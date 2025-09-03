@@ -35,7 +35,16 @@ interface GrowspaceDevice {
 
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
-  @state() private _addPlantDialog: { open: boolean; row: number; col: number; strain?: string } | null = null;
+  @state() private _addPlantDialog: {
+    open: boolean;
+    row: number;
+    col: number;
+    strain?: string;
+    phenotype?: string;
+    veg_start?: string;
+    flower_start?: string;
+  } | null = null;
+
   @state() private selectedDevice: string | null = null;
 
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -45,15 +54,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const strainSensor = Object.values(this.hass.states).find(s => s.entity_id.endsWith('_strain_library'));
     return strainSensor?.attributes?.strains || [];
   }
+
   public static async getConfigElement() {
     return document.createElement('div');
   }
 
   public static getStubConfig(): GrowspaceManagerCardConfig {
-    return {
-      type: 'custom:growspace-manager-card',
-      title: 'Growspace Manager'
-    };
+    return { type: 'custom:growspace-manager-card', title: 'Growspace Manager' };
   }
 
   public setConfig(config: GrowspaceManagerCardConfig): void {
@@ -61,9 +68,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this._config = config;
   }
 
-  public getCardSize(): number {
-    return 3;
-  }
+  public getCardSize(): number { return 3; }
 
   static get styles(): CSSResultGroup {
     return css`
@@ -100,7 +105,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
     });
 
-    
     const devices: GrowspaceDevice[] = [];
     deviceGroups.forEach((plants, growspaceId) => {
       const overview = overviewSensors.find(ov => ov.attributes?.growspace_id === growspaceId);
@@ -140,24 +144,46 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _openAddPlantDialog(row: number, col: number) {
-    const defaultStrain = this._strainLibrary?.[0] || ''; // pick first strain or something
-    this._addPlantDialog = { open: true, row, col, strain: defaultStrain };
+    const today = new Date().toISOString().slice(0, 16);
+    const defaultStrain = this._strainLibrary?.[0] || '';
+    this._addPlantDialog = {
+      open: true,
+      row,
+      col,
+      strain: defaultStrain,
+      phenotype: '',
+      veg_start: today,
+      flower_start: today,
+    };
   }
 
-  
-  private _addPlant() {
+  private _updateStageFromDates() {
+    if (!this._addPlantDialog) return;
+    const vegDate = new Date(this._addPlantDialog.veg_start!);
+    const flowerDate = new Date(this._addPlantDialog.flower_start!);
+    const today = new Date();
+
+    if (today < vegDate) this._addPlantDialog.stage = 'seedling';
+    else if (today >= vegDate && today < flowerDate) this._addPlantDialog.stage = 'veg';
+    else if (today >= flowerDate) this._addPlantDialog.stage = 'flower';
+  }
+
+  private _confirmAddPlant() {
     if (!this._addPlantDialog || !this.selectedDevice) return;
-    const { row, col, strain } = this._addPlantDialog;
-    if (!strain) { alert('Please enter a strain!'); return; }
+    if (!this._addPlantDialog.strain) { alert('Please enter a strain!'); return; }
+
+    this._updateStageFromDates();
 
     this.hass.callService('growspace_manager', 'add_plant', {
       growspace_id: this.selectedDevice,
-      row: row + 1,
-      col: col + 1,
-      strain
-    }).then(() => {
-      this._addPlantDialog = null;
-    }).catch(err => console.error('Error calling growspace_manager.add_plant', err));
+      row: this._addPlantDialog.row + 1,
+      col: this._addPlantDialog.col + 1,
+      strain: this._addPlantDialog.strain,
+      phenotype: this._addPlantDialog.phenotype,
+      veg_start: this._addPlantDialog.veg_start,
+      flower_start: this._addPlantDialog.flower_start,
+    }).then(() => { this._addPlantDialog = null; })
+      .catch(err => console.error('Error calling growspace_manager.add_plant', err));
   }
 
   protected render(): TemplateResult {
@@ -217,18 +243,30 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             @closed=${() => this._addPlantDialog = null}
             heading="Add Plant at Row ${this._addPlantDialog.row + 1}, Col ${this._addPlantDialog.col + 1}"
           >
-            <div>
-              <label for="strain-select">Select strain:</label>
-              <select id="strain-select" .value=${this._addPlantDialog.strain} @change=${(e: Event) => {
-                const target = e.target as HTMLSelectElement;
-                if (this._addPlantDialog) this._addPlantDialog.strain = target.value;
-              }}>
-                ${this._strainLibrary.map(s => html`
-                  <option value="${s}" ?selected=${this._addPlantDialog?.strain === s}>${s}</option>
-                `)}
-              </select>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label>Strain:
+                <select .value=${this._addPlantDialog.strain} @change=${(e: Event) => {
+                  const target = e.target as HTMLSelectElement;
+                  if (this._addPlantDialog) this._addPlantDialog.strain = target.value;
+                }}>
+                  ${this._strainLibrary.map(s => html`<option value="${s}" ?selected=${this._addPlantDialog?.strain === s}>${s}</option>`)}
+                </select>
+              </label>
+
+              <label>Phenotype:
+                <input type="text" .value=${this._addPlantDialog.phenotype || ''} @input=${(e: any) => this._addPlantDialog!.phenotype = e.target.value} />
+              </label>
+
+              <label>Vegetative Start:
+                <input type="datetime-local" .value=${this._addPlantDialog.veg_start || ''} @input=${(e: any) => this._addPlantDialog!.veg_start = e.target.value} />
+              </label>
+
+              <label>Flower Start:
+                <input type="datetime-local" .value=${this._addPlantDialog.flower_start || ''} @input=${(e: any) => this._addPlantDialog!.flower_start = e.target.value} />
+              </label>
             </div>
-            <mwc-button slot="primaryAction" @click=${this._addPlant}>Add</mwc-button>
+
+            <mwc-button slot="primaryAction" @click=${this._confirmAddPlant}>Add Plant</mwc-button>
             <mwc-button slot="secondaryAction" @click=${() => this._addPlantDialog = null}>Cancel</mwc-button>
           </ha-dialog>
         ` : ''}
@@ -237,7 +275,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 }
 
-// Register card
 declare global {
   interface HTMLElementTagNameMap { 'growspace-manager-card': GrowspaceManagerCard; }
 }
