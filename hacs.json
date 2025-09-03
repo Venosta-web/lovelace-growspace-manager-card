@@ -1,0 +1,7 @@
+{
+  "name": "Growspace Manager Card",
+  "filename": "growspace-manager-card.js",
+  "content_in_root": false,
+  "type": "frontend",
+  "homeassistant": "2025.8.0"
+}
