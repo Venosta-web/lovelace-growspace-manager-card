@@ -7,6 +7,7 @@ import { mdiClose } from '@mdi/js';
 interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
   type: string;
   title?: string;
+  default_growspace?: string; // optional default growspace
 }
 
 interface PlantEntity {
@@ -46,6 +47,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     veg_start?: string;
     flower_start?: string;
   } | null = null;
+
+  @state() private _defaultApplied = false;
 
   @state() private _plantOverviewDialog: {
     open: boolean;
@@ -124,6 +127,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this._config = config;
   }
 
+
   public getCardSize(): number { return 3; }
 
   static get styles(): CSSResultGroup {
@@ -179,7 +183,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       
       
       ha-card { padding: 16px; --ha-card-border-radius: var(--ha-card-border-radius, 12px); }
-      .header { display: flex; align-items: start; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+      .header { display: flex; align-items: start; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; margin: 1% 2%}
       .selector-container { display: flex; align-items: center; gap: 8px; }
       select { padding: 8px 12px; border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color); color: var(--primary-text-color); font-family: inherit; cursor: pointer; min-width: 150px; }
       select:focus { outline: 2px solid var(--primary-color); outline-offset: 2px; }
@@ -196,7 +200,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       .overview-fields input, .overview-fields select { padding: 6px 8px; font-family: inherit; border-radius: 6px; border: 1px solid var(--divider-color); }
     `;
   }
-
+  
   private _getGrowspaceDevices(): GrowspaceDevice[] {
     if (!this.hass) return [];
     const allStates = Object.values(this.hass.states);
@@ -341,15 +345,54 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       console.error("Error moving plant:", err);
     }
   }
+  protected firstUpdated() {
+    const devices = this._getGrowspaceDevices();
+    if (!this.selectedDevice && devices.length) {
+      let defaultDevice: GrowspaceDevice | undefined;
+      if (this._config?.default_growspace) {
+        defaultDevice = devices.find(d =>
+          d.device_id === this._config.default_growspace || d.name === this._config.default_growspace
+        );
+      }
+      this.selectedDevice = defaultDevice?.device_id || devices[0].device_id;
+      console.log('Default growspace applied:', devices.find(d => d.device_id === this.selectedDevice)?.name);
+    }
+  }
 
   protected render(): TemplateResult {
     if (!this.hass) return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
 
     const devices = this._getGrowspaceDevices();
+    console.log('devices detected:', devices);
+    console.log('current selectedDevice:', this.selectedDevice);
+    console.log('default from config:', this._config?.default_growspace);
     if (!devices.length) return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
 
-    if (!this.selectedDevice || !devices.find(d => d.device_id === this.selectedDevice)) this.selectedDevice = devices[0].device_id;
-    const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice)!;
+    // Apply default growspace only once
+    if (!this._defaultApplied && this._config?.default_growspace) {
+      const match = devices.find(d =>
+        d.device_id === this._config.default_growspace || d.name === this._config.default_growspace
+      );
+      
+      if (match) this.selectedDevice = match.device_id;
+        console.log('Applying default growspace:', match?.name);
+        this._defaultApplied = true;
+    }
+
+    // fallback if nothing selected and no default is configured
+    if (!this.selectedDevice || !devices.find(d => d.device_id === this.selectedDevice)) {
+      if (!this._config?.default_growspace) {
+        this.selectedDevice = devices[0].device_id;
+      } else {
+        // use the default growspace from config
+        const match = devices.find(d =>
+          d.device_id === this._config.default_growspace || d.name === this._config.default_growspace
+        );
+        if (match) this.selectedDevice = match.device_id;
+      }
+    }
+
+    const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice)!;  
 
     const { rows, cols, grid } = this._createGridLayout(selectedDeviceData.plants, selectedDeviceData.rows, selectedDeviceData.plants_per_row);
 
@@ -357,14 +400,20 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       <ha-card>
         <div class="header">
           <div class="selector-container">
-            <label for="device-select">Growspace:</label>
-            <select id="device-select" .value=${this.selectedDevice} @change=${this._handleDeviceChange}>
-              ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
-            </select>
+            ${!this._config?.default_growspace ? html`
+              <label for="device-select">Growspace:</label>
+              <select id="device-select" .value=${this.selectedDevice} @change=${this._handleDeviceChange}>
+                ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
+              </select>
+            ` : html`<span>Growspace: ${devices.find(d => d.device_id === this.selectedDevice)?.name}</span>`}
           </div>
-          <div class="header-buttons">
-            <ha-button variant="neutral" class="growspace-button" @click=${this._openStrainLibraryDialog}>Manage Strain Library</ha-button>
-          </div>
+
+          <ha-button 
+            variant="neutral" 
+            class="growspace-button" 
+            @click=${this._openStrainLibraryDialog}>
+            Manage Strain Library
+          </ha-button>
         </div>
 
         <div class="grid" style="grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${rows}, 1fr);">
