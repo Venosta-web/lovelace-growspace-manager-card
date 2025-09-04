@@ -1,6 +1,8 @@
 import { LitElement, html, css, CSSResultGroup, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardConfig } from 'custom-card-helpers';
+import { mdiClose } from '@mdi/js';
+
 
 interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
   type: string;
@@ -15,12 +17,12 @@ interface PlantEntity {
     device_id?: string;
     row?: number;
     col?: number;
-    stage?: string;
     strain?: string;
     phenotype?: string;
     veg_days?: number;
     flower_days?: number;
-    plant_name?: string;
+    veg_start?: string;
+    flower_start?: string;
     [key: string]: any;
   };
 }
@@ -45,7 +47,22 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     flower_start?: string;
   } | null = null;
 
+  @state() private _plantOverviewDialog: {
+    open: boolean;
+    plant: PlantEntity;
+    editedAttributes: { [key: string]: any };
+  } | null = null;
+
+  @state() private _strainLibraryDialog: {
+    open: boolean;
+    newStrain: string;
+    strains: string[]; // <-- local copy of strains
+  } | null = null;
+
+
   @state() private selectedDevice: string | null = null;
+
+  private _draggedPlant: PlantEntity | null = null;
 
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) private _config!: GrowspaceManagerCardConfig;
@@ -53,6 +70,45 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   private get _strainLibrary(): string[] {
     const strainSensor = Object.values(this.hass.states).find(s => s.entity_id.endsWith('_strain_library'));
     return strainSensor?.attributes?.strains || [];
+  }
+
+  // ----------------- strain library helpers -----------------
+  private _openStrainLibraryDialog() {
+    const currentStrains = this._strainLibrary || []; // get from HA state
+    this._strainLibraryDialog = { open: true, newStrain: '' ,strains: currentStrains};
+  }
+
+  private async _addStrain() {
+    if (!this._strainLibraryDialog?.newStrain) return;
+
+    // Update local list immediately
+    this._strainLibraryDialog.strains.push(this._strainLibraryDialog.newStrain);
+
+    // Call HA service
+    await this.hass.callService('growspace_manager', 'import_strain_library', {
+      strains: this._strainLibraryDialog.strains,
+      replace: true
+    });
+
+    this._strainLibraryDialog.newStrain = '';
+  }
+
+  private async _removeStrain(strain: string) {
+    if (!this._strainLibraryDialog) return;
+
+    // Remove locally for immediate UI update
+    this._strainLibraryDialog.strains = this._strainLibraryDialog.strains.filter(s => s !== strain);
+
+    // Persist changes
+    await this.hass.callService('growspace_manager', 'import_strain_library', {
+      strains: this._strainLibraryDialog.strains,
+      replace: true
+    });
+  }
+
+
+  private async _clearStrains() {
+    await this.hass.callService('growspace_manager', 'clear_strain_library', {});
   }
 
   public static async getConfigElement() {
@@ -72,9 +128,58 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   static get styles(): CSSResultGroup {
     return css`
-      :host { display: block; }
+      :host { 
+        display: block;
+      }
+      /* Force override ha-button styles with !important */  
+      /* Custom button class for more specific targeting */
+      ha-button.growspace-button::part(base),
+      .growspace-button::part(base):hover,
+      .growspace-button::part(base):active {
+        background-color: #2196f3;
+        color: var(--text-primary-color);
+      }
+      
+      /* Strain library specific buttons */
+      .strain-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 5%;
+      }
+
+      .strain-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 8px;
+        background: var(--card-background-color);
+        border-radius: 6px;
+      }
+
+      .remove-button {
+        background: none;
+        border: none;
+        padding: 2px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--error-color, red); /* optional */
+        transition: color 0.2s;
+      }
+
+      .remove-button:hover {
+        color: var(--error-color, darkred);
+      }
+
+      .remove-icon {
+        display: block;
+      }
+      
+      
       ha-card { padding: 16px; --ha-card-border-radius: var(--ha-card-border-radius, 12px); }
-      .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+      .header { display: flex; align-items: start; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
       .selector-container { display: flex; align-items: center; gap: 8px; }
       select { padding: 8px 12px; border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color); color: var(--primary-text-color); font-family: inherit; cursor: pointer; min-width: 150px; }
       select:focus { outline: 2px solid var(--primary-color); outline-offset: 2px; }
@@ -86,6 +191,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       .plant-stage { color: var(--secondary-text-color); font-size: 0.8em; margin-bottom: 2px; }
       .no-data { text-align: center; color: var(--secondary-text-color); padding: 32px 16px; font-style: italic; }
       .error { color: var(--error-color); padding: 16px; background: rgba(var(--error-color-rgb, 244, 67, 54), 0.1); border-radius: 8px; margin: 16px 0; }
+      .overview-fields { display: flex; flex-direction: column; gap: 8px; }
+      .overview-fields label { display: flex; flex-direction: column; font-size: 0.85em; }
+      .overview-fields input, .overview-fields select { padding: 6px 8px; font-family: inherit; border-radius: 6px; border: 1px solid var(--divider-color); }
     `;
   }
 
@@ -97,7 +205,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     allStates.forEach((entity: any) => {
       if (entity.attributes?.row !== undefined && entity.attributes?.col !== undefined) {
-        const growspaceId = entity.attributes?.growspace_id 
+        const growspaceId = entity.attributes?.growspace_id
           || overviewSensors.find(ov => ov.entity_id.startsWith(entity.entity_id.split('_')[0]))?.attributes?.growspace_id
           || 'unknown';
         if (!deviceGroups.has(growspaceId)) deviceGroups.set(growspaceId, []);
@@ -136,11 +244,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handlePlantClick(plant: PlantEntity): void {
-    this.dispatchEvent(new CustomEvent('hass-more-info', {
-      bubbles: true,
-      composed: true,
-      detail: { entityId: plant.entity_id }
-    }));
+    this._plantOverviewDialog = {
+      open: true,
+      plant,
+      editedAttributes: { ...plant.attributes }
+    };
   }
 
   private _openAddPlantDialog(row: number, col: number) {
@@ -157,22 +265,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     };
   }
 
-  private _updateStageFromDates() {
-    if (!this._addPlantDialog) return;
-    const vegDate = new Date(this._addPlantDialog.veg_start!);
-    const flowerDate = new Date(this._addPlantDialog.flower_start!);
-    const today = new Date();
-
-    if (today < vegDate) this._addPlantDialog.stage = 'seedling';
-    else if (today >= vegDate && today < flowerDate) this._addPlantDialog.stage = 'veg';
-    else if (today >= flowerDate) this._addPlantDialog.stage = 'flower';
-  }
-
   private _confirmAddPlant() {
     if (!this._addPlantDialog || !this.selectedDevice) return;
     if (!this._addPlantDialog.strain) { alert('Please enter a strain!'); return; }
 
-    this._updateStageFromDates();
+    const vegStart = this._addPlantDialog.veg_start || new Date().toISOString().slice(0, 16);
+    const flowerStart = this._addPlantDialog.flower_start || new Date().toISOString().slice(0, 16);
 
     this.hass.callService('growspace_manager', 'add_plant', {
       growspace_id: this.selectedDevice,
@@ -180,10 +278,68 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       col: this._addPlantDialog.col + 1,
       strain: this._addPlantDialog.strain,
       phenotype: this._addPlantDialog.phenotype,
-      veg_start: this._addPlantDialog.veg_start,
-      flower_start: this._addPlantDialog.flower_start,
+      veg_start: vegStart,
+      flower_start: flowerStart,
     }).then(() => { this._addPlantDialog = null; })
       .catch(err => console.error('Error calling growspace_manager.add_plant', err));
+  }
+
+  private async _updatePlant() {
+    if (!this._plantOverviewDialog) return;
+    const attrs = this._plantOverviewDialog.editedAttributes;
+    const payload: any = { plant_id: this._plantOverviewDialog.plant.attributes?.plant_id || this._plantOverviewDialog.plant.entity_id.replace('sensor.', '') };
+
+    ['strain', 'phenotype', 'row', 'col', 'veg_start', 'flower_start']
+      .forEach(field => {
+        if (attrs[field] !== undefined && attrs[field] !== null) payload[field] = attrs[field];
+      });
+
+    try {
+      await this.hass.callService('growspace_manager', 'update_plant', payload);
+      this._plantOverviewDialog = null;
+    } catch (err) {
+      console.error("Error updating plant:", err);
+    }
+  }
+
+
+  private _handleDragStart(e: DragEvent, plant: PlantEntity) {
+    this._draggedPlant = plant;
+    e.dataTransfer?.setData("text/plain", JSON.stringify({ id: plant.entity_id }));
+  }
+
+  private _handleDragOver(e: DragEvent) {
+    e.preventDefault();
+  }
+
+  private _handleDrop(e: DragEvent, targetRow: number, targetCol: number, targetPlant: PlantEntity | null) {
+    e.preventDefault();
+    if (!this._draggedPlant) return;
+
+    const sourcePlant = this._draggedPlant;
+    this._draggedPlant = null;
+
+    if (targetPlant) {
+      // swap positions
+      this._movePlant(sourcePlant, targetRow, targetCol);
+      this._movePlant(targetPlant, sourcePlant.attributes.row!, sourcePlant.attributes.col!);
+    } else {
+      // just move
+      this._movePlant(sourcePlant, targetRow, targetCol);
+    }
+  }
+
+  private async _movePlant(plant: PlantEntity, newRow: number, newCol: number) {
+    try {
+      const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+      await this.hass.callService('growspace_manager', 'update_plant', {
+        plant_id: plantId,
+        row: newRow,
+        col: newCol,
+      });
+    } catch (err) {
+      console.error("Error moving plant:", err);
+    }
   }
 
   protected render(): TemplateResult {
@@ -200,43 +356,52 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     return html`
       <ha-card>
         <div class="header">
-          ${this._config.title ? html`<h2>${this._config.title}</h2>` : ''}
           <div class="selector-container">
             <label for="device-select">Growspace:</label>
             <select id="device-select" .value=${this.selectedDevice} @change=${this._handleDeviceChange}>
-              ${devices.map(device => html`
-                <option value="${device.device_id}" ?selected=${device.device_id === this.selectedDevice}>
-                  ${device.name} (${device.plants.length} plants)
-                </option>
-              `)}
+              ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
             </select>
+          </div>
+          <div class="header-buttons">
+            <ha-button variant="neutral" class="growspace-button" @click=${this._openStrainLibraryDialog}>Manage Strain Library</ha-button>
           </div>
         </div>
 
         <div class="grid" style="grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${rows}, 1fr);">
           ${grid.flat().map((plant, index) => {
-            const row = Math.floor(index / cols);
-            const col = index % cols;
-            if (!plant) {
-              return html`
-                <div class="plant empty" style="grid-row: ${row+1}; grid-column: ${col+1}" @click=${() => this._openAddPlantDialog(row, col)}>
+      const row = Math.floor(index / cols) + 1;
+      const col = (index % cols) + 1;
+      if (!plant) {
+        return html`
+                <div class="plant empty" 
+                     style="grid-row: ${row}; grid-column: ${col}" 
+                     @click=${() => this._openAddPlantDialog(row - 1, col - 1)}
+                     @dragover=${this._handleDragOver}
+                     @drop=${(e: DragEvent) => this._handleDrop(e, row, col, null)}>
                   <div class="plant-name">Empty</div>
                   <div class="plant-stage">Empty</div>
                 </div>
               `;
-            }
-            return html`
-              <div class="plant" style="grid-row: ${row+1}; grid-column: ${col+1}" @click=${() => this._handlePlantClick(plant)}>
+      }
+      return html`
+              <div class="plant" 
+                   style="grid-row: ${row}; grid-column: ${col}" 
+                   draggable="true"
+                   @dragstart=${(e: DragEvent) => this._handleDragStart(e, plant)}
+                   @dragover=${this._handleDragOver}
+                   @drop=${(e: DragEvent) => this._handleDrop(e, row, col, plant)}
+                   @click=${() => this._handlePlantClick(plant)}>
                 <div class="plant-name">${plant.attributes?.strain}</div>
                 ${plant.attributes?.phenotype ? html`<div class="plant-phenotype">Phenotype: ${plant.attributes.phenotype}</div>` : ''}
                 <div class="plant-stage">${plant.state}</div>
-                ${plant.attributes?.veg_days && plant.attributes?.stage === 'vegetative' ? html`<div class="plant-veg-days">Days in Veg: ${plant.attributes.veg_days}</div>` : ''}
-                ${plant.attributes?.flower_days && plant.attributes?.stage === 'flowering' ? html`<div class="plant-flower-days">Days in Flower: ${plant.attributes.flower_days}</div>` : ''}
+                ${plant.attributes?.veg_days ? html`<div class="plant-veg-days">Days in Veg: ${plant.attributes.veg_days}</div>` : ''}
+                ${plant.attributes?.flower_days ? html`<div class="plant-flower-days">Days in Flower: ${plant.attributes.flower_days}</div>` : ''}
               </div>
             `;
-          })}
+    })}
         </div>
 
+        <!-- Add Plant Dialog -->
         ${this._addPlantDialog?.open ? html`
           <ha-dialog
             open
@@ -246,9 +411,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             <div style="display: flex; flex-direction: column; gap: 8px;">
               <label>Strain:
                 <select .value=${this._addPlantDialog.strain} @change=${(e: Event) => {
-                  const target = e.target as HTMLSelectElement;
-                  if (this._addPlantDialog) this._addPlantDialog.strain = target.value;
-                }}>
+          const target = e.target as HTMLSelectElement;
+          if (this._addPlantDialog) this._addPlantDialog.strain = target.value;
+        }}>
                   ${this._strainLibrary.map(s => html`<option value="${s}" ?selected=${this._addPlantDialog?.strain === s}>${s}</option>`)}
                 </select>
               </label>
@@ -266,26 +431,94 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
               </label>
             </div>
 
-            <mwc-button slot="primaryAction" @click=${this._confirmAddPlant}>Add Plant</mwc-button>
-            <mwc-button slot="secondaryAction" @click=${() => this._addPlantDialog = null}>Cancel</mwc-button>
+            <ha-button class="growspace-button" slot="primaryAction" @click=${this._confirmAddPlant}>Add Plant</ha-button>
+            <ha-button class="growspace-button" slot="secondaryAction" @click=${() => this._addPlantDialog = null}>Cancel</ha-button>
           </ha-dialog>
         ` : ''}
+
+        <!-- Plant Overview Dialog -->
+        ${this._plantOverviewDialog?.open ? html`
+          <ha-dialog
+            open
+            @closed=${() => this._plantOverviewDialog = null}
+            heading="Plant Overview: ${this._plantOverviewDialog.editedAttributes.strain || 'Unnamed'}"
+          >
+            <div class="overview-fields">
+              <label>Strain:
+                <input type="text" .value=${this._plantOverviewDialog.editedAttributes.strain || ''} 
+                       @input=${(e: Event) => this._plantOverviewDialog!.editedAttributes.strain = (e.target as HTMLInputElement).value}>
+              </label>
+
+              <label>Phenotype:
+                <input type="text" .value=${this._plantOverviewDialog.editedAttributes.phenotype || ''} 
+                       @input=${(e: Event) => this._plantOverviewDialog!.editedAttributes.phenotype = (e.target as HTMLInputElement).value}>
+              </label>
+
+              <label>Row:
+                <input type="number" .value=${this._plantOverviewDialog.editedAttributes.row || 1} 
+                       @input=${(e: Event) => this._plantOverviewDialog!.editedAttributes.row = parseInt((e.target as HTMLInputElement).value)}>
+              </label>
+
+              <label>Col:
+                <input type="number" .value=${this._plantOverviewDialog.editedAttributes.col || 1} 
+                       @input=${(e: Event) => this._plantOverviewDialog!.editedAttributes.col = parseInt((e.target as HTMLInputElement).value)}>
+              </label>
+
+              <label>Vegetative Start:
+                <input type="datetime-local" .value=${this._plantOverviewDialog.editedAttributes.veg_start || ''} 
+                       @input=${(e: Event) => this._plantOverviewDialog!.editedAttributes.veg_start = (e.target as HTMLInputElement).value}>
+              </label>
+
+              <label>Flower Start:
+                <input type="datetime-local" .value=${this._plantOverviewDialog.editedAttributes.flower_start || ''} 
+                       @input=${(e: Event) => this._plantOverviewDialog!.editedAttributes.flower_start = (e.target as HTMLInputElement).value}>
+              </label>
+            </div>
+
+            <ha-button slot="primaryAction" @click=${this._updatePlant}>Update</ha-button>
+            <ha-button slot="secondaryAction" @click=${() => this._plantOverviewDialog = null}>Cancel</ha-button>
+          </ha-dialog>
+          
+        ` : ''}
       </ha-card>
+      <!-- strain library dialog -->
+        ${this._strainLibraryDialog?.open ? html`
+          <ha-dialog open heading="Strain Library" @closed=${() => this._strainLibraryDialog = null}>
+            <div>
+              <label>Add new strain:</label>
+              <input type="text" .value=${this._strainLibraryDialog.newStrain}
+                     @input=${(e: any) => this._strainLibraryDialog!.newStrain = e.target.value}>
+              <ha-button variant="neutral" class="growspace-button" size="small" @click=${this._addStrain}>Add</ha-button>
+            </div>
+            </div>
+            <div class="strain-list">
+              ${this._strainLibraryDialog?.strains.map(s => html`
+                <div class="strain-item">
+                  <span>${s}</span>
+                  <button 
+                    class="remove-button"
+                    title="Remove"
+                    type="button"
+                    @click=${() => this._removeStrain(s)}
+                  >
+                    <svg
+                      class="remove-icon"
+                      style="width:16px;height:16px;fill:currentColor;vertical-align:middle;"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="${mdiClose}"></path>
+                    </svg>
+                  </button>
+                </div>
+              `)}
+            </div>
+
+            <ha-button variant="neutral" class="growspace-button" size="small" slot="secondaryAction" @click=${this._clearStrains}>Clear All</ha-button>
+            <ha-button variant="neutral" class="growspace-button" size="small" slot="primaryAction" @click=${() => this._strainLibraryDialog = null}>Close</ha-button>
+   
+          </ha-dialog>
+        `: ''}
     `;
   }
-}
 
-declare global {
-  interface HTMLElementTagNameMap { 'growspace-manager-card': GrowspaceManagerCard; }
-}
-
-(window as any).customCards = (window as any).customCards || [];
-(window as any).customCards.push({
-  type: 'growspace-manager-card',
-  name: 'Growspace Manager Card',
-  description: 'A card to manage and display growspace plants in a grid layout'
-});
-
-if (!customElements.get('growspace-manager-card')) {
-  customElements.define('growspace-manager-card', GrowspaceManagerCard);
 }
