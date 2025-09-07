@@ -8,6 +8,7 @@
     "sourceMap": true,
     "importHelpers": true,
     "experimentalDecorators": true,
+    "useDefineForClassFields": false,
     "emitDecoratorMetadata": true,
     "strict": true,
     "esModuleInterop": true

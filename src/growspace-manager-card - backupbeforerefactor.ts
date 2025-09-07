@@ -722,9 +722,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       editedAttributes: { ...plant.attributes }
     };
   }
+  private getLocalDateTimeString(date: Date = new Date()): string {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
 
   private _openAddPlantDialog(row: number, col: number) {
-    const today = new Date().toISOString().slice(0, 16);
+    const today = this.getLocalDateTimeString();
     const defaultStrain = this._strainLibrary?.[0] || '';
     this._addPlantDialog = {
       open: true,
