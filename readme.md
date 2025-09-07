@@ -8,6 +8,10 @@ A modern **Home Assistant Lovelace custom card** to manage multiple growspaces a
 
 - Display plants in a grid layout with configurable rows and columns per growspace.
 - Track plant stages: `veg`, `flower`, `dry`, `cure`.
+- Strain Library:
+  Maintain a list of strains.
+  Autocomplete input when adding or updating a plant for quick selection.
+  Add, remove, and clear strains easily from the card.
 - Automatically calculate days in each stage.
 - Add, update, move, and delete plants directly from the card.
 - Harvest and finish drying plants with proper stage checks.
