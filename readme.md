@@ -100,12 +100,6 @@ npm run deploy
 - `build` compiles TypeScript and bundles the card.
 - `deploy` copies the output to Home Assistant `www` folder.
 
-### TypeScript & Lit Tips
-
-- Use `PlantStage` union type to track stages consistently.
-- Always use `Home Assistant` timezone via Luxon for date/time handling.
-- Drag-and-drop is supported using native HTML5 events.
-
 ---
 
 ## Contributing
