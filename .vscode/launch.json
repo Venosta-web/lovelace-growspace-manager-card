@@ -10,6 +10,12 @@
             "name": "Launch Edge against localhost",
             "url": "http://homeassistant.local:8123/dashboard-grow/1",
             "webRoot": "${workspaceFolder}"
+        },
+        {
+            "type": "chrome",
+            "name": "http://homeassistant.local:8123/dashboard-grow/dry",
+            "request": "launch",
+            "url": "http://homeassistant.local:8123/dashboard-grow/dry"
         }
     ]
 }
