@@ -13,3 +13,6 @@ build/
 
 # MacOS files
 .DS_Store
+
+# Ignore zip files
+*.zip
