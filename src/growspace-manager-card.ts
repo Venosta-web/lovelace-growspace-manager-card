@@ -153,9 +153,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         box-shadow: var(--card-shadow);
         transition: var(--transition-medium);
         min-height: 100px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
+        display: grid; 
+          grid-template-columns: 1fr; 
+          grid-template-rows: 2fr 1fr 1fr 2fr; 
+          gap: 0px 0px; 
+          grid-template-areas: 
+            "icon"
+            "name"
+            "stage"
+            "days"; 
+        align-items: center;
+        justify-items: center;
         cursor: pointer;
         aspect-ratio: 1;
         position: relative;
@@ -202,7 +210,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         justify-content: center;
         gap: var(--spacing-xs);
         margin-bottom: var(--spacing-xs);
-        margin-top: auto;
       }
 
       .plant.empty .plant-header {
@@ -242,11 +249,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
       .plant-days {
         display: flex;
-        justify-content: space-between;
+        justify-content: space-around;
         align-items: center;
         font-size: var(--font-size-md);
         color: var(--secondary-text-color);
-        margin-top: auto;
+        width: 100%;
       }
 
       .plant-days span {
@@ -827,211 +834,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
 
 }
-export const GrowspaceManagerCardStyles: CSSResultGroup = [
-      css`${variables}`, // import all variables
 
-      css`
-        :host {
-          display: block;
-        }
-
-        ha-card {
-          padding: var(--growspace-card-padding, 16px);
-          border-radius: var(--growspace-card-radius, 12px);
-          background: var(--growspace-card-bg, var(--card-background-color, white));
-          color: var(--growspace-card-text, var(--primary-text-color, black));
-          box-shadow: var(--growspace-card-shadow, 0 4px 8px rgba(0,0,0,0.12));
-          transition: var(--growspace-transition, all 0.3s ease);
-        }
-
-        ha-card:hover {
-          box-shadow: var(--growspace-card-shadow-hover, 0 8px 16px rgba(0,0,0,0.16));
-        }
-
-        /* Header */
-        .header {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          justify-content: space-between;
-          gap: var(--spacing-md, 16px);
-          margin-bottom: var(--spacing-lg, 24px);
-          padding-bottom: var(--spacing-sm, 8px);
-          border-bottom: 2px solid var(--divider-color, rgba(0,0,0,0.12));
-        }
-
-        .header-title {
-          font-size: var(--growspace-header-font-size, 1.5rem);
-          font-weight: 600;
-          color: var(--growspace-header-color, var(--primary-text-color));
-          margin: 0;
-        }
-
-        /* Selectors & Buttons */
-        .growspace-select {
-          padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-          border: 2px solid var(--divider-color, rgba(0,0,0,0.12));
-          border-radius: var(--growspace-card-radius, 12px);
-          background: var(--growspace-input-bg, var(--card-background-color));
-          color: var(--growspace-input-text, var(--primary-text-color));
-          font-size: 0.9rem;
-          cursor: pointer;
-          min-width: 180px;
-          transition: var(--growspace-transition, all 0.3s ease);
-        }
-
-        .growspace-select:focus {
-          outline: none;
-          border-color: var(--primary-color);
-          box-shadow: 0 0 0 3px rgba(var(--rgb-primary-color, 33,150,243), 0.1);
-        }
-
-        .action-button {
-          padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-          border: none;
-          border-radius: var(--growspace-card-radius, 12px);
-          font-size: 0.9rem;
-          font-weight: 500;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          gap: var(--spacing-xs, 4px);
-          background: var(--growspace-button-bg, var(--secondary-color, #2196F3));
-          color: var(--growspace-button-text, white);
-          box-shadow: var(--growspace-card-shadow, 0 4px 8px rgba(0,0,0,0.12));
-          transition: var(--growspace-transition, all 0.3s ease);
-        }
-
-        .action-button:hover {
-          transform: translateY(-2px);
-          box-shadow: var(--growspace-card-shadow-hover, 0 8px 16px rgba(0,0,0,0.16));
-        }
-
-        .action-button.primary {
-          background: var(--primary-color, #4CAF50);
-        }
-
-        .action-button.danger {
-          background: var(--error-color, #f44336);
-        }
-
-        /* Grid */
-        .grid {
-          display: grid;
-          gap: var(--spacing-md, 16px);
-          margin-top: var(--spacing-lg, 24px);
-          padding: var(--spacing-sm, 8px);
-        }
-
-        .grid.compact {
-          gap: var(--spacing-sm, 8px);
-        }
-
-        .plant {
-          border: 2px solid transparent;
-          border-radius: var(--growspace-card-radius, 12px);
-          text-align: center;
-          padding: var(--spacing-md, 16px);
-          background: var(--growspace-plant-bg, var(--card-background-color));
-          box-shadow: var(--growspace-card-shadow, 0 4px 8px rgba(0,0,0,0.12));
-          min-height: 100px;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          cursor: pointer;
-          aspect-ratio: 1;
-          position: relative;
-          overflow: hidden;
-          transition: var(--growspace-transition, all 0.3s ease);
-        }
-
-        .plant::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 4px;
-          background: var(--growspace-plant-bar, var(--secondary-color, #2196F3));
-          transition: var(--growspace-transition, all 0.3s ease);
-        }
-
-        .plant:hover {
-          transform: translateY(-4px);
-          box-shadow: var(--growspace-card-shadow-hover, 0 8px 16px rgba(0,0,0,0.16));
-          border-color: var(--growspace-plant-bar, var(--secondary-color, #2196F3));
-        }
-
-        .plant.empty {
-          background: var(--growspace-empty-bg, rgba(var(--rgb-disabled-text-color, 158, 158, 158), 0.1));
-          border: 2px dashed var(--divider-color, rgba(0,0,0,0.12));
-          opacity: 0.7;
-        }
-
-        .plant.empty:hover {
-          opacity: 1;
-          background: var(--growspace-empty-hover-bg, rgba(var(--rgb-primary-color, 33,150,243),0.1));
-          border-color: var(--primary-color, #2196F3);
-        }
-
-        .plant.dragging {
-          opacity: 0.5;
-          transform: rotate(5deg);
-        }
-
-        .plant-header {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: var(--spacing-xs, 4px);
-          margin-bottom: var(--spacing-xs, 4px);
-          margin-top: auto;
-        }
-
-        .plant-name {
-          font-weight: 600;
-          font-size: var(--growspace-plant-name-size, 2rem);
-          color: var(--growspace-plant-name-color, var(--primary-text-color));
-          margin-bottom: var(--spacing-xs, 4px);
-          text-overflow: ellipsis;
-          overflow: hidden;
-          white-space: nowrap;
-        }
-
-        .plant-stage {
-          color: var(--growspace-stage-color, #757575);
-          font-size: var(--growspace-stage-size, 2rem);
-          font-weight: 500;
-          margin-bottom: var(--spacing-xs, 4px);
-          text-transform: capitalize;
-        }
-
-        .plant-days {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: var(--growspace-days-size, 1.2rem);
-          color: var(--secondary-text-color);
-          margin-top: auto;
-        }
-
-        /* Responsive */
-        @media (max-width: 600px) {
-          .header {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .grid {
-            gap: var(--spacing-sm, 8px);
-          }
-
-          .plant {
-            min-height: 80px;
-          }
-        }
-      `
-  ];
 @customElement("growspace-manager-card-editor")
 export class GrowspaceManagerCardEditor extends LitElement {
   @property({ attribute: false }) public hass!: any;
