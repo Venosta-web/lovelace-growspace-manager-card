@@ -83,36 +83,65 @@ export class DataService {
     dry_start?: string;
     cure_start?: string;
   }) {
-    return this.hass.callService('growspace_manager', 'add_plant', params);
+    console.log("[DataService:addPlant] Sending payload:", params);
+    try {
+      const res = await this.hass.callService("growspace_manager", "add_plant", params);
+      console.log("[DataService:addPlant] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:addPlant] Error:", err);
+      throw err;
+    }
   }
-  
   async updatePlant(params: { plant_id: string; [key: string]: any }) {
-    return this.hass.callService('growspace_manager', 'update_plant', params);
+    console.log("[DataService:updatePlant] Sending payload:", params);
+    try {
+      const res = await this.hass.callService("growspace_manager", "update_plant", params);
+      console.log("[DataService:updatePlant] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:updatePlant] Error:", err);
+      throw err;
+    }
   }
 
   async removePlant(plantId: string) {
-    return this.hass.callService('growspace_manager', 'remove_plant', { plant_id: plantId });
-  }
-  getPlantInternalId(entity: PlantEntity): string | null {
-    // The internal plant_id should be stored in attributes
-     return entity.entity_id;
+    console.log("[DataService:removePlant] Removing plant_id:", plantId);
+    try {
+      const res = await this.hass.callService("growspace_manager", "remove_plant", { plant_id: plantId });
+      console.log("[DataService:removePlant] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:removePlant] Error:", err);
+      throw err;
+    }
   }
 
-  async harvestPlant(plantId: string, GrowspaceType: string = 'dry') {
-    return this.hass.callService('growspace_manager', 'harvest_plant', {
-      plant_id: plantId,
-      target_growspace_name: GrowspaceType,
-    });
+  async harvestPlant(plantId: string, target: string = "dry") {
+    console.log("[DataService:harvestPlant] Harvesting plant:", plantId, "→ target:", target);
+    try {
+      const res = await this.hass.callService("growspace_manager", "harvest_plant", {
+        plant_id: plantId,
+        target_growspace_name: target,
+      });
+      console.log("[DataService:harvestPlant] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:harvestPlant] Error:", err);
+      throw err;
+    }
   }
 
   async importStrainLibrary(strains: string[], replace: boolean = true) {
-    return this.hass.callService('growspace_manager', 'import_strain_library', {
+    console.log("[DataService:importStrainLibrary] Sending strains:", strains, "replace:", replace);
+    return this.hass.callService("growspace_manager", "import_strain_library", {
       strains,
-      replace
+      replace,
     });
   }
 
   async clearStrainLibrary() {
-    return this.hass.callService('growspace_manager', 'clear_strain_library', {});
-  }
+    console.log("[DataService:clearStrainLibrary] Clearing strain library");
+    return this.hass.callService("growspace_manager", "clear_strain_library", {});
+}
 }

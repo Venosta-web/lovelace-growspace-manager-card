@@ -5,6 +5,7 @@ import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer } from
 import { DateTime } from 'luxon'; 
 import { variables } from './styles/variables';
 
+
 // Import our modules
 import { 
   GrowspaceManagerCardConfig, 
@@ -15,7 +16,7 @@ import {
   StrainLibraryDialogState,
   GrowspaceDevice 
 } from './types';
-import { PlantUtils } from './utils';
+import { PlantUtils } from "./utils";
 import { DataService } from './data-service';
 import { DialogRenderer } from './dialog-renderer';
 
@@ -82,8 +83,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         align-items: center;
         gap: var(--spacing-sm);
         flex: 1;
+        text-transform: capitalize;
       }
-
+      
       .growspace-select {
         padding: var(--spacing-sm) var(--spacing-md);
         border: 2px solid var(--divider-color);
@@ -114,7 +116,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         display: inline-flex;
         align-items: center;
         gap: var(--spacing-xs);
-        background: var(--growspace-card-accent);
+        background: var(--plant-border-color-default);
         color: var(--growspace-card-text);
         box-shadow: var(--card-shadow);
         transition: var(--transition-fast);
@@ -177,14 +179,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         left: 0;
         right: 0;
         height: 4px;
-        background: var(--growspace-card-accent);
+        background: var(--plant-border-color-default);
         transition: var(--transition-medium);
       }
 
       .plant:hover {
         transform: translateY(-4px);
         box-shadow: var(--card-shadow-hover);
-        border-color: var(--growspace-card-accent);
+        border-color: var(--plant-border-color-default);
       }
 
       .plant.empty {
@@ -196,12 +198,27 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       .plant.empty:hover {
         opacity: 1;
         background: var(--growspace-empty-bg-hover);
-        border-color: var(--primary-color);
+        border-color: var(--plant-border-color-default);
       }
 
       .plant.dragging {
         opacity: 0.5;
         transform: rotate(5deg);
+      }
+      .plant-name,
+      .plant-phenotype,
+      .plant-stage,
+      .plant-days {
+        min-height: 1.2em; /* reserve space */
+        text-align: center;
+      }
+
+      .plant-phenotype:empty::before,
+      .plant-name:empty::before,
+      .plant-stage:empty::before,
+      .plant-days:empty::before {
+        content: "—";
+        color: var(--disabled-text-color);
       }
 
       .plant-header {
@@ -299,6 +316,134 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         border: 1px solid var(--error-border);
         border-radius: var(--border-radius-md);
         margin: var(--spacing-md) 0;
+      }
+      /* Dialog Styles */
+      ha-dialog {
+        --mdc-dialog-border-radius: var(--border-radius);
+        --mdc-dialog-box-shadow: var(--surface-elevation-hover);
+      }
+      
+      ha-dialog .mdc-dialog--open .mdc-dialog__container,
+      ha-dialog .mdc-dialog--open {
+        align-items: start;
+        margin-top: 5vh;
+      }
+      
+      ha-dialog.strain-dialog .mdc-dialog--open .mdc-dialog__container .mdc-dialog__surface {
+        width: 800px;
+        max-width: 90vw;
+        height: 600px;
+        max-height: 90vh;
+      }
+      ha-dialog.strain-dialog .mdc-dialog--open .dialog-content .strain-library-header {
+        justify-content: space-between;
+      }
+      ha-dialog.strain-dialog {
+        --mdc-dialog-min-width: 45vw;
+        --mdc-dialog-max-width: 45vw;
+      }
+      .dialog-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md) 0;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+      }
+
+      .form-group label {
+        font-weight: 500;
+        color: var(--primary-text-color);
+        font-size: 0.9rem;
+      }
+
+      .form-input {
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: 2px solid var(--divider-color);
+        border-radius: var(--border-radius);
+        font-family: inherit;
+        font-size: 0.9rem;
+        transition: var(--transition);
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+      }
+
+      .form-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(var(--rgb-primary-color), 0.1);
+      }
+
+      /* Strain Library Styles */
+      .strain-library-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
+      }
+
+      .strain-input-group {
+        display: flex;
+        gap: var(--spacing-sm);
+        align-items: center;
+      }
+
+      .strain-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        max-height: 500px;
+        overflow-y: auto;
+        margin-top: var(--spacing-md);
+        padding-right: var(--spacing-md)
+      }
+
+      .strain-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: rgba(var(--rgb-primary-color), 0.05);
+        border: 1px solid rgba(var(--rgb-primary-color), 0.1);
+        border-radius: var(--border-radius);
+        transition: var(--transition);
+      }
+
+      .strain-item:hover {
+        background: rgba(var(--rgb-primary-color), 0.1);
+      }
+
+      .strain-name {
+        font-weight: 500;
+        flex: 1;
+      }
+
+      .remove-button {
+        background: none;
+        border: none;
+        padding: var(--spacing-xs);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--error-color);
+        border-radius: 50%;
+        transition: var(--transition);
+      }
+
+      .remove-button:hover {
+        background: rgba(var(--rgb-error-color), 0.1);
+        transform: scale(1.1);
+      }
+
+      .remove-icon {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
       }
 
       @media (max-width: 600px) {
@@ -416,24 +561,33 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
 
     const { row, col, strain, phenotype, veg_start, flower_start, dry_start, cure_start } = this._addPlantDialog;
-    
+
     try {
-      await this.dataService.addPlant({
+      const payload = {
         growspace_id: this.selectedDevice,
         row: row + 1,
         col: col + 1,
         strain,
         phenotype,
-        veg_start: veg_start || PlantUtils.getCurrentDateTime(),
-        flower_start: flower_start || PlantUtils.getCurrentDateTime(),
-        dry_start: dry_start || PlantUtils.getCurrentDateTime(),
-        cure_start: cure_start || PlantUtils.getCurrentDateTime(),
-      });
+        veg_start: PlantUtils.parseDateTimeLocal(veg_start) 
+          ?? PlantUtils.getCurrentDateTime(),
+        flower_start: PlantUtils.parseDateTimeLocal(flower_start) 
+          ?? PlantUtils.getCurrentDateTime(),
+        dry_start: PlantUtils.parseDateTimeLocal(dry_start) 
+          ?? PlantUtils.getCurrentDateTime(),
+        cure_start: PlantUtils.parseDateTimeLocal(cure_start) 
+          ?? PlantUtils.getCurrentDateTime(),
+      };
+      console.log("Adding plant to growspace:", this.selectedDevice, payload);
+      console.log("Adding plant:", payload);
+      await this.dataService.addPlant(payload);
+
       this._addPlantDialog = null;
     } catch (err) {
       console.error('Error adding plant:', err);
     }
   }
+
 
   private async _updatePlant() {
     if (!this._plantOverviewDialog) return;
@@ -467,55 +621,50 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       console.error("Error deleting plant:", err);
     }
   }
-
-  private async _harvestPlant(plant: PlantEntity) {
-    const plantId = plant.attributes?.plant_id;
-    if (!plantId) {
-      console.error("Plant UUID not found:", plant);
-      return;
-    }
-    const stage = plant.state;
-    if (!stage || (stage !== "flower" && stage !== "dry")) {
-      alert("Plant must be in flower or dry stage to harvest.");
+  private async _movePlantToNextStage(_: PlantEntity) {
+    if (!this._plantOverviewDialog?.plant) {
+      console.error("No plant found in overview dialog");
       return;
     }
 
-    try {
-      await this.hass.callService("growspace_manager", "harvest_plant", {
-        plant_id: plantId,
-        target_growspace_name: "dry"
-      });
-      this._plantOverviewDialog = null;
-    } catch (err: any) {
-      console.error("Error harvesting plant:", err);
-    }
-  }
+    const plant = this._plantOverviewDialog.plant;
+    const stage = PlantUtils.getPlantStage(plant);
 
-
-
-
-
-
-  private async _finishDryingPlant(plantEntity: PlantEntity) {
-    if (!this._plantOverviewDialog) return;
-
-    const plant = plantEntity;
-
-    // Use stage if defined, otherwise fallback to state
-     const stage = plant.state; // <-- use state, not attributes.stage
     if (!stage || (stage !== "dry" && stage !== "cure")) {
-      alert('Plant must be in dry or cure stage to finish drying.');
+      alert("Plant must be in dry or cure stage to move.");
       return;
     }
 
+    // Decide the target growspace
+    let targetGrowspace: string;
+    if (stage === "dry") {
+      targetGrowspace = "cure_overview"; // move to curing
+    } else if (stage === "cure") {
+      targetGrowspace = "harvested_overview"; // final harvested
+    } else
+      targetGrowspace = "bin"; // fallback to dry
+
     try {
-      // Pass the entity_id of the plant, not the growspace
-      await this.dataService.harvestPlant(plant.entity_id, 'cure');
+      const plantId =
+        plant.attributes?.plant_id || plant.entity_id.replace("sensor.", "");
+
+      // Call your coordinator/service
+      await this.dataService.harvestPlant(plantId, targetGrowspace);
+
+      // Close dialog
       this._plantOverviewDialog = null;
     } catch (err) {
-      console.error('Error harvesting plant:', err);
+      console.error("Error moving plant to next stage:", err);
     }
   }
+  private async _harvestPlant(plantEntity: PlantEntity): Promise<void> {
+    await this._movePlantToNextStage(plantEntity);
+  }
+
+  private async _finishDryingPlant(plantEntity: PlantEntity): Promise<void> {
+    await this._movePlantToNextStage(plantEntity);
+  }
+
 
   // Strain library methods
   private _openStrainLibraryDialog() {
@@ -748,11 +897,26 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             <path d="${stageIcon}"></path>
           </svg>
         </div>
-        <div class="plant-name">${plant.attributes?.strain || 'Unknown'}</div>
-        ${plant.attributes?.phenotype ? html`<div class="plant-phenotype">${plant.attributes.phenotype}</div>` : ''}
-        <div class="plant-stage">${plant.state}</div>
-        
-        ${!this._isCompactView ? this.renderPlantDays(plant) : ''}
+
+        <!-- Always render strain slot -->
+        <div class="plant-name">
+          ${plant.attributes?.strain || '—'}
+        </div>
+
+        <!-- Always render phenotype slot -->
+        <div class="plant-phenotype">
+          ${plant.attributes?.phenotype || '—'}
+        </div>
+
+        <!-- Always render state slot -->
+        <div class="plant-stage">
+          ${plant.state || '—'}
+        </div>
+
+        <!-- Always render plant-days slot -->
+        <div class="plant-days">
+          ${!this._isCompactView ? this.renderPlantDays(plant) : '—'}
+        </div>
       </div>
     `;
   }
@@ -801,20 +965,22 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       )}
 
       ${DialogRenderer.renderPlantOverviewDialog(
-        this._plantOverviewDialog,
-        {
-          onClose: () => this._plantOverviewDialog = null,
-          onUpdate: () => this._updatePlant(),
-          onDelete: (plantId) => this._handleDeletePlant(plantId),
-          onHarvest: (plantEntity:PlantEntity) => this._harvestPlant(plantEntity),
-          onFinishDrying: (plantEntity:PlantEntity) => this._finishDryingPlant(plantEntity),
-          onAttributeChange: (key, value) => {
-            if (this._plantOverviewDialog) {
-              this._plantOverviewDialog.editedAttributes[key] = value;
-            }
-          },
-        }
-      )}
+      this._plantOverviewDialog,
+      {
+        onClose: () => this._plantOverviewDialog = null,
+        onUpdate: () => { this._updatePlant(); },
+        onDelete: (plantId) => { this._handleDeletePlant(plantId); },
+        onHarvest: (plantEntity) => { this._harvestPlant(plantEntity); },
+        onFinishDrying: (plantEntity) => { this._finishDryingPlant(plantEntity); },
+        _harvestPlant: this._harvestPlant.bind(this),
+        _finishDryingPlant: this._finishDryingPlant.bind(this),
+        onAttributeChange: (key, value) => {
+          if (this._plantOverviewDialog) {
+            this._plantOverviewDialog.editedAttributes[key] = value;
+          }
+        },
+      }
+    )}
 
       ${DialogRenderer.renderStrainLibraryDialog(
         this._strainLibraryDialog,

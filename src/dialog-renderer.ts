@@ -91,6 +91,8 @@ export class DialogRenderer {
       onDelete: (plantId: string) => void;
       onHarvest: (plantEntity: PlantEntity) => void;
       onFinishDrying: (plantEntity: PlantEntity) => void;
+      _harvestPlant: (plantEntity: PlantEntity) => void;
+      _finishDryingPlant: (plantEntity: PlantEntity) => void;
       onAttributeChange: (key: string, value: any) => void;
     }
   ): TemplateResult {
@@ -165,11 +167,11 @@ export class DialogRenderer {
         ` : ''}
 
         ${plant.state.toLowerCase() === 'dry' ? html`
-          <button class="action-button primary" @click=${callbacks.onFinishDrying}>
+          <button class="action-button primary" @click=${() => callbacks.onFinishDrying(plant)}>
             Finish Drying
           </button>
-        ` : ''}
-      </ha-dialog>
+  ` : ''}
+        </ha-dialog>
     `;
   }
 
@@ -306,7 +308,7 @@ export class DialogRenderer {
     return html`
       <div style="background: rgba(var(--rgb-info-color, 33, 150, 243), 0.05); padding: var(--spacing-md); border-radius: var(--border-radius); border-left: 4px solid var(--info-color, #2196F3);">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span><strong>Current Stage:</strong> ${plant.state}</span>
+          <span style="margin-right: 5px"><strong>Current Stage:</strong> ${plant.state} </span>
           <div style="display: flex; gap: var(--spacing-md);">
             ${plant.attributes?.veg_days ? html`<span>${plant.attributes.veg_days} days veg</span>` : ''}
             ${plant.attributes?.flower_days ? html`<span>${plant.attributes.flower_days} days flower</span>` : ''}
