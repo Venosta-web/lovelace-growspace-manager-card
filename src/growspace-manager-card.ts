@@ -485,17 +485,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (this._config?.default_growspace) {
       const defaultDevice = devices.find(d =>
         
-        d.device_id === this._config.default_growspace ||
+        d.id === this._config.default_growspace ||
         d.name === this._config.default_growspace
       );
       if (defaultDevice) {
-        this.selectedDevice = defaultDevice.device_id;
+        this.selectedDevice = defaultDevice.id;
         return;
       }
     }
 
     // Fallback to first device
-    this.selectedDevice = devices[0].device_id;
+    this.selectedDevice = devices[0].id;
   }
 
   
@@ -533,7 +533,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     };
   }
   private _handleTakeClone = (motherPlant: PlantEntity) => {
-    const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
+    const plantId = motherPlant.attributes?.id || motherPlant.entity_id.replace('sensor.', '');
     
     // Call your Home Assistant service to take a clone
     this.hass.callService('growspace_manager', 'take_clone', {
@@ -606,7 +606,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (!this._plantOverviewDialog) return;
     
     const { plant, editedAttributes } = this._plantOverviewDialog;
-    const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+    const plantId = plant.attributes?.id || plant.entity_id.replace('sensor.', '');
     
     const payload: any = { plant_id: plantId };
     ['strain', 'phenotype', 'row', 'col','seedling_start', 'mother_start', 'clone_start', 'veg_start', 'flower_start', 'dry_start', 'cure_start']
@@ -666,7 +666,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     try {
       const plantId =
-        plant.attributes?.plant_id || plant.entity_id.replace("sensor.", "");
+        plant.attributes?.id || plant.entity_id.replace("sensor.", "");
 
       // Call your coordinator/service
       await this.dataService.harvestPlant(plantId, targetGrowspace);
@@ -685,7 +685,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     await this._movePlantToNextStage(plantEntity);
   }
   private clonePlant = (motherPlant: PlantEntity, numClones: number) => {
-    const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
+    const plantId = motherPlant.attributes?.id || motherPlant.entity_id.replace('sensor.', '');
     const num_clones = numClones
     
     // Call your Home Assistant service to take a clone
@@ -758,8 +758,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     try {
       if (targetPlant) {
         // Swap plants via backend
-        const sourceId = sourcePlant.attributes?.plant_id || sourcePlant.entity_id.replace('sensor.', '');
-        const targetId = targetPlant.attributes?.plant_id || targetPlant.entity_id.replace('sensor.', '');
+        const sourceId = sourcePlant.attributes?.id || sourcePlant.entity_id.replace('sensor.', '');
+        const targetId = targetPlant.attributes?.id || targetPlant.entity_id.replace('sensor.', '');
 
         await this._movePlant(sourcePlant,targetRow, targetCol);
 
@@ -782,7 +782,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   private async _movePlant(plant: PlantEntity, newRow: number, newCol: number) {
     try {
-      const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+      const plantId = plant.attributes?.id || plant.entity_id.replace('sensor.', '');
       await this.dataService.updatePlant({
         plant_id: plantId,
         row: newRow,
@@ -794,7 +794,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
   _moveClonePlant(plant: PlantEntity, targetGrowspace: string) {
     this.hass.callService('growspace_manager', 'move_clone', {
-      plant_id: plant.attributes.plant_id,
+      plant_id: plant.attributes.id,
       target_growspace_id: targetGrowspace
     }).then(() => {
       console.log(`Moved clone ${plant.attributes.friendly_name} to ${targetGrowspace}`);
@@ -822,17 +822,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     // Apply default growspace logic
     if (!this._defaultApplied && this._config?.default_growspace) {
       const match = devices.find(d =>
-        d.device_id === this._config.default_growspace || d.name === this._config.default_growspace
+        d.id === this._config.default_growspace || d.name === this._config.default_growspace
       );
-      if (match) this.selectedDevice = match.device_id;
+      if (match) this.selectedDevice = match.id;
       this._defaultApplied = true;
     }
 
-    if (!this.selectedDevice || !devices.find(d => d.device_id === this.selectedDevice)) {
-      this.selectedDevice = devices[0].device_id;
+    if (!this.selectedDevice || !devices.find(d => d.id === this.selectedDevice)) {
+      this.selectedDevice = devices[0].id;
     }
 
-    const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
+    const selectedDeviceData = devices.find(d => d.id === this.selectedDevice);
     if (!selectedDeviceData) {
       return html`<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
     }
@@ -877,7 +877,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private renderHeader(devices: GrowspaceDevice[]): TemplateResult {
-    const selectedDevice = devices.find(d => d.device_id === this.selectedDevice);
+    const selectedDevice = devices.find(d => d.id === this.selectedDevice);
     
     return html`
       <div class="header">
@@ -892,7 +892,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
               .value=${this.selectedDevice || ''} 
               @change=${this._handleDeviceChange}
             >
-              ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
+              ${devices.map(d => html`<option value="${d.id}">${d.name}</option>`)}
             </select>
           ` : html`<span class="selected-growspace">${selectedDevice?.name}</span>`}
         </div>

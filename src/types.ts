@@ -18,7 +18,6 @@ export interface PlantEntity {
   state: string;
   attributes: {
     friendly_name?: string;
-    device_id?: string;
     row?: number;
     col?: number;
     strain?: string;
@@ -27,15 +26,15 @@ export interface PlantEntity {
     flower_days?: number;
     dry_days?: number;
     cure_days?: number;
-    mom_days?: number;
+    mother_days?: number;
     clone_days?: number;
     veg_start?: string;
     flower_start?: string;
     dry_start?: string;
     cure_start?: string;
-    mom_start?: string;
+    mother_start?: string;
     clone_start?: string;
-    plant_id?: string;
+    id?: string;
     stage?: PlantStage;
     growspace_id?: string;
     [key: string]: any;
@@ -85,7 +84,7 @@ export interface PlantOverviewEditedAttributes {
 }
 
 export interface GrowspaceDevice {
-  device_id: string;
+  id: string;
   name: string;
   type: GrowspaceType;
   plants: PlantEntity[];

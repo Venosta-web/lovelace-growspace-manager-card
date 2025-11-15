@@ -53,7 +53,7 @@ export class DataService {
         name.toLowerCase().includes('cure') ? 'cure' : 'normal');
 
       return createGrowspaceDevice({
-        device_id: growspaceId,
+        id: growspaceId,
         name,
         plants,
         rows: overview?.attributes?.rows ?? 3,
