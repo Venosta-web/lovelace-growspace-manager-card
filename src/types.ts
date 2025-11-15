@@ -6,6 +6,11 @@ export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
   title?: string;
   default_growspace?: string;
   theme?: 'dark' | 'default' | 'green';
+  growspaces?: string[]; 
+  grid_options?: {
+    columns?: 'full' | 'auto';
+    rows?: string;
+  };
 }
 
 export interface PlantEntity {
@@ -22,25 +27,35 @@ export interface PlantEntity {
     flower_days?: number;
     dry_days?: number;
     cure_days?: number;
+    mom_days?: number;
+    clone_days?: number;
     veg_start?: string;
     flower_start?: string;
     dry_start?: string;
     cure_start?: string;
+    mom_start?: string;
+    clone_start?: string;
     plant_id?: string;
     stage?: PlantStage;
     growspace_id?: string;
     [key: string]: any;
   };
 }
-export type PlantStage = "seedling" | "vegetative" | "flower" | "dry" | "cure";
+export type PlantStage = "seedling" | "mother" | "clone" | "vegetative" | "flower" | "dry" | "cure";
 
-export type GrowspaceType = "normal" | "dry" | "cure";
+export type GrowspaceType = "normal" | "mother" | "clone" | "dry" | "cure";
 export const stageInputs: Record<PlantStage, Array<{
   label: string;
   icon: string;
   key: keyof PlantEntity['attributes'];
 }>> = {
   seedling: [],
+  mother: [
+    { label: "Mother Start", icon: mdiSprout, key: "mother_start" },
+  ],
+  clone: [
+    { label: "Clone Start", icon: mdiSprout, key: "clone_start" },
+  ],
   vegetative: [
     { label: "Vegetative Start", icon: mdiSprout, key: "veg_start" },
   ],
@@ -65,6 +80,8 @@ export interface PlantOverviewEditedAttributes {
   flower_start?: string;
   dry_start?: string;
   cure_start?: string;
+  mom_start?: string;
+  clone_start?: string;
 }
 
 export interface GrowspaceDevice {
@@ -90,16 +107,21 @@ export interface AddPlantDialogState {
   col: number;
   strain?: string;
   phenotype?: string;
+  mother_id?: string;
   veg_start?: string;
   flower_start?: string;
-  dry_start?: string;
-  cure_start?: string;
 }
 
 export interface PlantOverviewDialogState {
   open: boolean;
   plant: PlantEntity;
   editedAttributes: { [key: string]: any };
+  onClose?: () => void;
+  onUpdate?: () => Promise<void>;
+  onDelete?: (plantId: string) => Promise<void>;
+  onHarvest?: (plantEntity: PlantEntity) => Promise<void>;
+  onFinishDrying?: (plantEntity: PlantEntity) => Promise<void>;
+  onAttributeChange?: (key: string, value: any) => void;
 }
 
 export interface StrainLibraryDialogState {

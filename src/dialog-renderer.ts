@@ -13,8 +13,6 @@ export class DialogRenderer {
       onPhenotypeChange: (value: string) => void;
       onVegStartChange: (value: string) => void;
       onFlowerStartChange: (value: string) => void;
-      onDryStartChange: (value: string) => void;
-      onCureStartChange: (value: string) => void;
     }
   ): TemplateResult {
     if (!dialog?.open) return html``;
@@ -61,8 +59,6 @@ export class DialogRenderer {
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
             ${this.renderDateTimeInput('Vegetative Start', mdiCalendarClock, dialog.veg_start || '', callbacks.onVegStartChange)}
             ${this.renderDateTimeInput('Flower Start', mdiFlower, dialog.flower_start || '', callbacks.onFlowerStartChange)}
-            ${this.renderDateTimeInput('Dry Start', mdiFlower, dialog.dry_start || '', callbacks.onDryStartChange)}
-            ${this.renderDateTimeInput('Cure Start', mdiFlower, dialog.cure_start || '', callbacks.onCureStartChange)}
           </div>
 
           <div style="background: rgba(var(--rgb-primary-color), 0.05); padding: var(--spacing-md); border-radius: var(--border-radius); border-left: 4px solid var(--primary-color);">
@@ -85,12 +81,18 @@ export class DialogRenderer {
 
   static renderPlantOverviewDialog(
     dialog: PlantOverviewDialogState | null,
+    growspaceOptions: Record<string, string>,
     callbacks: {
       onClose: () => void;
       onUpdate: () => void;
       onDelete: (plantId: string) => void;
-      onHarvest: (plantEntity: PlantEntity) => void;
+      onHarvest: (plant: PlantEntity, targetGrowspace?: string) => void;
+      onClone: (plantEntity: PlantEntity,numClones: number) => void;
+      onTakeClone: (motherPlantEntity: PlantEntity,numClones: number) => void;
+      onMoveClone: (plantId: PlantEntity, targetGrowspace: string) => void;
       onFinishDrying: (plantEntity: PlantEntity) => void;
+      _harvestPlant: (plantEntity: PlantEntity) => void;
+      _finishDryingPlant: (plantEntity: PlantEntity) => void;
       onAttributeChange: (key: string, value: any) => void;
     }
   ): TemplateResult {
@@ -98,6 +100,7 @@ export class DialogRenderer {
 
     const { plant, editedAttributes} = dialog;
     const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+    const currentStage = plant.state.toLowerCase();
 
     const onAttributeChange = (key: string, value: PlantAttributeValue) => {
       editedAttributes[key] = typeof value === 'number' ? value.toString() : value;
@@ -127,9 +130,19 @@ export class DialogRenderer {
             ${editedAttributes.stage === 'veg' || editedAttributes.stage === 'flower'
               ? this.renderDateTimeInput('Vegetative Start', mdiSprout, editedAttributes.veg_start ?? '', (v) => onAttributeChange('veg_start', v))
               : nothing}
+            ${editedAttributes.stage === 'flower'
+              ? this.renderDateTimeInput('Flower Start', mdiFlower, editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))
+              : nothing}
+            ${editedAttributes.stage === 'mother'
+              ? this.renderDateTimeInput('Mother Start', mdiSprout, editedAttributes.mother_start ?? '', (v) => onAttributeChange('mother_start', v))
+              : nothing}
+            ${editedAttributes.stage === 'clone'
+              ? this.renderDateTimeInput('Clone Start', mdiSprout, editedAttributes.clone_start ?? '', (v) => onAttributeChange('clone_start', v))
+              : nothing}
 
-            ${this.renderDateTimeInput('Flower Start', mdiFlower, editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))}
-
+            ${editedAttributes.stage === 'cure'
+              ? this.renderDateTimeInput('Cure Start', mdiCannabis, editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))
+              : nothing}  
             ${editedAttributes.stage === 'dry' || editedAttributes.stage === 'cure'
               ? this.renderDateTimeInput('Dry Start', mdiHairDryer, editedAttributes.dry_start ?? '', (v) => onAttributeChange('dry_start', v))
               : nothing}
@@ -157,7 +170,73 @@ export class DialogRenderer {
         <button class="action-button" slot="secondaryAction" @click=${callbacks.onClose}>
           Cancel
         </button>
-        
+        ${plant.state.toLowerCase() === 'mother' ? html`
+          <div class="take-clone-container" data-plant-id="${plant.entity_id}">
+            <input 
+              type="number" 
+              min="1" 
+              max="10" 
+              value="1"
+              data-plant-id="${plant.entity_id}"
+              class="num-clones-input"
+            >
+            <button class="action-button primary" 
+              @click=${(e: MouseEvent) => {
+                const container = (e.currentTarget as HTMLElement).closest('.take-clone-container');
+                if (!container) return;
+                const numClonesInput = container.querySelector<HTMLInputElement>('.num-clones-input');
+                const numClones = numClonesInput ? parseInt(numClonesInput.value, 10) : 1;
+                callbacks.onTakeClone(plant, numClones);
+              }}
+            >
+              Take Clone
+            </button>
+          </div>
+        ` : ''}
+       ${plant.state.toLowerCase() === 'clone' ? html`
+          <div class="move-clone-container" style="display: flex; gap: var(--spacing-md); align-items: center;">
+            <!-- Growspace dropdown -->
+            <select class="form-input">
+              <option value="">Select Growspace</option>
+              ${Object.entries(growspaceOptions).map(
+                ([id, name]) => html`<option value="${id}">${name}</option>`
+              )}
+            </select>
+
+            <!-- Checkbox to confirm sending clone -->
+            <label style="display:flex; align-items:center; gap:4px;">
+              <input type="checkbox">
+              Confirm Move
+            </label>
+
+            <button class="action-button primary" 
+              @click=${(e: MouseEvent) => {
+                const container = (e.currentTarget as HTMLElement).closest('.move-clone-container');
+                if (!container) return;
+
+                const select = container.querySelector<HTMLSelectElement>('select');
+                const checkbox = container.querySelector<HTMLInputElement>('input[type="checkbox"]');
+
+                const targetGrowspace = select?.value;
+                const confirmed = checkbox?.checked;
+
+                if (!targetGrowspace) {
+                  alert('Please select a growspace.');
+                  return;
+                }
+                if (!confirmed) {
+                  alert('Please confirm moving the clone by checking the box.');
+                  return;
+                }
+
+                callbacks.onMoveClone(plantId, targetGrowspace);
+              }}
+            >
+              Move Clone
+            </button>
+          </div>
+        ` : ''}
+  
         ${plant.state.toLowerCase() === 'flower' ? html`            
           <button class="action-button primary" @click=${() => callbacks.onHarvest(plant)}>
             Harvest
@@ -165,11 +244,11 @@ export class DialogRenderer {
         ` : ''}
 
         ${plant.state.toLowerCase() === 'dry' ? html`
-          <button class="action-button primary" @click=${callbacks.onFinishDrying}>
+          <button class="action-button primary" @click=${() => callbacks.onFinishDrying(plant)}>
             Finish Drying
           </button>
-        ` : ''}
-      </ha-dialog>
+  ` : ''}
+        </ha-dialog>
     `;
   }
 
@@ -306,7 +385,7 @@ export class DialogRenderer {
     return html`
       <div style="background: rgba(var(--rgb-info-color, 33, 150, 243), 0.05); padding: var(--spacing-md); border-radius: var(--border-radius); border-left: 4px solid var(--info-color, #2196F3);">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span><strong>Current Stage:</strong> ${plant.state}</span>
+          <span style="margin-right: 5px"><strong>Current Stage:</strong> ${plant.state} </span>
           <div style="display: flex; gap: var(--spacing-md);">
             ${plant.attributes?.veg_days ? html`<span>${plant.attributes.veg_days} days veg</span>` : ''}
             ${plant.attributes?.flower_days ? html`<span>${plant.attributes.flower_days} days flower</span>` : ''}
