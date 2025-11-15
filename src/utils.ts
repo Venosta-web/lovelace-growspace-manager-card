@@ -3,6 +3,8 @@ import { PlantEntity, GrowspaceDevice, PlantStage } from "./types";
 
 export const PLANT_STAGES: PlantStage[] = [
   "seedling",
+  "mother",
+  "clone",
   "vegetative",
   "flower",
   "dry",
@@ -11,6 +13,8 @@ export const PLANT_STAGES: PlantStage[] = [
 
 export class PlantUtils {
   private static readonly stageColors: Record<PlantStage, string> = {
+    mother: "#E91E63",
+    clone: "#FF5722",
     seedling: "#4CAF50",
     vegetative: "#8BC34A",
     flower: "#FF9800",
@@ -19,6 +23,8 @@ export class PlantUtils {
   };
 
   private static readonly stageIcons: Record<PlantStage, string> = {
+    mother: mdiSprout,
+    clone: mdiSprout,
     seedling: mdiSprout,
     vegetative: mdiSprout,
     flower: mdiFlower,
@@ -42,6 +48,8 @@ export class PlantUtils {
 
     if (attrs.cure_start) return "cure";
     if (attrs.dry_start) return "dry";
+    if (attrs.mom_start) return "mother";
+    if (attrs.clone_start) return "clone";
     if (attrs.flower_start && new Date(attrs.flower_start) <= now) return "flower";
     if (attrs.veg_start && new Date(attrs.veg_start) <= now) return "vegetative";
 
@@ -70,7 +78,7 @@ export class PlantUtils {
   static calculateEffectiveRows(device: GrowspaceDevice): number {
     const { name, plants, plants_per_row } = device;
 
-    if (name === "dry Overview" || name === "cure Overview") {
+    if (name === "dry" || name === "cure" || name === "mother" || name === "clone") {
       if (plants.length === 0) return 1;
 
       const maxRowUsed = Math.max(

@@ -1,13 +1,12 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant, LovelaceCard } from 'custom-card-helpers';
+import { HomeAssistant, LovelaceCard,LovelaceCardEditor } from 'custom-card-helpers';
 import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer } from '@mdi/js';
 import { DateTime } from 'luxon'; 
 import { variables } from './styles/variables';
 
-
 // Import our modules
-import { 
+import {  
   GrowspaceManagerCardConfig, 
   PlantEntity, 
   PlantStage,
@@ -33,6 +32,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) private _config!: GrowspaceManagerCardConfig;
+  
 
   private dataService!: DataService;
   static styles: CSSResultGroup = [
@@ -484,6 +484,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     // Try to apply default from config
     if (this._config?.default_growspace) {
       const defaultDevice = devices.find(d =>
+        
         d.device_id === this._config.default_growspace ||
         d.name === this._config.default_growspace
       );
@@ -497,17 +498,22 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.selectedDevice = devices[0].device_id;
   }
 
-  public static getConfigElement() {
-    return document.createElement("growspace-manager-card-editor");
+  
+  public static async getConfigElement(): Promise<LovelaceCardEditor> {
+    // path must match where the editor JS is served relative to the card script
+    await import("./growspace-manager-card-editor.js");
+    const el = document.createElement("growspace-manager-card-editor") as unknown as LovelaceCardEditor;
+    return el;
   }
-
-  public static getStubConfig(): GrowspaceManagerCardConfig {
-    
-    return { type: 'custom:growspace-manager-card', title: 'Growspace Manager', compact: false, };
+  public static getStubConfig() {
+    return {
+      default_growspace: "4x4",
+      compact: true
+    };
   }
 
   public setConfig(config: GrowspaceManagerCardConfig): void {
-    if (!config) throw new Error('Invalid configuration');
+    if (!config) throw new Error("Invalid configuration");
     this._config = config;
   }
 
@@ -526,6 +532,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       editedAttributes: { ...plant.attributes }
     };
   }
+  private _handleTakeClone = (motherPlant: PlantEntity) => {
+    const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
+    
+    // Call your Home Assistant service to take a clone
+    this.hass.callService('growspace_manager', 'take_clone', {
+      mother_plant_id: plantId,
+      // The service will automatically find an available position in the clone growspace
+    }).then(() => {
+      console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
+    }).catch((error) => {
+      console.error(`Failed to take clone: ${error.message}`);
+    });
+  };
 
   private getHaDateTimeString(): string {
     // hass.config.time_zone is your Home Assistant timezone
@@ -548,8 +567,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       phenotype: '',
       veg_start: today,
       flower_start: today,
-      dry_start: today,
-      cure_start: today,
     };
   }
 
@@ -560,7 +577,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       return;
     }
 
-    const { row, col, strain, phenotype, veg_start, flower_start, dry_start, cure_start } = this._addPlantDialog;
+    const { row, col, strain, phenotype, veg_start, flower_start} = this._addPlantDialog;
 
     try {
       const payload = {
@@ -572,10 +589,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         veg_start: PlantUtils.parseDateTimeLocal(veg_start) 
           ?? PlantUtils.getCurrentDateTime(),
         flower_start: PlantUtils.parseDateTimeLocal(flower_start) 
-          ?? PlantUtils.getCurrentDateTime(),
-        dry_start: PlantUtils.parseDateTimeLocal(dry_start) 
-          ?? PlantUtils.getCurrentDateTime(),
-        cure_start: PlantUtils.parseDateTimeLocal(cure_start) 
           ?? PlantUtils.getCurrentDateTime(),
       };
       console.log("Adding plant to growspace:", this.selectedDevice, payload);
@@ -596,7 +609,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
     
     const payload: any = { plant_id: plantId };
-    ['strain', 'phenotype', 'row', 'col', 'veg_start', 'flower_start', 'dry_start', 'cure_start']
+    ['strain', 'phenotype', 'row', 'col','seedling_start', 'mother_start', 'clone_start', 'veg_start', 'flower_start', 'dry_start', 'cure_start']
       .forEach(field => {
         if (editedAttributes[field] !== undefined && editedAttributes[field] !== null) {
           payload[field] = editedAttributes[field];
@@ -628,21 +641,28 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
 
     const plant = this._plantOverviewDialog.plant;
-    const stage = PlantUtils.getPlantStage(plant);
+    const stage = plant.attributes?.stage;
+    let targetGrowspace = "";
 
-    if (!stage || (stage !== "dry" && stage !== "cure")) {
-      alert("Plant must be in dry or cure stage to move.");
+    const movableStages = new Set(["mother", "flower", "dry", "cure"]);
+    if (!stage || !movableStages.has(stage)) {
+      alert("Plant must be in mother or flower or dry or cure stage to move. stage is " + stage);
       return;
     }
 
     // Decide the target growspace
-    let targetGrowspace: string;
-    if (stage === "dry") {
-      targetGrowspace = "cure_overview"; // move to curing
-    } else if (stage === "cure") {
-      targetGrowspace = "harvested_overview"; // final harvested
-    } else
-      targetGrowspace = "bin"; // fallback to dry
+    
+    if (stage === "flower") {
+      targetGrowspace = "dry"; // move to curing
+    } else if (stage === "dry") {
+      targetGrowspace = "cure"; // final harvested
+    } else if (stage === "mother") {
+      targetGrowspace = "clone"; // move to curing
+    } 
+    else {
+      console.error("Unknown stage, cannot move plant", targetGrowspace);
+      targetGrowspace = "error"; // fallback to dry
+    }
 
     try {
       const plantId =
@@ -664,6 +684,21 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   private async _finishDryingPlant(plantEntity: PlantEntity): Promise<void> {
     await this._movePlantToNextStage(plantEntity);
   }
+  private clonePlant = (motherPlant: PlantEntity, numClones: number) => {
+    const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
+    const num_clones = numClones
+    
+    // Call your Home Assistant service to take a clone
+    this.hass.callService('growspace_manager', 'take_clone', {
+      mother_plant_id: plantId,
+      num_clones: num_clones,
+      // The service will automatically find an available position in the clone growspace
+    }).then(() => {
+      console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
+    }).catch((error) => {
+      console.error(`Failed to take clone: ${error.message}`);
+    });
+  };
 
 
   // Strain library methods
@@ -708,20 +743,42 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     e.preventDefault();
   }
 
-  private _handleDrop(e: DragEvent, targetRow: number, targetCol: number, targetPlant: PlantEntity | null) {
+  private async _handleDrop(
+    e: DragEvent,
+    targetRow: number,
+    targetCol: number,
+    targetPlant: PlantEntity | null
+  ) {
     e.preventDefault();
-    if (!this._draggedPlant) return;
+    if (!this._draggedPlant || !this.selectedDevice) return;
 
     const sourcePlant = this._draggedPlant;
     this._draggedPlant = null;
 
-    if (targetPlant) {
-      this._movePlant(sourcePlant, targetRow, targetCol);
-      this._movePlant(targetPlant, sourcePlant.attributes.row!, sourcePlant.attributes.col!);
-    } else {
-      this._movePlant(sourcePlant, targetRow, targetCol);
+    try {
+      if (targetPlant) {
+        // Swap plants via backend
+        const sourceId = sourcePlant.attributes?.plant_id || sourcePlant.entity_id.replace('sensor.', '');
+        const targetId = targetPlant.attributes?.plant_id || targetPlant.entity_id.replace('sensor.', '');
+
+        await this._movePlant(sourcePlant,targetRow, targetCol);
+
+        // Optionally, update local grid positions immediately
+        const tempRow = sourcePlant.attributes.row;
+        const tempCol = sourcePlant.attributes.col;
+        sourcePlant.attributes.row = targetPlant.attributes.row;
+        sourcePlant.attributes.col = targetPlant.attributes.col;
+        targetPlant.attributes.row = tempRow;
+        targetPlant.attributes.col = tempCol;
+      } else {
+        // Move plant to empty slot
+        await this._movePlant(sourcePlant, targetRow, targetCol);
+      }
+    } catch (err) {
+      console.error("Error during drag-and-drop:", err);
     }
-  }
+}
+
 
   private async _movePlant(plant: PlantEntity, newRow: number, newCol: number) {
     try {
@@ -735,11 +792,25 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       console.error("Error moving plant:", err);
     }
   }
+  _moveClonePlant(plant: PlantEntity, targetGrowspace: string) {
+    this.hass.callService('growspace_manager', 'move_clone', {
+      plant_id: plant.attributes.plant_id,
+      target_growspace_id: targetGrowspace
+    }).then(() => {
+      console.log(`Moved clone ${plant.attributes.friendly_name} to ${targetGrowspace}`);
+      // Optionally refresh local state
+      this._plantOverviewDialog = null; 
+    }).catch((err) => {
+      console.error('Error moving clone:', err);
+    });
+  }
+
 
   protected render(): TemplateResult {
     if (!this.hass) {
       return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
     }
+    
 
     this.dataService = new DataService(this.hass);
     const devices = this.dataService.getGrowspaceDevices();
@@ -767,7 +838,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
 
     // Check if growspace is empty
-    if (selectedDeviceData.plants.length === 0) {
+    
+    /*if (selectedDeviceData.plants.length === ) {
       return html`
         <ha-card>
           <div class="no-data" style="text-align:center; padding: 1.5rem;">
@@ -776,7 +848,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         </ha-card>
       `;
     }
-
+    */
+    const growspaceOptions: Record<string, string> = {};
+    const growspaces = this.hass.states['sensor.growspaces_list']?.attributes?.growspaces;
+    if (growspaces) {
+      Object.entries(growspaces).forEach(([id, name]) => {
+        growspaceOptions[id] = name as string;
+      });
+    }
+    // Calculate grid layout
     const effectiveRows = PlantUtils.calculateEffectiveRows(selectedDeviceData);
     const { grid } = PlantUtils.createGridLayout(
       selectedDeviceData.plants,
@@ -876,7 +956,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       </div>
     `;
   }
-
+  
   private renderPlantSlot(plant: PlantEntity, row: number, col: number): TemplateResult {
     const stageColor = PlantUtils.getPlantStageColor(plant.state);
     const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
@@ -920,9 +1000,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       </div>
     `;
   }
-
+  
   private renderPlantDays(plant: PlantEntity): TemplateResult {
     const days = [
+      { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Days in Seedling" },
+      { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Days in Mother" },
+      { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Days in Clone" },
       { days: plant.attributes?.veg_days, icon: mdiSprout, title: "Days in Vegetative" },
       { days: plant.attributes?.flower_days, icon: mdiFlower, title: "Days in Flower" },
       { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Days in Dry" },
@@ -947,6 +1030,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   private renderDialogs(): TemplateResult {
     const strainLibrary = this.dataService?.getStrainLibrary() || [];
+    const growspaceOptions: Record<string, string> = {};
+    const growspaces = this.hass.states['sensor.growspaces_list']?.attributes?.growspaces;
+    if (growspaces) {
+      Object.entries(growspaces).forEach(([id, name]) => {
+        growspaceOptions[id] = name as string;
+      });
+    }
 
     return html`
       ${DialogRenderer.renderAddPlantDialog(
@@ -959,22 +1049,34 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           onPhenotypeChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.phenotype = value; },
           onVegStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.veg_start = value; },
           onFlowerStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.flower_start = value; },
-          onDryStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.dry_start = value; },
-          onCureStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.cure_start = value; },
         }
       )}
 
       ${DialogRenderer.renderPlantOverviewDialog(
       this._plantOverviewDialog,
+      growspaceOptions,
       {
         onClose: () => this._plantOverviewDialog = null,
         onUpdate: () => { this._updatePlant(); },
-        onDelete: (plantId) => { this._handleDeletePlant(plantId); },
-        onHarvest: (plantEntity) => { this._harvestPlant(plantEntity); },
-        onFinishDrying: (plantEntity) => { this._finishDryingPlant(plantEntity); },
+        onDelete: (plantId: string) => { this._handleDeletePlant(plantId); },
+        onHarvest: (plantEntity: PlantEntity) => { this._harvestPlant(plantEntity); },
+        onClone: (plantEntity: PlantEntity, numClones: number) => { this.clonePlant(plantEntity,numClones); },
+        onTakeClone: (plantEntity: PlantEntity, numClones: number) => { this.clonePlant(plantEntity,numClones); },
+        onMoveClone: (plant: PlantEntity, targetGrowspace: string) => {
+          this.hass.callService('growspace_manager', 'move_clone', {
+            plant_id: plant.attributes.plant_id,
+            target_growspace_id: targetGrowspace
+          }).then(() => {
+            console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
+            this._plantOverviewDialog = null; // close dialog or refresh state
+          }).catch((err) => {
+            console.error('Error moving clone:', err);
+          });
+        },
+        onFinishDrying: (plantEntity: PlantEntity) => { this._finishDryingPlant(plantEntity); },
         _harvestPlant: this._harvestPlant.bind(this),
         _finishDryingPlant: this._finishDryingPlant.bind(this),
-        onAttributeChange: (key, value) => {
+        onAttributeChange: (key: string, value: any) => {
           if (this._plantOverviewDialog) {
             this._plantOverviewDialog.editedAttributes[key] = value;
           }
@@ -999,48 +1101,4 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
 
-}
-
-@customElement("growspace-manager-card-editor")
-export class GrowspaceManagerCardEditor extends LitElement {
-  @property({ attribute: false }) public hass!: any;
-  @state() private _config!: GrowspaceManagerCardConfig;
-
-  setConfig(config: GrowspaceManagerCardConfig): void {
-    this._config = { ...config };
-  }
-
-  private _valueChanged(ev: Event) {
-    const target = ev.target as HTMLInputElement;
-    if (!this._config || !target) return;
-
-    const value =
-      target.type === "checkbox" ? target.checked : target.value;
-
-    if (this._config[target.name as keyof GrowspaceManagerCardConfig] === value) {
-      return;
-    }
-  this._config = {
-      ...this._config,
-      [target.name]: value,
-    };
-
-    this.dispatchEvent(new CustomEvent("config-changed", { 
-      detail: { config: this._config } 
-    }));
-  }
-
-  render() {
-    if (!this._config) return html``;
-
-    return html`
-      <ha-formfield label="Compact mode">
-        <ha-switch
-          .checked=${this._config.compact ?? false}
-          .name=${"compact"}
-          @change=${this._valueChanged}
-        ></ha-switch>
-      </ha-formfield>
-    `;
-  }
 }
