@@ -197,5 +197,20 @@ export class DataService {
   async clearStrainLibrary() {
     console.log("[DataService:clearStrainLibrary] Clearing strain library");
     return this.hass.callService("growspace_manager", "clear_strain_library", {});
-}
+  }
+
+  async swapPlants(plant1Id: string, plant2Id: string) {
+    console.log(`[DataService:swapPlants] Swapping plants: ${plant1Id} and ${plant2Id}`);
+    try {
+      const res = await this.hass.callService("growspace_manager", "swap_plants", {
+        plant1_id: plant1Id,
+        plant2_id: plant2Id,
+      });
+      console.log("[DataService:swapPlants] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:swapPlants] Error:", err);
+      throw err;
+    }
+  }
 }
