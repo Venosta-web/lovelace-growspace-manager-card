@@ -767,7 +767,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         const targetId = targetPlant.attributes.plant_id || targetPlant.entity_id.replace("sensor.", "");
 
         // Call backend swap function (atomic, correct)
-        await this.dataService.swapPlants(sourceId, targetId);
+        await this.hass.callService("growspace_manager", "switch_plants", {
+          plant1_id: sourceId,
+          plant2_id: targetId,
+        });
 
         // Ask HA for updated state
         this.updateGrid();

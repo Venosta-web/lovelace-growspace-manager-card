@@ -1,0 +1,196 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - complementary [ref=e5]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic "Seitenleiste umschalten" [ref=e10]:
+            - button "Seitenleiste umschalten" [ref=e11] [cursor=pointer]:
+              - generic [ref=e13]:
+                - img
+          - generic [ref=e14]: Home Assistant
+        - generic [ref=e15]:
+          - generic:
+            - listitem [ref=e17] [cursor=pointer]:
+              - generic [ref=e18]:
+                - generic [ref=e20]:
+                  - img
+                - generic [ref=e22]: Home
+            - listitem [ref=e24] [cursor=pointer]:
+              - generic [ref=e25]:
+                - generic [ref=e27]:
+                  - img
+                - generic [ref=e29]: Grow
+            - listitem [ref=e31] [cursor=pointer]:
+              - generic [ref=e32]:
+                - generic [ref=e34]:
+                  - img
+                - generic [ref=e36]: Frigate
+            - listitem [ref=e38] [cursor=pointer]:
+              - generic [ref=e39]:
+                - generic [ref=e40]:
+                  - img
+                - generic [ref=e42]: Energie
+            - listitem [ref=e44] [cursor=pointer]:
+              - generic [ref=e45]:
+                - generic [ref=e46]:
+                  - img
+                - generic [ref=e48]: Aktivität
+            - listitem [ref=e50] [cursor=pointer]:
+              - generic [ref=e51]:
+                - generic [ref=e52]:
+                  - img
+                - generic [ref=e54]: Verlauf
+            - listitem [ref=e56] [cursor=pointer]:
+              - generic [ref=e57]:
+                - generic [ref=e59]:
+                  - img
+                - generic [ref=e61]: Browser Mod
+            - listitem [ref=e63] [cursor=pointer]:
+              - generic [ref=e64]:
+                - generic [ref=e66]:
+                  - img
+                - generic [ref=e68]: HACS
+            - listitem [ref=e70] [cursor=pointer]:
+              - generic [ref=e71]:
+                - generic [ref=e72]:
+                  - img
+                - generic [ref=e74]: Medien
+            - listitem [ref=e76] [cursor=pointer]:
+              - generic [ref=e77]:
+                - generic [ref=e79]:
+                  - img
+                - generic [ref=e81]: Studio Code Server
+            - listitem [ref=e83] [cursor=pointer]:
+              - generic [ref=e84]:
+                - generic [ref=e86]:
+                  - img
+                - generic [ref=e88]: Terminal
+            - listitem [ref=e90] [cursor=pointer]:
+              - generic [ref=e91]:
+                - generic [ref=e92]:
+                  - img
+                - generic [ref=e94]: Kalender
+            - listitem [ref=e96] [cursor=pointer]:
+              - generic [ref=e97]:
+                - generic [ref=e98]:
+                  - img
+                - generic [ref=e100]: Übersicht
+            - listitem [ref=e102] [cursor=pointer]:
+              - generic [ref=e103]:
+                - generic [ref=e104]:
+                  - img
+                - generic [ref=e106]: Entwicklerwerkzeuge
+            - listitem [ref=e108] [cursor=pointer]:
+              - generic [ref=e109]:
+                - generic [ref=e110]:
+                  - img
+                - generic [ref=e112]: Einstellungen
+                - generic [ref=e113]: "1"
+        - generic [ref=e115]:
+          - generic:
+            - listitem [ref=e117] [cursor=pointer]:
+              - generic [ref=e118]:
+                - generic [ref=e119]:
+                  - img
+                - generic [ref=e121]: Benachrichtigungen
+                - generic [ref=e122]: "9"
+            - listitem [ref=e124] [cursor=pointer]:
+              - generic [ref=e125]:
+                - generic [ref=e127]: V
+                - generic [ref=e129]: Venosta
+    - generic [ref=e134]:
+      - generic [ref=e136]:
+        - tablist [ref=e141]:
+          - generic:
+            - tab "Flower tent" [ref=e142]:
+              - generic "Flower tent" [ref=e144] [cursor=pointer]:
+                - generic [ref=e145]:
+                  - img
+            - tab "4x4" [ref=e146]:
+              - generic [ref=e147] [cursor=pointer]:
+                - generic: 4x4
+            - tab "140x70" [ref=e148]:
+              - generic [ref=e149] [cursor=pointer]:
+                - generic: 140x70
+            - tab "Mum" [ref=e150]:
+              - generic "Mum" [ref=e152] [cursor=pointer]:
+                - generic [ref=e153]:
+                  - img
+            - tab "Dry" [ref=e154]:
+              - generic "Dry" [ref=e156] [cursor=pointer]:
+                - generic [ref=e157]:
+                  - img
+            - tab "Settings" [ref=e158]:
+              - generic "Settings" [ref=e160] [cursor=pointer]:
+                - generic [ref=e161]:
+                  - img
+            - tab "Info" [ref=e162]:
+              - generic "Info" [ref=e164] [cursor=pointer]:
+                - generic [ref=e165]:
+                  - img
+            - tab "Notes" [ref=e166]:
+              - generic "Notes" [ref=e168] [cursor=pointer]:
+                - generic [ref=e169]:
+                  - img
+            - tab "Test" [selected] [ref=e170]:
+              - generic [ref=e171] [cursor=pointer]:
+                - generic: Test
+        - generic [ref=e172]:
+          - generic [ref=e173]:
+            - button "Zu Home Assistant hinzufügen" [ref=e177] [cursor=pointer]:
+              - generic [ref=e179]:
+                - img
+            - generic:
+              - generic:
+                - generic: Gerät hinzufügen
+                - generic: Automation erstellen
+                - generic: Bereich erstellen
+                - generic: Person hinzufügen
+          - button [ref=e182] [cursor=pointer]:
+            - generic [ref=e184]:
+              - img
+          - button [ref=e187] [cursor=pointer]:
+            - generic [ref=e189]:
+              - img
+          - button [ref=e192] [cursor=pointer]:
+            - generic [ref=e194]:
+              - img
+      - generic [ref=e206]:
+        - paragraph [ref=e213]: Neuer Abschnitt
+        - generic [ref=e217]:
+          - generic:
+            - generic [ref=e218]:
+              - generic [ref=e220]: mother
+              - generic [ref=e221]:
+                - generic [ref=e222]:
+                  - checkbox "Compact" [ref=e223]
+                  - generic [ref=e224]: Compact
+                - button "Strains" [ref=e225] [cursor=pointer]:
+                  - img [ref=e226]
+                  - text: Strains
+            - generic [ref=e228]:
+              - generic [ref=e229] [cursor=pointer]:
+                - img [ref=e231]
+                - generic [ref=e233]: Add Plant
+                - generic [ref=e234]: Empty Slot
+              - generic [ref=e235] [cursor=pointer]:
+                - img [ref=e237]
+                - generic [ref=e239]: Melonsicle
+                - generic [ref=e240]: "#1"
+                - generic [ref=e241]: mother
+                - generic "Days in Mother" [ref=e244]:
+                  - img [ref=e245]
+                  - text: 22d
+              - generic [ref=e247] [cursor=pointer]:
+                - img [ref=e249]
+                - generic [ref=e251]: Snackpack
+                - generic [ref=e252]: —
+                - generic [ref=e253]: mother
+                - generic "Days in Mother" [ref=e256]:
+                  - img [ref=e257]
+                  - text: 22d
+  - status [ref=e260]: Die Aktion growspace_manager/switch_plants konnte nicht ausgeführt werden. extra keys not allowed @ data['data']
+```

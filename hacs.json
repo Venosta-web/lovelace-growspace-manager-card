@@ -1,7 +1,12 @@
 {
-  "name": "Growspace Manager Card",
-  "filename": "growspace-manager-card.js",
+  "name": "Lovelace Growspace Manager Card",
   "content_in_root": false,
+  "domains": [
+    "lovelace"
+  ],
+  "filename": "dist/growspace-manager-card.js",
   "type": "frontend",
-  "homeassistant": "2025.8.0"
+  "description": "A Lovelace card for managing growspaces",
+  "homeassistant": "2021.11.0",
+  "render_readme": true
 }

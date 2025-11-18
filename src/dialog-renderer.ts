@@ -229,7 +229,7 @@ export class DialogRenderer {
                   return;
                 }
 
-                callbacks.onMoveClone(plantId, targetGrowspace);
+                callbacks.onMoveClone(plant, targetGrowspace);
               }}
             >
               Move Clone
