@@ -1,6 +1,6 @@
 {
   "name": "Lovelace Growspace Manager Card",
-  "content_in_root": false,
+  "content_in_root": true,
   "domains": [
     "lovelace"
   ],
