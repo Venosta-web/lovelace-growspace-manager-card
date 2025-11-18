@@ -4,7 +4,7 @@
   "domains": [
     "lovelace"
   ],
-  "filename": "dist/growspace-manager-card.js",
+  "filename": "growspace-manager-card.js",
   "type": "frontend",
   "description": "A Lovelace card for managing growspaces",
   "homeassistant": "2021.11.0",
