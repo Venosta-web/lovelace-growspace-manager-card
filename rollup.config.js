@@ -7,13 +7,13 @@ import css from 'rollup-plugin-css-only';
 export default {
   input: 'src/growspace-manager-card.ts',
   output: {
-    file: 'growspace-manager-card.js', // write directly to root
+    file: 'growspace-manager-card.js',
     format: 'es',
   },
   plugins: [
     resolve(),
     commonjs(),
-    typescript({ tsconfig: './tsconfig.json' }), // <- add this
+    typescript({ tsconfig: './tsconfig.json' }),
     terser(),
     css({ output: false })
   ],
