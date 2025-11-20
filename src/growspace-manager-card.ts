@@ -1086,15 +1086,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onConfirm: () => this._confirmAddPlant(),
         onStrainChange: (value) => {
           if (this._addPlantDialog) {
-             // When using the dropdown, we might get "Strain|Phenotype" or just a string
-             // For now, let's assume the value passed is the key from the dropdown
-             const entry = strainLibrary.find(s => s.key === value);
-             if (entry) {
-                this._addPlantDialog.strain = entry.strain;
+             // When using the dropdown, we now get the unique strain name (string)
+             this._addPlantDialog.strain = value;
+
+             // Attempt to pre-fill phenotype from library (first match)
+             const entry = strainLibrary.find(s => s.strain === value);
+             if (entry && entry.phenotype) {
                 this._addPlantDialog.phenotype = entry.phenotype;
              } else {
-                // Fallback or manual entry
-                this._addPlantDialog.strain = value;
+                // No default phenotype or not found, keep current or clear?
+                // Let's clear it if they switched strains, unless they are typing (but this is a select change)
+                this._addPlantDialog.phenotype = '';
              }
           }
         },

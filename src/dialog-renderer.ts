@@ -17,19 +17,8 @@ export class DialogRenderer {
   ): TemplateResult {
     if (!dialog?.open) return html``;
 
-    // Determine the currently selected key based on the dialog's strain and phenotype
-    const selectedKey = strainLibrary.find(s => s.strain === dialog.strain && s.phenotype === (dialog.phenotype || ''))?.key;
-    // Or if manually entered, we might not match a key. That's fine for the dropdown value if it allows custom input,
-    // but here we are using a SELECT. If the user entered a custom strain/pheno, it won't be in the list.
-    // However, the logic in GrowspaceManagerCard._openAddPlantDialog defaults to the first library entry.
-    // And onStrainChange updates both fields.
-
-    // Wait, if the user wants to add a NEW strain that isn't in the library, they can't with a strict dropdown.
-    // But the previous implementation was a dropdown too.
-    // For now, we stick to the library. If they want a new strain, they should add it to the library first?
-    // Or maybe we provide an "Other/Custom" option?
-    // The prompt implies "updated the custom component backend to include phenotype in strain type",
-    // which suggests tight coupling with the library.
+    // Extract unique strain names from the library
+    const uniqueStrains = [...new Set(strainLibrary.map(s => s.strain))].sort();
 
     return html`
       <ha-dialog
@@ -49,13 +38,13 @@ export class DialogRenderer {
             </label>
             <select 
               class="form-input"
-              .value=${selectedKey || ''}
+              .value=${dialog.strain || ''}
               @change=${(e: Event) => callbacks.onStrainChange((e.target as HTMLSelectElement).value)}
             >
               <option value="">Select a strain...</option>
-              ${strainLibrary.map(s => html`
-                <option value="${s.key}" ?selected=${s.strain === dialog.strain && s.phenotype === (dialog.phenotype || '')}>
-                  ${s.strain} ${s.phenotype ? `(${s.phenotype})` : ''}
+              ${uniqueStrains.map(strainName => html`
+                <option value="${strainName}" ?selected=${strainName === dialog.strain}>
+                  ${strainName}
                 </option>
               `)}
             </select>
@@ -69,11 +58,7 @@ export class DialogRenderer {
               placeholder="e.g., Pheno #1, Purple variant..."
               .value=${dialog.phenotype || ''} 
               @input=${(e: Event) => callbacks.onPhenotypeChange((e.target as HTMLInputElement).value)}
-              ?disabled=${!!selectedKey}
             />
-            <span style="font-size: 0.8em; color: var(--secondary-text-color);">
-              ${selectedKey ? "Selected from library" : "Enter phenotype manually"}
-            </span>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
