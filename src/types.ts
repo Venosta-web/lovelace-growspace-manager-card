@@ -13,6 +13,12 @@ export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
   };
 }
 
+export interface StrainEntry {
+  strain: string;
+  phenotype: string;
+  key: string;
+}
+
 export interface PlantEntity {
   entity_id: string;
   state: string;
@@ -128,5 +134,5 @@ export interface StrainLibraryDialogState {
   open: boolean;
   newStrain: string;
   newPhenotype: string;
-  strains: string[];
+  strains: StrainEntry[];
 }

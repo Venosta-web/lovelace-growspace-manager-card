@@ -1,5 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
-import { PlantEntity, GrowspaceDevice, GrowspaceType, createGrowspaceDevice } from './types';
+import { PlantEntity, GrowspaceDevice, GrowspaceType, createGrowspaceDevice, StrainEntry } from './types';
 import { noChange } from 'lit';
 
 export class DataService {
@@ -68,12 +68,46 @@ export class DataService {
     return entity.attributes?.growspace_id || 'unknown';
   }
 
-  getStrainLibrary(): string[] {
+  getStrainLibrary(): StrainEntry[] {
     const allStates = Object.values(this.hass.states);
+    // Find the sensor that contains the strain library.
+    // The check `Array.isArray` will likely fail for the new dict format,
+    // so we look for `strains` attribute being present and not null.
     const strainSensor = allStates.find(
-      (s: any) => Array.isArray(s.attributes?.strains)
+      (s: any) => s.attributes?.strains !== undefined && s.attributes?.strains !== null
     );
-    return (strainSensor?.attributes?.strains as string[]) || [];
+
+    const rawStrains = strainSensor?.attributes?.strains;
+
+    if (!rawStrains) return [];
+
+    // If it's an array (old format fallback), map strings to StrainEntry
+    if (Array.isArray(rawStrains)) {
+      return rawStrains.map((s: string) => ({
+        strain: s,
+        phenotype: '',
+        key: `${s}|default`
+      }));
+    }
+
+    // If it's an object/dictionary (new format)
+    if (typeof rawStrains === 'object') {
+      return Object.keys(rawStrains).map(key => {
+        // Keys are expected to be "StrainName|Phenotype"
+        const parts = key.split('|');
+        // If split results in 1 part, phenotype is missing/empty
+        const strain = parts[0];
+        const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : '';
+
+        return {
+          strain,
+          phenotype,
+          key: key
+        };
+      }).sort((a, b) => a.strain.localeCompare(b.strain));
+    }
+
+    return [];
   }
 
   // Service calls
