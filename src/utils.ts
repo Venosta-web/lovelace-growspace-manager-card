@@ -120,6 +120,29 @@ export class PlantUtils {
     }
   }
 
+  /**
+   * Extracts YYYY-MM-DD from a date string or datetime-local string
+   */
+  static formatDateForBackend(value?: string | null): string | undefined {
+    if (!value) return undefined;
+    try {
+      // If it's already roughly ISO format, extracting the first part is safest
+      // if we assume the user entered local time in the datetime-local input.
+      const parts = value.split('T');
+      if (parts.length > 0 && parts[0].match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return parts[0];
+      }
+      // Fallback to parsing if format is unexpected
+      const dt = new Date(value);
+      if (isNaN(dt.getTime())) return undefined;
+      const yyyy = dt.getFullYear();
+      const mm = String(dt.getMonth() + 1).padStart(2, '0');
+      const dd = String(dt.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    } catch {
+      return undefined;
+    }
+  }
 
   static getCurrentDateTime(): string {
     const now = new Date();

@@ -591,10 +591,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         col: col + 1,
         strain,
         phenotype,
-        veg_start: PlantUtils.parseDateTimeLocal(veg_start)
-          ?? PlantUtils.getCurrentDateTime(),
-        flower_start: PlantUtils.parseDateTimeLocal(flower_start)
-          ?? PlantUtils.getCurrentDateTime(),
+        veg_start: PlantUtils.formatDateForBackend(veg_start)
+          ?? PlantUtils.formatDateForBackend(PlantUtils.getCurrentDateTime()),
+        flower_start: PlantUtils.formatDateForBackend(flower_start)
+          ?? PlantUtils.formatDateForBackend(PlantUtils.getCurrentDateTime()),
       };
       console.log("Adding plant to growspace:", this.selectedDevice, payload);
       console.log("Adding plant:", payload);
@@ -614,10 +614,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
 
     const payload: any = { plant_id: plantId };
-    ['strain', 'phenotype', 'row', 'col', 'seedling_start', 'mother_start', 'clone_start', 'veg_start', 'flower_start', 'dry_start', 'cure_start']
+    const dateFields = ['seedling_start', 'mother_start', 'clone_start', 'veg_start', 'flower_start', 'dry_start', 'cure_start'];
+
+    ['strain', 'phenotype', 'row', 'col', ...dateFields]
       .forEach(field => {
         if (editedAttributes[field] !== undefined && editedAttributes[field] !== null) {
-          payload[field] = editedAttributes[field];
+          if (dateFields.includes(field)) {
+             const formattedDate = PlantUtils.formatDateForBackend(String(editedAttributes[field]));
+             if (formattedDate) {
+                 payload[field] = formattedDate;
+             }
+          } else {
+            payload[field] = editedAttributes[field];
+          }
         }
       });
 
