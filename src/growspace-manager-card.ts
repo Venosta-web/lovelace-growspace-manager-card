@@ -13,7 +13,8 @@ import {
   AddPlantDialogState,
   PlantOverviewDialogState,
   StrainLibraryDialogState,
-  GrowspaceDevice
+  GrowspaceDevice,
+  StrainEntry
 } from './types';
 import { PlantUtils } from "./utils";
 import { DataService } from './data-service';
@@ -559,12 +560,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const today = this.getHaDateTimeString();
     const strainLibrary = this.dataService.getStrainLibrary();
 
+    // If library has entries, default to the first one
+    const defaultStrain = strainLibrary.length > 0 ? strainLibrary[0].strain : '';
+    const defaultPhenotype = strainLibrary.length > 0 ? strainLibrary[0].phenotype : '';
+
     this._addPlantDialog = {
       open: true,
       row,
       col,
-      strain: strainLibrary[0] || '',
-      phenotype: '',
+      strain: defaultStrain,
+      phenotype: defaultPhenotype,
       veg_start: today,
       flower_start: today,
     };
@@ -717,8 +722,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       await this.dataService.addStrain(strainName, phenotype);
       // Optimistically update the list
       const key = `${strainName}|${phenotype || 'default'}`;
-      if (!this._strainLibraryDialog.strains.includes(key)) {
-        this._strainLibraryDialog.strains.push(key);
+      const newEntry: StrainEntry = {
+        strain: strainName,
+        phenotype: phenotype,
+        key: key
+      };
+
+      if (!this._strainLibraryDialog.strains.some(s => s.key === key)) {
+        this._strainLibraryDialog.strains.push(newEntry);
       }
       this._strainLibraryDialog.newStrain = '';
       this._strainLibraryDialog.newPhenotype = '';
@@ -732,10 +743,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (!this._strainLibraryDialog) return;
 
     try {
-      const [strain, phenotype] = strainKey.split('|');
-      await this.dataService.removeStrain(strain, phenotype === 'default' ? undefined : phenotype);
+      // The key is constructed as "Strain|Phenotype" or "Strain|default" in data-service
+      const parts = strainKey.split('|');
+      const strain = parts[0];
+      const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
 
-      this._strainLibraryDialog.strains = this._strainLibraryDialog.strains.filter(s => s !== strainKey);
+      await this.dataService.removeStrain(strain, phenotype);
+
+      this._strainLibraryDialog.strains = this._strainLibraryDialog.strains.filter(s => s.key !== strainKey);
       this.requestUpdate();
     } catch (err) {
       console.error("Error removing strain:", err);
@@ -1069,7 +1084,20 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       {
         onClose: () => this._addPlantDialog = null,
         onConfirm: () => this._confirmAddPlant(),
-        onStrainChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.strain = value; },
+        onStrainChange: (value) => {
+          if (this._addPlantDialog) {
+             // When using the dropdown, we might get "Strain|Phenotype" or just a string
+             // For now, let's assume the value passed is the key from the dropdown
+             const entry = strainLibrary.find(s => s.key === value);
+             if (entry) {
+                this._addPlantDialog.strain = entry.strain;
+                this._addPlantDialog.phenotype = entry.phenotype;
+             } else {
+                // Fallback or manual entry
+                this._addPlantDialog.strain = value;
+             }
+          }
+        },
         onPhenotypeChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.phenotype = value; },
         onVegStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.veg_start = value; },
         onFlowerStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.flower_start = value; },
@@ -1113,7 +1141,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       {
         onClose: () => this._strainLibraryDialog = null,
         onAddStrain: () => this._addStrain(),
-        onRemoveStrain: (strain) => this._removeStrain(strain),
+        onRemoveStrain: (strainKey) => this._removeStrain(strainKey),
         onClearAll: () => this._clearStrains(),
         onNewStrainChange: (value) => {
           if (this._strainLibraryDialog) this._strainLibraryDialog.newStrain = value;

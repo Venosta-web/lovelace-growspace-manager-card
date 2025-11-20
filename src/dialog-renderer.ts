@@ -1,11 +1,11 @@
 import { html, TemplateResult, nothing } from 'lit';
 import { mdiPlus, mdiSprout, mdiFlower, mdiClose, mdiCalendarClock, mdiDna, mdiHairDryer, mdiCannabis } from '@mdi/js';
-import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes } from './types';
+import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry } from './types';
 
 export class DialogRenderer {
   static renderAddPlantDialog(
     dialog: AddPlantDialogState | null,
-    strainLibrary: string[],
+    strainLibrary: StrainEntry[],
     callbacks: {
       onClose: () => void;
       onConfirm: () => void;
@@ -16,6 +16,20 @@ export class DialogRenderer {
     }
   ): TemplateResult {
     if (!dialog?.open) return html``;
+
+    // Determine the currently selected key based on the dialog's strain and phenotype
+    const selectedKey = strainLibrary.find(s => s.strain === dialog.strain && s.phenotype === (dialog.phenotype || ''))?.key;
+    // Or if manually entered, we might not match a key. That's fine for the dropdown value if it allows custom input,
+    // but here we are using a SELECT. If the user entered a custom strain/pheno, it won't be in the list.
+    // However, the logic in GrowspaceManagerCard._openAddPlantDialog defaults to the first library entry.
+    // And onStrainChange updates both fields.
+
+    // Wait, if the user wants to add a NEW strain that isn't in the library, they can't with a strict dropdown.
+    // But the previous implementation was a dropdown too.
+    // For now, we stick to the library. If they want a new strain, they should add it to the library first?
+    // Or maybe we provide an "Other/Custom" option?
+    // The prompt implies "updated the custom component backend to include phenotype in strain type",
+    // which suggests tight coupling with the library.
 
     return html`
       <ha-dialog
@@ -35,12 +49,14 @@ export class DialogRenderer {
             </label>
             <select 
               class="form-input"
-              .value=${dialog.strain || ''} 
+              .value=${selectedKey || ''}
               @change=${(e: Event) => callbacks.onStrainChange((e.target as HTMLSelectElement).value)}
             >
               <option value="">Select a strain...</option>
               ${strainLibrary.map(s => html`
-                <option value="${s}" ?selected=${dialog.strain === s}>${s}</option>
+                <option value="${s.key}" ?selected=${s.strain === dialog.strain && s.phenotype === (dialog.phenotype || '')}>
+                  ${s.strain} ${s.phenotype ? `(${s.phenotype})` : ''}
+                </option>
               `)}
             </select>
           </div>
@@ -53,7 +69,11 @@ export class DialogRenderer {
               placeholder="e.g., Pheno #1, Purple variant..."
               .value=${dialog.phenotype || ''} 
               @input=${(e: Event) => callbacks.onPhenotypeChange((e.target as HTMLInputElement).value)}
+              ?disabled=${!!selectedKey}
             />
+            <span style="font-size: 0.8em; color: var(--secondary-text-color);">
+              ${selectedKey ? "Selected from library" : "Enter phenotype manually"}
+            </span>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
@@ -311,13 +331,16 @@ export class DialogRenderer {
 
           ${dialog.strains.length > 0 ? html`
             <div class="strain-list">
-              ${dialog.strains.map(strain => html`
+              ${dialog.strains.map(entry => html`
                 <div class="strain-item">
-                  <span class="strain-name">${strain}</span>
+                  <span class="strain-name">
+                    ${entry.strain}
+                    ${entry.phenotype ? html`<span style="color: var(--secondary-text-color); font-size: 0.9em;"> (${entry.phenotype})</span>` : ''}
+                  </span>
                   <button 
                     class="remove-button" 
-                    title="Remove ${strain}"
-                    @click=${() => callbacks.onRemoveStrain(strain)}
+                    title="Remove ${entry.strain}"
+                    @click=${() => callbacks.onRemoveStrain(entry.key)}
                   >
                     <svg class="remove-icon" viewBox="0 0 24 24">
                       <path d="${mdiClose}"></path>
