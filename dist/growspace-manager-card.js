@@ -184,7 +184,7 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
             ${"mother"===s.stage?Hs.renderDateTimeInput("Mother Start",wt,s.mother_start??"",t=>a("mother_start",t)):R}
             ${"clone"===s.stage?Hs.renderDateTimeInput("Clone Start",wt,s.clone_start??"",t=>a("clone_start",t)):R}
 
-            ${"cure"===s.stage?Hs.renderDateTimeInput("Cure Start",pt,s.cure_start??"",t=>a("cure_start",t)):R}
+            ${"cure"===s.stage?Hs.renderDateTimeInput("Cure Start",pt,s.cure_start??"",t=>a("cure_start",t)):R}  
             ${"dry"===s.stage||"cure"===s.stage?Hs.renderDateTimeInput("Dry Start",yt,s.dry_start??"",t=>a("dry_start",t)):R}
 
             ${"cure"===s.stage?Hs.renderDateTimeInput("Cure Start",pt,s.cure_start??"",t=>a("cure_start",t)):R}
