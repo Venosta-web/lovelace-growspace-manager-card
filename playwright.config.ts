@@ -2,7 +2,8 @@ import { defineConfig } from '@playwright/test';
 import dotenv from 'dotenv';
 
 // Load .env
-dotenv.config();
+console.log('Current working directory:', process.cwd());
+dotenv.config({ path: '.env' });
 
 export default defineConfig({
     testDir: './tests',

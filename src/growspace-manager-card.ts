@@ -704,22 +704,42 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   // Strain library methods
   private _openStrainLibraryDialog() {
     const currentStrains = this.dataService.getStrainLibrary();
-    this._strainLibraryDialog = { open: true, newStrain: '', strains: currentStrains };
+    this._strainLibraryDialog = { open: true, newStrain: '', newPhenotype: '', strains: currentStrains };
   }
 
   private async _addStrain() {
     if (!this._strainLibraryDialog?.newStrain) return;
 
-    this._strainLibraryDialog.strains.push(this._strainLibraryDialog.newStrain);
-    await this.dataService.importStrainLibrary(this._strainLibraryDialog.strains, true);
-    this._strainLibraryDialog.newStrain = '';
+    const strainName = this._strainLibraryDialog.newStrain;
+    const phenotype = this._strainLibraryDialog.newPhenotype;
+
+    try {
+      await this.dataService.addStrain(strainName, phenotype);
+      // Optimistically update the list
+      const key = `${strainName}|${phenotype || 'default'}`;
+      if (!this._strainLibraryDialog.strains.includes(key)) {
+        this._strainLibraryDialog.strains.push(key);
+      }
+      this._strainLibraryDialog.newStrain = '';
+      this._strainLibraryDialog.newPhenotype = '';
+      this.requestUpdate();
+    } catch (err) {
+      console.error("Error adding strain:", err);
+    }
   }
 
-  private async _removeStrain(strain: string) {
+  private async _removeStrain(strainKey: string) {
     if (!this._strainLibraryDialog) return;
 
-    this._strainLibraryDialog.strains = this._strainLibraryDialog.strains.filter(s => s !== strain);
-    await this.dataService.importStrainLibrary(this._strainLibraryDialog.strains, true);
+    try {
+      const [strain, phenotype] = strainKey.split('|');
+      await this.dataService.removeStrain(strain, phenotype === 'default' ? undefined : phenotype);
+
+      this._strainLibraryDialog.strains = this._strainLibraryDialog.strains.filter(s => s !== strainKey);
+      this.requestUpdate();
+    } catch (err) {
+      console.error("Error removing strain:", err);
+    }
   }
 
   private async _clearStrains() {
@@ -1097,6 +1117,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onClearAll: () => this._clearStrains(),
         onNewStrainChange: (value) => {
           if (this._strainLibraryDialog) this._strainLibraryDialog.newStrain = value;
+        },
+        onNewPhenotypeChange: (value) => {
+          if (this._strainLibraryDialog) this._strainLibraryDialog.newPhenotype = value;
         },
         onEnterKey: (e) => { if (e.key === 'Enter') this._addStrain(); },
       }

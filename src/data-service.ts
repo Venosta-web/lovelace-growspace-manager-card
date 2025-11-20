@@ -3,7 +3,7 @@ import { PlantEntity, GrowspaceDevice, GrowspaceType, createGrowspaceDevice } fr
 import { noChange } from 'lit';
 
 export class DataService {
-  constructor(private hass: HomeAssistant) {}
+  constructor(private hass: HomeAssistant) { }
 
   getGrowspaceDevices(): GrowspaceDevice[] {
     if (!this.hass) return [];
@@ -50,7 +50,7 @@ export class DataService {
       const type: GrowspaceType =
         (overview?.attributes?.type as GrowspaceType) ??
         (name.toLowerCase().includes('dry') ? 'dry' :
-        name.toLowerCase().includes('cure') ? 'cure' : 'normal');
+          name.toLowerCase().includes('cure') ? 'cure' : 'normal');
 
       return createGrowspaceDevice({
         device_id: growspaceId,
@@ -74,7 +74,7 @@ export class DataService {
       (s: any) => Array.isArray(s.attributes?.strains)
     );
     return (strainSensor?.attributes?.strains as string[]) || [];
-}
+  }
 
   // Service calls
   async addPlant(params: {
@@ -105,7 +105,7 @@ export class DataService {
       throw err;
     }
   }
-  async updatePlant(params: { plant_id: string; [key: string]: any }) {
+  async updatePlant(params: { plant_id: string;[key: string]: any }) {
     console.log("[DataService:updatePlant] Sending payload:", params);
     try {
       const res = await this.hass.callService("growspace_manager", "update_plant", params);
@@ -180,29 +180,16 @@ export class DataService {
       const res = await this.hass.callService("growspace_manager", "takeClone", payload);
       console.log("[DataService:takeClone] Response:", res);
       return res;
-
     } catch (error) {
       console.error("[DataService:takeClone] Error:", error);
       throw error;
     }
   }
-  async importStrainLibrary(strains: string[], replace: boolean = true) {
-    console.log("[DataService:importStrainLibrary] Sending strains:", strains, "replace:", replace);
-    return this.hass.callService("growspace_manager", "import_strain_library", {
-      strains,
-      replace,
-    });
-  }
-
-  async clearStrainLibrary() {
-    console.log("[DataService:clearStrainLibrary] Clearing strain library");
-    return this.hass.callService("growspace_manager", "clear_strain_library", {});
-  }
 
   async swapPlants(plant1Id: string, plant2Id: string) {
     console.log(`[DataService:swapPlants] Swapping plants: ${plant1Id} and ${plant2Id}`);
     try {
-      const res = await this.hass.callService("growspace_manager", "swap_plants", {
+      const res = await this.hass.callService("growspace_manager", "switch_plants", {
         plant1_id: plant1Id,
         plant2_id: plant2Id,
       });
@@ -210,6 +197,62 @@ export class DataService {
       return res;
     } catch (err) {
       console.error("[DataService:swapPlants] Error:", err);
+      throw err;
+    }
+  }
+
+  async addStrain(strain: string, phenotype?: string) {
+    console.log("[DataService:addStrain] Adding strain:", strain, phenotype);
+    try {
+      const res = await this.hass.callService("growspace_manager", "add_strain", {
+        strain,
+        phenotype
+      });
+      console.log("[DataService:addStrain] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:addStrain] Error:", err);
+      throw err;
+    }
+  }
+
+  async removeStrain(strain: string, phenotype?: string) {
+    console.log("[DataService:removeStrain] Removing strain:", strain, phenotype);
+    try {
+      const res = await this.hass.callService("growspace_manager", "remove_strain", {
+        strain,
+        phenotype
+      });
+      console.log("[DataService:removeStrain] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:removeStrain] Error:", err);
+      throw err;
+    }
+  }
+
+  async importStrainLibrary(strains: string[]) {
+    console.log("[DataService:importStrainLibrary] Importing strains:", strains);
+    try {
+      const res = await this.hass.callService("growspace_manager", "import_strain_library", {
+        strains
+      });
+      console.log("[DataService:importStrainLibrary] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:importStrainLibrary] Error:", err);
+      throw err;
+    }
+  }
+
+  async clearStrainLibrary() {
+    console.log("[DataService:clearStrainLibrary] Clearing library");
+    try {
+      const res = await this.hass.callService("growspace_manager", "clear_strain_library");
+      console.log("[DataService:clearStrainLibrary] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:clearStrainLibrary] Error:", err);
       throw err;
     }
   }

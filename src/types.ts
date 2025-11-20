@@ -6,7 +6,7 @@ export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
   title?: string;
   default_growspace?: string;
   theme?: 'dark' | 'default' | 'green';
-  growspaces?: string[]; 
+  growspaces?: string[];
   grid_options?: {
     columns?: 'full' | 'auto';
     rows?: string;
@@ -127,5 +127,6 @@ export interface PlantOverviewDialogState {
 export interface StrainLibraryDialogState {
   open: boolean;
   newStrain: string;
+  newPhenotype: string;
   strains: string[];
 }

@@ -1,6 +1,6 @@
 import { html, TemplateResult, nothing } from 'lit';
-import { mdiPlus, mdiSprout, mdiFlower, mdiClose, mdiCalendarClock, mdiDna,mdiHairDryer,mdiCannabis } from '@mdi/js';
-import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, PlantStage, stageInputs, PlantAttributeValue,PlantOverviewEditedAttributes } from './types';
+import { mdiPlus, mdiSprout, mdiFlower, mdiClose, mdiCalendarClock, mdiDna, mdiHairDryer, mdiCannabis } from '@mdi/js';
+import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes } from './types';
 
 export class DialogRenderer {
   static renderAddPlantDialog(
@@ -57,8 +57,8 @@ export class DialogRenderer {
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
-            ${this.renderDateTimeInput('Vegetative Start', mdiCalendarClock, dialog.veg_start || '', callbacks.onVegStartChange)}
-            ${this.renderDateTimeInput('Flower Start', mdiFlower, dialog.flower_start || '', callbacks.onFlowerStartChange)}
+            ${DialogRenderer.renderDateTimeInput('Vegetative Start', mdiCalendarClock, dialog.veg_start || '', callbacks.onVegStartChange)}
+            ${DialogRenderer.renderDateTimeInput('Flower Start', mdiFlower, dialog.flower_start || '', callbacks.onFlowerStartChange)}
           </div>
 
           <div style="background: rgba(var(--rgb-primary-color), 0.05); padding: var(--spacing-md); border-radius: var(--border-radius); border-left: 4px solid var(--primary-color);">
@@ -87,8 +87,8 @@ export class DialogRenderer {
       onUpdate: () => void;
       onDelete: (plantId: string) => void;
       onHarvest: (plant: PlantEntity, targetGrowspace?: string) => void;
-      onClone: (plantEntity: PlantEntity,numClones: number) => void;
-      onTakeClone: (motherPlantEntity: PlantEntity,numClones: number) => void;
+      onClone: (plantEntity: PlantEntity, numClones: number) => void;
+      onTakeClone: (motherPlantEntity: PlantEntity, numClones: number) => void;
       onMoveClone: (plantId: PlantEntity, targetGrowspace: string) => void;
       onFinishDrying: (plantEntity: PlantEntity) => void;
       _harvestPlant: (plantEntity: PlantEntity) => void;
@@ -98,9 +98,8 @@ export class DialogRenderer {
   ): TemplateResult {
     if (!dialog?.open) return html``;
 
-    const { plant, editedAttributes} = dialog;
+    const { plant, editedAttributes } = dialog;
     const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-    const currentStage = plant.state.toLowerCase();
 
     const onAttributeChange = (key: string, value: PlantAttributeValue) => {
       editedAttributes[key] = typeof value === 'number' ? value.toString() : value;
@@ -117,43 +116,43 @@ export class DialogRenderer {
       >
         <div class="dialog-content">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
-            ${this.renderTextInput('Strain', editedAttributes.strain || '', (v) => callbacks.onAttributeChange('strain', v))}
-            ${this.renderTextInput('Phenotype', editedAttributes.phenotype || '', (v) => callbacks.onAttributeChange('phenotype', v))}
+            ${DialogRenderer.renderTextInput('Strain', editedAttributes.strain || '', (v) => callbacks.onAttributeChange('strain', v))}
+            ${DialogRenderer.renderTextInput('Phenotype', editedAttributes.phenotype || '', (v) => callbacks.onAttributeChange('phenotype', v))}
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
-            ${this.renderNumberInput('Row', editedAttributes.row || 1, (v) => callbacks.onAttributeChange('row', parseInt(v)))}
-            ${this.renderNumberInput('Column', editedAttributes.col || 1, (v) => callbacks.onAttributeChange('col', parseInt(v)))}
+            ${DialogRenderer.renderNumberInput('Row', editedAttributes.row || 1, (v) => callbacks.onAttributeChange('row', parseInt(v)))}
+            ${DialogRenderer.renderNumberInput('Column', editedAttributes.col || 1, (v) => callbacks.onAttributeChange('col', parseInt(v)))}
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
             ${editedAttributes.stage === 'veg' || editedAttributes.stage === 'flower'
-              ? this.renderDateTimeInput('Vegetative Start', mdiSprout, editedAttributes.veg_start ?? '', (v) => onAttributeChange('veg_start', v))
-              : nothing}
+        ? DialogRenderer.renderDateTimeInput('Vegetative Start', mdiSprout, editedAttributes.veg_start ?? '', (v) => onAttributeChange('veg_start', v))
+        : nothing}
             ${editedAttributes.stage === 'flower'
-              ? this.renderDateTimeInput('Flower Start', mdiFlower, editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))
-              : nothing}
+        ? DialogRenderer.renderDateTimeInput('Flower Start', mdiFlower, editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))
+        : nothing}
             ${editedAttributes.stage === 'mother'
-              ? this.renderDateTimeInput('Mother Start', mdiSprout, editedAttributes.mother_start ?? '', (v) => onAttributeChange('mother_start', v))
-              : nothing}
+        ? DialogRenderer.renderDateTimeInput('Mother Start', mdiSprout, editedAttributes.mother_start ?? '', (v) => onAttributeChange('mother_start', v))
+        : nothing}
             ${editedAttributes.stage === 'clone'
-              ? this.renderDateTimeInput('Clone Start', mdiSprout, editedAttributes.clone_start ?? '', (v) => onAttributeChange('clone_start', v))
-              : nothing}
+        ? DialogRenderer.renderDateTimeInput('Clone Start', mdiSprout, editedAttributes.clone_start ?? '', (v) => onAttributeChange('clone_start', v))
+        : nothing}
 
             ${editedAttributes.stage === 'cure'
-              ? this.renderDateTimeInput('Cure Start', mdiCannabis, editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))
-              : nothing}  
+        ? DialogRenderer.renderDateTimeInput('Cure Start', mdiCannabis, editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))
+        : nothing}  
             ${editedAttributes.stage === 'dry' || editedAttributes.stage === 'cure'
-              ? this.renderDateTimeInput('Dry Start', mdiHairDryer, editedAttributes.dry_start ?? '', (v) => onAttributeChange('dry_start', v))
-              : nothing}
+        ? DialogRenderer.renderDateTimeInput('Dry Start', mdiHairDryer, editedAttributes.dry_start ?? '', (v) => onAttributeChange('dry_start', v))
+        : nothing}
 
             ${editedAttributes.stage === 'cure'
-              ? this.renderDateTimeInput('Cure Start', mdiCannabis, editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))
-              : nothing}
+        ? DialogRenderer.renderDateTimeInput('Cure Start', mdiCannabis, editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))
+        : nothing}
           </div>
 
 
-          ${this.renderPlantStats(plant)}
+          ${DialogRenderer.renderPlantStats(plant)}
         </div>
 
         <button class="action-button primary" slot="primaryAction" @click=${callbacks.onUpdate}>
@@ -182,12 +181,12 @@ export class DialogRenderer {
             >
             <button class="action-button primary" 
               @click=${(e: MouseEvent) => {
-                const container = (e.currentTarget as HTMLElement).closest('.take-clone-container');
-                if (!container) return;
-                const numClonesInput = container.querySelector<HTMLInputElement>('.num-clones-input');
-                const numClones = numClonesInput ? parseInt(numClonesInput.value, 10) : 1;
-                callbacks.onTakeClone(plant, numClones);
-              }}
+          const container = (e.currentTarget as HTMLElement).closest('.take-clone-container');
+          if (!container) return;
+          const numClonesInput = container.querySelector<HTMLInputElement>('.num-clones-input');
+          const numClones = numClonesInput ? parseInt(numClonesInput.value, 10) : 1;
+          callbacks.onTakeClone(plant, numClones);
+        }}
             >
               Take Clone
             </button>
@@ -199,8 +198,8 @@ export class DialogRenderer {
             <select class="form-input">
               <option value="">Select Growspace</option>
               ${Object.entries(growspaceOptions).map(
-                ([id, name]) => html`<option value="${id}">${name}</option>`
-              )}
+          ([id, name]) => html`<option value="${id}">${name}</option>`
+        )}
             </select>
 
             <!-- Checkbox to confirm sending clone -->
@@ -211,26 +210,26 @@ export class DialogRenderer {
 
             <button class="action-button primary" 
               @click=${(e: MouseEvent) => {
-                const container = (e.currentTarget as HTMLElement).closest('.move-clone-container');
-                if (!container) return;
+          const container = (e.currentTarget as HTMLElement).closest('.move-clone-container');
+          if (!container) return;
 
-                const select = container.querySelector<HTMLSelectElement>('select');
-                const checkbox = container.querySelector<HTMLInputElement>('input[type="checkbox"]');
+          const select = container.querySelector<HTMLSelectElement>('select');
+          const checkbox = container.querySelector<HTMLInputElement>('input[type="checkbox"]');
 
-                const targetGrowspace = select?.value;
-                const confirmed = checkbox?.checked;
+          const targetGrowspace = select?.value;
+          const confirmed = checkbox?.checked;
 
-                if (!targetGrowspace) {
-                  alert('Please select a growspace.');
-                  return;
-                }
-                if (!confirmed) {
-                  alert('Please confirm moving the clone by checking the box.');
-                  return;
-                }
+          if (!targetGrowspace) {
+            alert('Please select a growspace.');
+            return;
+          }
+          if (!confirmed) {
+            alert('Please confirm moving the clone by checking the box.');
+            return;
+          }
 
-                callbacks.onMoveClone(plant, targetGrowspace);
-              }}
+          callbacks.onMoveClone(plant, targetGrowspace);
+        }}
             >
               Move Clone
             </button>
@@ -248,7 +247,7 @@ export class DialogRenderer {
             Finish Drying
           </button>
   ` : ''}
-        </ha-dialog>
+      </ha-dialog>
     `;
   }
 
@@ -260,38 +259,54 @@ export class DialogRenderer {
       onRemoveStrain: (strain: string) => void;
       onClearAll: () => void;
       onNewStrainChange: (value: string) => void;
+      onNewPhenotypeChange: (value: string) => void;
       onEnterKey: (e: KeyboardEvent) => void;
     }
   ): TemplateResult {
     if (!dialog?.open) return html``;
 
     return html`
-      <ha-dialog 
-        open 
-        heading="Strain Library Management" 
+      <ha-dialog
+        open
         @closed=${callbacks.onClose}
+        heading="Strain Library"
         .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-        .className=${'strain-dialog'}
+        .escapeKeyAction=${''}
       >
         <div class="dialog-content">
-          <div class="strain-library-header">
-            <div class="strain-input-group">
+          <div class="add-strain-container">
+            <div class="form-group">
+              <label>New Strain Name</label>
               <input 
                 type="text" 
-                class="form-input"
-                placeholder="Enter new strain name..."
+                class="form-input" 
+                placeholder="Strain Name"
                 .value=${dialog.newStrain}
                 @input=${(e: Event) => callbacks.onNewStrainChange((e.target as HTMLInputElement).value)}
-                @keydown=${callbacks.onEnterKey}
+                @keypress=${callbacks.onEnterKey}
               />
-              <button class="action-button primary" @click=${callbacks.onAddStrain}>
-                <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiPlus}"></path>
-                </svg>
-                Add
-              </button>
             </div>
+            <div class="form-group">
+              <label>Phenotype (Optional)</label>
+              <input 
+                type="text" 
+                class="form-input" 
+                placeholder="Phenotype (e.g. #1)"
+                .value=${dialog.newPhenotype || ''}
+                @input=${(e: Event) => callbacks.onNewPhenotypeChange((e.target as HTMLInputElement).value)}
+                @keypress=${callbacks.onEnterKey}
+              />
+            </div>
+            <button class="action-button primary" @click=${callbacks.onAddStrain} ?disabled=${!dialog.newStrain}>
+              <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiPlus}"></path>
+              </svg>
+              Add
+            </button>
+          </div>
+
+          <div class="strain-list-header">
+            <strong>Library Strains (${dialog.strains.length})</strong>
           </div>
 
           ${dialog.strains.length > 0 ? html`
@@ -300,7 +315,7 @@ export class DialogRenderer {
                 <div class="strain-item">
                   <span class="strain-name">${strain}</span>
                   <button 
-                    class="remove-button"
+                    class="remove-button" 
                     title="Remove ${strain}"
                     @click=${() => callbacks.onRemoveStrain(strain)}
                   >
@@ -335,7 +350,7 @@ export class DialogRenderer {
         <input 
           type="text" 
           class="form-input"
-          .value=${value} 
+          .value=${value}
           @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
         />
       </div>
@@ -350,7 +365,7 @@ export class DialogRenderer {
           type="number" 
           class="form-input"
           min="1"
-          value=${value} 
+          .value=${value}
           @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
         />
       </div>
@@ -369,7 +384,7 @@ export class DialogRenderer {
         <input 
           type="datetime-local" 
           class="form-input"
-          .value=${value} 
+          .value=${value}
           @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
         />
       </div>
@@ -377,15 +392,15 @@ export class DialogRenderer {
   }
 
   private static renderPlantStats(plant: any): TemplateResult {
-    const hasStats = plant.attributes?.veg_days || plant.attributes?.flower_days || 
-                     plant.attributes?.dry_days || plant.attributes?.cure_days;
+    const hasStats = plant.attributes?.veg_days || plant.attributes?.flower_days ||
+      plant.attributes?.dry_days || plant.attributes?.cure_days;
 
     if (!hasStats) return html``;
 
     return html`
       <div style="background: rgba(var(--rgb-info-color, 33, 150, 243), 0.05); padding: var(--spacing-md); border-radius: var(--border-radius); border-left: 4px solid var(--info-color, #2196F3);">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="margin-right: 5px"><strong>Current Stage:</strong> ${plant.state} </span>
+          <span style="margin-right: 5px"><strong>Current Stage:</strong> ${plant.state}</span>
           <div style="display: flex; gap: var(--spacing-md);">
             ${plant.attributes?.veg_days ? html`<span>${plant.attributes.veg_days} days veg</span>` : ''}
             ${plant.attributes?.flower_days ? html`<span>${plant.attributes.flower_days} days flower</span>` : ''}

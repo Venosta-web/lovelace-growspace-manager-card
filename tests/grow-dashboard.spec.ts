@@ -72,6 +72,9 @@ test('Strain Library Dialog opens, adds, and removes strain', async ({ page }) =
     const addButton = strainDialog.locator('button.action-button', { hasText: 'Add' });
     await addButton.click();
 
+    await page.screenshot({ path: 'test-results/strain-dialog-after-add.png' });
+    await page.waitForTimeout(2000); // Temporary wait for debugging
+
     // Verify the new strain is in the list
     const strainItem = strainDialog.locator(`.strain-item:has-text("${newStrainName}")`);
     await expect(strainItem).toBeVisible();
@@ -191,6 +194,7 @@ test('Drag and drop plant to occupied slot (switching plants)', async ({ page })
 
     // Wait for network requests to complete and the UI to update
     await page.waitForLoadState('networkidle');
+    console.log('Growspace Card InnerHTML after drag:', await growspaceCard.innerHTML());
 
     // Re-locate the growspaceCard after the potential re-render
     growspaceCard = page.locator('growspace-manager-card').first();
