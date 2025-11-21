@@ -111,6 +111,24 @@ export class DataService {
     return [];
   }
 
+  async getHistory(entityId: string, startTime: Date, endTime?: Date): Promise<any[]> {
+    if (!this.hass) return [];
+
+    const startStr = startTime.toISOString();
+    let url = `history/period/${startStr}?filter_entity_id=${entityId}`;
+    if (endTime) {
+      url += `&end_time=${endTime.toISOString()}`;
+    }
+
+    try {
+      const res = await this.hass.callApi<any[][]>('GET', url);
+      return res && res.length > 0 ? res[0] : [];
+    } catch (err) {
+      console.error("Error fetching history:", err);
+      return [];
+    }
+  }
+
   // Service calls
   async addPlant(params: {
     growspace_id: string;

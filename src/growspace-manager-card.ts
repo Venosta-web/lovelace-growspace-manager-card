@@ -1,7 +1,7 @@
-import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult } from 'lit';
+import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
@@ -29,6 +29,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private selectedDevice: string | null = null;
   @state() private _draggedPlant: PlantEntity | null = null;
   @state() private _isCompactView: boolean = false;
+  @state() private _historyData: any[] | null = null;
 
 
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -57,109 +58,159 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         box-shadow: var(--card-shadow-hover);
       }
 
-      /* Growspace Header Styles */
+      /* Growspace Header Styles - Glassmorphism & Gradient */
       .growspace-header-card {
-        background: rgba(var(--stage-color-rgb, 33, 150, 243), 0.1);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(var(--stage-color-rgb, 33, 150, 243), 0.2);
-        border-radius: var(--border-radius-lg);
-        padding: var(--spacing-md);
+        /* Fallback */
+        background: rgba(30, 30, 35, 0.6);
+        /* Gradient approximating the screenshot */
+        background-image: linear-gradient(135deg, rgba(50, 50, 60, 0.8) 0%, rgba(40, 30, 60, 0.8) 100%);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        padding: 24px;
         margin-bottom: var(--spacing-lg);
         display: flex;
         flex-direction: column;
-        gap: var(--spacing-md);
+        gap: 20px;
         color: #fff;
         position: relative;
         overflow: hidden;
-      }
-
-      .growspace-header-card::before {
-         content: '';
-         position: absolute;
-         top:0; left:0; right:0; height: 4px;
-         background: var(--stage-color, #2196f3);
-         opacity: 0.8;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
       }
 
       .gs-header-top {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
         flex-wrap: wrap;
-        gap: var(--spacing-sm);
+        gap: var(--spacing-md);
       }
 
       .gs-title-group {
         display: flex;
-        align-items: center;
-        gap: var(--spacing-md);
-      }
-
-      .gs-icon-box {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        background: rgba(var(--stage-color-rgb, 33, 150, 243), 0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--stage-color, #fff);
+        flex-direction: column;
+        gap: 4px;
       }
 
       .gs-title {
-        font-size: 1.5rem;
+        font-size: 2rem;
         font-weight: 500;
         margin: 0;
+        letter-spacing: -0.5px;
       }
 
-      .gs-subtitle {
+      .gs-stage-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.15);
+        padding: 4px 12px;
+        border-radius: 16px;
         font-size: 0.9rem;
-        color: rgba(255,255,255,0.7);
+        font-weight: 500;
+        color: #fff;
+        width: fit-content;
       }
 
-      .gs-stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-        gap: var(--spacing-sm);
-        margin-top: var(--spacing-sm);
+      /* Chips Container */
+      .gs-stats-chips {
+         display: flex;
+         flex-wrap: wrap;
+         gap: 8px;
+         justify-content: flex-end;
       }
 
-      .gs-stat-item {
-        background: rgba(255,255,255,0.05);
-        border-radius: 8px;
-        padding: 8px;
-        text-align: center;
-        border: 1px solid rgba(255,255,255,0.05);
+      .stat-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+        padding: 6px 14px;
+        font-size: 0.9rem;
+        color: #eee;
+        backdrop-filter: blur(4px);
       }
 
-      .gs-stat-value {
-        font-size: 1.1rem;
-        font-weight: bold;
-        display: block;
+      .stat-chip svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+        opacity: 0.9;
       }
 
-      .gs-stat-label {
-        font-size: 0.75rem;
-        color: rgba(255,255,255,0.6);
-        text-transform: uppercase;
+      .light-status-chip {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 6px 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
       }
 
-      .light-status-bar {
+      .light-status-chip.on {
+        background: linear-gradient(90deg, rgba(255, 235, 59, 0.8), rgba(253, 216, 53, 0.6));
+        color: #000;
+        box-shadow: 0 0 15px rgba(253, 216, 53, 0.4);
+        border: none;
+      }
+
+      .light-status-chip.off {
+         background: rgba(0, 0, 0, 0.3);
+         color: rgba(255, 255, 255, 0.7);
+      }
+
+      /* 24h Chart */
+      .gs-chart-container {
+         margin-top: 8px;
+      }
+
+      .gs-chart-label {
+         font-size: 0.85rem;
+         color: rgba(255, 255, 255, 0.7);
+         margin-bottom: 6px;
+      }
+
+      .gs-chart-bars {
+         display: flex;
+         gap: 4px;
+         height: 40px;
          width: 100%;
-         height: 6px;
-         background: rgba(255,255,255,0.1);
-         border-radius: 3px;
-         overflow: hidden;
-         margin-top: 4px;
+         align-items: flex-end;
       }
 
-      .light-progress {
+      .chart-bar {
+         flex: 1;
          height: 100%;
-         background: var(--growspace-card-accent); /* Green or yellow? usually yellow for light */
-         transition: width 0.5s ease;
+         background: transparent;
+         border-radius: 4px;
+         border: 1px solid rgba(255, 255, 255, 0.1);
+         position: relative;
+         overflow: hidden;
       }
 
+      .chart-bar.active {
+         background: rgba(255, 235, 59, 0.7); /* Yellowish */
+         border: none;
+         box-shadow: 0 0 8px rgba(255, 235, 59, 0.3);
+      }
+
+      /* Time markers for chart */
+      .chart-markers {
+         display: flex;
+         justify-content: space-between;
+         margin-top: 4px;
+         font-size: 0.7rem;
+         color: rgba(255, 255, 255, 0.5);
+      }
+
+      /* Existing styles... */
       ha-card.wide-growspace .plant-name,
       ha-card.wide-growspace .plant-stage,
       ha-card.wide-growspace .plant-phenotype {
@@ -919,6 +970,38 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   protected firstUpdated() {
     this.dataService = new DataService(this.hass);
     this.initializeSelectedDevice();
+    this._fetchHistory();
+  }
+
+  protected updated(changedProps: PropertyValues): void {
+    super.updated(changedProps);
+    if (changedProps.has('selectedDevice')) {
+        this._fetchHistory();
+    }
+  }
+
+  private async _fetchHistory() {
+    if (!this.hass || !this.selectedDevice) return;
+    const devices = this.dataService.getGrowspaceDevices();
+    const device = devices.find(d => d.device_id === this.selectedDevice);
+    if (!device) return;
+
+    let slug = device.name.toLowerCase().replace(/\s+/g, '_');
+    if (device.overview_entity_id) {
+       slug = device.overview_entity_id.replace('sensor.', '');
+    }
+    const envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+
+    // Get history for last 24h
+    const now = new Date();
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    try {
+        const history = await this.dataService.getHistory(envEntityId, yesterday, now);
+        this._historyData = history;
+    } catch (e) {
+        console.error("Failed to fetch history", e);
+    }
   }
 
   private initializeSelectedDevice() {
@@ -1427,149 +1510,129 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private renderGrowspaceHeader(device: GrowspaceDevice): TemplateResult {
-    // 1. Determine Stage Summary
     const dominant = PlantUtils.getDominantStage(device.plants);
-    const stageColor = dominant ? PlantUtils.getPlantStageColor(dominant.stage) : 'var(--plant-border-color-default)';
-    const stageIcon = dominant ? PlantUtils.getPlantStageIcon(dominant.stage) : mdiSprout;
 
-    // Convert hex color to r,g,b for background transparency
-    // Simple hex to rgb conversion for css variable usage
-    let r = 33, g = 150, b = 243; // default blue
-    if (stageColor.startsWith('#')) {
-       const hex = stageColor.substring(1);
-       if (hex.length === 6) {
-         r = parseInt(hex.substring(0,2), 16);
-         g = parseInt(hex.substring(2,4), 16);
-         b = parseInt(hex.substring(4,6), 16);
-       }
-    }
-    const rgbString = `${r}, ${g}, ${b}`;
-
-    // 2. Fetch Environmental Data
-    // Pattern: binary_sensor.{growspace_slug}_optimal_conditions
-    // Logic: use device.name or try to find matching entity
-    // If overview_entity_id is "sensor.4x4", slug is "4x4"
+    // Fetch Environmental Data
     let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-
     if (device.overview_entity_id) {
        slug = device.overview_entity_id.replace('sensor.', '');
     }
-
     const envEntityId = `binary_sensor.${slug}_optimal_conditions`;
     const envEntity = this.hass.states[envEntityId];
 
-    // Light Entity
-    const lightEntityId = `binary_sensor.${slug}_light_schedule_correct`;
-    const lightEntity = this.hass.states[lightEntityId];
-
-    // Helper to get attribute if exists
     const getAttr = (ent: any, attr: string) => ent?.attributes?.[attr];
-
     const temp = getAttr(envEntity, 'temperature');
     const hum = getAttr(envEntity, 'humidity');
     const vpd = getAttr(envEntity, 'vpd');
     const co2 = getAttr(envEntity, 'co2');
 
-    // Light Status logic
-    const lightsOn = envEntity?.attributes?.is_lights_on === true;
-    const lightDurationStr = lightEntity?.attributes?.time_in_current_state; // "0:31:46.345173"
-    let lightPercentage = 0;
+    // Light Status Logic with History
+    const isLightsOn = envEntity?.attributes?.is_lights_on === true;
+    let durationDisplay = "0h 0m";
+    let hourlyStatus: boolean[] = new Array(24).fill(false);
 
-    // Simple progress bar visualization (assuming 12h or 18h cycle, let's just show a fill based on logic or static)
-    // Actually, user asked for "duration indicator". A progress bar needs a max value.
-    // Without schedule info (12/12 or 18/6), we can't calculate percentage accurately.
-    // However, the example output showed "expected_schedule: 12/12".
-    // We can try to parse that.
+    if (this._historyData && this._historyData.length > 0) {
+        // 1. Calculate duration
+        // Sort history Newest -> Oldest
+        const sortedHistory = [...this._historyData].sort((a, b) => new Date(b.last_changed).getTime() - new Date(a.last_changed).getTime());
 
-    if (lightEntity?.attributes?.expected_schedule) {
-       const parts = lightEntity.attributes.expected_schedule.split('/');
-       if (parts.length === 2) {
-          const onHours = parseFloat(parts[0]);
-          // Parse duration string "HH:MM:SS"
-          if (lightDurationStr) {
-             const [h, m] = lightDurationStr.split(':').map(Number);
-             const currentHours = h + (m/60);
-             if (onHours > 0) {
-                // If lights are ON, progress is relative to ON duration.
-                // If lights are OFF, progress is relative to OFF duration?
-                // Usually people want to see how long lights have been ON.
-                if (lightsOn) {
-                    lightPercentage = Math.min((currentHours / onHours) * 100, 100);
-                } else {
-                    // Maybe show how long until on?
-                    // For now, let's just stick to a visual bar that represents active duration if on.
-                    lightPercentage = 0;
-                }
+        const currentState = isLightsOn;
+
+        // Find the index of the first entry that does NOT match the current state
+        // The entry *before* that (index - 1) is the transition TO the current state.
+        const mismatchIndex = sortedHistory.findIndex(h => {
+            const histLightsOn = h.attributes?.is_lights_on === true;
+            return histLightsOn !== currentState;
+        });
+
+        let startTime: Date | null = null;
+
+        if (mismatchIndex === 0) {
+             // The newest history entry doesn't match current state (lag?), assume just changed
+             startTime = new Date();
+        } else if (mismatchIndex === -1) {
+             // No mismatch found, state has been consistent for the entire history duration
+             if (sortedHistory.length > 0) {
+                 startTime = new Date(sortedHistory[sortedHistory.length - 1].last_changed);
+                 durationDisplay = "> 24h"; // Or calculate from that time
              }
-          }
-       }
-    }
+        } else {
+             // Found a mismatch at mismatchIndex.
+             // The entry at mismatchIndex - 1 is the start of the current block.
+             const startEntry = sortedHistory[mismatchIndex - 1];
+             startTime = new Date(startEntry.last_changed);
+        }
 
-    // Format Duration for display
-    let durationDisplay = "";
-    if (lightDurationStr) {
-       const [h, m] = lightDurationStr.split(':');
-       durationDisplay = `${h}h ${m}m`;
+        if (startTime) {
+            const diffMs = new Date().getTime() - startTime.getTime();
+            const diffMins = Math.floor(diffMs / 60000);
+            if (durationDisplay !== "> 24h") {
+                const h = Math.floor(diffMins / 60);
+                const m = diffMins % 60;
+                durationDisplay = `${h}h ${m}m`;
+            }
+        }
+
+        // 2. Build hourly status for chart (last 24h)
+        const now = new Date();
+        for (let i = 0; i < 24; i++) {
+            const sampleTime = new Date(now.getTime() - (23 - i) * 60 * 60 * 1000);
+            // Find the latest history entry that is BEFORE sampleTime
+            const entry = sortedHistory.find(h => new Date(h.last_changed) <= sampleTime);
+
+            if (entry) {
+                hourlyStatus[i] = entry.attributes?.is_lights_on === true;
+            } else {
+                if (sortedHistory.length > 0) {
+                     const oldest = sortedHistory[sortedHistory.length - 1];
+                     hourlyStatus[i] = oldest.attributes?.is_lights_on === true;
+                }
+            }
+        }
     }
 
     return html`
-      <div class="growspace-header-card" style="--stage-color: ${stageColor}; --stage-color-rgb: ${rgbString}">
+      <div class="growspace-header-card">
          <div class="gs-header-top">
             <div class="gs-title-group">
-               <div class="gs-icon-box">
-                  <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                     <path d="${stageIcon}"></path>
-                  </svg>
+               <h3 class="gs-title">${device.name}</h3>
+               ${dominant ? html`
+               <div class="gs-stage-chip">
+                 <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
+                 ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Day ${dominant.days}
                </div>
-               <div>
-                  <h3 class="gs-title">${device.name}</h3>
-                  <div class="gs-subtitle">
-                     ${dominant ? `${dominant.days} Days in ${dominant.stage}` : 'Empty / No Active Plants'}
-                  </div>
-               </div>
+               ` : ''}
             </div>
 
-            ${lightEntity ? html`
-              <div style="text-align: right; min-width: 120px;">
-                 <div style="font-size: 0.9rem; font-weight: 500;">
-                    Light: ${lightsOn ? 'ON' : 'OFF'}
-                 </div>
-                 <div style="font-size: 0.8rem; opacity: 0.7;">
-                    ${durationDisplay}
-                 </div>
-                 ${lightsOn ? html`
-                 <div class="light-status-bar">
-                    <div class="light-progress" style="width: ${lightPercentage}%"></div>
-                 </div>` : ''}
-              </div>
-            ` : ''}
+            <div class="gs-stats-chips">
+                ${temp !== undefined ? html`<div class="stat-chip"><svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>${temp}°C</div>` : ''}
+                ${hum !== undefined ? html`<div class="stat-chip"><svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>${hum}%</div>` : ''}
+                ${vpd !== undefined ? html`<div class="stat-chip"><svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>${vpd} kPa</div>` : ''}
+                ${co2 !== undefined ? html`<div class="stat-chip"><svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm</div>` : ''}
+
+                ${envEntity ? html`
+                <div class="light-status-chip ${isLightsOn ? 'on' : 'off'}">
+                   <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                      <path d="${isLightsOn ? mdiLightbulbOn : mdiLightbulbOff}"></path>
+                   </svg>
+                   ${isLightsOn ? 'ON' : 'OFF'} • ${durationDisplay}
+                </div>
+                ` : ''}
+            </div>
          </div>
 
-         <div class="gs-stats-grid">
-            ${temp !== undefined ? html`
-               <div class="gs-stat-item">
-                  <span class="gs-stat-value">${temp}°C</span>
-                  <span class="gs-stat-label">Temp</span>
-               </div>
-            ` : ''}
-            ${hum !== undefined ? html`
-               <div class="gs-stat-item">
-                  <span class="gs-stat-value">${hum}%</span>
-                  <span class="gs-stat-label">Hum</span>
-               </div>
-            ` : ''}
-            ${vpd !== undefined ? html`
-               <div class="gs-stat-item">
-                  <span class="gs-stat-value">${vpd} kPa</span>
-                  <span class="gs-stat-label">VPD</span>
-               </div>
-            ` : ''}
-            ${co2 !== undefined ? html`
-               <div class="gs-stat-item">
-                  <span class="gs-stat-value">${co2} ppm</span>
-                  <span class="gs-stat-label">CO2</span>
-               </div>
-            ` : ''}
+         <div class="gs-chart-container">
+            <div class="gs-chart-label">24h Light Cycle</div>
+            <div class="gs-chart-bars">
+               ${hourlyStatus.map(isOn => html`
+                 <div class="chart-bar ${isOn ? 'active' : ''}"></div>
+               `)}
+            </div>
+            <div class="chart-markers">
+               <span>-24h</span>
+               <span>-12h</span>
+               <span>Now</span>
+            </div>
          </div>
       </div>
     `;
