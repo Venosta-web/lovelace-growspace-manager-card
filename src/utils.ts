@@ -157,4 +157,26 @@ export class PlantUtils {
     const pad = (n: number) => n.toString().padStart(2, "0");
     return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:00`;
   }
+
+  /**
+   * Formats a date string (YYYY-MM-DD or ISO) to YYYY-MM-DDThh:mm for datetime-local inputs
+   */
+  static toDateTimeLocal(value?: string | null): string {
+    if (!value) return "";
+    try {
+      const dt = new Date(value);
+      if (isNaN(dt.getTime())) return "";
+
+      const pad = (n: number) => n.toString().padStart(2, "0");
+      const yyyy = dt.getFullYear();
+      const mm = pad(dt.getMonth() + 1);
+      const dd = pad(dt.getDate());
+      const hh = pad(dt.getHours());
+      const min = pad(dt.getMinutes());
+
+      return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+    } catch {
+      return "";
+    }
+  }
 }
