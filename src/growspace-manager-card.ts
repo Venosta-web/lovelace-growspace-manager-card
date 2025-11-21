@@ -343,6 +343,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       ha-dialog.strain-dialog {
         --mdc-dialog-min-width: 45vw;
         --mdc-dialog-max-width: 45vw;
+        --mdc-dialog-surface-fill-color: var(--growspace-card-bg);
       }
       .dialog-content {
         display: flex;
@@ -610,7 +611,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
          or style our own container inside. */
 
       .glass-dialog-container {
-        background: rgba(30, 30, 30, 0.85); /* Darker for better contrast in all modes */
+        background: var(--growspace-card-bg);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1507,11 +1508,30 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                 // Let's clear it if they switched strains, unless they are typing (but this is a select change)
                 this._addPlantDialog.phenotype = '';
              }
+             this.requestUpdate();
           }
         },
         onPhenotypeChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.phenotype = value; },
         onVegStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.veg_start = value; },
         onFlowerStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.flower_start = value; },
+        onRowChange: (value) => {
+          if (this._addPlantDialog) {
+            const val = parseInt(value);
+            if (!isNaN(val) && val > 0) {
+              this._addPlantDialog.row = val - 1;
+              this.requestUpdate();
+            }
+          }
+        },
+        onColChange: (value) => {
+          if (this._addPlantDialog) {
+             const val = parseInt(value);
+             if (!isNaN(val) && val > 0) {
+               this._addPlantDialog.col = val - 1;
+               this.requestUpdate();
+             }
+          }
+        },
       }
     )}
 
