@@ -931,12 +931,95 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         .selector-container {
           justify-content: center;
         }
+        /* Switch Grid to List View */
         .grid {
+          display: flex;
+          flex-direction: column;
           gap: var(--spacing-sm);
+          grid-template-columns: 1fr !important;
+          grid-template-rows: auto !important;
         }
         .plant {
-          min-height: 80px;
+          min-height: auto;
+          aspect-ratio: unset;
+          display: grid;
+          grid-template-columns: 48px 1fr auto;
+          grid-template-rows: auto auto;
+          grid-template-areas:
+            "icon name stage"
+            "icon phenotype days";
+          padding: 12px;
+          gap: 4px 12px;
+          text-align: left;
         }
+        .plant-name, .plant-phenotype, .plant-stage, .plant-days {
+          text-align: left;
+          min-height: 0;
+          margin: 0;
+        }
+        .plant-header {
+          justify-content: center; /* Icon stays centered in its box */
+        }
+        .plant-name {
+          font-size: 1rem;
+          align-self: end;
+        }
+        .plant-phenotype {
+          font-size: 0.85rem;
+          align-self: start;
+        }
+        .plant-stage {
+          font-size: 0.85rem;
+          text-align: right;
+          align-self: end;
+        }
+        .plant-days {
+          justify-content: flex-end;
+          font-size: 0.8rem;
+        }
+        .plant-days span {
+           flex-direction: row;
+           gap: 4px;
+        }
+        .plant-days span svg {
+           width: 1.2rem;
+           height: 1.2rem;
+        }
+
+        /* Empty Slot in List View */
+        .plant.empty {
+           display: flex;
+           align-items: center;
+           gap: 12px;
+           padding: 12px;
+        }
+        .plant.empty .plant-header {
+           margin: 0;
+        }
+        .plant.empty .plant-name {
+           font-size: 1rem;
+           margin: 0;
+        }
+        .plant.empty .plant-stage {
+           display: none;
+        }
+
+        /* Header vertical stacking */
+        .gs-header-top {
+            flex-direction: column;
+        }
+        .gs-stats-chips {
+            flex-direction: column;
+            width: 100%;
+            align-items: stretch;
+            gap: 4px;
+        }
+        .stat-chip {
+            width: 100%;
+            box-sizing: border-box;
+            justify-content: space-between; /* Icon/Value spread */
+        }
+
         /* Mobile specific dialog adjustments */
         ha-dialog.strain-dialog .mdc-dialog__surface {
             width: 100vw !important;
