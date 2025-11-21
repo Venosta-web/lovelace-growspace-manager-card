@@ -57,6 +57,109 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         box-shadow: var(--card-shadow-hover);
       }
 
+      /* Growspace Header Styles */
+      .growspace-header-card {
+        background: rgba(var(--stage-color-rgb, 33, 150, 243), 0.1);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(var(--stage-color-rgb, 33, 150, 243), 0.2);
+        border-radius: var(--border-radius-lg);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .growspace-header-card::before {
+         content: '';
+         position: absolute;
+         top:0; left:0; right:0; height: 4px;
+         background: var(--stage-color, #2196f3);
+         opacity: 0.8;
+      }
+
+      .gs-header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+      }
+
+      .gs-title-group {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+      }
+
+      .gs-icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: rgba(var(--stage-color-rgb, 33, 150, 243), 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--stage-color, #fff);
+      }
+
+      .gs-title {
+        font-size: 1.5rem;
+        font-weight: 500;
+        margin: 0;
+      }
+
+      .gs-subtitle {
+        font-size: 0.9rem;
+        color: rgba(255,255,255,0.7);
+      }
+
+      .gs-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-sm);
+      }
+
+      .gs-stat-item {
+        background: rgba(255,255,255,0.05);
+        border-radius: 8px;
+        padding: 8px;
+        text-align: center;
+        border: 1px solid rgba(255,255,255,0.05);
+      }
+
+      .gs-stat-value {
+        font-size: 1.1rem;
+        font-weight: bold;
+        display: block;
+      }
+
+      .gs-stat-label {
+        font-size: 0.75rem;
+        color: rgba(255,255,255,0.6);
+        text-transform: uppercase;
+      }
+
+      .light-status-bar {
+         width: 100%;
+         height: 6px;
+         background: rgba(255,255,255,0.1);
+         border-radius: 3px;
+         overflow: hidden;
+         margin-top: 4px;
+      }
+
+      .light-progress {
+         height: 100%;
+         background: var(--growspace-card-accent); /* Green or yellow? usually yellow for light */
+         transition: width 0.5s ease;
+      }
+
       ha-card.wide-growspace .plant-name,
       ha-card.wide-growspace .plant-stage,
       ha-card.wide-growspace .plant-phenotype {
@@ -1314,11 +1417,161 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     return html`
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
+        ${!this._isCompactView ? this.renderGrowspaceHeader(selectedDeviceData) : ''}
         ${this.renderHeader(devices)}
         ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
       </ha-card>
       
       ${this.renderDialogs()}
+    `;
+  }
+
+  private renderGrowspaceHeader(device: GrowspaceDevice): TemplateResult {
+    // 1. Determine Stage Summary
+    const dominant = PlantUtils.getDominantStage(device.plants);
+    const stageColor = dominant ? PlantUtils.getPlantStageColor(dominant.stage) : 'var(--plant-border-color-default)';
+    const stageIcon = dominant ? PlantUtils.getPlantStageIcon(dominant.stage) : mdiSprout;
+
+    // Convert hex color to r,g,b for background transparency
+    // Simple hex to rgb conversion for css variable usage
+    let r = 33, g = 150, b = 243; // default blue
+    if (stageColor.startsWith('#')) {
+       const hex = stageColor.substring(1);
+       if (hex.length === 6) {
+         r = parseInt(hex.substring(0,2), 16);
+         g = parseInt(hex.substring(2,4), 16);
+         b = parseInt(hex.substring(4,6), 16);
+       }
+    }
+    const rgbString = `${r}, ${g}, ${b}`;
+
+    // 2. Fetch Environmental Data
+    // Pattern: binary_sensor.{growspace_slug}_optimal_conditions
+    // Logic: use device.name or try to find matching entity
+    // If overview_entity_id is "sensor.4x4", slug is "4x4"
+    let slug = device.name.toLowerCase().replace(/\s+/g, '_');
+
+    if (device.overview_entity_id) {
+       slug = device.overview_entity_id.replace('sensor.', '');
+    }
+
+    const envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+    const envEntity = this.hass.states[envEntityId];
+
+    // Light Entity
+    const lightEntityId = `binary_sensor.${slug}_light_schedule_correct`;
+    const lightEntity = this.hass.states[lightEntityId];
+
+    // Helper to get attribute if exists
+    const getAttr = (ent: any, attr: string) => ent?.attributes?.[attr];
+
+    const temp = getAttr(envEntity, 'temperature');
+    const hum = getAttr(envEntity, 'humidity');
+    const vpd = getAttr(envEntity, 'vpd');
+    const co2 = getAttr(envEntity, 'co2');
+
+    // Light Status logic
+    const lightsOn = envEntity?.attributes?.is_lights_on === true;
+    const lightDurationStr = lightEntity?.attributes?.time_in_current_state; // "0:31:46.345173"
+    let lightPercentage = 0;
+
+    // Simple progress bar visualization (assuming 12h or 18h cycle, let's just show a fill based on logic or static)
+    // Actually, user asked for "duration indicator". A progress bar needs a max value.
+    // Without schedule info (12/12 or 18/6), we can't calculate percentage accurately.
+    // However, the example output showed "expected_schedule: 12/12".
+    // We can try to parse that.
+
+    if (lightEntity?.attributes?.expected_schedule) {
+       const parts = lightEntity.attributes.expected_schedule.split('/');
+       if (parts.length === 2) {
+          const onHours = parseFloat(parts[0]);
+          // Parse duration string "HH:MM:SS"
+          if (lightDurationStr) {
+             const [h, m] = lightDurationStr.split(':').map(Number);
+             const currentHours = h + (m/60);
+             if (onHours > 0) {
+                // If lights are ON, progress is relative to ON duration.
+                // If lights are OFF, progress is relative to OFF duration?
+                // Usually people want to see how long lights have been ON.
+                if (lightsOn) {
+                    lightPercentage = Math.min((currentHours / onHours) * 100, 100);
+                } else {
+                    // Maybe show how long until on?
+                    // For now, let's just stick to a visual bar that represents active duration if on.
+                    lightPercentage = 0;
+                }
+             }
+          }
+       }
+    }
+
+    // Format Duration for display
+    let durationDisplay = "";
+    if (lightDurationStr) {
+       const [h, m] = lightDurationStr.split(':');
+       durationDisplay = `${h}h ${m}m`;
+    }
+
+    return html`
+      <div class="growspace-header-card" style="--stage-color: ${stageColor}; --stage-color-rgb: ${rgbString}">
+         <div class="gs-header-top">
+            <div class="gs-title-group">
+               <div class="gs-icon-box">
+                  <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
+                     <path d="${stageIcon}"></path>
+                  </svg>
+               </div>
+               <div>
+                  <h3 class="gs-title">${device.name}</h3>
+                  <div class="gs-subtitle">
+                     ${dominant ? `${dominant.days} Days in ${dominant.stage}` : 'Empty / No Active Plants'}
+                  </div>
+               </div>
+            </div>
+
+            ${lightEntity ? html`
+              <div style="text-align: right; min-width: 120px;">
+                 <div style="font-size: 0.9rem; font-weight: 500;">
+                    Light: ${lightsOn ? 'ON' : 'OFF'}
+                 </div>
+                 <div style="font-size: 0.8rem; opacity: 0.7;">
+                    ${durationDisplay}
+                 </div>
+                 ${lightsOn ? html`
+                 <div class="light-status-bar">
+                    <div class="light-progress" style="width: ${lightPercentage}%"></div>
+                 </div>` : ''}
+              </div>
+            ` : ''}
+         </div>
+
+         <div class="gs-stats-grid">
+            ${temp !== undefined ? html`
+               <div class="gs-stat-item">
+                  <span class="gs-stat-value">${temp}°C</span>
+                  <span class="gs-stat-label">Temp</span>
+               </div>
+            ` : ''}
+            ${hum !== undefined ? html`
+               <div class="gs-stat-item">
+                  <span class="gs-stat-value">${hum}%</span>
+                  <span class="gs-stat-label">Hum</span>
+               </div>
+            ` : ''}
+            ${vpd !== undefined ? html`
+               <div class="gs-stat-item">
+                  <span class="gs-stat-value">${vpd} kPa</span>
+                  <span class="gs-stat-label">VPD</span>
+               </div>
+            ` : ''}
+            ${co2 !== undefined ? html`
+               <div class="gs-stat-item">
+                  <span class="gs-stat-value">${co2} ppm</span>
+                  <span class="gs-stat-label">CO2</span>
+               </div>
+            ` : ''}
+         </div>
+      </div>
     `;
   }
 

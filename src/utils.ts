@@ -179,4 +179,57 @@ export class PlantUtils {
       return "";
     }
   }
+
+  static getDominantStage(plants: PlantEntity[]): { stage: PlantStage, days: number } | null {
+    if (!plants || plants.length === 0) return null;
+
+    // Defined priority: Cure > Dry > Flower > Vegetative > Clone > Mother > Seedling
+    // Lower index = higher priority
+    const priority: PlantStage[] = [
+      "cure",
+      "dry",
+      "flower",
+      "vegetative",
+      "clone",
+      "mother",
+      "seedling"
+    ];
+
+    // Find the highest priority stage present in the plants
+    let bestStage: PlantStage | null = null;
+    let maxDays = 0;
+
+    // Group plants by normalized stage
+    const plantsByStage: Record<string, PlantEntity[]> = {};
+
+    for (const plant of plants) {
+      // Use plant.state directly if possible, or calculate it
+      // plant.state usually contains the stage string
+      const stage = this.normalizeStage(plant.state || this.getPlantStage(plant));
+      if (!plantsByStage[stage]) plantsByStage[stage] = [];
+      plantsByStage[stage].push(plant);
+    }
+
+    // Iterate priority list to find the first matching stage
+    for (const stage of priority) {
+      if (plantsByStage[stage] && plantsByStage[stage].length > 0) {
+        bestStage = stage;
+        // Find max days for this stage
+        // Map stage to attribute key
+        const daysKey = `${stage === 'vegetative' ? 'veg' : stage}_days`;
+
+        const daysValues = plantsByStage[stage].map(p => {
+            const val = p.attributes[daysKey];
+            return typeof val === 'number' ? val : 0;
+        });
+
+        maxDays = Math.max(...daysValues);
+        break;
+      }
+    }
+
+    if (!bestStage) return null;
+
+    return { stage: bestStage, days: maxDays };
+  }
 }

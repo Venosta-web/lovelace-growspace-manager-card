@@ -54,6 +54,7 @@ export class DataService {
 
       return createGrowspaceDevice({
         device_id: growspaceId,
+        overview_entity_id: overview?.entity_id,
         name,
         plants,
         rows: overview?.attributes?.rows ?? 3,
