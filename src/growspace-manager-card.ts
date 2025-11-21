@@ -60,8 +60,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         box-shadow: var(--card-shadow-hover);
       }
 
-      /* Growspace Header Styles - Glassmorphism & Gradient */
-      .growspace-header-card {
+      /* Unified Card Container - Glassmorphism & Gradient */
+      .unified-growspace-card {
         /* Fallback */
         background: rgba(30, 30, 35, 0.6);
         /* Gradient approximating the screenshot */
@@ -72,7 +72,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 24px;
         padding: 24px;
-        margin-bottom: var(--spacing-lg);
         display: flex;
         flex-direction: column;
         gap: 20px;
@@ -80,6 +79,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         position: relative;
         overflow: hidden;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      }
+
+      .gs-stats-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
       }
 
       .gs-header-top {
@@ -414,7 +419,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         flex-wrap: wrap;
         gap: var(--spacing-md);
         padding: var(--spacing-sm) 0;
-        border-bottom: 2px solid var(--divider-color);
       }
 
       .header-title {
@@ -483,21 +487,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       .grid {
         display: grid;
         gap: var(--spacing-md);
-        margin-top: var(--spacing-lg);
-        padding: 20px;
-
-        /* Glass effect */
-        background: rgba(30, 30, 35, 0.4);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 24px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
       }
 
       .grid.compact {
         gap: var(--spacing-sm);
-        padding: var(--spacing-md);
       }
 
       .plant {
@@ -1338,6 +1331,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   public setConfig(config: GrowspaceManagerCardConfig): void {
     if (!config) throw new Error("Invalid configuration");
     this._config = config;
+    if (this._config.compact !== undefined) {
+      this._isCompactView = this._config.compact;
+    }
   }
 
   public getCardSize(): number { return 4; }
@@ -1895,9 +1891,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     return html`
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
-        ${!this._isCompactView ? this.renderGrowspaceHeader(selectedDeviceData) : ''}
-        ${this.renderHeader(devices)}
-        ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
+        <div class="unified-growspace-card">
+          ${this.renderHeader(devices)}
+          ${!this._isCompactView ? this.renderGrowspaceHeader(selectedDeviceData) : ''}
+          ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
+        </div>
       </ha-card>
       
       ${this.renderDialogs()}
@@ -2030,7 +2028,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
 
     return html`
-      <div class="growspace-header-card">
+      <div class="gs-stats-container">
          <div class="gs-header-top">
             <div class="gs-title-group">
                <!-- Title as Dropdown if no default is set -->
