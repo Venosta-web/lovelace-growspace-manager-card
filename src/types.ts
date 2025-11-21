@@ -92,6 +92,7 @@ export interface PlantOverviewEditedAttributes {
 
 export interface GrowspaceDevice {
   device_id: string;
+  overview_entity_id?: string;
   name: string;
   type: GrowspaceType;
   plants: PlantEntity[];
