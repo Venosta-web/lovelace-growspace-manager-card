@@ -135,4 +135,8 @@ export interface StrainLibraryDialogState {
   newStrain: string;
   newPhenotype: string;
   strains: StrainEntry[];
+  searchQuery?: string;
+  isAddFormOpen?: boolean;
+  expandedStrains?: string[];
+  confirmClearAll?: boolean;
 }
