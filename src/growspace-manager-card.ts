@@ -101,6 +101,36 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         letter-spacing: -0.5px;
       }
 
+      .header-growspace-select {
+        font-size: 2rem;
+        font-weight: 500;
+        margin: 0;
+        letter-spacing: -0.5px;
+        color: #fff;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding-right: 24px; /* Space for chevron */
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22white%22%3E%3Cpath%20d%3D%22M7.41%208.59L12%2013.17l4.59-4.58L18%2010l-6%206-6-6%201.41-1.41z%22%2F%3E%3C%2Fsvg%3E');
+        background-repeat: no-repeat;
+        background-position: right center;
+        background-size: 24px;
+        font-family: inherit;
+        max-width: 100%;
+      }
+      .header-growspace-select:focus {
+        outline: none;
+        text-shadow: 0 0 10px rgba(255,255,255,0.5);
+      }
+      .header-growspace-select option {
+        color: var(--primary-text-color);
+        background: var(--card-background-color);
+        font-size: 1rem;
+      }
+
       .gs-stage-chip {
         display: inline-flex;
         align-items: center;
@@ -1523,7 +1553,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     return html`
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
-        ${!this._isCompactView ? this.renderGrowspaceHeader(selectedDeviceData) : ''}
+        ${!this._isCompactView ? this.renderGrowspaceHeader(devices, selectedDeviceData) : ''}
         ${this.renderHeader(devices)}
         ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
       </ha-card>
@@ -1532,7 +1562,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     `;
   }
 
-  private renderGrowspaceHeader(device: GrowspaceDevice): TemplateResult {
+  private renderGrowspaceHeader(devices: GrowspaceDevice[], device: GrowspaceDevice): TemplateResult {
     const dominant = PlantUtils.getDominantStage(device.plants);
 
     // Fetch Environmental Data
@@ -1630,7 +1660,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       <div class="growspace-header-card">
          <div class="gs-header-top">
             <div class="gs-title-group">
-               <h3 class="gs-title">${device.name}</h3>
+               ${!this._config?.default_growspace ? html`
+                 <select
+                   class="header-growspace-select"
+                   .value=${this.selectedDevice || ''}
+                   @change=${this._handleDeviceChange}
+                 >
+                   ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
+                 </select>
+               ` : html`
+                 <h3 class="gs-title">${device.name}</h3>
+               `}
                ${dominant ? html`
                <div class="gs-stage-chip">
                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
@@ -1680,6 +1720,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       <div class="header">
         ${this._config?.title ? html`<h2 class="header-title">${this._config.title}</h2>` : ''}
         
+        ${this._isCompactView ? html`
         <div class="selector-container">
           ${!this._config?.default_growspace ? html`
             <label for="device-select">Growspace:</label>
@@ -1693,6 +1734,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             </select>
           ` : html`<span class="selected-growspace">${selectedDevice?.name}</span>`}
         </div>
+        ` : ''}
 
         <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
           <div class="view-toggle">
