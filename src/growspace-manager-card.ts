@@ -1,7 +1,7 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
@@ -155,59 +155,51 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
 
       .light-status-chip.on {
-        background: linear-gradient(90deg, rgba(255, 235, 59, 0.8), rgba(253, 216, 53, 0.6));
-        color: #000;
-        box-shadow: 0 0 15px rgba(253, 216, 53, 0.4);
-        border: none;
+        color: var(--primary-light-color);
       }
 
       .light-status-chip.off {
-         background: rgba(0, 0, 0, 0.3);
          color: rgba(255, 255, 255, 0.7);
       }
 
       /* 24h Chart */
       .gs-chart-container {
          margin-top: 8px;
-      }
-
-      .gs-chart-label {
-         font-size: 0.85rem;
-         color: rgba(255, 255, 255, 0.7);
-         margin-bottom: 6px;
-      }
-
-      .gs-chart-bars {
-         display: flex;
-         gap: 4px;
-         height: 60px;
-         width: 100%;
-         align-items: flex-end;
-      }
-
-      .chart-bar {
-         flex: 1;
-         height: 100%;
-         background: rgba(255, 255, 255, 0.05);
-         border-radius: 4px;
-         border: none;
+         height: 150px;
          position: relative;
-         overflow: hidden;
+         width: 100%;
       }
 
-      .chart-bar.active {
-         background: rgba(255, 235, 59, 0.7); /* Yellowish */
-         box-shadow: 0 0 8px rgba(255, 235, 59, 0.3);
+      .gs-chart-svg {
+        width: 100%;
+        height: 100%;
+        filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.2));
+      }
+
+      .chart-line {
+        fill: none;
+        stroke: var(--primary-light-color, #FFEB3B);
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .chart-gradient-fill {
+        fill: url(#gradient);
+        opacity: 0.2;
       }
 
       /* Time markers for chart */
       .chart-markers {
          display: flex;
          justify-content: space-between;
-         margin-top: 8px;
+         margin-top: -24px;
+         padding: 0 10px;
          font-size: 0.75rem;
-         color: rgba(255, 255, 255, 0.5);
+         color: rgba(255, 255, 255, 0.3);
          font-weight: 500;
+         position: relative;
+         z-index: 2;
       }
 
       /* Light Cycle Card Nested */
@@ -229,23 +221,125 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
 
       .gs-light-title {
-         font-size: 1.1rem;
-         font-weight: 500;
+         font-size: 1.5rem;
+         font-weight: 600;
          display: flex;
          align-items: center;
-         gap: 10px;
-         color: rgba(255, 255, 255, 0.9);
+         gap: 12px;
+         color: #fff;
       }
 
       .gs-icon-box {
-        background: rgba(255, 235, 59, 0.15);
-        border-radius: 12px;
-        width: 40px;
-        height: 40px;
+        background: rgba(255, 235, 59, 0.05);
+        border: 1px solid rgba(255, 235, 59, 0.2);
+        border-radius: 14px;
+        width: 48px;
+        height: 48px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: rgba(255, 235, 59, 0.9);
+        color: var(--primary-light-color);
+      }
+
+      .gs-light-subtitle {
+        font-size: 0.75rem;
+        opacity: 0.5;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-top: 4px;
+      }
+
+      .light-status-text {
+         font-size: 1.5rem;
+         font-weight: 700;
+         display: flex;
+         align-items: center;
+         gap: 8px;
+      }
+
+      .status-dot {
+         width: 8px;
+         height: 8px;
+         border-radius: 50%;
+         background: currentColor;
+         box-shadow: 0 0 8px currentColor;
+      }
+
+      .target-cycle-text {
+         font-size: 0.9rem;
+         opacity: 0.5;
+         text-align: right;
+         margin-top: 4px;
+      }
+
+      /* Bottom Action Cards */
+      .gs-action-cards {
+        display: flex;
+        gap: 16px;
+        margin-top: 8px;
+      }
+
+      .action-card {
+         flex: 1;
+         background: rgba(255, 255, 255, 0.05);
+         border: 1px solid rgba(255, 255, 255, 0.05);
+         border-radius: 16px;
+         padding: 16px;
+         display: flex;
+         align-items: center;
+         justify-content: space-between;
+         cursor: default; /* Or pointer if clickable */
+      }
+
+      .ac-content {
+         display: flex;
+         align-items: center;
+         gap: 12px;
+      }
+
+      .ac-icon {
+         width: 40px;
+         height: 40px;
+         border-radius: 50%;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+      }
+
+      .ac-icon.on {
+         background: rgba(255, 235, 59, 0.1);
+         color: var(--primary-light-color);
+      }
+
+      .ac-icon.off {
+         background: rgba(120, 144, 156, 0.1);
+         color: #90a4ae;
+      }
+
+      .ac-text h4 {
+         margin: 0;
+         font-size: 0.7rem;
+         text-transform: uppercase;
+         opacity: 0.5;
+         letter-spacing: 0.5px;
+      }
+
+      .ac-text .time {
+         font-size: 1.2rem;
+         font-weight: 600;
+         color: #fff;
+      }
+
+      .ac-text .time span {
+         font-size: 0.9rem;
+         font-weight: 400;
+         opacity: 0.7;
+         margin-left: 2px;
+      }
+
+      .ac-arrow {
+         opacity: 0.3;
       }
 
       /* Header Dropdown */
@@ -1634,67 +1728,97 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     // Light Status Logic with History
     const isLightsOn = getValue(envEntity, 'is_lights_on') === true;
-    let durationDisplay = "0h 0m";
-    let hourlyStatus: boolean[] = new Array(24).fill(false);
+    let svgPath = "";
+    let lastOnTime = "--:--";
+    let lastOffTime = "--:--";
+    let lastOnAmPm = "";
+    let lastOffAmPm = "";
+
+    // Target Cycle Logic
+    const hasFlower = device.plants.some(p => p.attributes.stage === 'flower');
+    const targetCycle = hasFlower ? '12/12 Cycle' : '18/6 Cycle';
 
     if (this._historyData && this._historyData.length > 0) {
-        // 1. Calculate duration
-        // Sort history Newest -> Oldest
-        const sortedHistory = [...this._historyData].sort((a, b) => new Date(b.last_changed).getTime() - new Date(a.last_changed).getTime());
+        // Sort history Oldest -> Newest for graph building
+        const sortedHistory = [...this._historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
 
-        const currentState = isLightsOn;
+        // Filter for light state changes
+        const now = new Date();
+        const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-        // Find the index of the first entry that does NOT match the current state
-        // The entry *before* that (index - 1) is the transition TO the current state.
-        const mismatchIndex = sortedHistory.findIndex(h => {
-            const histVal = getValue(h, 'is_lights_on');
-            const histLightsOn = histVal === true;
-            return histLightsOn !== currentState;
+        // Build path
+        const width = 1000;
+        const height = 100;
+        const points: [number, number][] = [];
+
+        // Initial state (before history window) - infer from first entry or assume off?
+        // Ideally look at the state just before the window, but here we take the first point in window
+        // If first point is ON, it means it turned ON at that time? No, it means state changed.
+        // DataService uses history/period, so it returns state changes.
+
+        // We need the state at T-24h.
+        // For simplicity, we'll assume the state at T-24h is the inverse of the first change found,
+        // or if no changes, the current state (constant).
+
+        let currentState = sortedHistory.length > 0 ? (getValue(sortedHistory[0], 'is_lights_on') === true ? false : true) : isLightsOn;
+        // Actually, a better heuristic: if the first history entry says "ON", it means it turned ON then. So before that it was OFF.
+
+        // If history is sparse, we might need to be careful.
+        // Let's scan through and record transitions.
+
+        const transitions: {time: number, state: boolean}[] = [];
+
+        sortedHistory.forEach(h => {
+           const t = new Date(h.last_changed).getTime();
+           const s = getValue(h, 'is_lights_on') === true;
+           if (t >= twentyFourHoursAgo.getTime()) {
+              transitions.push({time: t, state: s});
+           }
         });
 
-        let startTime: Date | null = null;
-
-        if (mismatchIndex === 0) {
-             // The newest history entry doesn't match current state (lag?), assume just changed
-             startTime = new Date();
-        } else if (mismatchIndex === -1) {
-             // No mismatch found, state has been consistent for the entire history duration
-             if (sortedHistory.length > 0) {
-                 startTime = new Date(sortedHistory[sortedHistory.length - 1].last_changed);
-                 durationDisplay = "> 24h"; // Or calculate from that time
-             }
+        // Determine initial state at -24h
+        if (transitions.length > 0) {
+           // If the first transition in the window is TO 'true', then before that it was 'false'
+           currentState = !transitions[0].state;
         } else {
-             // Found a mismatch at mismatchIndex.
-             // The entry at mismatchIndex - 1 is the start of the current block.
-             const startEntry = sortedHistory[mismatchIndex - 1];
-             startTime = new Date(startEntry.last_changed);
+           currentState = isLightsOn; // No changes in 24h
         }
 
-        if (startTime) {
-            const diffMs = new Date().getTime() - startTime.getTime();
-            const diffMins = Math.floor(diffMs / 60000);
-            if (durationDisplay !== "> 24h") {
-                const h = Math.floor(diffMins / 60);
-                const m = diffMins % 60;
-                durationDisplay = `${h}h ${m}m`;
-            }
+        // Start point
+        points.push([0, currentState ? 0 : height]);
+
+        transitions.forEach(tr => {
+           const x = ((tr.time - twentyFourHoursAgo.getTime()) / (24 * 60 * 60 * 1000)) * width;
+           // Draw horizontal line from previous x to current x
+           points.push([x, currentState ? 0 : height]);
+           // Update state
+           currentState = tr.state;
+           // Vertical line is implicit in the next horizontal segment starting at same x but new y
+           points.push([x, currentState ? 0 : height]);
+        });
+
+        // Final point at 'now'
+        points.push([width, currentState ? 0 : height]);
+
+        svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+
+        // Calculate Last ON / OFF Times
+        // We need the *latest* transition to ON and the *latest* transition to OFF
+        // Scan history (Newest -> Oldest)
+        const reversedHistory = [...sortedHistory].reverse();
+
+        const lastOn = reversedHistory.find(h => getValue(h, 'is_lights_on') === true);
+        if (lastOn) {
+            const d = new Date(lastOn.last_changed);
+            lastOnTime = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).replace(/ [AP]M/, '');
+            lastOnAmPm = d.toLocaleTimeString([], {hour12: true}).slice(-2);
         }
 
-        // 2. Build hourly status for chart (last 24h)
-        const now = new Date();
-        for (let i = 0; i < 24; i++) {
-            const sampleTime = new Date(now.getTime() - (23 - i) * 60 * 60 * 1000);
-            // Find the latest history entry that is BEFORE sampleTime
-            const entry = sortedHistory.find(h => new Date(h.last_changed) <= sampleTime);
-
-            if (entry) {
-                hourlyStatus[i] = getValue(entry, 'is_lights_on') === true;
-            } else {
-                if (sortedHistory.length > 0) {
-                     const oldest = sortedHistory[sortedHistory.length - 1];
-                     hourlyStatus[i] = getValue(oldest, 'is_lights_on') === true;
-                }
-            }
+        const lastOff = reversedHistory.find(h => getValue(h, 'is_lights_on') === false);
+        if (lastOff) {
+            const d = new Date(lastOff.last_changed);
+            lastOffTime = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).replace(/ [AP]M/, '');
+            lastOffAmPm = d.toLocaleTimeString([], {hour12: true}).slice(-2);
         }
     }
 
@@ -1732,34 +1856,77 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             <div class="gs-light-header-row">
                 <div class="gs-light-title">
                     <div class="gs-icon-box">
-                       <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiWeatherSunny}"></path></svg>
+                       <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiWeatherSunny}"></path></svg>
                     </div>
                     <div>
-                       <div style="font-size: 1.1rem; font-weight: 600;">Light Cycle</div>
-                       <div style="font-size: 0.75rem; opacity: 0.7;">24H HISTORY</div>
+                       <div>Light Cycle</div>
+                       <div class="gs-light-subtitle">24H HISTORY</div>
                     </div>
                 </div>
 
                 ${envEntity ? html`
-                <div class="light-status-chip ${isLightsOn ? 'on' : 'off'}">
-                   <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                      <path d="${isLightsOn ? mdiLightbulbOn : mdiLightbulbOff}"></path>
-                   </svg>
-                   ${isLightsOn ? 'ON' : 'OFF'} • ${durationDisplay}
+                <div>
+                    <div class="light-status-chip ${isLightsOn ? 'on' : 'off'}">
+                       <div class="light-status-text">
+                           <div class="status-dot"></div>
+                           ${isLightsOn ? 'ON' : 'OFF'}
+                       </div>
+                    </div>
+                    <div class="target-cycle-text">Target: ${targetCycle}</div>
                 </div>
                 ` : ''}
             </div>
 
             <div class="gs-chart-container">
-                <div class="gs-chart-bars">
-                   ${hourlyStatus.map(isOn => html`
-                     <div class="chart-bar ${isOn ? 'active' : ''}"></div>
-                   `)}
-                </div>
+                <svg class="gs-chart-svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:var(--primary-light-color, #FFEB3B);stop-opacity:0.5" />
+                            <stop offset="100%" style="stop-color:var(--primary-light-color, #FFEB3B);stop-opacity:0" />
+                        </linearGradient>
+                    </defs>
+                    <path class="chart-line" d="${svgPath}" />
+                    <path class="chart-gradient-fill" d="${svgPath} V 100 H 0 Z" />
+                </svg>
                 <div class="chart-markers">
                    <span>-24H</span>
+                   <span>-18H</span>
                    <span>-12H</span>
+                   <span>-6H</span>
                    <span>NOW</span>
+                </div>
+            </div>
+
+            <!-- Bottom Cards -->
+            <div class="gs-action-cards">
+                <div class="action-card">
+                    <div class="ac-content">
+                        <div class="ac-icon on">
+                            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiWeatherSunny}"></path></svg>
+                        </div>
+                        <div class="ac-text">
+                            <h4>LIGHT ON</h4>
+                            <div class="time">${lastOnTime} <span>${lastOnAmPm}</span></div>
+                        </div>
+                    </div>
+                    <div class="ac-arrow">
+                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                    </div>
+                </div>
+
+                <div class="action-card">
+                    <div class="ac-content">
+                        <div class="ac-icon off">
+                            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiWeatherNight}"></path></svg>
+                        </div>
+                        <div class="ac-text">
+                            <h4>LIGHT OFF</h4>
+                            <div class="time">${lastOffTime} <span>${lastOffAmPm}</span></div>
+                        </div>
+                    </div>
+                    <div class="ac-arrow">
+                         <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                    </div>
                 </div>
             </div>
          </div>

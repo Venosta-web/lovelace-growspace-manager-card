@@ -61,5 +61,6 @@ export const variables: CSSResult = css`
     --strain-border-color: #4caf50;
     --strain-input-bg: #2a2a2a;
     --strain-input-border: #3a3a3a;
+    --primary-light-color: #FFEB3B;
   }
 `;
