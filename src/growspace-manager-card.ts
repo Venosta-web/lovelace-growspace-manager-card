@@ -294,37 +294,51 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         display: grid;
         gap: var(--spacing-md);
         margin-top: var(--spacing-lg);
-        padding: var(--spacing-sm);
+        padding: 20px;
+
+        /* Glass effect */
+        background: rgba(30, 30, 35, 0.4);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
       }
 
       .grid.compact {
         gap: var(--spacing-sm);
+        padding: var(--spacing-md);
       }
 
       .plant {
-        border: 2px solid transparent;
-        border-radius: var(--border-radius-md);
-        text-align: center;
-        padding: var(--spacing-md);
-        background: var(--growspace-card-bg);
-        box-shadow: var(--card-shadow);
-        transition: var(--transition-medium);
-        min-height: 100px;
         display: grid; 
-          grid-template-columns: 1fr; 
-          grid-template-rows: 2fr 1fr 1fr 2fr; 
-          gap: 0px 0px; 
-          grid-template-areas: 
-            "icon"
-            "name"
-            "stage"
-            "days"; 
+        grid-template-columns: 1fr;
+        grid-template-rows: 2fr 1fr 0.8fr 1fr 2fr;
+        gap: 0px 0px;
+        grid-template-areas:
+          "icon"
+          "name"
+          "phenotype"
+          "stage"
+          "days";
         align-items: center;
         justify-items: center;
         cursor: pointer;
         aspect-ratio: 1;
         position: relative;
         overflow: hidden;
+        min-height: 100px;
+        text-align: center;
+        padding: var(--spacing-md);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        /* New Glass Style (Lighter than header) */
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
 
       .plant::before {
@@ -334,26 +348,29 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         left: 0;
         right: 0;
         height: 4px;
-        background: var(--plant-border-color-default);
+        background: var(--stage-color, var(--plant-border-color-default));
+        opacity: 0.8;
         transition: var(--transition-medium);
       }
 
       .plant:hover {
         transform: translateY(-4px);
-        box-shadow: var(--card-shadow-hover);
-        border-color: var(--plant-border-color-default);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 255, 255, 0.2);
       }
 
       .plant.empty {
-        background: var(--growspace-empty-bg);
-        border: 2px dashed var(--divider-color);
-        opacity: 0.7;
+        background: rgba(0, 0, 0, 0.2);
+        border: 2px dashed rgba(255, 255, 255, 0.1);
+        backdrop-filter: none;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
       }
 
       .plant.empty:hover {
-        opacity: 1;
-        background: var(--growspace-empty-bg-hover);
+        background: rgba(255, 255, 255, 0.05);
         border-color: var(--plant-border-color-default);
+        opacity: 1;
       }
 
       .plant.dragging {
@@ -377,6 +394,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
 
       .plant-header {
+        grid-area: icon;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -396,6 +414,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
 
       .plant-name {
+        grid-area: name;
         font-weight: var(--font-weight-bold);
         color: var(--growspace-card-text);
         font-size: var(--font-size-lg);
@@ -406,6 +425,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
 
       .plant-stage {
+        grid-area: stage;
         color: var(--stage-color, var(--secondary-text-color));
         font-size: var(--font-size-lg);
         font-weight: var(--font-weight-medium);
@@ -414,6 +434,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
 
       .plant-phenotype {
+        grid-area: phenotype;
         color: var(--secondary-text-color);
         font-size: var(--font-size-md);
         margin-bottom: var(--spacing-xs);
@@ -421,6 +442,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
 
       .plant-days {
+        grid-area: days;
         display: flex;
         justify-content: space-around;
         align-items: center;
@@ -440,6 +462,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       .compact .plant {
         min-height: 80px;
         padding: var(--spacing-sm);
+        border-radius: 12px;
       }
 
       .compact .plant-name {
