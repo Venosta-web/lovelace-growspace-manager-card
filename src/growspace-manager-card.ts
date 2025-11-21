@@ -1,7 +1,7 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
@@ -380,72 +380,179 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         box-shadow: 0 0 0 3px rgba(var(--rgb-primary-color), 0.1);
       }
 
-      /* Strain Library Styles */
-      .strain-library-header {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
+      /* Strain Library Styles - Glassmorphism & Table */
+      .strain-search-container {
+        position: relative;
         margin-bottom: var(--spacing-md);
       }
-
-      .strain-input-group {
-        display: flex;
-        gap: var(--spacing-sm);
-        align-items: center;
-      }
-
-      .strain-list {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-sm);
-        max-height: 500px;
-        overflow-y: auto;
-        margin-top: var(--spacing-md);
-        padding-right: var(--spacing-md)
-      }
-
-      .strain-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: var(--spacing-sm) var(--spacing-md);
-        background: rgba(var(--rgb-primary-color), 0.05);
-        border: 1px solid rgba(var(--rgb-primary-color), 0.1);
-        border-radius: var(--border-radius);
+      .search-input {
+        width: 100%;
+        padding: var(--spacing-sm) var(--spacing-lg);
+        padding-left: 40px;
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--primary-text-color);
+        backdrop-filter: blur(10px);
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
         transition: var(--transition);
       }
-
-      .strain-item:hover {
-        background: rgba(var(--rgb-primary-color), 0.1);
+      .search-input:focus {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--primary-color);
+        outline: none;
+      }
+      .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        color: var(--secondary-text-color);
+        pointer-events: none;
       }
 
-      .strain-name {
-        font-weight: 500;
-        flex: 1;
+      .strain-table-container {
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        overflow: hidden;
+        max-height: 60vh;
+        overflow-y: auto;
       }
 
-      .remove-button {
-        background: none;
-        border: none;
-        padding: var(--spacing-xs);
+      .strain-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .strain-row {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .strain-row:last-child {
+        border-bottom: none;
+      }
+      .strain-row:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .strain-cell {
+        padding: var(--spacing-md);
+        display: flex;
+        align-items: center;
+      }
+      .strain-cell.expand-icon {
+        width: 40px;
+        justify-content: center;
+        color: var(--secondary-text-color);
+      }
+      .strain-cell.content {
+        flex: 1;
+        font-weight: 500;
+        font-size: 1.1rem;
+      }
+      .strain-cell.actions {
+        justify-content: flex-end;
+        gap: var(--spacing-sm);
+      }
+
+      .pheno-row {
+        background: rgba(0, 0, 0, 0.2);
+      }
+      .pheno-list {
+        padding: var(--spacing-sm) var(--spacing-lg);
+      }
+      .pheno-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm) 0;
+        border-bottom: 1px dashed rgba(255,255,255,0.1);
+        color: var(--secondary-text-color);
+      }
+      .pheno-item:last-child {
+        border-bottom: none;
+      }
+
+      .fab-button {
+        position: absolute;
+        bottom: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--primary-gradient);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--error-color);
-        border-radius: 50%;
-        transition: var(--transition);
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        z-index: 10;
+      }
+      .fab-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+      }
+      .fab-button:active {
+        transform: scale(0.95);
       }
 
-      .remove-button:hover {
-        background: rgba(var(--rgb-error-color), 0.1);
-        transform: scale(1.1);
+      /* Add Form Overlay */
+      .add-form-overlay {
+        position: absolute;
+        bottom: 90px;
+        right: 24px;
+        width: 300px;
+        background: var(--card-background-color);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: var(--spacing-md);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        backdrop-filter: blur(12px);
+        z-index: 10;
+        animation: slideUp 0.3s ease-out;
+      }
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
       }
 
-      .remove-icon {
-        width: 16px;
-        height: 16px;
-        fill: currentColor;
+      .badge {
+        background: rgba(255,255,255,0.1);
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        margin-left: 8px;
+        color: var(--secondary-text-color);
+      }
+
+      /* Clear Confirmation */
+      .confirmation-overlay {
+        position: absolute;
+        bottom: 24px;
+        left: 24px;
+        background: var(--error-bg);
+        border: 1px solid var(--error-border);
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        animation: fadeIn 0.2s ease-out;
+      }
+
+      .rotate-icon {
+         transition: transform 0.3s ease;
+      }
+      .rotate-icon.expanded {
+         transform: rotate(90deg);
       }
 
       @media (max-width: 600px) {
@@ -461,6 +568,23 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         }
         .plant {
           min-height: 80px;
+        }
+        /* Mobile specific dialog adjustments */
+        ha-dialog.strain-dialog .mdc-dialog__surface {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+        }
+        .fab-button {
+            bottom: 16px;
+            right: 16px;
+        }
+        .add-form-overlay {
+            bottom: 80px;
+            right: 16px;
+            left: 16px;
+            width: auto;
         }
       }
 
@@ -719,7 +843,58 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   // Strain library methods
   private _openStrainLibraryDialog() {
     const currentStrains = this.dataService.getStrainLibrary();
-    this._strainLibraryDialog = { open: true, newStrain: '', newPhenotype: '', strains: currentStrains };
+    this._strainLibraryDialog = {
+        open: true,
+        newStrain: '',
+        newPhenotype: '',
+        strains: currentStrains,
+        searchQuery: '',
+        isAddFormOpen: false,
+        expandedStrains: [],
+        confirmClearAll: false
+    };
+  }
+
+  private _toggleStrainExpansion(strain: string) {
+      if (!this._strainLibraryDialog) return;
+
+      const currentExpanded = this._strainLibraryDialog.expandedStrains || [];
+      const isExpanded = currentExpanded.includes(strain);
+
+      if (isExpanded) {
+          this._strainLibraryDialog.expandedStrains = currentExpanded.filter(s => s !== strain);
+      } else {
+          this._strainLibraryDialog.expandedStrains = [...currentExpanded, strain];
+      }
+      this.requestUpdate();
+  }
+
+  private _setStrainSearchQuery(query: string) {
+      if (this._strainLibraryDialog) {
+          this._strainLibraryDialog.searchQuery = query;
+          this.requestUpdate();
+      }
+  }
+
+  private _toggleAddStrainForm() {
+      if (this._strainLibraryDialog) {
+          this._strainLibraryDialog.isAddFormOpen = !this._strainLibraryDialog.isAddFormOpen;
+          this.requestUpdate();
+      }
+  }
+
+  private _promptClearAll() {
+      if (this._strainLibraryDialog) {
+          this._strainLibraryDialog.confirmClearAll = true;
+          this.requestUpdate();
+      }
+  }
+
+  private _cancelClearAll() {
+      if (this._strainLibraryDialog) {
+          this._strainLibraryDialog.confirmClearAll = false;
+          this.requestUpdate();
+      }
   }
 
   private async _addStrain() {
@@ -743,6 +918,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
       this._strainLibraryDialog.newStrain = '';
       this._strainLibraryDialog.newPhenotype = '';
+      this._strainLibraryDialog.isAddFormOpen = false; // Close form after adding
       this.requestUpdate();
     } catch (err) {
       console.error("Error adding strain:", err);
@@ -769,7 +945,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   private async _clearStrains() {
     await this.dataService.clearStrainLibrary();
+    if (this._strainLibraryDialog) {
+        this._strainLibraryDialog.strains = [];
+        this._strainLibraryDialog.confirmClearAll = false;
+        this.requestUpdate();
+    }
   }
+
   private updateGrid(): void {
     // Refresh data from Home Assistant
     this.dataService = new DataService(this.hass);
@@ -1165,6 +1347,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           if (this._strainLibraryDialog) this._strainLibraryDialog.newPhenotype = value;
         },
         onEnterKey: (e) => { if (e.key === 'Enter') this._addStrain(); },
+        onToggleExpand: (strain) => this._toggleStrainExpansion(strain),
+        onSearch: (query) => this._setStrainSearchQuery(query),
+        onToggleAddForm: () => this._toggleAddStrainForm(),
+        onPromptClear: () => this._promptClearAll(),
+        onCancelClear: () => this._cancelClearAll()
       }
     )}
     `;

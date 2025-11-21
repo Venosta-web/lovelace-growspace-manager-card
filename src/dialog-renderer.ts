@@ -1,5 +1,5 @@
 import { html, TemplateResult, nothing } from 'lit';
-import { mdiPlus, mdiSprout, mdiFlower, mdiClose, mdiCalendarClock, mdiDna, mdiHairDryer, mdiCannabis } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiClose, mdiCalendarClock, mdiDna, mdiHairDryer, mdiCannabis, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiCheck } from '@mdi/js';
 import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry } from './types';
 
 export class DialogRenderer {
@@ -266,84 +266,179 @@ export class DialogRenderer {
       onNewStrainChange: (value: string) => void;
       onNewPhenotypeChange: (value: string) => void;
       onEnterKey: (e: KeyboardEvent) => void;
+      onToggleExpand: (strain: string) => void;
+      onSearch: (query: string) => void;
+      onToggleAddForm: () => void;
+      onPromptClear: () => void;
+      onCancelClear: () => void;
     }
   ): TemplateResult {
     if (!dialog?.open) return html``;
+
+    // Group strains by name
+    const groupedStrains: Record<string, StrainEntry[]> = {};
+    const query = (dialog.searchQuery || '').toLowerCase();
+
+    dialog.strains.forEach(entry => {
+      const strainName = entry.strain;
+      const matchQuery = !query ||
+                         strainName.toLowerCase().includes(query) ||
+                         (entry.phenotype && entry.phenotype.toLowerCase().includes(query));
+
+      if (matchQuery) {
+          if (!groupedStrains[strainName]) {
+            groupedStrains[strainName] = [];
+          }
+          groupedStrains[strainName].push(entry);
+      }
+    });
+
+    const sortedStrainNames = Object.keys(groupedStrains).sort();
 
     return html`
       <ha-dialog
         open
         @closed=${callbacks.onClose}
         heading="Strain Library"
+        class="strain-dialog"
         .scrimClickAction=${''}
         .escapeKeyAction=${''}
       >
-        <div class="dialog-content">
-          <div class="add-strain-container">
-            <div class="form-group">
-              <label>New Strain Name</label>
-              <input 
+        <div class="dialog-content" style="position: relative; min-height: 400px;">
+
+          <!-- Search Bar -->
+          <div class="strain-search-container">
+            <svg class="search-icon" viewBox="0 0 24 24">
+                <path d="${mdiMagnify}"></path>
+            </svg>
+            <input
                 type="text" 
-                class="form-input" 
-                placeholder="Strain Name"
-                .value=${dialog.newStrain}
-                @input=${(e: Event) => callbacks.onNewStrainChange((e.target as HTMLInputElement).value)}
-                @keypress=${callbacks.onEnterKey}
-              />
-            </div>
-            <div class="form-group">
-              <label>Phenotype (Optional)</label>
-              <input 
-                type="text" 
-                class="form-input" 
-                placeholder="Phenotype (e.g. #1)"
-                .value=${dialog.newPhenotype || ''}
-                @input=${(e: Event) => callbacks.onNewPhenotypeChange((e.target as HTMLInputElement).value)}
-                @keypress=${callbacks.onEnterKey}
-              />
-            </div>
-            <button class="action-button primary" @click=${callbacks.onAddStrain} ?disabled=${!dialog.newStrain}>
-              <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiPlus}"></path>
-              </svg>
-              Add
-            </button>
+                class="search-input"
+                placeholder="Search strains & phenotypes..."
+                .value=${dialog.searchQuery || ''}
+                @input=${(e: Event) => callbacks.onSearch((e.target as HTMLInputElement).value)}
+            />
           </div>
 
-          <div class="strain-list-header">
-            <strong>Library Strains (${dialog.strains.length})</strong>
+          <!-- Strain Table -->
+          <div class="strain-table-container">
+            ${sortedStrainNames.length > 0 ? html`
+              <table class="strain-table">
+                ${sortedStrainNames.map(strainName => {
+                  const isExpanded = dialog.expandedStrains?.includes(strainName);
+                  const entries = groupedStrains[strainName];
+                  const phenotypeCount = entries.filter(e => e.phenotype).length;
+
+                  return html`
+                    <tr class="strain-row" @click=${() => callbacks.onToggleExpand(strainName)}>
+                      <td class="strain-cell expand-icon">
+                        <svg style="width:24px;height:24px;fill:currentColor;"
+                             class="rotate-icon ${isExpanded ? 'expanded' : ''}"
+                             viewBox="0 0 24 24">
+                          <path d="${mdiChevronRight}"></path>
+                        </svg>
+                      </td>
+                      <td class="strain-cell content">
+                        ${strainName}
+                        <span class="badge">${entries.length} Var.</span>
+                      </td>
+                    </tr>
+                    ${isExpanded ? html`
+                      <tr class="pheno-row">
+                        <td colspan="3" class="pheno-list">
+                           ${entries.map(entry => html`
+                              <div class="pheno-item">
+                                <span>${entry.phenotype || 'Default (No Phenotype)'}</span>
+                                <button
+                                  class="remove-button"
+                                  title="Remove ${entry.strain} ${entry.phenotype}"
+                                  @click=${(e: Event) => {
+                                    e.stopPropagation();
+                                    callbacks.onRemoveStrain(entry.key);
+                                  }}
+                                >
+                                  <svg class="remove-icon" viewBox="0 0 24 24">
+                                    <path d="${mdiClose}"></path>
+                                  </svg>
+                                </button>
+                              </div>
+                           `)}
+                        </td>
+                      </tr>
+                    ` : nothing}
+                  `;
+                })}
+              </table>
+            ` : html`
+              <div class="no-data" style="background: transparent;">
+                ${dialog.strains.length === 0
+                  ? "Library is empty. Add your first strain!"
+                  : "No matches found."}
+              </div>
+            `}
           </div>
 
-          ${dialog.strains.length > 0 ? html`
-            <div class="strain-list">
-              ${dialog.strains.map(entry => html`
-                <div class="strain-item">
-                  <span class="strain-name">
-                    ${entry.strain}
-                    ${entry.phenotype ? html`<span style="color: var(--secondary-text-color); font-size: 0.9em;"> (${entry.phenotype})</span>` : ''}
-                  </span>
-                  <button 
-                    class="remove-button" 
-                    title="Remove ${entry.strain}"
-                    @click=${() => callbacks.onRemoveStrain(entry.key)}
-                  >
-                    <svg class="remove-icon" viewBox="0 0 24 24">
-                      <path d="${mdiClose}"></path>
-                    </svg>
-                  </button>
+          <!-- FAB for Adding Strains -->
+          <button class="fab-button" @click=${callbacks.onToggleAddForm}>
+             <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${dialog.isAddFormOpen ? mdiClose : mdiPlus}"></path>
+             </svg>
+          </button>
+
+          <!-- Add Strain Form Overlay -->
+          ${dialog.isAddFormOpen ? html`
+            <div class="add-form-overlay">
+                <h3 style="margin-top:0; margin-bottom: var(--spacing-md);">Add New Strain</h3>
+                <div class="form-group">
+                  <label>Strain Name</label>
+                  <input
+                    type="text"
+                    class="form-input"
+                    placeholder="Strain Name"
+                    .value=${dialog.newStrain}
+                    @input=${(e: Event) => callbacks.onNewStrainChange((e.target as HTMLInputElement).value)}
+                    @keypress=${callbacks.onEnterKey}
+                  />
                 </div>
-              `)}
+                <div class="form-group">
+                  <label>Phenotype (Optional)</label>
+                  <input
+                    type="text"
+                    class="form-input"
+                    placeholder="Phenotype (e.g. #1)"
+                    .value=${dialog.newPhenotype || ''}
+                    @input=${(e: Event) => callbacks.onNewPhenotypeChange((e.target as HTMLInputElement).value)}
+                    @keypress=${callbacks.onEnterKey}
+                  />
+                </div>
+                <div style="display:flex; justify-content: flex-end; margin-top: var(--spacing-md);">
+                    <button class="action-button primary" @click=${callbacks.onAddStrain} ?disabled=${!dialog.newStrain}>
+                      Add
+                    </button>
+                </div>
             </div>
-          ` : html`
-            <div class="no-data">
-              No strains in library. Add some strains to get started!
-            </div>
-          `}
+          ` : nothing}
+
+          <!-- Clear All Confirmation Overlay -->
+          ${dialog.confirmClearAll ? html`
+             <div class="confirmation-overlay">
+                 <span style="color: white;">Delete all strains?</span>
+                 <button class="action-button danger" @click=${callbacks.onClearAll}>Yes</button>
+                 <button class="action-button" @click=${callbacks.onCancelClear}>No</button>
+             </div>
+          ` : nothing}
+
         </div>
 
-        <button class="action-button danger" slot="secondaryAction" @click=${callbacks.onClearAll}>
-          Clear All
-        </button>
+        <!-- Footer Actions -->
+        <div slot="secondaryAction">
+           ${!dialog.confirmClearAll ? html`
+              <button class="action-button danger" @click=${callbacks.onPromptClear} ?disabled=${dialog.strains.length === 0}>
+                Clear All
+              </button>
+           ` : nothing}
+        </div>
+
         <button class="action-button" slot="primaryAction" @click=${callbacks.onClose}>
           Done
         </button>
