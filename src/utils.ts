@@ -232,12 +232,4 @@ export class PlantUtils {
 
     return { stage: bestStage, days: maxDays };
   }
-
-  static getTargetCycle(plants: PlantEntity[]): string {
-    const hasFlower = plants.some(p => {
-        const stage = this.normalizeStage(p.state || this.getPlantStage(p));
-        return stage === 'flower';
-    });
-    return hasFlower ? "12/12" : "18/6";
-  }
 }
