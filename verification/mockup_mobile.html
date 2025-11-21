@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growspace Manager Mobile Mockup</title>
+    <style>
+        /* Variables */
+        :root {
+            --growspace-card-text: #e1e1e1;
+            --growspace-card-bg: #1c1c1c;
+            --spacing-lg: 16px;
+            --border-radius-lg: 12px;
+            --card-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            --card-shadow-hover: 0 4px 8px rgba(0,0,0,0.6);
+            --transition-medium: 0.3s;
+            --spacing-md: 12px;
+            --primary-light-color: #FFEB3B;
+            --divider-color: #444;
+            --spacing-sm: 8px;
+            --border-radius-md: 8px;
+            --font-size-sm: 0.9rem;
+            --primary-color: #03a9f4;
+            --rgb-primary-color: 3, 169, 244;
+            --plant-border-color-default: #555;
+            --spacing-xs: 4px;
+            --secondary-text-color: #aaa;
+            --font-size-xs: 0.8rem;
+            --font-weight-bold: 700;
+            --font-size-lg: 1.2rem;
+            --font-weight-medium: 500;
+            --font-size-md: 1rem;
+            --growspace-empty-bg: #222;
+            --error-color: #f44336;
+            --error-bg: #3c1f1f;
+            --error-border: #b71c1c;
+        }
+
+        body {
+            background-color: #111;
+            color: var(--growspace-card-text);
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 10px;
+        }
+
+        /* Copied CSS from growspace-manager-card.ts */
+      :host {
+        display: block;
+        font-family: 'Roboto', sans-serif;
+        color: var(--growspace-card-text);
+      }
+
+      ha-card {
+        padding: var(--spacing-lg);
+        border-radius: var(--border-radius-lg);
+        background: var(--growspace-card-bg);
+        box-shadow: var(--card-shadow);
+        transition: var(--transition-medium);
+      }
+
+      ha-card:hover {
+        box-shadow: var(--card-shadow-hover);
+      }
+
+      /* Growspace Header Styles - Glassmorphism & Gradient */
+      .growspace-header-card {
+        /* Fallback */
+        background: rgba(30, 30, 35, 0.6);
+        /* Gradient approximating the screenshot */
+        background-image: linear-gradient(135deg, rgba(50, 50, 60, 0.8) 0%, rgba(40, 30, 60, 0.8) 100%);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        padding: 24px;
+        margin-bottom: var(--spacing-lg);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      }
+
+      .gs-header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: var(--spacing-md);
+      }
+
+      .gs-title-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .gs-title {
+        font-size: 2rem;
+        font-weight: 500;
+        margin: 0;
+        letter-spacing: -0.5px;
+      }
+
+      .gs-stage-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.15);
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #fff;
+        width: fit-content;
+      }
+
+      /* Chips Container */
+      .gs-stats-chips {
+         display: flex;
+         flex-wrap: wrap;
+         gap: 8px;
+         justify-content: flex-end;
+      }
+
+      .stat-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+        padding: 6px 14px;
+        font-size: 0.9rem;
+        color: #eee;
+        backdrop-filter: blur(4px);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .stat-chip:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .stat-chip.active {
+        background: rgba(255, 255, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.5);
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+      }
+
+      .stat-chip svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+        opacity: 0.9;
+      }
+
+      .light-status-chip {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 6px 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .light-status-chip.on {
+        color: var(--primary-light-color);
+      }
+
+      .light-status-chip.off {
+         color: rgba(255, 255, 255, 0.7);
+      }
+
+      /* 24h Chart */
+      .gs-chart-container {
+         margin-top: 8px;
+         height: 150px;
+         position: relative;
+         width: 100%;
+      }
+
+      .gs-chart-svg {
+        width: 100%;
+        height: 100%;
+        filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.2));
+      }
+
+      .chart-line {
+        fill: none;
+        stroke: var(--primary-light-color, #FFEB3B);
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .chart-gradient-fill {
+        fill: url(#gradient);
+        opacity: 0.2;
+      }
+
+      /* Time markers for chart */
+      .chart-markers {
+         display: flex;
+         justify-content: space-between;
+         margin-top: -24px;
+         padding: 0 10px;
+         font-size: 0.75rem;
+         color: rgba(255, 255, 255, 0.3);
+         font-weight: 500;
+         position: relative;
+         z-index: 2;
+      }
+
+      /* Light Cycle Card Nested */
+      .gs-light-cycle-card {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition: all 0.3s ease;
+      }
+
+      .gs-light-cycle-card.collapsed {
+        padding: 12px 20px;
+        gap: 0;
+      }
+
+      .gs-light-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+        cursor: pointer;
+      }
+
+      .gs-light-cycle-card.collapsed .gs-light-header-row {
+        margin-bottom: 0;
+      }
+
+      .gs-light-title {
+         font-size: 1.5rem;
+         font-weight: 600;
+         display: flex;
+         align-items: center;
+         gap: 12px;
+         color: #fff;
+      }
+
+      .gs-icon-box {
+        background: rgba(255, 235, 59, 0.05);
+        border: 1px solid rgba(255, 235, 59, 0.2);
+        border-radius: 14px;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary-light-color);
+      }
+
+      .gs-light-subtitle {
+        font-size: 0.75rem;
+        opacity: 0.5;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-top: 4px;
+      }
+
+      .light-status-text {
+         font-size: 1.5rem;
+         font-weight: 700;
+         display: flex;
+         align-items: center;
+         gap: 8px;
+      }
+
+      .status-dot {
+         width: 8px;
+         height: 8px;
+         border-radius: 50%;
+         background: currentColor;
+         box-shadow: 0 0 8px currentColor;
+      }
+
+      .target-cycle-text {
+         font-size: 0.9rem;
+         opacity: 0.5;
+         text-align: right;
+         margin-top: 4px;
+      }
+
+      /* Bottom Action Cards */
+      .gs-action-cards {
+        display: flex;
+        gap: 16px;
+        margin-top: 8px;
+      }
+
+      .action-card {
+         flex: 1;
+         background: rgba(255, 255, 255, 0.05);
+         border: 1px solid rgba(255, 255, 255, 0.05);
+         border-radius: 16px;
+         padding: 16px;
+         display: flex;
+         align-items: center;
+         justify-content: space-between;
+         cursor: default; /* Or pointer if clickable */
+      }
+
+      .ac-content {
+         display: flex;
+         align-items: center;
+         gap: 12px;
+      }
+
+      .ac-icon {
+         width: 40px;
+         height: 40px;
+         border-radius: 50%;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+      }
+
+      .ac-icon.on {
+         background: rgba(255, 235, 59, 0.1);
+         color: var(--primary-light-color);
+      }
+
+      .ac-icon.off {
+         background: rgba(120, 144, 156, 0.1);
+         color: #90a4ae;
+      }
+
+      .ac-text h4 {
+         margin: 0;
+         font-size: 0.7rem;
+         text-transform: uppercase;
+         opacity: 0.5;
+         letter-spacing: 0.5px;
+      }
+
+      .ac-text .time {
+         font-size: 1.2rem;
+         font-weight: 600;
+         color: #fff;
+      }
+
+      .ac-text .time span {
+         font-size: 0.9rem;
+         font-weight: 400;
+         opacity: 0.7;
+         margin-left: 2px;
+      }
+
+      .ac-arrow {
+         opacity: 0.3;
+      }
+
+      /* Header Dropdown */
+      .growspace-select-header {
+        background: transparent;
+        color: #fff;
+        font-size: 2rem;
+        font-weight: 500;
+        font-family: inherit;
+        border: none;
+        padding: 0;
+        margin: 0;
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        width: auto;
+        max-width: 100%;
+        letter-spacing: -0.5px;
+        border-bottom: 1px dashed rgba(255,255,255,0.3);
+        transition: border-color 0.2s;
+      }
+      .growspace-select-header:hover {
+         border-bottom-color: rgba(255,255,255,0.8);
+      }
+      .growspace-select-header:focus {
+         outline: none;
+         border-bottom-color: var(--primary-color);
+      }
+      .growspace-select-header option {
+         background: var(--growspace-card-bg);
+         color: var(--growspace-card-text);
+         font-size: 1rem;
+         padding: 10px;
+      }
+
+      /* Existing styles... */
+      ha-card.wide-growspace .plant-name,
+      ha-card.wide-growspace .plant-stage,
+      ha-card.wide-growspace .plant-phenotype {
+        font-size: var(--font-size-sm);
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: var(--spacing-md);
+        padding: var(--spacing-sm) 0;
+        border-bottom: 2px solid var(--divider-color);
+      }
+
+      .header-title {
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-bold);
+        margin: 0;
+      }
+
+      .selector-container {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        flex: 1;
+        text-transform: capitalize;
+      }
+
+      .growspace-select {
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: 2px solid var(--divider-color);
+        border-radius: var(--border-radius-md);
+        background: var(--growspace-card-bg);
+        color: var(--growspace-card-text);
+        font-family: inherit;
+        font-size: var(--font-size-sm);
+        cursor: pointer;
+        min-width: 180px;
+        transition: var(--transition-fast);
+      }
+
+      .growspace-select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(var(--rgb-primary-color), 0.1);
+      }
+
+      .action-button {
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: none;
+        border-radius: var(--border-radius-md);
+        font-family: inherit;
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        background: var(--plant-border-color-default);
+        color: var(--growspace-card-text);
+        box-shadow: var(--card-shadow);
+        transition: var(--transition-fast);
+      }
+
+      .action-button:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--card-shadow-hover);
+      }
+
+      .view-toggle {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        font-size: var(--font-size-xs);
+        color: var(--secondary-text-color);
+      }
+
+      .grid {
+        display: grid;
+        gap: var(--spacing-md);
+        margin-top: var(--spacing-lg);
+        padding: 20px;
+
+        /* Glass effect */
+        background: rgba(30, 30, 35, 0.4);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      }
+
+      .grid.compact {
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md);
+      }
+
+      .plant {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-rows: 2fr 1fr 0.8fr 1fr 2fr;
+        gap: 0px 0px;
+        grid-template-areas:
+          "icon"
+          "name"
+          "phenotype"
+          "stage"
+          "days";
+        align-items: center;
+        justify-items: center;
+        cursor: pointer;
+        aspect-ratio: 1;
+        position: relative;
+        overflow: hidden;
+        min-height: 100px;
+        text-align: center;
+        padding: var(--spacing-md);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        /* New Glass Style (Lighter than header) */
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .plant::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--stage-color, var(--plant-border-color-default));
+        opacity: 0.8;
+        transition: var(--transition-medium);
+      }
+
+      .plant:hover {
+        transform: translateY(-4px);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .plant.empty {
+        background: rgba(0, 0, 0, 0.2);
+        border: 2px dashed rgba(255, 255, 255, 0.1);
+        backdrop-filter: none;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+      }
+
+      .plant.empty:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--plant-border-color-default);
+        opacity: 1;
+      }
+
+      .plant.dragging {
+        opacity: 0.5;
+        transform: rotate(5deg);
+      }
+      .plant-name,
+      .plant-phenotype,
+      .plant-stage,
+      .plant-days {
+        min-height: 1.2em; /* reserve space */
+        text-align: center;
+      }
+
+      .plant-phenotype:empty::before,
+      .plant-name:empty::before,
+      .plant-stage:empty::before,
+      .plant-days:empty::before {
+        content: "—";
+        color: var(--disabled-text-color);
+      }
+
+      .plant-header {
+        grid-area: icon;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-xs);
+        margin-bottom: var(--spacing-xs);
+        color: var(--stage-color, var(--secondary-text-color));
+      }
+
+      .plant.empty .plant-header {
+        margin-top: inherit;
+      }
+
+      .plant-icon {
+        width: 2rem;
+        height: 2rem;
+        fill: var(--stage-color, var(--secondary-text-color));
+      }
+
+      .plant-name {
+        grid-area: name;
+        font-weight: var(--font-weight-bold);
+        color: var(--growspace-card-text);
+        font-size: var(--font-size-lg);
+        margin-bottom: var(--spacing-xs);
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+
+      .plant-stage {
+        grid-area: stage;
+        color: var(--stage-color, var(--secondary-text-color));
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-medium);
+        margin-bottom: var(--spacing-xs);
+        text-transform: capitalize;
+      }
+
+      .plant-phenotype {
+        grid-area: phenotype;
+        color: var(--secondary-text-color);
+        font-size: var(--font-size-md);
+        margin-bottom: var(--spacing-xs);
+        font-style: italic;
+      }
+
+      .plant-days {
+        grid-area: days;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        font-size: var(--font-size-md);
+        color: var(--secondary-text-color);
+        width: 100%;
+      }
+
+      .plant-days span {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .compact .plant {
+        min-height: 80px;
+        padding: var(--spacing-sm);
+        border-radius: 12px;
+      }
+
+      .compact .plant-name {
+        font-size: var(--font-size-sm);
+      }
+
+      .compact .plant-days {
+        font-size: var(--font-size-xs);
+      }
+
+      ha-dialog {
+        --mdc-dialog-border-radius: var(--border-radius-md);
+        --mdc-dialog-box-shadow: var(--card-shadow-hover);
+      }
+
+      .no-data {
+        text-align: center;
+        color: var(--secondary-text-color);
+        padding: var(--spacing-lg);
+        font-style: italic;
+        background: var(--growspace-empty-bg);
+        border-radius: var(--border-radius-md);
+        margin: var(--spacing-md) 0;
+      }
+
+      .error {
+        color: var(--error-color);
+        padding: var(--spacing-md);
+        background: var(--error-bg);
+        border: 1px solid var(--error-border);
+        border-radius: var(--border-radius-md);
+        margin: var(--spacing-md) 0;
+      }
+      /* Dialog Styles */
+      ha-dialog {
+        --mdc-dialog-border-radius: var(--border-radius);
+        --mdc-dialog-box-shadow: var(--surface-elevation-hover);
+      }
+
+      ha-dialog .mdc-dialog--open .mdc-dialog__container,
+      ha-dialog .mdc-dialog--open {
+        align-items: start;
+        margin-top: 5vh;
+      }
+
+      ha-dialog.strain-dialog .mdc-dialog--open .mdc-dialog__container .mdc-dialog__surface {
+        width: 800px;
+        max-width: 90vw;
+        height: 600px;
+        max-height: 90vh;
+      }
+      ha-dialog.strain-dialog .mdc-dialog--open .dialog-content .strain-library-header {
+        justify-content: space-between;
+      }
+      ha-dialog.strain-dialog {
+        --mdc-dialog-min-width: 45vw;
+        --mdc-dialog-max-width: 45vw;
+        --mdc-dialog-surface-fill-color: var(--growspace-card-bg);
+      }
+      .dialog-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md) 0;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+      }
+
+      .form-group label {
+        font-weight: 500;
+        color: var(--primary-text-color);
+        font-size: 0.9rem;
+      }
+
+      .form-input {
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: 2px solid var(--divider-color);
+        border-radius: var(--border-radius);
+        font-family: inherit;
+        font-size: 0.9rem;
+        transition: var(--transition);
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+      }
+
+      .form-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(var(--rgb-primary-color), 0.1);
+      }
+
+      /* Strain Library Styles - Glassmorphism & Table */
+      .strain-search-container {
+        position: relative;
+        margin-bottom: var(--spacing-md);
+      }
+      .search-input {
+        width: 100%;
+        padding: var(--spacing-sm) var(--spacing-lg);
+        padding-left: 40px;
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--primary-text-color);
+        backdrop-filter: blur(10px);
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+        transition: var(--transition);
+      }
+      .search-input:focus {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--primary-color);
+        outline: none;
+      }
+      .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        color: var(--secondary-text-color);
+        pointer-events: none;
+      }
+
+      .strain-table-container {
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        overflow: hidden;
+        max-height: 60vh;
+        overflow-y: auto;
+      }
+
+      .strain-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .strain-row {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .strain-row:last-child {
+        border-bottom: none;
+      }
+      .strain-row:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .strain-cell {
+        padding: var(--spacing-md);
+        display: flex;
+        align-items: center;
+      }
+      .strain-cell.expand-icon {
+        width: 40px;
+        justify-content: center;
+        color: var(--secondary-text-color);
+      }
+      .strain-cell.content {
+        flex: 1;
+        font-weight: 500;
+        font-size: 1.1rem;
+      }
+      .strain-cell.actions {
+        justify-content: flex-end;
+        gap: var(--spacing-sm);
+      }
+
+      .pheno-row {
+        background: rgba(0, 0, 0, 0.2);
+      }
+      .pheno-list {
+        padding: var(--spacing-sm) var(--spacing-lg);
+      }
+      .pheno-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm) 0;
+        border-bottom: 1px dashed rgba(255,255,255,0.1);
+        color: var(--secondary-text-color);
+      }
+      .pheno-item:last-child {
+        border-bottom: none;
+      }
+
+      .fab-button {
+        position: absolute;
+        bottom: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--plant-border-color-default);
+        color: var(--growspace-card-text);
+        border: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        z-index: 10;
+      }
+      .fab-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+      }
+      .fab-button:active {
+        transform: scale(0.95);
+      }
+
+      /* Add Form Overlay */
+      .add-form-overlay {
+        position: absolute;
+        bottom: 90px;
+        right: 24px;
+        width: 300px;
+        background: var(--card-background-color);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: var(--spacing-md);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        backdrop-filter: blur(12px);
+        z-index: 10;
+        animation: slideUp 0.3s ease-out;
+      }
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .badge {
+        background: rgba(255,255,255,0.1);
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        margin-left: 8px;
+        color: var(--secondary-text-color);
+      }
+
+      /* Clear Confirmation */
+      .confirmation-overlay {
+        position: absolute;
+        bottom: 24px;
+        left: 24px;
+        background: var(--error-bg);
+        border: 1px solid var(--error-border);
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        animation: fadeIn 0.2s ease-out;
+      }
+
+      .rotate-icon {
+         transition: transform 0.3s ease;
+      }
+      .rotate-icon.expanded {
+         transform: rotate(90deg);
+      }
+
+      @media (max-width: 600px) {
+        .header {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .selector-container {
+          justify-content: center;
+        }
+        /* Switch Grid to List View */
+        .grid {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-sm);
+          grid-template-columns: 1fr !important;
+          grid-template-rows: auto !important;
+        }
+        .plant {
+          min-height: auto;
+          aspect-ratio: unset;
+          display: grid;
+          grid-template-columns: 48px 1fr auto;
+          grid-template-rows: auto auto;
+          grid-template-areas:
+            "icon name stage"
+            "icon phenotype days";
+          padding: 12px;
+          gap: 4px 12px;
+          text-align: left;
+        }
+        .plant-name, .plant-phenotype, .plant-stage, .plant-days {
+          text-align: left;
+          min-height: 0;
+          margin: 0;
+        }
+        .plant-header {
+          justify-content: center; /* Icon stays centered in its box */
+        }
+        .plant-name {
+          font-size: 1rem;
+          align-self: end;
+        }
+        .plant-phenotype {
+          font-size: 0.85rem;
+          align-self: start;
+        }
+        .plant-stage {
+          font-size: 0.85rem;
+          text-align: right;
+          align-self: end;
+        }
+        .plant-days {
+          justify-content: flex-end;
+          font-size: 0.8rem;
+        }
+        .plant-days span {
+           flex-direction: row;
+           gap: 4px;
+        }
+        .plant-days span svg {
+           width: 1.2rem;
+           height: 1.2rem;
+        }
+
+        /* Empty Slot in List View */
+        .plant.empty {
+           display: flex;
+           align-items: center;
+           gap: 12px;
+           padding: 12px;
+        }
+        .plant.empty .plant-header {
+           margin: 0;
+        }
+        .plant.empty .plant-name {
+           font-size: 1rem;
+           margin: 0;
+        }
+        .plant.empty .plant-stage {
+           display: none;
+        }
+
+        /* Header vertical stacking */
+        .gs-header-top {
+            flex-direction: column;
+        }
+        .gs-stats-chips {
+            flex-direction: column;
+            width: 100%;
+            align-items: stretch;
+            gap: 4px;
+        }
+        .stat-chip {
+            width: 100%;
+            box-sizing: border-box;
+            justify-content: space-between; /* Icon/Value spread */
+        }
+
+        /* Mobile specific dialog adjustments */
+        ha-dialog.strain-dialog .mdc-dialog__surface {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+        }
+        .fab-button {
+            bottom: 16px;
+            right: 16px;
+        }
+        .add-form-overlay {
+            bottom: 80px;
+            right: 16px;
+            left: 16px;
+            width: auto;
+        }
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .plant {
+        animation: fadeIn 0.3s ease-out;
+      }
+
+      /* Glassmorphism for Dialogs */
+      ha-dialog {
+        --mdc-dialog-surface-fill-color: transparent; /* Transparent base for glass effect */
+        --mdc-dialog-min-width: 400px;
+        --mdc-dialog-max-width: 90vw;
+      }
+
+      /* Override internal dialog surface if possible, or we style the content wrapper */
+      /* Note: Home Assistant dialogs use mwc-dialog which uses mdc-dialog.
+         Directly styling shadow roots is hard, but we can try to influence it via variables
+         or style our own container inside. */
+
+      .glass-dialog-container {
+        background: var(--growspace-card-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        border-radius: 28px; /* MD3 extra large rounding */
+        padding: var(--spacing-lg);
+        color: #ffffff; /* Force white text for contrast against dark glass */
+        margin: -24px; /* Counteract default dialog padding if necessary */
+        min-width: 320px;
+      }
+
+      /* MD3 Dialog Layout */
+      .dialog-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+        padding-bottom: var(--spacing-md);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .dialog-icon {
+        width: 48px;
+        height: 48px;
+        padding: 12px;
+        border-radius: 16px; /* MD3 medium shape */
+        background: rgba(var(--stage-color-rgb, 76, 175, 80), 0.2);
+        color: var(--stage-color, #4caf50);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .dialog-title-group {
+        flex: 1;
+      }
+
+      .dialog-title {
+        font-size: 1.5rem;
+        font-weight: 500; /* MD3 Headline Small */
+        margin: 0;
+        color: #ffffff;
+      }
+
+      .dialog-subtitle {
+        font-size: 0.875rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin-top: 4px;
+        text-transform: capitalize;
+      }
+
+      /* MD3 Cards inside Dialog */
+      .detail-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .detail-card h3 {
+        margin: 0 0 var(--spacing-sm) 0;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* MD3 Input Styles */
+      .md3-input-group {
+        position: relative;
+        margin-bottom: var(--spacing-md);
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 4px 4px 0 0;
+        border-bottom: 1px solid var(--secondary-text-color);
+        transition: background 0.2s;
+      }
+
+      .md3-input-group:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .md3-input-group:focus-within {
+        background: rgba(255, 255, 255, 0.06);
+        border-bottom: 2px solid var(--primary-color);
+      }
+
+      .md3-label {
+        position: absolute;
+        left: 16px;
+        top: 8px;
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        pointer-events: none;
+        transition: 0.2s;
+      }
+
+      .md3-input-group:focus-within .md3-label {
+        color: var(--primary-color);
+      }
+
+      .md3-input {
+        width: 100%;
+        padding: 24px 16px 8px;
+        border: none;
+        background: transparent;
+        color: #ffffff;
+        font-size: 1rem;
+        font-family: inherit;
+        box-sizing: border-box;
+      }
+
+      .md3-input:focus {
+        outline: none;
+      }
+
+      /* Button Group & MD3 Buttons */
+      .button-group {
+        display: flex;
+        gap: var(--spacing-sm);
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        margin-top: var(--spacing-lg);
+      }
+
+      .md3-button {
+        height: 40px;
+        padding: 0 24px;
+        border-radius: 20px; /* Pill shape */
+        border: none;
+        font-family: inherit;
+        font-weight: 500;
+        font-size: 0.875rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        text-transform: capitalize;
+      }
+
+      .md3-button.primary {
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      }
+
+      .md3-button.primary:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        filter: brightness(1.1);
+      }
+
+      .md3-button.tonal {
+        background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.15);
+        color: var(--primary-color);
+      }
+
+      .md3-button.tonal:hover {
+        background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.25);
+      }
+
+      .md3-button.text {
+        background: transparent;
+        color: var(--primary-color);
+      }
+
+      .md3-button.text:hover {
+        background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.08);
+      }
+
+      .md3-button.danger {
+        background: transparent;
+        color: var(--error-color);
+        border: 1px solid rgba(244, 67, 54, 0.5);
+      }
+
+      .md3-button.danger:hover {
+        background: rgba(244, 67, 54, 0.1);
+      }
+
+      /* Specific adjustments for HA Dialog content constraints */
+      ha-dialog {
+        --mdc-theme-primary: var(--primary-color);
+      }
+
+      @media (max-width: 600px) {
+        .glass-dialog-container {
+            margin: -20px;
+            padding: var(--spacing-md);
+        }
+        .dialog-header {
+            flex-direction: column;
+            text-align: center;
+        }
+        .button-group {
+            justify-content: center;
+        }
+      }
+    </style>
+</head>
+<body>
+
+<ha-card>
+    <!-- Growspace Header -->
+    <div class="growspace-header-card">
+         <div class="gs-header-top">
+            <div class="gs-title-group">
+                 <h3 class="gs-title">My Growspace</h3>
+
+               <div class="gs-stage-chip">
+                 <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="M12 2L12 22 M2 12L22 12"></path></svg>
+                 Flower • Day 24
+               </div>
+            </div>
+
+            <div class="gs-stats-chips">
+                   <div class="stat-chip active">
+                     <svg viewBox="0 0 24 24"><path d="M12 2L12 22 M2 12L22 12"></path></svg>24.5°C
+                   </div>
+                   <div class="stat-chip">
+                     <svg viewBox="0 0 24 24"><path d="M12 2L12 22 M2 12L22 12"></path></svg>55%
+                   </div>
+                   <div class="stat-chip">
+                     <svg viewBox="0 0 24 24"><path d="M12 2L12 22 M2 12L22 12"></path></svg>1.2 kPa
+                   </div>
+                   <div class="stat-chip">
+                     <svg viewBox="0 0 24 24"><path d="M12 2L12 22 M2 12L22 12"></path></svg>800 ppm
+                   </div>
+            </div>
+         </div>
+
+         <!-- Nested Light Cycle Card -->
+         <div class="gs-light-cycle-card">
+            <div class="gs-light-header-row">
+                <div class="gs-light-title">
+                    <div class="gs-icon-box">
+                       <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="M12 2L12 22 M2 12L22 12"></path></svg>
+                    </div>
+                    <div>
+                       <div>Light Cycle</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div>
+                        <div class="light-status-chip on">
+                           <div class="light-status-text">
+                               <div class="status-dot"></div>
+                               ON
+                           </div>
+                        </div>
+                    </div>
+                    <div class="rotate-icon" style="opacity: 0.7;">
+                        <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="M12 2L12 22 M2 12L22 12"></path></svg>
+                    </div>
+                </div>
+            </div>
+         </div>
+    </div>
+
+    <!-- Grid/List View -->
+    <div class="grid">
+        <!-- Plant 1: Flowering -->
+        <div class="plant" style="--stage-color: #E91E63">
+            <div class="plant-header">
+                <svg class="plant-icon" viewBox="0 0 24 24">
+                    <path d="M12 2L12 22 M2 12L22 12"></path>
+                </svg>
+            </div>
+            <div class="plant-name">
+                Purple Haze
+            </div>
+            <div class="plant-phenotype">
+                Pheno #1
+            </div>
+            <div class="plant-stage">
+                Flower
+            </div>
+            <div class="plant-days">
+                <span title="Days in Flower" style="color: #E91E63">
+                    <svg style="width: 2rem;height: 2rem;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="M12 2L12 22 M2 12L22 12"></path>
+                    </svg>
+                    24d
+                </span>
+            </div>
+        </div>
+
+        <!-- Plant 2: Veg -->
+        <div class="plant" style="--stage-color: #4CAF50">
+            <div class="plant-header">
+                <svg class="plant-icon" viewBox="0 0 24 24">
+                    <path d="M12 2L12 22 M2 12L22 12"></path>
+                </svg>
+            </div>
+            <div class="plant-name">
+                Blue Dream
+            </div>
+            <div class="plant-phenotype">
+                Clone
+            </div>
+            <div class="plant-stage">
+                Vegetative
+            </div>
+            <div class="plant-days">
+                <span title="Days in Vegetative" style="color: #4CAF50">
+                    <svg style="width: 2rem;height: 2rem;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="M12 2L12 22 M2 12L22 12"></path>
+                    </svg>
+                    45d
+                </span>
+            </div>
+        </div>
+
+        <!-- Empty Slot -->
+        <div class="plant empty">
+            <div class="plant-header">
+                <svg class="plant-icon" viewBox="0 0 24 24">
+                    <path d="M12 2L12 22 M2 12L22 12"></path>
+                </svg>
+            </div>
+            <div class="plant-name">Add Plant</div>
+            <div class="plant-stage">Empty Slot</div>
+        </div>
+    </div>
+</ha-card>
+
+</body>
+</html>
