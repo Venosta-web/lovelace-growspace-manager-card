@@ -1,7 +1,7 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
@@ -180,7 +180,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       .gs-chart-bars {
          display: flex;
          gap: 4px;
-         height: 40px;
+         height: 60px;
          width: 100%;
          align-items: flex-end;
       }
@@ -188,16 +188,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       .chart-bar {
          flex: 1;
          height: 100%;
-         background: transparent;
+         background: rgba(255, 255, 255, 0.05);
          border-radius: 4px;
-         border: 1px solid rgba(255, 255, 255, 0.1);
+         border: none;
          position: relative;
          overflow: hidden;
       }
 
       .chart-bar.active {
          background: rgba(255, 235, 59, 0.7); /* Yellowish */
-         border: none;
          box-shadow: 0 0 8px rgba(255, 235, 59, 0.3);
       }
 
@@ -205,9 +204,81 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       .chart-markers {
          display: flex;
          justify-content: space-between;
-         margin-top: 4px;
-         font-size: 0.7rem;
+         margin-top: 8px;
+         font-size: 0.75rem;
          color: rgba(255, 255, 255, 0.5);
+         font-weight: 500;
+      }
+
+      /* Light Cycle Card Nested */
+      .gs-light-cycle-card {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .gs-light-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+      }
+
+      .gs-light-title {
+         font-size: 1.1rem;
+         font-weight: 500;
+         display: flex;
+         align-items: center;
+         gap: 10px;
+         color: rgba(255, 255, 255, 0.9);
+      }
+
+      .gs-icon-box {
+        background: rgba(255, 235, 59, 0.15);
+        border-radius: 12px;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255, 235, 59, 0.9);
+      }
+
+      /* Header Dropdown */
+      .growspace-select-header {
+        background: transparent;
+        color: #fff;
+        font-size: 2rem;
+        font-weight: 500;
+        font-family: inherit;
+        border: none;
+        padding: 0;
+        margin: 0;
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        width: auto;
+        max-width: 100%;
+        letter-spacing: -0.5px;
+        border-bottom: 1px dashed rgba(255,255,255,0.3);
+        transition: border-color 0.2s;
+      }
+      .growspace-select-header:hover {
+         border-bottom-color: rgba(255,255,255,0.8);
+      }
+      .growspace-select-header:focus {
+         outline: none;
+         border-bottom-color: var(--primary-color);
+      }
+      .growspace-select-header option {
+         background: var(--growspace-card-bg);
+         color: var(--growspace-card-text);
+         font-size: 1rem;
+         padding: 10px;
       }
 
       /* Existing styles... */
@@ -1534,6 +1605,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   private renderGrowspaceHeader(device: GrowspaceDevice): TemplateResult {
     const dominant = PlantUtils.getDominantStage(device.plants);
+    const devices = this.dataService.getGrowspaceDevices();
 
     // Fetch Environmental Data
     let slug = device.name.toLowerCase().replace(/\s+/g, '_');
@@ -1630,7 +1702,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       <div class="growspace-header-card">
          <div class="gs-header-top">
             <div class="gs-title-group">
-               <h3 class="gs-title">${device.name}</h3>
+               <!-- Title as Dropdown if no default is set -->
+               ${!this._config?.default_growspace ? html`
+                 <select class="growspace-select-header" .value=${this.selectedDevice || ''} @change=${this._handleDeviceChange}>
+                    ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
+                 </select>
+               ` : html`
+                 <h3 class="gs-title">${device.name}</h3>
+               `}
+
                ${dominant ? html`
                <div class="gs-stage-chip">
                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
@@ -1644,6 +1724,21 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                 ${hum !== undefined ? html`<div class="stat-chip"><svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>${hum}%</div>` : ''}
                 ${vpd !== undefined ? html`<div class="stat-chip"><svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>${vpd} kPa</div>` : ''}
                 ${co2 !== undefined ? html`<div class="stat-chip"><svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm</div>` : ''}
+            </div>
+         </div>
+
+         <!-- Nested Light Cycle Card -->
+         <div class="gs-light-cycle-card">
+            <div class="gs-light-header-row">
+                <div class="gs-light-title">
+                    <div class="gs-icon-box">
+                       <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiWeatherSunny}"></path></svg>
+                    </div>
+                    <div>
+                       <div style="font-size: 1.1rem; font-weight: 600;">Light Cycle</div>
+                       <div style="font-size: 0.75rem; opacity: 0.7;">24H HISTORY</div>
+                    </div>
+                </div>
 
                 ${envEntity ? html`
                 <div class="light-status-chip ${isLightsOn ? 'on' : 'off'}">
@@ -1654,19 +1749,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                 </div>
                 ` : ''}
             </div>
-         </div>
 
-         <div class="gs-chart-container">
-            <div class="gs-chart-label">24h Light Cycle</div>
-            <div class="gs-chart-bars">
-               ${hourlyStatus.map(isOn => html`
-                 <div class="chart-bar ${isOn ? 'active' : ''}"></div>
-               `)}
-            </div>
-            <div class="chart-markers">
-               <span>-24h</span>
-               <span>-12h</span>
-               <span>Now</span>
+            <div class="gs-chart-container">
+                <div class="gs-chart-bars">
+                   ${hourlyStatus.map(isOn => html`
+                     <div class="chart-bar ${isOn ? 'active' : ''}"></div>
+                   `)}
+                </div>
+                <div class="chart-markers">
+                   <span>-24H</span>
+                   <span>-12H</span>
+                   <span>NOW</span>
+                </div>
             </div>
          </div>
       </div>
@@ -1680,6 +1774,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       <div class="header">
         ${this._config?.title ? html`<h2 class="header-title">${this._config.title}</h2>` : ''}
         
+        ${this._isCompactView ? html`
         <div class="selector-container">
           ${!this._config?.default_growspace ? html`
             <label for="device-select">Growspace:</label>
@@ -1691,8 +1786,20 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             >
               ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
             </select>
-          ` : html`<span class="selected-growspace">${selectedDevice?.name}</span>`}
+          ` : html`
+            <label for="device-select">Growspace:</label>
+            <!-- Even if default is set, user wants dropdown in compact mode -->
+            <select
+              id="device-select"
+              class="growspace-select"
+              .value=${this.selectedDevice || ''}
+              @change=${this._handleDeviceChange}
+            >
+              ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
+            </select>
+          `}
         </div>
+        ` : ''}
 
         <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
           <div class="view-toggle">
