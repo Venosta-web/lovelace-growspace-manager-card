@@ -228,6 +228,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         justify-content: center;
         gap: var(--spacing-xs);
         margin-bottom: var(--spacing-xs);
+        color: var(--stage-color, var(--secondary-text-color));
       }
 
       .plant.empty .plant-header {
