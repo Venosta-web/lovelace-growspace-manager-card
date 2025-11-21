@@ -1009,8 +1009,8 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
         width: 56px;
         height: 56px;
         border-radius: 50%;
-        background: var(--primary-gradient);
-        color: white;
+        background: var(--plant-border-color-default);
+        color: var(--growspace-card-text);
         border: none;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         display: flex;
