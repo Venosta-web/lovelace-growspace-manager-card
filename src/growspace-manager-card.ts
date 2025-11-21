@@ -1051,27 +1051,30 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   private renderPlantDays(plant: PlantEntity): TemplateResult {
     const days = [
-      { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Days in Seedling" },
-      { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Days in Mother" },
-      { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Days in Clone" },
-      { days: plant.attributes?.veg_days, icon: mdiSprout, title: "Days in Vegetative" },
-      { days: plant.attributes?.flower_days, icon: mdiFlower, title: "Days in Flower" },
-      { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Days in Dry" },
-      { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Days in Cure" }
+      { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Days in Seedling", stage: "seedling" },
+      { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Days in Mother", stage: "mother" },
+      { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Days in Clone", stage: "clone" },
+      { days: plant.attributes?.veg_days, icon: mdiSprout, title: "Days in Vegetative", stage: "vegetative" },
+      { days: plant.attributes?.flower_days, icon: mdiFlower, title: "Days in Flower", stage: "flower" },
+      { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Days in Dry", stage: "dry" },
+      { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Days in Cure", stage: "cure" }
     ].filter(d => d.days);
 
     if (!days.length) return html``;
 
     return html`
       <div class="plant-days">
-        ${days.map(({ days, icon, title }) => html`
-          <span title="${title}">
-            <svg style="width: 2rem;height: 2rem;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${icon}"></path>
-            </svg>
-            ${days}d
-          </span>
-        `)}
+        ${days.map(({ days, icon, title, stage }) => {
+          const color = PlantUtils.getPlantStageColor(stage);
+          return html`
+            <span title="${title}" style="color: ${color}">
+              <svg style="width: 2rem;height: 2rem;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${icon}"></path>
+              </svg>
+              ${days}d
+            </span>
+          `;
+        })}
       </div>
     `;
   }
