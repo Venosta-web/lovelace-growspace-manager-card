@@ -1520,14 +1520,25 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const envEntityId = `binary_sensor.${slug}_optimal_conditions`;
     const envEntity = this.hass.states[envEntityId];
 
-    const getAttr = (ent: any, attr: string) => ent?.attributes?.[attr];
-    const temp = getAttr(envEntity, 'temperature');
-    const hum = getAttr(envEntity, 'humidity');
-    const vpd = getAttr(envEntity, 'vpd');
-    const co2 = getAttr(envEntity, 'co2');
+    // Helper to get attribute from either top-level or nested 'observations'
+    const getValue = (ent: any, key: string) => {
+        if (!ent || !ent.attributes) return undefined;
+        // 1. Check top level
+        if (ent.attributes[key] !== undefined) return ent.attributes[key];
+        // 2. Check nested 'observations' (if it exists and is an object)
+        if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
+            return ent.attributes.observations[key];
+        }
+        return undefined;
+    };
+
+    const temp = getValue(envEntity, 'temperature');
+    const hum = getValue(envEntity, 'humidity');
+    const vpd = getValue(envEntity, 'vpd');
+    const co2 = getValue(envEntity, 'co2');
 
     // Light Status Logic with History
-    const isLightsOn = envEntity?.attributes?.is_lights_on === true;
+    const isLightsOn = getValue(envEntity, 'is_lights_on') === true;
     let durationDisplay = "0h 0m";
     let hourlyStatus: boolean[] = new Array(24).fill(false);
 
@@ -1541,7 +1552,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         // Find the index of the first entry that does NOT match the current state
         // The entry *before* that (index - 1) is the transition TO the current state.
         const mismatchIndex = sortedHistory.findIndex(h => {
-            const histLightsOn = h.attributes?.is_lights_on === true;
+            const histVal = getValue(h, 'is_lights_on');
+            const histLightsOn = histVal === true;
             return histLightsOn !== currentState;
         });
 
@@ -1581,11 +1593,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             const entry = sortedHistory.find(h => new Date(h.last_changed) <= sampleTime);
 
             if (entry) {
-                hourlyStatus[i] = entry.attributes?.is_lights_on === true;
+                hourlyStatus[i] = getValue(entry, 'is_lights_on') === true;
             } else {
                 if (sortedHistory.length > 0) {
                      const oldest = sortedHistory[sortedHistory.length - 1];
-                     hourlyStatus[i] = oldest.attributes?.is_lights_on === true;
+                     hourlyStatus[i] = getValue(oldest, 'is_lights_on') === true;
                 }
             }
         }
