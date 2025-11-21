@@ -14,6 +14,8 @@ export class DialogRenderer {
       onPhenotypeChange: (value: string) => void;
       onVegStartChange: (value: string) => void;
       onFlowerStartChange: (value: string) => void;
+      onRowChange: (value: string) => void;
+      onColChange: (value: string) => void;
     }
   ): TemplateResult {
     if (!dialog?.open) return html``;
@@ -25,62 +27,57 @@ export class DialogRenderer {
       <ha-dialog
         open
         @closed=${callbacks.onClose}
-        heading="Add New Plant"
+        hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${''}
       >
-        <div class="dialog-content">
-          <div class="form-group">
-            <label>
-              <svg style="width:16px;height:16px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-                <path d="${mdiDna}"></path>
-              </svg>
-              Strain *
-            </label>
-            <select 
-              class="form-input"
-              .value=${dialog.strain || ''}
-              @change=${(e: Event) => callbacks.onStrainChange((e.target as HTMLSelectElement).value)}
-            >
-              <option value="">Select a strain...</option>
-              ${uniqueStrains.map(strainName => html`
-                <option value="${strainName}" ?selected=${strainName === dialog.strain}>
-                  ${strainName}
-                </option>
-              `)}
-            </select>
+        <div class="glass-dialog-container" style="--stage-color: var(--plant-border-color-default)">
+
+          <!-- HEADER -->
+          <div class="dialog-header">
+            <div class="dialog-title-group">
+               <h2 class="dialog-title">Add New Plant</h2>
+               <div class="dialog-subtitle">Enter plant details below</div>
+            </div>
+            <button class="md3-button text" @click=${callbacks.onClose} style="min-width: auto; padding: 8px;">
+               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                 <path d="${mdiClose}"></path>
+               </svg>
+            </button>
           </div>
 
-          <div class="form-group">
-            <label>Phenotype</label>
-            <input 
-              type="text" 
-              class="form-input"
-              placeholder="e.g., Pheno #1, Purple variant..."
-              .value=${dialog.phenotype || ''} 
-              @input=${(e: Event) => callbacks.onPhenotypeChange((e.target as HTMLInputElement).value)}
-            />
+          <div class="overview-grid">
+             <!-- IDENTITY CARD -->
+             <div class="detail-card">
+               <h3>Identity & Location</h3>
+               ${DialogRenderer.renderMD3SelectInput('Strain *', dialog.strain || '', uniqueStrains, callbacks.onStrainChange)}
+               ${DialogRenderer.renderMD3TextInput('Phenotype', dialog.phenotype || '', callbacks.onPhenotypeChange)}
+               <div style="display:flex; gap:16px;">
+                 ${DialogRenderer.renderMD3NumberInput('Row', dialog.row + 1, (v) => callbacks.onRowChange(v))}
+                 ${DialogRenderer.renderMD3NumberInput('Col', dialog.col + 1, (v) => callbacks.onColChange(v))}
+               </div>
+             </div>
+
+             <!-- TIMELINE CARD -->
+             <div class="detail-card">
+               <h3>Timeline</h3>
+               ${DialogRenderer.renderMD3DateInput('Vegetative Start', dialog.veg_start || '', callbacks.onVegStartChange)}
+               ${DialogRenderer.renderMD3DateInput('Flower Start', dialog.flower_start || '', callbacks.onFlowerStartChange)}
+             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
-            ${DialogRenderer.renderDateTimeInput('Vegetative Start', mdiCalendarClock, dialog.veg_start || '', callbacks.onVegStartChange)}
-            ${DialogRenderer.renderDateTimeInput('Flower Start', mdiFlower, dialog.flower_start || '', callbacks.onFlowerStartChange)}
+          <!-- ACTION BUTTONS -->
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${callbacks.onClose}>
+              Cancel
+            </button>
+            <button class="md3-button primary" @click=${callbacks.onConfirm}>
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
+              Add Plant
+            </button>
           </div>
 
-          <div style="background: rgba(var(--rgb-primary-color), 0.05); padding: var(--spacing-md); border-radius: var(--border-radius); border-left: 4px solid var(--primary-color);">
-            <strong>Position:</strong> Row ${dialog.row + 1}, Column ${dialog.col + 1}
-          </div>
         </div>
-
-        <button class="action-button primary" slot="primaryAction" @click=${callbacks.onConfirm}>
-          <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiSprout}"></path>
-          </svg>
-          Add Plant
-        </button>
-        <button class="action-button" slot="secondaryAction" @click=${callbacks.onClose}>
-          Cancel
-        </button>
       </ha-dialog>
     `;
   }
@@ -464,6 +461,22 @@ export class DialogRenderer {
           .value=${value}
           @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
         />
+      </div>
+    `;
+  }
+
+  private static renderMD3SelectInput(label: string, value: string, options: string[], onChange: (value: string) => void): TemplateResult {
+    return html`
+      <div class="md3-input-group">
+        <label class="md3-label">${label}</label>
+        <select
+          class="md3-input"
+          .value=${value}
+          @change=${(e: Event) => onChange((e.target as HTMLSelectElement).value)}
+        >
+          <option value="">Select...</option>
+          ${options.map(opt => html`<option value="${opt}" ?selected=${opt === value}>${opt}</option>`)}
+        </select>
       </div>
     `;
   }
