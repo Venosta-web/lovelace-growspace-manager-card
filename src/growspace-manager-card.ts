@@ -30,6 +30,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _draggedPlant: PlantEntity | null = null;
   @state() private _isCompactView: boolean = false;
   @state() private _historyData: any[] | null = null;
+  @state() private _lightCycleCollapsed: boolean = true;
+  @state() private _activeEnvGraphs: Set<string> = new Set();
 
 
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -133,6 +135,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         font-size: 0.9rem;
         color: #eee;
         backdrop-filter: blur(4px);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .stat-chip:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .stat-chip.active {
+        background: rgba(255, 255, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.5);
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
       }
 
       .stat-chip svg {
@@ -211,6 +225,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         display: flex;
         flex-direction: column;
         gap: 12px;
+        transition: all 0.3s ease;
+      }
+
+      .gs-light-cycle-card.collapsed {
+        padding: 12px 20px;
+        gap: 0;
       }
 
       .gs-light-header-row {
@@ -218,6 +238,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         justify-content: space-between;
         align-items: center;
         margin-bottom: 4px;
+        cursor: pointer;
+      }
+
+      .gs-light-cycle-card.collapsed .gs-light-header-row {
+        margin-bottom: 0;
       }
 
       .gs-light-title {
@@ -1458,6 +1483,105 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       this.requestUpdate();
   }
 
+  private _toggleLightCycle() {
+    this._lightCycleCollapsed = !this._lightCycleCollapsed;
+  }
+
+  private _toggleEnvGraph(metric: string) {
+    const newSet = new Set(this._activeEnvGraphs);
+    if (newSet.has(metric)) {
+        newSet.delete(metric);
+    } else {
+        newSet.add(metric);
+    }
+    this._activeEnvGraphs = newSet;
+    this.requestUpdate();
+  }
+
+  private renderEnvGraph(metricKey: string, color: string, title: string, unit: string): TemplateResult {
+    if (!this._historyData || this._historyData.length === 0) return html``;
+
+    const getValue = (ent: any, key: string) => {
+        if (!ent || !ent.attributes) return undefined;
+        if (ent.attributes[key] !== undefined) return ent.attributes[key];
+        if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
+            return ent.attributes.observations[key];
+        }
+        return undefined;
+    };
+
+    const sortedHistory = [...this._historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const dataPoints: {time: number, value: number}[] = [];
+
+    sortedHistory.forEach(h => {
+        const t = new Date(h.last_changed).getTime();
+        if (t < twentyFourHoursAgo.getTime()) return;
+        const val = getValue(h, metricKey);
+        if (val !== undefined && !isNaN(parseFloat(val))) {
+            dataPoints.push({ time: t, value: parseFloat(val) });
+        }
+    });
+
+    if (dataPoints.length < 2) return html``;
+
+    const width = 1000;
+    const height = 100;
+    const minVal = Math.min(...dataPoints.map(d => d.value));
+    const maxVal = Math.max(...dataPoints.map(d => d.value));
+    const range = maxVal - minVal || 1;
+
+    const paddedMin = minVal - (range * 0.1);
+    const paddedMax = maxVal + (range * 0.1);
+    const paddedRange = paddedMax - paddedMin;
+
+    const points: [number, number][] = dataPoints.map(d => {
+        const x = ((d.time - twentyFourHoursAgo.getTime()) / (24 * 60 * 60 * 1000)) * width;
+        const y = height - ((d.value - paddedMin) / paddedRange) * height;
+        return [x, y];
+    });
+
+    const svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+
+    return html`
+      <div class="gs-light-cycle-card" style="margin-top: 12px; border: 1px solid ${color}40;">
+         <div class="gs-light-header-row" @click=${() => this._toggleEnvGraph(metricKey)}>
+             <div class="gs-light-title" style="font-size: 1.2rem;">
+                 <div class="gs-icon-box" style="color: ${color}; background: ${color}10; border-color: ${color}30; width: 36px; height: 36px;">
+                      <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+                 </div>
+                 <div>
+                    <div>${title}</div>
+                    <div class="gs-light-subtitle">24H HISTORY • ${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}</div>
+                 </div>
+             </div>
+             <div style="opacity: 0.7;">
+                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronDown}"></path></svg>
+             </div>
+         </div>
+
+         <div class="gs-chart-container" style="height: 100px;">
+             <svg class="gs-chart-svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
+                 <defs>
+                     <linearGradient id="grad-${metricKey}" x1="0%" y1="0%" x2="0%" y2="100%">
+                         <stop offset="0%" style="stop-color:${color};stop-opacity:0.5" />
+                         <stop offset="100%" style="stop-color:${color};stop-opacity:0" />
+                     </linearGradient>
+                 </defs>
+                 <path class="chart-line" d="${svgPath}" style="stroke: ${color};" />
+                 <path class="chart-gradient-fill" d="${svgPath} V 100 H 0 Z" style="fill: url(#grad-${metricKey});" />
+             </svg>
+             <div class="chart-markers">
+                <span>-24H</span>
+                <span>NOW</span>
+             </div>
+         </div>
+      </div>
+    `;
+  }
+
   private _setStrainSearchQuery(query: string) {
       if (this._strainLibraryDialog) {
           this._strainLibraryDialog.searchQuery = query;
@@ -1844,39 +1968,61 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             </div>
 
             <div class="gs-stats-chips">
-                ${temp !== undefined ? html`<div class="stat-chip"><svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>${temp}°C</div>` : ''}
-                ${hum !== undefined ? html`<div class="stat-chip"><svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>${hum}%</div>` : ''}
-                ${vpd !== undefined ? html`<div class="stat-chip"><svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>${vpd} kPa</div>` : ''}
-                ${co2 !== undefined ? html`<div class="stat-chip"><svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm</div>` : ''}
+                ${temp !== undefined ? html`
+                   <div class="stat-chip ${this._activeEnvGraphs.has('temperature') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('temperature')}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>${temp}°C
+                   </div>` : ''}
+                ${hum !== undefined ? html`
+                   <div class="stat-chip ${this._activeEnvGraphs.has('humidity') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('humidity')}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>${hum}%
+                   </div>` : ''}
+                ${vpd !== undefined ? html`
+                   <div class="stat-chip ${this._activeEnvGraphs.has('vpd') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('vpd')}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>${vpd} kPa
+                   </div>` : ''}
+                ${co2 !== undefined ? html`
+                   <div class="stat-chip ${this._activeEnvGraphs.has('co2') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('co2')}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm
+                   </div>` : ''}
             </div>
          </div>
 
          <!-- Nested Light Cycle Card -->
-         <div class="gs-light-cycle-card">
-            <div class="gs-light-header-row">
+         <div class="gs-light-cycle-card ${this._lightCycleCollapsed ? 'collapsed' : ''}">
+            <div class="gs-light-header-row" @click=${() => this._toggleLightCycle()}>
                 <div class="gs-light-title">
                     <div class="gs-icon-box">
                        <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiWeatherSunny}"></path></svg>
                     </div>
                     <div>
                        <div>Light Cycle</div>
-                       <div class="gs-light-subtitle">24H HISTORY</div>
+                       ${!this._lightCycleCollapsed ? html`<div class="gs-light-subtitle">24H HISTORY</div>` : ''}
                     </div>
                 </div>
 
                 ${envEntity ? html`
-                <div>
-                    <div class="light-status-chip ${isLightsOn ? 'on' : 'off'}">
-                       <div class="light-status-text">
-                           <div class="status-dot"></div>
-                           ${isLightsOn ? 'ON' : 'OFF'}
-                       </div>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div>
+                        <div class="light-status-chip ${isLightsOn ? 'on' : 'off'}">
+                           <div class="light-status-text">
+                               <div class="status-dot"></div>
+                               ${isLightsOn ? 'ON' : 'OFF'}
+                           </div>
+                        </div>
+                        ${!this._lightCycleCollapsed ? html`<div class="target-cycle-text">Target: ${targetCycle}</div>` : ''}
                     </div>
-                    <div class="target-cycle-text">Target: ${targetCycle}</div>
+                    <div class="rotate-icon ${!this._lightCycleCollapsed ? 'expanded' : ''}" style="opacity: 0.7;">
+                        <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                    </div>
                 </div>
                 ` : ''}
             </div>
 
+            ${!this._lightCycleCollapsed ? html`
             <div class="gs-chart-container">
                 <svg class="gs-chart-svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
                     <defs>
@@ -1929,7 +2075,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                     </div>
                 </div>
             </div>
+            ` : ''}
          </div>
+
+         <!-- Active Environmental Graphs -->
+         ${this._activeEnvGraphs.has('temperature') ? this.renderEnvGraph('temperature', '#FF5722', 'Temperature', '°C') : ''}
+         ${this._activeEnvGraphs.has('humidity') ? this.renderEnvGraph('humidity', '#2196F3', 'Humidity', '%') : ''}
+         ${this._activeEnvGraphs.has('vpd') ? this.renderEnvGraph('vpd', '#9C27B0', 'VPD', 'kPa') : ''}
+         ${this._activeEnvGraphs.has('co2') ? this.renderEnvGraph('co2', '#90A4AE', 'CO2', 'ppm') : ''}
+
       </div>
     `;
   }
