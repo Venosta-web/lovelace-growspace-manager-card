@@ -1,6 +1,7 @@
 import { html, TemplateResult, nothing } from 'lit';
-import { mdiPlus, mdiSprout, mdiFlower, mdiClose, mdiCalendarClock, mdiDna, mdiHairDryer, mdiCannabis, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiCheck } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiClose, mdiCalendarClock, mdiDna, mdiHairDryer, mdiCannabis, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiCheck, mdiContentCopy, mdiArrowRight } from '@mdi/js';
 import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry } from './types';
+import { PlantUtils } from "./utils";
 
 export class DialogRenderer {
   static renderAddPlantDialog(
@@ -105,6 +106,8 @@ export class DialogRenderer {
 
     const { plant, editedAttributes } = dialog;
     const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+    const stageColor = PlantUtils.getPlantStageColor(plant.state);
+    const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
 
     const onAttributeChange = (key: string, value: PlantAttributeValue) => {
       editedAttributes[key] = typeof value === 'number' ? value.toString() : value;
@@ -115,147 +118,152 @@ export class DialogRenderer {
       <ha-dialog
         open
         @closed=${callbacks.onClose}
-        heading="${editedAttributes.strain || 'Plant'} Details"
+        hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${''}
       >
-        <div class="dialog-content">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
-            ${DialogRenderer.renderTextInput('Strain', editedAttributes.strain || '', (v) => callbacks.onAttributeChange('strain', v))}
-            ${DialogRenderer.renderTextInput('Phenotype', editedAttributes.phenotype || '', (v) => callbacks.onAttributeChange('phenotype', v))}
+        <div class="glass-dialog-container" style="--stage-color: ${stageColor}">
+
+          <!-- HEADER -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${stageIcon}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+               <h2 class="dialog-title">${editedAttributes.strain || 'Unknown Strain'}</h2>
+               <div class="dialog-subtitle">${plant.state} Stage • ${editedAttributes.phenotype || 'No Phenotype'}</div>
+            </div>
+            <button class="md3-button text" @click=${callbacks.onClose} style="min-width: auto; padding: 8px;">
+               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                 <path d="${mdiClose}"></path>
+               </svg>
+            </button>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
-            ${DialogRenderer.renderNumberInput('Row', editedAttributes.row || 1, (v) => callbacks.onAttributeChange('row', parseInt(v)))}
-            ${DialogRenderer.renderNumberInput('Column', editedAttributes.col || 1, (v) => callbacks.onAttributeChange('col', parseInt(v)))}
+          <div class="overview-grid">
+             <!-- IDENTITY & LOCATION CARD -->
+             <div class="detail-card">
+               <h3>Identity & Location</h3>
+               ${DialogRenderer.renderMD3TextInput('Strain Name', editedAttributes.strain || '', (v) => callbacks.onAttributeChange('strain', v))}
+               ${DialogRenderer.renderMD3TextInput('Phenotype', editedAttributes.phenotype || '', (v) => callbacks.onAttributeChange('phenotype', v))}
+               <div style="display:flex; gap:16px;">
+                 ${DialogRenderer.renderMD3NumberInput('Row', editedAttributes.row || 1, (v) => callbacks.onAttributeChange('row', parseInt(v)))}
+                 ${DialogRenderer.renderMD3NumberInput('Col', editedAttributes.col || 1, (v) => callbacks.onAttributeChange('col', parseInt(v)))}
+               </div>
+             </div>
+
+             <!-- TIMELINE CARD -->
+             <div class="detail-card">
+               <h3>Timeline</h3>
+               ${editedAttributes.stage === 'mother'
+                  ? DialogRenderer.renderMD3DateInput('Mother Start', editedAttributes.mother_start ?? '', (v) => onAttributeChange('mother_start', v))
+                  : nothing}
+               ${editedAttributes.stage === 'clone'
+                  ? DialogRenderer.renderMD3DateInput('Clone Start', editedAttributes.clone_start ?? '', (v) => onAttributeChange('clone_start', v))
+                  : nothing}
+               ${editedAttributes.stage === 'veg' || editedAttributes.stage === 'flower'
+                  ? DialogRenderer.renderMD3DateInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => onAttributeChange('veg_start', v))
+                  : nothing}
+               ${editedAttributes.stage === 'flower'
+                  ? DialogRenderer.renderMD3DateInput('Flower Start', editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))
+                  : nothing}
+               ${editedAttributes.stage === 'dry' || editedAttributes.stage === 'cure'
+                  ? DialogRenderer.renderMD3DateInput('Dry Start', editedAttributes.dry_start ?? '', (v) => onAttributeChange('dry_start', v))
+                  : nothing}
+               ${editedAttributes.stage === 'cure'
+                  ? DialogRenderer.renderMD3DateInput('Cure Start', editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))
+                  : nothing}
+             </div>
+
+             <!-- STATS CARD -->
+             ${DialogRenderer.renderPlantStatsMD3(plant)}
+
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
-            ${editedAttributes.stage === 'veg' || editedAttributes.stage === 'flower'
-        ? DialogRenderer.renderDateTimeInput('Vegetative Start', mdiSprout, editedAttributes.veg_start ?? '', (v) => onAttributeChange('veg_start', v))
-        : nothing}
-            ${editedAttributes.stage === 'flower'
-        ? DialogRenderer.renderDateTimeInput('Flower Start', mdiFlower, editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))
-        : nothing}
-            ${editedAttributes.stage === 'mother'
-        ? DialogRenderer.renderDateTimeInput('Mother Start', mdiSprout, editedAttributes.mother_start ?? '', (v) => onAttributeChange('mother_start', v))
-        : nothing}
-            ${editedAttributes.stage === 'clone'
-        ? DialogRenderer.renderDateTimeInput('Clone Start', mdiSprout, editedAttributes.clone_start ?? '', (v) => onAttributeChange('clone_start', v))
-        : nothing}
+          <!-- ACTION BUTTONS -->
+          <div class="button-group">
+             <button class="md3-button danger" @click=${() => callbacks.onDelete(plantId)}>
+               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+               Delete
+             </button>
 
-            ${editedAttributes.stage === 'cure'
-        ? DialogRenderer.renderDateTimeInput('Cure Start', mdiCannabis, editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))
-        : nothing}  
-            ${editedAttributes.stage === 'dry' || editedAttributes.stage === 'cure'
-        ? DialogRenderer.renderDateTimeInput('Dry Start', mdiHairDryer, editedAttributes.dry_start ?? '', (v) => onAttributeChange('dry_start', v))
-        : nothing}
+             <button class="md3-button tonal" @click=${callbacks.onUpdate}>
+               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
+               Save Changes
+             </button>
 
-            ${editedAttributes.stage === 'cure'
-        ? DialogRenderer.renderDateTimeInput('Cure Start', mdiCannabis, editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))
-        : nothing}
+             <!-- DYNAMIC ACTIONS BASED ON STAGE -->
+             ${plant.state.toLowerCase() === 'mother' ? html`
+                <div class="take-clone-container" style="display:contents;" data-plant-id="${plant.entity_id}">
+                  <!-- Ideally this input should be styled nicely too, but for now inline -->
+                   <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value="1"
+                    class="num-clones-input md3-input"
+                    style="width: 60px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 8px; text-align:center; padding:0;"
+                  >
+                  <button class="md3-button primary"
+                    @click=${(e: MouseEvent) => {
+                      const btn = e.currentTarget as HTMLElement;
+                      // Find the input sibling (since we used display:contents, they are siblings in the flex container)
+                      const input = btn.previousElementSibling as HTMLInputElement;
+                      const numClones = input ? parseInt(input.value, 10) : 1;
+                      callbacks.onTakeClone(plant, numClones);
+                    }}
+                  >
+                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+                    Take Clone
+                  </button>
+                </div>
+             ` : nothing}
+
+             ${plant.state.toLowerCase() === 'flower' ? html`
+               <button class="md3-button primary" @click=${() => callbacks.onHarvest(plant)}>
+                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
+                 Harvest
+               </button>
+             ` : nothing}
+
+             ${plant.state.toLowerCase() === 'dry' ? html`
+               <button class="md3-button primary" @click=${() => callbacks.onFinishDrying(plant)}>
+                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
+                 Finish Drying
+               </button>
+             ` : nothing}
+
+             ${plant.state.toLowerCase() === 'clone' ? html`
+               <div style="display:contents;">
+                  <select class="md3-input" style="width: auto; height: 40px; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 0 16px;" id="clone-target-select">
+                    <option value="">Move to...</option>
+                    ${Object.entries(growspaceOptions).map(([id, name]) => html`<option value="${id}">${name}</option>`)}
+                  </select>
+                  <button class="md3-button primary"
+                    @click=${(e: MouseEvent) => {
+                       const btn = e.currentTarget as HTMLElement;
+                       const select = btn.previousElementSibling as HTMLSelectElement;
+                       if (!select.value) { alert('Select a growspace'); return; }
+                       callbacks.onMoveClone(plant, select.value);
+                    }}
+                  >
+                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
+                    Move
+                  </button>
+               </div>
+             ` : nothing}
           </div>
 
-
-          ${DialogRenderer.renderPlantStats(plant)}
         </div>
-
-        <button class="action-button primary" slot="primaryAction" @click=${callbacks.onUpdate}>
-          <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"></path>
-          </svg>
-          Update Plant
-        </button>
-        
-        <button class="action-button" slot="secondaryAction" @click=${() => callbacks.onDelete(plantId)}>
-          Remove Plant
-        </button>
-        
-        <button class="action-button" slot="secondaryAction" @click=${callbacks.onClose}>
-          Cancel
-        </button>
-        ${plant.state.toLowerCase() === 'mother' ? html`
-          <div class="take-clone-container" data-plant-id="${plant.entity_id}">
-            <input 
-              type="number" 
-              min="1" 
-              max="10" 
-              value="1"
-              data-plant-id="${plant.entity_id}"
-              class="num-clones-input"
-            >
-            <button class="action-button primary" 
-              @click=${(e: MouseEvent) => {
-          const container = (e.currentTarget as HTMLElement).closest('.take-clone-container');
-          if (!container) return;
-          const numClonesInput = container.querySelector<HTMLInputElement>('.num-clones-input');
-          const numClones = numClonesInput ? parseInt(numClonesInput.value, 10) : 1;
-          callbacks.onTakeClone(plant, numClones);
-        }}
-            >
-              Take Clone
-            </button>
-          </div>
-        ` : ''}
-       ${plant.state.toLowerCase() === 'clone' ? html`
-          <div class="move-clone-container" style="display: flex; gap: var(--spacing-md); align-items: center;">
-            <!-- Growspace dropdown -->
-            <select class="form-input">
-              <option value="">Select Growspace</option>
-              ${Object.entries(growspaceOptions).map(
-          ([id, name]) => html`<option value="${id}">${name}</option>`
-        )}
-            </select>
-
-            <!-- Checkbox to confirm sending clone -->
-            <label style="display:flex; align-items:center; gap:4px;">
-              <input type="checkbox">
-              Confirm Move
-            </label>
-
-            <button class="action-button primary" 
-              @click=${(e: MouseEvent) => {
-          const container = (e.currentTarget as HTMLElement).closest('.move-clone-container');
-          if (!container) return;
-
-          const select = container.querySelector<HTMLSelectElement>('select');
-          const checkbox = container.querySelector<HTMLInputElement>('input[type="checkbox"]');
-
-          const targetGrowspace = select?.value;
-          const confirmed = checkbox?.checked;
-
-          if (!targetGrowspace) {
-            alert('Please select a growspace.');
-            return;
-          }
-          if (!confirmed) {
-            alert('Please confirm moving the clone by checking the box.');
-            return;
-          }
-
-          callbacks.onMoveClone(plant, targetGrowspace);
-        }}
-            >
-              Move Clone
-            </button>
-          </div>
-        ` : ''}
-  
-        ${plant.state.toLowerCase() === 'flower' ? html`            
-          <button class="action-button primary" @click=${() => callbacks.onHarvest(plant)}>
-            Harvest
-          </button>
-        ` : ''}
-
-        ${plant.state.toLowerCase() === 'dry' ? html`
-          <button class="action-button primary" @click=${() => callbacks.onFinishDrying(plant)}>
-            Finish Drying
-          </button>
-  ` : ''}
       </ha-dialog>
     `;
   }
 
+  // ... (Keep renderStrainLibraryDialog as is, or refactor if needed.
+  // The user specifically asked for "Plant Overview(detail view)", but strain library is separate.
+  // I will leave Strain Library alone for now to avoid scope creep, unless requested.)
   static renderStrainLibraryDialog(
     dialog: StrainLibraryDialogState | null,
     callbacks: {
@@ -446,6 +454,51 @@ export class DialogRenderer {
     `;
   }
 
+  private static renderMD3TextInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
+    return html`
+      <div class="md3-input-group">
+        <label class="md3-label">${label}</label>
+        <input
+          type="text"
+          class="md3-input"
+          .value=${value}
+          @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
+        />
+      </div>
+    `;
+  }
+
+  private static renderMD3NumberInput(label: string, value: number, onChange: (value: string) => void): TemplateResult {
+    return html`
+      <div class="md3-input-group">
+        <label class="md3-label">${label}</label>
+        <input
+          type="number"
+          class="md3-input"
+          min="1"
+          .value=${value}
+          @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
+        />
+      </div>
+    `;
+  }
+
+  private static renderMD3DateInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
+    const formattedValue = PlantUtils.toDateTimeLocal(value);
+    return html`
+      <div class="md3-input-group">
+        <label class="md3-label">${label}</label>
+        <input
+          type="datetime-local"
+          class="md3-input"
+          .value=${formattedValue}
+          @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
+        />
+      </div>
+    `;
+  }
+
+  // Legacy render methods for Add Dialog (kept simple for now as requested focused on Overview)
   private static renderTextInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
     return html`
       <div class="form-group">
@@ -494,24 +547,47 @@ export class DialogRenderer {
     `;
   }
 
-  private static renderPlantStats(plant: any): TemplateResult {
+  private static renderPlantStatsMD3(plant: any): TemplateResult {
     const hasStats = plant.attributes?.veg_days || plant.attributes?.flower_days ||
       plant.attributes?.dry_days || plant.attributes?.cure_days;
 
     if (!hasStats) return html``;
 
     return html`
-      <div style="background: rgba(var(--rgb-info-color, 33, 150, 243), 0.05); padding: var(--spacing-md); border-radius: var(--border-radius); border-left: 4px solid var(--info-color, #2196F3);">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="margin-right: 5px"><strong>Current Stage:</strong> ${plant.state}</span>
-          <div style="display: flex; gap: var(--spacing-md);">
-            ${plant.attributes?.veg_days ? html`<span>${plant.attributes.veg_days} days veg</span>` : ''}
-            ${plant.attributes?.flower_days ? html`<span>${plant.attributes.flower_days} days flower</span>` : ''}
-            ${plant.attributes?.dry_days ? html`<span>${plant.attributes.dry_days} days drying</span>` : ''}
-            ${plant.attributes?.cure_days ? html`<span>${plant.attributes.cure_days} days curing</span>` : ''}
-          </div>
+      <div class="detail-card">
+        <h3>Current Progress</h3>
+        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+           ${plant.attributes?.veg_days ? html`
+             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
+               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-veg);">${plant.attributes.veg_days}</span>
+               <span style="font-size:0.7rem; opacity:0.7;">Veg Days</span>
+             </div>
+           ` : ''}
+           ${plant.attributes?.flower_days ? html`
+             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
+               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-flower);">${plant.attributes.flower_days}</span>
+               <span style="font-size:0.7rem; opacity:0.7;">Flower Days</span>
+             </div>
+           ` : ''}
+           ${plant.attributes?.dry_days ? html`
+             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
+               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-dry);">${plant.attributes.dry_days}</span>
+               <span style="font-size:0.7rem; opacity:0.7;">Drying Days</span>
+             </div>
+           ` : ''}
+           ${plant.attributes?.cure_days ? html`
+             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
+               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-cure);">${plant.attributes.cure_days}</span>
+               <span style="font-size:0.7rem; opacity:0.7;">Curing Days</span>
+             </div>
+           ` : ''}
         </div>
       </div>
     `;
+  }
+
+  private static renderPlantStats(plant: any): TemplateResult {
+      // Keeping for legacy/Add dialog if needed, though Add dialog doesn't show stats usually
+      return this.renderPlantStatsMD3(plant);
   }
 }

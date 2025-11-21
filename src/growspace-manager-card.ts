@@ -596,6 +596,220 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       .plant {
         animation: fadeIn 0.3s ease-out;
       }
+
+      /* Glassmorphism for Dialogs */
+      ha-dialog {
+        --mdc-dialog-surface-fill-color: transparent; /* Transparent base for glass effect */
+        --mdc-dialog-min-width: 400px;
+        --mdc-dialog-max-width: 90vw;
+      }
+
+      /* Override internal dialog surface if possible, or we style the content wrapper */
+      /* Note: Home Assistant dialogs use mwc-dialog which uses mdc-dialog.
+         Directly styling shadow roots is hard, but we can try to influence it via variables
+         or style our own container inside. */
+
+      .glass-dialog-container {
+        background: rgba(30, 30, 30, 0.85); /* Darker for better contrast in all modes */
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        border-radius: 28px; /* MD3 extra large rounding */
+        padding: var(--spacing-lg);
+        color: #ffffff; /* Force white text for contrast against dark glass */
+        margin: -24px; /* Counteract default dialog padding if necessary */
+        min-width: 320px;
+      }
+
+      /* MD3 Dialog Layout */
+      .dialog-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+        padding-bottom: var(--spacing-md);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .dialog-icon {
+        width: 48px;
+        height: 48px;
+        padding: 12px;
+        border-radius: 16px; /* MD3 medium shape */
+        background: rgba(var(--stage-color-rgb, 76, 175, 80), 0.2);
+        color: var(--stage-color, #4caf50);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .dialog-title-group {
+        flex: 1;
+      }
+
+      .dialog-title {
+        font-size: 1.5rem;
+        font-weight: 500; /* MD3 Headline Small */
+        margin: 0;
+        color: #ffffff;
+      }
+
+      .dialog-subtitle {
+        font-size: 0.875rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin-top: 4px;
+        text-transform: capitalize;
+      }
+
+      /* MD3 Cards inside Dialog */
+      .detail-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .detail-card h3 {
+        margin: 0 0 var(--spacing-sm) 0;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* MD3 Input Styles */
+      .md3-input-group {
+        position: relative;
+        margin-bottom: var(--spacing-md);
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 4px 4px 0 0;
+        border-bottom: 1px solid var(--secondary-text-color);
+        transition: background 0.2s;
+      }
+
+      .md3-input-group:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .md3-input-group:focus-within {
+        background: rgba(255, 255, 255, 0.06);
+        border-bottom: 2px solid var(--primary-color);
+      }
+
+      .md3-label {
+        position: absolute;
+        left: 16px;
+        top: 8px;
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        pointer-events: none;
+        transition: 0.2s;
+      }
+
+      .md3-input-group:focus-within .md3-label {
+        color: var(--primary-color);
+      }
+
+      .md3-input {
+        width: 100%;
+        padding: 24px 16px 8px;
+        border: none;
+        background: transparent;
+        color: #ffffff;
+        font-size: 1rem;
+        font-family: inherit;
+        box-sizing: border-box;
+      }
+
+      .md3-input:focus {
+        outline: none;
+      }
+
+      /* Button Group & MD3 Buttons */
+      .button-group {
+        display: flex;
+        gap: var(--spacing-sm);
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        margin-top: var(--spacing-lg);
+      }
+
+      .md3-button {
+        height: 40px;
+        padding: 0 24px;
+        border-radius: 20px; /* Pill shape */
+        border: none;
+        font-family: inherit;
+        font-weight: 500;
+        font-size: 0.875rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        text-transform: capitalize;
+      }
+
+      .md3-button.primary {
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      }
+
+      .md3-button.primary:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        filter: brightness(1.1);
+      }
+
+      .md3-button.tonal {
+        background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.15);
+        color: var(--primary-color);
+      }
+
+      .md3-button.tonal:hover {
+        background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.25);
+      }
+
+      .md3-button.text {
+        background: transparent;
+        color: var(--primary-color);
+      }
+
+      .md3-button.text:hover {
+        background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.08);
+      }
+
+      .md3-button.danger {
+        background: transparent;
+        color: var(--error-color);
+        border: 1px solid rgba(244, 67, 54, 0.5);
+      }
+
+      .md3-button.danger:hover {
+        background: rgba(244, 67, 54, 0.1);
+      }
+
+      /* Specific adjustments for HA Dialog content constraints */
+      ha-dialog {
+        --mdc-theme-primary: var(--primary-color);
+      }
+
+      @media (max-width: 600px) {
+        .glass-dialog-container {
+            margin: -20px;
+            padding: var(--spacing-md);
+        }
+        .dialog-header {
+            flex-direction: column;
+            text-align: center;
+        }
+        .button-group {
+            justify-content: center;
+        }
+      }
     `
   ];
   protected firstUpdated() {
