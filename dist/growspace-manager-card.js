@@ -522,7 +522,7 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
            `:""}
         </div>
       </div>
-    `:U``}static renderPlantStats(t){return this.renderPlantStatsMD3(t)}}let Wa=class extends ot{constructor(){super(...arguments),this._addPlantDialog=null,this._defaultApplied=!1,this._plantOverviewDialog=null,this._strainLibraryDialog=null,this.selectedDevice=null,this._draggedPlant=null,this._isCompactView=!1,this._historyData=null,this._lightCycleCollapsed=!0,this._activeEnvGraphs=new Set,this._handleTakeClone=t=>{const e=t.attributes?.plant_id||t.entity_id.replace("sensor.","");this.hass.callService("growspace_manager","take_clone",{mother_plant_id:e}).then(()=>{console.log(`Clone taken from ${t.attributes?.strain||"plant"}`)}).catch(t=>{console.error(`Failed to take clone: ${t.message}`)})},this.clonePlant=(t,e)=>{const r=t.attributes?.plant_id||t.entity_id.replace("sensor.",""),i=e;this.hass.callService("growspace_manager","take_clone",{mother_plant_id:r,num_clones:i}).then(()=>{console.log(`Clone taken from ${t.attributes?.strain||"plant"}`)}).catch(t=>{console.error(`Failed to take clone: ${t.message}`)})}}firstUpdated(){this.dataService=new Za(this.hass),this.initializeSelectedDevice(),this._fetchHistory()}updated(t){super.updated(t),t.has("selectedDevice")&&this._fetchHistory()}async _fetchHistory(){if(!this.hass||!this.selectedDevice)return;const t=this.dataService.getGrowspaceDevices().find(t=>t.device_id===this.selectedDevice);if(!t)return;let e=t.name.toLowerCase().replace(/\s+/g,"_");t.overview_entity_id&&(e=t.overview_entity_id.replace("sensor.",""));const r=`binary_sensor.${e}_optimal_conditions`,i=new Date,a=new Date(i.getTime()-864e5);try{const t=await this.dataService.getHistory(r,a,i);this._historyData=t}catch(t){console.error("Failed to fetch history",t)}}initializeSelectedDevice(){const t=this.dataService.getGrowspaceDevices();if(t.length&&!this.selectedDevice){if(this._config?.default_growspace){const e=t.find(t=>t.device_id===this._config.default_growspace||t.name===this._config.default_growspace);if(e)return void(this.selectedDevice=e.device_id)}this.selectedDevice=t[0].device_id}}static async getConfigElement(){await Promise.resolve().then(function(){return qa});return document.createElement("growspace-manager-card-editor")}static getStubConfig(){return{default_growspace:"4x4",compact:!0}}setConfig(t){if(!t)throw new Error("Invalid configuration");this._config=t}getCardSize(){return 4}_handleDeviceChange(t){const e=t.target;this.selectedDevice=e.value}_handlePlantClick(t){this._plantOverviewDialog={open:!0,plant:t,editedAttributes:{...t.attributes}}}getHaDateTimeString(){const t=this.hass.config.time_zone||Intl.DateTimeFormat().resolvedOptions().timeZone;return Fa.now().setZone(t).toFormat("yyyy-LL-dd'T'HH:mm")}_openAddPlantDialog(t,e){const r=this.getHaDateTimeString(),i=this.dataService.getStrainLibrary(),a=i.length>0?i[0].strain:"",s=i.length>0?i[0].phenotype:"";this._addPlantDialog={open:!0,row:t,col:e,strain:a,phenotype:s,veg_start:r,flower_start:r}}async _confirmAddPlant(){if(!this._addPlantDialog||!this.selectedDevice)return;if(!this._addPlantDialog.strain)return void alert("Please enter a strain!");const{row:t,col:e,strain:r,phenotype:i,veg_start:a,flower_start:s}=this._addPlantDialog;try{const n={growspace_id:this.selectedDevice,row:t+1,col:e+1,strain:r,phenotype:i,veg_start:ja.formatDateForBackend(a)??ja.formatDateForBackend(ja.getCurrentDateTime()),flower_start:ja.formatDateForBackend(s)??ja.formatDateForBackend(ja.getCurrentDateTime())};console.log("Adding plant to growspace:",this.selectedDevice,n),console.log("Adding plant:",n),await this.dataService.addPlant(n),this._addPlantDialog=null}catch(t){console.error("Error adding plant:",t)}}async _updatePlant(){if(!this._plantOverviewDialog)return;const{plant:t,editedAttributes:e}=this._plantOverviewDialog,r={plant_id:t.attributes?.plant_id||t.entity_id.replace("sensor.","")},i=["seedling_start","mother_start","clone_start","veg_start","flower_start","dry_start","cure_start"];["strain","phenotype","row","col",...i].forEach(t=>{if(void 0!==e[t]&&null!==e[t])if(i.includes(t)){const i=ja.formatDateForBackend(String(e[t]));i&&(r[t]=i)}else r[t]=e[t]});try{await this.dataService.updatePlant(r),this._plantOverviewDialog=null}catch(t){console.error("Error updating plant:",t)}}async _handleDeletePlant(t){if(confirm("Are you sure you want to delete this plant?"))try{await this.dataService.removePlant(t),this._plantOverviewDialog=null}catch(t){console.error("Error deleting plant:",t)}}async _movePlantToNextStage(t){if(!this._plantOverviewDialog?.plant)return void console.error("No plant found in overview dialog");const e=this._plantOverviewDialog.plant,r=e.attributes?.stage;let i="";const a=new Set(["mother","flower","dry","cure"]);if(r&&a.has(r)){"flower"===r?i="dry":"dry"===r?i="cure":"mother"===r?i="clone":(console.error("Unknown stage, cannot move plant",i),i="error");try{const t=e.attributes?.plant_id||e.entity_id.replace("sensor.","");await this.dataService.harvestPlant(t,i),this._plantOverviewDialog=null}catch(t){console.error("Error moving plant to next stage:",t)}}else alert("Plant must be in mother or flower or dry or cure stage to move. stage is "+r)}async _harvestPlant(t){await this._movePlantToNextStage(t)}async _finishDryingPlant(t){await this._movePlantToNextStage(t)}_openStrainLibraryDialog(){const t=this.dataService.getStrainLibrary();this._strainLibraryDialog={open:!0,newStrain:"",newPhenotype:"",strains:t,searchQuery:"",isAddFormOpen:!1,expandedStrains:[],confirmClearAll:!1}}_toggleStrainExpansion(t){if(!this._strainLibraryDialog)return;const e=this._strainLibraryDialog.expandedStrains||[],r=e.includes(t);this._strainLibraryDialog.expandedStrains=r?e.filter(e=>e!==t):[...e,t],this.requestUpdate()}_toggleLightCycle(){this._lightCycleCollapsed=!this._lightCycleCollapsed}_toggleEnvGraph(t){const e=new Set(this._activeEnvGraphs);e.has(t)?e.delete(t):e.add(t),this._activeEnvGraphs=e,this.requestUpdate()}renderEnvGraph(t,e,r,i){if(!this._historyData||0===this._historyData.length)return U``;const a=[...this._historyData].sort((t,e)=>new Date(t.last_changed).getTime()-new Date(e.last_changed).getTime()),s=new Date,n=new Date(s.getTime()-864e5),o=[];if(a.forEach(e=>{const r=new Date(e.last_changed).getTime();if(r<n.getTime())return;const i=((t,e)=>{if(t&&t.attributes)return void 0!==t.attributes[e]?t.attributes[e]:t.attributes.observations&&"object"==typeof t.attributes.observations?t.attributes.observations[e]:void 0})(e,t);void 0===i||isNaN(parseFloat(i))||o.push({time:r,value:parseFloat(i)})}),o.length<2)return U``;const l=Math.min(...o.map(t=>t.value)),c=Math.max(...o.map(t=>t.value)),d=c-l||1,u=l-.1*d,h=c+.1*d-u,p=o.map(t=>[(t.time-n.getTime())/864e5*1e3,100-(t.value-u)/h*100]),g=`M ${p.map(t=>`${t[0]},${t[1]}`).join(" L ")}`;return U`
+    `:U``}static renderPlantStats(t){return this.renderPlantStatsMD3(t)}}let Wa=class extends ot{constructor(){super(...arguments),this._addPlantDialog=null,this._defaultApplied=!1,this._plantOverviewDialog=null,this._strainLibraryDialog=null,this.selectedDevice=null,this._draggedPlant=null,this._isCompactView=!1,this._historyData=null,this._lightCycleCollapsed=!0,this._activeEnvGraphs=new Set,this._handleTakeClone=t=>{const e=t.attributes?.plant_id||t.entity_id.replace("sensor.","");this.hass.callService("growspace_manager","take_clone",{mother_plant_id:e}).then(()=>{console.log(`Clone taken from ${t.attributes?.strain||"plant"}`)}).catch(t=>{console.error(`Failed to take clone: ${t.message}`)})},this.clonePlant=(t,e)=>{const r=t.attributes?.plant_id||t.entity_id.replace("sensor.",""),i=e;this.hass.callService("growspace_manager","take_clone",{mother_plant_id:r,num_clones:i}).then(()=>{console.log(`Clone taken from ${t.attributes?.strain||"plant"}`)}).catch(t=>{console.error(`Failed to take clone: ${t.message}`)})}}firstUpdated(){this.dataService=new Za(this.hass),this.initializeSelectedDevice(),this._fetchHistory()}updated(t){super.updated(t),t.has("selectedDevice")&&this._fetchHistory()}async _fetchHistory(){if(!this.hass||!this.selectedDevice)return;const t=this.dataService.getGrowspaceDevices().find(t=>t.device_id===this.selectedDevice);if(!t)return;let e=t.name.toLowerCase().replace(/\s+/g,"_");t.overview_entity_id&&(e=t.overview_entity_id.replace("sensor.",""));const r=`binary_sensor.${e}_optimal_conditions`,i=new Date,a=new Date(i.getTime()-864e5);try{const t=await this.dataService.getHistory(r,a,i);this._historyData=t}catch(t){console.error("Failed to fetch history",t)}}initializeSelectedDevice(){const t=this.dataService.getGrowspaceDevices();if(t.length&&!this.selectedDevice){if(this._config?.default_growspace){const e=t.find(t=>t.device_id===this._config.default_growspace||t.name===this._config.default_growspace);if(e)return void(this.selectedDevice=e.device_id)}this.selectedDevice=t[0].device_id}}static async getConfigElement(){await Promise.resolve().then(function(){return qa});return document.createElement("growspace-manager-card-editor")}static getStubConfig(){return{default_growspace:"4x4",compact:!0}}setConfig(t){if(!t)throw new Error("Invalid configuration");this._config=t,void 0!==this._config.compact&&(this._isCompactView=this._config.compact)}getCardSize(){return 4}_handleDeviceChange(t){const e=t.target;this.selectedDevice=e.value}_handlePlantClick(t){this._plantOverviewDialog={open:!0,plant:t,editedAttributes:{...t.attributes}}}getHaDateTimeString(){const t=this.hass.config.time_zone||Intl.DateTimeFormat().resolvedOptions().timeZone;return Fa.now().setZone(t).toFormat("yyyy-LL-dd'T'HH:mm")}_openAddPlantDialog(t,e){const r=this.getHaDateTimeString(),i=this.dataService.getStrainLibrary(),a=i.length>0?i[0].strain:"",s=i.length>0?i[0].phenotype:"";this._addPlantDialog={open:!0,row:t,col:e,strain:a,phenotype:s,veg_start:r,flower_start:r}}async _confirmAddPlant(){if(!this._addPlantDialog||!this.selectedDevice)return;if(!this._addPlantDialog.strain)return void alert("Please enter a strain!");const{row:t,col:e,strain:r,phenotype:i,veg_start:a,flower_start:s}=this._addPlantDialog;try{const n={growspace_id:this.selectedDevice,row:t+1,col:e+1,strain:r,phenotype:i,veg_start:ja.formatDateForBackend(a)??ja.formatDateForBackend(ja.getCurrentDateTime()),flower_start:ja.formatDateForBackend(s)??ja.formatDateForBackend(ja.getCurrentDateTime())};console.log("Adding plant to growspace:",this.selectedDevice,n),console.log("Adding plant:",n),await this.dataService.addPlant(n),this._addPlantDialog=null}catch(t){console.error("Error adding plant:",t)}}async _updatePlant(){if(!this._plantOverviewDialog)return;const{plant:t,editedAttributes:e}=this._plantOverviewDialog,r={plant_id:t.attributes?.plant_id||t.entity_id.replace("sensor.","")},i=["seedling_start","mother_start","clone_start","veg_start","flower_start","dry_start","cure_start"];["strain","phenotype","row","col",...i].forEach(t=>{if(void 0!==e[t]&&null!==e[t])if(i.includes(t)){const i=ja.formatDateForBackend(String(e[t]));i&&(r[t]=i)}else r[t]=e[t]});try{await this.dataService.updatePlant(r),this._plantOverviewDialog=null}catch(t){console.error("Error updating plant:",t)}}async _handleDeletePlant(t){if(confirm("Are you sure you want to delete this plant?"))try{await this.dataService.removePlant(t),this._plantOverviewDialog=null}catch(t){console.error("Error deleting plant:",t)}}async _movePlantToNextStage(t){if(!this._plantOverviewDialog?.plant)return void console.error("No plant found in overview dialog");const e=this._plantOverviewDialog.plant,r=e.attributes?.stage;let i="";const a=new Set(["mother","flower","dry","cure"]);if(r&&a.has(r)){"flower"===r?i="dry":"dry"===r?i="cure":"mother"===r?i="clone":(console.error("Unknown stage, cannot move plant",i),i="error");try{const t=e.attributes?.plant_id||e.entity_id.replace("sensor.","");await this.dataService.harvestPlant(t,i),this._plantOverviewDialog=null}catch(t){console.error("Error moving plant to next stage:",t)}}else alert("Plant must be in mother or flower or dry or cure stage to move. stage is "+r)}async _harvestPlant(t){await this._movePlantToNextStage(t)}async _finishDryingPlant(t){await this._movePlantToNextStage(t)}_openStrainLibraryDialog(){const t=this.dataService.getStrainLibrary();this._strainLibraryDialog={open:!0,newStrain:"",newPhenotype:"",strains:t,searchQuery:"",isAddFormOpen:!1,expandedStrains:[],confirmClearAll:!1}}_toggleStrainExpansion(t){if(!this._strainLibraryDialog)return;const e=this._strainLibraryDialog.expandedStrains||[],r=e.includes(t);this._strainLibraryDialog.expandedStrains=r?e.filter(e=>e!==t):[...e,t],this.requestUpdate()}_toggleLightCycle(){this._lightCycleCollapsed=!this._lightCycleCollapsed}_toggleEnvGraph(t){const e=new Set(this._activeEnvGraphs);e.has(t)?e.delete(t):e.add(t),this._activeEnvGraphs=e,this.requestUpdate()}renderEnvGraph(t,e,r,i){if(!this._historyData||0===this._historyData.length)return U``;const a=[...this._historyData].sort((t,e)=>new Date(t.last_changed).getTime()-new Date(e.last_changed).getTime()),s=new Date,n=new Date(s.getTime()-864e5),o=[];if(a.forEach(e=>{const r=new Date(e.last_changed).getTime();if(r<n.getTime())return;const i=((t,e)=>{if(t&&t.attributes)return void 0!==t.attributes[e]?t.attributes[e]:t.attributes.observations&&"object"==typeof t.attributes.observations?t.attributes.observations[e]:void 0})(e,t);void 0===i||isNaN(parseFloat(i))||o.push({time:r,value:parseFloat(i)})}),o.length<2)return U``;const l=Math.min(...o.map(t=>t.value)),c=Math.max(...o.map(t=>t.value)),d=c-l||1,u=l-.1*d,h=c+.1*d-u,p=o.map(t=>[(t.time-n.getTime())/864e5*1e3,100-(t.value-u)/h*100]),g=`M ${p.map(t=>`${t[0]},${t[1]}`).join(" L ")}`;return U`
       <div class="gs-light-cycle-card" style="margin-top: 12px; border: 1px solid ${e}40;">
          <div class="gs-light-header-row" @click=${()=>this._toggleEnvGraph(t)}>
              <div class="gs-light-title" style="font-size: 1.2rem;">
@@ -558,14 +558,16 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
       </div>
     `}_setStrainSearchQuery(t){this._strainLibraryDialog&&(this._strainLibraryDialog.searchQuery=t,this.requestUpdate())}_toggleAddStrainForm(){this._strainLibraryDialog&&(this._strainLibraryDialog.isAddFormOpen=!this._strainLibraryDialog.isAddFormOpen,this.requestUpdate())}_promptClearAll(){this._strainLibraryDialog&&(this._strainLibraryDialog.confirmClearAll=!0,this.requestUpdate())}_cancelClearAll(){this._strainLibraryDialog&&(this._strainLibraryDialog.confirmClearAll=!1,this.requestUpdate())}async _addStrain(){if(!this._strainLibraryDialog?.newStrain)return;const t=this._strainLibraryDialog.newStrain,e=this._strainLibraryDialog.newPhenotype;try{await this.dataService.addStrain(t,e);const r=`${t}|${e||"default"}`,i={strain:t,phenotype:e,key:r};this._strainLibraryDialog.strains.some(t=>t.key===r)||this._strainLibraryDialog.strains.push(i),this._strainLibraryDialog.newStrain="",this._strainLibraryDialog.newPhenotype="",this._strainLibraryDialog.isAddFormOpen=!1,this.requestUpdate()}catch(t){console.error("Error adding strain:",t)}}async _removeStrain(t){if(this._strainLibraryDialog)try{const e=t.split("|"),r=e[0],i=e.length>1&&"default"!==e[1]?e[1]:void 0;await this.dataService.removeStrain(r,i),this._strainLibraryDialog.strains=this._strainLibraryDialog.strains.filter(e=>e.key!==t),this.requestUpdate()}catch(t){console.error("Error removing strain:",t)}}async _clearStrains(){await this.dataService.clearStrainLibrary(),this._strainLibraryDialog&&(this._strainLibraryDialog.strains=[],this._strainLibraryDialog.confirmClearAll=!1,this.requestUpdate())}updateGrid(){this.dataService=new Za(this.hass),this.requestUpdate()}_handleDragStart(t,e){this._draggedPlant=e,t.dataTransfer?.setData("text/plain",JSON.stringify({id:e.entity_id}));t.target.classList.add("dragging")}_handleDragEnd(t){t.target.classList.remove("dragging")}_handleDragOver(t){t.preventDefault()}async _handleDrop(t,e,r,i){if(t.preventDefault(),!this._draggedPlant||!this.selectedDevice)return;const a=this._draggedPlant;this._draggedPlant=null;try{if(i){const t=a.attributes.plant_id||a.entity_id.replace("sensor.",""),e=i.attributes.plant_id||i.entity_id.replace("sensor.","");await this.hass.callService("growspace_manager","switch_plants",{plant1_id:t,plant2_id:e}),this.updateGrid()}else await this._movePlant(a,e,r)}catch(t){console.error("Error during drag-and-drop:",t)}}async _movePlant(t,e,r){try{const i=t.attributes?.plant_id||t.entity_id.replace("sensor.","");await this.dataService.updatePlant({plant_id:i,row:e,col:r})}catch(t){console.error("Error moving plant:",t)}}_moveClonePlant(t,e){this.hass.callService("growspace_manager","move_clone",{plant_id:t.attributes.plant_id,target_growspace_id:e}).then(()=>{console.log(`Moved clone ${t.attributes.friendly_name} to ${e}`),this._plantOverviewDialog=null}).catch(t=>{console.error("Error moving clone:",t)})}render(){if(!this.hass)return U`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;this.dataService=new Za(this.hass);const t=this.dataService.getGrowspaceDevices();if(!t.length)return U`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;if(!this._defaultApplied&&this._config?.default_growspace){const e=t.find(t=>t.device_id===this._config.default_growspace||t.name===this._config.default_growspace);e&&(this.selectedDevice=e.device_id),this._defaultApplied=!0}this.selectedDevice&&t.find(t=>t.device_id===this.selectedDevice)||(this.selectedDevice=t[0].device_id);const e=t.find(t=>t.device_id===this.selectedDevice);if(!e)return U`<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;const r=this.hass.states["sensor.growspaces_list"]?.attributes?.growspaces;r&&Object.entries(r).forEach(([t,e])=>{});const i=ja.calculateEffectiveRows(e),{grid:a}=ja.createGridLayout(e.plants,i,e.plants_per_row),s=e.plants_per_row>6;return U`
       <ha-card class=${s?"wide-growspace":""}>
-        ${this._isCompactView?"":this.renderGrowspaceHeader(e)}
-        ${this.renderHeader(t)}
-        ${this.renderGrid(a,i,e.plants_per_row)}
+        <div class="unified-growspace-card">
+          ${this.renderHeader(t)}
+          ${this._isCompactView?"":this.renderGrowspaceHeader(e)}
+          ${this.renderGrid(a,i,e.plants_per_row)}
+        </div>
       </ha-card>
       
       ${this.renderDialogs()}
     `}renderGrowspaceHeader(t){const e=ja.getDominantStage(t.plants),r=this.dataService.getGrowspaceDevices();let i=t.name.toLowerCase().replace(/\s+/g,"_");t.overview_entity_id&&(i=t.overview_entity_id.replace("sensor.",""));const a=`binary_sensor.${i}_optimal_conditions`,s=this.hass.states[a],n=(t,e)=>{if(t&&t.attributes)return void 0!==t.attributes[e]?t.attributes[e]:t.attributes.observations&&"object"==typeof t.attributes.observations?t.attributes.observations[e]:void 0},o=n(s,"temperature"),l=n(s,"humidity"),c=n(s,"vpd"),d=n(s,"co2"),u=!0===n(s,"is_lights_on");let h="",p="--:--",g="--:--",m="",f="";const y=t.plants.some(t=>"flower"===t.attributes.stage),v=y?"12/12 Cycle":"18/6 Cycle";if(this._historyData&&this._historyData.length>0){const t=[...this._historyData].sort((t,e)=>new Date(t.last_changed).getTime()-new Date(e.last_changed).getTime()),e=new Date,r=new Date(e.getTime()-864e5),i=1e3,a=100,s=[];let o=t.length>0?!0!==n(t[0],"is_lights_on"):u;const l=[];t.forEach(t=>{const e=new Date(t.last_changed).getTime(),i=!0===n(t,"is_lights_on");e>=r.getTime()&&l.push({time:e,state:i})}),o=l.length>0?!l[0].state:u,s.push([0,o?0:a]),l.forEach(t=>{const e=(t.time-r.getTime())/864e5*i;s.push([e,o?0:a]),o=t.state,s.push([e,o?0:a])}),s.push([i,o?0:a]),h=`M ${s.map(t=>`${t[0]},${t[1]}`).join(" L ")}`;const c=[...t].reverse(),d=c.find(t=>!0===n(t,"is_lights_on"));if(d){const t=new Date(d.last_changed);p=t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:!0}).replace(/ [AP]M/,""),m=t.toLocaleTimeString([],{hour12:!0}).slice(-2)}const y=c.find(t=>!1===n(t,"is_lights_on"));if(y){const t=new Date(y.last_changed);g=t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:!0}).replace(/ [AP]M/,""),f=t.toLocaleTimeString([],{hour12:!0}).slice(-2)}}return U`
-      <div class="growspace-header-card">
+      <div class="gs-stats-container">
          <div class="gs-header-top">
             <div class="gs-title-group">
                <!-- Title as Dropdown if no default is set -->
@@ -847,8 +849,8 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
         box-shadow: var(--card-shadow-hover);
       }
 
-      /* Growspace Header Styles - Glassmorphism & Gradient */
-      .growspace-header-card {
+      /* Unified Card Container - Glassmorphism & Gradient */
+      .unified-growspace-card {
         /* Fallback */
         background: rgba(30, 30, 35, 0.6);
         /* Gradient approximating the screenshot */
@@ -859,7 +861,6 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 24px;
         padding: 24px;
-        margin-bottom: var(--spacing-lg);
         display: flex;
         flex-direction: column;
         gap: 20px;
@@ -867,6 +868,12 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
         position: relative;
         overflow: hidden;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      }
+
+      .gs-stats-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
       }
 
       .gs-header-top {
@@ -1201,7 +1208,6 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
         flex-wrap: wrap;
         gap: var(--spacing-md);
         padding: var(--spacing-sm) 0;
-        border-bottom: 2px solid var(--divider-color);
       }
 
       .header-title {
@@ -1270,21 +1276,10 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
       .grid {
         display: grid;
         gap: var(--spacing-md);
-        margin-top: var(--spacing-lg);
-        padding: 20px;
-
-        /* Glass effect */
-        background: rgba(30, 30, 35, 0.4);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 24px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
       }
 
       .grid.compact {
         gap: var(--spacing-sm);
-        padding: var(--spacing-md);
       }
 
       .plant {
@@ -1718,12 +1713,95 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
         .selector-container {
           justify-content: center;
         }
+        /* Switch Grid to List View */
         .grid {
+          display: flex;
+          flex-direction: column;
           gap: var(--spacing-sm);
+          grid-template-columns: 1fr !important;
+          grid-template-rows: auto !important;
         }
         .plant {
-          min-height: 80px;
+          min-height: auto;
+          aspect-ratio: unset;
+          display: grid;
+          grid-template-columns: 48px 1fr auto;
+          grid-template-rows: auto auto;
+          grid-template-areas:
+            "icon name stage"
+            "icon phenotype days";
+          padding: 12px;
+          gap: 4px 12px;
+          text-align: left;
         }
+        .plant-name, .plant-phenotype, .plant-stage, .plant-days {
+          text-align: left;
+          min-height: 0;
+          margin: 0;
+        }
+        .plant-header {
+          justify-content: center; /* Icon stays centered in its box */
+        }
+        .plant-name {
+          font-size: 1rem;
+          align-self: end;
+        }
+        .plant-phenotype {
+          font-size: 0.85rem;
+          align-self: start;
+        }
+        .plant-stage {
+          font-size: 0.85rem;
+          text-align: right;
+          align-self: end;
+        }
+        .plant-days {
+          justify-content: flex-end;
+          font-size: 0.8rem;
+        }
+        .plant-days span {
+           flex-direction: row;
+           gap: 4px;
+        }
+        .plant-days span svg {
+           width: 1.2rem;
+           height: 1.2rem;
+        }
+
+        /* Empty Slot in List View */
+        .plant.empty {
+           display: flex;
+           align-items: center;
+           gap: 12px;
+           padding: 12px;
+        }
+        .plant.empty .plant-header {
+           margin: 0;
+        }
+        .plant.empty .plant-name {
+           font-size: 1rem;
+           margin: 0;
+        }
+        .plant.empty .plant-stage {
+           display: none;
+        }
+
+        /* Header vertical stacking */
+        .gs-header-top {
+            flex-direction: column;
+        }
+        .gs-stats-chips {
+            flex-direction: column;
+            width: 100%;
+            align-items: stretch;
+            gap: 4px;
+        }
+        .stat-chip {
+            width: 100%;
+            box-sizing: border-box;
+            justify-content: space-between; /* Icon/Value spread */
+        }
+
         /* Mobile specific dialog adjustments */
         ha-dialog.strain-dialog .mdc-dialog__surface {
             width: 100vw !important;
