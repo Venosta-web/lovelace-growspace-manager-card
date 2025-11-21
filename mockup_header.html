@@ -1,0 +1,336 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growspace Header Mockup</title>
+    <style>
+      body {
+        background-color: #000;
+        font-family: 'Roboto', sans-serif;
+        padding: 20px;
+      }
+
+      /* Copied CSS from GrowspaceManagerCard */
+      :root {
+        --spacing-xs: 4px;
+        --spacing-sm: 8px;
+        --spacing-md: 16px;
+        --spacing-lg: 24px;
+      }
+
+      .growspace-header-card {
+        background: #1a1a1d;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 32px;
+        padding: 24px;
+        margin-bottom: var(--spacing-lg);
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .gs-header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--spacing-md);
+      }
+
+      .gs-title-group {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .gs-icon-box {
+         width: 48px;
+         height: 48px;
+         border-radius: 12px;
+         background: linear-gradient(135deg, rgba(255, 235, 59, 0.2), rgba(255, 193, 7, 0.1));
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         border: 1px solid rgba(255, 235, 59, 0.3);
+         box-shadow: 0 0 15px rgba(255, 235, 59, 0.1);
+      }
+
+      .gs-icon-box svg {
+         width: 28px;
+         height: 28px;
+         fill: #FFD700;
+      }
+
+      .gs-text-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .gs-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+        letter-spacing: -0.5px;
+      }
+
+      .gs-subtitle {
+         font-size: 0.75rem;
+         color: rgba(255, 255, 255, 0.5);
+         text-transform: uppercase;
+         letter-spacing: 1px;
+         font-weight: 500;
+      }
+
+      .gs-status-group {
+         text-align: right;
+      }
+
+      .status-indicator {
+         display: flex;
+         align-items: center;
+         justify-content: flex-end;
+         gap: 8px;
+         font-size: 1.5rem;
+         font-weight: 700;
+         color: rgba(255, 255, 255, 0.5);
+      }
+
+      .status-indicator.on {
+         color: #FFD700;
+         text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+      }
+
+      .status-dot {
+         width: 12px;
+         height: 12px;
+         border-radius: 50%;
+         background: currentColor;
+         box-shadow: 0 0 8px currentColor;
+      }
+
+      .target-label {
+         font-size: 0.9rem;
+         color: rgba(255, 255, 255, 0.5);
+         margin-top: 4px;
+         font-weight: 500;
+      }
+
+      .gs-graph-area {
+         position: relative;
+         height: 200px;
+         width: 100%;
+         background: rgba(255, 255, 255, 0.02);
+         border-radius: 16px;
+         padding: 16px 0;
+         box-sizing: border-box;
+      }
+
+      .gs-graph-svg {
+         width: 100%;
+         height: 100%;
+         overflow: visible;
+      }
+
+      .graph-path {
+         fill: none;
+         stroke: #FFD700;
+         stroke-width: 2;
+         stroke-linejoin: round;
+         stroke-linecap: round;
+         filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5));
+      }
+
+      .graph-axis-labels {
+         position: absolute;
+         bottom: 10px;
+         left: 0;
+         right: 0;
+         display: flex;
+         justify-content: space-between;
+         padding: 0 20px;
+         font-size: 0.7rem;
+         color: rgba(255, 255, 255, 0.3);
+         font-weight: 500;
+      }
+
+      .gs-footer-cards {
+         display: flex;
+         gap: 16px;
+      }
+
+      .info-card {
+         flex: 1;
+         background: rgba(255, 255, 255, 0.05);
+         border-radius: 16px;
+         padding: 16px;
+         display: flex;
+         align-items: center;
+         justify-content: space-between;
+         border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .info-card-left {
+         display: flex;
+         align-items: center;
+         gap: 16px;
+      }
+
+      .info-icon-circle {
+         width: 40px;
+         height: 40px;
+         border-radius: 50%;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+      }
+
+      .info-icon-circle.sun {
+         background: rgba(255, 235, 59, 0.15);
+         color: #FFD700;
+      }
+
+      .info-icon-circle.moon {
+         background: rgba(121, 134, 203, 0.15);
+         color: #7986CB;
+      }
+
+      .info-text h4 {
+         margin: 0;
+         font-size: 0.7rem;
+         text-transform: uppercase;
+         color: rgba(255, 255, 255, 0.5);
+         font-weight: 600;
+         letter-spacing: 0.5px;
+      }
+
+      .info-text .time-value {
+         font-size: 1.2rem;
+         font-weight: 700;
+         color: #fff;
+         margin-top: 2px;
+      }
+
+      .info-text .time-value span {
+         font-size: 0.8rem;
+         font-weight: 500;
+         color: rgba(255, 255, 255, 0.6);
+         margin-left: 2px;
+      }
+
+      .info-card-arrow {
+         color: rgba(255, 255, 255, 0.2);
+      }
+
+      @keyframes glowPulse {
+         0% { filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5)); }
+         50% { filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.8)); }
+         100% { filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5)); }
+      }
+
+      .graph-path.animating {
+         animation: glowPulse 3s infinite ease-in-out;
+      }
+    </style>
+</head>
+<body>
+
+      <div class="growspace-header-card">
+         <!-- Top Row -->
+         <div class="gs-header-top">
+            <div class="gs-title-group">
+               <div class="gs-icon-box">
+                  <!-- mdiWeatherSunny -->
+                  <svg viewBox="0 0 24 24"><path d="M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,5.29C7.24,5.84 7.03,6.44 6.91,7.08L3.34,7M3.34,17L6.91,16.92C7.03,17.56 7.24,18.16 7.5,18.71L3.34,17M20.65,17L16.5,18.71C16.76,18.16 16.97,17.56 17.09,16.92L20.65,17M20.65,7L17.09,7.08C16.97,6.44 16.76,5.84 16.5,5.29L20.65,7M12,22L9.61,18.58C10.35,18.85 11.16,19 12,19C12.84,19 13.65,18.85 14.39,18.58L12,22Z"></path></svg>
+               </div>
+               <div class="gs-text-info">
+                  <h3 class="gs-title">Light Cycle</h3>
+                  <div class="gs-subtitle">24H HISTORY</div>
+               </div>
+            </div>
+
+            <div class="gs-status-group">
+               <div class="status-indicator on">
+                  <div class="status-dot"></div>
+                  ON
+               </div>
+               <div class="target-label">Target: 18/6 Cycle</div>
+            </div>
+         </div>
+
+         <!-- Graph Area -->
+         <div class="gs-graph-area">
+             <svg class="gs-graph-svg" viewBox="0 0 1000 200" preserveAspectRatio="none">
+                <defs>
+                   <linearGradient id="gradientFill" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stop-color="#FFD700" stop-opacity="0.5"/>
+                      <stop offset="100%" stop-color="#FFD700" stop-opacity="0"/>
+                   </linearGradient>
+                </defs>
+
+                <!-- Fake path for ON state with 18/6 cycle -->
+                <!-- Start ON (0,20), Drop to OFF (0,180) at 75% width? -->
+                <!-- Let's simulate: On from -24h to -6h, Off -6h to 0h (NOW) -->
+                <!-- Or matches screenshot: On, Off (gap), On -->
+                <path class="graph-path animating" d="M 0,20 L 400,20 L 400,180 L 650,180 L 650,20 L 1000,20" vector-effect="non-scaling-stroke" />
+             </svg>
+
+             <div class="graph-axis-labels">
+                 <span>-24H</span>
+                 <span>-18H</span>
+                 <span>-12H</span>
+                 <span>-6H</span>
+                 <span>NOW</span>
+             </div>
+         </div>
+
+         <!-- Footer Cards -->
+         <div class="gs-footer-cards">
+            <div class="info-card">
+               <div class="info-card-left">
+                  <div class="info-icon-circle sun">
+                     <!-- mdiWeatherSunny -->
+                     <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,5.29C7.24,5.84 7.03,6.44 6.91,7.08L3.34,7M3.34,17L6.91,16.92C7.03,17.56 7.24,18.16 7.5,18.71L3.34,17M20.65,17L16.5,18.71C16.76,18.16 16.97,17.56 17.09,16.92L20.65,17M20.65,7L17.09,7.08C16.97,6.44 16.76,5.84 16.5,5.29L20.65,7M12,22L9.61,18.58C10.35,18.85 11.16,19 12,19C12.84,19 13.65,18.85 14.39,18.58L12,22Z"></path></svg>
+                  </div>
+                  <div class="info-text">
+                     <h4>Light On</h4>
+                     <div class="time-value">
+                        06:00 <span>AM</span>
+                     </div>
+                  </div>
+               </div>
+               <div class="info-card-arrow">
+                  <!-- mdiChevronRight -->
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"></path></svg>
+               </div>
+            </div>
+
+            <div class="info-card">
+               <div class="info-card-left">
+                  <div class="info-icon-circle moon">
+                     <!-- mdiWeatherNight -->
+                     <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.84 4.94,4.94C6.86,3.03 9.38,2.08 11.9,2C11.9,2 12.75,2 13,2.05C10.79,3.56 9.31,6.07 9.31,8.91C9.31,13.5 13.03,17.23 17.63,17.23C18.11,17.23 18.57,17.19 19,17.1C19,17.1 18.66,15.97 18.97,15.95Z"></path></svg>
+                  </div>
+                  <div class="info-text">
+                     <h4>Light Off</h4>
+                     <div class="time-value">
+                        12:00 <span>AM</span>
+                     </div>
+                  </div>
+               </div>
+               <div class="info-card-arrow">
+                   <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"></path></svg>
+               </div>
+            </div>
+         </div>
+      </div>
+
+</body>
+</html>

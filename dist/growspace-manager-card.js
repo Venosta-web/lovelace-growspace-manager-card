@@ -116,7 +116,7 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
             </div>
             <button class="md3-button text" @click=${r.onClose} style="min-width: auto; padding: 8px;">
                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                 <path d="${mt}"></path>
+                 <path d="${ft}"></path>
                </svg>
             </button>
           </div>
@@ -147,7 +147,7 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
               Cancel
             </button>
             <button class="md3-button primary" @click=${r.onConfirm}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${bt}"></path></svg>
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${wt}"></path></svg>
               Add Plant
             </button>
           </div>
@@ -177,7 +177,7 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
             </div>
             <button class="md3-button text" @click=${r.onClose} style="min-width: auto; padding: 8px;">
                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                 <path d="${mt}"></path>
+                 <path d="${ft}"></path>
                </svg>
             </button>
           </div>
@@ -212,7 +212,7 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
 
           <!-- ACTION BUTTONS -->
           <div class="button-group">
-             <button class="md3-button danger" @click=${()=>r.onDelete(i)}>
+             <button class="md3-button danger" @click=${()=>r.onDelete(a)}>
                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${"M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"}"></path></svg>
                Delete
              </button>
@@ -310,7 +310,7 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
                         <svg style="width:24px;height:24px;fill:currentColor;"
                              class="rotate-icon ${s?"expanded":""}"
                              viewBox="0 0 24 24">
-                          <path d="${"M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"}"></path>
+                          <path d="${mt}"></path>
                         </svg>
                       </td>
                       <td class="strain-cell content">
@@ -321,7 +321,7 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
                     ${s?U`
                       <tr class="pheno-row">
                         <td colspan="3" class="pheno-list">
-                           ${i.map(t=>U`
+                           ${a.map(t=>U`
                               <div class="pheno-item">
                                 <span>${t.phenotype||"Default (No Phenotype)"}</span>
                                 <button
@@ -330,7 +330,7 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
                                   @click=${r=>{r.stopPropagation(),e.onRemoveStrain(t.key)}}
                                 >
                                   <svg class="remove-icon" viewBox="0 0 24 24">
-                                    <path d="${mt}"></path>
+                                    <path d="${ft}"></path>
                                   </svg>
                                 </button>
                               </div>
@@ -350,7 +350,7 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
           <!-- FAB for Adding Strains -->
           <button class="fab-button" @click=${e.onToggleAddForm}>
              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${t.isAddFormOpen?mt:vt}"></path>
+                <path d="${t.isAddFormOpen?ft:bt}"></path>
              </svg>
           </button>
 
@@ -531,6 +531,7 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
       ${this.renderDialogs()}
     `}renderGrowspaceHeader(t,e){const r=Fs.getDominantStage(e.plants);let a=e.name.toLowerCase().replace(/\s+/g,"_");e.overview_entity_id&&(a=e.overview_entity_id.replace("sensor.",""));const s=`binary_sensor.${a}_optimal_conditions`,i=this.hass.states[s],n=(t,e)=>{if(t&&t.attributes)return void 0!==t.attributes[e]?t.attributes[e]:t.attributes.observations&&"object"==typeof t.attributes.observations?t.attributes.observations[e]:void 0},o=n(i,"temperature"),l=n(i,"humidity"),c=n(i,"vpd"),d=n(i,"co2"),u=!0===n(i,"is_lights_on");let h="0h 0m",p=new Array(24).fill(!1);if(this._historyData&&this._historyData.length>0){const t=[...this._historyData].sort((t,e)=>new Date(e.last_changed).getTime()-new Date(t.last_changed).getTime()),e=u,r=t.findIndex(t=>!0===n(t,"is_lights_on")!==e);let a=null;if(0===r)a=new Date;else if(-1===r)t.length>0&&(a=new Date(t[t.length-1].last_changed),h="> 24h");else{const e=t[r-1];a=new Date(e.last_changed)}if(a){const t=(new Date).getTime()-a.getTime(),e=Math.floor(t/6e4);if("> 24h"!==h){h=`${Math.floor(e/60)}h ${e%60}m`}}const s=new Date;for(let e=0;e<24;e++){const r=new Date(s.getTime()-60*(23-e)*60*1e3),a=t.find(t=>new Date(t.last_changed)<=r);if(a)p[e]=!0===n(a,"is_lights_on");else if(t.length>0){const r=t[t.length-1];p[e]=!0===n(r,"is_lights_on")}}}return U`
       <div class="growspace-header-card">
+         <!-- Top Row -->
          <div class="gs-header-top">
             <div class="gs-title-group">
                ${this._config?.default_growspace?U`
@@ -549,7 +550,6 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${Fs.getPlantStageIcon(r.stage)}"></path></svg>
                  ${r.stage.charAt(0).toUpperCase()+r.stage.slice(1)} • Day ${r.days}
                </div>
-               `:""}
             </div>
 
             <div class="gs-stats-chips">
@@ -576,10 +576,22 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
                  <div class="chart-bar ${t?"active":""}"></div>
                `)}
             </div>
-            <div class="chart-markers">
-               <span>-24h</span>
-               <span>-12h</span>
-               <span>Now</span>
+
+            <div class="info-card">
+               <div class="info-card-left">
+                  <div class="info-icon-circle moon">
+                     <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${"M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z"}"></path></svg>
+                  </div>
+                  <div class="info-text" title="${"--:--"===o?"Light data not available":""}">
+                     <h4>Light Off</h4>
+                     <div class="time-value">
+                        ${o.replace(/ [AP]M/,"")} <span>${o.includes("AM")?"AM":o.includes("PM")?"PM":""}</span>
+                     </div>
+                  </div>
+               </div>
+               <div class="info-card-arrow">
+                   <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mt}"></path></svg>
+               </div>
             </div>
          </div>
       </div>
@@ -637,7 +649,7 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
       >
         <div class="plant-header">
           <svg class="plant-icon" viewBox="0 0 24 24">
-            <path d="${vt}"></path>
+            <path d="${bt}"></path>
           </svg>
         </div>
         <div class="plant-name">Add Plant</div>
@@ -680,7 +692,7 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
           ${this._isCompactView?"—":this.renderPlantDays(t)}
         </div>
       </div>
-    `}renderPlantDays(t){const e=[{days:t.attributes?.seedling_days,icon:bt,title:"Days in Seedling",stage:"seedling"},{days:t.attributes?.mother_days,icon:bt,title:"Days in Mother",stage:"mother"},{days:t.attributes?.clone_days,icon:bt,title:"Days in Clone",stage:"clone"},{days:t.attributes?.veg_days,icon:bt,title:"Days in Vegetative",stage:"vegetative"},{days:t.attributes?.flower_days,icon:ft,title:"Days in Flower",stage:"flower"},{days:t.attributes?.dry_days,icon:yt,title:"Days in Dry",stage:"dry"},{days:t.attributes?.cure_days,icon:gt,title:"Days in Cure",stage:"cure"}].filter(t=>t.days);return e.length?U`
+    `}renderPlantDays(t){const e=[{days:t.attributes?.seedling_days,icon:wt,title:"Days in Seedling",stage:"seedling"},{days:t.attributes?.mother_days,icon:wt,title:"Days in Mother",stage:"mother"},{days:t.attributes?.clone_days,icon:wt,title:"Days in Clone",stage:"clone"},{days:t.attributes?.veg_days,icon:wt,title:"Days in Vegetative",stage:"vegetative"},{days:t.attributes?.flower_days,icon:yt,title:"Days in Flower",stage:"flower"},{days:t.attributes?.dry_days,icon:vt,title:"Days in Dry",stage:"dry"},{days:t.attributes?.cure_days,icon:gt,title:"Days in Cure",stage:"cure"}].filter(t=>t.days);return e.length?U`
       <div class="plant-days">
         ${e.map(({days:t,icon:e,title:r,stage:a})=>{const s=Fs.getPlantStageColor(a);return U`
             <span title="${r}" style="color: ${s}">
@@ -718,43 +730,61 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
 
       /* Growspace Header Styles - Glassmorphism & Gradient */
       .growspace-header-card {
-        /* Fallback */
-        background: rgba(30, 30, 35, 0.6);
-        /* Gradient approximating the screenshot */
-        background-image: linear-gradient(135deg, rgba(50, 50, 60, 0.8) 0%, rgba(40, 30, 60, 0.8) 100%);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 24px;
+        /* Dark theme background similar to screenshot */
+        background: #1a1a1d;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 32px;
         padding: 24px;
         margin-bottom: var(--spacing-lg);
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 24px;
         color: #fff;
         position: relative;
         overflow: hidden;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
       }
 
       .gs-header-top {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        flex-wrap: wrap;
         gap: var(--spacing-md);
       }
 
       .gs-title-group {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .gs-icon-box {
+         width: 48px;
+         height: 48px;
+         border-radius: 12px;
+         background: linear-gradient(135deg, rgba(255, 235, 59, 0.2), rgba(255, 193, 7, 0.1));
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         border: 1px solid rgba(255, 235, 59, 0.3);
+         box-shadow: 0 0 15px rgba(255, 235, 59, 0.1);
+      }
+
+      .gs-icon-box svg {
+         width: 28px;
+         height: 28px;
+         fill: #FFD700;
+      }
+
+      .gs-text-info {
         display: flex;
         flex-direction: column;
         gap: 4px;
       }
 
       .gs-title {
-        font-size: 2rem;
-        font-weight: 500;
+        font-size: 1.5rem;
+        font-weight: 600;
         margin: 0;
         letter-spacing: -0.5px;
       }
@@ -802,100 +832,165 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
         width: fit-content;
       }
 
-      /* Chips Container */
-      .gs-stats-chips {
+      .status-indicator {
          display: flex;
-         flex-wrap: wrap;
-         gap: 8px;
+         align-items: center;
          justify-content: flex-end;
+         gap: 8px;
+         font-size: 1.5rem;
+         font-weight: 700;
+         color: rgba(255, 255, 255, 0.5); /* Default off color */
       }
 
-      .stat-chip {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 20px;
-        padding: 6px 14px;
-        font-size: 0.9rem;
-        color: #eee;
-        backdrop-filter: blur(4px);
+      .status-indicator.on {
+         color: #FFD700;
+         text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
       }
 
-      .stat-chip svg {
-        width: 18px;
-        height: 18px;
-        fill: currentColor;
-        opacity: 0.9;
+      .status-dot {
+         width: 12px;
+         height: 12px;
+         border-radius: 50%;
+         background: currentColor;
+         box-shadow: 0 0 8px currentColor;
       }
 
-      .light-status-chip {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 6px 16px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 500;
-        color: #fff;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+      .target-label {
+         font-size: 0.9rem;
+         color: rgba(255, 255, 255, 0.5);
+         margin-top: 4px;
+         font-weight: 500;
       }
 
-      .light-status-chip.on {
-        background: linear-gradient(90deg, rgba(255, 235, 59, 0.8), rgba(253, 216, 53, 0.6));
-        color: #000;
-        box-shadow: 0 0 15px rgba(253, 216, 53, 0.4);
-        border: none;
-      }
-
-      .light-status-chip.off {
-         background: rgba(0, 0, 0, 0.3);
-         color: rgba(255, 255, 255, 0.7);
-      }
-
-      /* 24h Chart */
-      .gs-chart-container {
-         margin-top: 8px;
-      }
-
-      .gs-chart-label {
-         font-size: 0.85rem;
-         color: rgba(255, 255, 255, 0.7);
-         margin-bottom: 6px;
-      }
-
-      .gs-chart-bars {
-         display: flex;
-         gap: 4px;
-         height: 40px;
-         width: 100%;
-         align-items: flex-end;
-      }
-
-      .chart-bar {
-         flex: 1;
-         height: 100%;
-         background: transparent;
-         border-radius: 4px;
-         border: 1px solid rgba(255, 255, 255, 0.1);
+      /* Graph Area */
+      .gs-graph-area {
          position: relative;
-         overflow: hidden;
+         height: 200px;
+         width: 100%;
+         background: rgba(255, 255, 255, 0.02);
+         border-radius: 16px;
+         padding: 16px 0;
+         box-sizing: border-box;
       }
 
-      .chart-bar.active {
-         background: rgba(255, 235, 59, 0.7); /* Yellowish */
-         border: none;
-         box-shadow: 0 0 8px rgba(255, 235, 59, 0.3);
+      .gs-graph-svg {
+         width: 100%;
+         height: 100%;
+         overflow: visible;
       }
 
-      /* Time markers for chart */
-      .chart-markers {
+      .graph-path {
+         fill: none;
+         stroke: #FFD700;
+         stroke-width: 2;
+         stroke-linejoin: round;
+         stroke-linecap: round;
+         filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5));
+      }
+
+      .graph-fill {
+         fill: url(#gradientFill);
+         opacity: 0.3;
+      }
+
+      .graph-axis-labels {
+         position: absolute;
+         bottom: 10px;
+         left: 0;
+         right: 0;
          display: flex;
          justify-content: space-between;
-         margin-top: 4px;
+         padding: 0 20px;
          font-size: 0.7rem;
+         color: rgba(255, 255, 255, 0.3);
+         font-weight: 500;
+      }
+
+      /* Footer Cards */
+      .gs-footer-cards {
+         display: flex;
+         gap: 16px;
+      }
+
+      .info-card {
+         flex: 1;
+         background: rgba(255, 255, 255, 0.05);
+         border-radius: 16px;
+         padding: 16px;
+         display: flex;
+         align-items: center;
+         justify-content: space-between;
+         border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .info-card-left {
+         display: flex;
+         align-items: center;
+         gap: 16px;
+      }
+
+      .info-icon-circle {
+         width: 40px;
+         height: 40px;
+         border-radius: 50%;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+      }
+
+      .info-icon-circle.sun {
+         background: rgba(255, 235, 59, 0.15);
+         color: #FFD700;
+      }
+
+      .info-icon-circle.moon {
+         background: rgba(121, 134, 203, 0.15);
+         color: #7986CB;
+      }
+
+      .info-text h4 {
+         margin: 0;
+         font-size: 0.7rem;
+         text-transform: uppercase;
          color: rgba(255, 255, 255, 0.5);
+         font-weight: 600;
+         letter-spacing: 0.5px;
+      }
+
+      .info-text .time-value {
+         font-size: 1.2rem;
+         font-weight: 700;
+         color: #fff;
+         margin-top: 2px;
+      }
+
+      .info-text .time-value span {
+         font-size: 0.8rem;
+         font-weight: 500;
+         color: rgba(255, 255, 255, 0.6);
+         margin-left: 2px;
+      }
+
+      .info-card-arrow {
+         color: rgba(255, 255, 255, 0.2);
+      }
+
+      @media (max-width: 600px) {
+         .gs-footer-cards {
+            flex-direction: column;
+            gap: 12px;
+         }
+      }
+
+      /* Glow Animation */
+      @keyframes glowPulse {
+         0% { filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5)); }
+         50% { filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.8)); }
+         100% { filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5)); }
+      }
+
+      .graph-path.animating {
+         animation: glowPulse 3s infinite ease-in-out;
       }
 
       /* Existing styles... */
