@@ -32,13 +32,21 @@ export class PlantUtils {
     cure: mdiCannabis,
   };
 
+  private static normalizeStage(state: PlantStage | string): PlantStage {
+    const lower = state.toLowerCase();
+    if (lower === 'veg') return 'vegetative';
+    if (lower === 'mom') return 'mother';
+    // Add other aliases if necessary
+    return lower as PlantStage;
+  }
+
   static getPlantStageColor(state: PlantStage | string): string {
-    const key = state.toLowerCase() as PlantStage;
+    const key = this.normalizeStage(state);
     return this.stageColors[key] ?? "#757575";
   }
 
   static getPlantStageIcon(state: PlantStage | string): string {
-    const key = state.toLowerCase() as PlantStage;
+    const key = this.normalizeStage(state);
     return this.stageIcons[key] ?? mdiSprout;
   }
   // --- helpers at the top ---
