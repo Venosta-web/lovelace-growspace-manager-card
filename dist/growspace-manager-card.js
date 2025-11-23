@@ -710,7 +710,7 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
         ${t.isImageSelectorOpen?this.renderImageSelector(t,e):Z}
 
       </ha-dialog>
-    `:R``}static renderImageSelector(t,e){const r=[...new Set(t.strains.map(t=>t.image).filter(t=>!!t))];return R`
+    `:R``}static renderImageSelector(t,e){const r=new Map;return t.strains.forEach(t=>{t.image&&(r.has(t.image)||r.set(t.image,[]),r.get(t.image).push({strain:t.strain,phenotype:t.phenotype||""}))}),R`
         <div class="crop-overlay">
            <div style="background: #1a1a1a; width: 80%; max-width: 800px; height: 80%; max-height: 600px; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color);">
               <div class="sd-header">
@@ -721,15 +721,26 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
               </div>
               <div class="sd-content" style="overflow-y: auto;">
                  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;">
-                    ${r.map(t=>R`
+                    ${[...r.entries()].map(([t,r])=>R`
                        <div style="aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative;"
                             @click=${()=>e.onSelectLibraryImage(t)}>
                           <img src="${t}" style="width: 100%; height: 100%; object-fit: cover;" />
-                          <div class="image-hover-overlay" style="position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(34, 197, 94, 0.2); opacity: 0; transition: opacity 0.2s;"></div>
+
+                          <!-- Info Overlay -->
+                          <div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 8px; font-size: 0.75rem; color: white;">
+                             ${r.map((t,e)=>R`
+                                <div style="${e<r.length-1?"margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);":""}">
+                                   <div style="font-weight: 700;">Strain: ${t.strain}</div>
+                                   <div style="opacity: 0.9;">Pheno: ${t.phenotype||"N/A"}</div>
+                                </div>
+                             `)}
+                          </div>
+
+                          <div class="image-hover-overlay" style="position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(34, 197, 94, 0.2); opacity: 0; transition: opacity 0.2s; pointer-events: none;"></div>
                        </div>
                     `)}
                  </div>
-                 ${0===r.length?R`<p style="text-align: center; color: var(--text-secondary); margin-top: 40px;">No images found in library.</p>`:Z}
+                 ${0===r.size?R`<p style="text-align: center; color: var(--text-secondary); margin-top: 40px;">No images found in library.</p>`:Z}
               </div>
            </div>
         </div>
