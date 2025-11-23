@@ -352,8 +352,36 @@ export class DialogRenderer {
                       <tr class="pheno-row">
                         <td colspan="3" class="pheno-list">
                            ${entries.map(entry => html`
-                              <div class="pheno-item">
-                                <span>${entry.phenotype || 'Default (No Phenotype)'}</span>
+                              <div class="pheno-item" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                <div style="display: flex; align-items: center; gap: 16px;">
+                                  <span style="font-weight: 500;">${entry.phenotype || 'Default'}</span>
+
+                                  ${entry.analytics ? html`
+                                    <div class="strain-analytics" style="display: flex; gap: 12px; font-size: 0.8rem; opacity: 0.7;">
+                                      ${entry.analytics.avg_veg_days > 0 ? html`
+                                        <div title="Avg Veg Days" style="display: flex; align-items: center; gap: 4px;">
+                                          <svg style="width:14px;height:14px;fill:var(--stage-veg);" viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
+                                          ${Math.round(entry.analytics.avg_veg_days)}d
+                                        </div>
+                                      ` : nothing}
+
+                                      ${entry.analytics.avg_flower_days > 0 ? html`
+                                        <div title="Avg Flower Days" style="display: flex; align-items: center; gap: 4px;">
+                                          <svg style="width:14px;height:14px;fill:var(--stage-flower);" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
+                                          ${Math.round(entry.analytics.avg_flower_days)}d
+                                        </div>
+                                      ` : nothing}
+
+                                      ${entry.analytics.total_harvests > 0 ? html`
+                                        <div title="Total Harvests" style="display: flex; align-items: center; gap: 4px;">
+                                          <svg style="width:14px;height:14px;fill:var(--primary-text-color);" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
+                                          ${entry.analytics.total_harvests}
+                                        </div>
+                                      ` : nothing}
+                                    </div>
+                                  ` : nothing}
+                                </div>
+
                                 <button
                                   class="remove-button"
                                   title="Remove ${entry.strain} ${entry.phenotype}"

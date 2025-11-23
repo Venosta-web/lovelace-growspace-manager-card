@@ -13,10 +13,18 @@ export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
   };
 }
 
+export interface StrainAnalytics {
+  avg_veg_days: number;
+  avg_flower_days: number;
+  total_harvests: number;
+}
+
 export interface StrainEntry {
   strain: string;
   phenotype: string;
   key: string;
+  analytics?: StrainAnalytics;
+  strain_analytics?: StrainAnalytics;
 }
 
 export interface PlantEntity {

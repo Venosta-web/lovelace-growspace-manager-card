@@ -1,5 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
-import { PlantEntity, GrowspaceDevice, GrowspaceType, createGrowspaceDevice, StrainEntry } from './types';
+import { PlantEntity, GrowspaceDevice, GrowspaceType, createGrowspaceDevice, StrainEntry, StrainAnalytics } from './types';
 import { noChange } from 'lit';
 
 export class DataService {
@@ -71,9 +71,6 @@ export class DataService {
 
   getStrainLibrary(): StrainEntry[] {
     const allStates = Object.values(this.hass.states);
-    // Find the sensor that contains the strain library.
-    // The check `Array.isArray` will likely fail for the new dict format,
-    // so we look for `strains` attribute being present and not null.
     const strainSensor = allStates.find(
       (s: any) => s.attributes?.strains !== undefined && s.attributes?.strains !== null
     );
@@ -82,8 +79,8 @@ export class DataService {
 
     if (!rawStrains) return [];
 
-    // If it's an array (old format fallback), map strings to StrainEntry
     if (Array.isArray(rawStrains)) {
+      // Fallback for legacy array format
       return rawStrains.map((s: string) => ({
         strain: s,
         phenotype: '',
@@ -91,21 +88,68 @@ export class DataService {
       }));
     }
 
-    // If it's an object/dictionary (new format)
     if (typeof rawStrains === 'object') {
-      return Object.keys(rawStrains).map(key => {
-        // Keys are expected to be "StrainName|Phenotype"
-        const parts = key.split('|');
-        // If split results in 1 part, phenotype is missing/empty
-        const strain = parts[0];
-        const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : '';
+      const results: StrainEntry[] = [];
 
-        return {
-          strain,
-          phenotype,
-          key: key
-        };
-      }).sort((a, b) => a.strain.localeCompare(b.strain));
+      for (const [strainName, strainData] of Object.entries(rawStrains)) {
+        const data = strainData as any;
+        const strainAnalytics: StrainAnalytics | undefined = data.analytics;
+
+        // If phenotypes dictionary exists
+        if (data.phenotypes && typeof data.phenotypes === 'object') {
+           const phenoEntries = Object.entries(data.phenotypes);
+           if (phenoEntries.length > 0) {
+             for (const [phenoName, phenoData] of phenoEntries) {
+               // phenoData likely contains the stats directly, or nested in analytics
+               // We support both structures defensively
+               const pData = phenoData as any;
+               let phenoAnalytics: StrainAnalytics | undefined;
+
+               if (pData.analytics) {
+                 phenoAnalytics = pData.analytics;
+               } else if (typeof pData.avg_veg_days === 'number') {
+                 // Assume flat structure
+                 phenoAnalytics = {
+                   avg_veg_days: pData.avg_veg_days,
+                   avg_flower_days: pData.avg_flower_days,
+                   total_harvests: pData.total_harvests
+                 };
+               }
+
+               results.push({
+                 strain: strainName,
+                 phenotype: phenoName,
+                 key: `${strainName}|${phenoName}`,
+                 analytics: phenoAnalytics,
+                 strain_analytics: strainAnalytics
+               });
+             }
+           } else {
+             // Strain exists but has empty phenotypes dict
+             // We still want to show the strain
+             results.push({
+               strain: strainName,
+               phenotype: '',
+               key: `${strainName}|default`,
+               strain_analytics: strainAnalytics
+             });
+           }
+        } else {
+          // No phenotypes dict, just a strain entry
+          results.push({
+            strain: strainName,
+            phenotype: '',
+            key: `${strainName}|default`,
+            strain_analytics: strainAnalytics
+          });
+        }
+      }
+
+      return results.sort((a, b) => {
+        const strainComp = a.strain.localeCompare(b.strain);
+        if (strainComp !== 0) return strainComp;
+        return (a.phenotype || '').localeCompare(b.phenotype || '');
+      });
     }
 
     return [];
