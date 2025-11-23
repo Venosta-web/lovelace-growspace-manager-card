@@ -94,6 +94,7 @@ export class DataService {
       for (const [strainName, strainData] of Object.entries(rawStrains)) {
         const data = strainData as any;
         const strainAnalytics: StrainAnalytics | undefined = data.analytics;
+        const meta = data.meta || {};
 
         // If phenotypes dictionary exists
         if (data.phenotypes && typeof data.phenotypes === 'object') {
@@ -122,7 +123,14 @@ export class DataService {
                  key: `${strainName}|${phenoName}`,
                  analytics: phenoAnalytics,
                  strain_analytics: strainAnalytics,
-                 image_crop_meta: pData.image_crop_meta
+                 image_crop_meta: pData.image_crop_meta,
+                 breeder: meta.breeder,
+                 type: meta.type,
+                 lineage: meta.lineage,
+                 sex: meta.sex,
+                 description: meta.description,
+                 flowering_days_min: meta.flowering_days_min,
+                 flowering_days_max: meta.flowering_days_max
                });
              }
            } else {
@@ -133,7 +141,14 @@ export class DataService {
                phenotype: '',
                key: `${strainName}|default`,
                strain_analytics: strainAnalytics,
-               image_crop_meta: data.image_crop_meta
+               image_crop_meta: data.image_crop_meta,
+               breeder: meta.breeder,
+               type: meta.type,
+               lineage: meta.lineage,
+               sex: meta.sex,
+               description: meta.description,
+               flowering_days_min: meta.flowering_days_min,
+               flowering_days_max: meta.flowering_days_max
              });
            }
         } else {
@@ -143,7 +158,14 @@ export class DataService {
             phenotype: '',
             key: `${strainName}|default`,
             strain_analytics: strainAnalytics,
-            image_crop_meta: data.image_crop_meta
+            image_crop_meta: data.image_crop_meta,
+            breeder: meta.breeder,
+            type: meta.type,
+            lineage: meta.lineage,
+            sex: meta.sex,
+            description: meta.description,
+            flowering_days_min: meta.flowering_days_min,
+            flowering_days_max: meta.flowering_days_max
            });
         }
       }
