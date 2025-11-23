@@ -1653,6 +1653,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   private _handleSelectLibraryImage(imageUrl: string) {
       if (this._strainLibraryDialog && this._strainLibraryDialog.editorState) {
           this._strainLibraryDialog.editorState.image = imageUrl;
+
+          // Find existing crop meta for this image
+          const existing = this._strainLibraryDialog.strains.find(s => s.image === imageUrl && !!s.image_crop_meta);
+          if (existing && existing.image_crop_meta) {
+              this._strainLibraryDialog.editorState.image_crop_meta = { ...existing.image_crop_meta };
+          } else {
+              this._strainLibraryDialog.editorState.image_crop_meta = undefined;
+          }
+
           // Close selector
           this._strainLibraryDialog.isImageSelectorOpen = false;
           this.requestUpdate();
