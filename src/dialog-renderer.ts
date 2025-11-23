@@ -727,7 +727,7 @@ export class DialogRenderer {
     `;
   }
 
-  private static renderCropOverlay(dialog: StrainLibraryDialogState, callbacks: any): TemplateResult {
+  private static renderCropOverlay(dialog: StrainLibraryDialogState, callbacks: any): TemplateResult | typeof nothing {
     const s = dialog.editorState;
     if (!s.image) return nothing;
 
