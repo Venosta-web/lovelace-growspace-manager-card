@@ -124,13 +124,15 @@ export class DataService {
                  analytics: phenoAnalytics,
                  strain_analytics: strainAnalytics,
                  image_crop_meta: pData.image_crop_meta,
-                 breeder: meta.breeder,
-                 type: meta.type,
-                 lineage: meta.lineage,
-                 sex: meta.sex,
-                 description: meta.description,
-                 flowering_days_min: meta.flowering_days_min,
-                 flowering_days_max: meta.flowering_days_max
+                 // Merge logic: Check phenotype data first, then fallback to meta
+                 breeder: pData.breeder || meta.breeder,
+                 type: pData.type || meta.type,
+                 lineage: pData.lineage || meta.lineage,
+                 sex: pData.sex || meta.sex,
+                 description: pData.description || meta.description,
+                 flowering_days_min: pData.flower_days_min || meta.flowering_days_min,
+                 flowering_days_max: pData.flower_days_max || meta.flowering_days_max,
+                 image: pData.image_path || pData.image || meta.image,
                });
              }
            } else {
@@ -148,7 +150,8 @@ export class DataService {
                sex: meta.sex,
                description: meta.description,
                flowering_days_min: meta.flowering_days_min,
-               flowering_days_max: meta.flowering_days_max
+               flowering_days_max: meta.flowering_days_max,
+               image: meta.image
              });
            }
         } else {
@@ -165,7 +168,8 @@ export class DataService {
             sex: meta.sex,
             description: meta.description,
             flowering_days_min: meta.flowering_days_min,
-            flowering_days_max: meta.flowering_days_max
+            flowering_days_max: meta.flowering_days_max,
+            image: meta.image
            });
         }
       }
