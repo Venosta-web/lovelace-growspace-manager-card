@@ -361,4 +361,58 @@ export class DataService {
       throw err;
     }
   }
+
+  // Configuration Services
+  async addGrowspace(data: {
+    name: string;
+    rows: number;
+    plants_per_row: number;
+    notification_service?: string;
+  }) {
+    console.log("[DataService:addGrowspace] Adding growspace:", data);
+    try {
+      const res = await this.hass.callService("growspace_manager", "add_growspace", data);
+      console.log("[DataService:addGrowspace] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:addGrowspace] Error:", err);
+      throw err;
+    }
+  }
+
+  async configureGrowspaceSensors(data: {
+    growspace_id: string;
+    temperature_sensor: string;
+    humidity_sensor: string;
+    vpd_sensor: string;
+    co2_sensor?: string;
+    light_sensor?: string;
+    fan_switch?: string;
+  }) {
+    console.log("[DataService:configureGrowspaceSensors] Configuring sensors:", data);
+    try {
+      const res = await this.hass.callService("growspace_manager", "configure_growspace", data);
+      console.log("[DataService:configureGrowspaceSensors] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:configureGrowspaceSensors] Error:", err);
+      throw err;
+    }
+  }
+
+  async configureGlobalSettings(data: {
+    weather_entity: string;
+    lung_room_temp: string;
+    lung_room_humidity: string;
+  }) {
+    console.log("[DataService:configureGlobalSettings] Configuring global settings:", data);
+    try {
+      const res = await this.hass.callService("growspace_manager", "configure_global", data);
+      console.log("[DataService:configureGlobalSettings] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:configureGlobalSettings] Error:", err);
+      throw err;
+    }
+  }
 }
