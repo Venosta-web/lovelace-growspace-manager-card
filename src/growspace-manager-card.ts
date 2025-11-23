@@ -950,7 +950,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
          transition: transform 0.3s ease;
       }
       .rotate-icon.expanded {
-         transform: rotate(90deg);
+         transform: rotate(180deg);
       }
 
       @media (max-width: 600px) {
@@ -2024,7 +2024,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const co2 = getValue(envEntity, 'co2');
 
     // Light Status Logic with History
-    const isLightsOn = getValue(envEntity, 'is_lights_on') === true;
+    const isLightsOnValue = getValue(envEntity, 'is_lights_on');
+    const hasLightSensor = isLightsOnValue !== undefined && isLightsOnValue !== null;
+    const isLightsOn = isLightsOnValue === true;
+
     let svgPath = "";
     let lastOnTime = "--:--";
     let lastOffTime = "--:--";
@@ -2177,6 +2180,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
          </div>
 
          <!-- Nested Light Cycle Card -->
+         ${hasLightSensor ? html`
          <div class="gs-light-cycle-card ${this._lightCycleCollapsed ? 'collapsed' : ''}">
             <div class="gs-light-header-row" @click=${() => this._toggleLightCycle()}>
                 <div class="gs-light-title">
@@ -2201,7 +2205,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                         ${!this._lightCycleCollapsed ? html`<div class="target-cycle-text">Target: ${targetCycle}</div>` : ''}
                     </div>
                     <div class="rotate-icon ${!this._lightCycleCollapsed ? 'expanded' : ''}" style="opacity: 0.7;">
-                        <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                        <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronDown}"></path></svg>
                     </div>
                 </div>
                 ` : ''}
@@ -2330,6 +2334,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             </div>
             ` : ''}
          </div>
+         ` : ''}
 
          <!-- Active Environmental Graphs -->
          ${this._activeEnvGraphs.has('temperature') ? this.renderEnvGraph('temperature', '#FF5722', 'Temperature', '°C') : ''}
