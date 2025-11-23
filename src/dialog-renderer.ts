@@ -1,5 +1,10 @@
 import { html, TemplateResult, nothing } from 'lit';
-import { mdiPlus, mdiSprout, mdiFlower, mdiClose, mdiCalendarClock, mdiDna, mdiHairDryer, mdiCannabis, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiCheck, mdiContentCopy, mdiArrowRight } from '@mdi/js';
+import {
+  mdiPlus, mdiSprout, mdiFlower, mdiClose, mdiCalendarClock, mdiDna, mdiHairDryer,
+  mdiCannabis, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiCheck,
+  mdiContentCopy, mdiArrowRight, mdiWeatherNight, mdiWeatherSunny, mdiTuneVariant,
+  mdiLeaf, mdiUpload, mdiArrowLeft, mdiFilterVariant, mdiCloudUpload, mdiPencil
+} from '@mdi/js';
 import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry } from './types';
 import { PlantUtils } from "./utils";
 
@@ -258,224 +263,633 @@ export class DialogRenderer {
     `;
   }
 
-  // ... (Keep renderStrainLibraryDialog as is, or refactor if needed.
-  // The user specifically asked for "Plant Overview(detail view)", but strain library is separate.
-  // I will leave Strain Library alone for now to avoid scope creep, unless requested.)
   static renderStrainLibraryDialog(
     dialog: StrainLibraryDialogState | null,
     callbacks: {
       onClose: () => void;
-      onAddStrain: () => void;
+      onAddStrain: () => void; // Now saves the editor state
       onRemoveStrain: (strain: string) => void;
       onClearAll: () => void;
-      onNewStrainChange: (value: string) => void;
-      onNewPhenotypeChange: (value: string) => void;
-      onEnterKey: (e: KeyboardEvent) => void;
-      onToggleExpand: (strain: string) => void;
+      // Editor Field Changes
+      onEditorChange: (field: string, value: string) => void;
+      // Navigation
+      onSwitchView: (view: 'browse' | 'editor', strainToEdit?: StrainEntry) => void;
       onSearch: (query: string) => void;
-      onToggleAddForm: () => void;
-      onPromptClear: () => void;
-      onCancelClear: () => void;
     }
   ): TemplateResult {
     if (!dialog?.open) return html``;
-
-    // Group strains by name
-    const groupedStrains: Record<string, StrainEntry[]> = {};
-    const query = (dialog.searchQuery || '').toLowerCase();
-
-    dialog.strains.forEach(entry => {
-      const strainName = entry.strain;
-      const matchQuery = !query ||
-                         strainName.toLowerCase().includes(query) ||
-                         (entry.phenotype && entry.phenotype.toLowerCase().includes(query));
-
-      if (matchQuery) {
-          if (!groupedStrains[strainName]) {
-            groupedStrains[strainName] = [];
-          }
-          groupedStrains[strainName].push(entry);
-      }
-    });
-
-    const sortedStrainNames = Object.keys(groupedStrains).sort();
 
     return html`
       <ha-dialog
         open
         @closed=${callbacks.onClose}
-        heading="Strain Library"
-        class="strain-dialog"
+        hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${''}
       >
-        <div class="dialog-content" style="position: relative; min-height: 400px;">
+        <style>
+          /* STRICT DARK MODE & SHARED STYLES */
+          .strain-dialog-container {
+             background-color: #1a1a1a; /* Deep Charcoal */
+             color: #fff;
+             display: flex;
+             flex-direction: column;
+             height: 85vh;
+             width: 90vw;
+             max-width: 1200px;
+             border-radius: 16px;
+             overflow: hidden;
+             font-family: 'Roboto', sans-serif;
+             --accent-green: #22c55e;
+             --card-bg: #2d2d2d;
+             --input-bg: #2d2d2d;
+             --text-secondary: #9ca3af;
+             --border-color: #374151;
+          }
 
-          <!-- Search Bar -->
-          <div class="strain-search-container">
-            <svg class="search-icon" viewBox="0 0 24 24">
-                <path d="${mdiMagnify}"></path>
-            </svg>
-            <input
-                type="text" 
-                class="search-input"
-                placeholder="Search strains & phenotypes..."
-                .value=${dialog.searchQuery || ''}
-                @input=${(e: Event) => callbacks.onSearch((e.target as HTMLInputElement).value)}
-            />
-          </div>
+          /* SCROLLBAR */
+          .strain-dialog-container ::-webkit-scrollbar { width: 8px; }
+          .strain-dialog-container ::-webkit-scrollbar-track { background: transparent; }
+          .strain-dialog-container ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+          .strain-dialog-container ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
 
-          <!-- Strain Table -->
-          <div class="strain-table-container">
-            ${sortedStrainNames.length > 0 ? html`
-              <table class="strain-table">
-                ${sortedStrainNames.map(strainName => {
-                  const isExpanded = dialog.expandedStrains?.includes(strainName);
-                  const entries = groupedStrains[strainName];
-                  const phenotypeCount = entries.filter(e => e.phenotype).length;
+          /* HEADER */
+          .sd-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: #1a1a1a;
+            z-index: 10;
+          }
+          .sd-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #fff;
+            margin: 0;
+          }
+          .sd-close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.2s;
+          }
+          .sd-close-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+          }
 
-                  return html`
-                    <tr class="strain-row" @click=${() => callbacks.onToggleExpand(strainName)}>
-                      <td class="strain-cell expand-icon">
-                        <svg style="width:24px;height:24px;fill:currentColor;"
-                             class="rotate-icon ${isExpanded ? 'expanded' : ''}"
-                             viewBox="0 0 24 24">
-                          <path d="${mdiChevronRight}"></path>
-                        </svg>
-                      </td>
-                      <td class="strain-cell content">
-                        ${strainName}
-                        <span class="badge">${entries.length} Var.</span>
-                      </td>
-                    </tr>
-                    ${isExpanded ? html`
-                      <tr class="pheno-row">
-                        <td colspan="3" class="pheno-list">
-                           ${entries.map(entry => html`
-                              <div class="pheno-item" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                                <div style="display: flex; align-items: center; gap: 16px;">
-                                  <span style="font-weight: 500;">${entry.phenotype || 'Default'}</span>
+          /* CONTENT AREA */
+          .sd-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            background: #1a1a1a;
+          }
 
-                                  ${entry.analytics ? html`
-                                    <div class="strain-analytics" style="display: flex; gap: 12px; font-size: 0.8rem; opacity: 0.7;">
-                                      ${entry.analytics.avg_veg_days > 0 ? html`
-                                        <div title="Avg Veg Days" style="display: flex; align-items: center; gap: 4px;">
-                                          <svg style="width:14px;height:14px;fill:var(--stage-veg);" viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
-                                          ${Math.round(entry.analytics.avg_veg_days)}d
-                                        </div>
-                                      ` : nothing}
+          /* FOOTER */
+          .sd-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+            background: #1a1a1a;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+          }
 
-                                      ${entry.analytics.avg_flower_days > 0 ? html`
-                                        <div title="Avg Flower Days" style="display: flex; align-items: center; gap: 4px;">
-                                          <svg style="width:14px;height:14px;fill:var(--stage-flower);" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
-                                          ${Math.round(entry.analytics.avg_flower_days)}d
-                                        </div>
-                                      ` : nothing}
+          /* BUTTONS */
+          .sd-btn {
+             display: inline-flex;
+             align-items: center;
+             justify-content: center;
+             gap: 8px;
+             padding: 10px 20px;
+             border-radius: 8px;
+             font-weight: 600;
+             font-size: 0.9rem;
+             cursor: pointer;
+             transition: all 0.2s;
+             border: none;
+          }
+          .sd-btn.primary {
+            background: var(--accent-green);
+            color: #fff;
+          }
+          .sd-btn.primary:hover {
+            background: #16a34a;
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
+          }
+          .sd-btn.secondary {
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+          }
+          .sd-btn.secondary:hover {
+            background: #374151;
+            color: #fff;
+          }
+          .sd-btn.danger {
+             background: rgba(220, 38, 38, 0.1);
+             color: #ef4444;
+             border: 1px solid rgba(220, 38, 38, 0.2);
+          }
+          .sd-btn.danger:hover {
+             background: rgba(220, 38, 38, 0.2);
+          }
 
-                                      ${entry.analytics.total_harvests > 0 ? html`
-                                        <div title="Total Harvests" style="display: flex; align-items: center; gap: 4px;">
-                                          <svg style="width:14px;height:14px;fill:var(--primary-text-color);" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
-                                          ${entry.analytics.total_harvests}
-                                        </div>
-                                      ` : nothing}
-                                    </div>
-                                  ` : nothing}
-                                </div>
+          /* FORMS */
+          .sd-form-group {
+            margin-bottom: 20px;
+          }
+          .sd-label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            font-weight: 500;
+          }
+          .sd-input, .sd-textarea, .sd-select {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+            box-sizing: border-box; /* Ensure padding doesn't overflow */
+          }
+          .sd-input:focus, .sd-textarea:focus, .sd-select:focus {
+            border-color: var(--accent-green);
+          }
+          .sd-textarea {
+            resize: vertical;
+            min-height: 100px;
+          }
 
-                                <button
-                                  class="remove-button"
-                                  title="Remove ${entry.strain} ${entry.phenotype}"
-                                  @click=${(e: Event) => {
-                                    e.stopPropagation();
-                                    callbacks.onRemoveStrain(entry.key);
-                                  }}
-                                >
-                                  <svg class="remove-icon" viewBox="0 0 24 24">
-                                    <path d="${mdiClose}"></path>
-                                  </svg>
-                                </button>
-                              </div>
-                           `)}
-                        </td>
-                      </tr>
-                    ` : nothing}
-                  `;
-                })}
-              </table>
-            ` : html`
-              <div class="no-data" style="background: transparent;">
-                ${dialog.strains.length === 0
-                  ? "Library is empty. Add your first strain!"
-                  : "No matches found."}
-              </div>
-            `}
-          </div>
+          /* GRID & CARDS */
+          .sd-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+          }
+          .strain-card {
+             background: var(--card-bg);
+             border-radius: 12px;
+             overflow: hidden;
+             border: 1px solid var(--border-color);
+             transition: all 0.3s ease;
+             position: relative;
+             display: flex;
+             flex-direction: column;
+          }
+          .strain-card:hover {
+             border-color: var(--accent-green);
+             transform: translateY(-4px);
+             box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+          }
+          .sc-thumb {
+             height: 180px;
+             background: #222;
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             color: #444;
+             position: relative;
+          }
+          .sc-thumb img {
+             width: 100%;
+             height: 100%;
+             object-fit: cover;
+          }
+          .sc-content {
+             padding: 16px;
+             flex: 1;
+          }
+          .sc-title {
+             font-size: 1.1rem;
+             font-weight: 700;
+             margin: 0 0 4px 0;
+             color: #fff;
+          }
+          .sc-type-row {
+             display: flex;
+             align-items: center;
+             gap: 6px;
+             color: var(--accent-green);
+             font-size: 0.85rem;
+             font-weight: 600;
+             margin-bottom: 12px;
+          }
+          .sc-meta {
+             display: flex;
+             flex-direction: column;
+             gap: 4px;
+             font-size: 0.8rem;
+             color: var(--text-secondary);
+          }
+          .sc-actions {
+             position: absolute;
+             top: 8px;
+             right: 8px;
+             display: flex;
+             gap: 8px;
+             opacity: 0;
+             transition: opacity 0.2s;
+          }
+          .strain-card:hover .sc-actions {
+             opacity: 1;
+          }
+          .sc-action-btn {
+             background: rgba(0,0,0,0.6);
+             border: none;
+             border-radius: 50%;
+             width: 32px;
+             height: 32px;
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             color: #fff;
+             cursor: pointer;
+          }
+          .sc-action-btn:hover {
+             background: var(--accent-green);
+          }
 
-          <!-- FAB for Adding Strains -->
-          <button class="fab-button" @click=${callbacks.onToggleAddForm}>
-             <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${dialog.isAddFormOpen ? mdiClose : mdiPlus}"></path>
-             </svg>
-          </button>
+          /* SEARCH BAR */
+          .search-bar-container {
+             margin-bottom: 24px;
+          }
+          .search-input-wrapper {
+             position: relative;
+             margin-bottom: 12px;
+          }
+          .search-input-wrapper svg {
+             position: absolute;
+             left: 16px;
+             top: 50%;
+             transform: translateY(-50%);
+             width: 20px;
+             height: 20px;
+             fill: var(--text-secondary);
+          }
+          .search-bar-input {
+             width: 100%;
+             background: var(--card-bg);
+             border: 1px solid var(--border-color);
+             border-radius: 12px;
+             padding: 14px 14px 14px 48px;
+             color: #fff;
+             font-size: 1rem;
+             outline: none;
+             box-sizing: border-box;
+          }
+          .search-bar-input:focus {
+             border-color: var(--accent-green);
+          }
+          .filter-chips {
+             display: flex;
+             gap: 8px;
+             flex-wrap: wrap;
+             align-items: center;
+          }
+          .filter-chip {
+             background: #374151;
+             padding: 6px 12px;
+             border-radius: 20px;
+             font-size: 0.8rem;
+             color: #fff;
+             display: flex;
+             align-items: center;
+             gap: 6px;
+          }
+          .clear-link {
+             color: var(--accent-green);
+             font-size: 0.85rem;
+             text-decoration: underline;
+             cursor: pointer;
+             margin-left: 8px;
+          }
 
-          <!-- Add Strain Form Overlay -->
-          ${dialog.isAddFormOpen ? html`
-            <div class="add-form-overlay">
-                <h3 style="margin-top:0; margin-bottom: var(--spacing-md);">Add New Strain</h3>
-                <div class="form-group">
-                  <label>Strain Name</label>
-                  <input
-                    type="text"
-                    class="form-input"
-                    placeholder="Strain Name"
-                    .value=${dialog.newStrain}
-                    @input=${(e: Event) => callbacks.onNewStrainChange((e.target as HTMLInputElement).value)}
-                    @keypress=${callbacks.onEnterKey}
-                  />
-                </div>
-                <div class="form-group">
-                  <label>Phenotype (Optional)</label>
-                  <input
-                    type="text"
-                    class="form-input"
-                    placeholder="Phenotype (e.g. #1)"
-                    .value=${dialog.newPhenotype || ''}
-                    @input=${(e: Event) => callbacks.onNewPhenotypeChange((e.target as HTMLInputElement).value)}
-                    @keypress=${callbacks.onEnterKey}
-                  />
-                </div>
-                <div style="display:flex; justify-content: flex-end; margin-top: var(--spacing-md);">
-                    <button class="action-button primary" @click=${callbacks.onAddStrain} ?disabled=${!dialog.newStrain}>
-                      Add
-                    </button>
-                </div>
-            </div>
-          ` : nothing}
+          /* EDITOR LAYOUT */
+          .editor-layout {
+             display: grid;
+             grid-template-columns: 1fr 1.5fr;
+             gap: 32px;
+          }
+          @media (max-width: 800px) {
+             .editor-layout { grid-template-columns: 1fr; }
+          }
 
-          <!-- Clear All Confirmation Overlay -->
-          ${dialog.confirmClearAll ? html`
-             <div class="confirmation-overlay">
-                 <span style="color: white;">Delete all strains?</span>
-                 <button class="action-button danger" @click=${callbacks.onClearAll}>Yes</button>
-                 <button class="action-button" @click=${callbacks.onCancelClear}>No</button>
-             </div>
-          ` : nothing}
+          /* TYPE SELECTOR */
+          .type-selector-grid {
+             display: grid;
+             grid-template-columns: 1fr 1fr;
+             gap: 12px;
+          }
+          .type-option {
+             background: var(--input-bg);
+             border: 1px solid var(--border-color);
+             border-radius: 8px;
+             padding: 16px;
+             cursor: pointer;
+             display: flex;
+             flex-direction: column;
+             align-items: center;
+             gap: 8px;
+             transition: all 0.2s;
+             text-align: center;
+          }
+          .type-option:hover {
+             border-color: #666;
+          }
+          .type-option.active {
+             background: rgba(34, 197, 94, 0.1);
+             border-color: var(--accent-green);
+             color: #fff;
+          }
+          .type-option svg {
+             width: 28px;
+             height: 28px;
+             fill: var(--text-secondary);
+          }
+          .type-option.active svg {
+             fill: var(--accent-green);
+          }
+          .type-label {
+             font-size: 0.85rem;
+             font-weight: 500;
+          }
 
+          /* PHOTO UPLOAD */
+          .photo-upload-area {
+             border: 2px dashed var(--border-color);
+             border-radius: 12px;
+             background: rgba(255,255,255,0.02);
+             height: 240px;
+             display: flex;
+             flex-direction: column;
+             align-items: center;
+             justify-content: center;
+             color: var(--text-secondary);
+             cursor: pointer;
+             transition: all 0.2s;
+             margin-bottom: 20px;
+          }
+          .photo-upload-area:hover {
+             border-color: var(--accent-green);
+             background: rgba(34, 197, 94, 0.05);
+          }
+
+        </style>
+
+        <div class="strain-dialog-container">
+           ${dialog.view === 'browse'
+              ? this.renderStrainBrowseView(dialog, callbacks)
+              : this.renderStrainEditorView(dialog, callbacks)
+           }
         </div>
 
-        <!-- Footer Actions -->
-        <div slot="secondaryAction">
-           ${!dialog.confirmClearAll ? html`
-              <button class="action-button danger" @click=${callbacks.onPromptClear} ?disabled=${dialog.strains.length === 0}>
-                Clear All
-              </button>
-           ` : nothing}
-        </div>
-
-        <button class="action-button" slot="primaryAction" @click=${callbacks.onClose}>
-          Done
-        </button>
       </ha-dialog>
+    `;
+  }
+
+  private static renderStrainBrowseView(
+      dialog: StrainLibraryDialogState,
+      callbacks: any
+  ): TemplateResult {
+    // Filter Logic
+    const query = (dialog.searchQuery || '').toLowerCase();
+    const filteredStrains = dialog.strains.filter(s =>
+       s.strain.toLowerCase().includes(query) ||
+       (s.breeder && s.breeder.toLowerCase().includes(query)) ||
+       (s.phenotype && s.phenotype.toLowerCase().includes(query))
+    );
+
+    return html`
+      <div class="sd-header">
+         <h2 class="sd-title">Strain Library</h2>
+         <button class="sd-close-btn" @click=${callbacks.onClose}>
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+         </button>
+      </div>
+
+      <div class="sd-content">
+         <!-- SEARCH & FILTER -->
+         <div class="search-bar-container">
+            <div class="search-input-wrapper">
+               <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+               <input
+                  type="text"
+                  class="search-bar-input"
+                  placeholder="Search Strains by Name, Breeder..."
+                  .value=${dialog.searchQuery || ''}
+                  @input=${(e: Event) => callbacks.onSearch((e.target as HTMLInputElement).value)}
+               />
+            </div>
+            <div class="filter-chips">
+               <!-- Placeholder Chips -->
+               <div class="filter-chip">
+                  <span>Sativa Dom</span>
+                  <svg style="width:16px;height:16px;fill:currentColor;cursor:pointer" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+               </div>
+               <div class="filter-chip">
+                  <span>Under 60 Days</span>
+                  <svg style="width:16px;height:16px;fill:currentColor;cursor:pointer" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+               </div>
+               <a class="clear-link">Clear All</a>
+            </div>
+         </div>
+
+         <!-- GRID -->
+         <div class="sd-grid">
+            ${filteredStrains.map(strain => this.renderStrainCard(strain, callbacks))}
+         </div>
+
+         ${filteredStrains.length === 0 ? html`
+            <div style="text-align:center; padding: 40px; color: var(--text-secondary);">
+               <svg style="width:48px;height:48px;fill:currentColor; opacity:0.5;" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+               <p>No strains found matching "${query}"</p>
+            </div>
+         ` : nothing}
+      </div>
+
+      <div class="sd-footer">
+         <button class="sd-btn secondary">
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
+            Import CSV
+         </button>
+         <button class="sd-btn primary" @click=${() => callbacks.onSwitchView('editor')}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+            New Strain
+         </button>
+      </div>
+    `;
+  }
+
+  private static renderStrainCard(strain: StrainEntry, callbacks: any): TemplateResult {
+     let typeIcon = mdiLeaf;
+     let typeLabel = strain.type || 'Unknown';
+
+     // Icon Mapping
+     const lowerType = (strain.type || '').toLowerCase();
+     if (lowerType.includes('indica')) typeIcon = mdiWeatherNight; // Moon/Fat Leaf approx
+     else if (lowerType.includes('sativa')) typeIcon = mdiWeatherSunny; // Sun/Tall Leaf approx
+     else if (lowerType.includes('hybrid')) typeIcon = mdiTuneVariant;
+     else if (lowerType.includes('ruderalis') || lowerType.includes('auto')) typeIcon = mdiLeaf;
+
+     return html`
+       <div class="strain-card" @click=${() => callbacks.onSwitchView('editor', strain)}>
+          <div class="sc-thumb">
+             ${strain.image
+                ? html`<img src="${strain.image}" alt="${strain.strain}" />`
+                : html`<svg style="width:48px;height:48px;opacity:0.2;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>`
+             }
+             <div class="sc-actions">
+                <button class="sc-action-btn" @click=${(e: Event) => { e.stopPropagation(); callbacks.onRemoveStrain(strain.key); }}>
+                   <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+                </button>
+             </div>
+          </div>
+          <div class="sc-content">
+             <h3 class="sc-title">${strain.strain} ${strain.phenotype ? `(${strain.phenotype})` : ''}</h3>
+             <div class="sc-type-row">
+                <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${typeIcon}"></path></svg>
+                <span>${typeLabel}</span>
+             </div>
+             <div class="sc-meta">
+                ${strain.flowering_days_min ? html`<span>Flowering: ${strain.flowering_days_min}-${strain.flowering_days_max || '?'} Days</span>` : nothing}
+                ${strain.breeder ? html`<span>Breeder: ${strain.breeder}</span>` : nothing}
+             </div>
+          </div>
+       </div>
+     `;
+  }
+
+  private static renderStrainEditorView(
+      dialog: StrainLibraryDialogState,
+      callbacks: any
+  ): TemplateResult {
+    const s = dialog.editorState || {} as any;
+    const isEdit = !!s.strain && dialog.strains.some(ex => ex.strain === s.strain && ex.phenotype === s.phenotype); // Check if exists
+
+    const update = (field: string, value: any) => callbacks.onEditorChange(field, value);
+
+    return html`
+      <div class="sd-header">
+         <div style="display:flex; align-items:center; gap:16px;">
+            <button class="sd-btn secondary" style="padding: 8px 12px;" @click=${() => callbacks.onSwitchView('browse')}>
+               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiArrowLeft}"></path></svg>
+               Back
+            </button>
+            <h2 class="sd-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
+         </div>
+         <button class="sd-close-btn" @click=${callbacks.onClose}>
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+         </button>
+      </div>
+
+      <div class="sd-content">
+         <div class="editor-layout">
+            <!-- LEFT COL: IDENTITY -->
+            <div class="editor-col">
+               <div class="photo-upload-area">
+                  <svg style="width:48px;height:48px;fill:currentColor;margin-bottom:16px;" viewBox="0 0 24 24"><path d="${mdiUpload}"></path></svg>
+                  <span style="font-weight:600;">PHOTO UPLOAD AREA</span>
+                  <span style="font-size:0.8rem; margin-top:4px;">(Drag & Drop or Click)</span>
+               </div>
+
+               <div class="sd-form-group">
+                  <label class="sd-label">Strain Name *</label>
+                  <input type="text" class="sd-input" .value=${s.strain} @input=${(e:any) => update('strain', e.target.value)} />
+               </div>
+
+               <div class="sd-form-group">
+                  <label class="sd-label">Phenotype</label>
+                  <input type="text" class="sd-input" placeholder="e.g. #1 (Optional)" .value=${s.phenotype} @input=${(e:any) => update('phenotype', e.target.value)} />
+               </div>
+
+               <div class="sd-form-group">
+                  <label class="sd-label">Breeder/Seedbank</label>
+                  <input type="text" class="sd-input" .value=${s.breeder} @input=${(e:any) => update('breeder', e.target.value)} />
+               </div>
+            </div>
+
+            <!-- RIGHT COL: GENETICS -->
+            <div class="editor-col">
+               <div class="sd-form-group">
+                  <label class="sd-label">Type *</label>
+                  <div class="type-selector-grid">
+                     ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map(t => {
+                        let icon = mdiLeaf;
+                        if(t === 'Indica') icon = mdiWeatherNight;
+                        if(t === 'Sativa') icon = mdiWeatherSunny;
+                        if(t === 'Hybrid') icon = mdiTuneVariant;
+
+                        const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
+                        return html`
+                           <div class="type-option ${isActive ? 'active' : ''}"
+                                @click=${() => update('type', t)}>
+                              <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+                              <span class="type-label">${t}</span>
+                           </div>
+                        `;
+                     })}
+                  </div>
+               </div>
+
+               <div class="sd-form-group">
+                  <label class="sd-label">Flowering Time (Days)</label>
+                  <div style="display:flex; gap:16px;">
+                     <input type="number" class="sd-input" placeholder="Min" .value=${s.flowering_min} @input=${(e:any) => update('flowering_min', e.target.value)} />
+                     <input type="number" class="sd-input" placeholder="Max" .value=${s.flowering_max} @input=${(e:any) => update('flowering_max', e.target.value)} />
+                  </div>
+               </div>
+
+               <div class="sd-form-group">
+                  <label class="sd-label">Lineage</label>
+                  <input type="text" class="sd-input" .value=${s.lineage} @input=${(e:any) => update('lineage', e.target.value)} />
+               </div>
+
+               <div class="sd-form-group">
+                  <label class="sd-label">Sex</label>
+                  <div style="display:flex; gap:20px; padding: 8px 0;">
+                     ${['Feminized', 'Regular'].map(sex => html`
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:white;">
+                           <input type="radio" name="sex_radio"
+                                  .checked=${s.sex === sex}
+                                  @change=${() => update('sex', sex)}
+                                  style="accent-color: var(--accent-green); transform: scale(1.2);" />
+                           ${sex}
+                        </label>
+                     `)}
+                  </div>
+               </div>
+
+               <div class="sd-form-group">
+                  <label class="sd-label">Description</label>
+                  <textarea class="sd-textarea" .value=${s.description} @input=${(e:any) => update('description', e.target.value)}></textarea>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <div class="sd-footer">
+         <button class="sd-btn secondary" @click=${() => callbacks.onSwitchView('browse')}>
+            Cancel
+         </button>
+         <button class="sd-btn primary" @click=${callbacks.onAddStrain}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
+            Save Strain
+         </button>
+      </div>
     `;
   }
 

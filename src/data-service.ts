@@ -298,13 +298,21 @@ export class DataService {
     }
   }
 
-  async addStrain(strain: string, phenotype?: string) {
-    console.log("[DataService:addStrain] Adding strain:", strain, phenotype);
+  async addStrain(data: {
+    strain: string;
+    phenotype?: string;
+    breeder?: string;
+    type?: string;
+    flowering_days_min?: number;
+    flowering_days_max?: number;
+    lineage?: string;
+    sex?: string;
+    description?: string;
+    image?: string;
+  }) {
+    console.log("[DataService:addStrain] Adding strain:", data);
     try {
-      const res = await this.hass.callService("growspace_manager", "add_strain", {
-        strain,
-        phenotype
-      });
+      const res = await this.hass.callService("growspace_manager", "add_strain", data);
       console.log("[DataService:addStrain] Response:", res);
       return res;
     } catch (err) {
