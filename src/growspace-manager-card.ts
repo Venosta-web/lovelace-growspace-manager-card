@@ -1304,7 +1304,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
     if (changedProps.has('selectedDevice')) {
-        this._fetchHistory();
+      this._fetchHistory();
     }
   }
 
@@ -1316,7 +1316,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     let slug = device.name.toLowerCase().replace(/\s+/g, '_');
     if (device.overview_entity_id) {
-       slug = device.overview_entity_id.replace('sensor.', '');
+      slug = device.overview_entity_id.replace('sensor.', '');
     }
     const envEntityId = `binary_sensor.${slug}_optimal_conditions`;
 
@@ -1325,10 +1325,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
     try {
-        const history = await this.dataService.getHistory(envEntityId, yesterday, now);
-        this._historyData = history;
+      const history = await this.dataService.getHistory(envEntityId, yesterday, now);
+      this._historyData = history;
     } catch (e) {
-        console.error("Failed to fetch history", e);
+      console.error("Failed to fetch history", e);
     }
   }
 
@@ -1477,10 +1477,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       .forEach(field => {
         if (editedAttributes[field] !== undefined && editedAttributes[field] !== null) {
           if (dateFields.includes(field)) {
-             const formattedDate = PlantUtils.formatDateForBackend(String(editedAttributes[field]));
-             if (formattedDate) {
-                 payload[field] = formattedDate;
-             }
+            const formattedDate = PlantUtils.formatDateForBackend(String(editedAttributes[field]));
+            if (formattedDate) {
+              payload[field] = formattedDate;
+            }
           } else {
             payload[field] = editedAttributes[field];
           }
@@ -1576,87 +1576,96 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   private _openStrainLibraryDialog() {
     const currentStrains = this.dataService.getStrainLibrary();
     this._strainLibraryDialog = {
-        open: true,
-        view: 'browse',
-        strains: currentStrains,
-        searchQuery: '',
-        editorState: this._createEmptyEditorState()
+      open: true,
+      view: 'browse',
+      strains: currentStrains,
+      searchQuery: '',
+      editorState: this._createEmptyEditorState()
     };
   }
 
   private _createEmptyEditorState() {
-      return {
-          strain: '',
-          phenotype: '',
-          breeder: '',
-          type: '',
-          flowering_min: '',
-          flowering_max: '',
-          lineage: '',
-          sex: '',
-          description: '',
-          image: '',
-          image_crop_meta: undefined
-      };
+    return {
+      strain: '',
+      phenotype: '',
+      breeder: '',
+      type: '',
+      flowering_min: '',
+      flowering_max: '',
+      lineage: '',
+      sex: '',
+      description: '',
+      image: '',
+      image_crop_meta: undefined
+    };
   }
 
   private _switchStrainView(view: 'browse' | 'editor', strainToEdit?: StrainEntry) {
-      if (!this._strainLibraryDialog) return;
-      this._strainLibraryDialog.view = view;
-      this._strainLibraryDialog.isCropping = false; // Reset cropping state
+    if (!this._strainLibraryDialog) return;
+    this._strainLibraryDialog.view = view;
+    this._strainLibraryDialog.isCropping = false; // Reset cropping state
 
-      if (view === 'editor') {
-          if (strainToEdit) {
-              // Populate editor
-              this._strainLibraryDialog.editorState = {
-                  strain: strainToEdit.strain,
-                  phenotype: strainToEdit.phenotype || '',
-                  breeder: strainToEdit.breeder || '',
-                  type: strainToEdit.type || '',
-                  flowering_min: strainToEdit.flowering_days_min?.toString() || '',
-                  flowering_max: strainToEdit.flowering_days_max?.toString() || '',
-                  lineage: strainToEdit.lineage || '',
-                  sex: strainToEdit.sex || '',
-                  description: strainToEdit.description || '',
-                  image: strainToEdit.image || '',
-                  image_crop_meta: strainToEdit.image_crop_meta
-              };
-          } else {
-              // Reset editor
-              this._strainLibraryDialog.editorState = this._createEmptyEditorState();
-          }
+    if (view === 'editor') {
+      if (strainToEdit) {
+        // Populate editor
+        this._strainLibraryDialog.editorState = {
+          strain: strainToEdit.strain,
+          phenotype: strainToEdit.phenotype || '',
+          breeder: strainToEdit.breeder || '',
+          type: strainToEdit.type || '',
+          flowering_min: strainToEdit.flowering_days_min?.toString() || '',
+          flowering_max: strainToEdit.flowering_days_max?.toString() || '',
+          lineage: strainToEdit.lineage || '',
+          sex: strainToEdit.sex || '',
+          description: strainToEdit.description || '',
+          image: strainToEdit.image || '',
+          image_crop_meta: strainToEdit.image_crop_meta
+        };
+      } else {
+        // Reset editor
+        this._strainLibraryDialog.editorState = this._createEmptyEditorState();
       }
-      this.requestUpdate();
+    }
+    this.requestUpdate();
   }
 
   private _handleStrainEditorChange(field: string, value: any) {
-      if (this._strainLibraryDialog && this._strainLibraryDialog.editorState) {
-          (this._strainLibraryDialog.editorState as any)[field] = value;
-          this.requestUpdate();
-      }
+    if (this._strainLibraryDialog && this._strainLibraryDialog.editorState) {
+      (this._strainLibraryDialog.editorState as any)[field] = value;
+      this.requestUpdate();
+    }
   }
 
   private _toggleCropMode(active: boolean) {
-      if (this._strainLibraryDialog) {
-          this._strainLibraryDialog.isCropping = active;
-          this.requestUpdate();
-      }
+    if (this._strainLibraryDialog) {
+      this._strainLibraryDialog.isCropping = active;
+      this.requestUpdate();
+    }
   }
 
   private _toggleImageSelector(isOpen: boolean) {
-      if (this._strainLibraryDialog) {
-          this._strainLibraryDialog.isImageSelectorOpen = isOpen;
-          this.requestUpdate();
-      }
+    if (this._strainLibraryDialog) {
+      this._strainLibraryDialog.isImageSelectorOpen = isOpen;
+      this.requestUpdate();
+    }
   }
 
   private _handleSelectLibraryImage(imageUrl: string) {
-      if (this._strainLibraryDialog && this._strainLibraryDialog.editorState) {
-          this._strainLibraryDialog.editorState.image = imageUrl;
-          // Close selector
-          this._strainLibraryDialog.isImageSelectorOpen = false;
-          this.requestUpdate();
+    if (this._strainLibraryDialog && this._strainLibraryDialog.editorState) {
+      this._strainLibraryDialog.editorState.image = imageUrl;
+      // Close selector
+
+      // Find existing crop meta for this image
+      const existing = this._strainLibraryDialog.strains.find(s => s.image === imageUrl && !!s.image_crop_meta);
+      if (existing && existing.image_crop_meta) {
+        this._strainLibraryDialog.editorState.image_crop_meta = { ...existing.image_crop_meta };
+      } else {
+        this._strainLibraryDialog.editorState.image_crop_meta = undefined;
       }
+
+      this._strainLibraryDialog.isImageSelectorOpen = false;
+      this.requestUpdate();
+    }
   }
 
   private _toggleLightCycle() {
@@ -1666,80 +1675,80 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   private _toggleEnvGraph(metric: string) {
     const newSet = new Set(this._activeEnvGraphs);
     if (newSet.has(metric)) {
-        newSet.delete(metric);
+      newSet.delete(metric);
     } else {
-        newSet.add(metric);
+      newSet.add(metric);
     }
     this._activeEnvGraphs = newSet;
     this.requestUpdate();
   }
 
-  private _handleGraphHover(e: MouseEvent, graphId: string, dataPoints: {time: number, value: number}[], rect: DOMRect, unit: string) {
-      const x = e.clientX - rect.left;
-      const width = rect.width;
+  private _handleGraphHover(e: MouseEvent, graphId: string, dataPoints: { time: number, value: number }[], rect: DOMRect, unit: string) {
+    const x = e.clientX - rect.left;
+    const width = rect.width;
 
-      const now = new Date();
-      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const minTime = twentyFourHoursAgo.getTime();
-      const maxTime = now.getTime();
-      const range = maxTime - minTime;
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const minTime = twentyFourHoursAgo.getTime();
+    const maxTime = now.getTime();
+    const range = maxTime - minTime;
 
-      const hoveredTime = minTime + (x / width) * range;
+    const hoveredTime = minTime + (x / width) * range;
 
-      // Find closest data point
-      let closest = dataPoints[0];
-      let minDiff = Math.abs(hoveredTime - closest.time);
+    // Find closest data point
+    let closest = dataPoints[0];
+    let minDiff = Math.abs(hoveredTime - closest.time);
 
-      for (let i = 1; i < dataPoints.length; i++) {
-          const diff = Math.abs(hoveredTime - dataPoints[i].time);
-          if (diff < minDiff) {
-              minDiff = diff;
-              closest = dataPoints[i];
-          }
+    for (let i = 1; i < dataPoints.length; i++) {
+      const diff = Math.abs(hoveredTime - dataPoints[i].time);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = dataPoints[i];
       }
+    }
 
-      const d = new Date(hoveredTime);
-      const timeStr = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).toLowerCase();
+    const d = new Date(hoveredTime);
+    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
 
-      // For value, if it's light cycle, we need special handling (passed as unit='ON/OFF' maybe?)
-      let valStr = `${closest.value} ${unit}`;
-      if (unit === 'state') {
-          valStr = closest.value === 1 ? 'ON' : 'OFF';
-      }
+    // For value, if it's light cycle, we need special handling (passed as unit='ON/OFF' maybe?)
+    let valStr = `${closest.value} ${unit}`;
+    if (unit === 'state') {
+      valStr = closest.value === 1 ? 'ON' : 'OFF';
+    }
 
-      this._tooltip = {
-          id: graphId,
-          x: x,
-          time: timeStr,
-          value: valStr
-      };
+    this._tooltip = {
+      id: graphId,
+      x: x,
+      time: timeStr,
+      value: valStr
+    };
   }
 
   private renderEnvGraph(metricKey: string, color: string, title: string, unit: string): TemplateResult {
     if (!this._historyData || this._historyData.length === 0) return html``;
 
     const getValue = (ent: any, key: string) => {
-        if (!ent || !ent.attributes) return undefined;
-        if (ent.attributes[key] !== undefined) return ent.attributes[key];
-        if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
-            return ent.attributes.observations[key];
-        }
-        return undefined;
+      if (!ent || !ent.attributes) return undefined;
+      if (ent.attributes[key] !== undefined) return ent.attributes[key];
+      if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
+        return ent.attributes.observations[key];
+      }
+      return undefined;
     };
 
     const sortedHistory = [...this._historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const dataPoints: {time: number, value: number}[] = [];
+    const dataPoints: { time: number, value: number }[] = [];
 
     sortedHistory.forEach(h => {
-        const t = new Date(h.last_changed).getTime();
-        if (t < twentyFourHoursAgo.getTime()) return;
-        const val = getValue(h, metricKey);
-        if (val !== undefined && !isNaN(parseFloat(val))) {
-            dataPoints.push({ time: t, value: parseFloat(val) });
-        }
+      const t = new Date(h.last_changed).getTime();
+      if (t < twentyFourHoursAgo.getTime()) return;
+      const val = getValue(h, metricKey);
+      if (val !== undefined && !isNaN(parseFloat(val))) {
+        dataPoints.push({ time: t, value: parseFloat(val) });
+      }
     });
 
     if (dataPoints.length < 2) return html``;
@@ -1755,9 +1764,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const paddedRange = paddedMax - paddedMin;
 
     const points: [number, number][] = dataPoints.map(d => {
-        const x = ((d.time - twentyFourHoursAgo.getTime()) / (24 * 60 * 60 * 1000)) * width;
-        const y = height - ((d.value - paddedMin) / paddedRange) * height;
-        return [x, y];
+      const x = ((d.time - twentyFourHoursAgo.getTime()) / (24 * 60 * 60 * 1000)) * width;
+      const y = height - ((d.value - paddedMin) / paddedRange) * height;
+      return [x, y];
     });
 
     const svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
@@ -1781,9 +1790,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
          <div class="gs-chart-container" style="height: 100px;"
               @mousemove=${(e: MouseEvent) => {
-                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                  this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
-              }}
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
+      }}
               @mouseleave=${() => this._tooltip = null}>
 
              ${this._tooltip && this._tooltip.id === metricKey ? html`
@@ -1814,22 +1823,22 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _setStrainSearchQuery(query: string) {
-      if (this._strainLibraryDialog) {
-          this._strainLibraryDialog.searchQuery = query;
-          this.requestUpdate();
-      }
+    if (this._strainLibraryDialog) {
+      this._strainLibraryDialog.searchQuery = query;
+      this.requestUpdate();
+    }
   }
 
   private _toggleAddStrainForm() {
-      // Legacy method removed or kept empty
+    // Legacy method removed or kept empty
   }
 
   private _promptClearAll() {
-      // Removed logic
+    // Removed logic
   }
 
   private _cancelClearAll() {
-      // Removed logic
+    // Removed logic
   }
 
   private async _addStrain() {
@@ -1838,17 +1847,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const s = this._strainLibraryDialog.editorState;
 
     const payload = {
-       strain: s.strain,
-       phenotype: s.phenotype,
-       breeder: s.breeder,
-       type: s.type,
-       flowering_days_min: s.flowering_min ? parseInt(s.flowering_min) : undefined,
-       flowering_days_max: s.flowering_max ? parseInt(s.flowering_max) : undefined,
-       lineage: s.lineage,
-       sex: s.sex,
-       description: s.description,
-       image: s.image,
-       image_crop_meta: s.image_crop_meta
+      strain: s.strain,
+      phenotype: s.phenotype,
+      breeder: s.breeder,
+      type: s.type,
+      flowering_days_min: s.flowering_min ? parseInt(s.flowering_min) : undefined,
+      flowering_days_max: s.flowering_max ? parseInt(s.flowering_max) : undefined,
+      lineage: s.lineage,
+      sex: s.sex,
+      description: s.description,
+      image: s.image,
+      image_crop_meta: s.image_crop_meta
     };
 
     try {
@@ -1904,9 +1913,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   private async _clearStrains() {
     await this.dataService.clearStrainLibrary();
     if (this._strainLibraryDialog) {
-        this._strainLibraryDialog.strains = [];
-        this._strainLibraryDialog.confirmClearAll = false;
-        this.requestUpdate();
+      this._strainLibraryDialog.strains = [];
+      this._strainLibraryDialog.confirmClearAll = false;
+      this.requestUpdate();
     }
   }
 
@@ -2006,40 +2015,40 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleAddGrowspaceSubmit() {
-     if (!this._configDialog) return;
-     const d = this._configDialog.addGrowspaceData;
-     if (!d.name) { alert('Name is required'); return; }
-     this.dataService.addGrowspace(d)
-         .then(() => { this._configDialog = null; this.requestUpdate(); })
-         .catch(e => alert(`Error: ${e.message}`));
+    if (!this._configDialog) return;
+    const d = this._configDialog.addGrowspaceData;
+    if (!d.name) { alert('Name is required'); return; }
+    this.dataService.addGrowspace(d)
+      .then(() => { this._configDialog = null; this.requestUpdate(); })
+      .catch(e => alert(`Error: ${e.message}`));
   }
 
   private _handleEnvSubmit() {
-     if (!this._configDialog) return;
-     const d = this._configDialog.environmentData;
-     if (!d.selectedGrowspaceId || !d.temp_sensor || !d.humidity_sensor || !d.vpd_sensor) {
-         alert('Growspace and required sensors (Temp, Hum, VPD) are mandatory');
-         return;
-     }
-     this.dataService.configureGrowspaceSensors({
-         growspace_id: d.selectedGrowspaceId,
-         temperature_sensor: d.temp_sensor,
-         humidity_sensor: d.humidity_sensor,
-         vpd_sensor: d.vpd_sensor,
-         co2_sensor: d.co2_sensor || undefined,
-         light_sensor: d.light_sensor || undefined,
-         fan_switch: d.fan_switch || undefined
-     })
-     .then(() => { this._configDialog = null; this.requestUpdate(); })
-     .catch(e => alert(`Error: ${e.message}`));
+    if (!this._configDialog) return;
+    const d = this._configDialog.environmentData;
+    if (!d.selectedGrowspaceId || !d.temp_sensor || !d.humidity_sensor || !d.vpd_sensor) {
+      alert('Growspace and required sensors (Temp, Hum, VPD) are mandatory');
+      return;
+    }
+    this.dataService.configureGrowspaceSensors({
+      growspace_id: d.selectedGrowspaceId,
+      temperature_sensor: d.temp_sensor,
+      humidity_sensor: d.humidity_sensor,
+      vpd_sensor: d.vpd_sensor,
+      co2_sensor: d.co2_sensor || undefined,
+      light_sensor: d.light_sensor || undefined,
+      fan_switch: d.fan_switch || undefined
+    })
+      .then(() => { this._configDialog = null; this.requestUpdate(); })
+      .catch(e => alert(`Error: ${e.message}`));
   }
 
   private _handleGlobalSubmit() {
-     if (!this._configDialog) return;
-     const d = this._configDialog.globalData;
-     this.dataService.configureGlobalSettings(d)
-         .then(() => { this._configDialog = null; this.requestUpdate(); })
-         .catch(e => alert(`Error: ${e.message}`));
+    if (!this._configDialog) return;
+    const d = this._configDialog.globalData;
+    this.dataService.configureGlobalSettings(d)
+      .then(() => { this._configDialog = null; this.requestUpdate(); })
+      .catch(e => alert(`Error: ${e.message}`));
   }
 
 
@@ -2123,21 +2132,21 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     // Fetch Environmental Data
     let slug = device.name.toLowerCase().replace(/\s+/g, '_');
     if (device.overview_entity_id) {
-       slug = device.overview_entity_id.replace('sensor.', '');
+      slug = device.overview_entity_id.replace('sensor.', '');
     }
     const envEntityId = `binary_sensor.${slug}_optimal_conditions`;
     const envEntity = this.hass.states[envEntityId];
 
     // Helper to get attribute from either top-level or nested 'observations'
     const getValue = (ent: any, key: string) => {
-        if (!ent || !ent.attributes) return undefined;
-        // 1. Check top level
-        if (ent.attributes[key] !== undefined) return ent.attributes[key];
-        // 2. Check nested 'observations' (if it exists and is an object)
-        if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
-            return ent.attributes.observations[key];
-        }
-        return undefined;
+      if (!ent || !ent.attributes) return undefined;
+      // 1. Check top level
+      if (ent.attributes[key] !== undefined) return ent.attributes[key];
+      // 2. Check nested 'observations' (if it exists and is an object)
+      if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
+        return ent.attributes.observations[key];
+      }
+      return undefined;
     };
 
     const temp = getValue(envEntity, 'temperature');
@@ -2160,88 +2169,88 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const hasFlower = device.plants.some(p => p.attributes.stage === 'flower');
     const targetCycle = hasFlower ? '12/12 Cycle' : '18/6 Cycle';
 
-    let transitions: {time: number, state: boolean}[] = [];
+    let transitions: { time: number, state: boolean }[] = [];
 
     if (this._historyData && this._historyData.length > 0) {
-        // Sort history Oldest -> Newest for graph building
-        const sortedHistory = [...this._historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+      // Sort history Oldest -> Newest for graph building
+      const sortedHistory = [...this._historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
 
-        // Filter for light state changes
-        const now = new Date();
-        const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      // Filter for light state changes
+      const now = new Date();
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-        // Build path
-        const width = 1000;
-        const height = 100;
-        const points: [number, number][] = [];
+      // Build path
+      const width = 1000;
+      const height = 100;
+      const points: [number, number][] = [];
 
-        // Initial state (before history window) - infer from first entry or assume off?
-        // Ideally look at the state just before the window, but here we take the first point in window
-        // If first point is ON, it means it turned ON at that time? No, it means state changed.
-        // DataService uses history/period, so it returns state changes.
+      // Initial state (before history window) - infer from first entry or assume off?
+      // Ideally look at the state just before the window, but here we take the first point in window
+      // If first point is ON, it means it turned ON at that time? No, it means state changed.
+      // DataService uses history/period, so it returns state changes.
 
-        // We need the state at T-24h.
-        // For simplicity, we'll assume the state at T-24h is the inverse of the first change found,
-        // or if no changes, the current state (constant).
+      // We need the state at T-24h.
+      // For simplicity, we'll assume the state at T-24h is the inverse of the first change found,
+      // or if no changes, the current state (constant).
 
-        let currentState = sortedHistory.length > 0 ? (getValue(sortedHistory[0], 'is_lights_on') === true ? false : true) : isLightsOn;
-        // Actually, a better heuristic: if the first history entry says "ON", it means it turned ON then. So before that it was OFF.
+      let currentState = sortedHistory.length > 0 ? (getValue(sortedHistory[0], 'is_lights_on') === true ? false : true) : isLightsOn;
+      // Actually, a better heuristic: if the first history entry says "ON", it means it turned ON then. So before that it was OFF.
 
-        // If history is sparse, we might need to be careful.
-        // Let's scan through and record transitions.
+      // If history is sparse, we might need to be careful.
+      // Let's scan through and record transitions.
 
-        sortedHistory.forEach(h => {
-           const t = new Date(h.last_changed).getTime();
-           const s = getValue(h, 'is_lights_on') === true;
-           if (t >= twentyFourHoursAgo.getTime()) {
-              transitions.push({time: t, state: s});
-           }
-        });
-
-        // Determine initial state at -24h
-        if (transitions.length > 0) {
-           // If the first transition in the window is TO 'true', then before that it was 'false'
-           currentState = !transitions[0].state;
-        } else {
-           currentState = isLightsOn; // No changes in 24h
+      sortedHistory.forEach(h => {
+        const t = new Date(h.last_changed).getTime();
+        const s = getValue(h, 'is_lights_on') === true;
+        if (t >= twentyFourHoursAgo.getTime()) {
+          transitions.push({ time: t, state: s });
         }
+      });
 
-        // Start point
-        points.push([0, currentState ? 0 : height]);
+      // Determine initial state at -24h
+      if (transitions.length > 0) {
+        // If the first transition in the window is TO 'true', then before that it was 'false'
+        currentState = !transitions[0].state;
+      } else {
+        currentState = isLightsOn; // No changes in 24h
+      }
 
-        transitions.forEach(tr => {
-           const x = ((tr.time - twentyFourHoursAgo.getTime()) / (24 * 60 * 60 * 1000)) * width;
-           // Draw horizontal line from previous x to current x
-           points.push([x, currentState ? 0 : height]);
-           // Update state
-           currentState = tr.state;
-           // Vertical line is implicit in the next horizontal segment starting at same x but new y
-           points.push([x, currentState ? 0 : height]);
-        });
+      // Start point
+      points.push([0, currentState ? 0 : height]);
 
-        // Final point at 'now'
-        points.push([width, currentState ? 0 : height]);
+      transitions.forEach(tr => {
+        const x = ((tr.time - twentyFourHoursAgo.getTime()) / (24 * 60 * 60 * 1000)) * width;
+        // Draw horizontal line from previous x to current x
+        points.push([x, currentState ? 0 : height]);
+        // Update state
+        currentState = tr.state;
+        // Vertical line is implicit in the next horizontal segment starting at same x but new y
+        points.push([x, currentState ? 0 : height]);
+      });
 
-        svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+      // Final point at 'now'
+      points.push([width, currentState ? 0 : height]);
 
-        // Calculate Last ON / OFF Times
-        // We need the *latest* transition to ON and the *latest* transition to OFF
-        // Scan history (Newest -> Oldest)
-        const reversedHistory = [...sortedHistory].reverse();
+      svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
 
-        const lastOn = reversedHistory.find(h => getValue(h, 'is_lights_on') === true);
-        if (lastOn) {
-            const d = new Date(lastOn.last_changed);
-            lastOnTime = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).replace(/ [AP]M/, '');
-            lastOnAmPm = d.toLocaleTimeString([], {hour12: true}).slice(-2);
-        }
+      // Calculate Last ON / OFF Times
+      // We need the *latest* transition to ON and the *latest* transition to OFF
+      // Scan history (Newest -> Oldest)
+      const reversedHistory = [...sortedHistory].reverse();
 
-        const lastOff = reversedHistory.find(h => getValue(h, 'is_lights_on') === false);
-        if (lastOff) {
-            const d = new Date(lastOff.last_changed);
-            lastOffTime = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).replace(/ [AP]M/, '');
-            lastOffAmPm = d.toLocaleTimeString([], {hour12: true}).slice(-2);
-        }
+      const lastOn = reversedHistory.find(h => getValue(h, 'is_lights_on') === true);
+      if (lastOn) {
+        const d = new Date(lastOn.last_changed);
+        lastOnTime = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace(/ [AP]M/, '');
+        lastOnAmPm = d.toLocaleTimeString([], { hour12: true }).slice(-2);
+      }
+
+      const lastOff = reversedHistory.find(h => getValue(h, 'is_lights_on') === false);
+      if (lastOff) {
+        const d = new Date(lastOff.last_changed);
+        lastOffTime = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace(/ [AP]M/, '');
+        lastOffAmPm = d.toLocaleTimeString([], { hour12: true }).slice(-2);
+      }
     }
 
     return html`
@@ -2341,63 +2350,63 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             ${!this._lightCycleCollapsed ? html`
             <div class="gs-chart-container"
                 @mousemove=${(e: MouseEvent) => {
-                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                    // Need to construct data points for hover logic
-                    // Re-using the transitions array calculated above would be cleaner but it's inside the if block.
-                    // I'll reconstruct a simplified points array for the hover handler:
-                    // [ {time: t, value: 1/0} ... ] using 'transitions'.
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            // Need to construct data points for hover logic
+            // Re-using the transitions array calculated above would be cleaner but it's inside the if block.
+            // I'll reconstruct a simplified points array for the hover handler:
+            // [ {time: t, value: 1/0} ... ] using 'transitions'.
 
-                    const hoverPoints: {time: number, value: number}[] = [];
-                    // Add initial state at -24h
-                    const now = new Date();
-                    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-                    // Use 'transitions' calculated above
-                    // Oh wait, transitions is in the upper scope? Yes, inside the function.
+            const hoverPoints: { time: number, value: number }[] = [];
+            // Add initial state at -24h
+            const now = new Date();
+            const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            // Use 'transitions' calculated above
+            // Oh wait, transitions is in the upper scope? Yes, inside the function.
 
-                    // We need to pass points that represent the state changes.
-                    // For step line, we should probably pass points at regular intervals or just the transitions?
-                    // _handleGraphHover finds the closest point. For a step function, we want the value of the interval.
-                    // So we should look for the transition *before* the hovered time.
+            // We need to pass points that represent the state changes.
+            // For step line, we should probably pass points at regular intervals or just the transitions?
+            // _handleGraphHover finds the closest point. For a step function, we want the value of the interval.
+            // So we should look for the transition *before* the hovered time.
 
-                    // Let's modify _handleGraphHover or create a specific one?
-                    // Or just feed it enough points?
-                    // Actually, if we feed it transitions, "closest" might be the transition *after*.
+            // Let's modify _handleGraphHover or create a specific one?
+            // Or just feed it enough points?
+            // Actually, if we feed it transitions, "closest" might be the transition *after*.
 
-                    // Let's implement a custom hover for light cycle here inline or adapt logic.
-                    // I will use _handleGraphHover but I need to adapt the logic for step function.
-                    // Actually, let's just use the transitions array.
+            // Let's implement a custom hover for light cycle here inline or adapt logic.
+            // I will use _handleGraphHover but I need to adapt the logic for step function.
+            // Actually, let's just use the transitions array.
 
-                    const hoverPointsLocal = transitions.map(t => ({time: t.time, value: t.state ? 1 : 0}));
-                    // Add start point
-                    // Transitions only has changes within window.
-                    // Need to insert start point at -24h
-                    // 'transitions' is defined in the scope above.
+            const hoverPointsLocal = transitions.map(t => ({ time: t.time, value: t.state ? 1 : 0 }));
+            // Add start point
+            // Transitions only has changes within window.
+            // Need to insert start point at -24h
+            // 'transitions' is defined in the scope above.
 
-                    // Wait, if I use _handleGraphHover with discrete points, it finds the closest point.
-                    // If I hover between two points 6 hours apart, it will snap to one.
-                    // That's fine for now, or I can refine _handleGraphHover to support 'step' interpolation.
+            // Wait, if I use _handleGraphHover with discrete points, it finds the closest point.
+            // If I hover between two points 6 hours apart, it will snap to one.
+            // That's fine for now, or I can refine _handleGraphHover to support 'step' interpolation.
 
-                    // Let's stick to _handleGraphHover for consistency but populate it well.
-                    // Or better: pass the transitions and let a specialized handler deal with it?
-                    // I'll stick to generic for now, but ensure we have points.
+            // Let's stick to _handleGraphHover for consistency but populate it well.
+            // Or better: pass the transitions and let a specialized handler deal with it?
+            // I'll stick to generic for now, but ensure we have points.
 
-                    if (hoverPointsLocal.length === 0 || hoverPointsLocal[0].time > twentyFourHoursAgo.getTime()) {
-                         // Add the initial state point
-                         // We don't have 'currentState' variable available here easily (it was mutated in loop)
-                         // But we know 'transitions' and we calculated 'currentState' before loop.
-                         // It's tricky because of scope mutation.
+            if (hoverPointsLocal.length === 0 || hoverPointsLocal[0].time > twentyFourHoursAgo.getTime()) {
+              // Add the initial state point
+              // We don't have 'currentState' variable available here easily (it was mutated in loop)
+              // But we know 'transitions' and we calculated 'currentState' before loop.
+              // It's tricky because of scope mutation.
 
-                         // Let's just rely on the 'transitions' array and add the start/end points.
-                         // But I can't easily access the initial state derived above without refactoring.
-                         // However, I can re-derive or just use what I have.
+              // Let's just rely on the 'transitions' array and add the start/end points.
+              // But I can't easily access the initial state derived above without refactoring.
+              // However, I can re-derive or just use what I have.
 
-                         // Hack: I'll just pass the transitions. The user will see the time of the switch.
-                         // If they hover in between, they snap to the switch.
-                         // "Time: 10:30pm Value: ON" -> implies at 10:30pm it turned ON.
-                    }
+              // Hack: I'll just pass the transitions. The user will see the time of the switch.
+              // If they hover in between, they snap to the switch.
+              // "Time: 10:30pm Value: ON" -> implies at 10:30pm it turned ON.
+            }
 
-                    this._handleGraphHover(e, 'light-cycle', hoverPointsLocal, rect, 'state');
-                }}
+            this._handleGraphHover(e, 'light-cycle', hoverPointsLocal, rect, 'state');
+          }}
                 @mouseleave=${() => this._tooltip = null}
             >
                 ${this._tooltip && this._tooltip.id === 'light-cycle' ? html`
@@ -2631,8 +2640,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     return html`
       <div class="plant-days">
         ${days.map(({ days, icon, title, stage }) => {
-          const color = PlantUtils.getPlantStageColor(stage);
-          return html`
+      const color = PlantUtils.getPlantStageColor(stage);
+      return html`
             <span title="${title}" style="color: ${color}">
               <svg style="width: 2rem;height: 2rem;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${icon}"></path>
@@ -2640,7 +2649,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
               ${days}d
             </span>
           `;
-        })}
+    })}
       </div>
     `;
   }
@@ -2664,19 +2673,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onConfirm: () => this._confirmAddPlant(),
         onStrainChange: (value) => {
           if (this._addPlantDialog) {
-             // When using the dropdown, we now get the unique strain name (string)
-             this._addPlantDialog.strain = value;
+            // When using the dropdown, we now get the unique strain name (string)
+            this._addPlantDialog.strain = value;
 
-             // Attempt to pre-fill phenotype from library (first match)
-             const entry = strainLibrary.find(s => s.strain === value);
-             if (entry && entry.phenotype) {
-                this._addPlantDialog.phenotype = entry.phenotype;
-             } else {
-                // No default phenotype or not found, keep current or clear?
-                // Let's clear it if they switched strains, unless they are typing (but this is a select change)
-                this._addPlantDialog.phenotype = '';
-             }
-             this.requestUpdate();
+            // Attempt to pre-fill phenotype from library (first match)
+            const entry = strainLibrary.find(s => s.strain === value);
+            if (entry && entry.phenotype) {
+              this._addPlantDialog.phenotype = entry.phenotype;
+            } else {
+              // No default phenotype or not found, keep current or clear?
+              // Let's clear it if they switched strains, unless they are typing (but this is a select change)
+              this._addPlantDialog.phenotype = '';
+            }
+            this.requestUpdate();
           }
         },
         onPhenotypeChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.phenotype = value; },
@@ -2693,11 +2702,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         },
         onColChange: (value) => {
           if (this._addPlantDialog) {
-             const val = parseInt(value);
-             if (!isNaN(val) && val > 0) {
-               this._addPlantDialog.col = val - 1;
-               this.requestUpdate();
-             }
+            const val = parseInt(value);
+            if (!isNaN(val) && val > 0) {
+              this._addPlantDialog.col = val - 1;
+              this.requestUpdate();
+            }
           }
         },
       }
