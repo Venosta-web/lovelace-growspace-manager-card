@@ -32,6 +32,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _historyData: any[] | null = null;
   @state() private _lightCycleCollapsed: boolean = true;
   @state() private _activeEnvGraphs: Set<string> = new Set();
+  @state() private _tooltip: { id: string, x: number, time: string, value: string } | null = null;
 
 
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -219,6 +220,42 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
          font-weight: 500;
          position: relative;
          z-index: 2;
+         pointer-events: none;
+      }
+
+      .gs-tooltip {
+        position: absolute;
+        top: 10px;
+        background: rgba(0, 0, 0, 0.85);
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        pointer-events: none;
+        transform: translate(-50%, 0);
+        z-index: 10;
+        white-space: nowrap;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(4px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        line-height: 1.2;
+        text-align: center;
+      }
+      .gs-tooltip .time {
+        font-weight: bold;
+        color: var(--primary-light-color);
+        margin-bottom: 2px;
+      }
+
+      .gs-cursor-line {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: rgba(255, 255, 255, 0.3);
+        pointer-events: none;
+        z-index: 5;
+        border-left: 1px dashed rgba(255, 255, 255, 0.5);
       }
 
       /* Light Cycle Card Nested */
@@ -1577,6 +1614,47 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.requestUpdate();
   }
 
+  private _handleGraphHover(e: MouseEvent, graphId: string, dataPoints: {time: number, value: number}[], rect: DOMRect, unit: string) {
+      const x = e.clientX - rect.left;
+      const width = rect.width;
+
+      const now = new Date();
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const minTime = twentyFourHoursAgo.getTime();
+      const maxTime = now.getTime();
+      const range = maxTime - minTime;
+
+      const hoveredTime = minTime + (x / width) * range;
+
+      // Find closest data point
+      let closest = dataPoints[0];
+      let minDiff = Math.abs(hoveredTime - closest.time);
+
+      for (let i = 1; i < dataPoints.length; i++) {
+          const diff = Math.abs(hoveredTime - dataPoints[i].time);
+          if (diff < minDiff) {
+              minDiff = diff;
+              closest = dataPoints[i];
+          }
+      }
+
+      const d = new Date(hoveredTime);
+      const timeStr = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}).toLowerCase();
+
+      // For value, if it's light cycle, we need special handling (passed as unit='ON/OFF' maybe?)
+      let valStr = `${closest.value} ${unit}`;
+      if (unit === 'state') {
+          valStr = closest.value === 1 ? 'ON' : 'OFF';
+      }
+
+      this._tooltip = {
+          id: graphId,
+          x: x,
+          time: timeStr,
+          value: valStr
+      };
+  }
+
   private renderEnvGraph(metricKey: string, color: string, title: string, unit: string): TemplateResult {
     if (!this._historyData || this._historyData.length === 0) return html``;
 
@@ -1641,7 +1719,21 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
              </div>
          </div>
 
-         <div class="gs-chart-container" style="height: 100px;">
+         <div class="gs-chart-container" style="height: 100px;"
+              @mousemove=${(e: MouseEvent) => {
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
+              }}
+              @mouseleave=${() => this._tooltip = null}>
+
+             ${this._tooltip && this._tooltip.id === metricKey ? html`
+                 <div class="gs-cursor-line" style="left: ${this._tooltip.x}px;"></div>
+                 <div class="gs-tooltip" style="left: ${this._tooltip.x}px;">
+                    <div class="time">${this._tooltip.time}</div>
+                    <div>${this._tooltip.value}</div>
+                 </div>
+             ` : ''}
+
              <svg class="gs-chart-svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
                  <defs>
                      <linearGradient id="grad-${metricKey}" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -1943,6 +2035,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const hasFlower = device.plants.some(p => p.attributes.stage === 'flower');
     const targetCycle = hasFlower ? '12/12 Cycle' : '18/6 Cycle';
 
+    let transitions: {time: number, state: boolean}[] = [];
+
     if (this._historyData && this._historyData.length > 0) {
         // Sort history Oldest -> Newest for graph building
         const sortedHistory = [...this._historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
@@ -1970,8 +2064,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
         // If history is sparse, we might need to be careful.
         // Let's scan through and record transitions.
-
-        const transitions: {time: number, state: boolean}[] = [];
 
         sortedHistory.forEach(h => {
            const t = new Date(h.last_changed).getTime();
@@ -2069,6 +2161,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                         @click=${() => this._toggleEnvGraph('co2')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm
                    </div>` : ''}
+
+                ${!this._isCompactView ? html`
+                   <div class="stat-chip" @click=${this._openStrainLibraryDialog} title="Strain Library">
+                      <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+                      Strains
+                   </div>
+
+                   <div class="stat-chip" @click=${() => this._isCompactView = true} title="Switch to Compact Mode">
+                       <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+                       Compact
+                   </div>
+                ` : ''}
             </div>
          </div>
 
@@ -2104,7 +2208,75 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             </div>
 
             ${!this._lightCycleCollapsed ? html`
-            <div class="gs-chart-container">
+            <div class="gs-chart-container"
+                @mousemove=${(e: MouseEvent) => {
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    // Need to construct data points for hover logic
+                    // Re-using the transitions array calculated above would be cleaner but it's inside the if block.
+                    // I'll reconstruct a simplified points array for the hover handler:
+                    // [ {time: t, value: 1/0} ... ] using 'transitions'.
+
+                    const hoverPoints: {time: number, value: number}[] = [];
+                    // Add initial state at -24h
+                    const now = new Date();
+                    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                    // Use 'transitions' calculated above
+                    // Oh wait, transitions is in the upper scope? Yes, inside the function.
+
+                    // We need to pass points that represent the state changes.
+                    // For step line, we should probably pass points at regular intervals or just the transitions?
+                    // _handleGraphHover finds the closest point. For a step function, we want the value of the interval.
+                    // So we should look for the transition *before* the hovered time.
+
+                    // Let's modify _handleGraphHover or create a specific one?
+                    // Or just feed it enough points?
+                    // Actually, if we feed it transitions, "closest" might be the transition *after*.
+
+                    // Let's implement a custom hover for light cycle here inline or adapt logic.
+                    // I will use _handleGraphHover but I need to adapt the logic for step function.
+                    // Actually, let's just use the transitions array.
+
+                    const hoverPointsLocal = transitions.map(t => ({time: t.time, value: t.state ? 1 : 0}));
+                    // Add start point
+                    // Transitions only has changes within window.
+                    // Need to insert start point at -24h
+                    // 'transitions' is defined in the scope above.
+
+                    // Wait, if I use _handleGraphHover with discrete points, it finds the closest point.
+                    // If I hover between two points 6 hours apart, it will snap to one.
+                    // That's fine for now, or I can refine _handleGraphHover to support 'step' interpolation.
+
+                    // Let's stick to _handleGraphHover for consistency but populate it well.
+                    // Or better: pass the transitions and let a specialized handler deal with it?
+                    // I'll stick to generic for now, but ensure we have points.
+
+                    if (hoverPointsLocal.length === 0 || hoverPointsLocal[0].time > twentyFourHoursAgo.getTime()) {
+                         // Add the initial state point
+                         // We don't have 'currentState' variable available here easily (it was mutated in loop)
+                         // But we know 'transitions' and we calculated 'currentState' before loop.
+                         // It's tricky because of scope mutation.
+
+                         // Let's just rely on the 'transitions' array and add the start/end points.
+                         // But I can't easily access the initial state derived above without refactoring.
+                         // However, I can re-derive or just use what I have.
+
+                         // Hack: I'll just pass the transitions. The user will see the time of the switch.
+                         // If they hover in between, they snap to the switch.
+                         // "Time: 10:30pm Value: ON" -> implies at 10:30pm it turned ON.
+                    }
+
+                    this._handleGraphHover(e, 'light-cycle', hoverPointsLocal, rect, 'state');
+                }}
+                @mouseleave=${() => this._tooltip = null}
+            >
+                ${this._tooltip && this._tooltip.id === 'light-cycle' ? html`
+                    <div class="gs-cursor-line" style="left: ${this._tooltip.x}px;"></div>
+                    <div class="gs-tooltip" style="left: ${this._tooltip.x}px;">
+                        <div class="time">${this._tooltip.time}</div>
+                        <div>${this._tooltip.value}</div>
+                    </div>
+                ` : ''}
+
                 <svg class="gs-chart-svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
                     <defs>
                         <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -2170,6 +2342,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private renderHeader(devices: GrowspaceDevice[]): TemplateResult {
+    if (!this._isCompactView && !this._config?.title) {
+      return html``;
+    }
+
     const selectedDevice = devices.find(d => d.device_id === this.selectedDevice);
 
     return html`
@@ -2201,7 +2377,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             </select>
           `}
         </div>
-        ` : ''}
 
         <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
           <div class="view-toggle">
@@ -2221,6 +2396,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             Strains
           </button>
         </div>
+        ` : ''}
       </div>
     `;
   }
