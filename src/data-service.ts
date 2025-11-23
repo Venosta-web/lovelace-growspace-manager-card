@@ -1,5 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
-import { PlantEntity, GrowspaceDevice, GrowspaceType, createGrowspaceDevice, StrainEntry, StrainAnalytics } from './types';
+import { PlantEntity, GrowspaceDevice, GrowspaceType, createGrowspaceDevice, StrainEntry, StrainAnalytics, StrainMeta } from './types';
 import { noChange } from 'lit';
 
 export class DataService {
@@ -84,7 +84,8 @@ export class DataService {
       return rawStrains.map((s: string) => ({
         strain: s,
         phenotype: '',
-        key: `${s}|default`
+        key: `${s}|default`,
+        meta: {}
       }));
     }
 
@@ -94,6 +95,7 @@ export class DataService {
       for (const [strainName, strainData] of Object.entries(rawStrains)) {
         const data = strainData as any;
         const strainAnalytics: StrainAnalytics | undefined = data.analytics;
+        const meta: StrainMeta = data.meta || {};
 
         // If phenotypes dictionary exists
         if (data.phenotypes && typeof data.phenotypes === 'object') {
@@ -121,17 +123,18 @@ export class DataService {
                  phenotype: phenoName,
                  key: `${strainName}|${phenoName}`,
                  analytics: phenoAnalytics,
-                 strain_analytics: strainAnalytics
+                 strain_analytics: strainAnalytics,
+                 meta: meta // Inherit strain meta
                });
              }
            } else {
              // Strain exists but has empty phenotypes dict
-             // We still want to show the strain
              results.push({
                strain: strainName,
                phenotype: '',
                key: `${strainName}|default`,
-               strain_analytics: strainAnalytics
+               strain_analytics: strainAnalytics,
+               meta: meta
              });
            }
         } else {
@@ -140,7 +143,8 @@ export class DataService {
             strain: strainName,
             phenotype: '',
             key: `${strainName}|default`,
-            strain_analytics: strainAnalytics
+            strain_analytics: strainAnalytics,
+            meta: meta
           });
         }
       }
@@ -310,6 +314,21 @@ export class DataService {
     } catch (err) {
       console.error("[DataService:addStrain] Error:", err);
       throw err;
+    }
+  }
+
+  async saveStrain(strain: string, meta: StrainMeta) {
+    console.log("[DataService:saveStrain] Saving strain:", strain, meta);
+    try {
+       const res = await this.hass.callService("growspace_manager", "add_strain", {
+          strain,
+          meta
+       });
+       console.log("[DataService:saveStrain] Response:", res);
+       return res;
+    } catch (err) {
+       console.error("[DataService:saveStrain] Error:", err);
+       throw err;
     }
   }
 
