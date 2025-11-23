@@ -1,5 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
-import { PlantEntity, GrowspaceDevice, GrowspaceType, createGrowspaceDevice, StrainEntry, StrainAnalytics } from './types';
+import { PlantEntity, GrowspaceDevice, GrowspaceType, createGrowspaceDevice, StrainEntry, StrainAnalytics, CropMeta } from './types';
 import { noChange } from 'lit';
 
 export class DataService {
@@ -121,7 +121,8 @@ export class DataService {
                  phenotype: phenoName,
                  key: `${strainName}|${phenoName}`,
                  analytics: phenoAnalytics,
-                 strain_analytics: strainAnalytics
+                 strain_analytics: strainAnalytics,
+                 image_crop_meta: pData.image_crop_meta
                });
              }
            } else {
@@ -131,7 +132,8 @@ export class DataService {
                strain: strainName,
                phenotype: '',
                key: `${strainName}|default`,
-               strain_analytics: strainAnalytics
+               strain_analytics: strainAnalytics,
+               image_crop_meta: data.image_crop_meta
              });
            }
         } else {
@@ -140,8 +142,9 @@ export class DataService {
             strain: strainName,
             phenotype: '',
             key: `${strainName}|default`,
-            strain_analytics: strainAnalytics
-          });
+            strain_analytics: strainAnalytics,
+            image_crop_meta: data.image_crop_meta
+           });
         }
       }
 
@@ -309,6 +312,7 @@ export class DataService {
     sex?: string;
     description?: string;
     image?: string;
+    image_crop_meta?: CropMeta;
   }) {
     console.log("[DataService:addStrain] Adding strain:", data);
     try {

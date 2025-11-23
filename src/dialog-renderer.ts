@@ -6,10 +6,37 @@ import {
   mdiLeaf, mdiUpload, mdiArrowLeft, mdiFilterVariant, mdiCloudUpload, mdiPencil,
   mdiCog, mdiThermometer, mdiEarth, mdiViewDashboard, mdiFan, mdiWeatherPartlyCloudy
 } from '@mdi/js';
-import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, ConfigDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry } from './types';
+import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, ConfigDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry, CropMeta } from './types';
 import { PlantUtils } from "./utils";
 
 export class DialogRenderer {
+  private static getCropStyle(image: string, meta?: CropMeta) {
+    if (!meta) return `background-image: url('${image}')`;
+
+    // Math:
+    // meta.scale is the zoom level (>=1)
+    // meta.x, meta.y are offsets in % relative to the image dimensions
+    // To display:
+    // background-size: {scale * 100}%
+    // background-position: {x}% {y}%
+
+    // Wait, standard background-position percentage works differently:
+    // 0% 0% aligns left edge with left edge.
+    // 100% 100% aligns right edge with right edge.
+    // If we store the center point or top-left, we need to map it.
+
+    // Let's assume we store:
+    // x: offset X in percentage (0-100)
+    // y: offset Y in percentage (0-100)
+    // scale: zoom factor (1 = fit cover)
+
+    return `
+      background-image: url('${image}');
+      background-size: ${meta.scale * 100}%;
+      background-position: ${meta.x}% ${meta.y}%;
+    `;
+  }
+
   static renderAddPlantDialog(
     dialog: AddPlantDialogState | null,
     strainLibrary: StrainEntry[],
@@ -276,6 +303,7 @@ export class DialogRenderer {
       // Navigation
       onSwitchView: (view: 'browse' | 'editor', strainToEdit?: StrainEntry) => void;
       onSearch: (query: string) => void;
+      onToggleCropMode: (active: boolean) => void;
     }
   ): TemplateResult {
     if (!dialog?.open) return html``;
@@ -643,10 +671,45 @@ export class DialogRenderer {
              cursor: pointer;
              transition: all 0.2s;
              margin-bottom: 20px;
+             position: relative;
+             overflow: hidden;
           }
           .photo-upload-area:hover {
              border-color: var(--accent-green);
              background: rgba(34, 197, 94, 0.05);
+          }
+
+          /* Crop Overlay */
+          .crop-overlay {
+             position: fixed;
+             top: 0; left: 0; right: 0; bottom: 0;
+             background: rgba(0,0,0,0.9);
+             z-index: 1000;
+             display: flex;
+             flex-direction: column;
+             align-items: center;
+             justify-content: center;
+             padding: 20px;
+          }
+          .crop-viewport {
+             width: 300px;
+             height: 300px;
+             border: 2px solid var(--accent-green);
+             overflow: hidden;
+             position: relative;
+             cursor: move;
+             box-shadow: 0 0 0 100vmax rgba(0,0,0,0.7);
+          }
+          .crop-controls {
+             margin-top: 20px;
+             width: 300px;
+             display: flex;
+             flex-direction: column;
+             gap: 12px;
+          }
+          .crop-slider {
+             width: 100%;
+             accent-color: var(--accent-green);
           }
 
         </style>
@@ -658,7 +721,92 @@ export class DialogRenderer {
            }
         </div>
 
+        ${dialog.isCropping ? this.renderCropOverlay(dialog, callbacks) : nothing}
+
       </ha-dialog>
+    `;
+  }
+
+  private static renderCropOverlay(dialog: StrainLibraryDialogState, callbacks: any): TemplateResult {
+    const s = dialog.editorState;
+    if (!s.image) return nothing;
+
+    // Local state handling for drag/zoom would ideally be in the component instance,
+    // but since this is a static renderer, we rely on the dialog state.
+    // We need the offsets and scale in the state.
+    // For smooth dragging, we might need to use DOM events that update the state via callback.
+
+    const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
+
+    const handleWheel = (e: WheelEvent) => {
+       e.preventDefault();
+       const delta = e.deltaY * -0.001;
+       const newScale = Math.min(Math.max(meta.scale + delta, 1), 5);
+       callbacks.onEditorChange('image_crop_meta', { ...meta, scale: newScale });
+    };
+
+    const handleMouseDown = (e: MouseEvent) => {
+       const startX = e.clientX;
+       const startY = e.clientY;
+       const startMetaX = meta.x;
+       const startMetaY = meta.y;
+
+       const onMouseMove = (ev: MouseEvent) => {
+          // Sensitivity factor needs tuning
+          const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
+          const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
+
+          let newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
+          let newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
+
+          callbacks.onEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
+       };
+
+       const onMouseUp = () => {
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+       };
+
+       window.addEventListener('mousemove', onMouseMove);
+       window.addEventListener('mouseup', onMouseUp);
+    };
+
+    return html`
+       <div class="crop-overlay">
+          <h3 style="color:white; margin-bottom:20px;">Adjust Image</h3>
+          <div class="crop-viewport"
+               @wheel=${handleWheel}
+               @mousedown=${handleMouseDown}
+               @dragstart=${(e: DragEvent) => e.preventDefault()}>
+             <!--
+                We are updating the CropMeta which maps to background-position %.
+                background-position: 50% 50% is center. 0% 0% is left/top.
+             -->
+             <div style="width: 100%; height: 100%;
+                 background-image: url('${s.image}');
+                 background-size: ${meta.scale * 100}%;
+                 background-position: ${meta.x}% ${meta.y}%;
+                 background-repeat: no-repeat;
+                 pointer-events: none;">
+             </div>
+          </div>
+
+          <div class="crop-controls">
+             <div style="display:flex; justify-content:space-between; color:#ccc; font-size:0.8rem;">
+                <span>Zoom: ${(meta.scale * 100).toFixed(0)}%</span>
+             </div>
+             <input type="range" class="crop-slider" min="1" max="5" step="0.1"
+                    .value=${meta.scale}
+                    @input=${(e: Event) => callbacks.onEditorChange('image_crop_meta', { ...meta, scale: parseFloat((e.target as HTMLInputElement).value) })} />
+
+             <div style="display:flex; gap:12px; margin-top:12px;">
+                <button class="md3-button tonal" style="flex:1" @click=${() => callbacks.onToggleCropMode(false)}>Done</button>
+             </div>
+             <div style="text-align:center; font-size:0.8rem; color:#888; margin-top:8px;">
+                Drag to pan • Scroll to zoom
+             </div>
+          </div>
+       </div>
     `;
   }
 
@@ -746,11 +894,15 @@ export class DialogRenderer {
      else if (lowerType.includes('hybrid')) typeIcon = mdiTuneVariant;
      else if (lowerType.includes('ruderalis') || lowerType.includes('auto')) typeIcon = mdiLeaf;
 
+     const thumbStyle = strain.image ? DialogRenderer.getCropStyle(strain.image, strain.image_crop_meta) : '';
+
      return html`
        <div class="strain-card" @click=${() => callbacks.onSwitchView('editor', strain)}>
-          <div class="sc-thumb">
+          <div class="sc-thumb" style="${strain.image ? thumbStyle + '; background-repeat: no-repeat; background-position: center; background-size: cover;' : ''}">
              ${strain.image
-                ? html`<img src="${strain.image}" alt="${strain.strain}" />`
+                ? (strain.image_crop_meta
+                     ? html`<div style="width:100%; height:100%; ${thumbStyle}; background-repeat: no-repeat;"></div>`
+                     : html`<img src="${strain.image}" alt="${strain.strain}" />`)
                 : html`<svg style="width:48px;height:48px;opacity:0.2;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>`
              }
              <div class="sc-actions">
@@ -802,7 +954,13 @@ export class DialogRenderer {
             <!-- LEFT COL: IDENTITY -->
             <div class="editor-col">
                <div class="photo-upload-area"
-                    @click=${(e: Event) => (e.currentTarget as HTMLElement).querySelector('input')?.click()}
+                    @click=${(e: Event) => {
+                       // Only click input if not clicking the crop button
+                       const target = e.target as HTMLElement;
+                       if (!target.closest('.crop-btn')) {
+                           (e.currentTarget as HTMLElement).querySelector('input')?.click();
+                       }
+                    }}
                     @dragover=${(e: DragEvent) => { e.preventDefault(); e.dataTransfer!.dropEffect = 'copy'; }}
                     @drop=${(e: DragEvent) => {
                        e.preventDefault();
@@ -814,9 +972,21 @@ export class DialogRenderer {
                        }
                     }}>
                   ${s.image ? html`
-                     <img src="${s.image}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" />
-                     <div style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.6); padding:4px; border-radius:50%;">
-                        <svg style="width:20px;height:20px;fill:white;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                     ${s.image_crop_meta
+                        ? html`<div style="width:100%; height:100%; border-radius:10px; ${DialogRenderer.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"></div>`
+                        : html`<img src="${s.image}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" />`
+                     }
+
+                     <div style="position:absolute; bottom:8px; right:8px; display:flex; gap:8px;">
+                         <button class="crop-btn"
+                                 style="background:rgba(0,0,0,0.6); border:none; padding:6px; border-radius:50%; cursor:pointer; color:white;"
+                                 @click=${(e: Event) => { e.stopPropagation(); callbacks.onToggleCropMode(true); }}
+                                 title="Crop Image">
+                            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+                         </button>
+                         <div style="background:rgba(0,0,0,0.6); padding:6px; border-radius:50%; pointer-events:none;">
+                            <svg style="width:18px;height:18px;fill:white;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                         </div>
                      </div>
                   ` : html`
                      <svg style="width:48px;height:48px;fill:currentColor;margin-bottom:16px;" viewBox="0 0 24 24"><path d="${mdiUpload}"></path></svg>
