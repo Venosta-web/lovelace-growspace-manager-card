@@ -1,10 +1,12 @@
+JSON
+
 {
   "name": "Lovelace Growspace Manager Card",
-  "content_in_root": true,
+  "content_in_root": false,
   "domains": [
     "lovelace"
   ],
-  "filename": "dist/growspace-manager-card.js",
+  "filename": "growspace-manager-card.js",
   "type": "frontend",
   "description": "A Lovelace card for managing growspaces",
   "homeassistant": "2025.11.0",
