@@ -312,7 +312,14 @@ export class DataService {
   }) {
     console.log("[DataService:addStrain] Adding strain:", data);
     try {
-      const res = await this.hass.callService("growspace_manager", "add_strain", data);
+      // Map 'image' to 'image_base64' for the backend service
+      const payload: any = { ...data };
+      if (data.image) {
+        payload.image_base64 = data.image;
+        delete payload.image;
+      }
+
+      const res = await this.hass.callService("growspace_manager", "add_strain", payload);
       console.log("[DataService:addStrain] Response:", res);
       return res;
     } catch (err) {

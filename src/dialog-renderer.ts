@@ -801,10 +801,37 @@ export class DialogRenderer {
          <div class="editor-layout">
             <!-- LEFT COL: IDENTITY -->
             <div class="editor-col">
-               <div class="photo-upload-area">
-                  <svg style="width:48px;height:48px;fill:currentColor;margin-bottom:16px;" viewBox="0 0 24 24"><path d="${mdiUpload}"></path></svg>
-                  <span style="font-weight:600;">PHOTO UPLOAD AREA</span>
-                  <span style="font-size:0.8rem; margin-top:4px;">(Drag & Drop or Click)</span>
+               <div class="photo-upload-area"
+                    @click=${(e: Event) => (e.currentTarget as HTMLElement).querySelector('input')?.click()}
+                    @dragover=${(e: DragEvent) => { e.preventDefault(); e.dataTransfer!.dropEffect = 'copy'; }}
+                    @drop=${(e: DragEvent) => {
+                       e.preventDefault();
+                       const file = e.dataTransfer?.files[0];
+                       if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => update('image', ev.target?.result);
+                          reader.readAsDataURL(file);
+                       }
+                    }}>
+                  ${s.image ? html`
+                     <img src="${s.image}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" />
+                     <div style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.6); padding:4px; border-radius:50%;">
+                        <svg style="width:20px;height:20px;fill:white;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                     </div>
+                  ` : html`
+                     <svg style="width:48px;height:48px;fill:currentColor;margin-bottom:16px;" viewBox="0 0 24 24"><path d="${mdiUpload}"></path></svg>
+                     <span style="font-weight:600;">PHOTO UPLOAD AREA</span>
+                     <span style="font-size:0.8rem; margin-top:4px;">(Drag & Drop or Click)</span>
+                  `}
+                  <input type="file" id="strain-image-upload" style="display:none" accept="image/*"
+                         @change=${(e: Event) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (file) {
+                               const reader = new FileReader();
+                               reader.onload = (ev) => update('image', ev.target?.result);
+                               reader.readAsDataURL(file);
+                            }
+                         }} />
                </div>
 
                <div class="sd-form-group">
