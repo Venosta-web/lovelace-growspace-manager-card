@@ -1324,88 +1324,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     try {
         const history = await this.dataService.getHistory(envEntityId, yesterday, now);
-        this._historyData = this._preprocessHistory(history);
+        this._historyData = history;
     } catch (e) {
         console.error("Failed to fetch history", e);
     }
-  }
-
-  private _preprocessHistory(history: any[]) {
-    if (!history || history.length === 0) return history;
-
-    // Sort by time to be safe
-    const sorted = [...history].sort((a, b) =>
-      new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()
-    );
-
-    // Helper to check if an entry is "ON"
-    const isLocallyOn = (entry: any) => {
-      if (!entry || !entry.attributes) return false;
-      // Handle nested observations if necessary, matching the card's logic
-      if (entry.attributes.is_lights_on === true) return true;
-      if (entry.attributes.observations && entry.attributes.observations.is_lights_on === true) return true;
-      return false;
-    };
-
-    // 15 minutes in milliseconds
-    const THRESHOLD_MS = 15 * 60 * 1000;
-
-    // We want to find segments of "OFF" (not ON) that are short and bounded by "ON".
-
-    // Identify runs
-    let i = 0;
-    while (i < sorted.length) {
-      // Find start of an OFF segment
-      if (isLocallyOn(sorted[i])) {
-        i++;
-        continue;
-      }
-
-      // We found a non-ON state at i.
-      // Let's find the end of this OFF segment.
-      let j = i + 1;
-      while (j < sorted.length && !isLocallyOn(sorted[j])) {
-        j++;
-      }
-
-      // Now:
-      // sorted[i] to sorted[j-1] are OFF.
-      // sorted[j] is ON (or we reached end of array).
-      // sorted[i-1] is ON (or i was 0).
-
-      // Check boundaries
-      const hasPrevOn = (i > 0); // Since we skipped ONs, sorted[i-1] must be ON.
-      const hasNextOn = (j < sorted.length); // sorted[j] is the next ON.
-
-      if (hasPrevOn && hasNextOn) {
-        // Calculate duration.
-        // The "OFF" state starts at sorted[i].last_changed.
-        // The "ON" state resumes at sorted[j].last_changed.
-        // Duration of the gap is (Time of j) - (Time of i).
-
-        const startTime = new Date(sorted[i].last_changed).getTime();
-        const endTime = new Date(sorted[j].last_changed).getTime();
-        const duration = endTime - startTime;
-
-        if (duration < THRESHOLD_MS) {
-          // Patch this segment
-          for (let k = i; k < j; k++) {
-            // We mutate the attributes to simulate "ON"
-            if (!sorted[k].attributes) sorted[k].attributes = {};
-            sorted[k].attributes.is_lights_on = true;
-            // If observations exist, patch there too for consistency
-            if (sorted[k].attributes.observations) {
-              sorted[k].attributes.observations.is_lights_on = true;
-            }
-          }
-        }
-      }
-
-      // Continue search from j
-      i = j;
-    }
-
-    return sorted;
   }
 
   private initializeSelectedDevice() {
