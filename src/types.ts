@@ -19,25 +19,12 @@ export interface StrainAnalytics {
   total_harvests: number;
 }
 
-export interface StrainMeta {
-  breeder?: string;
-  type?: 'Indica' | 'Sativa' | 'Hybrid' | 'Rudaralis/Auto';
-  hybrid_ratio?: 'Indica Dom' | 'Sativa Dom' | 'Balanced';
-  flowering_days_min?: number;
-  flowering_days_max?: number;
-  lineage?: string;
-  sex?: 'Feminized' | 'Regular' | 'Auto-Fem';
-  description?: string;
-  image?: string; // URL or Base64
-}
-
 export interface StrainEntry {
   strain: string;
   phenotype: string;
   key: string;
   analytics?: StrainAnalytics;
   strain_analytics?: StrainAnalytics;
-  meta?: StrainMeta;
 }
 
 export interface PlantEntity {
@@ -154,29 +141,11 @@ export interface PlantOverviewDialogState {
 
 export interface StrainLibraryDialogState {
   open: boolean;
-  view: 'library' | 'editor';
+  newStrain: string;
+  newPhenotype: string;
   strains: StrainEntry[];
   searchQuery?: string;
-  activeFilters: string[]; // e.g. ["Sativa Dom"]
-
-  // Editor State
-  editingStrain?: StrainEntry; // If null, we are adding new
-  editorState?: {
-     strain: string;
-     breeder: string;
-     type: 'Indica' | 'Sativa' | 'Hybrid' | 'Rudaralis/Auto' | string;
-     hybrid_ratio: string;
-     flowering_min: number;
-     flowering_max: number;
-     lineage: string;
-     sex: string;
-     description: string;
-     image: string;
-  };
-
-  // Legacy / Misc
-  newStrain?: string; // used for quick add if needed
-  newPhenotype?: string;
+  isAddFormOpen?: boolean;
   expandedStrains?: string[];
   confirmClearAll?: boolean;
 }
