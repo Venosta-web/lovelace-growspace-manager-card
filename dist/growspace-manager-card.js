@@ -815,7 +815,7 @@ const ct=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}
     `}renderPlantSlot(t,e,r){const i=Ua.getPlantStageColor(t.state),a=Ua.getPlantStageIcon(t.state);return U`
       <div 
         class="plant" 
-        style="grid-row: ${e}; grid-column: ${r}; --stage-color: ${i}"
+        style="grid-row: ${e}; grid-column: ${r}; --stage-color: ${i}" 
         draggable="true"
         @dragstart=${e=>this._handleDragStart(e,t)}
         @dragend=${this._handleDragEnd}
