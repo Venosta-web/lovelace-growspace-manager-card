@@ -7,7 +7,7 @@ import css from 'rollup-plugin-css-only';
 export default {
   input: 'src/growspace-manager-card.ts',
   output: {
-    file: 'dist/growspace-manager-card.js',
+    file: 'growspace-manager-card.js',
     format: 'es',
     inlineDynamicImports: true,
   },
