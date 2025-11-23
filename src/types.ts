@@ -160,6 +160,7 @@ export interface StrainLibraryDialogState {
   strains: StrainEntry[];
   searchQuery?: string;
   isCropping?: boolean;
+  isImageSelectorOpen?: boolean;
   editorState: {
     strain: string;
     phenotype: string;

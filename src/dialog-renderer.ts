@@ -304,6 +304,9 @@ export class DialogRenderer {
       onSwitchView: (view: 'browse' | 'editor', strainToEdit?: StrainEntry) => void;
       onSearch: (query: string) => void;
       onToggleCropMode: (active: boolean) => void;
+      // Image Selection
+      onToggleImageSelector: (isOpen: boolean) => void;
+      onSelectLibraryImage: (imageUrl: string) => void;
     }
   ): TemplateResult {
     if (!dialog?.open) return html``;
@@ -678,6 +681,26 @@ export class DialogRenderer {
              border-color: var(--accent-green);
              background: rgba(34, 197, 94, 0.05);
           }
+          .select-library-btn {
+             position: absolute;
+             top: 8px;
+             left: 8px;
+             background: rgba(0,0,0,0.6);
+             border: 1px solid rgba(255,255,255,0.2);
+             color: #fff;
+             padding: 6px 12px;
+             border-radius: 20px;
+             font-size: 0.75rem;
+             display: flex;
+             align-items: center;
+             gap: 6px;
+             z-index: 10;
+             cursor: pointer;
+          }
+          .select-library-btn:hover {
+             background: var(--accent-green);
+             border-color: var(--accent-green);
+          }
 
           /* Crop Overlay */
           .crop-overlay {
@@ -722,9 +745,42 @@ export class DialogRenderer {
         </div>
 
         ${dialog.isCropping ? this.renderCropOverlay(dialog, callbacks) : nothing}
+        ${dialog.isImageSelectorOpen ? this.renderImageSelector(dialog, callbacks) : nothing}
 
       </ha-dialog>
     `;
+  }
+
+  private static renderImageSelector(dialog: StrainLibraryDialogState, callbacks: any): TemplateResult {
+     // Extract unique images
+     const uniqueImages = [...new Set(
+        dialog.strains.map(s => s.image).filter(img => !!img)
+     )];
+
+     return html`
+        <div class="crop-overlay">
+           <div style="background: #1a1a1a; width: 80%; max-width: 800px; height: 80%; max-height: 600px; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color);">
+              <div class="sd-header">
+                 <h2 class="sd-title">Select from Library</h2>
+                 <button class="sd-close-btn" @click=${() => callbacks.onToggleImageSelector(false)}>
+                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+                 </button>
+              </div>
+              <div class="sd-content" style="overflow-y: auto;">
+                 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;">
+                    ${uniqueImages.map(img => html`
+                       <div style="aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative;"
+                            @click=${() => callbacks.onSelectLibraryImage(img)}>
+                          <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" />
+                          <div class="image-hover-overlay" style="position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(34, 197, 94, 0.2); opacity: 0; transition: opacity 0.2s;"></div>
+                       </div>
+                    `)}
+                 </div>
+                 ${uniqueImages.length === 0 ? html`<p style="text-align: center; color: var(--text-secondary); margin-top: 40px;">No images found in library.</p>` : nothing}
+              </div>
+           </div>
+        </div>
+     `;
   }
 
   private static renderCropOverlay(dialog: StrainLibraryDialogState, callbacks: any): TemplateResult | typeof nothing {
@@ -955,9 +1011,9 @@ export class DialogRenderer {
             <div class="editor-col">
                <div class="photo-upload-area"
                     @click=${(e: Event) => {
-                       // Only click input if not clicking the crop button
+                       // Only click input if not clicking the crop button or select lib button
                        const target = e.target as HTMLElement;
-                       if (!target.closest('.crop-btn')) {
+                       if (!target.closest('.crop-btn') && !target.closest('.select-library-btn')) {
                            (e.currentTarget as HTMLElement).querySelector('input')?.click();
                        }
                     }}
@@ -971,6 +1027,15 @@ export class DialogRenderer {
                           reader.readAsDataURL(file);
                        }
                     }}>
+
+                  <button class="select-library-btn" @click=${(e: Event) => {
+                     e.stopPropagation();
+                     callbacks.onToggleImageSelector(true);
+                  }}>
+                      <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
+                      Select from Library
+                  </button>
+
                   ${s.image ? html`
                      ${s.image_crop_meta
                         ? html`<div style="width:100%; height:100%; border-radius:10px; ${DialogRenderer.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"></div>`
