@@ -752,10 +752,16 @@ export class DialogRenderer {
   }
 
   private static renderImageSelector(dialog: StrainLibraryDialogState, callbacks: any): TemplateResult {
-     // Extract unique images
-     const uniqueImages = [...new Set(
-        dialog.strains.map(s => s.image).filter(img => !!img)
-     )];
+     // Group strains by image
+     const imageMap = new Map<string, {strain: string, phenotype: string}[]>();
+     dialog.strains.forEach(s => {
+        if (s.image) {
+           if (!imageMap.has(s.image)) {
+              imageMap.set(s.image, []);
+           }
+           imageMap.get(s.image)!.push({ strain: s.strain, phenotype: s.phenotype || '' });
+        }
+     });
 
      return html`
         <div class="crop-overlay">
@@ -768,15 +774,26 @@ export class DialogRenderer {
               </div>
               <div class="sd-content" style="overflow-y: auto;">
                  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;">
-                    ${uniqueImages.map(img => html`
+                    ${[...imageMap.entries()].map(([img, infoList]) => html`
                        <div style="aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative;"
                             @click=${() => callbacks.onSelectLibraryImage(img)}>
                           <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" />
-                          <div class="image-hover-overlay" style="position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(34, 197, 94, 0.2); opacity: 0; transition: opacity 0.2s;"></div>
+
+                          <!-- Info Overlay -->
+                          <div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 8px; font-size: 0.75rem; color: white;">
+                             ${infoList.map((info, index) => html`
+                                <div style="${index < infoList.length - 1 ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);' : ''}">
+                                   <div style="font-weight: 700;">Strain: ${info.strain}</div>
+                                   <div style="opacity: 0.9;">Pheno: ${info.phenotype || 'N/A'}</div>
+                                </div>
+                             `)}
+                          </div>
+
+                          <div class="image-hover-overlay" style="position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(34, 197, 94, 0.2); opacity: 0; transition: opacity 0.2s; pointer-events: none;"></div>
                        </div>
                     `)}
                  </div>
-                 ${uniqueImages.length === 0 ? html`<p style="text-align: center; color: var(--text-secondary); margin-top: 40px;">No images found in library.</p>` : nothing}
+                 ${imageMap.size === 0 ? html`<p style="text-align: center; color: var(--text-secondary); margin-top: 40px;">No images found in library.</p>` : nothing}
               </div>
            </div>
         </div>
