@@ -19,6 +19,12 @@ export interface StrainAnalytics {
   total_harvests: number;
 }
 
+export interface CropMeta {
+  x: number;
+  y: number;
+  scale: number;
+}
+
 export interface StrainEntry {
   strain: string;
   phenotype: string;
@@ -31,6 +37,7 @@ export interface StrainEntry {
   sex?: string;
   description?: string;
   image?: string;
+  image_crop_meta?: CropMeta;
   analytics?: StrainAnalytics;
   strain_analytics?: StrainAnalytics;
 }
@@ -152,6 +159,7 @@ export interface StrainLibraryDialogState {
   view: 'browse' | 'editor';
   strains: StrainEntry[];
   searchQuery?: string;
+  isCropping?: boolean;
   editorState: {
     strain: string;
     phenotype: string;
@@ -163,6 +171,7 @@ export interface StrainLibraryDialogState {
     sex: string;
     description: string;
     image: string;
+    image_crop_meta?: CropMeta;
   };
   expandedStrains?: string[];
   confirmClearAll?: boolean;

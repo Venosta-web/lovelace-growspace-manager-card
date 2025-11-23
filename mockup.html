@@ -1,108 +1,81 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Growspace Manager Card Mockup</title>
-    <script type="module" src="/dist/growspace-manager-card.js"></script>
-    <style>
-        body {
-            background-color: #222;
-            color: white;
-            font-family: Roboto, sans-serif;
-            padding: 20px;
-        }
-        growspace-manager-card {
-            display: block;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-    </style>
+  <title>Growspace Manager Mockup</title>
+  <style>
+    body { background-color: #1a1a1a; color: white; font-family: 'Roboto', sans-serif; margin: 0; padding: 20px; }
+    /* Mock CSS Variables usually provided by HA */
+    :root {
+      --primary-color: #4CAF50;
+      --accent-color: #FFC107;
+      --primary-text-color: #ffffff;
+      --secondary-text-color: #9e9e9e;
+      --card-background-color: #1e1e1e;
+      --growspace-card-bg: rgba(30, 30, 35, 0.6);
+      --plant-border-color-default: #4caf50;
+      --divider-color: rgba(255,255,255,0.12);
+    }
+  </style>
+  <!-- Import the built card -->
+  <script type="module" src="/dist/growspace-manager-card.js"></script>
 </head>
 <body>
-    <growspace-manager-card id="card"></growspace-manager-card>
+  <div id="root">
+     <growspace-manager-card></growspace-manager-card>
+  </div>
 
-    <script>
-        async function init() {
-            await customElements.whenDefined('growspace-manager-card');
+  <script type="module">
+    const card = document.querySelector('growspace-manager-card');
 
-            const card = document.getElementById('card');
+    // Mock Hass Object
+    const mockHass = {
+      states: {
+         'sensor.growspaces_list': {
+             attributes: {
+                 growspaces: {
+                     'gs1': 'Growspace 1'
+                 }
+             }
+         }
+      },
+      callApi: async () => [],
+      callService: async (domain, service, data) => {
+         console.log('Service called:', domain, service, data);
+      },
+      config: { time_zone: 'UTC' }
+    };
 
-            // Mock Hass object
-            const hass = {
-                callService: async (domain, service, data) => {
-                    console.log('Service called:', domain, service, data);
-                    return Promise.resolve();
-                },
-                callApi: async (method, url) => {
-                     console.log('API called:', method, url);
-                     // Mock history response for graph
-                     if (url.includes('history/period')) {
-                        return [[
-                           { last_changed: new Date(Date.now() - 3600000).toISOString(), attributes: { is_lights_on: true } },
-                           { last_changed: new Date().toISOString(), attributes: { is_lights_on: true } }
-                        ]];
-                     }
-                     return Promise.resolve([]);
-                },
-                states: {
-                    'sensor.growspaces_list': {
-                        entity_id: 'sensor.growspaces_list',
-                        attributes: {
-                            growspaces: {
-                                'gs1': 'Tent A',
-                                'gs2': 'Tent B'
-                            }
-                        }
-                    },
-                    'sensor.tent_a': {
-                        entity_id: 'sensor.tent_a',
-                        attributes: {
-                            growspace_id: 'gs1',
-                            friendly_name: 'Tent A',
-                            rows: 3,
-                            plants_per_row: 3
-                        }
-                    },
-                    'binary_sensor.tent_a_optimal_conditions': {
-                        entity_id: 'binary_sensor.tent_a_optimal_conditions',
-                        attributes: {
-                            observations: {
-                                temperature: 25,
-                                humidity: 60,
-                                vpd: 1.2,
-                                co2: 800,
-                                is_lights_on: true
-                            }
-                        }
-                    },
-                    'sensor.plant_1': {
-                         entity_id: 'sensor.plant_1',
-                         state: 'vegetative',
-                         attributes: {
-                             growspace_id: 'gs1',
-                             strain: 'Blue Dream',
-                             row: 1,
-                             col: 1,
-                             veg_days: 14
-                         }
-                    }
-                },
-                config: {
-                   time_zone: 'UTC'
+    // Wait for card to be defined
+    customElements.whenDefined('growspace-manager-card').then(() => {
+        card.hass = mockHass;
+        card.setConfig({ type: 'custom:growspace-manager-card' });
+
+        // Wait for update
+        card.updateComplete.then(() => {
+            // Manually open strain library in editor mode with a dummy image
+            card._strainLibraryDialog = {
+                open: true,
+                view: 'editor',
+                strains: [],
+                searchQuery: '',
+                editorState: {
+                    strain: 'Test Strain',
+                    phenotype: '',
+                    breeder: '',
+                    type: 'Indica',
+                    flowering_min: '',
+                    flowering_max: '',
+                    lineage: '',
+                    sex: '',
+                    description: '',
+                    image: 'https://via.placeholder.com/800x600.png?text=Test+Image', // Placeholder image
+                    image_crop_meta: { x: 20, y: 20, scale: 1.5 } // Initial crop
                 }
             };
-
-            card.setConfig({
-                 type: 'custom:growspace-manager-card',
-                 title: 'My Growspace',
-                 default_growspace: 'gs1'
-            });
-
-            // Ensure hass is set after config
-            card.hass = hass;
-        }
-
-        init();
-    </script>
+            card.requestUpdate();
+        });
+    });
+  </script>
 </body>
 </html>

@@ -1595,13 +1595,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           lineage: '',
           sex: '',
           description: '',
-          image: ''
+          image: '',
+          image_crop_meta: undefined
       };
   }
 
   private _switchStrainView(view: 'browse' | 'editor', strainToEdit?: StrainEntry) {
       if (!this._strainLibraryDialog) return;
       this._strainLibraryDialog.view = view;
+      this._strainLibraryDialog.isCropping = false; // Reset cropping state
 
       if (view === 'editor') {
           if (strainToEdit) {
@@ -1616,7 +1618,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                   lineage: strainToEdit.lineage || '',
                   sex: strainToEdit.sex || '',
                   description: strainToEdit.description || '',
-                  image: strainToEdit.image || ''
+                  image: strainToEdit.image || '',
+                  image_crop_meta: strainToEdit.image_crop_meta
               };
           } else {
               // Reset editor
@@ -1626,9 +1629,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       this.requestUpdate();
   }
 
-  private _handleStrainEditorChange(field: string, value: string) {
+  private _handleStrainEditorChange(field: string, value: any) {
       if (this._strainLibraryDialog && this._strainLibraryDialog.editorState) {
           (this._strainLibraryDialog.editorState as any)[field] = value;
+          this.requestUpdate();
+      }
+  }
+
+  private _toggleCropMode(active: boolean) {
+      if (this._strainLibraryDialog) {
+          this._strainLibraryDialog.isCropping = active;
           this.requestUpdate();
       }
   }
@@ -1821,7 +1831,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
        lineage: s.lineage,
        sex: s.sex,
        description: s.description,
-       image: s.image
+       image: s.image,
+       image_crop_meta: s.image_crop_meta
     };
 
     try {
@@ -1840,7 +1851,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         lineage: s.lineage,
         sex: s.sex,
         description: s.description,
-        image: s.image
+        image: s.image,
+        image_crop_meta: s.image_crop_meta
       };
 
       // Remove existing if update (naive check by key)
@@ -2717,6 +2729,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onEditorChange: (field, value) => this._handleStrainEditorChange(field, value),
         onSwitchView: (view, strain) => this._switchStrainView(view, strain),
         onSearch: (query) => this._setStrainSearchQuery(query),
+        onToggleCropMode: (active) => this._toggleCropMode(active),
       }
     )}
 
