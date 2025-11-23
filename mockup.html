@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Growspace Manager Card Mockup</title>
+    <script type="module" src="/dist/growspace-manager-card.js"></script>
+    <style>
+        body {
+            background-color: #222;
+            color: white;
+            font-family: Roboto, sans-serif;
+            padding: 20px;
+        }
+        growspace-manager-card {
+            display: block;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <growspace-manager-card id="card"></growspace-manager-card>
+
+    <script>
+        async function init() {
+            await customElements.whenDefined('growspace-manager-card');
+
+            const card = document.getElementById('card');
+
+            // Mock Hass object
+            const hass = {
+                callService: async (domain, service, data) => {
+                    console.log('Service called:', domain, service, data);
+                    return Promise.resolve();
+                },
+                callApi: async (method, url) => {
+                     console.log('API called:', method, url);
+                     // Mock history response for graph
+                     if (url.includes('history/period')) {
+                        return [[
+                           { last_changed: new Date(Date.now() - 3600000).toISOString(), attributes: { is_lights_on: true } },
+                           { last_changed: new Date().toISOString(), attributes: { is_lights_on: true } }
+                        ]];
+                     }
+                     return Promise.resolve([]);
+                },
+                states: {
+                    'sensor.growspaces_list': {
+                        entity_id: 'sensor.growspaces_list',
+                        attributes: {
+                            growspaces: {
+                                'gs1': 'Tent A',
+                                'gs2': 'Tent B'
+                            }
+                        }
+                    },
+                    'sensor.tent_a': {
+                        entity_id: 'sensor.tent_a',
+                        attributes: {
+                            growspace_id: 'gs1',
+                            friendly_name: 'Tent A',
+                            rows: 3,
+                            plants_per_row: 3
+                        }
+                    },
+                    'binary_sensor.tent_a_optimal_conditions': {
+                        entity_id: 'binary_sensor.tent_a_optimal_conditions',
+                        attributes: {
+                            observations: {
+                                temperature: 25,
+                                humidity: 60,
+                                vpd: 1.2,
+                                co2: 800,
+                                is_lights_on: true
+                            }
+                        }
+                    },
+                    'sensor.plant_1': {
+                         entity_id: 'sensor.plant_1',
+                         state: 'vegetative',
+                         attributes: {
+                             growspace_id: 'gs1',
+                             strain: 'Blue Dream',
+                             row: 1,
+                             col: 1,
+                             veg_days: 14
+                         }
+                    }
+                },
+                config: {
+                   time_zone: 'UTC'
+                }
+            };
+
+            card.setConfig({
+                 type: 'custom:growspace-manager-card',
+                 title: 'My Growspace',
+                 default_growspace: 'gs1'
+            });
+
+            // Ensure hass is set after config
+            card.hass = hass;
+        }
+
+        init();
+    </script>
+</body>
+</html>

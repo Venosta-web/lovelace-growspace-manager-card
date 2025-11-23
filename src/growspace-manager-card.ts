@@ -1,7 +1,7 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
@@ -13,6 +13,7 @@ import {
   AddPlantDialogState,
   PlantOverviewDialogState,
   StrainLibraryDialogState,
+  ConfigDialogState,
   GrowspaceDevice,
   StrainEntry
 } from './types';
@@ -26,6 +27,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _defaultApplied = false;
   @state() private _plantOverviewDialog: PlantOverviewDialogState | null = null;
   @state() private _strainLibraryDialog: StrainLibraryDialogState | null = null;
+  @state() private _configDialog: ConfigDialogState | null = null;
   @state() private selectedDevice: string | null = null;
   @state() private _draggedPlant: PlantEntity | null = null;
   @state() private _isCompactView: boolean = false;
@@ -1964,6 +1966,54 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     });
   }
 
+  // Configuration Dialog Methods
+  private _openConfigDialog() {
+    this._configDialog = {
+      open: true,
+      currentTab: 'add_growspace',
+      addGrowspaceData: { name: '', rows: 3, plants_per_row: 3, notification_service: '' },
+      environmentData: { selectedGrowspaceId: '', temp_sensor: '', humidity_sensor: '', vpd_sensor: '', co2_sensor: '', light_sensor: '', fan_switch: '' },
+      globalData: { weather_entity: '', lung_room_temp: '', lung_room_humidity: '' }
+    };
+  }
+
+  private _handleAddGrowspaceSubmit() {
+     if (!this._configDialog) return;
+     const d = this._configDialog.addGrowspaceData;
+     if (!d.name) { alert('Name is required'); return; }
+     this.dataService.addGrowspace(d)
+         .then(() => { this._configDialog = null; this.requestUpdate(); })
+         .catch(e => alert(`Error: ${e.message}`));
+  }
+
+  private _handleEnvSubmit() {
+     if (!this._configDialog) return;
+     const d = this._configDialog.environmentData;
+     if (!d.selectedGrowspaceId || !d.temp_sensor || !d.humidity_sensor || !d.vpd_sensor) {
+         alert('Growspace and required sensors (Temp, Hum, VPD) are mandatory');
+         return;
+     }
+     this.dataService.configureGrowspaceSensors({
+         growspace_id: d.selectedGrowspaceId,
+         temperature_sensor: d.temp_sensor,
+         humidity_sensor: d.humidity_sensor,
+         vpd_sensor: d.vpd_sensor,
+         co2_sensor: d.co2_sensor || undefined,
+         light_sensor: d.light_sensor || undefined,
+         fan_switch: d.fan_switch || undefined
+     })
+     .then(() => { this._configDialog = null; this.requestUpdate(); })
+     .catch(e => alert(`Error: ${e.message}`));
+  }
+
+  private _handleGlobalSubmit() {
+     if (!this._configDialog) return;
+     const d = this._configDialog.globalData;
+     this.dataService.configureGlobalSettings(d)
+         .then(() => { this._configDialog = null; this.requestUpdate(); })
+         .catch(e => alert(`Error: ${e.message}`));
+  }
+
 
   protected render(): TemplateResult {
     if (!this.hass) {
@@ -2213,6 +2263,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                    <div class="stat-chip" @click=${this._openStrainLibraryDialog} title="Strain Library">
                       <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
                       Strains
+                   </div>
+
+                   <div class="stat-chip" @click=${this._openConfigDialog} title="Configure">
+                      <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                      Config
                    </div>
 
                    <div class="stat-chip" @click=${() => this._isCompactView = true} title="Switch to Compact Mode">
@@ -2662,6 +2717,21 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onEditorChange: (field, value) => this._handleStrainEditorChange(field, value),
         onSwitchView: (view, strain) => this._switchStrainView(view, strain),
         onSearch: (query) => this._setStrainSearchQuery(query),
+      }
+    )}
+
+      ${DialogRenderer.renderConfigDialog(
+      this._configDialog,
+      growspaceOptions,
+      {
+        onClose: () => this._configDialog = null,
+        onSwitchTab: (tab) => { if (this._configDialog) { this._configDialog.currentTab = tab; this.requestUpdate(); } },
+        onAddGrowspaceChange: (f, v) => { if (this._configDialog) { (this._configDialog.addGrowspaceData as any)[f] = v; this.requestUpdate(); } },
+        onAddGrowspaceSubmit: () => this._handleAddGrowspaceSubmit(),
+        onEnvChange: (f, v) => { if (this._configDialog) { (this._configDialog.environmentData as any)[f] = v; this.requestUpdate(); } },
+        onEnvSubmit: () => this._handleEnvSubmit(),
+        onGlobalChange: (f, v) => { if (this._configDialog) { (this._configDialog.globalData as any)[f] = v; this.requestUpdate(); } },
+        onGlobalSubmit: () => this._handleGlobalSubmit(),
       }
     )}
     `;

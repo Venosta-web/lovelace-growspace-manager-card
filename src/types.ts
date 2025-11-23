@@ -167,3 +167,28 @@ export interface StrainLibraryDialogState {
   expandedStrains?: string[];
   confirmClearAll?: boolean;
 }
+
+export interface ConfigDialogState {
+  open: boolean;
+  currentTab: 'add_growspace' | 'environment' | 'global';
+  addGrowspaceData: {
+    name: string;
+    rows: number;
+    plants_per_row: number;
+    notification_service: string;
+  };
+  environmentData: {
+    selectedGrowspaceId: string;
+    temp_sensor: string;
+    humidity_sensor: string;
+    vpd_sensor: string;
+    co2_sensor: string;
+    light_sensor: string;
+    fan_switch: string;
+  };
+  globalData: {
+    weather_entity: string;
+    lung_room_temp: string;
+    lung_room_humidity: string;
+  };
+}
