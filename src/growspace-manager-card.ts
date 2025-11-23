@@ -1575,28 +1575,60 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const currentStrains = this.dataService.getStrainLibrary();
     this._strainLibraryDialog = {
         open: true,
-        newStrain: '',
-        newPhenotype: '',
+        view: 'browse',
         strains: currentStrains,
         searchQuery: '',
-        isAddFormOpen: false,
-        expandedStrains: [],
-        confirmClearAll: false
+        editorState: this._createEmptyEditorState()
     };
   }
 
-  private _toggleStrainExpansion(strain: string) {
+  private _createEmptyEditorState() {
+      return {
+          strain: '',
+          phenotype: '',
+          breeder: '',
+          type: '',
+          flowering_min: '',
+          flowering_max: '',
+          lineage: '',
+          sex: '',
+          description: '',
+          image: ''
+      };
+  }
+
+  private _switchStrainView(view: 'browse' | 'editor', strainToEdit?: StrainEntry) {
       if (!this._strainLibraryDialog) return;
+      this._strainLibraryDialog.view = view;
 
-      const currentExpanded = this._strainLibraryDialog.expandedStrains || [];
-      const isExpanded = currentExpanded.includes(strain);
-
-      if (isExpanded) {
-          this._strainLibraryDialog.expandedStrains = currentExpanded.filter(s => s !== strain);
-      } else {
-          this._strainLibraryDialog.expandedStrains = [...currentExpanded, strain];
+      if (view === 'editor') {
+          if (strainToEdit) {
+              // Populate editor
+              this._strainLibraryDialog.editorState = {
+                  strain: strainToEdit.strain,
+                  phenotype: strainToEdit.phenotype || '',
+                  breeder: strainToEdit.breeder || '',
+                  type: strainToEdit.type || '',
+                  flowering_min: strainToEdit.flowering_days_min?.toString() || '',
+                  flowering_max: strainToEdit.flowering_days_max?.toString() || '',
+                  lineage: strainToEdit.lineage || '',
+                  sex: strainToEdit.sex || '',
+                  description: strainToEdit.description || '',
+                  image: strainToEdit.image || ''
+              };
+          } else {
+              // Reset editor
+              this._strainLibraryDialog.editorState = this._createEmptyEditorState();
+          }
       }
       this.requestUpdate();
+  }
+
+  private _handleStrainEditorChange(field: string, value: string) {
+      if (this._strainLibraryDialog && this._strainLibraryDialog.editorState) {
+          (this._strainLibraryDialog.editorState as any)[field] = value;
+          this.requestUpdate();
+      }
   }
 
   private _toggleLightCycle() {
@@ -1761,49 +1793,61 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _toggleAddStrainForm() {
-      if (this._strainLibraryDialog) {
-          this._strainLibraryDialog.isAddFormOpen = !this._strainLibraryDialog.isAddFormOpen;
-          this.requestUpdate();
-      }
+      // Legacy method removed or kept empty
   }
 
   private _promptClearAll() {
-      if (this._strainLibraryDialog) {
-          this._strainLibraryDialog.confirmClearAll = true;
-          this.requestUpdate();
-      }
+      // Removed logic
   }
 
   private _cancelClearAll() {
-      if (this._strainLibraryDialog) {
-          this._strainLibraryDialog.confirmClearAll = false;
-          this.requestUpdate();
-      }
+      // Removed logic
   }
 
   private async _addStrain() {
-    if (!this._strainLibraryDialog?.newStrain) return;
+    if (!this._strainLibraryDialog?.editorState?.strain) return;
 
-    const strainName = this._strainLibraryDialog.newStrain;
-    const phenotype = this._strainLibraryDialog.newPhenotype;
+    const s = this._strainLibraryDialog.editorState;
+
+    const payload = {
+       strain: s.strain,
+       phenotype: s.phenotype,
+       breeder: s.breeder,
+       type: s.type,
+       flowering_days_min: s.flowering_min ? parseInt(s.flowering_min) : undefined,
+       flowering_days_max: s.flowering_max ? parseInt(s.flowering_max) : undefined,
+       lineage: s.lineage,
+       sex: s.sex,
+       description: s.description,
+       image: s.image
+    };
 
     try {
-      await this.dataService.addStrain(strainName, phenotype);
-      // Optimistically update the list
-      const key = `${strainName}|${phenotype || 'default'}`;
+      await this.dataService.addStrain(payload);
+
+      // Refetch library to update list or optimistic update
+      const key = `${s.strain}|${s.phenotype || 'default'}`;
       const newEntry: StrainEntry = {
-        strain: strainName,
-        phenotype: phenotype,
-        key: key
+        key: key,
+        strain: s.strain,
+        phenotype: s.phenotype,
+        breeder: s.breeder,
+        type: s.type,
+        flowering_days_min: payload.flowering_days_min,
+        flowering_days_max: payload.flowering_days_max,
+        lineage: s.lineage,
+        sex: s.sex,
+        description: s.description,
+        image: s.image
       };
 
-      if (!this._strainLibraryDialog.strains.some(s => s.key === key)) {
-        this._strainLibraryDialog.strains.push(newEntry);
-      }
-      this._strainLibraryDialog.newStrain = '';
-      this._strainLibraryDialog.newPhenotype = '';
-      this._strainLibraryDialog.isAddFormOpen = false; // Close form after adding
-      this.requestUpdate();
+      // Remove existing if update (naive check by key)
+      this._strainLibraryDialog.strains = this._strainLibraryDialog.strains.filter(ex => ex.key !== key);
+      this._strainLibraryDialog.strains.push(newEntry);
+
+      // Switch back to browse
+      this._switchStrainView('browse');
+
     } catch (err) {
       console.error("Error adding strain:", err);
     }
@@ -2615,18 +2659,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onAddStrain: () => this._addStrain(),
         onRemoveStrain: (strainKey) => this._removeStrain(strainKey),
         onClearAll: () => this._clearStrains(),
-        onNewStrainChange: (value) => {
-          if (this._strainLibraryDialog) this._strainLibraryDialog.newStrain = value;
-        },
-        onNewPhenotypeChange: (value) => {
-          if (this._strainLibraryDialog) this._strainLibraryDialog.newPhenotype = value;
-        },
-        onEnterKey: (e) => { if (e.key === 'Enter') this._addStrain(); },
-        onToggleExpand: (strain) => this._toggleStrainExpansion(strain),
+        onEditorChange: (field, value) => this._handleStrainEditorChange(field, value),
+        onSwitchView: (view, strain) => this._switchStrainView(view, strain),
         onSearch: (query) => this._setStrainSearchQuery(query),
-        onToggleAddForm: () => this._toggleAddStrainForm(),
-        onPromptClear: () => this._promptClearAll(),
-        onCancelClear: () => this._cancelClearAll()
       }
     )}
     `;

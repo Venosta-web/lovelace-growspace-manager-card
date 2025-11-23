@@ -23,6 +23,14 @@ export interface StrainEntry {
   strain: string;
   phenotype: string;
   key: string;
+  breeder?: string;
+  type?: string;
+  flowering_days_min?: number;
+  flowering_days_max?: number;
+  lineage?: string;
+  sex?: string;
+  description?: string;
+  image?: string;
   analytics?: StrainAnalytics;
   strain_analytics?: StrainAnalytics;
 }
@@ -141,11 +149,21 @@ export interface PlantOverviewDialogState {
 
 export interface StrainLibraryDialogState {
   open: boolean;
-  newStrain: string;
-  newPhenotype: string;
+  view: 'browse' | 'editor';
   strains: StrainEntry[];
   searchQuery?: string;
-  isAddFormOpen?: boolean;
+  editorState: {
+    strain: string;
+    phenotype: string;
+    breeder: string;
+    type: string;
+    flowering_min: string;
+    flowering_max: string;
+    lineage: string;
+    sex: string;
+    description: string;
+    image: string;
+  };
   expandedStrains?: string[];
   confirmClearAll?: boolean;
 }
