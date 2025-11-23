@@ -1643,6 +1643,22 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
   }
 
+  private _toggleImageSelector(isOpen: boolean) {
+      if (this._strainLibraryDialog) {
+          this._strainLibraryDialog.isImageSelectorOpen = isOpen;
+          this.requestUpdate();
+      }
+  }
+
+  private _handleSelectLibraryImage(imageUrl: string) {
+      if (this._strainLibraryDialog && this._strainLibraryDialog.editorState) {
+          this._strainLibraryDialog.editorState.image = imageUrl;
+          // Close selector
+          this._strainLibraryDialog.isImageSelectorOpen = false;
+          this.requestUpdate();
+      }
+  }
+
   private _toggleLightCycle() {
     this._lightCycleCollapsed = !this._lightCycleCollapsed;
   }
@@ -2730,6 +2746,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onSwitchView: (view, strain) => this._switchStrainView(view, strain),
         onSearch: (query) => this._setStrainSearchQuery(query),
         onToggleCropMode: (active) => this._toggleCropMode(active),
+        onToggleImageSelector: (isOpen) => this._toggleImageSelector(isOpen),
+        onSelectLibraryImage: (img) => this._handleSelectLibraryImage(img),
       }
     )}
 

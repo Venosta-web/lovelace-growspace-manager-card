@@ -32,9 +32,36 @@
     const mockHass = {
       states: {
          'sensor.growspaces_list': {
+             entity_id: 'sensor.growspaces_list',
              attributes: {
                  growspaces: {
                      'gs1': 'Growspace 1'
+                 }
+             }
+         },
+         'sensor.gs1_overview': {
+             entity_id: 'sensor.gs1_overview',
+             attributes: {
+                 growspace_id: 'gs1',
+                 rows: 1,
+                 plants_per_row: 1,
+                 friendly_name: 'GS 1'
+             }
+         },
+         'sensor.growspace_strain_library': {
+             entity_id: 'sensor.growspace_strain_library',
+             attributes: {
+                 strains: {
+                     'Test Strain A': {
+                         meta: {
+                             image: 'https://via.placeholder.com/150/0000FF/808080?text=Strain+A'
+                         }
+                     },
+                     'Test Strain B': {
+                         meta: {
+                             image: 'https://via.placeholder.com/150/FF0000/FFFFFF?text=Strain+B'
+                         }
+                     }
                  }
              }
          }
@@ -49,31 +76,9 @@
     // Wait for card to be defined
     customElements.whenDefined('growspace-manager-card').then(() => {
         card.hass = mockHass;
-        card.setConfig({ type: 'custom:growspace-manager-card' });
-
-        // Wait for update
-        card.updateComplete.then(() => {
-            // Manually open strain library in editor mode with a dummy image
-            card._strainLibraryDialog = {
-                open: true,
-                view: 'editor',
-                strains: [],
-                searchQuery: '',
-                editorState: {
-                    strain: 'Test Strain',
-                    phenotype: '',
-                    breeder: '',
-                    type: 'Indica',
-                    flowering_min: '',
-                    flowering_max: '',
-                    lineage: '',
-                    sex: '',
-                    description: '',
-                    image: 'https://via.placeholder.com/800x600.png?text=Test+Image', // Placeholder image
-                    image_crop_meta: { x: 20, y: 20, scale: 1.5 } // Initial crop
-                }
-            };
-            card.requestUpdate();
+        card.setConfig({
+            type: 'custom:growspace-manager-card',
+            default_growspace: 'gs1'
         });
     });
   </script>
