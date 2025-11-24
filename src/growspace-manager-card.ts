@@ -2475,18 +2475,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                ` : ''}
             </div>
 
-            <!-- AI Button -->
-            ${!this._isCompactView ? html`
-                <div style="position:absolute; top: 24px; left: 50%; transform: translateX(-50%);">
-                   <!-- Optional center placement if desired, but request said 'next to growspace name' -->
-                </div>
-                <button class="action-button" style="position: absolute; top: 24px; right: 24px; width: 40px; height: 40px; border-radius: 50%; padding: 0; justify-content: center; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);"
-                        @click=${this._openGrowMasterDialog}
-                        title="Ask the Grow Master">
-                   <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-                </button>
-            ` : ''}
-
             <div class="gs-stats-chips">
                 ${temp !== undefined ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('temperature') ? 'active' : ''}"
@@ -2523,6 +2511,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                    <div class="stat-chip" @click=${() => this._isCompactView = true} title="Switch to Compact Mode">
                        <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
                        Compact
+                   </div>
+
+                   <div class="stat-chip" @click=${this._openGrowMasterDialog} title="Ask the Grow Master">
+                       <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+                       Ask AI
                    </div>
                 ` : ''}
             </div>
