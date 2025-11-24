@@ -74,7 +74,7 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
     --growspace-card-accent: var(--primary-color, #4caf50);
     --growspace-empty-bg: rgba(255, 255, 255, 0.05);
     --growspace-empty-bg-hover: rgba(255, 255, 255, 0.1);
-    --plant-border-color-default:  #2196f3; 
+    --plant-border-color-default:  #2196f3;
 
     --card-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
     --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.35);
@@ -1227,8 +1227,8 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
     `}static renderTextInput(e,t,r){return R`
       <div class="form-group">
         <label>${e}</label>
-        <input 
-          type="text" 
+        <input
+          type="text"
           class="form-input"
           .value=${t}
           @input=${e=>r(e.target.value)}
@@ -1237,8 +1237,8 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
     `}static renderNumberInput(e,t,r){return R`
       <div class="form-group">
         <label>${e}</label>
-        <input 
-          type="number" 
+        <input
+          type="number"
           class="form-input"
           min="1"
           .value=${t}
@@ -1253,8 +1253,8 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
           </svg>
           ${e}
         </label>
-        <input 
-          type="datetime-local" 
+        <input
+          type="datetime-local"
           class="form-input"
           .value=${r}
           @input=${e=>i(e.target.value)}
@@ -1653,7 +1653,7 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
           ${this.renderGrid(a,i,t.plants_per_row,n)}
         </div>
       </ha-card>
-      
+
       ${this.renderDialogs()}
     `}renderGrowspaceHeader(e){const t=Xa.getDominantStage(e.plants),r=this.dataService.getGrowspaceDevices();let i=e.name.toLowerCase().replace(/\s+/g,"_");e.overview_entity_id&&(i=e.overview_entity_id.replace("sensor.",""));let a=`binary_sensor.${i}_optimal_conditions`;const s="cure"===i,n="dry"===i;s?a="binary_sensor.cure_optimal_curing":n&&(a="binary_sensor.dry_optimal_drying");const o=this.hass.states[a],l=(e,t)=>{if(e&&e.attributes)return void 0!==e.attributes[t]?e.attributes[t]:e.attributes.observations&&"object"==typeof e.attributes.observations?e.attributes.observations[t]:void 0},c=l(o,"temperature"),d=l(o,"humidity"),u=l(o,"vpd"),h=s||n,p=h?void 0:l(o,"co2"),g=l(o,"is_lights_on"),m=!h&&null!=g,f=!0===g;let v="",y="--:--",b="--:--",w="",x="";const _=e.plants.some(e=>"flower"===e.attributes.stage),$=_?"12/12 Cycle":"18/6 Cycle";let S=[];if(this._historyData&&this._historyData.length>0){const e=[...this._historyData].sort((e,t)=>new Date(e.last_changed).getTime()-new Date(t.last_changed).getTime()),t=new Date,r=new Date(t.getTime()-864e5),i=1e3,a=100,s=[];let n=e.length>0?!0!==l(e[0],"is_lights_on"):f;e.forEach(e=>{const t=new Date(e.last_changed).getTime(),i=!0===l(e,"is_lights_on");t>=r.getTime()&&S.push({time:t,state:i})}),n=S.length>0?!S[0].state:f,s.push([0,n?0:a]),S.forEach(e=>{const t=(e.time-r.getTime())/864e5*i;s.push([t,n?0:a]),n=e.state,s.push([t,n?0:a])}),s.push([i,n?0:a]),v=`M ${s.map(e=>`${e[0]},${e[1]}`).join(" L ")}`;const o=[...e].reverse(),c=o.find(e=>!0===l(e,"is_lights_on"));if(c){const e=new Date(c.last_changed);y=e.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:!0}).replace(/ [AP]M/,""),w=e.toLocaleTimeString([],{hour12:!0}).slice(-2)}const d=o.find(e=>!1===l(e,"is_lights_on"));if(d){const e=new Date(d.last_changed);b=e.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:!0}).replace(/ [AP]M/,""),x=e.toLocaleTimeString([],{hour12:!0}).slice(-2)}}return R`
       <div class="gs-stats-container">
@@ -1832,7 +1832,7 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
     `}renderHeader(e){return this._isCompactView||this._config?.title?(e.find(e=>e.device_id===this.selectedDevice),R`
       <div class="header">
         ${this._config?.title?R`<h2 class="header-title">${this._config.title}</h2>`:""}
-        
+
         ${this._isCompactView?R`
         <div class="selector-container">
           ${this._config?.default_growspace?R`
@@ -1848,10 +1848,10 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
             </select>
           `:R`
             <label for="device-select">Growspace:</label>
-            <select 
-              id="device-select" 
+            <select
+              id="device-select"
               class="growspace-select"
-              .value=${this.selectedDevice||""} 
+              .value=${this.selectedDevice||""}
               @change=${this._handleDeviceChange}
             >
               ${e.map(e=>R`<option value="${e.device_id}">${e.name}</option>`)}
@@ -1861,15 +1861,15 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
 
         <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
           <div class="view-toggle">
-            <input 
-              type="checkbox" 
-              id="compact-view" 
+            <input
+              type="checkbox"
+              id="compact-view"
               .checked=${this._isCompactView}
               @change=${e=>this._isCompactView=e.target.checked}
             >
             <label for="compact-view">Compact</label>
           </div>
-          
+
           <button class="action-button" @click=${this._openStrainLibraryDialog}>
             <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
               <path d="${$e}"></path>
@@ -1885,9 +1885,9 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
         ${e.flat().map((e,t)=>{const a=Math.floor(t/r)+1,s=t%r+1;return e?this.renderPlantSlot(e,a,s,i):this.renderEmptySlot(a,s)})}
       </div>
     `}renderEmptySlot(e,t){return R`
-      <div 
+      <div
         class="plant-card-empty"
-        style="grid-row: ${e}; grid-column: ${t}" 
+        style="grid-row: ${e}; grid-column: ${t}"
         @click=${()=>this._openAddPlantDialog(e-1,t-1)}
         @dragover=${this._handleDragOver}
         @drop=${r=>this._handleDrop(r,e,t,null)}
@@ -1900,9 +1900,9 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
         <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
       </div>
     `}renderPlantSlot(e,t,r,i){const a=Xa.getPlantStageColor(e.state),s=e.attributes?.strain,n=e.attributes?.phenotype;let o;if(s){const e=i.find(e=>e.strain===s&&e.phenotype===n);if(e&&e.image)o=e.image;else{const e=i.find(e=>e.strain===s&&(!e.phenotype||"default"===e.phenotype));if(e&&e.image)o=e.image;else if(!o){const e=i.find(e=>e.strain===s&&e.image);e&&(o=e.image)}}}const l=o?`background-image: url('${o}');`:"";return R`
-      <div 
+      <div
         class="plant-card-rich"
-        style="grid-row: ${t}; grid-column: ${r}; --stage-color: ${a}" 
+        style="grid-row: ${t}; grid-column: ${r}; --stage-color: ${a}"
         draggable="true"
         @dragstart=${t=>this._handleDragStart(t,e)}
         @dragend=${this._handleDragEnd}
@@ -2520,7 +2520,7 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
         flex: 1;
         text-transform: capitalize;
       }
-      
+
       .growspace-select {
         padding: var(--spacing-sm) var(--spacing-md);
         border: 2px solid var(--divider-color);
@@ -2580,7 +2580,7 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
       }
 
       .plant {
-        display: grid; 
+        display: grid;
         grid-template-columns: 1fr;
         grid-template-rows: 2fr 1fr 0.8fr 1fr 2fr;
         gap: 0px 0px;
@@ -2770,13 +2770,13 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
         --mdc-dialog-border-radius: var(--border-radius);
         --mdc-dialog-box-shadow: var(--surface-elevation-hover);
       }
-      
+
       ha-dialog .mdc-dialog--open .mdc-dialog__container,
       ha-dialog .mdc-dialog--open {
         align-items: start;
         margin-top: 5vh;
       }
-      
+
       ha-dialog.strain-dialog .mdc-dialog--open .mdc-dialog__container .mdc-dialog__surface {
         width: 800px;
         max-width: 90vw;
