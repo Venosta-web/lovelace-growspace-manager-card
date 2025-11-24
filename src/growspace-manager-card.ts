@@ -51,6 +51,153 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         color: var(--growspace-card-text);
       }
 
+      /* Rich Card Style */
+      .plant-card-rich {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        border-radius: 16px;
+        overflow: hidden;
+        /* Default background if no image */
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        aspect-ratio: 1;
+      }
+
+      .plant-card-rich:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .plant-card-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center;
+        z-index: 0;
+      }
+
+      .plant-card-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.3) 100%);
+        z-index: 1;
+      }
+
+      .plant-card-content {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+
+      .pc-header {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-top: 24px;
+        align-items: center;
+      }
+
+      .pc-strain-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #fff;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
+
+      .pc-pheno {
+        font-size: 0.9rem;
+        color: rgba(255,255,255,0.7);
+        font-weight: 500;
+      }
+
+      .pc-stage {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-top: 8px;
+        color: var(--stage-color);
+        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        text-transform: capitalize;
+      }
+
+      .pc-stats {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: auto;
+        width: 100%;
+        padding: 0 12px;
+        box-sizing: border-box;
+      }
+
+      .pc-stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .pc-stat-item svg {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+      }
+
+      .pc-stat-text {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #fff;
+      }
+
+      /* Empty Slot Redesign */
+      .plant-card-empty {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.02);
+        border: 2px dashed rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        color: rgba(255,255,255,0.3);
+        transition: all 0.2s;
+        cursor: pointer;
+        min-height: 100px;
+        aspect-ratio: 1;
+        gap: 12px;
+      }
+
+      .plant-card-empty:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: rgba(255,255,255,0.8);
+      }
+
       ha-card {
         padding: var(--spacing-lg);
         border-radius: var(--border-radius-lg);
@@ -971,69 +1118,81 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           grid-template-columns: 1fr !important;
           grid-template-rows: auto !important;
         }
-        .plant {
+
+        /* Mobile List View for Rich Cards */
+        .plant-card-rich {
           min-height: auto;
           aspect-ratio: unset;
-          display: grid;
-          grid-template-columns: 48px 1fr auto;
-          grid-template-rows: auto auto;
-          grid-template-areas:
-            "icon name stage"
-            "icon phenotype days";
+          flex-direction: row;
+          align-items: center;
           padding: 12px;
-          gap: 4px 12px;
-          text-align: left;
+          gap: 12px;
         }
-        .plant-name, .plant-phenotype, .plant-stage, .plant-days {
-          text-align: left;
-          min-height: 0;
-          margin: 0;
+
+        .plant-card-bg {
+           /* Turn background into a thumbnail on mobile */
+           position: relative;
+           width: 64px;
+           height: 64px;
+           border-radius: 8px;
+           flex-shrink: 0;
+           background-color: rgba(0,0,0,0.2);
         }
-        .plant-header {
-          justify-content: center; /* Icon stays centered in its box */
+
+        .plant-card-overlay {
+           display: none;
         }
-        .plant-name {
-          font-size: 1rem;
-          align-self: end;
-        }
-        .plant-phenotype {
-          font-size: 0.85rem;
-          align-self: start;
-        }
-        .plant-stage {
-          font-size: 0.85rem;
-          text-align: right;
-          align-self: end;
-        }
-        .plant-days {
-          justify-content: flex-end;
-          font-size: 0.8rem;
-        }
-        .plant-days span {
+
+        .plant-card-content {
            flex-direction: row;
-           gap: 4px;
+           padding: 0;
+           align-items: center;
+           width: 100%;
+           justify-content: space-between;
+           gap: 8px;
         }
-        .plant-days span svg {
-           width: 1.2rem;
-           height: 1.2rem;
+
+        .pc-header {
+           margin-top: 0;
+           align-items: flex-start;
+           text-align: left;
+           flex: 1;
+           gap: 2px;
+        }
+
+        .pc-strain-name {
+           font-size: 1rem;
+        }
+
+        .pc-pheno {
+           font-size: 0.85rem;
+        }
+
+        .pc-stage {
+           margin-top: 2px;
+           font-size: 0.85rem;
+        }
+
+        .pc-stats {
+           width: auto;
+           padding: 0;
+           gap: 12px;
+           flex-shrink: 0;
+        }
+
+        .pc-stat-item svg {
+           width: 20px;
+           height: 20px;
         }
 
         /* Empty Slot in List View */
-        .plant.empty {
-           display: flex;
-           align-items: center;
-           gap: 12px;
-           padding: 12px;
-        }
-        .plant.empty .plant-header {
-           margin: 0;
-        }
-        .plant.empty .plant-name {
-           font-size: 1rem;
-           margin: 0;
-        }
-        .plant.empty .plant-stage {
-           display: none;
+        .plant-card-empty {
+           min-height: 80px;
+           aspect-ratio: unset;
+           flex-direction: row;
+           justify-content: flex-start;
+           padding: 0 24px;
+           gap: 16px;
         }
 
         /* Header vertical stacking */
@@ -2117,13 +2276,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     );
 
     const isWide = selectedDeviceData.plants_per_row > 6;
+    const strainLibrary = this.dataService.getStrainLibrary();
 
     return html`
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="unified-growspace-card">
           ${this.renderHeader(devices)}
           ${!this._isCompactView ? this.renderGrowspaceHeader(selectedDeviceData) : ''}
-          ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
+          ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
         </div>
       </ha-card>
       
@@ -2548,7 +2708,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     `;
   }
 
-  private renderGrid(grid: (PlantEntity | null)[][], rows: number, cols: number): TemplateResult {
+  private renderGrid(grid: (PlantEntity | null)[][], rows: number, cols: number, strainLibrary: StrainEntry[]): TemplateResult {
     return html`
       <div class="grid ${this._isCompactView ? 'compact' : ''}" 
            style="grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${rows}, 1fr);">
@@ -2560,7 +2720,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         return this.renderEmptySlot(row, col);
       }
 
-      return this.renderPlantSlot(plant, row, col);
+      return this.renderPlantSlot(plant, row, col, strainLibrary);
     })}
       </div>
     `;
@@ -2569,30 +2729,75 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   private renderEmptySlot(row: number, col: number): TemplateResult {
     return html`
       <div 
-        class="plant empty" 
+        class="plant-card-empty"
         style="grid-row: ${row}; grid-column: ${col}" 
         @click=${() => this._openAddPlantDialog(row - 1, col - 1)}
         @dragover=${this._handleDragOver}
         @drop=${(e: DragEvent) => this._handleDrop(e, row, col, null)}
       >
         <div class="plant-header">
-          <svg class="plant-icon" viewBox="0 0 24 24">
+          <svg style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;" viewBox="0 0 24 24">
             <path d="${mdiPlus}"></path>
           </svg>
         </div>
-        <div class="plant-name">Add Plant</div>
-        <div class="plant-stage">Empty Slot</div>
+        <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
       </div>
     `;
   }
 
-  private renderPlantSlot(plant: PlantEntity, row: number, col: number): TemplateResult {
+  private renderPlantSlot(plant: PlantEntity, row: number, col: number, strainLibrary: StrainEntry[]): TemplateResult {
+    // If we are in mobile/compact list mode, use the old renderer structure (modified class names if needed)
+    // The query logic in CSS handles `.plant` but we are changing to `.plant-card-rich`.
+    // Actually, mobile view (<600px) has CSS for `.plant`.
+    // To preserve mobile view, we need to check if we are on mobile or ensure the new class supports the list view via media query.
+    // The request said "list view behaviour should stay on mobile".
+    // The media query targets `.plant`. I should probably keep using `.plant` class on the container or duplicate styles.
+    // I'll add `plant` class to the rich card as well to inherit mobile styles if needed,
+    // BUT the structure is different.
+
+    // Actually, on mobile, the grid is forced to column.
+    // I should create a separate render path for mobile if I want to strictly preserve the "list" look,
+    // OR ensure the new card looks good in a list.
+    // The request says "list view behaviour should stay".
+    // I'll assume that means the "layout" (icon left, text right).
+    // The new structure (bg image, overlay) works well for cards.
+    // If I use the new card structure on mobile, it will look like a stack of cards.
+    // The user might want that? "match the design".
+    // "mostly take the positioning and what gets displayed but make it in the same style"
+    // So likely the card design applies everywhere, just the Grid vs List layout changes.
+
+    // I will use the new card structure.
+
     const stageColor = PlantUtils.getPlantStageColor(plant.state);
-    const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
+
+    // Resolve Image
+    const strainName = plant.attributes?.strain;
+    const pheno = plant.attributes?.phenotype;
+
+    let imageUrl: string | undefined;
+    if (strainName) {
+      // Look for specific pheno match first
+      const phenoMatch = strainLibrary.find(s => s.strain === strainName && s.phenotype === pheno);
+      if (phenoMatch && phenoMatch.image) {
+        imageUrl = phenoMatch.image;
+      } else {
+        // Fallback to strain default
+        const strainMatch = strainLibrary.find(s => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
+        if (strainMatch && strainMatch.image) {
+           imageUrl = strainMatch.image;
+        } else if (!imageUrl) {
+           // Any match?
+           const anyMatch = strainLibrary.find(s => s.strain === strainName && s.image);
+           if (anyMatch) imageUrl = anyMatch.image;
+        }
+      }
+    }
+
+    const bgStyle = imageUrl ? `background-image: url('${imageUrl}');` : '';
 
     return html`
       <div 
-        class="plant" 
+        class="plant-card-rich"
         style="grid-row: ${row}; grid-column: ${col}; --stage-color: ${stageColor}" 
         draggable="true"
         @dragstart=${(e: DragEvent) => this._handleDragStart(e, plant)}
@@ -2601,62 +2806,58 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         @drop=${(e: DragEvent) => this._handleDrop(e, row, col, plant)}
         @click=${() => this._handlePlantClick(plant)}
       >
-        <div class="plant-header">
-          <svg class="plant-icon" viewBox="0 0 24 24">
-            <path d="${stageIcon}"></path>
-          </svg>
-        </div>
+        ${imageUrl ? html`<div class="plant-card-bg" style="${bgStyle}"></div>
+                          <div class="plant-card-overlay"></div>` : ''}
 
-        <!-- Always render strain slot -->
-        <div class="plant-name">
-          ${plant.attributes?.strain || '—'}
-        </div>
+        <div class="plant-card-content">
+            <div class="pc-header">
+                <div class="pc-strain-name" title="${plant.attributes?.strain || ''}">
+                    ${plant.attributes?.strain || 'Unknown Strain'}
+                </div>
+                ${plant.attributes?.phenotype ? html`<div class="pc-pheno">${plant.attributes.phenotype}</div>` : ''}
+                <div class="pc-stage">
+                    ${plant.state || 'Unknown'}
+                </div>
+            </div>
 
-        <!-- Always render phenotype slot -->
-        <div class="plant-phenotype">
-          ${plant.attributes?.phenotype || '—'}
-        </div>
-
-        <!-- Always render state slot -->
-        <div class="plant-stage">
-          ${plant.state || '—'}
-        </div>
-
-        <!-- Always render plant-days slot -->
-        <div class="plant-days">
-          ${!this._isCompactView ? this.renderPlantDays(plant) : '—'}
+            <div class="pc-stats">
+               ${this.renderPlantDaysRich(plant)}
+            </div>
         </div>
       </div>
     `;
   }
 
-  private renderPlantDays(plant: PlantEntity): TemplateResult {
-    const days = [
-      { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Days in Seedling", stage: "seedling" },
-      { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Days in Mother", stage: "mother" },
-      { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Days in Clone", stage: "clone" },
-      { days: plant.attributes?.veg_days, icon: mdiSprout, title: "Days in Vegetative", stage: "vegetative" },
-      { days: plant.attributes?.flower_days, icon: mdiFlower, title: "Days in Flower", stage: "flower" },
-      { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Days in Dry", stage: "dry" },
-      { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Days in Cure", stage: "cure" }
-    ].filter(d => d.days);
+  private renderPlantDaysRich(plant: PlantEntity): TemplateResult {
+     // We need to show relevant days.
+     // Mockup shows two icons at bottom.
+     // Likely Veg Days and Flower Days if available, or current stage days?
+     // User said "continue to show relevant days like we already do".
+     // Existing logic filters and shows all relevant days.
+     // I will use that logic but style it for the new card (Icon Top, Text Bottom or similar).
 
-    if (!days.length) return html``;
+     const days = [
+      { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Seedling", stage: "seedling" },
+      { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Mother", stage: "mother" },
+      { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Clone", stage: "clone" },
+      { days: plant.attributes?.veg_days, icon: mdiSprout, title: "Veg", stage: "vegetative" },
+      { days: plant.attributes?.flower_days, icon: mdiFlower, title: "Flower", stage: "flower" },
+      { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Dry", stage: "dry" },
+      { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Cure", stage: "cure" }
+    ].filter(d => d.days !== undefined && d.days !== null); // Filter nulls, let 0 show if relevant? Logic above used d.days which is truthy, so 0 was hidden. I'll stick to truthy.
+
+    const visibleDays = days.filter(d => d.days);
 
     return html`
-      <div class="plant-days">
-        ${days.map(({ days, icon, title, stage }) => {
-      const color = PlantUtils.getPlantStageColor(stage);
-      return html`
-            <span title="${title}" style="color: ${color}">
-              <svg style="width: 2rem;height: 2rem;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${icon}"></path>
-              </svg>
-              ${days}d
-            </span>
-          `;
-    })}
-      </div>
+        ${visibleDays.map(d => {
+            const color = PlantUtils.getPlantStageColor(d.stage);
+            return html`
+                <div class="pc-stat-item">
+                    <svg style="color: ${color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
+                    <div class="pc-stat-text">${d.days}d</div>
+                </div>
+            `;
+        })}
     `;
   }
 
