@@ -6,11 +6,42 @@ export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
   title?: string;
   default_growspace?: string;
   theme?: 'dark' | 'default' | 'green';
-  growspaces?: string[]; 
+  growspaces?: string[];
   grid_options?: {
     columns?: 'full' | 'auto';
     rows?: string;
   };
+}
+
+export interface StrainAnalytics {
+  avg_veg_days: number;
+  avg_flower_days: number;
+  total_harvests: number;
+}
+
+export interface CropMeta {
+  x: number;
+  y: number;
+  scale: number;
+}
+
+export interface StrainEntry {
+  strain: string;
+  phenotype: string;
+  key: string;
+  breeder?: string;
+  type?: string;
+  flowering_days_min?: number;
+  flowering_days_max?: number;
+  lineage?: string;
+  sex?: string;
+  description?: string;
+  image?: string;
+  image_crop_meta?: CropMeta;
+  analytics?: StrainAnalytics;
+  strain_analytics?: StrainAnalytics;
+  sativa_percentage?: number;
+  indica_percentage?: number;
 }
 
 export interface PlantEntity {
@@ -86,6 +117,7 @@ export interface PlantOverviewEditedAttributes {
 
 export interface GrowspaceDevice {
   device_id: string;
+  overview_entity_id?: string;
   name: string;
   type: GrowspaceType;
   plants: PlantEntity[];
@@ -126,6 +158,51 @@ export interface PlantOverviewDialogState {
 
 export interface StrainLibraryDialogState {
   open: boolean;
-  newStrain: string;
-  strains: string[];
+  view: 'browse' | 'editor';
+  strains: StrainEntry[];
+  searchQuery?: string;
+  isCropping?: boolean;
+  isImageSelectorOpen?: boolean;
+  editorState: {
+    strain: string;
+    phenotype: string;
+    breeder: string;
+    type: string;
+    flowering_min: string;
+    flowering_max: string;
+    lineage: string;
+    sex: string;
+    description: string;
+    image: string;
+    image_crop_meta?: CropMeta;
+    sativa_percentage?: number;
+    indica_percentage?: number;
+  };
+  expandedStrains?: string[];
+  confirmClearAll?: boolean;
+}
+
+export interface ConfigDialogState {
+  open: boolean;
+  currentTab: 'add_growspace' | 'environment' | 'global';
+  addGrowspaceData: {
+    name: string;
+    rows: number;
+    plants_per_row: number;
+    notification_service: string;
+  };
+  environmentData: {
+    selectedGrowspaceId: string;
+    temp_sensor: string;
+    humidity_sensor: string;
+    vpd_sensor: string;
+    co2_sensor: string;
+    light_sensor: string;
+    fan_switch: string;
+  };
+  globalData: {
+    weather_entity: string;
+    lung_room_temp: string;
+    lung_room_humidity: string;
+  };
 }

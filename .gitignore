@@ -6,6 +6,9 @@ build/
 
 # Local env files
 .env
+ha-login-debug.png
+ha-login-debug.html
+ha-auth.json
 
 # VSCode settings (optional)
 .vscode/
@@ -15,4 +18,7 @@ build/
 
 # Ignore zip files
 *.zip
+growspace_manager/
 
+# Ignore test results
+test-results/

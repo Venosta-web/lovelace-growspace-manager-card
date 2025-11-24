@@ -32,13 +32,21 @@ export class PlantUtils {
     cure: mdiCannabis,
   };
 
+  private static normalizeStage(state: PlantStage | string): PlantStage {
+    const lower = state.toLowerCase();
+    if (lower === 'veg') return 'vegetative';
+    if (lower === 'mom') return 'mother';
+    // Add other aliases if necessary
+    return lower as PlantStage;
+  }
+
   static getPlantStageColor(state: PlantStage | string): string {
-    const key = state.toLowerCase() as PlantStage;
+    const key = this.normalizeStage(state);
     return this.stageColors[key] ?? "#757575";
   }
 
   static getPlantStageIcon(state: PlantStage | string): string {
-    const key = state.toLowerCase() as PlantStage;
+    const key = this.normalizeStage(state);
     return this.stageIcons[key] ?? mdiSprout;
   }
   // --- helpers at the top ---
@@ -120,10 +128,160 @@ export class PlantUtils {
     }
   }
 
+  /**
+   * Extracts YYYY-MM-DD from a date string or datetime-local string
+   */
+  static formatDateForBackend(value?: string | null): string | undefined {
+    if (!value) return undefined;
+    try {
+      // If it's already roughly ISO format, extracting the first part is safest
+      // if we assume the user entered local time in the datetime-local input.
+      const parts = value.split('T');
+      if (parts.length > 0 && parts[0].match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return parts[0];
+      }
+      // Fallback to parsing if format is unexpected
+      const dt = new Date(value);
+      if (isNaN(dt.getTime())) return undefined;
+      const yyyy = dt.getFullYear();
+      const mm = String(dt.getMonth() + 1).padStart(2, '0');
+      const dd = String(dt.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    } catch {
+      return undefined;
+    }
+  }
 
   static getCurrentDateTime(): string {
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, "0");
     return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:00`;
+  }
+
+  /**
+   * Formats a date string (YYYY-MM-DD or ISO) to YYYY-MM-DDThh:mm for datetime-local inputs
+   */
+  static toDateTimeLocal(value?: string | null): string {
+    if (!value) return "";
+    try {
+      const dt = new Date(value);
+      if (isNaN(dt.getTime())) return "";
+
+      const pad = (n: number) => n.toString().padStart(2, "0");
+      const yyyy = dt.getFullYear();
+      const mm = pad(dt.getMonth() + 1);
+      const dd = pad(dt.getDate());
+      const hh = pad(dt.getHours());
+      const min = pad(dt.getMinutes());
+
+      return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+    } catch {
+      return "";
+    }
+  }
+
+  static getDominantStage(plants: PlantEntity[]): { stage: PlantStage, days: number } | null {
+    if (!plants || plants.length === 0) return null;
+
+    // Defined priority: Cure > Dry > Flower > Vegetative > Clone > Mother > Seedling
+    // Lower index = higher priority
+    const priority: PlantStage[] = [
+      "cure",
+      "dry",
+      "flower",
+      "vegetative",
+      "clone",
+      "mother",
+      "seedling"
+    ];
+
+    // Find the highest priority stage present in the plants
+    let bestStage: PlantStage | null = null;
+    let maxDays = 0;
+
+    // Group plants by normalized stage
+    const plantsByStage: Record<string, PlantEntity[]> = {};
+
+    for (const plant of plants) {
+      // Use plant.state directly if possible, or calculate it
+      // plant.state usually contains the stage string
+      const stage = this.normalizeStage(plant.state || this.getPlantStage(plant));
+      if (!plantsByStage[stage]) plantsByStage[stage] = [];
+      plantsByStage[stage].push(plant);
+    }
+
+    // Iterate priority list to find the first matching stage
+    for (const stage of priority) {
+      if (plantsByStage[stage] && plantsByStage[stage].length > 0) {
+        bestStage = stage;
+        // Find max days for this stage
+        // Map stage to attribute key
+        const daysKey = `${stage === 'vegetative' ? 'veg' : stage}_days`;
+
+        const daysValues = plantsByStage[stage].map(p => {
+            const val = p.attributes[daysKey];
+            return typeof val === 'number' ? val : 0;
+        });
+
+        maxDays = Math.max(...daysValues);
+        break;
+      }
+    }
+
+    if (!bestStage) return null;
+
+    return { stage: bestStage, days: maxDays };
+  }
+
+  /**
+   * Compresses and resizes an image file.
+   * @param file The file object from input.
+   * @param maxWidth Maximum width in pixels.
+   * @param maxHeight Maximum height in pixels.
+   * @param quality Quality between 0 and 1.
+   * @returns Promise resolving to base64 string.
+   */
+  static compressImage(file: File, maxWidth: number = 800, maxHeight: number = 800, quality: number = 0.7): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error("Failed to get canvas context"));
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Get base64 string
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
+    });
   }
 }
