@@ -2212,6 +2212,56 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     document.body.removeChild(a);
   }
 
+  private _openImportDialog() {
+    if (this._strainLibraryDialog) {
+      this._strainLibraryDialog.importDialog = { open: true, replace: false };
+      this.requestUpdate();
+    }
+  }
+
+  private _handleImportDialogChange(changes: { open?: boolean; replace?: boolean }) {
+    if (this._strainLibraryDialog && this._strainLibraryDialog.importDialog) {
+      if (changes.open !== undefined) this._strainLibraryDialog.importDialog.open = changes.open;
+      if (changes.replace !== undefined) this._strainLibraryDialog.importDialog.replace = changes.replace;
+      this.requestUpdate();
+    }
+  }
+
+  private async _performImport() {
+    if (!this._strainLibraryDialog?.importDialog) return;
+    const replace = this._strainLibraryDialog.importDialog.replace;
+
+    // Create file input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.zip';
+
+    input.onchange = e => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64Data = event.target?.result as string;
+        try {
+          await this.dataService.importStrainLibrary(base64Data, replace);
+          alert("Import started! Check notifications.");
+          // Close dialogs
+          if (this._strainLibraryDialog && this._strainLibraryDialog.importDialog) {
+            this._strainLibraryDialog.importDialog.open = false;
+          }
+          this.requestUpdate();
+        } catch (err: any) {
+          console.error("Import failed:", err);
+          alert(`Import failed: ${err.message}`);
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+
+    input.click();
+  }
+
   private updateGrid(): void {
     // Refresh data from Home Assistant
     this.dataService = new DataService(this.hass);
@@ -3154,6 +3204,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onToggleImageSelector: (isOpen) => this._toggleImageSelector(isOpen),
         onSelectLibraryImage: (img) => this._handleSelectLibraryImage(img),
         onExportStrains: () => this._handleExportLibrary(),
+        onOpenImportDialog: () => this._openImportDialog(),
+        onImportDialogChange: (c) => this._handleImportDialogChange(c),
+        onConfirmImport: () => this._performImport(),
       }
     )}
 
