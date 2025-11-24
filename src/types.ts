@@ -40,6 +40,8 @@ export interface StrainEntry {
   image_crop_meta?: CropMeta;
   analytics?: StrainAnalytics;
   strain_analytics?: StrainAnalytics;
+  sativa_percentage?: number;
+  indica_percentage?: number;
 }
 
 export interface PlantEntity {
@@ -173,6 +175,8 @@ export interface StrainLibraryDialogState {
     description: string;
     image: string;
     image_crop_meta?: CropMeta;
+    sativa_percentage?: number;
+    indica_percentage?: number;
   };
   expandedStrains?: string[];
   confirmClearAll?: boolean;

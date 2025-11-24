@@ -735,6 +735,29 @@ export class DialogRenderer {
              accent-color: var(--accent-green);
           }
 
+          /* SCALE GRAPH */
+          .scale-graph-container {
+             width: 100%;
+             height: 8px;
+             background: rgba(255,255,255,0.1);
+             border-radius: 4px;
+             margin-top: 6px;
+             position: relative;
+             overflow: hidden;
+             display: flex;
+          }
+          .sg-bar-sativa {
+             background: #EAB308; /* Yellow/Orange */
+             height: 100%;
+          }
+          .sg-bar-indica {
+             background: #8B5CF6; /* Purple */
+             height: 100%;
+             position: absolute;
+             right: 0;
+             top: 0;
+          }
+
         </style>
 
         <div class="strain-dialog-container">
@@ -986,9 +1009,17 @@ export class DialogRenderer {
           </div>
           <div class="sc-content">
              <h3 class="sc-title">${strain.strain} ${strain.phenotype ? `(${strain.phenotype})` : ''}</h3>
-             <div class="sc-type-row">
-                <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${typeIcon}"></path></svg>
-                <span>${typeLabel}</span>
+             <div class="sc-type-row" style="flex-wrap: wrap;">
+                <div style="display:flex; align-items:center; gap:6px; width: 100%;">
+                   <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${typeIcon}"></path></svg>
+                   <span>${typeLabel}</span>
+                </div>
+                ${lowerType.includes('hybrid') ? html`
+                   <div class="scale-graph-container" title="Sativa: ${strain.sativa_percentage || 0}% | Indica: ${strain.indica_percentage || 0}%">
+                      <div class="sg-bar-sativa" style="width: ${strain.sativa_percentage || 0}%"></div>
+                      <div class="sg-bar-indica" style="width: ${strain.indica_percentage || 0}%"></div>
+                   </div>
+                ` : nothing}
              </div>
              <div class="sc-meta">
                 ${strain.flowering_days_min ? html`<span>Flowering: ${strain.flowering_days_min}-${strain.flowering_days_max || '?'} Days</span>` : nothing}
@@ -1124,6 +1155,53 @@ export class DialogRenderer {
                      })}
                   </div>
                </div>
+
+               ${(s.type || '').toLowerCase() === 'hybrid' ? html`
+                  <div class="sd-form-group">
+                     <label class="sd-label">Hybrid Composition (%)</label>
+                     <div style="display:flex; gap:16px;">
+                        <div style="flex:1;">
+                           <label class="sd-label" style="font-size:0.75rem;">Sativa</label>
+                           <input type="number" class="sd-input" placeholder="0-100" min="0" max="100"
+                                  .value=${s.sativa_percentage || ''}
+                                  @input=${(e:any) => {
+                                     let val = parseFloat(e.target.value) || 0;
+                                     if(val < 0) val = 0;
+                                     if(val > 100) val = 100;
+
+                                     // Enforce combined limit
+                                     const currentIndica = s.indica_percentage || 0;
+                                     if(val + currentIndica > 100) {
+                                        // Adjust this value to fit remaining space? Or prevent input?
+                                        // Requirement: "force it in the ui"
+                                        // Let's adjust the OTHER value if possible, or clamp this one?
+                                        // Usually better to clamp the input being typed.
+                                        val = 100 - currentIndica;
+                                        e.target.value = val.toString();
+                                     }
+                                     update('sativa_percentage', val);
+                                  }} />
+                        </div>
+                        <div style="flex:1;">
+                           <label class="sd-label" style="font-size:0.75rem;">Indica</label>
+                           <input type="number" class="sd-input" placeholder="0-100" min="0" max="100"
+                                  .value=${s.indica_percentage || ''}
+                                  @input=${(e:any) => {
+                                     let val = parseFloat(e.target.value) || 0;
+                                     if(val < 0) val = 0;
+                                     if(val > 100) val = 100;
+
+                                     const currentSativa = s.sativa_percentage || 0;
+                                     if(val + currentSativa > 100) {
+                                        val = 100 - currentSativa;
+                                        e.target.value = val.toString();
+                                     }
+                                     update('indica_percentage', val);
+                                  }} />
+                        </div>
+                     </div>
+                  </div>
+               ` : nothing}
 
                <div class="sd-form-group">
                   <label class="sd-label">Flowering Time (Days)</label>
