@@ -4,9 +4,9 @@ import {
   mdiCannabis, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiCheck,
   mdiContentCopy, mdiArrowRight, mdiWeatherNight, mdiWeatherSunny, mdiTuneVariant,
   mdiLeaf, mdiUpload, mdiArrowLeft, mdiFilterVariant, mdiCloudUpload, mdiPencil,
-  mdiCog, mdiThermometer, mdiEarth, mdiViewDashboard, mdiFan, mdiWeatherPartlyCloudy
+  mdiCog, mdiThermometer, mdiEarth, mdiViewDashboard, mdiFan, mdiWeatherPartlyCloudy, mdiBrain, mdiLoading
 } from '@mdi/js';
-import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, ConfigDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry, CropMeta } from './types';
+import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, ConfigDialogState, GrowMasterDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry, CropMeta } from './types';
 import { PlantUtils } from "./utils";
 
 export class DialogRenderer {
@@ -1767,6 +1767,146 @@ export class DialogRenderer {
              ${this.renderMD3TextInput('Lung Room Humidity Sensor', d.lung_room_humidity, (v) => callbacks.onGlobalChange('lung_room_humidity', v))}
           </div>
        </div>
+    `;
+  }
+
+  static renderGrowMasterDialog(
+    dialog: GrowMasterDialogState | null,
+    isStressed: boolean,
+    personality: string | undefined,
+    callbacks: {
+      onClose: () => void;
+      onQueryChange: (query: string) => void;
+      onAnalyze: () => void;
+    }
+  ): TemplateResult {
+    if (!dialog?.open) return html``;
+
+    // Border color based on stress
+    // Light Green: #4CAF50, Warning Orange: #FF9800
+    const borderColor = isStressed ? '#FF9800' : '#4CAF50';
+    const title = personality ? `Ask the ${personality}` : 'Ask the Grow Master';
+
+    return html`
+      <ha-dialog
+        open
+        @closed=${callbacks.onClose}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <style>
+           .gm-container {
+              background: #1a1a1a;
+              color: #fff;
+              width: 500px;
+              max-width: 90vw;
+              border-radius: 24px;
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;
+              font-family: 'Roboto', sans-serif;
+              border: 1px solid rgba(255,255,255,0.1);
+           }
+           .gm-header {
+              background: #2d2d2d;
+              padding: 20px 24px;
+              display: flex;
+              align-items: center;
+              gap: 16px;
+              border-bottom: 1px solid rgba(255,255,255,0.1);
+           }
+           .gm-content {
+              padding: 24px;
+              display: flex;
+              flex-direction: column;
+              gap: 20px;
+              overflow-y: auto;
+              max-height: 70vh;
+           }
+           .gm-response-box {
+              background: rgba(255,255,255,0.05);
+              border: 2px solid ${borderColor};
+              border-radius: 16px;
+              padding: 20px;
+              line-height: 1.6;
+              font-size: 0.95rem;
+              white-space: pre-wrap;
+              position: relative;
+           }
+           .gm-loading {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              padding: 40px;
+              color: var(--secondary-text-color);
+              gap: 12px;
+           }
+           @keyframes spin { 100% { transform: rotate(360deg); } }
+           .spinner {
+              animation: spin 1s linear infinite;
+              width: 24px;
+              height: 24px;
+           }
+        </style>
+
+        <div class="gm-container">
+           <div class="gm-header">
+              <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; color: ${borderColor}">
+                 <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+              </div>
+              <div style="flex:1">
+                 <h2 style="margin:0; font-size:1.25rem;">${title}</h2>
+                 <div style="font-size:0.8rem; color:var(--secondary-text-color); margin-top:4px;">
+                    ${isStressed ? 'Warning: Plant Stress Detected' : 'All systems normal'}
+                 </div>
+              </div>
+              <button class="md3-button text" @click=${callbacks.onClose} style="min-width:auto; padding:8px;">
+                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+              </button>
+           </div>
+
+           <div class="gm-content">
+              <!-- Input Area -->
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                 <label style="font-size:0.9rem; font-weight:500; color:#ccc;">Your Question</label>
+                 <textarea
+                    class="sd-textarea"
+                    placeholder="Ask about this growspace..."
+                    .value=${dialog.userQuery}
+                    @input=${(e: any) => callbacks.onQueryChange(e.target.value)}
+                    style="min-height: 80px;"
+                 ></textarea>
+              </div>
+
+              <!-- Action -->
+              <div style="display:flex; justify-content:flex-end;">
+                 <button
+                    class="md3-button primary"
+                    @click=${callbacks.onAnalyze}
+                    ?disabled=${dialog.isLoading}
+                    style="opacity: ${dialog.isLoading ? 0.7 : 1}"
+                 >
+                    ${dialog.isLoading ? 'Analyzing...' : 'Analyze Environment'}
+                 </button>
+              </div>
+
+              <!-- Response Area -->
+              ${dialog.isLoading ? html`
+                 <div class="gm-loading">
+                    <svg class="spinner" viewBox="0 0 24 24"><path d="${mdiLoading}" fill="currentColor"></path></svg>
+                    <span>Consulting the archives...</span>
+                 </div>
+              ` : nothing}
+
+              ${!dialog.isLoading && dialog.response ? html`
+                 <div class="gm-response-box">
+                    ${dialog.response}
+                 </div>
+              ` : nothing}
+           </div>
+        </div>
+      </ha-dialog>
     `;
   }
 }

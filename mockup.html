@@ -1,108 +1,123 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Growspace Manager Card Mockup</title>
-  <script type="module" src="./dist/growspace-manager-card.js"></script>
-  <style>
-    body { background-color: #222; color: #fff; font-family: sans-serif; }
-    growspace-manager-card { display: block; max-width: 800px; margin: 0 auto; }
-    /* Mock some CSS variables */
-    body {
-        --primary-text-color: #ffffff;
-        --secondary-text-color: #aaaaaa;
-        --primary-color: #03a9f4;
-        --accent-color: #ff9800;
-        --ha-card-background: #1c1c1c;
-        --ha-card-box-shadow: 0px 2px 4px 0px rgba(0,0,0,0.14);
-        --ha-card-border-radius: 4px;
-        --plant-border-color-default: #4CAF50;
-        --stage-veg: #8BC34A;
-        --stage-flower: #FF9800;
-        --stage-dry: #795548;
-        --stage-cure: #9C27B0;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growspace Card Mockup</title>
+    <script type="module" src="./dist/growspace-manager-card.js"></script>
+    <style>
+        body {
+            background-color: #111;
+            color: white;
+            padding: 20px;
+            font-family: Roboto, sans-serif;
+        }
+        :root {
+            --primary-text-color: #fff;
+            --secondary-text-color: #aaa;
+            --primary-color: #03a9f4;
+            --accent-color: #ff9800;
+            --error-color: #db4437;
+            --card-background-color: #1c1c1c;
+            --growspace-card-bg: #222;
+            --plant-border-color-default: #4caf50;
+            --stage-veg: #4caf50;
+            --stage-flower: #ff9800;
+            --stage-dry: #795548;
+            --stage-cure: #9c27b0;
+        }
+    </style>
 </head>
 <body>
-
-  <growspace-manager-card id="card"></growspace-manager-card>
-
-  <script>
-    const card = document.querySelector('growspace-manager-card');
-
-    // Mock Hass object
-    const hass = {
-      config: { time_zone: 'UTC' },
-      states: {
-        'sensor.growspaces_list': {
-           entity_id: 'sensor.growspaces_list',
-           attributes: {
-             growspaces: {
-               'gs1': 'Growspace 1'
-             }
-           }
-        },
-        'sensor.growspace_gs1_overview': {
-           entity_id: 'sensor.growspace_gs1_overview',
-           attributes: {
-              growspace_id: 'gs1',
-              rows: 2,
-              plants_per_row: 2,
-              friendly_name: 'Growspace 1',
-              type: 'normal'
-           }
-        },
-        // Strain library sensor
-        'sensor.growspace_strain_library': {
-           entity_id: 'sensor.growspace_strain_library',
-           attributes: {
-              strains: {
-                 'Gorilla Glue': {
-                    meta: {
-                       type: 'Hybrid',
-                       breeder: 'GG Strains',
-                       sativa_percentage: 60,
-                       indica_percentage: 40
-                    },
-                    analytics: { avg_veg_days: 30, avg_flower_days: 60, total_harvests: 5 }
-                 },
-                 'Blue Dream': {
-                    meta: {
-                       type: 'Sativa',
-                       breeder: 'Humboldt',
-                       sativa_percentage: 80,
-                       indica_percentage: 20
-                    }
-                 },
-                 'Northern Lights': {
-                    meta: {
-                       type: 'Indica',
-                       breeder: 'Sensi Seeds',
-                       sativa_percentage: 5,
-                       indica_percentage: 95
-                    }
-                 }
-              }
-           }
+    <growspace-manager-card id="card"></growspace-manager-card>
+    <script>
+        // Mock HA Elements
+        class HaDialog extends HTMLElement {
+            constructor() { super(); this.attachShadow({mode: 'open'}); }
+            connectedCallback() {
+                this.shadowRoot.innerHTML = `
+                    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+                        <div style="background: #1a1a1a; max-height: 90vh; overflow: auto; border-radius: 16px; padding: 20px; border: 1px solid #333; min-width: 300px;">
+                            <slot></slot>
+                        </div>
+                    </div>
+                `;
+            }
         }
-      },
-      callService: async (domain, service, data) => {
-         console.log('Call Service:', domain, service, data);
-         return Promise.resolve();
-      },
-      callApi: async (method, path) => {
-         console.log('Call API:', method, path);
-         return Promise.resolve([]);
-      }
-    };
+        if (!customElements.get('ha-dialog')) customElements.define('ha-dialog', HaDialog);
 
-    // Wait for element to upgrade
-    customElements.whenDefined('growspace-manager-card').then(() => {
-       card.setConfig({ default_growspace: 'gs1' });
-       card.hass = hass;
-    });
+        class HaCard extends HTMLElement {
+            constructor() { super(); this.attachShadow({mode: 'open'}); }
+            connectedCallback() {
+                this.shadowRoot.innerHTML = `
+                    <div style="border: 1px solid #333; border-radius: 4px; overflow: hidden; background: var(--ha-card-background, var(--card-background-color, #fff));">
+                        <slot></slot>
+                    </div>
+                `;
+            }
+        }
+        if (!customElements.get('ha-card')) customElements.define('ha-card', HaCard);
 
-  </script>
+        const card = document.getElementById('card');
+        const hass = {
+            config: { time_zone: "America/New_York" },
+            states: {
+                "sensor.growspaces_list": {
+                    entity_id: "sensor.growspaces_list",
+                    attributes: {
+                        growspaces: { "4x4": "Main Tent", "2x4": "Veg Tent" }
+                    }
+                },
+                "sensor.main_tent_overview": {
+                    entity_id: "sensor.main_tent_overview",
+                    attributes: {
+                        growspace_id: "4x4",
+                        friendly_name: "Main Tent",
+                        rows: 3,
+                        plants_per_row: 3,
+                        type: "normal"
+                    }
+                },
+                "binary_sensor.main_tent_optimal_conditions": {
+                    entity_id: "binary_sensor.main_tent_optimal_conditions",
+                    attributes: { temperature: 26.5, humidity: 55, vpd: 1.1, co2: 1200, is_lights_on: true }
+                },
+                "binary_sensor.4x4_plants_under_stress": {
+                    entity_id: "binary_sensor.4x4_plants_under_stress",
+                    state: "on",
+                    attributes: { friendly_name: "4x4 Plants Under Stress" }
+                },
+                "sensor.growspace_manager": {
+                    entity_id: "sensor.growspace_manager",
+                    attributes: { ai_settings: { personality: "Strict Coach" } }
+                }
+            },
+            callService: async (domain, service, data, target, returnResponse) => {
+                console.log("Service Called:", domain, service, data);
+                if (domain === "growspace_manager" && service === "ask_grow_advice") {
+                    return new Promise(resolve => setTimeout(() => {
+                        resolve({
+                            response: "LISTEN UP! Your humidity is drifting too high! Drop it to 50% immediately."
+                        });
+                    }, 1000));
+                }
+                return Promise.resolve();
+            },
+            callApi: async () => []
+        };
+
+        function init() {
+            console.log("Initializing card...");
+            card.setConfig({ type: 'custom:growspace-manager-card', default_growspace: '4x4', compact: false });
+            card.hass = hass;
+            console.log("Card configured and hass set.");
+        }
+
+        if (customElements.get('growspace-manager-card')) {
+             init();
+        } else {
+             customElements.whenDefined('growspace-manager-card').then(init);
+        }
+    </script>
 </body>
 </html>
