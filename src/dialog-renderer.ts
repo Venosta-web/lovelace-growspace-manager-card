@@ -758,6 +758,90 @@ export class DialogRenderer {
              top: 0;
           }
 
+          /* NEW HYBRID GRAPH STYLES */
+          .hg-container {
+             display: flex;
+             flex-direction: column;
+             gap: 4px;
+             width: 100%;
+             margin-top: 8px;
+             font-family: 'Roboto', sans-serif;
+          }
+          .hg-labels {
+             display: flex;
+             justify-content: space-between;
+             font-size: 0.75rem;
+             font-weight: 700;
+             color: #fff;
+             margin-bottom: 2px;
+          }
+          .hg-bar-track {
+             height: 18px;
+             width: 100%;
+             background: #333;
+             border-radius: 2px;
+             position: relative;
+             overflow: hidden;
+             display: flex;
+             border: 1px solid rgba(255,255,255,0.1);
+             cursor: pointer;
+          }
+          .hg-bar-indica {
+             background: #8B5CF6; /* Purple */
+             height: 100%;
+             transition: width 0.2s ease;
+          }
+          .hg-bar-sativa {
+             background: #EAB308; /* Yellow */
+             height: 100%;
+             flex: 1;
+             transition: width 0.2s ease;
+          }
+          .hg-tick {
+             position: absolute;
+             top: 0;
+             bottom: 0;
+             width: 1px;
+             background: rgba(255,255,255,0.4);
+             pointer-events: none;
+          }
+          .hg-legend-container {
+             position: relative;
+             height: 14px;
+             width: 100%;
+             margin-top: 2px;
+          }
+          .hg-legend-label {
+             position: absolute;
+             font-size: 0.65rem;
+             color: var(--text-secondary);
+             transform: translateX(-50%);
+          }
+          .hg-legend-label.start { left: 0; transform: none; }
+          .hg-legend-label.end { right: 0; transform: none; }
+
+          /* Interactive input styling override */
+          .hg-input-label {
+             display: flex;
+             align-items: center;
+             gap: 4px;
+          }
+          .hg-num-input {
+             background: transparent;
+             border: none;
+             border-bottom: 1px solid var(--text-secondary);
+             color: #fff;
+             width: 36px;
+             text-align: center;
+             font-size: 0.75rem;
+             font-weight: 700;
+             padding: 0;
+          }
+          .hg-num-input:focus {
+             outline: none;
+             border-bottom-color: var(--accent-green);
+          }
+
         </style>
 
         <div class="strain-dialog-container">
@@ -1015,9 +1099,26 @@ export class DialogRenderer {
                    <span>${typeLabel}</span>
                 </div>
                 ${lowerType.includes('hybrid') ? html`
-                   <div class="scale-graph-container" title="Sativa: ${strain.sativa_percentage || 0}% | Indica: ${strain.indica_percentage || 0}%">
-                      <div class="sg-bar-sativa" style="width: ${strain.sativa_percentage || 0}%"></div>
-                      <div class="sg-bar-indica" style="width: ${strain.indica_percentage || 0}%"></div>
+                   <div class="hg-container" title="Indica: ${strain.indica_percentage || 0}% | Sativa: ${strain.sativa_percentage || 0}%">
+                      <div class="hg-labels">
+                         <span>Indica: ${strain.indica_percentage || 0}%</span>
+                         <span>Sativa: ${strain.sativa_percentage || 0}%</span>
+                      </div>
+                      <div class="hg-bar-track" style="cursor: default;">
+                         <div class="hg-bar-indica" style="width: ${strain.indica_percentage || 0}%"></div>
+                         <div class="hg-bar-sativa"></div>
+
+                         <div class="hg-tick" style="left: 25%"></div>
+                         <div class="hg-tick" style="left: 50%"></div>
+                         <div class="hg-tick" style="left: 75%"></div>
+                      </div>
+                      <div class="hg-legend-container">
+                         <span class="hg-legend-label start">0%</span>
+                         <span class="hg-legend-label" style="left: 25%">25%</span>
+                         <span class="hg-legend-label" style="left: 50%">50%</span>
+                         <span class="hg-legend-label" style="left: 75%">75%</span>
+                         <span class="hg-legend-label end">100%</span>
+                      </div>
                    </div>
                 ` : nothing}
              </div>
@@ -1159,45 +1260,78 @@ export class DialogRenderer {
                ${(s.type || '').toLowerCase() === 'hybrid' ? html`
                   <div class="sd-form-group">
                      <label class="sd-label">Hybrid Composition (%)</label>
-                     <div style="display:flex; gap:16px;">
-                        <div style="flex:1;">
-                           <label class="sd-label" style="font-size:0.75rem;">Sativa</label>
-                           <input type="number" class="sd-input" placeholder="0-100" min="0" max="100"
-                                  .value=${s.sativa_percentage || ''}
-                                  @input=${(e:any) => {
-                                     let val = parseFloat(e.target.value) || 0;
-                                     if(val < 0) val = 0;
-                                     if(val > 100) val = 100;
+                     <div class="hg-container" style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;">
 
-                                     // Enforce combined limit
-                                     const currentIndica = s.indica_percentage || 0;
-                                     if(val + currentIndica > 100) {
-                                        // Adjust this value to fit remaining space? Or prevent input?
-                                        // Requirement: "force it in the ui"
-                                        // Let's adjust the OTHER value if possible, or clamp this one?
-                                        // Usually better to clamp the input being typed.
-                                        val = 100 - currentIndica;
-                                        e.target.value = val.toString();
-                                     }
-                                     update('sativa_percentage', val);
-                                  }} />
+                        <!-- Header / Inputs -->
+                        <div class="hg-labels">
+                           <div class="hg-input-label">
+                              <span>Indica:</span>
+                              <input class="hg-num-input" type="number" min="0" max="100"
+                                 .value=${s.indica_percentage || 0}
+                                 @input=${(e:any) => {
+                                    let val = Math.floor(parseFloat(e.target.value)) || 0;
+                                    if(val < 0) val = 0;
+                                    if(val > 100) val = 100;
+
+                                    // Update Indica, Auto-calc Sativa
+                                    update('indica_percentage', val);
+                                    update('sativa_percentage', 100 - val);
+                                 }} />
+                              <span>%</span>
+                           </div>
+
+                           <div class="hg-input-label">
+                              <span>Sativa:</span>
+                              <input class="hg-num-input" type="number" min="0" max="100"
+                                 .value=${s.sativa_percentage || 0}
+                                 @input=${(e:any) => {
+                                    let val = Math.floor(parseFloat(e.target.value)) || 0;
+                                    if(val < 0) val = 0;
+                                    if(val > 100) val = 100;
+
+                                    // Update Sativa, Auto-calc Indica
+                                    update('sativa_percentage', val);
+                                    update('indica_percentage', 100 - val);
+                                 }} />
+                              <span>%</span>
+                           </div>
                         </div>
-                        <div style="flex:1;">
-                           <label class="sd-label" style="font-size:0.75rem;">Indica</label>
-                           <input type="number" class="sd-input" placeholder="0-100" min="0" max="100"
-                                  .value=${s.indica_percentage || ''}
-                                  @input=${(e:any) => {
-                                     let val = parseFloat(e.target.value) || 0;
-                                     if(val < 0) val = 0;
-                                     if(val > 100) val = 100;
 
-                                     const currentSativa = s.sativa_percentage || 0;
-                                     if(val + currentSativa > 100) {
-                                        val = 100 - currentSativa;
-                                        e.target.value = val.toString();
-                                     }
-                                     update('indica_percentage', val);
-                                  }} />
+                        <!-- Bar -->
+                        <div class="hg-bar-track"
+                             @click=${(e: MouseEvent) => {
+                                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                const x = e.clientX - rect.left;
+                                const width = rect.width;
+                                // 0 on Left means 0% Indica?
+                                // Left Bar is Indica. So Width = Indica %.
+                                // if x is at 40% of width, then Indica is 40%.
+                                let percent = Math.round((x / width) * 100);
+                                if(percent < 0) percent = 0;
+                                if(percent > 100) percent = 100;
+
+                                update('indica_percentage', percent);
+                                update('sativa_percentage', 100 - percent);
+                             }}>
+                           <div class="hg-bar-indica" style="width: ${s.indica_percentage || 0}%"></div>
+                           <div class="hg-bar-sativa"></div>
+
+                           <div class="hg-tick" style="left: 25%"></div>
+                           <div class="hg-tick" style="left: 50%"></div>
+                           <div class="hg-tick" style="left: 75%"></div>
+                        </div>
+
+                        <!-- Legend -->
+                        <div class="hg-legend-container">
+                           <span class="hg-legend-label start">0%</span>
+                           <span class="hg-legend-label" style="left: 25%">25%</span>
+                           <span class="hg-legend-label" style="left: 50%">50%</span>
+                           <span class="hg-legend-label" style="left: 75%">75%</span>
+                           <span class="hg-legend-label end">100%</span>
+                        </div>
+
+                        <div style="font-size:0.7rem; color:var(--text-secondary); margin-top:4px; text-align:center;">
+                           Click bar or edit values to adjust
                         </div>
                      </div>
                   </div>
