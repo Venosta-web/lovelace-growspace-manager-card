@@ -308,6 +308,10 @@ export class DialogRenderer {
       onToggleImageSelector: (isOpen: boolean) => void;
       onSelectLibraryImage: (imageUrl: string) => void;
       onExportStrains: () => void;
+      // Import
+      onOpenImportDialog: () => void;
+      onImportDialogChange: (changes: { open?: boolean, replace?: boolean }) => void;
+      onConfirmImport: () => void;
     }
   ): TemplateResult {
     if (!dialog?.open) return html``;
@@ -854,9 +858,69 @@ export class DialogRenderer {
 
         ${dialog.isCropping ? this.renderCropOverlay(dialog, callbacks) : nothing}
         ${dialog.isImageSelectorOpen ? this.renderImageSelector(dialog, callbacks) : nothing}
+        ${dialog.importDialog?.open ? this.renderImportDialog(dialog, callbacks) : nothing}
 
       </ha-dialog>
     `;
+  }
+
+  private static renderImportDialog(dialog: StrainLibraryDialogState, callbacks: any): TemplateResult {
+     const isReplace = dialog.importDialog?.replace || false;
+
+     return html`
+        <div class="crop-overlay">
+           <div style="background: #1a1a1a; width: 400px; max-width: 90vw; border-radius: 16px; padding: 24px; border: 1px solid var(--border-color); color: #fff; display: flex; flex-direction: column; gap: 20px;">
+
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                 <h2 style="margin: 0; font-size: 1.25rem;">Import Strains</h2>
+                 <button class="sd-close-btn" @click=${() => callbacks.onImportDialogChange({ open: false })}>
+                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+                 </button>
+              </div>
+
+              <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">
+                 Select a ZIP file containing your strain library export. You can either merge the new strains with your existing library or replace it entirely.
+              </div>
+
+              <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                 <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <input type="radio" name="import_mode"
+                           .checked=${!isReplace}
+                           @change=${() => callbacks.onImportDialogChange({ replace: false })}
+                           style="accent-color: var(--accent-green); transform: scale(1.2);" />
+                    <div>
+                       <div style="font-weight: 600;">Merge</div>
+                       <div style="font-size: 0.8rem; color: var(--text-secondary);">Add new strains, keep existing ones.</div>
+                    </div>
+                 </label>
+
+                 <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 12px 0;"></div>
+
+                 <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                     <input type="radio" name="import_mode"
+                           .checked=${isReplace}
+                           @change=${() => callbacks.onImportDialogChange({ replace: true })}
+                           style="accent-color: var(--accent-green); transform: scale(1.2);" />
+                     <div>
+                       <div style="font-weight: 600;">Replace</div>
+                       <div style="font-size: 0.8rem; color: var(--text-secondary);">Overwrite entire library with import.</div>
+                    </div>
+                 </label>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
+                 <button class="sd-btn secondary" @click=${() => callbacks.onImportDialogChange({ open: false })}>
+                    Cancel
+                 </button>
+                 <button class="sd-btn primary" @click=${callbacks.onConfirmImport}>
+                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
+                    Select File
+                 </button>
+              </div>
+
+           </div>
+        </div>
+     `;
   }
 
   private static renderImageSelector(dialog: StrainLibraryDialogState, callbacks: any): TemplateResult {
@@ -1052,7 +1116,7 @@ export class DialogRenderer {
       </div>
 
       <div class="sd-footer">
-         <button class="sd-btn secondary">
+         <button class="sd-btn secondary" @click=${callbacks.onOpenImportDialog}>
             <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
             Import Strains
          </button>

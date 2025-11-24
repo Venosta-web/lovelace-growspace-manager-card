@@ -395,11 +395,12 @@ export class DataService {
     }
   }
 
-  async importStrainLibrary(strains: string[]) {
-    console.log("[DataService:importStrainLibrary] Importing strains:", strains);
+  async importStrainLibrary(zipBase64: string, replace: boolean) {
+    console.log("[DataService:importStrainLibrary] Importing strain library ZIP. Replace:", replace);
     try {
       const res = await this.hass.callService("growspace_manager", "import_strain_library", {
-        strains
+        zip_base64: zipBase64,
+        replace
       });
       console.log("[DataService:importStrainLibrary] Response:", res);
       return res;

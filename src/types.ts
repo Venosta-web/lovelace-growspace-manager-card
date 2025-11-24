@@ -180,6 +180,10 @@ export interface StrainLibraryDialogState {
   };
   expandedStrains?: string[];
   confirmClearAll?: boolean;
+  importDialog?: {
+    open: boolean;
+    replace: boolean;
+  };
 }
 
 export interface ConfigDialogState {
