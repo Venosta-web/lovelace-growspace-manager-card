@@ -478,11 +478,18 @@ export class DataService {
   async askGrowAdvice(growspaceId: string, userQuery: string) {
     console.log("[DataService:askGrowAdvice] Asking advice for:", growspaceId, userQuery);
     try {
-      // Cast hass to any because custom-card-helpers types don't support the 5th arg (return_response) yet
-      const res = await (this.hass as any).callService("growspace_manager", "ask_grow_advice", {
-        growspace_id: growspaceId,
-        user_query: userQuery
-      }, undefined, true);
+      // Use low-level connection to ensure return_response=true is respected
+      // as callService wrapper in older custom-card-helpers might not support it correctly
+      const res = await (this.hass as any).connection.sendMessagePromise({
+        type: 'call_service',
+        domain: 'growspace_manager',
+        service: 'ask_grow_advice',
+        service_data: {
+          growspace_id: growspaceId,
+          user_query: userQuery
+        },
+        return_response: true
+      });
       console.log("[DataService:askGrowAdvice] Response:", res);
       return res as { response: string };
     } catch (err) {
