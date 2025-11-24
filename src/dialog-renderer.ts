@@ -1140,7 +1140,18 @@ export class DialogRenderer {
 
     const update = (field: string, value: any) => callbacks.onEditorChange(field, value);
 
+    // Filter unique lists for autocomplete
+    const uniqueStrains = [...new Set(dialog.strains.map(st => st.strain).filter(Boolean))].sort();
+    const uniqueBreeders = [...new Set(dialog.strains.map(st => st.breeder).filter(Boolean))].sort();
+
     return html`
+      <datalist id="strain-suggestions">
+         ${uniqueStrains.map(name => html`<option value="${name}"></option>`)}
+      </datalist>
+      <datalist id="breeder-suggestions">
+         ${uniqueBreeders.map(name => html`<option value="${name}"></option>`)}
+      </datalist>
+
       <div class="sd-header">
          <div style="display:flex; align-items:center; gap:16px;">
             <button class="sd-btn secondary" style="padding: 8px 12px;" @click=${() => callbacks.onSwitchView('browse')}>
@@ -1220,7 +1231,7 @@ export class DialogRenderer {
 
                <div class="sd-form-group">
                   <label class="sd-label">Strain Name *</label>
-                  <input type="text" class="sd-input" .value=${s.strain} @input=${(e:any) => update('strain', e.target.value)} />
+                  <input type="text" class="sd-input" list="strain-suggestions" .value=${s.strain} @input=${(e:any) => update('strain', e.target.value)} />
                </div>
 
                <div class="sd-form-group">
@@ -1230,7 +1241,7 @@ export class DialogRenderer {
 
                <div class="sd-form-group">
                   <label class="sd-label">Breeder/Seedbank</label>
-                  <input type="text" class="sd-input" .value=${s.breeder} @input=${(e:any) => update('breeder', e.target.value)} />
+                  <input type="text" class="sd-input" list="breeder-suggestions" .value=${s.breeder} @input=${(e:any) => update('breeder', e.target.value)} />
                </div>
             </div>
 
