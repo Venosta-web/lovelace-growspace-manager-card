@@ -1619,7 +1619,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           sex: strainToEdit.sex || '',
           description: strainToEdit.description || '',
           image: strainToEdit.image || '',
-          image_crop_meta: strainToEdit.image_crop_meta
+          image_crop_meta: strainToEdit.image_crop_meta,
+          sativa_percentage: strainToEdit.sativa_percentage,
+          indica_percentage: strainToEdit.indica_percentage
         };
       } else {
         // Reset editor
@@ -1857,7 +1859,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       sex: s.sex,
       description: s.description,
       image: s.image,
-      image_crop_meta: s.image_crop_meta
+      image_crop_meta: s.image_crop_meta,
+      sativa_percentage: s.sativa_percentage,
+      indica_percentage: s.indica_percentage
     };
 
     try {
@@ -1877,7 +1881,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         sex: s.sex,
         description: s.description,
         image: s.image,
-        image_crop_meta: s.image_crop_meta
+        image_crop_meta: s.image_crop_meta,
+        sativa_percentage: s.sativa_percentage,
+        indica_percentage: s.indica_percentage
       };
 
       // Remove existing if update (naive check by key)

@@ -133,6 +133,8 @@ export class DataService {
                  flowering_days_min: pData.flower_days_min || meta.flowering_days_min,
                  flowering_days_max: pData.flower_days_max || meta.flowering_days_max,
                  image: pData.image_path || pData.image || meta.image,
+                 sativa_percentage: pData.sativa_percentage || meta.sativa_percentage,
+                 indica_percentage: pData.indica_percentage || meta.indica_percentage,
                });
              }
            } else {
@@ -151,7 +153,9 @@ export class DataService {
                description: meta.description,
                flowering_days_min: meta.flowering_days_min,
                flowering_days_max: meta.flowering_days_max,
-               image: meta.image
+               image: meta.image,
+               sativa_percentage: meta.sativa_percentage,
+               indica_percentage: meta.indica_percentage,
              });
            }
         } else {
@@ -169,7 +173,9 @@ export class DataService {
             description: meta.description,
             flowering_days_min: meta.flowering_days_min,
             flowering_days_max: meta.flowering_days_max,
-            image: meta.image
+            image: meta.image,
+            sativa_percentage: meta.sativa_percentage,
+            indica_percentage: meta.indica_percentage,
            });
         }
       }
@@ -339,6 +345,8 @@ export class DataService {
     description?: string;
     image?: string;
     image_crop_meta?: CropMeta;
+    sativa_percentage?: number;
+    indica_percentage?: number;
   }) {
     console.log("[DataService:addStrain] Adding strain:", data);
     try {
