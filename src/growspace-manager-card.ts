@@ -1,7 +1,7 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
@@ -14,6 +14,7 @@ import {
   PlantOverviewDialogState,
   StrainLibraryDialogState,
   ConfigDialogState,
+  GrowMasterDialogState,
   GrowspaceDevice,
   StrainEntry
 } from './types';
@@ -28,6 +29,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _plantOverviewDialog: PlantOverviewDialogState | null = null;
   @state() private _strainLibraryDialog: StrainLibraryDialogState | null = null;
   @state() private _configDialog: ConfigDialogState | null = null;
+  @state() private _growMasterDialog: GrowMasterDialogState | null = null;
   @state() private selectedDevice: string | null = null;
   @state() private _draggedPlant: PlantEntity | null = null;
   @state() private _isCompactView: boolean = false;
@@ -2214,6 +2216,41 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       .catch(e => alert(`Error: ${e.message}`));
   }
 
+  // Grow Master Methods
+  private _openGrowMasterDialog() {
+    if (!this.selectedDevice) return;
+    this._growMasterDialog = {
+      open: true,
+      growspaceId: this.selectedDevice,
+      userQuery: '',
+      isLoading: false,
+      response: null
+    };
+  }
+
+  private async _handleAskAdvice() {
+    if (!this._growMasterDialog || !this._growMasterDialog.userQuery) return;
+
+    this._growMasterDialog.isLoading = true;
+    this._growMasterDialog.response = null; // Clear previous response
+    this.requestUpdate();
+
+    try {
+      const result = await this.dataService.askGrowAdvice(this._growMasterDialog.growspaceId, this._growMasterDialog.userQuery);
+      if (this._growMasterDialog) {
+        this._growMasterDialog.response = result.response;
+      }
+    } catch (e: any) {
+      if (this._growMasterDialog) {
+        this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'}`;
+      }
+    } finally {
+      if (this._growMasterDialog) {
+        this._growMasterDialog.isLoading = false;
+        this.requestUpdate();
+      }
+    }
+  }
 
   protected render(): TemplateResult {
     if (!this.hass) {
@@ -2437,6 +2474,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                </div>
                ` : ''}
             </div>
+
+            <!-- AI Button -->
+            ${!this._isCompactView ? html`
+                <div style="position:absolute; top: 24px; left: 50%; transform: translateX(-50%);">
+                   <!-- Optional center placement if desired, but request said 'next to growspace name' -->
+                </div>
+                <button class="action-button" style="position: absolute; top: 24px; right: 24px; width: 40px; height: 40px; border-radius: 50%; padding: 0; justify-content: center; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);"
+                        @click=${this._openGrowMasterDialog}
+                        title="Ask the Grow Master">
+                   <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+                </button>
+            ` : ''}
 
             <div class="gs-stats-chips">
                 ${temp !== undefined ? html`
@@ -2979,6 +3028,50 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onGlobalSubmit: () => this._handleGlobalSubmit(),
       }
     )}
+
+    ${this._growMasterDialog ? (() => {
+        // Determine stress state for the dialog
+        let isStressed = false;
+        let personality = undefined;
+
+        // Attempt to find stress sensor
+        if (this.selectedDevice && this.hass) {
+           // Pattern checking for stress sensor
+           const id = this.selectedDevice;
+           const stressEntityIds = [
+              `binary_sensor.${id}_plants_under_stress`,
+              `binary_sensor.${id}_stress`,
+              `binary_sensor.growspace_manager_${id}_stress`
+           ];
+
+           for (const eid of stressEntityIds) {
+              const ent = this.hass.states[eid];
+              if (ent && ent.state === 'on') {
+                 isStressed = true;
+                 break;
+              }
+           }
+        }
+
+        // Personality check
+        if (this.hass) {
+          const manager = this.hass.states['sensor.growspace_manager'];
+          if (manager && manager.attributes && manager.attributes.ai_settings) {
+               personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
+          }
+        }
+
+        return DialogRenderer.renderGrowMasterDialog(
+          this._growMasterDialog,
+          isStressed,
+          personality,
+          {
+            onClose: () => this._growMasterDialog = null,
+            onQueryChange: (q) => { if(this._growMasterDialog) { this._growMasterDialog.userQuery = q; this.requestUpdate(); } },
+            onAnalyze: () => this._handleAskAdvice()
+          }
+        );
+    })() : ''}
     `;
   }
 
