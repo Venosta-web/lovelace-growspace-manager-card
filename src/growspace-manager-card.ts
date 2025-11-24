@@ -102,18 +102,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         z-index: 2;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
+        justify-content: flex-end;
+        gap: 16px;
         height: 100%;
         padding: 16px;
         box-sizing: border-box;
       }
 
-      .pc-header {
+      .pc-info {
         text-align: center;
         display: flex;
         flex-direction: column;
         gap: 4px;
-        margin-top: 24px;
         align-items: center;
       }
 
@@ -147,7 +147,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: auto;
         width: 100%;
         padding: 0 12px;
         box-sizing: border-box;
@@ -1151,7 +1150,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
            gap: 8px;
         }
 
-        .pc-header {
+        .pc-info {
            margin-top: 0;
            align-items: flex-start;
            text-align: left;
@@ -2809,7 +2808,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                           <div class="plant-card-overlay"></div>` : ''}
 
         <div class="plant-card-content">
-            <div class="pc-header">
+            <div class="pc-info">
                 <div class="pc-strain-name" title="${plant.attributes?.strain || ''}">
                     ${plant.attributes?.strain || 'Unknown Strain'}
                 </div>
