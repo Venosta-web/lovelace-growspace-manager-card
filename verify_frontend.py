@@ -12,12 +12,7 @@ def run():
         # Wait for the card to load
         expect(page.locator("growspace-manager-card")).to_be_visible()
 
-        # Click the "Strain Library" button (it's a chip/button in the header)
-        # Using title selector as defined in code: title="Strain Library"
-        # Or locate by icon path if needed, but let's try selector.
-
-        # Wait for the button to appear. The card renders async.
-        # It's a div with class 'stat-chip' and title 'Strain Library'
+        # Click the "Strain Library" button
         page.locator(".stat-chip[title='Strain Library']").click()
 
         # Wait for dialog to open
@@ -27,11 +22,13 @@ def run():
         expect(page.get_by_text("Gorilla Glue")).to_be_visible()
         expect(page.get_by_text("Hybrid")).to_be_visible()
 
-        # Check for the scale graph.
-        # We can look for the class .scale-graph-container
-        # And verify the bars have correct widths
-        scale_graph = page.locator(".scale-graph-container").first
-        expect(scale_graph).to_be_visible()
+        # Check for the NEW hybrid graph container
+        hg_container = page.locator(".hg-container").first
+        expect(hg_container).to_be_visible()
+
+        # Verify legend exists
+        expect(hg_container.locator(".hg-legend-container")).to_be_visible()
+        expect(hg_container.get_by_text("25%")).to_be_visible()
 
         # Take a screenshot of the library browse view
         page.screenshot(path="strain_library_browse.png")
@@ -43,27 +40,48 @@ def run():
         # Wait for Editor View
         expect(page.get_by_text("Edit Strain")).to_be_visible()
 
-        # Verify inputs exist
+        # Verify new interactive inputs exist
         expect(page.get_by_text("Hybrid Composition (%)")).to_be_visible()
-        sativa_input = page.locator("input[placeholder='0-100']").first
-        indica_input = page.locator("input[placeholder='0-100']").nth(1)
 
-        # Check values
-        expect(sativa_input).to_have_value("60")
+        # Check for the new number inputs (class .hg-num-input)
+        # There should be 2: Indica and Sativa
+        inputs = page.locator(".hg-num-input")
+        expect(inputs).to_have_count(2)
+
+        indica_input = inputs.nth(0)
+        sativa_input = inputs.nth(1)
+
+        # Check values (Indica 40, Sativa 60)
         expect(indica_input).to_have_value("40")
-
-        # Test validation logic: Set Sativa to 90, Indica should remain until modified?
-        # Actually logic is: on input of one, if sum > 100, clamp/adjust.
-        # Let's try typing 80 into Sativa (current Indica is 40). 80+40=120 > 100.
-        # My logic:
-        # if(val + currentIndica > 100) { val = 100 - currentIndica; e.target.value = val; }
-        # So if I type 80, and Indica is 40, Sativa should become 60.
-        # Wait, that's "clamping the input". It prevents me from increasing Sativa unless I decrease Indica first.
-        # Let's verify that behavior.
-
-        sativa_input.fill("80")
-        # Logic: currentIndica is 40. val=80. 80+40=120. val becomes 60.
         expect(sativa_input).to_have_value("60")
+
+        # Test interaction: Click the bar?
+        # Let's try typing first to match previous test logic
+        # Set Indica to 50. Sativa should become 50.
+        indica_input.fill("50")
+        indica_input.dispatch_event("input") # Trigger lit update
+
+        expect(indica_input).to_have_value("50")
+        expect(sativa_input).to_have_value("50")
+
+        # Test clicking the bar
+        # The bar is .hg-bar-track.
+        bar = page.locator(".hg-bar-track").last # Use last because browse view might still be in DOM? No, dialog rerenders content.
+        # But wait, the dialog content replaces the browse view.
+        # Let's be safe and use visibility.
+        editor_bar = page.locator(".hg-bar-track").filter(has=page.locator(".hg-tick")).last
+
+        # Click at 25% of width.
+        # Playwright click takes position={x, y}.
+        # We need to click relative to element.
+        box = editor_bar.bounding_box()
+        # Click at 25% from left
+        page.mouse.click(box['x'] + (box['width'] * 0.25), box['y'] + (box['height'] / 2))
+
+        # Indica should be approx 25, Sativa 75.
+        # Allow small margin due to rounding
+        val = int(indica_input.input_value())
+        assert 23 <= val <= 27, f"Expected Indica ~25, got {val}"
 
         # Take screenshot of editor
         page.screenshot(path="strain_library_editor.png")
