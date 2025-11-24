@@ -2236,27 +2236,22 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     input.type = 'file';
     input.accept = '.zip';
 
-    input.onchange = e => {
+    input.onchange = async e => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64Data = event.target?.result as string;
-        try {
-          await this.dataService.importStrainLibrary(base64Data, replace);
-          alert("Import started! Check notifications.");
-          // Close dialogs
-          if (this._strainLibraryDialog && this._strainLibraryDialog.importDialog) {
-            this._strainLibraryDialog.importDialog.open = false;
-          }
-          this.requestUpdate();
-        } catch (err: any) {
-          console.error("Import failed:", err);
-          alert(`Import failed: ${err.message}`);
+      try {
+        const result = await this.dataService.importStrainLibrary(file, replace);
+        alert(`Import successful! ${result.imported_count || ''} strains imported.`);
+        // Close dialogs
+        if (this._strainLibraryDialog && this._strainLibraryDialog.importDialog) {
+          this._strainLibraryDialog.importDialog.open = false;
         }
-      };
-      reader.readAsDataURL(file);
+        this.requestUpdate();
+      } catch (err: any) {
+        console.error("Import failed:", err);
+        alert(`Import failed: ${err.message}`);
+      }
     };
 
     input.click();
