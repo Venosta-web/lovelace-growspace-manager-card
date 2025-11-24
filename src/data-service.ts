@@ -351,6 +351,14 @@ export class DataService {
     console.log("[DataService:addStrain] Adding strain:", data);
     try {
       const payload: any = { ...data };
+
+      // Clean undefined keys
+      Object.keys(payload).forEach(key => {
+        if (payload[key] === undefined) {
+          delete payload[key];
+        }
+      });
+
       if (data.image) {
         if (data.image.startsWith("data:")) {
            // It's a base64 string (new upload)
@@ -358,12 +366,6 @@ export class DataService {
            delete payload.image; // Backend expects image_base64
         } else {
            // It's a path (existing image)
-           // If backend supports `image_path` explicitly, we could rename it.
-           // However, `add_strain` in backend often checks `image_base64`.
-           // Some versions of `add_strain` might accept `image_path` or `image_url`.
-           // Based on typical patterns, if we pass a path, we might need to send it as `image_path`
-           // or just leave it as `image` if the backend supports that field.
-           // Assuming backend might check `image_path` if provided.
            payload.image_path = data.image;
            delete payload.image;
         }

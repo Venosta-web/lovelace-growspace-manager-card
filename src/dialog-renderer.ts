@@ -1171,9 +1171,9 @@ export class DialogRenderer {
                        e.preventDefault();
                        const file = e.dataTransfer?.files[0];
                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (ev) => update('image', ev.target?.result);
-                          reader.readAsDataURL(file);
+                          PlantUtils.compressImage(file)
+                            .then(base64 => update('image', base64))
+                            .catch(err => console.error("Error compressing image:", err));
                        }
                     }}>
 
@@ -1211,9 +1211,9 @@ export class DialogRenderer {
                          @change=${(e: Event) => {
                             const file = (e.target as HTMLInputElement).files?.[0];
                             if (file) {
-                               const reader = new FileReader();
-                               reader.onload = (ev) => update('image', ev.target?.result);
-                               reader.readAsDataURL(file);
+                               PlantUtils.compressImage(file)
+                                 .then(base64 => update('image', base64))
+                                 .catch(err => console.error("Error compressing image:", err));
                             }
                          }} />
                </div>
