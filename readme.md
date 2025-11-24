@@ -4,6 +4,9 @@ A modern **Home Assistant Lovelace custom card** to manage multiple growspaces a
 
 ---
 
+## Demo
+https://Venosta-web.github.io/lovelace-growspace-manager-card/mockup.html
+
 ## Features
 
 - Display plants in a grid layout with configurable rows and columns per growspace.
