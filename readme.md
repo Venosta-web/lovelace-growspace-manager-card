@@ -2,7 +2,7 @@
 
 A modern, comprehensive **Home Assistant Lovelace custom card** designed to manage multiple growspaces, track plant lifecycles, and monitor environmental conditions. Built with **Lit**, **TypeScript**, and **Rollup**, featuring a sleek glassmorphism UI.
 
-![Growspace Manager Card](mockup_preview.png)
+![Growspace Manager Card]
 *Unified view showing plant grid, light cycle history, and environmental stats*
 
 ---
