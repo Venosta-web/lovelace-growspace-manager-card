@@ -84,7 +84,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         width: 100%;
         height: 100%;
         background-size: cover;
-        background-position: center;
         z-index: 0;
       }
 
@@ -2784,11 +2783,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         // Fallback to strain default
         const strainMatch = strainLibrary.find(s => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
         if (strainMatch && strainMatch.image) {
-           imageUrl = strainMatch.image;
+          imageUrl = strainMatch.image;
         } else if (!imageUrl) {
-           // Any match?
-           const anyMatch = strainLibrary.find(s => s.strain === strainName && s.image);
-           if (anyMatch) imageUrl = anyMatch.image;
+          // Any match?
+          const anyMatch = strainLibrary.find(s => s.strain === strainName && s.image);
+          if (anyMatch) imageUrl = anyMatch.image;
         }
       }
     }
@@ -2829,14 +2828,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private renderPlantDaysRich(plant: PlantEntity): TemplateResult {
-     // We need to show relevant days.
-     // Mockup shows two icons at bottom.
-     // Likely Veg Days and Flower Days if available, or current stage days?
-     // User said "continue to show relevant days like we already do".
-     // Existing logic filters and shows all relevant days.
-     // I will use that logic but style it for the new card (Icon Top, Text Bottom or similar).
+    // We need to show relevant days.
+    // Mockup shows two icons at bottom.
+    // Likely Veg Days and Flower Days if available, or current stage days?
+    // User said "continue to show relevant days like we already do".
+    // Existing logic filters and shows all relevant days.
+    // I will use that logic but style it for the new card (Icon Top, Text Bottom or similar).
 
-     const days = [
+    const days = [
       { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Seedling", stage: "seedling" },
       { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Mother", stage: "mother" },
       { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Clone", stage: "clone" },
@@ -2850,14 +2849,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     return html`
         ${visibleDays.map(d => {
-            const color = PlantUtils.getPlantStageColor(d.stage);
-            return html`
+      const color = PlantUtils.getPlantStageColor(d.stage);
+      return html`
                 <div class="pc-stat-item">
                     <svg style="color: ${color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
                     <div class="pc-stat-text">${d.days}d</div>
                 </div>
             `;
-        })}
+    })}
     `;
   }
 

@@ -1848,7 +1848,6 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
         width: 100%;
         height: 100%;
         background-size: cover;
-        background-position: center;
         z-index: 0;
       }
 
