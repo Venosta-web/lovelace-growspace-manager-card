@@ -1751,7 +1751,7 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
     `}renderEmptySlot(e,t){return G`
       <div 
         class="plant-card-empty"
-        style="grid-row: ${e}; grid-column: ${t}"
+        style="grid-row: ${e}; grid-column: ${t}" 
         @click=${()=>this._openAddPlantDialog(e-1,t-1)}
         @dragover=${this._handleDragOver}
         @drop=${r=>this._handleDrop(r,e,t,null)}
@@ -1766,7 +1766,7 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
     `}renderPlantSlot(e,t,r,i){const a=Ka.getPlantStageColor(e.state),s=e.attributes?.strain,n=e.attributes?.phenotype;let o;if(s){const e=i.find(e=>e.strain===s&&e.phenotype===n);if(e&&e.image)o=e.image;else{const e=i.find(e=>e.strain===s&&(!e.phenotype||"default"===e.phenotype));if(e&&e.image)o=e.image;else if(!o){const e=i.find(e=>e.strain===s&&e.image);e&&(o=e.image)}}}const l=o?`background-image: url('${o}');`:"";return G`
       <div 
         class="plant-card-rich"
-        style="grid-row: ${t}; grid-column: ${r}; --stage-color: ${a}"
+        style="grid-row: ${t}; grid-column: ${r}; --stage-color: ${a}" 
         draggable="true"
         @dragstart=${t=>this._handleDragStart(t,e)}
         @dragend=${this._handleDragEnd}
