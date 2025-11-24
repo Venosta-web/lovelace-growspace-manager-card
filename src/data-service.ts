@@ -474,4 +474,20 @@ export class DataService {
       throw err;
     }
   }
+
+  async askGrowAdvice(growspaceId: string, userQuery: string) {
+    console.log("[DataService:askGrowAdvice] Asking advice for:", growspaceId, userQuery);
+    try {
+      // Cast hass to any because custom-card-helpers types don't support the 5th arg (return_response) yet
+      const res = await (this.hass as any).callService("growspace_manager", "ask_grow_advice", {
+        growspace_id: growspaceId,
+        user_query: userQuery
+      }, undefined, true);
+      console.log("[DataService:askGrowAdvice] Response:", res);
+      return res as { response: string };
+    } catch (err) {
+      console.error("[DataService:askGrowAdvice] Error:", err);
+      throw err;
+    }
+  }
 }

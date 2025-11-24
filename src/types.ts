@@ -206,3 +206,11 @@ export interface ConfigDialogState {
     lung_room_humidity: string;
   };
 }
+
+export interface GrowMasterDialogState {
+  open: boolean;
+  growspaceId: string;
+  userQuery: string;
+  isLoading: boolean;
+  response: string | null;
+}
