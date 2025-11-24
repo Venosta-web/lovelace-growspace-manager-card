@@ -395,15 +395,36 @@ export class DataService {
     }
   }
 
-  async importStrainLibrary(zipBase64: string, replace: boolean) {
-    console.log("[DataService:importStrainLibrary] Importing strain library ZIP. Replace:", replace);
+  async importStrainLibrary(file: File, replace: boolean) {
+    console.log("[DataService:importStrainLibrary] Importing strain library ZIP via HTTP. Replace:", replace);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('replace', replace.toString());
+
     try {
-      const res = await this.hass.callService("growspace_manager", "import_strain_library", {
-        zip_base64: zipBase64,
-        replace
+      const response = await fetch('/api/growspace_manager/import_strains', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${this.hass.auth.data.access_token}`
+        }
       });
-      console.log("[DataService:importStrainLibrary] Response:", res);
-      return res;
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || response.statusText);
+      }
+
+      const result = await response.json();
+      console.log("[DataService:importStrainLibrary] Response:", result);
+
+      if (result.success) {
+        return result;
+      } else {
+        throw new Error(result.error || 'Unknown import error');
+      }
+
     } catch (err) {
       console.error("[DataService:importStrainLibrary] Error:", err);
       throw err;
