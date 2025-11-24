@@ -1273,6 +1273,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
            height: 20px;
         }
 
+        /* Hide non-current stages on mobile */
+        .pc-stat-item:not(.current-stage) {
+           display: none;
+        }
+
         /* Empty Slot in List View */
         .plant-card-empty {
            min-height: 80px;
@@ -3082,11 +3087,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     const visibleDays = days.filter(d => d.days);
 
+    // Identify current stage to highlight
+    const currentStage = (plant.state || '').toLowerCase();
+    // Normalize if necessary, e.g. "veg" -> "vegetative"
+    // The days array uses standard stage keys (vegetative, flower, etc)
+    const normalizedCurrent = currentStage === 'veg' ? 'vegetative' : currentStage;
+
     return html`
         ${visibleDays.map(d => {
       const color = PlantUtils.getPlantStageColor(d.stage);
+      const isCurrent = d.stage === normalizedCurrent;
+
       return html`
-                <div class="pc-stat-item">
+                <div class="pc-stat-item ${isCurrent ? 'current-stage' : ''}">
                     <svg style="color: ${color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
                     <div class="pc-stat-text">${d.days}d</div>
                 </div>
