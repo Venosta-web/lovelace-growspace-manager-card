@@ -1102,6 +1102,94 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
          transform: rotate(180deg);
       }
 
+      /* Allow Grid Items to Scale Down (Fix 5-col Overflow) */
+      .plant-card-rich, .plant-card-empty {
+         min-width: 0;
+      }
+
+      /* Force List View for Wide Grids on Desktop */
+      .grid.force-list-view {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-sm);
+          /* Remove grid template */
+          grid-template-columns: 1fr !important;
+          grid-template-rows: auto !important;
+      }
+
+      .grid.force-list-view .plant-card-rich {
+          min-height: auto;
+          aspect-ratio: unset;
+          flex-direction: row;
+          align-items: center;
+          padding: 12px;
+          gap: 12px;
+      }
+
+      .grid.force-list-view .plant-card-bg {
+           position: relative;
+           width: 64px;
+           height: 64px;
+           border-radius: 8px;
+           flex-shrink: 0;
+           background-color: rgba(0,0,0,0.2);
+      }
+
+      .grid.force-list-view .plant-card-overlay {
+           display: none;
+      }
+
+      .grid.force-list-view .plant-card-content {
+           flex-direction: row;
+           padding: 0;
+           align-items: center;
+           width: 100%;
+           justify-content: space-between;
+           gap: 8px;
+      }
+
+      .grid.force-list-view .pc-info {
+           margin-top: 0;
+           align-items: flex-start;
+           text-align: left;
+           flex: 1;
+           gap: 2px;
+      }
+
+      .grid.force-list-view .pc-strain-name {
+           font-size: 1rem;
+      }
+
+      .grid.force-list-view .pc-pheno {
+           font-size: 0.85rem;
+      }
+
+      .grid.force-list-view .pc-stage {
+           margin-top: 2px;
+           font-size: 0.85rem;
+      }
+
+      .grid.force-list-view .pc-stats {
+           width: auto;
+           padding: 0;
+           gap: 12px;
+           flex-shrink: 0;
+      }
+
+      .grid.force-list-view .pc-stat-item svg {
+           width: 20px;
+           height: 20px;
+      }
+
+      .grid.force-list-view .plant-card-empty {
+           min-height: 80px;
+           aspect-ratio: unset;
+           flex-direction: row;
+           justify-content: flex-start;
+           padding: 0 24px;
+           gap: 16px;
+      }
+
       @media (max-width: 600px) {
         .header {
           flex-direction: column;
@@ -2749,9 +2837,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private renderGrid(grid: (PlantEntity | null)[][], rows: number, cols: number, strainLibrary: StrainEntry[]): TemplateResult {
+    const isListView = cols > 5;
+    // Use minmax(0, 1fr) to allow items to shrink below their content size, fixing overflow issues in 5-col grids.
+    const gridStyle = isListView
+      ? ''
+      : `grid-template-columns: repeat(${cols}, minmax(0, 1fr)); grid-template-rows: repeat(${rows}, 1fr);`;
+
     return html`
-      <div class="grid ${this._isCompactView ? 'compact' : ''}" 
-           style="grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${rows}, 1fr);">
+      <div class="grid ${this._isCompactView ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
+           style="${gridStyle}">
         ${grid.flat().map((plant, index) => {
       const row = Math.floor(index / cols) + 1;
       const col = (index % cols) + 1;

@@ -84,7 +84,7 @@ export class PlantUtils {
   }
 
   static calculateEffectiveRows(device: GrowspaceDevice): number {
-    const { name, plants, plants_per_row } = device;
+    const { name, plants, plants_per_row, rows } = device;
 
     if (name === "dry" || name === "cure" || name === "mother" || name === "clone") {
       if (plants.length === 0) return 1;
@@ -99,7 +99,7 @@ export class PlantUtils {
       return lastRowCount >= plants_per_row ? maxRowUsed + 1 : maxRowUsed;
     }
 
-    return plants_per_row;
+    return rows;
   }
   /**
    * Converts a datetime-local input string (YYYY-MM-DDTHH:mm) to ISO string
