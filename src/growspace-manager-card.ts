@@ -2179,6 +2179,39 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
   }
 
+  private async _handleExportLibrary() {
+    // 1. Subscribe to the completion event
+    const unsubscribe = await this.hass.connection.subscribeEvents((event) => {
+      // Check if the URL exists in the event data
+      if (event.data && event.data.url) {
+        // 2. Trigger the download in the browser
+        this._downloadFile(event.data.url);
+
+        // 3. Clean up the listener
+        unsubscribe();
+      }
+    }, 'growspace_manager_strain_library_exported');
+
+    // 4. Call the backend service to start the export
+    try {
+      await this.hass.callService('growspace_manager', 'export_strain_library');
+      // Optional: Show a "Exporting..." toast or spinner here
+    } catch (err) {
+      console.error("Failed to call export service", err);
+      unsubscribe(); // Cleanup if call fails
+    }
+  }
+
+  private _downloadFile(url: string) {
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = url.split('/').pop() || 'export.zip'; // Sets filename from URL
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
   private updateGrid(): void {
     // Refresh data from Home Assistant
     this.dataService = new DataService(this.hass);
@@ -3120,6 +3153,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onToggleCropMode: (active) => this._toggleCropMode(active),
         onToggleImageSelector: (isOpen) => this._toggleImageSelector(isOpen),
         onSelectLibraryImage: (img) => this._handleSelectLibraryImage(img),
+        onExportStrains: () => this._handleExportLibrary(),
       }
     )}
 

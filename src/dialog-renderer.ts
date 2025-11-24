@@ -4,7 +4,7 @@ import {
   mdiCannabis, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiCheck,
   mdiContentCopy, mdiArrowRight, mdiWeatherNight, mdiWeatherSunny, mdiTuneVariant,
   mdiLeaf, mdiUpload, mdiArrowLeft, mdiFilterVariant, mdiCloudUpload, mdiPencil,
-  mdiCog, mdiThermometer, mdiEarth, mdiViewDashboard, mdiFan, mdiWeatherPartlyCloudy, mdiBrain, mdiLoading
+  mdiCog, mdiThermometer, mdiEarth, mdiViewDashboard, mdiFan, mdiWeatherPartlyCloudy, mdiBrain, mdiLoading, mdiDownload
 } from '@mdi/js';
 import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, ConfigDialogState, GrowMasterDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry, CropMeta } from './types';
 import { PlantUtils } from "./utils";
@@ -307,6 +307,7 @@ export class DialogRenderer {
       // Image Selection
       onToggleImageSelector: (isOpen: boolean) => void;
       onSelectLibraryImage: (imageUrl: string) => void;
+      onExportStrains: () => void;
     }
   ): TemplateResult {
     if (!dialog?.open) return html``;
@@ -1053,7 +1054,11 @@ export class DialogRenderer {
       <div class="sd-footer">
          <button class="sd-btn secondary">
             <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
-            Import CSV
+            Import Strains
+         </button>
+         <button class="sd-btn secondary" @click=${callbacks.onExportStrains}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg>
+            Export Strains
          </button>
          <button class="sd-btn primary" @click=${() => callbacks.onSwitchView('editor')}>
             <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
