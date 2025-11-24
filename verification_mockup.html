@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growspace Verification</title>
+    <script type="module" src="./dist/growspace-manager-card.js"></script>
+    <style>
+        body {
+            background-color: #202020;
+            color: white;
+            padding: 20px;
+            font-family: Roboto, sans-serif;
+        }
+        .container {
+            width: 800px;
+            margin-bottom: 50px;
+            border: 1px dashed #444;
+            padding: 20px;
+            border-radius: 8px;
+            background: #1a1a1a;
+        }
+        h2 { margin-top: 0; }
+    </style>
+</head>
+<body>
+    <h1>Growspace Layout Verification</h1>
+
+    <div class="container">
+        <h2>Scenario 1: 5 Columns (Should be GRID and SCALED DOWN)</h2>
+        <div style="width: 100%;">
+            <growspace-manager-card id="card-grid-5"></growspace-manager-card>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Scenario 2: 6 Columns (Should be LIST VIEW on desktop)</h2>
+        <div style="width: 100%;">
+            <growspace-manager-card id="card-list-6"></growspace-manager-card>
+        </div>
+    </div>
+
+    <script>
+        // Minimal Mock for Custom Card Helpers
+        class HaCard extends HTMLElement {
+            constructor() { super(); this.attachShadow({mode: 'open'}); }
+            connectedCallback() {
+                this.shadowRoot.innerHTML = `
+                    <style>
+                        :host { display: block; background: var(--ha-card-background, #1c1c1c); border-radius: 12px; border: 1px solid #333; overflow: hidden; }
+                    </style>
+                    <slot></slot>
+                `;
+            }
+        }
+        if (!customElements.get('ha-card')) customElements.define('ha-card', HaCard);
+
+        const hass = {
+            config: { time_zone: "UTC" },
+            states: {},
+            callService: async () => {},
+            callApi: async () => { return []; }
+        };
+
+        // Populate Hass States with Overview and Plants
+        // Important: DataService requires strict attribute matching
+
+        // 1. Overview Sensors
+        hass.states["sensor.5_column_grid_overview"] = {
+            entity_id: "sensor.5_column_grid_overview",
+            state: "on",
+            attributes: {
+                growspace_id: "5col",
+                friendly_name: "5 Column Grid",
+                rows: 2,
+                plants_per_row: 5,
+                type: "normal"
+            }
+        };
+
+        hass.states["sensor.6_column_list_overview"] = {
+            entity_id: "sensor.6_column_list_overview",
+            state: "on",
+            attributes: {
+                growspace_id: "6col",
+                friendly_name: "6 Column List",
+                rows: 2,
+                plants_per_row: 6,
+                type: "normal"
+            }
+        };
+
+        hass.states["sensor.growspaces_list"] = {
+             entity_id: "sensor.growspaces_list",
+             attributes: { growspaces: { "5col": "5 Column Grid", "6col": "6 Column List" } }
+        };
+
+        // 2. Plants
+        const createPlants = (count, prefix, cols, rows) => {
+            for(let i=0; i<count; i++) {
+                const row = Math.floor(i / cols) + 1;
+                const col = (i % cols) + 1;
+                const entity_id = `sensor.${prefix}_plant_${i+1}`;
+                hass.states[entity_id] = {
+                    entity_id: entity_id,
+                    state: 'vegetative',
+                    attributes: {
+                        plant_id: `${prefix}_p${i}`,
+                        growspace_id: prefix, // Must match overview ID
+                        strain: `Strain ${i+1}`,
+                        phenotype: `#${i+1}`,
+                        stage: 'vegetative',
+                        veg_days: 10 + i,
+                        row: row,
+                        col: col
+                    }
+                };
+            }
+        };
+
+        createPlants(10, "5col", 5, 2);
+        createPlants(12, "6col", 6, 2);
+
+        // 3. Environment Sensors (Optional but good for errors)
+        hass.states["binary_sensor.5_column_grid_optimal_conditions"] = {
+             entity_id: "binary_sensor.5_column_grid_optimal_conditions",
+             state: "on",
+             attributes: { is_lights_on: true, temperature: 25, humidity: 60, vpd: 1.0 }
+        };
+        hass.states["binary_sensor.6_column_list_optimal_conditions"] = {
+             entity_id: "binary_sensor.6_column_list_optimal_conditions",
+             state: "on",
+             attributes: { is_lights_on: false, temperature: 20, humidity: 50, vpd: 0.8 }
+        };
+
+
+        // Initialize
+        function initCards() {
+            console.log("Initializing cards...");
+            const c1 = document.getElementById('card-grid-5');
+            c1.setConfig({ type: 'custom:growspace-manager-card', default_growspace: '5col', compact: false });
+            c1.hass = hass;
+
+            const c2 = document.getElementById('card-list-6');
+            c2.setConfig({ type: 'custom:growspace-manager-card', default_growspace: '6col', compact: false });
+            c2.hass = hass;
+
+            console.log("Hass object injected.");
+        }
+
+        // Wait for element upgrade
+        if (customElements.get('growspace-manager-card')) {
+            initCards();
+        } else {
+            customElements.whenDefined('growspace-manager-card').then(initCards);
+        }
+
+    </script>
+</body>
+</html>
