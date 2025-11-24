@@ -1565,7 +1565,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (device.overview_entity_id) {
       slug = device.overview_entity_id.replace('sensor.', '');
     }
-    const envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+
+    let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+    // Specific logic for 'cure' and 'dry' growspaces
+    if (slug === 'cure') {
+      envEntityId = `binary_sensor.cure_optimal_curing`;
+    } else if (slug === 'dry') {
+      envEntityId = `binary_sensor.dry_optimal_drying`;
+    }
 
     // Get history for last 24h
     const now = new Date();
@@ -2423,7 +2430,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (device.overview_entity_id) {
       slug = device.overview_entity_id.replace('sensor.', '');
     }
-    const envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+
+    let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+    // Specific logic for 'cure' and 'dry' growspaces
+    const isCure = slug === 'cure';
+    const isDry = slug === 'dry';
+
+    if (isCure) {
+      envEntityId = `binary_sensor.cure_optimal_curing`;
+    } else if (isDry) {
+      envEntityId = `binary_sensor.dry_optimal_drying`;
+    }
+
     const envEntity = this.hass.states[envEntityId];
 
     // Helper to get attribute from either top-level or nested 'observations'
@@ -2441,11 +2459,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const temp = getValue(envEntity, 'temperature');
     const hum = getValue(envEntity, 'humidity');
     const vpd = getValue(envEntity, 'vpd');
-    const co2 = getValue(envEntity, 'co2');
+
+    // For cure/dry, we never need co2 or light
+    const isSpecialGrowspace = isCure || isDry;
+
+    const co2 = isSpecialGrowspace ? undefined : getValue(envEntity, 'co2');
 
     // Light Status Logic with History
     const isLightsOnValue = getValue(envEntity, 'is_lights_on');
-    const hasLightSensor = isLightsOnValue !== undefined && isLightsOnValue !== null;
+    const hasLightSensor = !isSpecialGrowspace && (isLightsOnValue !== undefined && isLightsOnValue !== null);
     const isLightsOn = isLightsOnValue === true;
 
     let svgPath = "";
