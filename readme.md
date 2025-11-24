@@ -44,7 +44,7 @@ Manage your genetics with a visual library.
 
 | Browse View | Editor View |
 |:---:|:---:|
-| ![Strain Library Browse](strain_library_browse.png) | ![Strain Library Editor](strain_library_editor.png) |
+| ![Strain Library Browse]() | ![Strain Library Editor]() |
 
 ---
 
@@ -90,15 +90,15 @@ Click the **Cog Icon** in the card header to access the configuration menu.
 
 #### 1. Add Growspace
 Create new growspaces to manage different tents or rooms.
-![Add Growspace](verification_config_add.png)
+![Add Growspace]()
 
 #### 2. Environment
 Map your Home Assistant sensors (Temperature, Humidity, CO2, Power) to your growspace.
-![Environment Config](verification_config_env.png)
+![Environment Config]()
 
 #### 3. Global Settings
 Configure global preferences like weather providers and "Lung Room" sensors.
-![Global Config](verification_config_global.png)
+![Global Config]()
 
 ---
 
