@@ -1,0 +1,21 @@
+name: Deploy Demo
+on:
+  push:
+    branches: [ main ]
+permissions:
+  contents: write
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install and Build
+        run: |
+          npm ci
+          npm run build
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./ # Publishes root (containing mockup.html and dist folder)
+          destination_dir: ./
