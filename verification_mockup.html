@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growspace Verification</title>
+    <script type="module" src="./dist/growspace-manager-card.js"></script>
+    <style>
+        body { background-color: #202020; color: white; padding: 20px; font-family: Roboto, sans-serif; }
+        .container { width: 800px; margin-bottom: 50px; border: 1px dashed #444; padding: 20px; border-radius: 8px; background: #1a1a1a; }
+        h2 { margin-top: 0; }
+    </style>
+</head>
+<body>
+    <h1>Growspace Dialog Verification</h1>
+
+    <div class="container">
+        <h2>Standard Growspace</h2>
+        <growspace-manager-card id="card-standard"></growspace-manager-card>
+    </div>
+    <div class="container">
+        <h2>Mother Growspace</h2>
+        <growspace-manager-card id="card-mother"></growspace-manager-card>
+    </div>
+    <div class="container">
+        <h2>Clone Growspace</h2>
+        <growspace-manager-card id="card-clone"></growspace-manager-card>
+    </div>
+    <div class="container">
+        <h2>Dry Growspace</h2>
+        <growspace-manager-card id="card-dry"></growspace-manager-card>
+    </div>
+     <div class="container">
+        <h2>Cure Growspace</h2>
+        <growspace-manager-card id="card-cure"></growspace-manager-card>
+    </div>
+
+    <script>
+        class HaCard extends HTMLElement {
+            constructor() { super(); this.attachShadow({mode: 'open'}); }
+            connectedCallback() { this.shadowRoot.innerHTML = `<slot></slot>`; }
+        }
+        if (!customElements.get('ha-card')) customElements.define('ha-card', HaCard);
+
+        const hass = {
+            config: { time_zone: "UTC" },
+            states: {},
+            callService: async () => {},
+            callApi: async () => [],
+        };
+
+        // Populate Hass States with corrected attributes
+        hass.states["sensor.standard_overview"] = { attributes: { growspace_id: "standard", friendly_name: "Standard Space", rows: 2, plants_per_row: 2 } };
+        hass.states["sensor.mother_overview"] = { attributes: { growspace_id: "mother", friendly_name: "Mother Space", rows: 1, plants_per_row: 2 } };
+        hass.states["sensor.clone_overview"] = { attributes: { growspace_id: "clone", friendly_name: "Clone Space", rows: 1, plants_per_row: 2 } };
+        hass.states["sensor.dry_overview"] = { attributes: { growspace_id: "dry", friendly_name: "Dry Space", rows: 1, plants_per_row: 2 } };
+        hass.states["sensor.cure_overview"] = { attributes: { growspace_id: "cure", friendly_name: "Cure Space", rows: 1, plants_per_row: 2 } };
+
+        hass.states["sensor.growspaces_list"] = {
+             attributes: {
+                 growspaces: {
+                     "standard": "Standard Space",
+                     "mother": "Mother Space",
+                     "clone": "Clone Space",
+                     "dry": "Dry Space",
+                     "cure": "Cure Space",
+                 }
+             }
+        };
+
+        // Create one plant for each, leaving a slot empty
+        hass.states["sensor.standard_plant_1"] = { state: 'vegetative', attributes: { growspace_id: "standard", strain: `Strain 1`, row: 1, col: 1 } };
+        hass.states["sensor.mother_plant_1"] = { state: 'mother', attributes: { growspace_id: "mother", strain: `Mother 1`, row: 1, col: 1 } };
+        hass.states["sensor.clone_plant_1"] = { state: 'clone', attributes: { growspace_id: "clone", strain: `Clone 1`, row: 1, col: 1 } };
+        hass.states["sensor.dry_plant_1"] = { state: 'dry', attributes: { growspace_id: "dry", strain: `Dry 1`, row: 1, col: 1 } };
+        hass.states["sensor.cure_plant_1"] = { state: 'cure', attributes: { growspace_id: "cure", strain: `Cure 1`, row: 1, col: 1 } };
+
+        // Strain Library (empty is fine for this test)
+        hass.states["sensor.growspace_strain_library"] = { attributes: { strains: {} } };
+
+        function initCards() {
+            document.getElementById('card-standard').setConfig({ type: 'custom:growspace-manager-card', default_growspace: 'standard' });
+            document.getElementById('card-standard').hass = hass;
+            document.getElementById('card-mother').setConfig({ type: 'custom:growspace-manager-card', default_growspace: 'mother' });
+            document.getElementById('card-mother').hass = hass;
+            document.getElementById('card-clone').setConfig({ type: 'custom:growspace-manager-card', default_growspace: 'clone' });
+            document.getElementById('card-clone').hass = hass;
+            document.getElementById('card-dry').setConfig({ type: 'custom:growspace-manager-card', default_growspace: 'dry' });
+            document.getElementById('card-dry').hass = hass;
+            document.getElementById('card-cure').setConfig({ type: 'custom:growspace-manager-card', default_growspace: 'cure' });
+            document.getElementById('card-cure').hass = hass;
+        }
+
+        customElements.whenDefined('growspace-manager-card').then(initCards);
+    </script>
+</body>
+</html>

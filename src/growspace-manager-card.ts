@@ -1,7 +1,7 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
@@ -14,8 +14,10 @@ import {
   PlantOverviewDialogState,
   StrainLibraryDialogState,
   ConfigDialogState,
+  GrowMasterDialogState,
   GrowspaceDevice,
-  StrainEntry
+  StrainEntry,
+  StrainRecommendationDialogState
 } from './types';
 import { PlantUtils } from "./utils";
 import { DataService } from './data-service';
@@ -28,6 +30,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _plantOverviewDialog: PlantOverviewDialogState | null = null;
   @state() private _strainLibraryDialog: StrainLibraryDialogState | null = null;
   @state() private _configDialog: ConfigDialogState | null = null;
+  @state() private _growMasterDialog: GrowMasterDialogState | null = null;
+  @state() private _strainRecommendationDialog: StrainRecommendationDialogState | null = null;
   @state() private selectedDevice: string | null = null;
   @state() private _draggedPlant: PlantEntity | null = null;
   @state() private _isCompactView: boolean = false;
@@ -1100,7 +1104,98 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
          transform: rotate(180deg);
       }
 
+      /* Allow Grid Items to Scale Down (Fix 5-col Overflow) */
+      .plant-card-rich, .plant-card-empty {
+         min-width: 0;
+      }
+
+      /* Force List View for Wide Grids on Desktop */
+      .grid.force-list-view {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-sm);
+          /* Remove grid template */
+          grid-template-columns: 1fr !important;
+          grid-template-rows: auto !important;
+      }
+
+      .grid.force-list-view .plant-card-rich {
+          min-height: auto;
+          aspect-ratio: unset;
+          flex-direction: row;
+          align-items: center;
+          padding: 12px;
+          gap: 12px;
+      }
+
+      .grid.force-list-view .plant-card-bg {
+           position: relative;
+           width: 64px;
+           height: 64px;
+           border-radius: 8px;
+           flex-shrink: 0;
+           background-color: rgba(0,0,0,0.2);
+      }
+
+      .grid.force-list-view .plant-card-overlay {
+           display: none;
+      }
+
+      .grid.force-list-view .plant-card-content {
+           flex-direction: row;
+           padding: 0;
+           align-items: center;
+           width: 100%;
+           justify-content: space-between;
+           gap: 8px;
+      }
+
+      .grid.force-list-view .pc-info {
+           margin-top: 0;
+           align-items: flex-start;
+           text-align: left;
+           flex: 1;
+           gap: 2px;
+      }
+
+      .grid.force-list-view .pc-strain-name {
+           font-size: 1rem;
+      }
+
+      .grid.force-list-view .pc-pheno {
+           font-size: 0.85rem;
+      }
+
+      .grid.force-list-view .pc-stage {
+           margin-top: 2px;
+           font-size: 0.85rem;
+      }
+
+      .grid.force-list-view .pc-stats {
+           width: auto;
+           padding: 0;
+           gap: 12px;
+           flex-shrink: 0;
+      }
+
+      .grid.force-list-view .pc-stat-item svg {
+           width: 20px;
+           height: 20px;
+      }
+
+      .grid.force-list-view .plant-card-empty {
+           min-height: 80px;
+           aspect-ratio: unset;
+           flex-direction: row;
+           justify-content: flex-start;
+           padding: 0 24px;
+           gap: 16px;
+      }
+
       @media (max-width: 600px) {
+        .unified-growspace-card {
+            padding: 12px;
+        }
         .header {
           flex-direction: column;
           align-items: stretch;
@@ -1119,6 +1214,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
         /* Mobile List View for Rich Cards */
         .plant-card-rich {
+          width: unset;
           min-height: auto;
           aspect-ratio: unset;
           flex-direction: row;
@@ -1142,10 +1238,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         }
 
         .plant-card-content {
+           flex: 1;
+           min-width: 0;
            flex-direction: row;
            padding: 0;
            align-items: center;
-           width: 100%;
            justify-content: space-between;
            gap: 8px;
         }
@@ -1159,16 +1256,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         }
 
         .pc-strain-name {
-           font-size: 1rem;
+           font-size: 0.9rem;
         }
 
         .pc-pheno {
-           font-size: 0.85rem;
+           font-size: 0.8rem;
         }
 
         .pc-stage {
            margin-top: 2px;
-           font-size: 0.85rem;
+           font-size: 0.8rem;
         }
 
         .pc-stats {
@@ -1181,6 +1278,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         .pc-stat-item svg {
            width: 20px;
            height: 20px;
+        }
+
+        /* Hide non-current stages on mobile */
+        .pc-stat-item:not(.current-stage) {
+           display: none;
         }
 
         /* Empty Slot in List View */
@@ -1320,23 +1422,33 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         letter-spacing: 0.5px;
       }
 
-      /* MD3 Input Styles */
+      /* MD3 Input Styles - Enhanced for Material Design 3 */
       .md3-input-group {
         position: relative;
         margin-bottom: var(--spacing-md);
-        background: rgba(255, 255, 255, 0.03);
+        background: rgba(255, 255, 255, 0.04);
         border-radius: 4px 4px 0 0;
-        border-bottom: 1px solid var(--secondary-text-color);
-        transition: background 0.2s;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.38);
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
       }
 
       .md3-input-group:hover {
-        background: rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.08);
+        border-bottom-color: rgba(255, 255, 255, 0.87);
       }
 
       .md3-input-group:focus-within {
-        background: rgba(255, 255, 255, 0.06);
-        border-bottom: 2px solid var(--primary-color);
+        background: rgba(255, 255, 255, 0.12);
+        border-bottom: 2px solid var(--primary-color, #4caf50);
+      }
+
+      /* Error state for inputs */
+      .md3-input-group.error {
+        border-bottom-color: var(--error-color, #f44336);
+      }
+
+      .md3-input-group.error .md3-label {
+        color: var(--error-color, #f44336);
       }
 
       .md3-label {
@@ -1344,13 +1456,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         left: 16px;
         top: 8px;
         font-size: 0.75rem;
-        color: var(--secondary-text-color);
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.6);
         pointer-events: none;
-        transition: 0.2s;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        letter-spacing: 0.4px;
       }
 
       .md3-input-group:focus-within .md3-label {
-        color: var(--primary-color);
+        color: var(--primary-color, #4caf50);
       }
 
       .md3-input {
@@ -1360,12 +1474,41 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         background: transparent;
         color: #ffffff;
         font-size: 1rem;
-        font-family: inherit;
+        font-family: 'Roboto', sans-serif;
         box-sizing: border-box;
+        outline: none;
+      }
+
+      .md3-input::placeholder {
+        color: rgba(255, 255, 255, 0.38);
+        opacity: 1;
       }
 
       .md3-input:focus {
         outline: none;
+      }
+
+      /* Disabled input state */
+      .md3-input:disabled {
+        color: rgba(255, 255, 255, 0.38);
+        cursor: not-allowed;
+      }
+
+      .md3-input-group:has(.md3-input:disabled) {
+        background: rgba(255, 255, 255, 0.02);
+        border-bottom-style: dotted;
+      }
+
+      /* Supporting text for inputs */
+      .md3-supporting-text {
+        padding: 4px 16px 0;
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.6);
+        letter-spacing: 0.4px;
+      }
+
+      .md3-supporting-text.error {
+        color: var(--error-color, #f44336);
       }
 
       /* Button Group & MD3 Buttons */
@@ -1377,59 +1520,139 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         margin-top: var(--spacing-lg);
       }
 
+      /* MD3 Button Styles - Enhanced for Material Design 3 */
       .md3-button {
         height: 40px;
         padding: 0 24px;
-        border-radius: 20px; /* Pill shape */
+        border-radius: 20px; /* Full-rounded MD3 style */
         border: none;
-        font-family: inherit;
+        font-family: 'Roboto', sans-serif;
         font-weight: 500;
         font-size: 0.875rem;
+        letter-spacing: 0.1px;
         cursor: pointer;
-        display: flex;
+        display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
-        transition: all 0.2s;
-        text-transform: capitalize;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        text-transform: none;
+        position: relative;
+        overflow: hidden;
+        user-select: none;
+        outline: none;
       }
 
+      /* MD3 State Layer Effect */
+      .md3-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: currentColor;
+        opacity: 0;
+        transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
+        pointer-events: none;
+      }
+
+      .md3-button:hover::before {
+        opacity: 0.08;
+      }
+
+      .md3-button:focus-visible::before {
+        opacity: 0.12;
+      }
+
+      .md3-button:active::before {
+        opacity: 0.12;
+      }
+
+      /* Focus visible state for accessibility */
+      .md3-button:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
+
+      /* Primary Filled Button */
       .md3-button.primary {
-        background: var(--primary-color);
+        background: var(--primary-color, #4caf50);
         color: var(--text-primary-color, #fff);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
       }
 
       .md3-button.primary:hover {
-        box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-        filter: brightness(1.1);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15);
       }
 
+      .md3-button.primary:active {
+        box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
+      }
+
+      /* Tonal Button (MD3 Filled Tonal variant) */
       .md3-button.tonal {
-        background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.15);
-        color: var(--primary-color);
+        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
+        color: var(--primary-color, #4caf50);
       }
 
       .md3-button.tonal:hover {
-        background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.25);
+        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.16);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
       }
 
+      .md3-button.tonal:active {
+        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
+      }
+
+      /* Text Button */
       .md3-button.text {
         background: transparent;
-        color: var(--primary-color);
+        color: var(--primary-color, #4caf50);
+        padding: 0 12px;
       }
 
       .md3-button.text:hover {
-        background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.08);
+        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.08);
       }
 
+      .md3-button.text:active {
+        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
+      }
+
+      /* Danger/Error Button (Outlined variant with error color) */
       .md3-button.danger {
         background: transparent;
-        color: var(--error-color);
-        border: 1px solid rgba(244, 67, 54, 0.5);
+        color: var(--error-color, #f44336);
+        border: 1px solid currentColor;
+      }
+
+      .md3-button.danger::before {
+        background: var(--error-color, #f44336);
       }
 
       .md3-button.danger:hover {
-        background: rgba(244, 67, 54, 0.1);
+        background: rgba(244, 67, 54, 0.08);
+        border-color: var(--error-color, #f44336);
+      }
+
+      .md3-button.danger:active {
+        background: rgba(244, 67, 54, 0.12);
+      }
+
+      .md3-button.danger:focus-visible {
+        outline-color: var(--error-color, #f44336);
+      }
+
+      /* Disabled state */
+      .md3-button:disabled {
+        opacity: 0.38;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      .md3-button:disabled::before {
+        display: none;
       }
 
       /* Specific adjustments for HA Dialog content constraints */
@@ -1475,7 +1698,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (device.overview_entity_id) {
       slug = device.overview_entity_id.replace('sensor.', '');
     }
-    const envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+
+    let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+    // Specific logic for 'cure' and 'dry' growspaces
+    if (slug === 'cure') {
+      envEntityId = `binary_sensor.cure_optimal_curing`;
+    } else if (slug === 'dry') {
+      envEntityId = `binary_sensor.dry_optimal_drying`;
+    }
 
     // Get history for last 24h
     const now = new Date();
@@ -1586,6 +1816,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       phenotype: defaultPhenotype,
       veg_start: today,
       flower_start: today,
+      seedling_start: today,
+      mother_start: today,
+      clone_start: today,
+      dry_start: today,
+      cure_start: today,
     };
   }
 
@@ -1596,20 +1831,26 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       return;
     }
 
-    const { row, col, strain, phenotype, veg_start, flower_start } = this._addPlantDialog;
+    const { row, col, strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start } = this._addPlantDialog;
 
     try {
-      const payload = {
+      const payload: any = {
         growspace_id: this.selectedDevice,
         row: row + 1,
         col: col + 1,
         strain,
         phenotype,
-        veg_start: PlantUtils.formatDateForBackend(veg_start)
-          ?? PlantUtils.formatDateForBackend(PlantUtils.getCurrentDateTime()),
-        flower_start: PlantUtils.formatDateForBackend(flower_start)
-          ?? PlantUtils.formatDateForBackend(PlantUtils.getCurrentDateTime()),
       };
+
+      const dateFields: (keyof AddPlantDialogState)[] = ['veg_start', 'flower_start', 'seedling_start', 'mother_start', 'clone_start', 'dry_start', 'cure_start'];
+      dateFields.forEach(field => {
+        const value = this._addPlantDialog![field];
+        if (value) {
+          payload[field] = PlantUtils.formatDateForBackend(value);
+        }
+      });
+
+
       console.log("Adding plant to growspace:", this.selectedDevice, payload);
       console.log("Adding plant:", payload);
       await this.dataService.addPlant(payload);
@@ -2082,6 +2323,84 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
   }
 
+  private async _handleExportLibrary() {
+    // 1. Subscribe to the completion event
+    const unsubscribe = await this.hass.connection.subscribeEvents((event) => {
+      // Check if the URL exists in the event data
+      if (event.data && event.data.url) {
+        // 2. Trigger the download in the browser
+        this._downloadFile(event.data.url);
+
+        // 3. Clean up the listener
+        unsubscribe();
+      }
+    }, 'growspace_manager_strain_library_exported');
+
+    // 4. Call the backend service to start the export
+    try {
+      await this.hass.callService('growspace_manager', 'export_strain_library');
+      // Optional: Show a "Exporting..." toast or spinner here
+    } catch (err) {
+      console.error("Failed to call export service", err);
+      unsubscribe(); // Cleanup if call fails
+    }
+  }
+
+  private _downloadFile(url: string) {
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = url.split('/').pop() || 'export.zip'; // Sets filename from URL
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  private _openImportDialog() {
+    if (this._strainLibraryDialog) {
+      this._strainLibraryDialog.importDialog = { open: true, replace: false };
+      this.requestUpdate();
+    }
+  }
+
+  private _handleImportDialogChange(changes: { open?: boolean; replace?: boolean }) {
+    if (this._strainLibraryDialog && this._strainLibraryDialog.importDialog) {
+      if (changes.open !== undefined) this._strainLibraryDialog.importDialog.open = changes.open;
+      if (changes.replace !== undefined) this._strainLibraryDialog.importDialog.replace = changes.replace;
+      this.requestUpdate();
+    }
+  }
+
+  private async _performImport() {
+    if (!this._strainLibraryDialog?.importDialog) return;
+    const replace = this._strainLibraryDialog.importDialog.replace;
+
+    // Create file input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.zip';
+
+    input.onchange = async e => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        const result = await this.dataService.importStrainLibrary(file, replace);
+        alert(`Import successful! ${result.imported_count || ''} strains imported.`);
+        // Close dialogs
+        if (this._strainLibraryDialog && this._strainLibraryDialog.importDialog) {
+          this._strainLibraryDialog.importDialog.open = false;
+        }
+        this.requestUpdate();
+      } catch (err: any) {
+        console.error("Import failed:", err);
+        alert(`Import failed: ${err.message}`);
+      }
+    };
+
+    input.click();
+  }
+
   private updateGrid(): void {
     // Refresh data from Home Assistant
     this.dataService = new DataService(this.hass);
@@ -2214,6 +2533,117 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       .catch(e => alert(`Error: ${e.message}`));
   }
 
+  // Grow Master Methods
+  private _openGrowMasterDialog() {
+    if (!this.selectedDevice) return;
+    this._growMasterDialog = {
+      open: true,
+      growspaceId: this.selectedDevice,
+      userQuery: '',
+      isLoading: false,
+      response: null,
+      mode: 'single'
+    };
+  }
+
+  private async _handleAskAdvice() {
+    if (!this._growMasterDialog || !this._growMasterDialog.userQuery) return;
+
+    this._growMasterDialog.isLoading = true;
+    this._growMasterDialog.response = null;
+    this.requestUpdate();
+
+    try {
+      const result = await this.dataService.askGrowAdvice(this._growMasterDialog.growspaceId, this._growMasterDialog.userQuery);
+      if (this._growMasterDialog) {
+        // EXTRACT RESPONSE SAFELY
+        // The service returns { response: "text" }, so we want result.response
+        if (result && typeof result.response === 'string') {
+          this._growMasterDialog.response = result.response;
+        } else {
+          // Fallback: if structure is unexpected, dump the whole thing so we can debug it
+          this._growMasterDialog.response = JSON.stringify(result, null, 2);
+        }
+      }
+    } catch (e: any) {
+      if (this._growMasterDialog) {
+        this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'}`;
+      }
+    } finally {
+      if (this._growMasterDialog) {
+        this._growMasterDialog.isLoading = false;
+        this.requestUpdate();
+      }
+    }
+  }
+
+  private async _handleAnalyzeAll() {
+    if (!this._growMasterDialog) return;
+
+    this._growMasterDialog.isLoading = true;
+    this._growMasterDialog.response = null;
+    this._growMasterDialog.mode = 'all';
+    this.requestUpdate();
+
+    try {
+      const result = await this.dataService.analyzeAllGrowspaces();
+      if (this._growMasterDialog) {
+        // EXTRACT RESPONSE SAFELY
+        if (result && typeof result.response === 'string') {
+          this._growMasterDialog.response = result.response;
+        } else {
+          this._growMasterDialog.response = JSON.stringify(result, null, 2);
+        }
+      }
+    } catch (e: any) {
+      if (this._growMasterDialog) {
+        this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'}`;
+      }
+    } finally {
+      if (this._growMasterDialog) {
+        this._growMasterDialog.isLoading = false;
+        this.requestUpdate();
+      }
+    }
+  }
+
+  private async _handleGetStrainRecommendation() {
+    if (!this._strainRecommendationDialog || !this._strainRecommendationDialog.userQuery) return;
+
+    this._strainRecommendationDialog.isLoading = true;
+    this._strainRecommendationDialog.response = null;
+    this.requestUpdate();
+
+    try {
+      const result = await this.dataService.getStrainRecommendation(this._strainRecommendationDialog.userQuery);
+      if (this._strainRecommendationDialog) {
+        // EXTRACT RESPONSE SAFELY
+        if (result && typeof result.response === 'string') {
+          this._strainRecommendationDialog.response = result.response;
+        } else {
+          this._strainRecommendationDialog.response = JSON.stringify(result, null, 2);
+        }
+      }
+    } catch (e: any) {
+      if (this._strainRecommendationDialog) {
+        this._strainRecommendationDialog.response = `Error: ${e.message || 'Failed to get recommendation.'}`;
+      }
+    } finally {
+      if (this._strainRecommendationDialog) {
+        this._strainRecommendationDialog.isLoading = false;
+        this.requestUpdate();
+      }
+    }
+  }
+
+  private _openStrainRecommendationDialog() {
+    this._strainRecommendationDialog = {
+      open: true,
+      userQuery: '',
+      isLoading: false,
+      response: null
+    };
+  }
 
   protected render(): TemplateResult {
     if (!this.hass) {
@@ -2298,7 +2728,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (device.overview_entity_id) {
       slug = device.overview_entity_id.replace('sensor.', '');
     }
-    const envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+
+    let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+    // Specific logic for 'cure' and 'dry' growspaces
+    const isCure = slug === 'cure';
+    const isDry = slug === 'dry';
+
+    if (isCure) {
+      envEntityId = `binary_sensor.cure_optimal_curing`;
+    } else if (isDry) {
+      envEntityId = `binary_sensor.dry_optimal_drying`;
+    }
+
     const envEntity = this.hass.states[envEntityId];
 
     // Helper to get attribute from either top-level or nested 'observations'
@@ -2316,11 +2757,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const temp = getValue(envEntity, 'temperature');
     const hum = getValue(envEntity, 'humidity');
     const vpd = getValue(envEntity, 'vpd');
-    const co2 = getValue(envEntity, 'co2');
+
+    // For cure/dry, we never need co2 or light
+    const isSpecialGrowspace = isCure || isDry;
+
+    const co2 = isSpecialGrowspace ? undefined : getValue(envEntity, 'co2');
 
     // Light Status Logic with History
     const isLightsOnValue = getValue(envEntity, 'is_lights_on');
-    const hasLightSensor = isLightsOnValue !== undefined && isLightsOnValue !== null;
+    const hasLightSensor = !isSpecialGrowspace && (isLightsOnValue !== undefined && isLightsOnValue !== null);
     const isLightsOn = isLightsOnValue === true;
 
     let svgPath = "";
@@ -2474,6 +2919,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                    <div class="stat-chip" @click=${() => this._isCompactView = true} title="Switch to Compact Mode">
                        <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
                        Compact
+                   </div>
+
+                   <div class="stat-chip" @click=${this._openGrowMasterDialog} title="Ask the Grow Master">
+                       <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+                       Ask AI
                    </div>
                 ` : ''}
             </div>
@@ -2707,9 +3157,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private renderGrid(grid: (PlantEntity | null)[][], rows: number, cols: number, strainLibrary: StrainEntry[]): TemplateResult {
+    const isListView = cols > 5;
+    // Use minmax(0, 1fr) to allow items to shrink below their content size, fixing overflow issues in 5-col grids.
+    const gridStyle = isListView
+      ? ''
+      : `grid-template-columns: repeat(${cols}, minmax(0, 1fr)); grid-template-rows: repeat(${rows}, 1fr);`;
+
     return html`
-      <div class="grid ${this._isCompactView ? 'compact' : ''}" 
-           style="grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${rows}, 1fr);">
+      <div class="grid ${this._isCompactView ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
+           style="${gridStyle}">
         ${grid.flat().map((plant, index) => {
       const row = Math.floor(index / cols) + 1;
       const col = (index % cols) + 1;
@@ -2846,11 +3302,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     const visibleDays = days.filter(d => d.days);
 
+    // Identify current stage to highlight
+    const currentStage = (plant.state || '').toLowerCase();
+    // Normalize if necessary, e.g. "veg" -> "vegetative"
+    // The days array uses standard stage keys (vegetative, flower, etc)
+    const normalizedCurrent = currentStage === 'veg' ? 'vegetative' : currentStage;
+
     return html`
         ${visibleDays.map(d => {
       const color = PlantUtils.getPlantStageColor(d.stage);
+      const isCurrent = d.stage === normalizedCurrent;
+
       return html`
-                <div class="pc-stat-item">
+                <div class="pc-stat-item ${isCurrent ? 'current-stage' : ''}">
                     <svg style="color: ${color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
                     <div class="pc-stat-text">${d.days}d</div>
                 </div>
@@ -2869,10 +3333,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       });
     }
 
+    const devices = this.dataService.getGrowspaceDevices();
+    const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
     return html`
       ${DialogRenderer.renderAddPlantDialog(
       this._addPlantDialog,
       strainLibrary,
+      selectedDeviceData?.name ?? '',
       {
         onClose: () => this._addPlantDialog = null,
         onConfirm: () => this._confirmAddPlant(),
@@ -2896,6 +3363,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onPhenotypeChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.phenotype = value; },
         onVegStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.veg_start = value; },
         onFlowerStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.flower_start = value; },
+        onSeedlingStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.seedling_start = value; },
+        onMotherStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.mother_start = value; },
+        onCloneStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.clone_start = value; },
+        onDryStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.dry_start = value; },
+        onCureStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.cure_start = value; },
         onRowChange: (value) => {
           if (this._addPlantDialog) {
             const val = parseInt(value);
@@ -2962,6 +3434,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onToggleCropMode: (active) => this._toggleCropMode(active),
         onToggleImageSelector: (isOpen) => this._toggleImageSelector(isOpen),
         onSelectLibraryImage: (img) => this._handleSelectLibraryImage(img),
+        onExportStrains: () => this._handleExportLibrary(),
+        onOpenImportDialog: () => this._openImportDialog(),
+        onImportDialogChange: (c) => this._handleImportDialogChange(c),
+        onConfirmImport: () => this._performImport(),
+        onGetRecommendation: () => this._openStrainRecommendationDialog(),
       }
     )}
 
@@ -2979,6 +3456,60 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onGlobalSubmit: () => this._handleGlobalSubmit(),
       }
     )}
+
+    ${this._growMasterDialog ? (() => {
+        // Determine stress state for the dialog
+        let isStressed = false;
+        let personality = undefined;
+
+        // Attempt to find stress sensor
+        if (this.selectedDevice && this.hass) {
+          // Pattern checking for stress sensor
+          const id = this.selectedDevice;
+          const stressEntityIds = [
+            `binary_sensor.${id}_plants_under_stress`,
+            `binary_sensor.${id}_stress`,
+            `binary_sensor.growspace_manager_${id}_stress`
+          ];
+
+          for (const eid of stressEntityIds) {
+            const ent = this.hass.states[eid];
+            if (ent && ent.state === 'on') {
+              isStressed = true;
+              break;
+            }
+          }
+        }
+
+        // Personality check
+        if (this.hass) {
+          const manager = this.hass.states['sensor.growspace_manager'];
+          if (manager && manager.attributes && manager.attributes.ai_settings) {
+            personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
+          }
+        }
+
+        return DialogRenderer.renderGrowMasterDialog(
+          this._growMasterDialog,
+          isStressed,
+          personality,
+          {
+            onClose: () => this._growMasterDialog = null,
+            onQueryChange: (q) => { if (this._growMasterDialog) { this._growMasterDialog.userQuery = q; this.requestUpdate(); } },
+            onAnalyze: () => this._handleAskAdvice(),
+            onAnalyzeAll: () => this._handleAnalyzeAll()
+          }
+        );
+      })() : ''}
+
+      ${DialogRenderer.renderStrainRecommendationDialog(
+        this._strainRecommendationDialog,
+        {
+          onClose: () => this._strainRecommendationDialog = null,
+          onQueryChange: (q) => { if (this._strainRecommendationDialog) { this._strainRecommendationDialog.userQuery = q; this.requestUpdate(); } },
+          onGetRecommendation: () => this._handleGetStrainRecommendation()
+        }
+      )}
     `;
   }
 
