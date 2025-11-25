@@ -200,6 +200,11 @@ export class DataService {
     }
 
     try {
+      // TODO: The mockup test for environmental graphs fails when relying on this function,
+      // but passes when history data is injected directly into the component.
+      // This suggests an issue with how the data is fetched or processed here.
+      // The component expects a flat array of states, but the raw API response is a nested array.
+      // Ensure that `res[0]` is the correct way to access the data.
       const res = await this.hass.callApi<any[][]>('GET', url);
       return res && res.length > 0 ? res[0] : [];
     } catch (err) {

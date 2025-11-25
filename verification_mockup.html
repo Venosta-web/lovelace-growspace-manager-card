@@ -59,45 +59,65 @@
             config: { time_zone: "UTC" },
             states: {},
             callService: async () => {},
-            callApi: async () => { return []; }
         };
 
-        // Populate Hass States with Overview and Plants
-        // Important: DataService requires strict attribute matching
+        // --- MOCK HISTORY GENERATION ---
+        const generateMockHistory = (entityId) => {
+            const history = [];
+            const now = new Date();
+            const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-        // 1. Overview Sensors
-        // Slug derivation: entity_id.replace('sensor.', '') -> '5col'
+            if (entityId === 'binary_sensor.5col_optimal_conditions') {
+                 const lightOnTime = new Date(now.getTime() - 18 * 60 * 60 * 1000);
+                 const lightOffTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+
+                 history.push({
+                     last_changed: new Date(twentyFourHoursAgo.getTime() - 1).toISOString(),
+                     attributes: { is_lights_on: false, temperature: 20, humidity: 65, vpd: 0.9 }
+                 });
+                 history.push({
+                     last_changed: lightOnTime.toISOString(),
+                     attributes: { is_lights_on: true, temperature: 22, humidity: 60, vpd: 1.0 }
+                 });
+                 history.push({
+                     last_changed: new Date(lightOnTime.getTime() + 6 * 60 * 60 * 1000).toISOString(),
+                     attributes: { is_lights_on: true, temperature: 26, humidity: 58, vpd: 1.2 }
+                 });
+                 history.push({
+                     last_changed: lightOffTime.toISOString(),
+                     attributes: { is_lights_on: false, temperature: 21, humidity: 62, vpd: 0.95 }
+                 });
+            }
+            return history;
+        };
+
+        // --- MOCK callApi ---
+        hass.callApi = async (method, path) => {
+            console.log(`Mock callApi: ${method} ${path}`);
+            if (method === 'GET' && path.startsWith('history/period/')) {
+                const entityId = path.split('/').pop().split('?')[0];
+                return [generateMockHistory(entityId)];
+            }
+            return [];
+        };
+
+        // Populate Hass States
         hass.states["sensor.5col"] = {
             entity_id: "sensor.5col",
             state: "on",
-            attributes: {
-                growspace_id: "5col",
-                friendly_name: "5 Column Grid",
-                rows: 2,
-                plants_per_row: 5,
-                type: "normal"
-            }
+            attributes: { growspace_id: "5col", friendly_name: "5 Column Grid", rows: 2, plants_per_row: 5 }
         };
-
         hass.states["sensor.6col"] = {
             entity_id: "sensor.6col",
             state: "on",
-            attributes: {
-                growspace_id: "6col",
-                friendly_name: "6 Column List",
-                rows: 2,
-                plants_per_row: 6,
-                type: "normal"
-            }
+            attributes: { growspace_id: "6col", friendly_name: "6 Column List", rows: 2, plants_per_row: 6 }
         };
-
         hass.states["sensor.growspaces_list"] = {
              entity_id: "sensor.growspaces_list",
              attributes: { growspaces: { "5col": "5 Column Grid", "6col": "6 Column List" } }
         };
 
-        // 2. Plants
-        const createPlants = (count, prefix, cols, rows) => {
+        const createPlants = (count, prefix, cols) => {
             for(let i=0; i<count; i++) {
                 const row = Math.floor(i / cols) + 1;
                 const col = (i % cols) + 1;
@@ -105,28 +125,17 @@
                 hass.states[entity_id] = {
                     entity_id: entity_id,
                     state: 'vegetative',
-                    attributes: {
-                        plant_id: `${prefix}_p${i}`,
-                        growspace_id: prefix, // Must match overview ID
-                        strain: `Strain ${i+1}`,
-                        phenotype: `#${i+1}`,
-                        stage: 'vegetative',
-                        veg_days: 10 + i,
-                        row: row,
-                        col: col
-                    }
+                    attributes: { growspace_id: prefix, strain: `Strain ${i+1}`, stage: 'vegetative', row, col }
                 };
             }
         };
+        createPlants(10, "5col", 5);
+        createPlants(12, "6col", 6);
 
-        createPlants(10, "5col", 5, 2);
-        createPlants(12, "6col", 6, 2);
-
-        // 3. Environment Sensors (Optional but good for errors)
         hass.states["binary_sensor.5col_optimal_conditions"] = {
              entity_id: "binary_sensor.5col_optimal_conditions",
              state: "on",
-             attributes: { is_lights_on: true, temperature: 25, humidity: 60, vpd: 1.0 }
+             attributes: { is_lights_on: false, temperature: 20, humidity: 63, vpd: 0.9, co2: 800 }
         };
         hass.states["binary_sensor.6col_optimal_conditions"] = {
              entity_id: "binary_sensor.6col_optimal_conditions",
@@ -134,27 +143,17 @@
              attributes: { is_lights_on: false, temperature: 20, humidity: 50, vpd: 0.8 }
         };
 
-
         // Initialize
         function initCards() {
-            console.log("Initializing cards...");
             const c1 = document.getElementById('card-grid-5');
             c1.setConfig({ type: 'custom:growspace-manager-card', default_growspace: '5col', compact: false });
             c1.hass = hass;
-
             const c2 = document.getElementById('card-list-6');
             c2.setConfig({ type: 'custom:growspace-manager-card', default_growspace: '6col', compact: false });
             c2.hass = hass;
-
-            console.log("Hass object injected.");
         }
 
-        // Wait for element upgrade
-        if (customElements.get('growspace-manager-card')) {
-            initCards();
-        } else {
-            customElements.whenDefined('growspace-manager-card').then(initCards);
-        }
+        customElements.whenDefined('growspace-manager-card').then(initCards);
 
     </script>
 </body>
