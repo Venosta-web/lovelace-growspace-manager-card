@@ -1983,9 +1983,9 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
             </div>
         </div>
       </div>
-    `}renderPlantDaysRich(e){const t=[{days:e.attributes?.seedling_days,icon:Te,title:"Seedling",stage:"seedling"},{days:e.attributes?.mother_days,icon:Te,title:"Mother",stage:"mother"},{days:e.attributes?.clone_days,icon:Te,title:"Clone",stage:"clone"},{days:e.attributes?.veg_days,icon:Te,title:"Veg",stage:"vegetative"},{days:e.attributes?.flower_days,icon:Ce,title:"Flower",stage:"flower"},{days:e.attributes?.dry_days,icon:De,title:"Dry",stage:"dry"},{days:e.attributes?.cure_days,icon:me,title:"Cure",stage:"cure"}].filter(e=>void 0!==e.days&&null!==e.days),r=t.filter(e=>e.days);return R`
-        ${r.map(e=>{const t=es.getPlantStageColor(e.stage);return R`
-                <div class="pc-stat-item">
+    `}renderPlantDaysRich(e){const t=[{days:e.attributes?.seedling_days,icon:Te,title:"Seedling",stage:"seedling"},{days:e.attributes?.mother_days,icon:Te,title:"Mother",stage:"mother"},{days:e.attributes?.clone_days,icon:Te,title:"Clone",stage:"clone"},{days:e.attributes?.veg_days,icon:Te,title:"Veg",stage:"vegetative"},{days:e.attributes?.flower_days,icon:Ce,title:"Flower",stage:"flower"},{days:e.attributes?.dry_days,icon:De,title:"Dry",stage:"dry"},{days:e.attributes?.cure_days,icon:me,title:"Cure",stage:"cure"}].filter(e=>void 0!==e.days&&null!==e.days),r=t.filter(e=>e.days),i=(e.state||"").toLowerCase(),a="veg"===i?"vegetative":i;return R`
+        ${r.map(e=>{const t=es.getPlantStageColor(e.stage),r=e.stage===a;return R`
+                <div class="pc-stat-item ${r?"current-stage":""}">
                     <svg style="color: ${t};" viewBox="0 0 24 24"><path d="${e.icon}"></path></svg>
                     <div class="pc-stat-text">${e.days}d</div>
                 </div>
@@ -3145,6 +3145,9 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
       }
 
       @media (max-width: 600px) {
+        .unified-growspace-card {
+            padding: 12px;
+        }
         .header {
           flex-direction: column;
           align-items: stretch;
@@ -3163,6 +3166,7 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
 
         /* Mobile List View for Rich Cards */
         .plant-card-rich {
+          width: unset;
           min-height: auto;
           aspect-ratio: unset;
           flex-direction: row;
@@ -3186,10 +3190,11 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
         }
 
         .plant-card-content {
+           flex: 1;
+           min-width: 0;
            flex-direction: row;
            padding: 0;
            align-items: center;
-           width: 100%;
            justify-content: space-between;
            gap: 8px;
         }
@@ -3203,16 +3208,16 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
         }
 
         .pc-strain-name {
-           font-size: 1rem;
+           font-size: 0.9rem;
         }
 
         .pc-pheno {
-           font-size: 0.85rem;
+           font-size: 0.8rem;
         }
 
         .pc-stage {
            margin-top: 2px;
-           font-size: 0.85rem;
+           font-size: 0.8rem;
         }
 
         .pc-stats {
