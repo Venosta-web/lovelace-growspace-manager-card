@@ -1,5 +1,9 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import '@material/web/menu/menu.js';
+import '@material/web/menu-item/menu-item.js';
+import '@material/web/iconbutton/icon-button.js';
+import '@material/web/switch/switch.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain } from '@mdi/js';
 import { DateTime } from 'luxon';
@@ -35,6 +39,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private selectedDevice: string | null = null;
   @state() private _draggedPlant: PlantEntity | null = null;
   @state() private _isCompactView: boolean = false;
+  @state() private _isMenuOpen: boolean = false;
   @state() private _historyData: any[] | null = null;
   @state() private _lightCycleCollapsed: boolean = true;
   @state() private _activeEnvGraphs: Set<string> = new Set();
@@ -2434,19 +2439,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     try {
       const result = await this.dataService.askGrowAdvice(this._growMasterDialog.growspaceId, this._growMasterDialog.userQuery);
-      
+
       if (this._growMasterDialog) {
         // FIX: Drill down into nested response structure
         // Structure received: { context: {...}, response: { response: "Actual Text" } }
         if (result?.response?.response && typeof result.response.response === 'string') {
-           this._growMasterDialog.response = result.response.response;
-        } 
+          this._growMasterDialog.response = result.response.response;
+        }
         // Fallback for flatter structure
         else if (result?.response && typeof result.response === 'string') {
-           this._growMasterDialog.response = result.response;
-        } 
+          this._growMasterDialog.response = result.response;
+        }
         else {
-           this._growMasterDialog.response = JSON.stringify(result, null, 2);
+          this._growMasterDialog.response = JSON.stringify(result, null, 2);
         }
       }
     } catch (e: any) {
@@ -2471,17 +2476,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     try {
       const result = await this.dataService.analyzeAllGrowspaces();
-      
+
       if (this._growMasterDialog) {
         // FIX: Drill down into nested response structure
         if (result?.response?.response && typeof result.response.response === 'string') {
-           this._growMasterDialog.response = result.response.response;
-        } 
+          this._growMasterDialog.response = result.response.response;
+        }
         else if (result?.response && typeof result.response === 'string') {
-           this._growMasterDialog.response = result.response;
-        } 
+          this._growMasterDialog.response = result.response;
+        }
         else {
-           this._growMasterDialog.response = JSON.stringify(result, null, 2);
+          this._growMasterDialog.response = JSON.stringify(result, null, 2);
         }
       }
     } catch (e: any) {
@@ -2505,17 +2510,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     try {
       const result = await this.dataService.getStrainRecommendation(this._strainRecommendationDialog.userQuery) as any;
-      
+
       if (this._strainRecommendationDialog) {
         // FIX: Drill down into nested response structure
         if (result?.response?.response && typeof result.response.response === 'string') {
-           this._strainRecommendationDialog.response = result.response.response;
-        } 
+          this._strainRecommendationDialog.response = result.response.response;
+        }
         else if (result?.response && typeof result.response === 'string') {
-           this._strainRecommendationDialog.response = result.response;
-        } 
+          this._strainRecommendationDialog.response = result.response;
+        }
         else {
-           this._strainRecommendationDialog.response = JSON.stringify(result, null, 2);
+          this._strainRecommendationDialog.response = JSON.stringify(result, null, 2);
         }
       }
     } catch (e: any) {
@@ -2604,7 +2609,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="unified-growspace-card">
           ${this.renderHeader(devices)}
-          ${!this._isCompactView ? this.renderGrowspaceHeader(selectedDeviceData) : ''}
+          ${this.renderGrowspaceHeader(selectedDeviceData)}
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
         </div>
       </ha-card>
@@ -2778,53 +2783,61 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             </div>
 
             <div class="gs-stats-chips">
-                ${temp !== undefined ? html`
-                   <div class="stat-chip ${this._activeEnvGraphs.has('temperature') ? 'active' : ''}"
-                        @click=${() => this._toggleEnvGraph('temperature')}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>${temp}°C
-                   </div>` : ''}
-                ${hum !== undefined ? html`
-                   <div class="stat-chip ${this._activeEnvGraphs.has('humidity') ? 'active' : ''}"
-                        @click=${() => this._toggleEnvGraph('humidity')}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>${hum}%
-                   </div>` : ''}
-                ${vpd !== undefined ? html`
-                   <div class="stat-chip ${this._activeEnvGraphs.has('vpd') ? 'active' : ''}"
-                        @click=${() => this._toggleEnvGraph('vpd')}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>${vpd} kPa
-                   </div>` : ''}
-                ${co2 !== undefined ? html`
-                   <div class="stat-chip ${this._activeEnvGraphs.has('co2') ? 'active' : ''}"
-                        @click=${() => this._toggleEnvGraph('co2')}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm
-                   </div>` : ''}
-
-                ${!this._isCompactView ? html`
-                   <div class="stat-chip" @click=${this._openStrainLibraryDialog} title="Strain Library">
-                      <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-                      Strains
-                   </div>
-
-                   <div class="stat-chip" @click=${this._openConfigDialog} title="Configure">
-                      <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                      Config
-                   </div>
-
-                   <div class="stat-chip" @click=${() => this._isCompactView = true} title="Switch to Compact Mode">
-                       <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-                       Compact
-                   </div>
-
-                   <div class="stat-chip" @click=${this._openGrowMasterDialog} title="Ask the Grow Master">
-                       <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-                       Ask AI
-                   </div>
+               ${!this._isCompactView ? html`
+                   ${temp !== undefined ? html`
+                      <div class="stat-chip ${this._activeEnvGraphs.has('temperature') ? 'active' : ''}"
+                           @click=${() => this._toggleEnvGraph('temperature')}>
+                        <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>${temp}°C
+                      </div>` : ''}
+                   ${hum !== undefined ? html`
+                      <div class="stat-chip ${this._activeEnvGraphs.has('humidity') ? 'active' : ''}"
+                           @click=${() => this._toggleEnvGraph('humidity')}>
+                        <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>${hum}%
+                      </div>` : ''}
+                   ${vpd !== undefined ? html`
+                      <div class="stat-chip ${this._activeEnvGraphs.has('vpd') ? 'active' : ''}"
+                           @click=${() => this._toggleEnvGraph('vpd')}>
+                        <svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>${vpd} kPa
+                      </div>` : ''}
+                   ${co2 !== undefined ? html`
+                      <div class="stat-chip ${this._activeEnvGraphs.has('co2') ? 'active' : ''}"
+                           @click=${() => this._toggleEnvGraph('co2')}>
+                        <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm
+                      </div>` : ''}
                 ` : ''}
+
+                <div style="position:relative;">
+                    <div id="menu-anchor"
+                         class="stat-chip"
+                         @click=${() => this._isMenuOpen = !this._isMenuOpen}
+                         title="Menu">
+                        <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                    </div>
+                    <md-menu
+                        anchor="menu-anchor"
+                        .open=${this._isMenuOpen}
+                        @closed=${() => this._isMenuOpen = false}
+                    >
+                        <md-menu-item @click=${this._openConfigDialog}>
+                            <div slot="headline">Config</div>
+                        </md-menu-item>
+                        <md-menu-item @click=${() => { this._isCompactView = !this._isCompactView; this.requestUpdate(); }}>
+                            <div slot="headline">Compact</div>
+                            <md-switch slot="end" .selected=${this._isCompactView}></md-switch>
+                        </md-menu-item>
+                        <md-menu-item @click=${this._openStrainLibraryDialog}>
+                            <div slot="headline">Strains</div>
+                        </md-menu-item>
+                        <md-menu-item @click=${this._openGrowMasterDialog}>
+                            <div slot="headline">Ask AI</div>
+                        </md-menu-item>
+                    </md-menu>
+                </div>
             </div>
          </div>
 
          <!-- Nested Light Cycle Card -->
-         ${hasLightSensor ? html`
+         ${!this._isCompactView && hasLightSensor ? html`
          <div class="gs-light-cycle-card ${this._lightCycleCollapsed ? 'collapsed' : ''}">
             <div class="gs-light-header-row" @click=${() => this._toggleLightCycle()}>
                 <div class="gs-light-title">
@@ -2981,11 +2994,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
          ` : ''}
 
          <!-- Active Environmental Graphs -->
-         ${this._activeEnvGraphs.has('temperature') ? this.renderEnvGraph('temperature', '#FF5722', 'Temperature', '°C') : ''}
-         ${this._activeEnvGraphs.has('humidity') ? this.renderEnvGraph('humidity', '#2196F3', 'Humidity', '%') : ''}
-         ${this._activeEnvGraphs.has('vpd') ? this.renderEnvGraph('vpd', '#9C27B0', 'VPD', 'kPa') : ''}
-         ${this._activeEnvGraphs.has('co2') ? this.renderEnvGraph('co2', '#90A4AE', 'CO2', 'ppm') : ''}
-
+         ${!this._isCompactView ? html`
+            ${this._activeEnvGraphs.has('temperature') ? this.renderEnvGraph('temperature', '#FF5722', 'Temperature', '°C') : ''}
+            ${this._activeEnvGraphs.has('humidity') ? this.renderEnvGraph('humidity', '#2196F3', 'Humidity', '%') : ''}
+            ${this._activeEnvGraphs.has('vpd') ? this.renderEnvGraph('vpd', '#9C27B0', 'VPD', 'kPa') : ''}
+            ${this._activeEnvGraphs.has('co2') ? this.renderEnvGraph('co2', '#90A4AE', 'CO2', 'ppm') : ''}
+         `: ''}
       </div>
     `;
   }
