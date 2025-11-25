@@ -3227,6 +3227,11 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
            height: 20px;
         }
 
+        /* Hide non-current stages on mobile */
+        .pc-stat-item:not(.current-stage) {
+           display: none;
+        }
+
         /* Empty Slot in List View */
         .plant-card-empty {
            min-height: 80px;
