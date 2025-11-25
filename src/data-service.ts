@@ -98,66 +98,66 @@ export class DataService {
 
         // If phenotypes dictionary exists
         if (data.phenotypes && typeof data.phenotypes === 'object') {
-           const phenoEntries = Object.entries(data.phenotypes);
-           if (phenoEntries.length > 0) {
-             for (const [phenoName, phenoData] of phenoEntries) {
-               // phenoData likely contains the stats directly, or nested in analytics
-               // We support both structures defensively
-               const pData = phenoData as any;
-               let phenoAnalytics: StrainAnalytics | undefined;
+          const phenoEntries = Object.entries(data.phenotypes);
+          if (phenoEntries.length > 0) {
+            for (const [phenoName, phenoData] of phenoEntries) {
+              // phenoData likely contains the stats directly, or nested in analytics
+              // We support both structures defensively
+              const pData = phenoData as any;
+              let phenoAnalytics: StrainAnalytics | undefined;
 
-               if (pData.analytics) {
-                 phenoAnalytics = pData.analytics;
-               } else if (typeof pData.avg_veg_days === 'number') {
-                 // Assume flat structure
-                 phenoAnalytics = {
-                   avg_veg_days: pData.avg_veg_days,
-                   avg_flower_days: pData.avg_flower_days,
-                   total_harvests: pData.total_harvests
-                 };
-               }
+              if (pData.analytics) {
+                phenoAnalytics = pData.analytics;
+              } else if (typeof pData.avg_veg_days === 'number') {
+                // Assume flat structure
+                phenoAnalytics = {
+                  avg_veg_days: pData.avg_veg_days,
+                  avg_flower_days: pData.avg_flower_days,
+                  total_harvests: pData.total_harvests
+                };
+              }
 
-               results.push({
-                 strain: strainName,
-                 phenotype: phenoName,
-                 key: `${strainName}|${phenoName}`,
-                 analytics: phenoAnalytics,
-                 strain_analytics: strainAnalytics,
-                 image_crop_meta: pData.image_crop_meta,
-                 // Merge logic: Check phenotype data first, then fallback to meta
-                 breeder: pData.breeder || meta.breeder,
-                 type: pData.type || meta.type,
-                 lineage: pData.lineage || meta.lineage,
-                 sex: pData.sex || meta.sex,
-                 description: pData.description || meta.description,
-                 flowering_days_min: pData.flower_days_min || meta.flowering_days_min,
-                 flowering_days_max: pData.flower_days_max || meta.flowering_days_max,
-                 image: pData.image_path || pData.image || meta.image,
-                 sativa_percentage: pData.sativa_percentage || meta.sativa_percentage,
-                 indica_percentage: pData.indica_percentage || meta.indica_percentage,
-               });
-             }
-           } else {
-             // Strain exists but has empty phenotypes dict
-             // We still want to show the strain
-             results.push({
-               strain: strainName,
-               phenotype: '',
-               key: `${strainName}|default`,
-               strain_analytics: strainAnalytics,
-               image_crop_meta: data.image_crop_meta,
-               breeder: meta.breeder,
-               type: meta.type,
-               lineage: meta.lineage,
-               sex: meta.sex,
-               description: meta.description,
-               flowering_days_min: meta.flowering_days_min,
-               flowering_days_max: meta.flowering_days_max,
-               image: meta.image,
-               sativa_percentage: meta.sativa_percentage,
-               indica_percentage: meta.indica_percentage,
-             });
-           }
+              results.push({
+                strain: strainName,
+                phenotype: phenoName,
+                key: `${strainName}|${phenoName}`,
+                analytics: phenoAnalytics,
+                strain_analytics: strainAnalytics,
+                image_crop_meta: pData.image_crop_meta,
+                // Merge logic: Check phenotype data first, then fallback to meta
+                breeder: pData.breeder || meta.breeder,
+                type: pData.type || meta.type,
+                lineage: pData.lineage || meta.lineage,
+                sex: pData.sex || meta.sex,
+                description: pData.description || meta.description,
+                flowering_days_min: pData.flower_days_min || meta.flowering_days_min,
+                flowering_days_max: pData.flower_days_max || meta.flowering_days_max,
+                image: pData.image_path || pData.image || meta.image,
+                sativa_percentage: pData.sativa_percentage || meta.sativa_percentage,
+                indica_percentage: pData.indica_percentage || meta.indica_percentage,
+              });
+            }
+          } else {
+            // Strain exists but has empty phenotypes dict
+            // We still want to show the strain
+            results.push({
+              strain: strainName,
+              phenotype: '',
+              key: `${strainName}|default`,
+              strain_analytics: strainAnalytics,
+              image_crop_meta: data.image_crop_meta,
+              breeder: meta.breeder,
+              type: meta.type,
+              lineage: meta.lineage,
+              sex: meta.sex,
+              description: meta.description,
+              flowering_days_min: meta.flowering_days_min,
+              flowering_days_max: meta.flowering_days_max,
+              image: meta.image,
+              sativa_percentage: meta.sativa_percentage,
+              indica_percentage: meta.indica_percentage,
+            });
+          }
         } else {
           // No phenotypes dict, just a strain entry
           results.push({
@@ -176,7 +176,7 @@ export class DataService {
             image: meta.image,
             sativa_percentage: meta.sativa_percentage,
             indica_percentage: meta.indica_percentage,
-           });
+          });
         }
       }
 
@@ -366,13 +366,13 @@ export class DataService {
 
       if (data.image) {
         if (data.image.startsWith("data:")) {
-           // It's a base64 string (new upload)
-           payload.image_base64 = data.image;
-           delete payload.image; // Backend expects image_base64
+          // It's a base64 string (new upload)
+          payload.image_base64 = data.image;
+          delete payload.image; // Backend expects image_base64
         } else {
-           // It's a path (existing image)
-           payload.image_path = data.image;
-           delete payload.image;
+          // It's a path (existing image)
+          payload.image_path = data.image;
+          delete payload.image;
         }
       }
 
@@ -505,10 +505,17 @@ export class DataService {
   async askGrowAdvice(growspaceId: string, userQuery: string): Promise<{ response: string }> {
     console.log("[DataService:askGrowAdvice] Asking advice for:", growspaceId, userQuery);
     try {
-      return await this.hass.callService("growspace_manager", "ask_grow_advice", {
-        growspace_id: growspaceId,
-        user_query: userQuery,
-      }, undefined, true) as { response: string };
+      // UPDATED: Use sendMessagePromise to send return_response=true
+      return await this.hass.connection.sendMessagePromise({
+        type: 'call_service',
+        domain: 'growspace_manager',
+        service: 'ask_grow_advice',
+        service_data: {
+          growspace_id: growspaceId,
+          user_query: userQuery,
+        },
+        return_response: true,
+      });
     } catch (err) {
       console.error("[DataService:askGrowAdvice] Error:", err);
       throw err;
@@ -518,7 +525,13 @@ export class DataService {
   async analyzeAllGrowspaces(): Promise<{ response: string }> {
     console.log("[DataService:analyzeAllGrowspaces] Analyzing all growspaces");
     try {
-      return await this.hass.callService("growspace_manager", "analyze_all_growspaces", {}, undefined, true) as { response: string };
+      return await this.hass.connection.sendMessagePromise({
+        type: 'call_service',
+        domain: 'growspace_manager',
+        service: 'analyze_all_growspaces',
+        service_data: {},
+        return_response: true,
+      });
     } catch (err) {
       console.error("[DataService:analyzeAllGrowspaces] Error:", err);
       throw err;
@@ -528,9 +541,15 @@ export class DataService {
   async getStrainRecommendation(userQuery: string): Promise<{ response: string }> {
     console.log("[DataService:getStrainRecommendation] Getting strain recommendation for:", userQuery);
     try {
-      return await this.hass.callService("growspace_manager", "strain_recommendation", {
-        user_query: userQuery,
-      }, undefined, true) as { response: string };
+      return await this.hass.connection.sendMessagePromise({
+        type: 'call_service',
+        domain: 'growspace_manager',
+        service: 'strain_recommendation',
+        service_data: {
+          user_query: userQuery,
+        },
+        return_response: true,
+      });
     } catch (err) {
       console.error("[DataService:getStrainRecommendation] Error:", err);
       throw err;
