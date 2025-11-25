@@ -1422,23 +1422,33 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         letter-spacing: 0.5px;
       }
 
-      /* MD3 Input Styles */
+      /* MD3 Input Styles - Enhanced for Material Design 3 */
       .md3-input-group {
         position: relative;
         margin-bottom: var(--spacing-md);
-        background: rgba(255, 255, 255, 0.03);
+        background: rgba(255, 255, 255, 0.04);
         border-radius: 4px 4px 0 0;
-        border-bottom: 1px solid var(--secondary-text-color);
-        transition: background 0.2s;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.38);
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
       }
 
       .md3-input-group:hover {
-        background: rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.08);
+        border-bottom-color: rgba(255, 255, 255, 0.87);
       }
 
       .md3-input-group:focus-within {
-        background: rgba(255, 255, 255, 0.06);
-        border-bottom: 2px solid var(--primary-color);
+        background: rgba(255, 255, 255, 0.12);
+        border-bottom: 2px solid var(--primary-color, #4caf50);
+      }
+
+      /* Error state for inputs */
+      .md3-input-group.error {
+        border-bottom-color: var(--error-color, #f44336);
+      }
+
+      .md3-input-group.error .md3-label {
+        color: var(--error-color, #f44336);
       }
 
       .md3-label {
@@ -1446,13 +1456,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         left: 16px;
         top: 8px;
         font-size: 0.75rem;
-        color: var(--secondary-text-color);
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.6);
         pointer-events: none;
-        transition: 0.2s;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        letter-spacing: 0.4px;
       }
 
       .md3-input-group:focus-within .md3-label {
-        color: var(--primary-color);
+        color: var(--primary-color, #4caf50);
       }
 
       .md3-input {
@@ -1462,12 +1474,41 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         background: transparent;
         color: #ffffff;
         font-size: 1rem;
-        font-family: inherit;
+        font-family: 'Roboto', sans-serif;
         box-sizing: border-box;
+        outline: none;
+      }
+
+      .md3-input::placeholder {
+        color: rgba(255, 255, 255, 0.38);
+        opacity: 1;
       }
 
       .md3-input:focus {
         outline: none;
+      }
+
+      /* Disabled input state */
+      .md3-input:disabled {
+        color: rgba(255, 255, 255, 0.38);
+        cursor: not-allowed;
+      }
+
+      .md3-input-group:has(.md3-input:disabled) {
+        background: rgba(255, 255, 255, 0.02);
+        border-bottom-style: dotted;
+      }
+
+      /* Supporting text for inputs */
+      .md3-supporting-text {
+        padding: 4px 16px 0;
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.6);
+        letter-spacing: 0.4px;
+      }
+
+      .md3-supporting-text.error {
+        color: var(--error-color, #f44336);
       }
 
       /* Button Group & MD3 Buttons */
@@ -1479,59 +1520,139 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         margin-top: var(--spacing-lg);
       }
 
+      /* MD3 Button Styles - Enhanced for Material Design 3 */
       .md3-button {
         height: 40px;
         padding: 0 24px;
-        border-radius: 20px; /* Pill shape */
+        border-radius: 20px; /* Full-rounded MD3 style */
         border: none;
-        font-family: inherit;
+        font-family: 'Roboto', sans-serif;
         font-weight: 500;
         font-size: 0.875rem;
+        letter-spacing: 0.1px;
         cursor: pointer;
-        display: flex;
+        display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
-        transition: all 0.2s;
-        text-transform: capitalize;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        text-transform: none;
+        position: relative;
+        overflow: hidden;
+        user-select: none;
+        outline: none;
       }
 
+      /* MD3 State Layer Effect */
+      .md3-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: currentColor;
+        opacity: 0;
+        transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
+        pointer-events: none;
+      }
+
+      .md3-button:hover::before {
+        opacity: 0.08;
+      }
+
+      .md3-button:focus-visible::before {
+        opacity: 0.12;
+      }
+
+      .md3-button:active::before {
+        opacity: 0.12;
+      }
+
+      /* Focus visible state for accessibility */
+      .md3-button:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
+
+      /* Primary Filled Button */
       .md3-button.primary {
-        background: var(--primary-color);
+        background: var(--primary-color, #4caf50);
         color: var(--text-primary-color, #fff);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
       }
 
       .md3-button.primary:hover {
-        box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-        filter: brightness(1.1);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15);
       }
 
+      .md3-button.primary:active {
+        box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
+      }
+
+      /* Tonal Button (MD3 Filled Tonal variant) */
       .md3-button.tonal {
-        background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.15);
-        color: var(--primary-color);
+        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
+        color: var(--primary-color, #4caf50);
       }
 
       .md3-button.tonal:hover {
-        background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.25);
+        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.16);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
       }
 
+      .md3-button.tonal:active {
+        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
+      }
+
+      /* Text Button */
       .md3-button.text {
         background: transparent;
-        color: var(--primary-color);
+        color: var(--primary-color, #4caf50);
+        padding: 0 12px;
       }
 
       .md3-button.text:hover {
-        background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.08);
+        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.08);
       }
 
+      .md3-button.text:active {
+        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
+      }
+
+      /* Danger/Error Button (Outlined variant with error color) */
       .md3-button.danger {
         background: transparent;
-        color: var(--error-color);
-        border: 1px solid rgba(244, 67, 54, 0.5);
+        color: var(--error-color, #f44336);
+        border: 1px solid currentColor;
+      }
+
+      .md3-button.danger::before {
+        background: var(--error-color, #f44336);
       }
 
       .md3-button.danger:hover {
-        background: rgba(244, 67, 54, 0.1);
+        background: rgba(244, 67, 54, 0.08);
+        border-color: var(--error-color, #f44336);
+      }
+
+      .md3-button.danger:active {
+        background: rgba(244, 67, 54, 0.12);
+      }
+
+      .md3-button.danger:focus-visible {
+        outline-color: var(--error-color, #f44336);
+      }
+
+      /* Disabled state */
+      .md3-button:disabled {
+        opacity: 0.38;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      .md3-button:disabled::before {
+        display: none;
       }
 
       /* Specific adjustments for HA Dialog content constraints */
