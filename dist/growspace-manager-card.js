@@ -1983,9 +1983,9 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
             </div>
         </div>
       </div>
-    `}renderPlantDaysRich(e){const t=[{days:e.attributes?.seedling_days,icon:Te,title:"Seedling",stage:"seedling"},{days:e.attributes?.mother_days,icon:Te,title:"Mother",stage:"mother"},{days:e.attributes?.clone_days,icon:Te,title:"Clone",stage:"clone"},{days:e.attributes?.veg_days,icon:Te,title:"Veg",stage:"vegetative"},{days:e.attributes?.flower_days,icon:Ce,title:"Flower",stage:"flower"},{days:e.attributes?.dry_days,icon:De,title:"Dry",stage:"dry"},{days:e.attributes?.cure_days,icon:me,title:"Cure",stage:"cure"}].filter(e=>void 0!==e.days&&null!==e.days),r=t.filter(e=>e.days),i=(e.state||"").toLowerCase(),a="veg"===i?"vegetative":i;return R`
-        ${r.map(e=>{const t=es.getPlantStageColor(e.stage),r=e.stage===a;return R`
-                <div class="pc-stat-item ${r?"current-stage":""}">
+    `}renderPlantDaysRich(e){const t=[{days:e.attributes?.seedling_days,icon:Te,title:"Seedling",stage:"seedling"},{days:e.attributes?.mother_days,icon:Te,title:"Mother",stage:"mother"},{days:e.attributes?.clone_days,icon:Te,title:"Clone",stage:"clone"},{days:e.attributes?.veg_days,icon:Te,title:"Veg",stage:"vegetative"},{days:e.attributes?.flower_days,icon:Ce,title:"Flower",stage:"flower"},{days:e.attributes?.dry_days,icon:De,title:"Dry",stage:"dry"},{days:e.attributes?.cure_days,icon:me,title:"Cure",stage:"cure"}].filter(e=>void 0!==e.days&&null!==e.days),r=t.filter(e=>e.days);return R`
+        ${r.map(e=>{const t=es.getPlantStageColor(e.stage);return R`
+                <div class="pc-stat-item">
                     <svg style="color: ${t};" viewBox="0 0 24 24"><path d="${e.icon}"></path></svg>
                     <div class="pc-stat-text">${e.days}d</div>
                 </div>

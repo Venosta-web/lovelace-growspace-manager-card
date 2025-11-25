@@ -66,8 +66,9 @@
         // Important: DataService requires strict attribute matching
 
         // 1. Overview Sensors
-        hass.states["sensor.5_column_grid_overview"] = {
-            entity_id: "sensor.5_column_grid_overview",
+        // Slug derivation: entity_id.replace('sensor.', '') -> '5col'
+        hass.states["sensor.5col"] = {
+            entity_id: "sensor.5col",
             state: "on",
             attributes: {
                 growspace_id: "5col",
@@ -78,8 +79,8 @@
             }
         };
 
-        hass.states["sensor.6_column_list_overview"] = {
-            entity_id: "sensor.6_column_list_overview",
+        hass.states["sensor.6col"] = {
+            entity_id: "sensor.6col",
             state: "on",
             attributes: {
                 growspace_id: "6col",
@@ -122,13 +123,13 @@
         createPlants(12, "6col", 6, 2);
 
         // 3. Environment Sensors (Optional but good for errors)
-        hass.states["binary_sensor.5_column_grid_optimal_conditions"] = {
-             entity_id: "binary_sensor.5_column_grid_optimal_conditions",
+        hass.states["binary_sensor.5col_optimal_conditions"] = {
+             entity_id: "binary_sensor.5col_optimal_conditions",
              state: "on",
              attributes: { is_lights_on: true, temperature: 25, humidity: 60, vpd: 1.0 }
         };
-        hass.states["binary_sensor.6_column_list_optimal_conditions"] = {
-             entity_id: "binary_sensor.6_column_list_optimal_conditions",
+        hass.states["binary_sensor.6col_optimal_conditions"] = {
+             entity_id: "binary_sensor.6col_optimal_conditions",
              state: "on",
              attributes: { is_lights_on: false, temperature: 20, humidity: 50, vpd: 0.8 }
         };
