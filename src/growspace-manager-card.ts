@@ -2699,11 +2699,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       const result = await this.dataService.askGrowAdvice(this._growMasterDialog.growspaceId, this._growMasterDialog.userQuery);
       if (this._growMasterDialog) {
         // EXTRACT RESPONSE SAFELY
-        // The service returns { response: "text" }, so we want result.response
-        if (result && typeof result.response === 'string') {
-          this._growMasterDialog.response = result.response;
+        // Backend returns { response: { response: "text" } } or { response: "text" }
+        if (result && result.response) {
+          if (typeof result.response === 'string') {
+            this._growMasterDialog.response = result.response;
+          } else if (typeof result.response === 'object' && 'response' in result.response && typeof result.response.response === 'string') {
+            // Nested response structure
+            this._growMasterDialog.response = result.response.response;
+          } else {
+            // Fallback
+            this._growMasterDialog.response = JSON.stringify(result, null, 2);
+          }
         } else {
-          // Fallback: if structure is unexpected, dump the whole thing so we can debug it
           this._growMasterDialog.response = JSON.stringify(result, null, 2);
         }
       }
@@ -2731,8 +2738,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       const result = await this.dataService.analyzeAllGrowspaces();
       if (this._growMasterDialog) {
         // EXTRACT RESPONSE SAFELY
-        if (result && typeof result.response === 'string') {
-          this._growMasterDialog.response = result.response;
+        if (result && result.response) {
+          if (typeof result.response === 'string') {
+            this._growMasterDialog.response = result.response;
+          } else if (typeof result.response === 'object' && 'response' in result.response && typeof result.response.response === 'string') {
+            // Nested response structure
+            this._growMasterDialog.response = result.response.response;
+          } else {
+            this._growMasterDialog.response = JSON.stringify(result, null, 2);
+          }
         } else {
           this._growMasterDialog.response = JSON.stringify(result, null, 2);
         }
