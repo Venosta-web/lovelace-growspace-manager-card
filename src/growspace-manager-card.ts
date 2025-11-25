@@ -2429,13 +2429,20 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (!this._growMasterDialog || !this._growMasterDialog.userQuery) return;
 
     this._growMasterDialog.isLoading = true;
-    this._growMasterDialog.response = null; // Clear previous response
+    this._growMasterDialog.response = null;
     this.requestUpdate();
 
     try {
       const result = await this.dataService.askGrowAdvice(this._growMasterDialog.growspaceId, this._growMasterDialog.userQuery);
       if (this._growMasterDialog) {
-        this._growMasterDialog.response = result.response;
+        // EXTRACT RESPONSE SAFELY
+        // The service returns { response: "text" }, so we want result.response
+        if (result && typeof result.response === 'string') {
+          this._growMasterDialog.response = result.response;
+        } else {
+          // Fallback: if structure is unexpected, dump the whole thing so we can debug it
+          this._growMasterDialog.response = JSON.stringify(result, null, 2);
+        }
       }
     } catch (e: any) {
       if (this._growMasterDialog) {
@@ -2460,7 +2467,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     try {
       const result = await this.dataService.analyzeAllGrowspaces();
       if (this._growMasterDialog) {
-        this._growMasterDialog.response = result.response;
+        // EXTRACT RESPONSE SAFELY
+        if (result && typeof result.response === 'string') {
+          this._growMasterDialog.response = result.response;
+        } else {
+          this._growMasterDialog.response = JSON.stringify(result, null, 2);
+        }
       }
     } catch (e: any) {
       if (this._growMasterDialog) {
@@ -2474,15 +2486,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
   }
 
-  private _openStrainRecommendationDialog() {
-    this._strainRecommendationDialog = {
-      open: true,
-      userQuery: '',
-      isLoading: false,
-      response: null
-    };
-  }
-
   private async _handleGetStrainRecommendation() {
     if (!this._strainRecommendationDialog || !this._strainRecommendationDialog.userQuery) return;
 
@@ -2493,7 +2496,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     try {
       const result = await this.dataService.getStrainRecommendation(this._strainRecommendationDialog.userQuery);
       if (this._strainRecommendationDialog) {
-        this._strainRecommendationDialog.response = result.response;
+        // EXTRACT RESPONSE SAFELY
+        if (result && typeof result.response === 'string') {
+          this._strainRecommendationDialog.response = result.response;
+        } else {
+          this._strainRecommendationDialog.response = JSON.stringify(result, null, 2);
+        }
       }
     } catch (e: any) {
       if (this._strainRecommendationDialog) {
@@ -2505,6 +2513,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         this.requestUpdate();
       }
     }
+  }
+
+  private _openStrainRecommendationDialog() {
+    this._strainRecommendationDialog = {
+      open: true,
+      userQuery: '',
+      isLoading: false,
+      response: null
+    };
   }
 
   protected render(): TemplateResult {
@@ -3300,7 +3317,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onOpenImportDialog: () => this._openImportDialog(),
         onImportDialogChange: (c) => this._handleImportDialogChange(c),
         onConfirmImport: () => this._performImport(),
-            onGetRecommendation: () => this._openStrainRecommendationDialog(),
+        onGetRecommendation: () => this._openStrainRecommendationDialog(),
       }
     )}
 
