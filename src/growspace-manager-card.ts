@@ -4,6 +4,17 @@ import '@material/web/menu/menu.js';
 import '@material/web/menu/menu-item.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/switch/switch.js';
+import '@material/web/dialog/dialog.js';
+import '@material/web/textfield/filled-text-field.js';
+import '@material/web/textfield/outlined-text-field.js';
+import '@material/web/button/filled-button.js';
+import '@material/web/button/outlined-button.js';
+import '@material/web/button/text-button.js';
+import '@material/web/select/filled-select.js';
+import '@material/web/select/select-option.js';
+import '@material/web/checkbox/checkbox.js';
+import '@material/web/radio/radio.js';
+import '@material/web/icon/icon.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain } from '@mdi/js';
 import { DateTime } from 'luxon';
@@ -849,10 +860,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         font-size: var(--font-size-xs);
       }
 
-      ha-dialog {
-        --mdc-dialog-border-radius: var(--border-radius-md);
-        --mdc-dialog-box-shadow: var(--card-shadow-hover);
-      }
+
 
       .no-data {
         text-align: center;
@@ -873,32 +881,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         margin: var(--spacing-md) 0;
       }
       /* Dialog Styles */
-      ha-dialog {
-        --mdc-dialog-border-radius: var(--border-radius);
-        --mdc-dialog-box-shadow: var(--surface-elevation-hover);
-      }
-      
-      ha-dialog .mdc-dialog--open .mdc-dialog__container,
-      ha-dialog .mdc-dialog--open {
-        align-items: start;
-        margin-top: 5vh;
-      }
-      
-      ha-dialog.strain-dialog .mdc-dialog--open .mdc-dialog__container .mdc-dialog__surface {
-        width: 800px;
-        max-width: 90vw;
-        height: 600px;
-        max-height: 90vh;
-      }
-      ha-dialog.strain-dialog .mdc-dialog--open .dialog-content .strain-library-header {
-        justify-content: space-between;
-      }
-      ha-dialog.strain-dialog {
-        --mdc-dialog-min-width: 45vw;
-        --mdc-dialog-max-width: 45vw;
-        --mdc-dialog-surface-fill-color: var(--growspace-card-bg);
-      }
-      .dialog-content {
+
         display: flex;
         flex-direction: column;
         gap: var(--spacing-md);
@@ -1317,7 +1300,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         }
 
         /* Mobile specific dialog adjustments */
-        ha-dialog.strain-dialog .mdc-dialog__surface {
+
             width: 100vw !important;
             height: 100vh !important;
             max-height: 100vh !important;
@@ -1345,10 +1328,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
 
       /* Glassmorphism for Dialogs */
-      ha-dialog {
-        --mdc-dialog-surface-fill-color: transparent; /* Transparent base for glass effect */
-        --mdc-dialog-min-width: 400px;
-        --mdc-dialog-max-width: 90vw;
+      md-dialog {
+        --md-dialog-container-color: transparent; /* Transparent base for glass effect */
+        min-width: 400px;
+        max-width: 90vw;
       }
 
       /* Override internal dialog surface if possible, or we style the content wrapper */
@@ -1540,9 +1523,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
 
       /* Specific adjustments for HA Dialog content constraints */
-      ha-dialog {
-        --mdc-theme-primary: var(--primary-color);
-      }
+
 
       @media (max-width: 600px) {
         .glass-dialog-container {
