@@ -3022,6 +3022,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
                  ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Day ${dominant.days}
                </div>
+               <div class="gs-stage-chip">
+                 <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
+                 ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Week ${Math.ceil(dominant.days / 7)}
+               </div>
                ` : ''}
             </div>
 

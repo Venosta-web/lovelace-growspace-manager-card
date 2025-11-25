@@ -1846,6 +1846,10 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${ts.getPlantStageIcon(t.stage)}"></path></svg>
                  ${t.stage.charAt(0).toUpperCase()+t.stage.slice(1)} • Day ${t.days}
                </div>
+               <div class="gs-stage-chip">
+                 <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${ts.getPlantStageIcon(t.stage)}"></path></svg>
+                 ${t.stage.charAt(0).toUpperCase()+t.stage.slice(1)} • Week ${Math.ceil(t.days/7)}
+               </div>
                `:""}
             </div>
 
