@@ -142,6 +142,11 @@ export interface AddPlantDialogState {
   mother_id?: string;
   veg_start?: string;
   flower_start?: string;
+  seedling_start?: string;
+  mother_start?: string;
+  clone_start?: string;
+  dry_start?: string;
+  cure_start?: string;
 }
 
 export interface PlantOverviewDialogState {

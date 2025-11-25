@@ -40,6 +40,7 @@ export class DialogRenderer {
   static renderAddPlantDialog(
     dialog: AddPlantDialogState | null,
     strainLibrary: StrainEntry[],
+    growspaceName: string,
     callbacks: {
       onClose: () => void;
       onConfirm: () => void;
@@ -47,6 +48,11 @@ export class DialogRenderer {
       onPhenotypeChange: (value: string) => void;
       onVegStartChange: (value: string) => void;
       onFlowerStartChange: (value: string) => void;
+      onSeedlingStartChange: (value: string) => void;
+      onMotherStartChange: (value: string) => void;
+      onCloneStartChange: (value: string) => void;
+      onDryStartChange: (value: string) => void;
+      onCureStartChange: (value: string) => void;
       onRowChange: (value: string) => void;
       onColChange: (value: string) => void;
     }
@@ -55,6 +61,8 @@ export class DialogRenderer {
 
     // Extract unique strain names from the library
     const uniqueStrains = [...new Set(strainLibrary.map(s => s.strain))].sort();
+    const timelineContent = DialogRenderer.getTimelineContent(dialog, growspaceName, callbacks);
+
 
     return html`
       <ha-dialog
@@ -93,9 +101,7 @@ export class DialogRenderer {
 
              <!-- TIMELINE CARD -->
              <div class="detail-card">
-               <h3>Timeline</h3>
-               ${DialogRenderer.renderMD3DateInput('Vegetative Start', dialog.veg_start || '', callbacks.onVegStartChange)}
-               ${DialogRenderer.renderMD3DateInput('Flower Start', dialog.flower_start || '', callbacks.onFlowerStartChange)}
+                ${timelineContent}
              </div>
           </div>
 
@@ -112,6 +118,44 @@ export class DialogRenderer {
 
         </div>
       </ha-dialog>
+    `;
+  }
+
+  private static getTimelineContent(
+    dialog: AddPlantDialogState,
+    growspaceName: string,
+    callbacks: {
+      onSeedlingStartChange: (value: string) => void;
+      onVegStartChange: (value: string) => void;
+      onFlowerStartChange: (value: string) => void;
+      onMotherStartChange: (value: string) => void;
+      onCloneStartChange: (value: string) => void;
+      onDryStartChange: (value: string) => void;
+      onCureStartChange: (value: string) => void;
+    }
+  ): TemplateResult {
+    const name = growspaceName.toLowerCase();
+    let content: TemplateResult;
+
+    if (name.includes('mother')) {
+      content = html`${DialogRenderer.renderMD3DateInput('Mother Start', dialog.mother_start || '', callbacks.onMotherStartChange)}`;
+    } else if (name.includes('clone')) {
+      content = html`${DialogRenderer.renderMD3DateInput('Clone Start', dialog.clone_start || '', callbacks.onCloneStartChange)}`;
+    } else if (name.includes('dry')) {
+      content = html`${DialogRenderer.renderMD3DateInput('Dry Start', dialog.dry_start || '', callbacks.onDryStartChange)}`;
+    } else if (name.includes('cure')) {
+      content = html`${DialogRenderer.renderMD3DateInput('Cure Start', dialog.cure_start || '', callbacks.onCureStartChange)}`;
+    } else {
+      content = html`
+        ${DialogRenderer.renderMD3DateInput('Seedling Start', dialog.seedling_start || '', callbacks.onSeedlingStartChange)}
+        ${DialogRenderer.renderMD3DateInput('Vegetative Start', dialog.veg_start || '', callbacks.onVegStartChange)}
+        ${DialogRenderer.renderMD3DateInput('Flower Start', dialog.flower_start || '', callbacks.onFlowerStartChange)}
+      `;
+    }
+
+    return html`
+      <h3>Timeline</h3>
+      ${content}
     `;
   }
 

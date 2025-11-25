@@ -1695,6 +1695,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       phenotype: defaultPhenotype,
       veg_start: today,
       flower_start: today,
+      seedling_start: today,
+      mother_start: today,
+      clone_start: today,
+      dry_start: today,
+      cure_start: today,
     };
   }
 
@@ -1705,20 +1710,26 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       return;
     }
 
-    const { row, col, strain, phenotype, veg_start, flower_start } = this._addPlantDialog;
+    const { row, col, strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start } = this._addPlantDialog;
 
     try {
-      const payload = {
+      const payload: any = {
         growspace_id: this.selectedDevice,
         row: row + 1,
         col: col + 1,
         strain,
         phenotype,
-        veg_start: PlantUtils.formatDateForBackend(veg_start)
-          ?? PlantUtils.formatDateForBackend(PlantUtils.getCurrentDateTime()),
-        flower_start: PlantUtils.formatDateForBackend(flower_start)
-          ?? PlantUtils.formatDateForBackend(PlantUtils.getCurrentDateTime()),
       };
+
+      const dateFields: (keyof AddPlantDialogState)[] = ['veg_start', 'flower_start', 'seedling_start', 'mother_start', 'clone_start', 'dry_start', 'cure_start'];
+      dateFields.forEach(field => {
+        const value = this._addPlantDialog![field];
+        if (value) {
+          payload[field] = PlantUtils.formatDateForBackend(value);
+        }
+      });
+
+
       console.log("Adding plant to growspace:", this.selectedDevice, payload);
       console.log("Adding plant:", payload);
       await this.dataService.addPlant(payload);
@@ -3184,10 +3195,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       });
     }
 
+    const devices = this.dataService.getGrowspaceDevices();
+    const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
     return html`
       ${DialogRenderer.renderAddPlantDialog(
       this._addPlantDialog,
       strainLibrary,
+      selectedDeviceData?.name ?? '',
       {
         onClose: () => this._addPlantDialog = null,
         onConfirm: () => this._confirmAddPlant(),
@@ -3211,6 +3225,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onPhenotypeChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.phenotype = value; },
         onVegStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.veg_start = value; },
         onFlowerStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.flower_start = value; },
+        onSeedlingStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.seedling_start = value; },
+        onMotherStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.mother_start = value; },
+        onCloneStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.clone_start = value; },
+        onDryStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.dry_start = value; },
+        onCureStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.cure_start = value; },
         onRowChange: (value) => {
           if (this._addPlantDialog) {
             const val = parseInt(value);
