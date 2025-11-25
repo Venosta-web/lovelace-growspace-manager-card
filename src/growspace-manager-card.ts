@@ -1191,6 +1191,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
 
       @media (max-width: 600px) {
+        .unified-growspace-card {
+            padding: 12px;
+        }
         .header {
           flex-direction: column;
           align-items: stretch;
@@ -1232,10 +1235,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         }
 
         .plant-card-content {
+           flex: 1;
+           min-width: 0;
            flex-direction: row;
            padding: 0;
            align-items: center;
-           width: 100%;
            justify-content: space-between;
            gap: 8px;
         }
@@ -1249,16 +1253,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         }
 
         .pc-strain-name {
-           font-size: 1rem;
+           font-size: 0.9rem;
         }
 
         .pc-pheno {
-           font-size: 0.85rem;
+           font-size: 0.8rem;
         }
 
         .pc-stage {
            margin-top: 2px;
-           font-size: 0.85rem;
+           font-size: 0.8rem;
         }
 
         .pc-stats {
