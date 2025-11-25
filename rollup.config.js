@@ -12,7 +12,7 @@ export default {
     inlineDynamicImports: true,
   },
   plugins: [
-    resolve(),
+    resolve({ browser: true }),
     commonjs(),
     typescript({ tsconfig: './tsconfig.json' }),
     terser(),
