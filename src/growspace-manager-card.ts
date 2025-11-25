@@ -3064,6 +3064,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                         @click=${() => this._toggleEnvGraph('co2')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm
                    </div>` : ''}
+                ${hasLightSensor ? html`
+                  <div class="stat-chip ${this._activeEnvGraphs.has('light') ? 'active' : ''}"
+                       @click=${() => this._toggleEnvGraph('light')}>
+                    <svg viewBox="0 0 24 24"><path d="${isLightsOn ? mdiLightbulbOn : mdiLightbulbOff}"></path></svg>${isLightsOn ? 'ON' : 'OFF'}
+                  </div>
+                ` : ''}
 
                 ${!this._isCompactView ? html`
                   <div class="menu-container">
@@ -3101,16 +3107,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
          </div>
 
          <!-- Nested Light Cycle Card -->
-         ${hasLightSensor ? html`
-         <div class="gs-light-cycle-card ${this._lightCycleCollapsed ? 'collapsed' : ''}">
-            <div class="gs-light-header-row" @click=${() => this._toggleLightCycle()}>
+         ${hasLightSensor && this._activeEnvGraphs.has('light') ? html`
+         <div class="gs-light-cycle-card">
+            <div class="gs-light-header-row">
                 <div class="gs-light-title">
                     <div class="gs-icon-box">
                        <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiWeatherSunny}"></path></svg>
                     </div>
                     <div>
                        <div>Light Cycle</div>
-                       ${!this._lightCycleCollapsed ? html`<div class="gs-light-subtitle">24H HISTORY</div>` : ''}
+                       <div class="gs-light-subtitle">24H HISTORY</div>
                     </div>
                 </div>
 
@@ -3123,73 +3129,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                                ${isLightsOn ? 'ON' : 'OFF'}
                            </div>
                         </div>
-                        ${!this._lightCycleCollapsed ? html`<div class="target-cycle-text">Target: ${targetCycle}</div>` : ''}
-                    </div>
-                    <div class="rotate-icon ${!this._lightCycleCollapsed ? 'expanded' : ''}" style="opacity: 0.7;">
-                        <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronDown}"></path></svg>
+                        <div class="target-cycle-text">Target: ${targetCycle}</div>
                     </div>
                 </div>
                 ` : ''}
             </div>
 
-            ${!this._lightCycleCollapsed ? html`
             <div class="gs-chart-container"
                 @mousemove=${(e: MouseEvent) => {
             const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-            // Need to construct data points for hover logic
-            // Re-using the transitions array calculated above would be cleaner but it's inside the if block.
-            // I'll reconstruct a simplified points array for the hover handler:
-            // [ {time: t, value: 1/0} ... ] using 'transitions'.
-
-            const hoverPoints: { time: number, value: number }[] = [];
-            // Add initial state at -24h
-            const now = new Date();
-            const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-            // Use 'transitions' calculated above
-            // Oh wait, transitions is in the upper scope? Yes, inside the function.
-
-            // We need to pass points that represent the state changes.
-            // For step line, we should probably pass points at regular intervals or just the transitions?
-            // _handleGraphHover finds the closest point. For a step function, we want the value of the interval.
-            // So we should look for the transition *before* the hovered time.
-
-            // Let's modify _handleGraphHover or create a specific one?
-            // Or just feed it enough points?
-            // Actually, if we feed it transitions, "closest" might be the transition *after*.
-
-            // Let's implement a custom hover for light cycle here inline or adapt logic.
-            // I will use _handleGraphHover but I need to adapt the logic for step function.
-            // Actually, let's just use the transitions array.
-
             const hoverPointsLocal = transitions.map(t => ({ time: t.time, value: t.state ? 1 : 0 }));
-            // Add start point
-            // Transitions only has changes within window.
-            // Need to insert start point at -24h
-            // 'transitions' is defined in the scope above.
-
-            // Wait, if I use _handleGraphHover with discrete points, it finds the closest point.
-            // If I hover between two points 6 hours apart, it will snap to one.
-            // That's fine for now, or I can refine _handleGraphHover to support 'step' interpolation.
-
-            // Let's stick to _handleGraphHover for consistency but populate it well.
-            // Or better: pass the transitions and let a specialized handler deal with it?
-            // I'll stick to generic for now, but ensure we have points.
-
-            if (hoverPointsLocal.length === 0 || hoverPointsLocal[0].time > twentyFourHoursAgo.getTime()) {
-              // Add the initial state point
-              // We don't have 'currentState' variable available here easily (it was mutated in loop)
-              // But we know 'transitions' and we calculated 'currentState' before loop.
-              // It's tricky because of scope mutation.
-
-              // Let's just rely on the 'transitions' array and add the start/end points.
-              // But I can't easily access the initial state derived above without refactoring.
-              // However, I can re-derive or just use what I have.
-
-              // Hack: I'll just pass the transitions. The user will see the time of the switch.
-              // If they hover in between, they snap to the switch.
-              // "Time: 10:30pm Value: ON" -> implies at 10:30pm it turned ON.
-            }
-
             this._handleGraphHover(e, 'light-cycle', hoverPointsLocal, rect, 'state');
           }}
                 @mouseleave=${() => this._tooltip = null}
@@ -3253,7 +3202,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                     </div>
                 </div>
             </div>
-            ` : ''}
          </div>
          ` : ''}
 
