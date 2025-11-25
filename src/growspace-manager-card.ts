@@ -1,7 +1,7 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain, mdiDotsVertical } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
@@ -39,6 +39,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _lightCycleCollapsed: boolean = true;
   @state() private _activeEnvGraphs: Set<string> = new Set();
   @state() private _tooltip: { id: string, x: number, time: string, value: string } | null = null;
+  @state() private _menuOpen: boolean = false;
 
 
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -331,6 +332,126 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
       .light-status-chip.off {
          color: rgba(255, 255, 255, 0.7);
+      }
+
+      /* Menu Button and Dropdown */
+      .menu-container {
+        position: relative;
+        display: inline-block;
+      }
+
+      .menu-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        color: #fff;
+      }
+
+      .menu-button:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .menu-button svg {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+      }
+
+      .menu-dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        min-width: 200px;
+        background: rgba(30, 30, 35, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+        overflow: hidden;
+        animation: menuFadeIn 0.2s cubic-bezier(0.2, 0, 0, 1);
+      }
+
+      @keyframes menuFadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: background 0.2s;
+        color: #fff;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .menu-item:last-child {
+        border-bottom: none;
+      }
+
+      .menu-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .menu-item svg {
+        width: 20px;
+        height: 20px;
+        fill: currentColor;
+        opacity: 0.9;
+      }
+
+      .menu-item-label {
+        flex: 1;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      /* Toggle switch in menu */
+      .menu-toggle-switch {
+        width: 40px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
+        position: relative;
+        transition: background 0.2s;
+      }
+
+      .menu-toggle-switch.active {
+        background: var(--primary-color, #4caf50);
+      }
+
+      .menu-toggle-switch::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        background: #fff;
+        border-radius: 50%;
+        transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+      }
+
+      .menu-toggle-switch.active::after {
+        transform: translateX(20px);
       }
 
       /* 24h Chart */
@@ -1675,6 +1796,27 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
     `
   ];
+
+  connectedCallback() {
+    super.connectedCallback();
+    document.addEventListener('click', this._handleDocumentClick);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    document.removeEventListener('click', this._handleDocumentClick);
+  }
+
+  private _handleDocumentClick = (e: Event) => {
+    if (this._menuOpen) {
+      const path = e.composedPath();
+      const menuContainer = this.shadowRoot?.querySelector('.menu-container');
+      if (menuContainer && !path.includes(menuContainer)) {
+        this._menuOpen = false;
+      }
+    }
+  };
+
   protected firstUpdated() {
     this.dataService = new DataService(this.hass);
     this.initializeSelectedDevice();
@@ -2899,32 +3041,43 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                         @click=${() => this._toggleEnvGraph('vpd')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>${vpd} kPa
                    </div>` : ''}
-                ${co2 !== undefined ? html`
+                 ${co2 !== undefined ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('co2') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('co2')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm
                    </div>` : ''}
 
                 ${!this._isCompactView ? html`
-                   <div class="stat-chip" @click=${this._openStrainLibraryDialog} title="Strain Library">
-                      <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-                      Strains
-                   </div>
-
-                   <div class="stat-chip" @click=${this._openConfigDialog} title="Configure">
-                      <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                      Config
-                   </div>
-
-                   <div class="stat-chip" @click=${() => this._isCompactView = true} title="Switch to Compact Mode">
-                       <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-                       Compact
-                   </div>
-
-                   <div class="stat-chip" @click=${this._openGrowMasterDialog} title="Ask the Grow Master">
-                       <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-                       Ask AI
-                   </div>
+                  <div class="menu-container">
+                    <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
+                    </div>
+                    
+                    ${this._menuOpen ? html`
+                      <div class="menu-dropdown" @click=${(e: Event) => e.stopPropagation()}>
+                        <div class="menu-item" @click=${() => { this._openConfigDialog(); this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                          <span class="menu-item-label">Config</span>
+                        </div>
+                        
+                        <div class="menu-item" @click=${() => { this._isCompactView = true; this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+                          <span class="menu-item-label">Compact View</span>
+                          <div class="menu-toggle-switch ${this._isCompactView ? 'active' : ''}"></div>
+                        </div>
+                        
+                        <div class="menu-item" @click=${() => { this._openStrainLibraryDialog(); this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+                          <span class="menu-item-label">Strains</span>
+                        </div>
+                        
+                        <div class="menu-item" @click=${() => { this._openGrowMasterDialog(); this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+                          <span class="menu-item-label">Ask AI</span>
+                        </div>
+                      </div>
+                    ` : ''}
+                  </div>
                 ` : ''}
             </div>
          </div>
