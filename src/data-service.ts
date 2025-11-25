@@ -502,25 +502,37 @@ export class DataService {
     }
   }
 
-  async askGrowAdvice(growspaceId: string, userQuery: string) {
+  async askGrowAdvice(growspaceId: string, userQuery: string): Promise<{ response: string }> {
     console.log("[DataService:askGrowAdvice] Asking advice for:", growspaceId, userQuery);
     try {
-      // Use low-level connection to ensure return_response=true is respected
-      // as callService wrapper in older custom-card-helpers might not support it correctly
-      const res = await (this.hass as any).connection.sendMessagePromise({
-        type: 'call_service',
-        domain: 'growspace_manager',
-        service: 'ask_grow_advice',
-        service_data: {
-          growspace_id: growspaceId,
-          user_query: userQuery
-        },
-        return_response: true
-      });
-      console.log("[DataService:askGrowAdvice] Response:", res);
-      return res as { response: string };
+      return await this.hass.callService("growspace_manager", "ask_grow_advice", {
+        growspace_id: growspaceId,
+        user_query: userQuery,
+      }, undefined, true) as { response: string };
     } catch (err) {
       console.error("[DataService:askGrowAdvice] Error:", err);
+      throw err;
+    }
+  }
+
+  async analyzeAllGrowspaces(): Promise<{ response: string }> {
+    console.log("[DataService:analyzeAllGrowspaces] Analyzing all growspaces");
+    try {
+      return await this.hass.callService("growspace_manager", "analyze_all_growspaces", {}, undefined, true) as { response: string };
+    } catch (err) {
+      console.error("[DataService:analyzeAllGrowspaces] Error:", err);
+      throw err;
+    }
+  }
+
+  async getStrainRecommendation(userQuery: string): Promise<{ response: string }> {
+    console.log("[DataService:getStrainRecommendation] Getting strain recommendation for:", userQuery);
+    try {
+      return await this.hass.callService("growspace_manager", "strain_recommendation", {
+        user_query: userQuery,
+      }, undefined, true) as { response: string };
+    } catch (err) {
+      console.error("[DataService:getStrainRecommendation] Error:", err);
       throw err;
     }
   }

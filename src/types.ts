@@ -217,4 +217,12 @@ export interface GrowMasterDialogState {
   userQuery: string;
   isLoading: boolean;
   response: string | null;
+  mode: 'single' | 'all';
+}
+
+export interface StrainRecommendationDialogState {
+  open: boolean;
+  userQuery: string;
+  isLoading: boolean;
+  response: string | null;
 }

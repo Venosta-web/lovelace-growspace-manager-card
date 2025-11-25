@@ -6,7 +6,7 @@ import {
   mdiLeaf, mdiUpload, mdiArrowLeft, mdiFilterVariant, mdiCloudUpload, mdiPencil,
   mdiCog, mdiThermometer, mdiEarth, mdiViewDashboard, mdiFan, mdiWeatherPartlyCloudy, mdiBrain, mdiLoading, mdiDownload
 } from '@mdi/js';
-import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, ConfigDialogState, GrowMasterDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry, CropMeta } from './types';
+import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, ConfigDialogState, GrowMasterDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry, CropMeta, StrainRecommendationDialogState } from './types';
 import { PlantUtils } from "./utils";
 
 export class DialogRenderer {
@@ -312,6 +312,7 @@ export class DialogRenderer {
       onOpenImportDialog: () => void;
       onImportDialogChange: (changes: { open?: boolean, replace?: boolean }) => void;
       onConfirmImport: () => void;
+      onGetRecommendation: () => void;
     }
   ): TemplateResult {
     if (!dialog?.open) return html``;
@@ -1116,6 +1117,10 @@ export class DialogRenderer {
       </div>
 
       <div class="sd-footer">
+         <button class="sd-btn secondary" @click=${callbacks.onGetRecommendation}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+            Get Recommendation
+         </button>
          <button class="sd-btn secondary" @click=${callbacks.onOpenImportDialog}>
             <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
             Import Strains
@@ -1858,6 +1863,7 @@ export class DialogRenderer {
       onClose: () => void;
       onQueryChange: (query: string) => void;
       onAnalyze: () => void;
+      onAnalyzeAll: () => void;
     }
   ): TemplateResult {
     if (!dialog?.open) return html``;
@@ -1960,7 +1966,15 @@ export class DialogRenderer {
               </div>
 
               <!-- Action -->
-              <div style="display:flex; justify-content:flex-end;">
+              <div style="display:flex; justify-content:flex-end; gap: 12px;">
+                 <button
+                    class="md3-button tonal"
+                    @click=${callbacks.onAnalyzeAll}
+                    ?disabled=${dialog.isLoading}
+                    style="opacity: ${dialog.isLoading ? 0.7 : 1}"
+                 >
+                    Analyze All
+                 </button>
                  <button
                     class="md3-button primary"
                     @click=${callbacks.onAnalyze}
@@ -1968,6 +1982,87 @@ export class DialogRenderer {
                     style="opacity: ${dialog.isLoading ? 0.7 : 1}"
                  >
                     ${dialog.isLoading ? 'Analyzing...' : 'Analyze Environment'}
+                 </button>
+              </div>
+
+              <!-- Response Area -->
+              ${dialog.isLoading ? html`
+                 <div class="gm-loading">
+                    <svg class="spinner" viewBox="0 0 24 24"><path d="${mdiLoading}" fill="currentColor"></path></svg>
+                    <span>Consulting the archives...</span>
+                 </div>
+              ` : nothing}
+
+              ${!dialog.isLoading && dialog.response ? html`
+                 <div class="gm-response-box">
+                    ${dialog.response}
+                 </div>
+              ` : nothing}
+           </div>
+        </div>
+      </ha-dialog>
+    `;
+  }
+
+  static renderStrainRecommendationDialog(
+    dialog: StrainRecommendationDialogState | null,
+    callbacks: {
+      onClose: () => void;
+      onQueryChange: (query: string) => void;
+      onGetRecommendation: () => void;
+    }
+  ): TemplateResult {
+    if (!dialog?.open) return html``;
+
+    return html`
+      <ha-dialog
+        open
+        @closed=${callbacks.onClose}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="gm-container">
+           <div class="gm-header">
+              <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; color: #4CAF50">
+                 <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+              </div>
+              <div style="flex:1">
+                 <h2 style="margin:0; font-size:1.25rem;">Get Strain Recommendation</h2>
+              </div>
+              <button class="md3-button text" @click=${callbacks.onClose} style="min-width:auto; padding:8px;">
+                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+              </button>
+           </div>
+
+           <div class="gm-content">
+              <!-- Input Area -->
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                 <label style="font-size:0.9rem; font-weight:500; color:#ccc;">Your Preferences</label>
+                 <textarea
+                    class="sd-textarea"
+                    placeholder="e.g., something fruity and good for daytime use..."
+                    .value=${dialog.userQuery}
+                    @input=${(e: any) => callbacks.onQueryChange(e.target.value)}
+                    style="min-height: 80px;"
+                 ></textarea>
+              </div>
+
+              <!-- Action -->
+              <div style="display:flex; justify-content:flex-end; gap: 12px;">
+                 <button
+                    class="md3-button tonal"
+                    @click=${callbacks.onClose}
+                 >
+                    OK
+                 </button>
+                 <button
+                    class="md3-button primary"
+                    @click=${callbacks.onGetRecommendation}
+                    ?disabled=${dialog.isLoading}
+                    style="opacity: ${dialog.isLoading ? 0.7 : 1}"
+                 >
+                    ${dialog.isLoading ? 'Getting Recommendation...' : 'Get Recommendation'}
                  </button>
               </div>
 
