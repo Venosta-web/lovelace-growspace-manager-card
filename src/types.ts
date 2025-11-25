@@ -142,6 +142,11 @@ export interface AddPlantDialogState {
   mother_id?: string;
   veg_start?: string;
   flower_start?: string;
+  seedling_start?: string;
+  mother_start?: string;
+  clone_start?: string;
+  dry_start?: string;
+  cure_start?: string;
 }
 
 export interface PlantOverviewDialogState {
@@ -180,6 +185,10 @@ export interface StrainLibraryDialogState {
   };
   expandedStrains?: string[];
   confirmClearAll?: boolean;
+  importDialog?: {
+    open: boolean;
+    replace: boolean;
+  };
 }
 
 export interface ConfigDialogState {
@@ -205,4 +214,20 @@ export interface ConfigDialogState {
     lung_room_temp: string;
     lung_room_humidity: string;
   };
+}
+
+export interface GrowMasterDialogState {
+  open: boolean;
+  growspaceId: string;
+  userQuery: string;
+  isLoading: boolean;
+  response: string | null;
+  mode: 'single' | 'all';
+}
+
+export interface StrainRecommendationDialogState {
+  open: boolean;
+  userQuery: string;
+  isLoading: boolean;
+  response: string | null;
 }

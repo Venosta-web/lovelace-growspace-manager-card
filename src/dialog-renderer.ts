@@ -1,62 +1,70 @@
 import { html, TemplateResult, nothing } from 'lit';
 import {
-  mdiPlus, mdiSprout, mdiFlower, mdiClose, mdiCalendarClock, mdiDna, mdiHairDryer,
-  mdiCannabis, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiCheck,
-  mdiContentCopy, mdiArrowRight, mdiWeatherNight, mdiWeatherSunny, mdiTuneVariant,
-  mdiLeaf, mdiUpload, mdiArrowLeft, mdiFilterVariant, mdiCloudUpload, mdiPencil,
-  mdiCog, mdiThermometer, mdiEarth, mdiViewDashboard, mdiFan, mdiWeatherPartlyCloudy
+   mdiPlus, mdiSprout, mdiFlower, mdiClose, mdiCalendarClock, mdiDna, mdiHairDryer,
+   mdiCannabis, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiCheck,
+   mdiContentCopy, mdiArrowRight, mdiWeatherNight, mdiWeatherSunny, mdiTuneVariant,
+   mdiLeaf, mdiUpload, mdiArrowLeft, mdiFilterVariant, mdiCloudUpload, mdiPencil,
+   mdiCog, mdiThermometer, mdiEarth, mdiViewDashboard, mdiFan, mdiWeatherPartlyCloudy, mdiBrain, mdiLoading, mdiDownload
 } from '@mdi/js';
-import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, ConfigDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry, CropMeta } from './types';
+import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, ConfigDialogState, GrowMasterDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry, CropMeta, StrainRecommendationDialogState } from './types';
 import { PlantUtils } from "./utils";
 
 export class DialogRenderer {
-  private static getCropStyle(image: string, meta?: CropMeta) {
-    if (!meta) return `background-image: url('${image}')`;
+   private static getCropStyle(image: string, meta?: CropMeta) {
+      if (!meta) return `background-image: url('${image}')`;
 
-    // Math:
-    // meta.scale is the zoom level (>=1)
-    // meta.x, meta.y are offsets in % relative to the image dimensions
-    // To display:
-    // background-size: {scale * 100}%
-    // background-position: {x}% {y}%
+      // Math:
+      // meta.scale is the zoom level (>=1)
+      // meta.x, meta.y are offsets in % relative to the image dimensions
+      // To display:
+      // background-size: {scale * 100}%
+      // background-position: {x}% {y}%
 
-    // Wait, standard background-position percentage works differently:
-    // 0% 0% aligns left edge with left edge.
-    // 100% 100% aligns right edge with right edge.
-    // If we store the center point or top-left, we need to map it.
+      // Wait, standard background-position percentage works differently:
+      // 0% 0% aligns left edge with left edge.
+      // 100% 100% aligns right edge with right edge.
+      // If we store the center point or top-left, we need to map it.
 
-    // Let's assume we store:
-    // x: offset X in percentage (0-100)
-    // y: offset Y in percentage (0-100)
-    // scale: zoom factor (1 = fit cover)
+      // Let's assume we store:
+      // x: offset X in percentage (0-100)
+      // y: offset Y in percentage (0-100)
+      // scale: zoom factor (1 = fit cover)
 
-    return `
+      return `
       background-image: url('${image}');
       background-size: ${meta.scale * 100}%;
       background-position: ${meta.x}% ${meta.y}%;
     `;
-  }
+   }
 
-  static renderAddPlantDialog(
-    dialog: AddPlantDialogState | null,
-    strainLibrary: StrainEntry[],
-    callbacks: {
-      onClose: () => void;
-      onConfirm: () => void;
-      onStrainChange: (value: string) => void;
-      onPhenotypeChange: (value: string) => void;
-      onVegStartChange: (value: string) => void;
-      onFlowerStartChange: (value: string) => void;
-      onRowChange: (value: string) => void;
-      onColChange: (value: string) => void;
-    }
-  ): TemplateResult {
-    if (!dialog?.open) return html``;
+   static renderAddPlantDialog(
+      dialog: AddPlantDialogState | null,
+      strainLibrary: StrainEntry[],
+      growspaceName: string,
+      callbacks: {
+         onClose: () => void;
+         onConfirm: () => void;
+         onStrainChange: (value: string) => void;
+         onPhenotypeChange: (value: string) => void;
+         onVegStartChange: (value: string) => void;
+         onFlowerStartChange: (value: string) => void;
+         onSeedlingStartChange: (value: string) => void;
+         onMotherStartChange: (value: string) => void;
+         onCloneStartChange: (value: string) => void;
+         onDryStartChange: (value: string) => void;
+         onCureStartChange: (value: string) => void;
+         onRowChange: (value: string) => void;
+         onColChange: (value: string) => void;
+      }
+   ): TemplateResult {
+      if (!dialog?.open) return html``;
 
-    // Extract unique strain names from the library
-    const uniqueStrains = [...new Set(strainLibrary.map(s => s.strain))].sort();
+      // Extract unique strain names from the library
+      const uniqueStrains = [...new Set(strainLibrary.map(s => s.strain))].sort();
+      const timelineContent = DialogRenderer.getTimelineContent(dialog, growspaceName, callbacks);
 
-    return html`
+
+      return html`
       <ha-dialog
         open
         @closed=${callbacks.onClose}
@@ -93,9 +101,7 @@ export class DialogRenderer {
 
              <!-- TIMELINE CARD -->
              <div class="detail-card">
-               <h3>Timeline</h3>
-               ${DialogRenderer.renderMD3DateInput('Vegetative Start', dialog.veg_start || '', callbacks.onVegStartChange)}
-               ${DialogRenderer.renderMD3DateInput('Flower Start', dialog.flower_start || '', callbacks.onFlowerStartChange)}
+                ${timelineContent}
              </div>
           </div>
 
@@ -113,38 +119,76 @@ export class DialogRenderer {
         </div>
       </ha-dialog>
     `;
-  }
+   }
 
-  static renderPlantOverviewDialog(
-    dialog: PlantOverviewDialogState | null,
-    growspaceOptions: Record<string, string>,
-    callbacks: {
-      onClose: () => void;
-      onUpdate: () => void;
-      onDelete: (plantId: string) => void;
-      onHarvest: (plant: PlantEntity, targetGrowspace?: string) => void;
-      onClone: (plantEntity: PlantEntity, numClones: number) => void;
-      onTakeClone: (motherPlantEntity: PlantEntity, numClones: number) => void;
-      onMoveClone: (plantId: PlantEntity, targetGrowspace: string) => void;
-      onFinishDrying: (plantEntity: PlantEntity) => void;
-      _harvestPlant: (plantEntity: PlantEntity) => void;
-      _finishDryingPlant: (plantEntity: PlantEntity) => void;
-      onAttributeChange: (key: string, value: any) => void;
-    }
-  ): TemplateResult {
-    if (!dialog?.open) return html``;
+   private static getTimelineContent(
+      dialog: AddPlantDialogState,
+      growspaceName: string,
+      callbacks: {
+         onSeedlingStartChange: (value: string) => void;
+         onVegStartChange: (value: string) => void;
+         onFlowerStartChange: (value: string) => void;
+         onMotherStartChange: (value: string) => void;
+         onCloneStartChange: (value: string) => void;
+         onDryStartChange: (value: string) => void;
+         onCureStartChange: (value: string) => void;
+      }
+   ): TemplateResult {
+      const name = growspaceName.toLowerCase();
+      let content: TemplateResult;
 
-    const { plant, editedAttributes } = dialog;
-    const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-    const stageColor = PlantUtils.getPlantStageColor(plant.state);
-    const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
+      if (name.includes('mother')) {
+         content = html`${DialogRenderer.renderMD3DateInput('Mother Start', dialog.mother_start || '', callbacks.onMotherStartChange)}`;
+      } else if (name.includes('clone')) {
+         content = html`${DialogRenderer.renderMD3DateInput('Clone Start', dialog.clone_start || '', callbacks.onCloneStartChange)}`;
+      } else if (name.includes('dry')) {
+         content = html`${DialogRenderer.renderMD3DateInput('Dry Start', dialog.dry_start || '', callbacks.onDryStartChange)}`;
+      } else if (name.includes('cure')) {
+         content = html`${DialogRenderer.renderMD3DateInput('Cure Start', dialog.cure_start || '', callbacks.onCureStartChange)}`;
+      } else {
+         content = html`
+        ${DialogRenderer.renderMD3DateInput('Seedling Start', dialog.seedling_start || '', callbacks.onSeedlingStartChange)}
+        ${DialogRenderer.renderMD3DateInput('Vegetative Start', dialog.veg_start || '', callbacks.onVegStartChange)}
+        ${DialogRenderer.renderMD3DateInput('Flower Start', dialog.flower_start || '', callbacks.onFlowerStartChange)}
+      `;
+      }
 
-    const onAttributeChange = (key: string, value: PlantAttributeValue) => {
-      editedAttributes[key] = typeof value === 'number' ? value.toString() : value;
-      callbacks.onAttributeChange(key, editedAttributes[key]);
-    };
+      return html`
+      <h3>Timeline</h3>
+      ${content}
+    `;
+   }
 
-    return html`
+   static renderPlantOverviewDialog(
+      dialog: PlantOverviewDialogState | null,
+      growspaceOptions: Record<string, string>,
+      callbacks: {
+         onClose: () => void;
+         onUpdate: () => void;
+         onDelete: (plantId: string) => void;
+         onHarvest: (plant: PlantEntity, targetGrowspace?: string) => void;
+         onClone: (plantEntity: PlantEntity, numClones: number) => void;
+         onTakeClone: (motherPlantEntity: PlantEntity, numClones: number) => void;
+         onMoveClone: (plantId: PlantEntity, targetGrowspace: string) => void;
+         onFinishDrying: (plantEntity: PlantEntity) => void;
+         _harvestPlant: (plantEntity: PlantEntity) => void;
+         _finishDryingPlant: (plantEntity: PlantEntity) => void;
+         onAttributeChange: (key: string, value: any) => void;
+      }
+   ): TemplateResult {
+      if (!dialog?.open) return html``;
+
+      const { plant, editedAttributes } = dialog;
+      const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+      const stageColor = PlantUtils.getPlantStageColor(plant.state);
+      const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
+
+      const onAttributeChange = (key: string, value: PlantAttributeValue) => {
+         editedAttributes[key] = typeof value === 'number' ? value.toString() : value;
+         callbacks.onAttributeChange(key, editedAttributes[key]);
+      };
+
+      return html`
       <ha-dialog
         open
         @closed=${callbacks.onClose}
@@ -188,23 +232,23 @@ export class DialogRenderer {
              <div class="detail-card">
                <h3>Timeline</h3>
                ${editedAttributes.stage === 'mother'
-                  ? DialogRenderer.renderMD3DateInput('Mother Start', editedAttributes.mother_start ?? '', (v) => onAttributeChange('mother_start', v))
-                  : nothing}
+            ? DialogRenderer.renderMD3DateInput('Mother Start', editedAttributes.mother_start ?? '', (v) => onAttributeChange('mother_start', v))
+            : nothing}
                ${editedAttributes.stage === 'clone'
-                  ? DialogRenderer.renderMD3DateInput('Clone Start', editedAttributes.clone_start ?? '', (v) => onAttributeChange('clone_start', v))
-                  : nothing}
+            ? DialogRenderer.renderMD3DateInput('Clone Start', editedAttributes.clone_start ?? '', (v) => onAttributeChange('clone_start', v))
+            : nothing}
                ${editedAttributes.stage === 'veg' || editedAttributes.stage === 'flower'
-                  ? DialogRenderer.renderMD3DateInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => onAttributeChange('veg_start', v))
-                  : nothing}
+            ? DialogRenderer.renderMD3DateInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => onAttributeChange('veg_start', v))
+            : nothing}
                ${editedAttributes.stage === 'flower'
-                  ? DialogRenderer.renderMD3DateInput('Flower Start', editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))
-                  : nothing}
+            ? DialogRenderer.renderMD3DateInput('Flower Start', editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))
+            : nothing}
                ${editedAttributes.stage === 'dry' || editedAttributes.stage === 'cure'
-                  ? DialogRenderer.renderMD3DateInput('Dry Start', editedAttributes.dry_start ?? '', (v) => onAttributeChange('dry_start', v))
-                  : nothing}
+            ? DialogRenderer.renderMD3DateInput('Dry Start', editedAttributes.dry_start ?? '', (v) => onAttributeChange('dry_start', v))
+            : nothing}
                ${editedAttributes.stage === 'cure'
-                  ? DialogRenderer.renderMD3DateInput('Cure Start', editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))
-                  : nothing}
+            ? DialogRenderer.renderMD3DateInput('Cure Start', editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))
+            : nothing}
              </div>
 
              <!-- STATS CARD -->
@@ -238,12 +282,12 @@ export class DialogRenderer {
                   >
                   <button class="md3-button primary"
                     @click=${(e: MouseEvent) => {
-                      const btn = e.currentTarget as HTMLElement;
-                      // Find the input sibling (since we used display:contents, they are siblings in the flex container)
-                      const input = btn.previousElementSibling as HTMLInputElement;
-                      const numClones = input ? parseInt(input.value, 10) : 1;
-                      callbacks.onTakeClone(plant, numClones);
-                    }}
+               const btn = e.currentTarget as HTMLElement;
+               // Find the input sibling (since we used display:contents, they are siblings in the flex container)
+               const input = btn.previousElementSibling as HTMLInputElement;
+               const numClones = input ? parseInt(input.value, 10) : 1;
+               callbacks.onTakeClone(plant, numClones);
+            }}
                   >
                     <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
                     Take Clone
@@ -273,11 +317,11 @@ export class DialogRenderer {
                   </select>
                   <button class="md3-button primary"
                     @click=${(e: MouseEvent) => {
-                       const btn = e.currentTarget as HTMLElement;
-                       const select = btn.previousElementSibling as HTMLSelectElement;
-                       if (!select.value) { alert('Select a growspace'); return; }
-                       callbacks.onMoveClone(plant, select.value);
-                    }}
+               const btn = e.currentTarget as HTMLElement;
+               const select = btn.previousElementSibling as HTMLSelectElement;
+               if (!select.value) { alert('Select a growspace'); return; }
+               callbacks.onMoveClone(plant, select.value);
+            }}
                   >
                     <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
                     Move
@@ -289,29 +333,35 @@ export class DialogRenderer {
         </div>
       </ha-dialog>
     `;
-  }
+   }
 
-  static renderStrainLibraryDialog(
-    dialog: StrainLibraryDialogState | null,
-    callbacks: {
-      onClose: () => void;
-      onAddStrain: () => void; // Now saves the editor state
-      onRemoveStrain: (strain: string) => void;
-      onClearAll: () => void;
-      // Editor Field Changes
-      onEditorChange: (field: string, value: string) => void;
-      // Navigation
-      onSwitchView: (view: 'browse' | 'editor', strainToEdit?: StrainEntry) => void;
-      onSearch: (query: string) => void;
-      onToggleCropMode: (active: boolean) => void;
-      // Image Selection
-      onToggleImageSelector: (isOpen: boolean) => void;
-      onSelectLibraryImage: (imageUrl: string) => void;
-    }
-  ): TemplateResult {
-    if (!dialog?.open) return html``;
+   static renderStrainLibraryDialog(
+      dialog: StrainLibraryDialogState | null,
+      callbacks: {
+         onClose: () => void;
+         onAddStrain: () => void; // Now saves the editor state
+         onRemoveStrain: (strain: string) => void;
+         onClearAll: () => void;
+         // Editor Field Changes
+         onEditorChange: (field: string, value: string) => void;
+         // Navigation
+         onSwitchView: (view: 'browse' | 'editor', strainToEdit?: StrainEntry) => void;
+         onSearch: (query: string) => void;
+         onToggleCropMode: (active: boolean) => void;
+         // Image Selection
+         onToggleImageSelector: (isOpen: boolean) => void;
+         onSelectLibraryImage: (imageUrl: string) => void;
+         onExportStrains: () => void;
+         // Import
+         onOpenImportDialog: () => void;
+         onImportDialogChange: (changes: { open?: boolean, replace?: boolean }) => void;
+         onConfirmImport: () => void;
+         onGetRecommendation: () => void;
+      }
+   ): TemplateResult {
+      if (!dialog?.open) return html``;
 
-    return html`
+      return html`
       <ha-dialog
         open
         @closed=${callbacks.onClose}
@@ -846,31 +896,91 @@ export class DialogRenderer {
 
         <div class="strain-dialog-container">
            ${dialog.view === 'browse'
-              ? this.renderStrainBrowseView(dialog, callbacks)
-              : this.renderStrainEditorView(dialog, callbacks)
-           }
+            ? this.renderStrainBrowseView(dialog, callbacks)
+            : this.renderStrainEditorView(dialog, callbacks)
+         }
         </div>
 
         ${dialog.isCropping ? this.renderCropOverlay(dialog, callbacks) : nothing}
         ${dialog.isImageSelectorOpen ? this.renderImageSelector(dialog, callbacks) : nothing}
+        ${dialog.importDialog?.open ? this.renderImportDialog(dialog, callbacks) : nothing}
 
       </ha-dialog>
     `;
-  }
+   }
 
-  private static renderImageSelector(dialog: StrainLibraryDialogState, callbacks: any): TemplateResult {
-     // Group strains by image
-     const imageMap = new Map<string, {strain: string, phenotype: string}[]>();
-     dialog.strains.forEach(s => {
-        if (s.image) {
-           if (!imageMap.has(s.image)) {
-              imageMap.set(s.image, []);
-           }
-           imageMap.get(s.image)!.push({ strain: s.strain, phenotype: s.phenotype || '' });
-        }
-     });
+   private static renderImportDialog(dialog: StrainLibraryDialogState, callbacks: any): TemplateResult {
+      const isReplace = dialog.importDialog?.replace || false;
 
-     return html`
+      return html`
+        <div class="crop-overlay">
+           <div style="background: #1a1a1a; width: 400px; max-width: 90vw; border-radius: 16px; padding: 24px; border: 1px solid var(--border-color); color: #fff; display: flex; flex-direction: column; gap: 20px;">
+
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                 <h2 style="margin: 0; font-size: 1.25rem;">Import Strains</h2>
+                 <button class="sd-close-btn" @click=${() => callbacks.onImportDialogChange({ open: false })}>
+                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+                 </button>
+              </div>
+
+              <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">
+                 Select a ZIP file containing your strain library export. You can either merge the new strains with your existing library or replace it entirely.
+              </div>
+
+              <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                 <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <input type="radio" name="import_mode"
+                           .checked=${!isReplace}
+                           @change=${() => callbacks.onImportDialogChange({ replace: false })}
+                           style="accent-color: var(--accent-green); transform: scale(1.2);" />
+                    <div>
+                       <div style="font-weight: 600;">Merge</div>
+                       <div style="font-size: 0.8rem; color: var(--text-secondary);">Add new strains, keep existing ones.</div>
+                    </div>
+                 </label>
+
+                 <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 12px 0;"></div>
+
+                 <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                     <input type="radio" name="import_mode"
+                           .checked=${isReplace}
+                           @change=${() => callbacks.onImportDialogChange({ replace: true })}
+                           style="accent-color: var(--accent-green); transform: scale(1.2);" />
+                     <div>
+                       <div style="font-weight: 600;">Replace</div>
+                       <div style="font-size: 0.8rem; color: var(--text-secondary);">Overwrite entire library with import.</div>
+                    </div>
+                 </label>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
+                 <button class="sd-btn secondary" @click=${() => callbacks.onImportDialogChange({ open: false })}>
+                    Cancel
+                 </button>
+                 <button class="sd-btn primary" @click=${callbacks.onConfirmImport}>
+                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
+                    Select File
+                 </button>
+              </div>
+
+           </div>
+        </div>
+     `;
+   }
+
+   private static renderImageSelector(dialog: StrainLibraryDialogState, callbacks: any): TemplateResult {
+      // Group strains by image
+      const imageMap = new Map<string, { strain: string, phenotype: string }[]>();
+      dialog.strains.forEach(s => {
+         if (s.image) {
+            if (!imageMap.has(s.image)) {
+               imageMap.set(s.image, []);
+            }
+            imageMap.get(s.image)!.push({ strain: s.strain, phenotype: s.phenotype || '' });
+         }
+      });
+
+      return html`
         <div class="crop-overlay">
            <div style="background: #1a1a1a; width: 80%; max-width: 800px; height: 80%; max-height: 600px; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color);">
               <div class="sd-header">
@@ -905,53 +1015,53 @@ export class DialogRenderer {
            </div>
         </div>
      `;
-  }
+   }
 
-  private static renderCropOverlay(dialog: StrainLibraryDialogState, callbacks: any): TemplateResult | typeof nothing {
-    const s = dialog.editorState;
-    if (!s.image) return nothing;
+   private static renderCropOverlay(dialog: StrainLibraryDialogState, callbacks: any): TemplateResult | typeof nothing {
+      const s = dialog.editorState;
+      if (!s.image) return nothing;
 
-    // Local state handling for drag/zoom would ideally be in the component instance,
-    // but since this is a static renderer, we rely on the dialog state.
-    // We need the offsets and scale in the state.
-    // For smooth dragging, we might need to use DOM events that update the state via callback.
+      // Local state handling for drag/zoom would ideally be in the component instance,
+      // but since this is a static renderer, we rely on the dialog state.
+      // We need the offsets and scale in the state.
+      // For smooth dragging, we might need to use DOM events that update the state via callback.
 
-    const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
+      const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
 
-    const handleWheel = (e: WheelEvent) => {
-       e.preventDefault();
-       const delta = e.deltaY * -0.001;
-       const newScale = Math.min(Math.max(meta.scale + delta, 1), 5);
-       callbacks.onEditorChange('image_crop_meta', { ...meta, scale: newScale });
-    };
+      const handleWheel = (e: WheelEvent) => {
+         e.preventDefault();
+         const delta = e.deltaY * -0.001;
+         const newScale = Math.min(Math.max(meta.scale + delta, 1), 5);
+         callbacks.onEditorChange('image_crop_meta', { ...meta, scale: newScale });
+      };
 
-    const handleMouseDown = (e: MouseEvent) => {
-       const startX = e.clientX;
-       const startY = e.clientY;
-       const startMetaX = meta.x;
-       const startMetaY = meta.y;
+      const handleMouseDown = (e: MouseEvent) => {
+         const startX = e.clientX;
+         const startY = e.clientY;
+         const startMetaX = meta.x;
+         const startMetaY = meta.y;
 
-       const onMouseMove = (ev: MouseEvent) => {
-          // Sensitivity factor needs tuning
-          const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
-          const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
+         const onMouseMove = (ev: MouseEvent) => {
+            // Sensitivity factor needs tuning
+            const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
+            const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
 
-          let newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
-          let newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
+            let newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
+            let newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
 
-          callbacks.onEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
-       };
+            callbacks.onEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
+         };
 
-       const onMouseUp = () => {
-          window.removeEventListener('mousemove', onMouseMove);
-          window.removeEventListener('mouseup', onMouseUp);
-       };
+         const onMouseUp = () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+         };
 
-       window.addEventListener('mousemove', onMouseMove);
-       window.addEventListener('mouseup', onMouseUp);
-    };
+         window.addEventListener('mousemove', onMouseMove);
+         window.addEventListener('mouseup', onMouseUp);
+      };
 
-    return html`
+      return html`
        <div class="crop-overlay">
           <h3 style="color:white; margin-bottom:20px;">Adjust Image</h3>
           <div class="crop-viewport"
@@ -988,21 +1098,21 @@ export class DialogRenderer {
           </div>
        </div>
     `;
-  }
+   }
 
-  private static renderStrainBrowseView(
+   private static renderStrainBrowseView(
       dialog: StrainLibraryDialogState,
       callbacks: any
-  ): TemplateResult {
-    // Filter Logic
-    const query = (dialog.searchQuery || '').toLowerCase();
-    const filteredStrains = dialog.strains.filter(s =>
-       s.strain.toLowerCase().includes(query) ||
-       (s.breeder && s.breeder.toLowerCase().includes(query)) ||
-       (s.phenotype && s.phenotype.toLowerCase().includes(query))
-    );
+   ): TemplateResult {
+      // Filter Logic
+      const query = (dialog.searchQuery || '').toLowerCase();
+      const filteredStrains = dialog.strains.filter(s =>
+         s.strain.toLowerCase().includes(query) ||
+         (s.breeder && s.breeder.toLowerCase().includes(query)) ||
+         (s.phenotype && s.phenotype.toLowerCase().includes(query))
+      );
 
-    return html`
+      return html`
       <div class="sd-header">
          <h2 class="sd-title">Strain Library</h2>
          <button class="sd-close-btn" @click=${callbacks.onClose}>
@@ -1051,9 +1161,17 @@ export class DialogRenderer {
       </div>
 
       <div class="sd-footer">
-         <button class="sd-btn secondary">
+         <button class="sd-btn secondary" @click=${callbacks.onGetRecommendation}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+            Get Recommendation
+         </button>
+         <button class="sd-btn secondary" @click=${callbacks.onOpenImportDialog}>
             <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
-            Import CSV
+            Import Strains
+         </button>
+         <button class="sd-btn secondary" @click=${callbacks.onExportStrains}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg>
+            Export Strains
          </button>
          <button class="sd-btn primary" @click=${() => callbacks.onSwitchView('editor')}>
             <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
@@ -1061,30 +1179,30 @@ export class DialogRenderer {
          </button>
       </div>
     `;
-  }
+   }
 
-  private static renderStrainCard(strain: StrainEntry, callbacks: any): TemplateResult {
-     let typeIcon = mdiLeaf;
-     let typeLabel = strain.type || 'Unknown';
+   private static renderStrainCard(strain: StrainEntry, callbacks: any): TemplateResult {
+      let typeIcon = mdiLeaf;
+      let typeLabel = strain.type || 'Unknown';
 
-     // Icon Mapping
-     const lowerType = (strain.type || '').toLowerCase();
-     if (lowerType.includes('indica')) typeIcon = mdiWeatherNight; // Moon/Fat Leaf approx
-     else if (lowerType.includes('sativa')) typeIcon = mdiWeatherSunny; // Sun/Tall Leaf approx
-     else if (lowerType.includes('hybrid')) typeIcon = mdiTuneVariant;
-     else if (lowerType.includes('ruderalis') || lowerType.includes('auto')) typeIcon = mdiLeaf;
+      // Icon Mapping
+      const lowerType = (strain.type || '').toLowerCase();
+      if (lowerType.includes('indica')) typeIcon = mdiWeatherNight; // Moon/Fat Leaf approx
+      else if (lowerType.includes('sativa')) typeIcon = mdiWeatherSunny; // Sun/Tall Leaf approx
+      else if (lowerType.includes('hybrid')) typeIcon = mdiTuneVariant;
+      else if (lowerType.includes('ruderalis') || lowerType.includes('auto')) typeIcon = mdiLeaf;
 
-     const thumbStyle = strain.image ? DialogRenderer.getCropStyle(strain.image, strain.image_crop_meta) : '';
+      const thumbStyle = strain.image ? DialogRenderer.getCropStyle(strain.image, strain.image_crop_meta) : '';
 
-     return html`
+      return html`
        <div class="strain-card" @click=${() => callbacks.onSwitchView('editor', strain)}>
           <div class="sc-thumb" style="${strain.image ? thumbStyle + '; background-repeat: no-repeat; background-position: center; background-size: cover;' : ''}">
              ${strain.image
-                ? (strain.image_crop_meta
-                     ? html`<div style="width:100%; height:100%; ${thumbStyle}; background-repeat: no-repeat;"></div>`
-                     : html`<img src="${strain.image}" alt="${strain.strain}" />`)
-                : html`<svg style="width:48px;height:48px;opacity:0.2;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>`
-             }
+            ? (strain.image_crop_meta
+               ? html`<div style="width:100%; height:100%; ${thumbStyle}; background-repeat: no-repeat;"></div>`
+               : html`<img src="${strain.image}" alt="${strain.strain}" />`)
+            : html`<svg style="width:48px;height:48px;opacity:0.2;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>`
+         }
              <div class="sc-actions">
                 <button class="sc-action-btn" @click=${(e: Event) => { e.stopPropagation(); callbacks.onRemoveStrain(strain.key); }}>
                    <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
@@ -1129,18 +1247,29 @@ export class DialogRenderer {
           </div>
        </div>
      `;
-  }
+   }
 
-  private static renderStrainEditorView(
+   private static renderStrainEditorView(
       dialog: StrainLibraryDialogState,
       callbacks: any
-  ): TemplateResult {
-    const s = dialog.editorState || {} as any;
-    const isEdit = !!s.strain && dialog.strains.some(ex => ex.strain === s.strain && ex.phenotype === s.phenotype); // Check if exists
+   ): TemplateResult {
+      const s = dialog.editorState || {} as any;
+      const isEdit = !!s.strain && dialog.strains.some(ex => ex.strain === s.strain && ex.phenotype === s.phenotype); // Check if exists
 
-    const update = (field: string, value: any) => callbacks.onEditorChange(field, value);
+      const update = (field: string, value: any) => callbacks.onEditorChange(field, value);
 
-    return html`
+      // Filter unique lists for autocomplete
+      const uniqueStrains = [...new Set(dialog.strains.map(st => st.strain).filter(Boolean))].sort();
+      const uniqueBreeders = [...new Set(dialog.strains.map(st => st.breeder).filter(Boolean))].sort();
+
+      return html`
+      <datalist id="strain-suggestions">
+         ${uniqueStrains.map(name => html`<option value="${name}"></option>`)}
+      </datalist>
+      <datalist id="breeder-suggestions">
+         ${uniqueBreeders.map(name => html`<option value="${name}"></option>`)}
+      </datalist>
+
       <div class="sd-header">
          <div style="display:flex; align-items:center; gap:16px;">
             <button class="sd-btn secondary" style="padding: 8px 12px;" @click=${() => callbacks.onSwitchView('browse')}>
@@ -1160,36 +1289,36 @@ export class DialogRenderer {
             <div class="editor-col">
                <div class="photo-upload-area"
                     @click=${(e: Event) => {
-                       // Only click input if not clicking the crop button or select lib button
-                       const target = e.target as HTMLElement;
-                       if (!target.closest('.crop-btn') && !target.closest('.select-library-btn')) {
-                           (e.currentTarget as HTMLElement).querySelector('input')?.click();
-                       }
-                    }}
+            // Only click input if not clicking the crop button or select lib button
+            const target = e.target as HTMLElement;
+            if (!target.closest('.crop-btn') && !target.closest('.select-library-btn')) {
+               (e.currentTarget as HTMLElement).querySelector('input')?.click();
+            }
+         }}
                     @dragover=${(e: DragEvent) => { e.preventDefault(); e.dataTransfer!.dropEffect = 'copy'; }}
                     @drop=${(e: DragEvent) => {
-                       e.preventDefault();
-                       const file = e.dataTransfer?.files[0];
-                       if (file) {
-                          PlantUtils.compressImage(file)
-                            .then(base64 => update('image', base64))
-                            .catch(err => console.error("Error compressing image:", err));
-                       }
-                    }}>
+            e.preventDefault();
+            const file = e.dataTransfer?.files[0];
+            if (file) {
+               PlantUtils.compressImage(file)
+                  .then(base64 => update('image', base64))
+                  .catch(err => console.error("Error compressing image:", err));
+            }
+         }}>
 
                   <button class="select-library-btn" @click=${(e: Event) => {
-                     e.stopPropagation();
-                     callbacks.onToggleImageSelector(true);
-                  }}>
+            e.stopPropagation();
+            callbacks.onToggleImageSelector(true);
+         }}>
                       <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
                       Select from Library
                   </button>
 
                   ${s.image ? html`
                      ${s.image_crop_meta
-                        ? html`<div style="width:100%; height:100%; border-radius:10px; ${DialogRenderer.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"></div>`
-                        : html`<img src="${s.image}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" />`
-                     }
+               ? html`<div style="width:100%; height:100%; border-radius:10px; ${DialogRenderer.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"></div>`
+               : html`<img src="${s.image}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" />`
+            }
 
                      <div style="position:absolute; bottom:8px; right:8px; display:flex; gap:8px;">
                          <button class="crop-btn"
@@ -1209,28 +1338,28 @@ export class DialogRenderer {
                   `}
                   <input type="file" id="strain-image-upload" style="display:none" accept="image/*"
                          @change=${(e: Event) => {
-                            const file = (e.target as HTMLInputElement).files?.[0];
-                            if (file) {
-                               PlantUtils.compressImage(file)
-                                 .then(base64 => update('image', base64))
-                                 .catch(err => console.error("Error compressing image:", err));
-                            }
-                         }} />
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (file) {
+               PlantUtils.compressImage(file)
+                  .then(base64 => update('image', base64))
+                  .catch(err => console.error("Error compressing image:", err));
+            }
+         }} />
                </div>
 
                <div class="sd-form-group">
                   <label class="sd-label">Strain Name *</label>
-                  <input type="text" class="sd-input" .value=${s.strain} @input=${(e:any) => update('strain', e.target.value)} />
+                  <input type="text" class="sd-input" list="strain-suggestions" .value=${s.strain} @input=${(e: any) => update('strain', e.target.value)} />
                </div>
 
                <div class="sd-form-group">
                   <label class="sd-label">Phenotype</label>
-                  <input type="text" class="sd-input" placeholder="e.g. #1 (Optional)" .value=${s.phenotype} @input=${(e:any) => update('phenotype', e.target.value)} />
+                  <input type="text" class="sd-input" placeholder="e.g. #1 (Optional)" .value=${s.phenotype} @input=${(e: any) => update('phenotype', e.target.value)} />
                </div>
 
                <div class="sd-form-group">
                   <label class="sd-label">Breeder/Seedbank</label>
-                  <input type="text" class="sd-input" .value=${s.breeder} @input=${(e:any) => update('breeder', e.target.value)} />
+                  <input type="text" class="sd-input" list="breeder-suggestions" .value=${s.breeder} @input=${(e: any) => update('breeder', e.target.value)} />
                </div>
             </div>
 
@@ -1240,20 +1369,20 @@ export class DialogRenderer {
                   <label class="sd-label">Type *</label>
                   <div class="type-selector-grid">
                      ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map(t => {
-                        let icon = mdiLeaf;
-                        if(t === 'Indica') icon = mdiWeatherNight;
-                        if(t === 'Sativa') icon = mdiWeatherSunny;
-                        if(t === 'Hybrid') icon = mdiTuneVariant;
+            let icon = mdiLeaf;
+            if (t === 'Indica') icon = mdiWeatherNight;
+            if (t === 'Sativa') icon = mdiWeatherSunny;
+            if (t === 'Hybrid') icon = mdiTuneVariant;
 
-                        const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
-                        return html`
+            const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
+            return html`
                            <div class="type-option ${isActive ? 'active' : ''}"
                                 @click=${() => update('type', t)}>
                               <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
                               <span class="type-label">${t}</span>
                            </div>
                         `;
-                     })}
+         })}
                   </div>
                </div>
 
@@ -1268,15 +1397,15 @@ export class DialogRenderer {
                               <span>Indica:</span>
                               <input class="hg-num-input" type="number" min="0" max="100"
                                  .value=${s.indica_percentage || 0}
-                                 @input=${(e:any) => {
-                                    let val = Math.floor(parseFloat(e.target.value)) || 0;
-                                    if(val < 0) val = 0;
-                                    if(val > 100) val = 100;
+                                 @input=${(e: any) => {
+               let val = Math.floor(parseFloat(e.target.value)) || 0;
+               if (val < 0) val = 0;
+               if (val > 100) val = 100;
 
-                                    // Update Indica, Auto-calc Sativa
-                                    update('indica_percentage', val);
-                                    update('sativa_percentage', 100 - val);
-                                 }} />
+               // Update Indica, Auto-calc Sativa
+               update('indica_percentage', val);
+               update('sativa_percentage', 100 - val);
+            }} />
                               <span>%</span>
                            </div>
 
@@ -1284,15 +1413,15 @@ export class DialogRenderer {
                               <span>Sativa:</span>
                               <input class="hg-num-input" type="number" min="0" max="100"
                                  .value=${s.sativa_percentage || 0}
-                                 @input=${(e:any) => {
-                                    let val = Math.floor(parseFloat(e.target.value)) || 0;
-                                    if(val < 0) val = 0;
-                                    if(val > 100) val = 100;
+                                 @input=${(e: any) => {
+               let val = Math.floor(parseFloat(e.target.value)) || 0;
+               if (val < 0) val = 0;
+               if (val > 100) val = 100;
 
-                                    // Update Sativa, Auto-calc Indica
-                                    update('sativa_percentage', val);
-                                    update('indica_percentage', 100 - val);
-                                 }} />
+               // Update Sativa, Auto-calc Indica
+               update('sativa_percentage', val);
+               update('indica_percentage', 100 - val);
+            }} />
                               <span>%</span>
                            </div>
                         </div>
@@ -1300,19 +1429,19 @@ export class DialogRenderer {
                         <!-- Bar -->
                         <div class="hg-bar-track"
                              @click=${(e: MouseEvent) => {
-                                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                                const x = e.clientX - rect.left;
-                                const width = rect.width;
-                                // 0 on Left means 0% Indica?
-                                // Left Bar is Indica. So Width = Indica %.
-                                // if x is at 40% of width, then Indica is 40%.
-                                let percent = Math.round((x / width) * 100);
-                                if(percent < 0) percent = 0;
-                                if(percent > 100) percent = 100;
+               const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+               const x = e.clientX - rect.left;
+               const width = rect.width;
+               // 0 on Left means 0% Indica?
+               // Left Bar is Indica. So Width = Indica %.
+               // if x is at 40% of width, then Indica is 40%.
+               let percent = Math.round((x / width) * 100);
+               if (percent < 0) percent = 0;
+               if (percent > 100) percent = 100;
 
-                                update('indica_percentage', percent);
-                                update('sativa_percentage', 100 - percent);
-                             }}>
+               update('indica_percentage', percent);
+               update('sativa_percentage', 100 - percent);
+            }}>
                            <div class="hg-bar-indica" style="width: ${s.indica_percentage || 0}%"></div>
                            <div class="hg-bar-sativa"></div>
 
@@ -1340,14 +1469,14 @@ export class DialogRenderer {
                <div class="sd-form-group">
                   <label class="sd-label">Flowering Time (Days)</label>
                   <div style="display:flex; gap:16px;">
-                     <input type="number" class="sd-input" placeholder="Min" .value=${s.flowering_min} @input=${(e:any) => update('flowering_min', e.target.value)} />
-                     <input type="number" class="sd-input" placeholder="Max" .value=${s.flowering_max} @input=${(e:any) => update('flowering_max', e.target.value)} />
+                     <input type="number" class="sd-input" placeholder="Min" .value=${s.flowering_min} @input=${(e: any) => update('flowering_min', e.target.value)} />
+                     <input type="number" class="sd-input" placeholder="Max" .value=${s.flowering_max} @input=${(e: any) => update('flowering_max', e.target.value)} />
                   </div>
                </div>
 
                <div class="sd-form-group">
                   <label class="sd-label">Lineage</label>
-                  <input type="text" class="sd-input" .value=${s.lineage} @input=${(e:any) => update('lineage', e.target.value)} />
+                  <input type="text" class="sd-input" .value=${s.lineage} @input=${(e: any) => update('lineage', e.target.value)} />
                </div>
 
                <div class="sd-form-group">
@@ -1367,7 +1496,7 @@ export class DialogRenderer {
 
                <div class="sd-form-group">
                   <label class="sd-label">Description</label>
-                  <textarea class="sd-textarea" .value=${s.description} @input=${(e:any) => update('description', e.target.value)}></textarea>
+                  <textarea class="sd-textarea" .value=${s.description} @input=${(e: any) => update('description', e.target.value)}></textarea>
                </div>
             </div>
          </div>
@@ -1383,10 +1512,10 @@ export class DialogRenderer {
          </button>
       </div>
     `;
-  }
+   }
 
-  private static renderMD3TextInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
-    return html`
+   private static renderMD3TextInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
+      return html`
       <div class="md3-input-group">
         <label class="md3-label">${label}</label>
         <input
@@ -1397,10 +1526,10 @@ export class DialogRenderer {
         />
       </div>
     `;
-  }
+   }
 
-  private static renderMD3SelectInput(label: string, value: string, options: string[], onChange: (value: string) => void): TemplateResult {
-    return html`
+   private static renderMD3SelectInput(label: string, value: string, options: string[], onChange: (value: string) => void): TemplateResult {
+      return html`
       <div class="md3-input-group">
         <label class="md3-label">${label}</label>
         <select
@@ -1413,10 +1542,10 @@ export class DialogRenderer {
         </select>
       </div>
     `;
-  }
+   }
 
-  private static renderMD3NumberInput(label: string, value: number, onChange: (value: string) => void): TemplateResult {
-    return html`
+   private static renderMD3NumberInput(label: string, value: number, onChange: (value: string) => void): TemplateResult {
+      return html`
       <div class="md3-input-group">
         <label class="md3-label">${label}</label>
         <input
@@ -1428,11 +1557,11 @@ export class DialogRenderer {
         />
       </div>
     `;
-  }
+   }
 
-  private static renderMD3DateInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
-    const formattedValue = PlantUtils.toDateTimeLocal(value);
-    return html`
+   private static renderMD3DateInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
+      const formattedValue = PlantUtils.toDateTimeLocal(value);
+      return html`
       <div class="md3-input-group">
         <label class="md3-label">${label}</label>
         <input
@@ -1443,11 +1572,11 @@ export class DialogRenderer {
         />
       </div>
     `;
-  }
+   }
 
-  // Legacy render methods for Add Dialog (kept simple for now as requested focused on Overview)
-  private static renderTextInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
-    return html`
+   // Legacy render methods for Add Dialog (kept simple for now as requested focused on Overview)
+   private static renderTextInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
+      return html`
       <div class="form-group">
         <label>${label}</label>
         <input 
@@ -1458,10 +1587,10 @@ export class DialogRenderer {
         />
       </div>
     `;
-  }
+   }
 
-  private static renderNumberInput(label: string, value: number, onChange: (value: string) => void): TemplateResult {
-    return html`
+   private static renderNumberInput(label: string, value: number, onChange: (value: string) => void): TemplateResult {
+      return html`
       <div class="form-group">
         <label>${label}</label>
         <input 
@@ -1473,10 +1602,10 @@ export class DialogRenderer {
         />
       </div>
     `;
-  }
+   }
 
-  private static renderDateTimeInput(label: string, icon: string, value: string, onChange: (value: string) => void): TemplateResult {
-    return html`
+   private static renderDateTimeInput(label: string, icon: string, value: string, onChange: (value: string) => void): TemplateResult {
+      return html`
       <div class="form-group">
         <label>
           <svg style="width:16px;height:16px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
@@ -1492,15 +1621,15 @@ export class DialogRenderer {
         />
       </div>
     `;
-  }
+   }
 
-  private static renderPlantStatsMD3(plant: any): TemplateResult {
-    const hasStats = plant.attributes?.veg_days || plant.attributes?.flower_days ||
-      plant.attributes?.dry_days || plant.attributes?.cure_days;
+   private static renderPlantStatsMD3(plant: any): TemplateResult {
+      const hasStats = plant.attributes?.veg_days || plant.attributes?.flower_days ||
+         plant.attributes?.dry_days || plant.attributes?.cure_days;
 
-    if (!hasStats) return html``;
+      if (!hasStats) return html``;
 
-    return html`
+      return html`
       <div class="detail-card">
         <h3>Current Progress</h3>
         <div style="display: flex; gap: 16px; flex-wrap: wrap;">
@@ -1531,35 +1660,35 @@ export class DialogRenderer {
         </div>
       </div>
     `;
-  }
+   }
 
-  private static renderPlantStats(plant: any): TemplateResult {
+   private static renderPlantStats(plant: any): TemplateResult {
       // Keeping for legacy/Add dialog if needed, though Add dialog doesn't show stats usually
       return this.renderPlantStatsMD3(plant);
-  }
+   }
 
-  static renderConfigDialog(
-    dialog: ConfigDialogState | null,
-    growspaceOptions: Record<string, string>,
-    callbacks: {
-      onClose: () => void;
-      onSwitchTab: (tab: 'add_growspace' | 'environment' | 'global') => void;
-      // Add Growspace
-      onAddGrowspaceChange: (field: string, value: any) => void;
-      onAddGrowspaceSubmit: () => void;
-      // Environment
-      onEnvChange: (field: string, value: any) => void;
-      onEnvSubmit: () => void;
-      // Global
-      onGlobalChange: (field: string, value: any) => void;
-      onGlobalSubmit: () => void;
-    }
-  ): TemplateResult {
-    if (!dialog?.open) return html``;
+   static renderConfigDialog(
+      dialog: ConfigDialogState | null,
+      growspaceOptions: Record<string, string>,
+      callbacks: {
+         onClose: () => void;
+         onSwitchTab: (tab: 'add_growspace' | 'environment' | 'global') => void;
+         // Add Growspace
+         onAddGrowspaceChange: (field: string, value: any) => void;
+         onAddGrowspaceSubmit: () => void;
+         // Environment
+         onEnvChange: (field: string, value: any) => void;
+         onEnvSubmit: () => void;
+         // Global
+         onGlobalChange: (field: string, value: any) => void;
+         onGlobalSubmit: () => void;
+      }
+   ): TemplateResult {
+      if (!dialog?.open) return html``;
 
-    const activeTab = dialog.currentTab;
+      const activeTab = dialog.currentTab;
 
-    return html`
+      return html`
       <ha-dialog
         open
         @closed=${callbacks.onClose}
@@ -1699,11 +1828,11 @@ export class DialogRenderer {
         </div>
       </ha-dialog>
     `;
-  }
+   }
 
-  private static renderAddGrowspaceTab(dialog: ConfigDialogState, callbacks: any): TemplateResult {
-    const d = dialog.addGrowspaceData;
-    return html`
+   private static renderAddGrowspaceTab(dialog: ConfigDialogState, callbacks: any): TemplateResult {
+      const d = dialog.addGrowspaceData;
+      return html`
       <div style="display:flex; flex-direction:column; gap:20px;">
          <div class="detail-card">
             <h3>New Growspace Details</h3>
@@ -1716,14 +1845,14 @@ export class DialogRenderer {
          </div>
       </div>
     `;
-  }
+   }
 
-  private static renderEnvironmentTab(dialog: ConfigDialogState, growspaces: Record<string, string>, callbacks: any): TemplateResult {
-    const d = dialog.environmentData;
-    // Convert record to array for select
-    const options = Object.entries(growspaces).map(([id, name]) => ({ id, name }));
+   private static renderEnvironmentTab(dialog: ConfigDialogState, growspaces: Record<string, string>, callbacks: any): TemplateResult {
+      const d = dialog.environmentData;
+      // Convert record to array for select
+      const options = Object.entries(growspaces).map(([id, name]) => ({ id, name }));
 
-    return html`
+      return html`
        <div style="display:flex; flex-direction:column; gap:20px;">
           <div class="detail-card">
              <h3>Select Target</h3>
@@ -1751,11 +1880,11 @@ export class DialogRenderer {
           </div>
        </div>
     `;
-  }
+   }
 
-  private static renderGlobalTab(dialog: ConfigDialogState, callbacks: any): TemplateResult {
-    const d = dialog.globalData;
-    return html`
+   private static renderGlobalTab(dialog: ConfigDialogState, callbacks: any): TemplateResult {
+      const d = dialog.globalData;
+      return html`
        <div style="display:flex; flex-direction:column; gap:20px;">
           <div class="detail-card">
              <h3>Global Environment</h3>
@@ -1768,5 +1897,238 @@ export class DialogRenderer {
           </div>
        </div>
     `;
-  }
+   }
+
+   static renderGrowMasterDialog(
+      dialog: GrowMasterDialogState | null,
+      isStressed: boolean,
+      personality: string | undefined,
+      callbacks: {
+         onClose: () => void;
+         onQueryChange: (query: string) => void;
+         onAnalyze: () => void;
+         onAnalyzeAll: () => void;
+      }
+   ): TemplateResult {
+      if (!dialog?.open) return html``;
+
+      // Border color based on stress
+      // Light Green: #4CAF50, Warning Orange: #FF9800
+      const borderColor = isStressed ? '#FF9800' : '#4CAF50';
+      const title = personality ? `Ask the ${personality}` : 'Ask the Grow Master';
+
+      return html`
+      <ha-dialog
+        open
+        @closed=${callbacks.onClose}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <style>
+           .gm-container {
+              background: #1a1a1a;
+              color: #fff;
+              width: 500px;
+              max-width: 90vw;
+              border-radius: 24px;
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;
+              font-family: 'Roboto', sans-serif;
+              border: 1px solid rgba(255,255,255,0.1);
+           }
+           .gm-header {
+              background: #2d2d2d;
+              padding: 20px 24px;
+              display: flex;
+              align-items: center;
+              gap: 16px;
+              border-bottom: 1px solid rgba(255,255,255,0.1);
+           }
+           .gm-content {
+              padding: 24px;
+              display: flex;
+              flex-direction: column;
+              gap: 20px;
+              overflow-y: auto;
+              max-height: 70vh;
+           }
+           .gm-response-box {
+              background: rgba(255,255,255,0.05);
+              border: 2px solid ${borderColor};
+              border-radius: 16px;
+              padding: 20px;
+              line-height: 1.6;
+              font-size: 0.95rem;
+              white-space: pre-wrap;
+              position: relative;
+           }
+           .gm-loading {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              padding: 40px;
+              color: var(--secondary-text-color);
+              gap: 12px;
+           }
+           @keyframes spin { 100% { transform: rotate(360deg); } }
+           .spinner {
+              animation: spin 1s linear infinite;
+              width: 24px;
+              height: 24px;
+           }
+        </style>
+
+        <div class="gm-container">
+           <div class="gm-header">
+              <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; color: ${borderColor}">
+                 <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+              </div>
+              <div style="flex:1">
+                 <h2 style="margin:0; font-size:1.25rem;">${title}</h2>
+                 <div style="font-size:0.8rem; color:var(--secondary-text-color); margin-top:4px;">
+                    ${isStressed ? 'Warning: Plant Stress Detected' : 'All systems normal'}
+                 </div>
+              </div>
+              <button class="md3-button text" @click=${callbacks.onClose} style="min-width:auto; padding:8px;">
+                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+              </button>
+           </div>
+
+           <div class="gm-content">
+              <!-- Input Area -->
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                 <label style="font-size:0.9rem; font-weight:500; color:#ccc;">Your Question</label>
+                 <textarea
+                    class="sd-textarea"
+                    placeholder="Ask about this growspace..."
+                    .value=${dialog.userQuery}
+                    @input=${(e: any) => callbacks.onQueryChange(e.target.value)}
+                    style="min-height: 80px;"
+                 ></textarea>
+              </div>
+
+              <!-- Action -->
+              <div style="display:flex; justify-content:flex-end; gap: 12px;">
+                 <button
+                    class="md3-button tonal"
+                    @click=${callbacks.onAnalyzeAll}
+                    ?disabled=${dialog.isLoading}
+                    style="opacity: ${dialog.isLoading ? 0.7 : 1}"
+                 >
+                    Analyze All
+                 </button>
+                 <button
+                    class="md3-button primary"
+                    @click=${callbacks.onAnalyze}
+                    ?disabled=${dialog.isLoading}
+                    style="opacity: ${dialog.isLoading ? 0.7 : 1}"
+                 >
+                    ${dialog.isLoading ? 'Analyzing...' : 'Analyze Environment'}
+                 </button>
+              </div>
+
+              <!-- Response Area -->
+              ${dialog.isLoading ? html`
+                 <div class="gm-loading">
+                    <svg class="spinner" viewBox="0 0 24 24"><path d="${mdiLoading}" fill="currentColor"></path></svg>
+                    <span>Consulting the archives...</span>
+                 </div>
+              ` : nothing}
+
+              ${!dialog.isLoading && dialog.response ? html`
+                 <div class="gm-response-box">
+                    ${typeof dialog.response === 'object'
+               ? JSON.stringify(dialog.response, null, 2)
+               : dialog.response}
+                 </div>
+              ` : nothing}
+           </div>
+        </div>
+      </ha-dialog>
+    `;
+   }
+
+   static renderStrainRecommendationDialog(
+      dialog: StrainRecommendationDialogState | null,
+      callbacks: {
+         onClose: () => void;
+         onQueryChange: (query: string) => void;
+         onGetRecommendation: () => void;
+      }
+   ): TemplateResult {
+      if (!dialog?.open) return html``;
+
+      return html`
+      <ha-dialog
+        open
+        @closed=${callbacks.onClose}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="gm-container">
+           <div class="gm-header">
+              <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; color: #4CAF50">
+                 <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+              </div>
+              <div style="flex:1">
+                 <h2 style="margin:0; font-size:1.25rem;">Get Strain Recommendation</h2>
+              </div>
+              <button class="md3-button text" @click=${callbacks.onClose} style="min-width:auto; padding:8px;">
+                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+              </button>
+           </div>
+
+           <div class="gm-content">
+              <!-- Input Area -->
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                 <label style="font-size:0.9rem; font-weight:500; color:#ccc;">Your Preferences</label>
+                 <textarea
+                    class="sd-textarea"
+                    placeholder="e.g., something fruity and good for daytime use..."
+                    .value=${dialog.userQuery}
+                    @input=${(e: any) => callbacks.onQueryChange(e.target.value)}
+                    style="min-height: 80px;"
+                 ></textarea>
+              </div>
+
+              <!-- Action -->
+              <div style="display:flex; justify-content:flex-end; gap: 12px;">
+                 <button
+                    class="md3-button tonal"
+                    @click=${callbacks.onClose}
+                 >
+                    OK
+                 </button>
+                 <button
+                    class="md3-button primary"
+                    @click=${callbacks.onGetRecommendation}
+                    ?disabled=${dialog.isLoading}
+                    style="opacity: ${dialog.isLoading ? 0.7 : 1}"
+                 >
+                    ${dialog.isLoading ? 'Getting Recommendation...' : 'Get Recommendation'}
+                 </button>
+              </div>
+
+              ${dialog.isLoading ? html`
+                 <div class="gm-loading">
+                    <svg class="spinner" viewBox="0 0 24 24"><path d="${mdiLoading}" fill="currentColor"></path></svg>
+                    <span>Consulting the archives...</span>
+                 </div>
+              ` : nothing}
+
+              ${!dialog.isLoading && dialog.response ? html`
+                 <div class="gm-response-box">
+                    ${typeof dialog.response === 'object'
+               ? JSON.stringify(dialog.response, null, 2)
+               : dialog.response}
+                 </div>
+              ` : nothing}
+           </div>
+        </div>
+      </ha-dialog>
+    `;
+   }
 }
