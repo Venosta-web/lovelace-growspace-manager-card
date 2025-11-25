@@ -505,7 +505,7 @@ export class DataService {
   async askGrowAdvice(growspaceId: string, userQuery: string): Promise<{ response: string }> {
     console.log("[DataService:askGrowAdvice] Asking advice for:", growspaceId, userQuery);
     try {
-      // UPDATED: Use sendMessagePromise to send return_response=true
+      // Use sendMessagePromise to ensure return_response=true is correctly sent
       return await this.hass.connection.sendMessagePromise({
         type: 'call_service',
         domain: 'growspace_manager',
