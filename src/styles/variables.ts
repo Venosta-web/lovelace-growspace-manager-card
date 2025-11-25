@@ -62,5 +62,48 @@ export const variables: CSSResult = css`
     --strain-input-bg: #2a2a2a;
     --strain-input-border: #3a3a3a;
     --primary-light-color: #FFEB3B;
+
+    /* MD3 System Tokens Mappings */
+    --md-sys-color-primary: var(--primary-color, #4caf50);
+    --md-sys-color-on-primary: #ffffff;
+    --md-sys-color-primary-container: rgba(76, 175, 80, 0.12);
+    --md-sys-color-on-primary-container: #1b5e20;
+    
+    --md-sys-color-secondary: var(--accent-color, #2196f3);
+    --md-sys-color-on-secondary: #ffffff;
+    --md-sys-color-secondary-container: rgba(33, 150, 243, 0.12);
+    --md-sys-color-on-secondary-container: #0d47a1;
+
+    --md-sys-color-surface: var(--growspace-card-bg, #1e1e1e);
+    --md-sys-color-on-surface: var(--growspace-card-text, #ffffff);
+    --md-sys-color-surface-variant: #424242;
+    --md-sys-color-on-surface-variant: #e0e0e0;
+    
+    --md-sys-color-outline: rgba(255, 255, 255, 0.12);
+    --md-sys-color-outline-variant: rgba(255, 255, 255, 0.08);
+
+    --md-sys-color-error: var(--error-color, #f44336);
+    --md-sys-color-on-error: #ffffff;
+    --md-sys-color-error-container: var(--error-bg, rgba(244, 67, 54, 0.1));
+    --md-sys-color-on-error-container: #ffb4ab;
+
+    /* Component specific overrides for Dark Mode */
+    --md-outlined-text-field-container-shape: 8px;
+    --md-outlined-text-field-outline-color: var(--md-sys-color-outline);
+    --md-outlined-text-field-focus-outline-color: var(--md-sys-color-primary);
+    --md-outlined-text-field-label-text-color: var(--md-sys-color-on-surface-variant);
+    --md-outlined-text-field-focus-label-text-color: var(--md-sys-color-primary);
+    --md-outlined-text-field-input-text-color: var(--md-sys-color-on-surface);
+
+    --md-outlined-select-text-field-container-shape: 8px;
+    --md-outlined-select-text-field-outline-color: var(--md-sys-color-outline);
+    --md-outlined-select-text-field-focus-outline-color: var(--md-sys-color-primary);
+    --md-outlined-select-text-field-label-text-color: var(--md-sys-color-on-surface-variant);
+    --md-outlined-select-text-field-focus-label-text-color: var(--md-sys-color-primary);
+    --md-outlined-select-text-field-input-text-color: var(--md-sys-color-on-surface);
+    --md-menu-container-color: var(--md-sys-color-surface);
+    --md-menu-item-label-text-color: var(--md-sys-color-on-surface);
+    --md-menu-item-selected-container-color: var(--md-sys-color-primary-container);
+    --md-menu-item-selected-label-text-color: var(--md-sys-color-on-primary-container);
   }
 `;

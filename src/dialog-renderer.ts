@@ -9,6 +9,15 @@ import {
 import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, ConfigDialogState, GrowMasterDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry, CropMeta, StrainRecommendationDialogState } from './types';
 import { PlantUtils } from "./utils";
 
+import '@material/web/textfield/outlined-text-field.js';
+import '@material/web/select/outlined-select.js';
+import '@material/web/select/select-option.js';
+import '@material/web/button/filled-button.js';
+import '@material/web/button/filled-tonal-button.js';
+import '@material/web/button/text-button.js';
+import '@material/web/icon/icon.js';
+import '@material/web/iconbutton/icon-button.js';
+
 export class DialogRenderer {
    private static getCropStyle(image: string, meta?: CropMeta) {
       if (!meta) return `background-image: url('${image}')`;
@@ -80,11 +89,9 @@ export class DialogRenderer {
                <h2 class="dialog-title">Add New Plant</h2>
                <div class="dialog-subtitle">Enter plant details below</div>
             </div>
-            <button class="md3-button text" @click=${callbacks.onClose} style="min-width: auto; padding: 8px;">
-               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                 <path d="${mdiClose}"></path>
-               </svg>
-            </button>
+            <md-icon-button @click=${callbacks.onClose}>
+               <md-icon><svg viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg></md-icon>
+            </md-icon-button>
           </div>
 
           <div class="overview-grid">
@@ -107,13 +114,13 @@ export class DialogRenderer {
 
           <!-- ACTION BUTTONS -->
           <div class="button-group">
-            <button class="md3-button tonal" @click=${callbacks.onClose}>
+            <md-filled-tonal-button @click=${callbacks.onClose}>
               Cancel
-            </button>
-            <button class="md3-button primary" @click=${callbacks.onConfirm}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
+            </md-filled-tonal-button>
+            <md-filled-button @click=${callbacks.onConfirm}>
+              <md-icon slot="icon"><svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg></md-icon>
               Add Plant
-            </button>
+            </md-filled-button>
           </div>
 
         </div>
@@ -209,11 +216,9 @@ export class DialogRenderer {
                <h2 class="dialog-title">${editedAttributes.strain || 'Unknown Strain'}</h2>
                <div class="dialog-subtitle">${plant.state} Stage • ${editedAttributes.phenotype || 'No Phenotype'}</div>
             </div>
-            <button class="md3-button text" @click=${callbacks.onClose} style="min-width: auto; padding: 8px;">
-               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                 <path d="${mdiClose}"></path>
-               </svg>
-            </button>
+            <md-icon-button @click=${callbacks.onClose}>
+               <md-icon><svg viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg></md-icon>
+            </md-icon-button>
           </div>
 
           <div class="overview-grid">
@@ -258,15 +263,15 @@ export class DialogRenderer {
 
           <!-- ACTION BUTTONS -->
           <div class="button-group">
-             <button class="md3-button danger" @click=${() => callbacks.onDelete(plantId)}>
-               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+             <md-filled-button class="danger" @click=${() => callbacks.onDelete(plantId)} style="--md-filled-button-container-color: var(--error-color, #b00020);">
+               <md-icon slot="icon"><svg viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg></md-icon>
                Delete
-             </button>
+             </md-filled-button>
 
-             <button class="md3-button tonal" @click=${callbacks.onUpdate}>
-               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
+             <md-filled-tonal-button @click=${callbacks.onUpdate}>
+               <md-icon slot="icon"><svg viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg></md-icon>
                Save Changes
-             </button>
+             </md-filled-tonal-button>
 
              <!-- DYNAMIC ACTIONS BASED ON STAGE -->
              ${plant.state.toLowerCase() === 'mother' ? html`
@@ -280,7 +285,7 @@ export class DialogRenderer {
                     class="num-clones-input md3-input"
                     style="width: 60px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 8px; text-align:center; padding:0;"
                   >
-                  <button class="md3-button primary"
+                  <md-filled-button
                     @click=${(e: MouseEvent) => {
                const btn = e.currentTarget as HTMLElement;
                // Find the input sibling (since we used display:contents, they are siblings in the flex container)
@@ -289,33 +294,12 @@ export class DialogRenderer {
                callbacks.onTakeClone(plant, numClones);
             }}
                   >
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+                    <md-icon slot="icon"><svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg></md-icon>
                     Take Clone
-                  </button>
-                </div>
-             ` : nothing}
-
-             ${plant.state.toLowerCase() === 'flower' ? html`
-               <button class="md3-button primary" @click=${() => callbacks.onHarvest(plant)}>
-                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
-                 Harvest
-               </button>
-             ` : nothing}
-
-             ${plant.state.toLowerCase() === 'dry' ? html`
-               <button class="md3-button primary" @click=${() => callbacks.onFinishDrying(plant)}>
-                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
-                 Finish Drying
-               </button>
-             ` : nothing}
-
-             ${plant.state.toLowerCase() === 'clone' ? html`
-               <div style="display:contents;">
-                  <select class="md3-input" style="width: auto; height: 40px; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 0 16px;" id="clone-target-select">
                     <option value="">Move to...</option>
                     ${Object.entries(growspaceOptions).map(([id, name]) => html`<option value="${id}">${name}</option>`)}
                   </select>
-                  <button class="md3-button primary"
+                  <md-filled-button
                     @click=${(e: MouseEvent) => {
                const btn = e.currentTarget as HTMLElement;
                const select = btn.previousElementSibling as HTMLSelectElement;
@@ -323,9 +307,9 @@ export class DialogRenderer {
                callbacks.onMoveClone(plant, select.value);
             }}
                   >
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
+                    <md-icon slot="icon"><svg viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg></md-icon>
                     Move
-                  </button>
+                  </md-filled-button>
                </div>
              ` : nothing}
           </div>
@@ -1493,134 +1477,17 @@ export class DialogRenderer {
                      `)}
                   </div>
                </div>
-
-               <div class="sd-form-group">
-                  <label class="sd-label">Description</label>
-                  <textarea class="sd-textarea" .value=${s.description} @input=${(e: any) => update('description', e.target.value)}></textarea>
-               </div>
-            </div>
-         </div>
-      </div>
+            </div> <!-- End Right Col -->
+         </div> <!-- End Editor Layout -->
+      </div> <!-- End Content -->
 
       <div class="sd-footer">
-         <button class="sd-btn secondary" @click=${() => callbacks.onSwitchView('browse')}>
-            Cancel
-         </button>
-         <button class="sd-btn primary" @click=${callbacks.onAddStrain}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
+         <md-filled-button @click=${callbacks.onAddStrain}>
+            <md-icon slot="icon"><svg viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg></md-icon>
             Save Strain
-         </button>
+         </md-filled-button>
       </div>
-    `;
-   }
-
-   private static renderMD3TextInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
-      return html`
-      <div class="md3-input-group">
-        <label class="md3-label">${label}</label>
-        <input
-          type="text"
-          class="md3-input"
-          .value=${value}
-          @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
-        />
-      </div>
-    `;
-   }
-
-   private static renderMD3SelectInput(label: string, value: string, options: string[], onChange: (value: string) => void): TemplateResult {
-      return html`
-      <div class="md3-input-group">
-        <label class="md3-label">${label}</label>
-        <select
-          class="md3-input"
-          .value=${value}
-          @change=${(e: Event) => onChange((e.target as HTMLSelectElement).value)}
-        >
-          <option value="">Select...</option>
-          ${options.map(opt => html`<option value="${opt}" ?selected=${opt === value}>${opt}</option>`)}
-        </select>
-      </div>
-    `;
-   }
-
-   private static renderMD3NumberInput(label: string, value: number, onChange: (value: string) => void): TemplateResult {
-      return html`
-      <div class="md3-input-group">
-        <label class="md3-label">${label}</label>
-        <input
-          type="number"
-          class="md3-input"
-          min="1"
-          .value=${value}
-          @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
-        />
-      </div>
-    `;
-   }
-
-   private static renderMD3DateInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
-      const formattedValue = PlantUtils.toDateTimeLocal(value);
-      return html`
-      <div class="md3-input-group">
-        <label class="md3-label">${label}</label>
-        <input
-          type="datetime-local"
-          class="md3-input"
-          .value=${formattedValue}
-          @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
-        />
-      </div>
-    `;
-   }
-
-   // Legacy render methods for Add Dialog (kept simple for now as requested focused on Overview)
-   private static renderTextInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
-      return html`
-      <div class="form-group">
-        <label>${label}</label>
-        <input 
-          type="text" 
-          class="form-input"
-          .value=${value}
-          @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
-        />
-      </div>
-    `;
-   }
-
-   private static renderNumberInput(label: string, value: number, onChange: (value: string) => void): TemplateResult {
-      return html`
-      <div class="form-group">
-        <label>${label}</label>
-        <input 
-          type="number" 
-          class="form-input"
-          min="1"
-          .value=${value}
-          @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
-        />
-      </div>
-    `;
-   }
-
-   private static renderDateTimeInput(label: string, icon: string, value: string, onChange: (value: string) => void): TemplateResult {
-      return html`
-      <div class="form-group">
-        <label>
-          <svg style="width:16px;height:16px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-            <path d="${icon}"></path>
-          </svg>
-          ${label}
-        </label>
-        <input 
-          type="datetime-local" 
-          class="form-input"
-          .value=${value}
-          @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
-        />
-      </div>
-    `;
+      `;
    }
 
    private static renderPlantStatsMD3(plant: any): TemplateResult {
@@ -1630,36 +1497,36 @@ export class DialogRenderer {
       if (!hasStats) return html``;
 
       return html`
-      <div class="detail-card">
-        <h3>Current Progress</h3>
-        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-           ${plant.attributes?.veg_days ? html`
-             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
-               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-veg);">${plant.attributes.veg_days}</span>
-               <span style="font-size:0.7rem; opacity:0.7;">Veg Days</span>
-             </div>
-           ` : ''}
-           ${plant.attributes?.flower_days ? html`
-             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
-               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-flower);">${plant.attributes.flower_days}</span>
-               <span style="font-size:0.7rem; opacity:0.7;">Flower Days</span>
-             </div>
-           ` : ''}
-           ${plant.attributes?.dry_days ? html`
-             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
-               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-dry);">${plant.attributes.dry_days}</span>
-               <span style="font-size:0.7rem; opacity:0.7;">Drying Days</span>
-             </div>
-           ` : ''}
-           ${plant.attributes?.cure_days ? html`
-             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
-               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-cure);">${plant.attributes.cure_days}</span>
-               <span style="font-size:0.7rem; opacity:0.7;">Curing Days</span>
-             </div>
-           ` : ''}
-        </div>
-      </div>
-    `;
+         <div class="detail-card">
+            <h3>Current Progress</h3>
+            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+               ${plant.attributes?.veg_days ? html`
+                  <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
+                     <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-veg);">${plant.attributes.veg_days}</span>
+                     <span style="font-size:0.7rem; opacity:0.7;">Veg Days</span>
+                  </div>
+               ` : ''}
+               ${plant.attributes?.flower_days ? html`
+                  <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
+                     <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-flower);">${plant.attributes.flower_days}</span>
+                     <span style="font-size:0.7rem; opacity:0.7;">Flower Days</span>
+                  </div>
+               ` : ''}
+               ${plant.attributes?.dry_days ? html`
+                  <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
+                     <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-dry);">${plant.attributes.dry_days}</span>
+                     <span style="font-size:0.7rem; opacity:0.7;">Drying Days</span>
+                  </div>
+               ` : ''}
+               ${plant.attributes?.cure_days ? html`
+                  <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
+                     <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-cure);">${plant.attributes.cure_days}</span>
+                     <span style="font-size:0.7rem; opacity:0.7;">Curing Days</span>
+                  </div>
+               ` : ''}
+            </div>
+         </div>
+      `;
    }
 
    private static renderPlantStats(plant: any): TemplateResult {
@@ -1670,24 +1537,20 @@ export class DialogRenderer {
    static renderConfigDialog(
       dialog: ConfigDialogState | null,
       growspaceOptions: Record<string, string>,
+      activeTab: string,
       callbacks: {
          onClose: () => void;
-         onSwitchTab: (tab: 'add_growspace' | 'environment' | 'global') => void;
-         // Add Growspace
+         onSwitchTab: (tab: string) => void;
          onAddGrowspaceChange: (field: string, value: any) => void;
          onAddGrowspaceSubmit: () => void;
-         // Environment
          onEnvChange: (field: string, value: any) => void;
          onEnvSubmit: () => void;
-         // Global
          onGlobalChange: (field: string, value: any) => void;
          onGlobalSubmit: () => void;
       }
    ): TemplateResult {
       if (!dialog?.open) return html``;
 
-      const activeTab = dialog.currentTab;
-
       return html`
       <ha-dialog
         open
@@ -1696,226 +1559,104 @@ export class DialogRenderer {
         .scrimClickAction=${''}
         .escapeKeyAction=${''}
       >
-        <style>
-          /* CONFIG DIALOG SPECIFIC STYLES */
-          .config-container {
-             background-color: #1a1a1a;
-             color: #fff;
-             display: flex;
-             flex-direction: column;
-             height: 80vh;
-             width: 500px;
-             max-width: 90vw;
-             border-radius: 24px;
-             overflow: hidden;
-             font-family: 'Roboto', sans-serif;
-             --accent-color: #22c55e;
-          }
-          .config-header {
-             padding: 20px 24px;
-             background: #2d2d2d;
-             display: flex;
-             align-items: center;
-             gap: 16px;
-             border-bottom: 1px solid rgba(255,255,255,0.1);
-          }
-          .config-title {
-             margin: 0;
-             font-size: 1.25rem;
-             font-weight: 600;
-          }
-          .config-tabs {
-             display: flex;
-             background: #2d2d2d;
-             padding: 0 16px;
-             border-bottom: 1px solid rgba(255,255,255,0.1);
-          }
-          .config-tab {
-             flex: 1;
-             padding: 16px 8px;
-             text-align: center;
-             cursor: pointer;
-             color: var(--secondary-text-color);
-             border-bottom: 3px solid transparent;
-             transition: all 0.2s;
-             display: flex;
-             flex-direction: column;
-             align-items: center;
-             gap: 4px;
-             font-size: 0.8rem;
-             font-weight: 500;
-          }
-          .config-tab svg {
-             width: 24px;
-             height: 24px;
-             margin-bottom: 4px;
-          }
-          .config-tab:hover {
-             color: #fff;
-             background: rgba(255,255,255,0.05);
-          }
-          .config-tab.active {
-             color: var(--accent-color);
-             border-bottom-color: var(--accent-color);
-          }
-          .config-content {
-             flex: 1;
-             padding: 24px;
-             overflow-y: auto;
-          }
-          .config-actions {
-             padding: 16px 24px;
-             border-top: 1px solid rgba(255,255,255,0.1);
-             display: flex;
-             justify-content: flex-end;
-             gap: 12px;
-             background: #2d2d2d;
-          }
-        </style>
+        <div class="glass-dialog-container" style="--stage-color: var(--primary-color)">
+          <div class="dialog-header">
+            <div class="dialog-title-group">
+               <h2 class="dialog-title">Configuration</h2>
+               <div class="dialog-subtitle">Manage Growspaces & Settings</div>
+            </div>
+            <md-icon-button @click=${callbacks.onClose}>
+               <md-icon><svg viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg></md-icon>
+            </md-icon-button>
+          </div>
 
-        <div class="config-container">
-           <!-- Header -->
-           <div class="config-header">
-              <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 12px;">
-                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-              </div>
-              <h2 class="config-title">Configuration</h2>
-              <div style="flex:1"></div>
-              <button class="md3-button text" @click=${callbacks.onClose} style="min-width: auto; padding: 8px;">
-                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
-              </button>
-           </div>
+          <div class="config-tabs">
+             <button class="config-tab ${activeTab === 'growspaces' ? 'active' : ''}" @click=${() => callbacks.onSwitchTab('growspaces')}>
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+                Add Growspace
+             </button>
+             <button class="config-tab ${activeTab === 'environment' ? 'active' : ''}" @click=${() => callbacks.onSwitchTab('environment')}>
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
+                Environment
+             </button>
+             <button class="config-tab ${activeTab === 'global' ? 'active' : ''}" @click=${() => callbacks.onSwitchTab('global')}>
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiEarth}"></path></svg>
+                Global Settings
+             </button>
+          </div>
 
-           <!-- Tabs -->
-           <div class="config-tabs">
-              <div class="config-tab ${activeTab === 'add_growspace' ? 'active' : ''}"
-                   @click=${() => callbacks.onSwitchTab('add_growspace')}>
-                 <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
-                 Add Growspace
-              </div>
-              <div class="config-tab ${activeTab === 'environment' ? 'active' : ''}"
-                   @click=${() => callbacks.onSwitchTab('environment')}>
-                 <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
-                 Environment
-              </div>
-              <div class="config-tab ${activeTab === 'global' ? 'active' : ''}"
-                   @click=${() => callbacks.onSwitchTab('global')}>
-                 <svg viewBox="0 0 24 24"><path d="${mdiEarth}"></path></svg>
-                 Global
-              </div>
-           </div>
-
-           <!-- Content -->
-           <div class="config-content">
-              ${activeTab === 'add_growspace' ? this.renderAddGrowspaceTab(dialog, callbacks) : nothing}
-              ${activeTab === 'environment' ? this.renderEnvironmentTab(dialog, growspaceOptions, callbacks) : nothing}
-              ${activeTab === 'global' ? this.renderGlobalTab(dialog, callbacks) : nothing}
-           </div>
-
-           <!-- Actions -->
-           <div class="config-actions">
-              <button class="md3-button tonal" @click=${callbacks.onClose}>Cancel</button>
-              ${activeTab === 'add_growspace' ? html`
-                 <button class="md3-button primary" @click=${callbacks.onAddGrowspaceSubmit}>Add Growspace</button>
-              ` : nothing}
-              ${activeTab === 'environment' ? html`
-                 <button class="md3-button primary" @click=${callbacks.onEnvSubmit}>Save Sensors</button>
-              ` : nothing}
-              ${activeTab === 'global' ? html`
-                 <button class="md3-button primary" @click=${callbacks.onGlobalSubmit}>Save Global</button>
-              ` : nothing}
-           </div>
+          <div class="config-content">
+             ${activeTab === 'growspaces' ? this.renderAddGrowspaceTab(dialog, callbacks) : nothing}
+             ${activeTab === 'environment' ? this.renderEnvironmentTab(dialog, callbacks) : nothing}
+             ${activeTab === 'global' ? this.renderGlobalTab(dialog, callbacks) : nothing}
+          </div>
         </div>
       </ha-dialog>
-    `;
+      `;
    }
 
    private static renderAddGrowspaceTab(dialog: ConfigDialogState, callbacks: any): TemplateResult {
-      const d = dialog.addGrowspaceData;
+      const s = dialog.addGrowspaceState || {};
       return html`
-      <div style="display:flex; flex-direction:column; gap:20px;">
          <div class="detail-card">
-            <h3>New Growspace Details</h3>
-            ${this.renderMD3TextInput('Growspace Name', d.name, (v) => callbacks.onAddGrowspaceChange('name', v))}
-            <div style="display:flex; gap:16px;">
-               ${this.renderMD3NumberInput('Rows', d.rows, (v) => callbacks.onAddGrowspaceChange('rows', parseInt(v)))}
-               ${this.renderMD3NumberInput('Plants per Row', d.plants_per_row, (v) => callbacks.onAddGrowspaceChange('plants_per_row', parseInt(v)))}
+            <h3>Add New Growspace</h3>
+            ${DialogRenderer.renderMD3TextInput('Growspace Name', s.name || '', (v) => callbacks.onAddGrowspaceChange('name', v))}
+            ${DialogRenderer.renderMD3SelectInput('Type', s.type || '', ['Tent', 'Room', 'Outdoor'], (v) => callbacks.onAddGrowspaceChange('type', v))}
+            <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+               <md-filled-button @click=${callbacks.onAddGrowspaceSubmit}>
+                  <md-icon slot="icon"><svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg></md-icon>
+                  Create Growspace
+               </md-filled-button>
             </div>
-            ${this.renderMD3TextInput('Notification Service (Optional)', d.notification_service, (v) => callbacks.onAddGrowspaceChange('notification_service', v))}
          </div>
-      </div>
-    `;
+      `;
    }
 
-   private static renderEnvironmentTab(dialog: ConfigDialogState, growspaces: Record<string, string>, callbacks: any): TemplateResult {
-      const d = dialog.environmentData;
-      // Convert record to array for select
-      const options = Object.entries(growspaces).map(([id, name]) => ({ id, name }));
-
+   private static renderEnvironmentTab(dialog: ConfigDialogState, callbacks: any): TemplateResult {
+      const s = dialog.environmentState || {};
       return html`
-       <div style="display:flex; flex-direction:column; gap:20px;">
-          <div class="detail-card">
-             <h3>Select Target</h3>
-             <div class="md3-input-group">
-                <label class="md3-label">Growspace</label>
-                <select class="md3-input" .value=${d.selectedGrowspaceId} @change=${(e: any) => callbacks.onEnvChange('selectedGrowspaceId', e.target.value)}>
-                   <option value="">Select...</option>
-                   ${options.map(o => html`<option value="${o.id}">${o.name}</option>`)}
-                </select>
-             </div>
-          </div>
-
-          <div class="detail-card">
-             <h3>Sensors</h3>
-             ${this.renderMD3TextInput('Temperature Sensor ID', d.temp_sensor, (v) => callbacks.onEnvChange('temp_sensor', v))}
-             ${this.renderMD3TextInput('Humidity Sensor ID', d.humidity_sensor, (v) => callbacks.onEnvChange('humidity_sensor', v))}
-             ${this.renderMD3TextInput('VPD Sensor ID', d.vpd_sensor, (v) => callbacks.onEnvChange('vpd_sensor', v))}
-          </div>
-
-          <div class="detail-card">
-             <h3>Optional</h3>
-             ${this.renderMD3TextInput('CO2 Sensor ID', d.co2_sensor, (v) => callbacks.onEnvChange('co2_sensor', v))}
-             ${this.renderMD3TextInput('Light Sensor/State ID', d.light_sensor, (v) => callbacks.onEnvChange('light_sensor', v))}
-             ${this.renderMD3TextInput('Fan Switch ID', d.fan_switch, (v) => callbacks.onEnvChange('fan_switch', v))}
-          </div>
-       </div>
-    `;
+         <div class="detail-card">
+            <h3>Environment Defaults</h3>
+            <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:16px;">Set default target values for new growspaces.</p>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+               ${DialogRenderer.renderMD3NumberInput('Temp Target (°C)', s.temp_target || 24, (v) => callbacks.onEnvChange('temp_target', parseFloat(v)))}
+               ${DialogRenderer.renderMD3NumberInput('Humidity Target (%)', s.humidity_target || 55, (v) => callbacks.onEnvChange('humidity_target', parseFloat(v)))}
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+               <md-filled-button @click=${callbacks.onEnvSubmit}>
+                  <md-icon slot="icon"><svg viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg></md-icon>
+                  Save Defaults
+               </md-filled-button>
+            </div>
+         </div>
+      `;
    }
 
    private static renderGlobalTab(dialog: ConfigDialogState, callbacks: any): TemplateResult {
-      const d = dialog.globalData;
+      const s = dialog.globalState || {};
       return html`
-       <div style="display:flex; flex-direction:column; gap:20px;">
-          <div class="detail-card">
-             <h3>Global Environment</h3>
-             ${this.renderMD3TextInput('Weather Entity ID', d.weather_entity, (v) => callbacks.onGlobalChange('weather_entity', v))}
-          </div>
-          <div class="detail-card">
-             <h3>Lung Room</h3>
-             ${this.renderMD3TextInput('Lung Room Temp Sensor', d.lung_room_temp, (v) => callbacks.onGlobalChange('lung_room_temp', v))}
-             ${this.renderMD3TextInput('Lung Room Humidity Sensor', d.lung_room_humidity, (v) => callbacks.onGlobalChange('lung_room_humidity', v))}
-          </div>
-       </div>
-    `;
+         <div class="detail-card">
+            <h3>Global Settings</h3>
+            ${DialogRenderer.renderMD3SelectInput('Temperature Unit', s.temp_unit || 'C', ['C', 'F'], (v) => callbacks.onGlobalChange('temp_unit', v))}
+            <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+               <md-filled-button @click=${callbacks.onGlobalSubmit}>
+                  <md-icon slot="icon"><svg viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg></md-icon>
+                  Save Settings
+               </md-filled-button>
+            </div>
+         </div>
+      `;
    }
 
    static renderGrowMasterDialog(
       dialog: GrowMasterDialogState | null,
-      isStressed: boolean,
-      personality: string | undefined,
       callbacks: {
          onClose: () => void;
          onQueryChange: (query: string) => void;
-         onAnalyze: () => void;
-         onAnalyzeAll: () => void;
+         onSubmit: () => void;
       }
    ): TemplateResult {
       if (!dialog?.open) return html``;
-
-      // Border color based on stress
-      // Light Green: #4CAF50, Warning Orange: #FF9800
-      const borderColor = isStressed ? '#FF9800' : '#4CAF50';
-      const title = personality ? `Ask the ${personality}` : 'Ask the Grow Master';
 
       return html`
       <ha-dialog
@@ -1925,137 +1666,62 @@ export class DialogRenderer {
         .scrimClickAction=${''}
         .escapeKeyAction=${''}
       >
-        <style>
-           .gm-container {
-              background: #1a1a1a;
-              color: #fff;
-              width: 500px;
-              max-width: 90vw;
-              border-radius: 24px;
-              display: flex;
-              flex-direction: column;
-              overflow: hidden;
-              font-family: 'Roboto', sans-serif;
-              border: 1px solid rgba(255,255,255,0.1);
-           }
-           .gm-header {
-              background: #2d2d2d;
-              padding: 20px 24px;
-              display: flex;
-              align-items: center;
-              gap: 16px;
-              border-bottom: 1px solid rgba(255,255,255,0.1);
-           }
-           .gm-content {
-              padding: 24px;
-              display: flex;
-              flex-direction: column;
-              gap: 20px;
-              overflow-y: auto;
-              max-height: 70vh;
-           }
-           .gm-response-box {
-              background: rgba(255,255,255,0.05);
-              border: 2px solid ${borderColor};
-              border-radius: 16px;
-              padding: 20px;
-              line-height: 1.6;
-              font-size: 0.95rem;
-              white-space: pre-wrap;
-              position: relative;
-           }
-           .gm-loading {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              padding: 40px;
-              color: var(--secondary-text-color);
-              gap: 12px;
-           }
-           @keyframes spin { 100% { transform: rotate(360deg); } }
-           .spinner {
-              animation: spin 1s linear infinite;
-              width: 24px;
-              height: 24px;
-           }
-        </style>
+        <div class="glass-dialog-container" style="--stage-color: #8B5CF6">
+          <div class="dialog-header">
+            <div class="dialog-title-group">
+               <h2 class="dialog-title">Grow Master AI</h2>
+               <div class="dialog-subtitle">Ask questions about your grow</div>
+            </div>
+            <md-icon-button @click=${callbacks.onClose}>
+               <md-icon><svg viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg></md-icon>
+            </md-icon-button>
+          </div>
 
-        <div class="gm-container">
-           <div class="gm-header">
-              <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; color: ${borderColor}">
-                 <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-              </div>
-              <div style="flex:1">
-                 <h2 style="margin:0; font-size:1.25rem;">${title}</h2>
-                 <div style="font-size:0.8rem; color:var(--secondary-text-color); margin-top:4px;">
-                    ${isStressed ? 'Warning: Plant Stress Detected' : 'All systems normal'}
-                 </div>
-              </div>
-              <button class="md3-button text" @click=${callbacks.onClose} style="min-width:auto; padding:8px;">
-                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
-              </button>
-           </div>
+          <div class="overview-grid">
+             <div class="detail-card" style="min-height: 300px; display: flex; flex-direction: column;">
+                <div class="chat-history" style="flex: 1; overflow-y: auto; margin-bottom: 16px; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background: rgba(0,0,0,0.2);">
+                   ${dialog.history?.map(msg => html`
+                      <div style="margin-bottom: 12px; text-align: ${msg.role === 'user' ? 'right' : 'left'};">
+                         <div style="display: inline-block; padding: 8px 12px; border-radius: 12px; background: ${msg.role === 'user' ? 'var(--primary-color)' : '#374151'}; color: white; max-width: 80%;">
+                            ${msg.content}
+                         </div>
+                      </div>
+                   `)}
+                   ${dialog.isLoading ? html`
+                      <div style="text-align: left; margin-bottom: 12px;">
+                         <div style="display: inline-block; padding: 8px 12px; border-radius: 12px; background: #374151; color: white;">
+                            <md-icon class="spin"><svg viewBox="0 0 24 24"><path d="${mdiLoading}"></path></svg></md-icon> Thinking...
+                         </div>
+                      </div>
+                   ` : nothing}
+                </div>
 
-           <div class="gm-content">
-              <!-- Input Area -->
-              <div style="display:flex; flex-direction:column; gap:8px;">
-                 <label style="font-size:0.9rem; font-weight:500; color:#ccc;">Your Question</label>
-                 <textarea
-                    class="sd-textarea"
-                    placeholder="Ask about this growspace..."
-                    .value=${dialog.userQuery}
-                    @input=${(e: any) => callbacks.onQueryChange(e.target.value)}
-                    style="min-height: 80px;"
-                 ></textarea>
-              </div>
-
-              <!-- Action -->
-              <div style="display:flex; justify-content:flex-end; gap: 12px;">
-                 <button
-                    class="md3-button tonal"
-                    @click=${callbacks.onAnalyzeAll}
-                    ?disabled=${dialog.isLoading}
-                    style="opacity: ${dialog.isLoading ? 0.7 : 1}"
-                 >
-                    Analyze All
-                 </button>
-                 <button
-                    class="md3-button primary"
-                    @click=${callbacks.onAnalyze}
-                    ?disabled=${dialog.isLoading}
-                    style="opacity: ${dialog.isLoading ? 0.7 : 1}"
-                 >
-                    ${dialog.isLoading ? 'Analyzing...' : 'Analyze Environment'}
-                 </button>
-              </div>
-
-              <!-- Response Area -->
-              ${dialog.isLoading ? html`
-                 <div class="gm-loading">
-                    <svg class="spinner" viewBox="0 0 24 24"><path d="${mdiLoading}" fill="currentColor"></path></svg>
-                    <span>Consulting the archives...</span>
-                 </div>
-              ` : nothing}
-
-              ${!dialog.isLoading && dialog.response ? html`
-                 <div class="gm-response-box">
-                    ${typeof dialog.response === 'object'
-               ? JSON.stringify(dialog.response, null, 2)
-               : dialog.response}
-                 </div>
-              ` : nothing}
-           </div>
+                <div style="display: flex; gap: 8px;">
+                   <md-outlined-text-field
+                      type="textarea"
+                      label="Ask Grow Master..."
+                      .value=${dialog.query || ''}
+                      @input=${(e: InputEvent) => callbacks.onQueryChange((e.target as HTMLInputElement).value)}
+                      style="flex: 1;"
+                   ></md-outlined-text-field>
+                   <md-icon-button @click=${callbacks.onSubmit} ?disabled=${dialog.isLoading}>
+                      <md-icon><svg viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg></md-icon>
+                   </md-icon-button>
+                </div>
+             </div>
+          </div>
         </div>
       </ha-dialog>
-    `;
+      `;
    }
 
    static renderStrainRecommendationDialog(
       dialog: StrainRecommendationDialogState | null,
       callbacks: {
          onClose: () => void;
-         onQueryChange: (query: string) => void;
-         onGetRecommendation: () => void;
+         onPreferencesChange: (prefs: string) => void;
+         onSubmit: () => void;
+         onAccept: (strain: any) => void;
       }
    ): TemplateResult {
       if (!dialog?.open) return html``;
@@ -2068,67 +1734,116 @@ export class DialogRenderer {
         .scrimClickAction=${''}
         .escapeKeyAction=${''}
       >
-        <div class="gm-container">
-           <div class="gm-header">
-              <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; color: #4CAF50">
-                 <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-              </div>
-              <div style="flex:1">
-                 <h2 style="margin:0; font-size:1.25rem;">Get Strain Recommendation</h2>
-              </div>
-              <button class="md3-button text" @click=${callbacks.onClose} style="min-width:auto; padding:8px;">
-                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
-              </button>
-           </div>
+        <div class="glass-dialog-container" style="--stage-color: #10B981">
+          <div class="dialog-header">
+            <div class="dialog-title-group">
+               <h2 class="dialog-title">Strain Recommender</h2>
+               <div class="dialog-subtitle">Find the perfect strain for you</div>
+            </div>
+            <md-icon-button @click=${callbacks.onClose}>
+               <md-icon><svg viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg></md-icon>
+            </md-icon-button>
+          </div>
 
-           <div class="gm-content">
-              <!-- Input Area -->
-              <div style="display:flex; flex-direction:column; gap:8px;">
-                 <label style="font-size:0.9rem; font-weight:500; color:#ccc;">Your Preferences</label>
-                 <textarea
-                    class="sd-textarea"
-                    placeholder="e.g., something fruity and good for daytime use..."
-                    .value=${dialog.userQuery}
-                    @input=${(e: any) => callbacks.onQueryChange(e.target.value)}
-                    style="min-height: 80px;"
-                 ></textarea>
-              </div>
+          <div class="overview-grid">
+             <div class="detail-card">
+                <h3>Your Preferences</h3>
+                <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:16px;">Describe what you are looking for (e.g., "High yield, fruity flavor, good for sleep").</p>
+                
+                <md-outlined-text-field
+                   type="textarea"
+                   label="Preferences"
+                   .value=${dialog.preferences || ''}
+                   @input=${(e: InputEvent) => callbacks.onPreferencesChange((e.target as HTMLInputElement).value)}
+                   style="width: 100%; margin-bottom: 16px;"
+                   rows="3"
+                ></md-outlined-text-field>
 
-              <!-- Action -->
-              <div style="display:flex; justify-content:flex-end; gap: 12px;">
-                 <button
-                    class="md3-button tonal"
-                    @click=${callbacks.onClose}
-                 >
-                    OK
-                 </button>
-                 <button
-                    class="md3-button primary"
-                    @click=${callbacks.onGetRecommendation}
-                    ?disabled=${dialog.isLoading}
-                    style="opacity: ${dialog.isLoading ? 0.7 : 1}"
-                 >
-                    ${dialog.isLoading ? 'Getting Recommendation...' : 'Get Recommendation'}
-                 </button>
-              </div>
+                <div style="display:flex; justify-content:flex-end;">
+                   <md-filled-button @click=${callbacks.onSubmit} ?disabled=${dialog.isLoading}>
+                      ${dialog.isLoading ? html`<md-icon class="spin" slot="icon"><svg viewBox="0 0 24 24"><path d="${mdiLoading}"></path></svg></md-icon>` : html`<md-icon slot="icon"><svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg></md-icon>`}
+                      Get Recommendations
+                   </md-filled-button>
+                </div>
+             </div>
 
-              ${dialog.isLoading ? html`
-                 <div class="gm-loading">
-                    <svg class="spinner" viewBox="0 0 24 24"><path d="${mdiLoading}" fill="currentColor"></path></svg>
-                    <span>Consulting the archives...</span>
-                 </div>
-              ` : nothing}
-
-              ${!dialog.isLoading && dialog.response ? html`
-                 <div class="gm-response-box">
-                    ${typeof dialog.response === 'object'
-               ? JSON.stringify(dialog.response, null, 2)
-               : dialog.response}
-                 </div>
-              ` : nothing}
-           </div>
+             ${dialog.recommendations?.length ? html`
+                <div class="detail-card">
+                   <h3>Recommendations</h3>
+                   <div style="display: grid; gap: 16px;">
+                      ${dialog.recommendations.map(rec => html`
+                         <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; border: 1px solid var(--border-color);">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                               <h4 style="margin: 0; font-size: 1.1rem; color: var(--accent-green);">${rec.strain}</h4>
+                               <span style="font-size: 0.8rem; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 12px;">${rec.match_score}% Match</span>
+                            </div>
+                            <p style="font-size: 0.9rem; color: #ddd; margin: 0 0 12px 0;">${rec.reason}</p>
+                            <md-filled-tonal-button @click=${() => callbacks.onAccept(rec)}>
+                               <md-icon slot="icon"><svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg></md-icon>
+                               Add to Library
+                            </md-filled-tonal-button>
+                         </div>
+                      `)}
+                   </div>
+                </div>
+             ` : nothing}
+          </div>
         </div>
       </ha-dialog>
-    `;
+      `;
+   }
+
+   static renderMD3TextInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
+      return html`
+         <md-outlined-text-field
+            label="${label}"
+            .value="${value}"
+            @input="${(e: InputEvent) => onChange((e.target as HTMLInputElement).value)}"
+            style="width: 100%;"
+         ></md-outlined-text-field>
+      `;
+   }
+
+   static renderMD3NumberInput(label: string, value: number, onChange: (value: string) => void): TemplateResult {
+      return html`
+         <md-outlined-text-field
+            label="${label}"
+            type="number"
+            .value="${value.toString()}"
+            @input="${(e: InputEvent) => onChange((e.target as HTMLInputElement).value)}"
+            style="width: 100%;"
+         ></md-outlined-text-field>
+      `;
+   }
+
+   static renderMD3SelectInput(label: string, value: string, options: string[], onChange: (value: string) => void): TemplateResult {
+      return html`
+         <md-outlined-select
+            label="${label}"
+            .value="${value}"
+            @change="${(e: Event) => onChange((e.target as HTMLSelectElement).value)}"
+            style="width: 100%;"
+         >
+            <md-select-option value=""></md-select-option>
+            ${options.map(opt => html`
+               <md-select-option value="${opt}">
+                  <div slot="headline">${opt}</div>
+               </md-select-option>
+            `)}
+         </md-outlined-select>
+      `;
+   }
+
+   static renderMD3DateInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
+      return html`
+         <md-outlined-text-field
+            label="${label}"
+            type="datetime-local"
+            .value="${value}"
+            @input="${(e: InputEvent) => onChange((e.target as HTMLInputElement).value)}"
+            style="width: 100%;"
+         ></md-outlined-text-field>
+      `;
    }
 }
+

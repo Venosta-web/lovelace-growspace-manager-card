@@ -9,7 +9,7 @@ export default defineConfig({
 
     // Run your local dev server before starting the tests
     webServer: {
-        command: 'python3 -m http.server 8123',
+        command: 'python -m http.server 8123',
         url: 'http://localhost:8123',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,

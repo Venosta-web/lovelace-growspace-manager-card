@@ -193,41 +193,34 @@ export interface StrainLibraryDialogState {
 
 export interface ConfigDialogState {
   open: boolean;
-  currentTab: 'add_growspace' | 'environment' | 'global';
-  addGrowspaceData: {
-    name: string;
-    rows: number;
-    plants_per_row: number;
-    notification_service: string;
+  currentTab: 'growspaces' | 'environment' | 'global';
+  addGrowspaceState?: {
+    name?: string;
+    type?: string;
+    rows?: number;
+    plants_per_row?: number;
   };
-  environmentData: {
-    selectedGrowspaceId: string;
-    temp_sensor: string;
-    humidity_sensor: string;
-    vpd_sensor: string;
-    co2_sensor: string;
-    light_sensor: string;
-    fan_switch: string;
+  environmentState?: {
+    temp_target?: number;
+    humidity_target?: number;
   };
-  globalData: {
-    weather_entity: string;
-    lung_room_temp: string;
-    lung_room_humidity: string;
+  globalState?: {
+    temp_unit?: string;
   };
 }
 
 export interface GrowMasterDialogState {
   open: boolean;
-  growspaceId: string;
-  userQuery: string;
+  growspaceId?: string;
+  query?: string;
   isLoading: boolean;
-  response: string | null;
-  mode: 'single' | 'all';
+  history?: { role: 'user' | 'assistant', content: string }[];
+  response?: string | null;
 }
 
 export interface StrainRecommendationDialogState {
   open: boolean;
-  userQuery: string;
+  preferences?: string;
   isLoading: boolean;
-  response: string | null;
+  recommendations?: { strain: string, match_score: number, reason: string }[];
 }
