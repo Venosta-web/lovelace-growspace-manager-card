@@ -1,7 +1,7 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import '@material/web/menu/menu.js';
-import '@material/web/menu-item/menu-item.js';
+import '@material/web/menu/menu-item.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/switch/switch.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
