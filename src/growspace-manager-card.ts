@@ -2434,14 +2434,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     try {
       const result = await this.dataService.askGrowAdvice(this._growMasterDialog.growspaceId, this._growMasterDialog.userQuery);
+      
       if (this._growMasterDialog) {
-        // EXTRACT RESPONSE SAFELY
-        // The service returns { response: "text" }, so we want result.response
-        if (result && typeof result.response === 'string') {
-          this._growMasterDialog.response = result.response;
-        } else {
-          // Fallback: if structure is unexpected, dump the whole thing so we can debug it
-          this._growMasterDialog.response = JSON.stringify(result, null, 2);
+        // FIX: Drill down into nested response structure
+        // Structure received: { context: {...}, response: { response: "Actual Text" } }
+        if (result?.response?.response && typeof result.response.response === 'string') {
+           this._growMasterDialog.response = result.response.response;
+        } 
+        // Fallback for flatter structure
+        else if (result?.response && typeof result.response === 'string') {
+           this._growMasterDialog.response = result.response;
+        } 
+        else {
+           this._growMasterDialog.response = JSON.stringify(result, null, 2);
         }
       }
     } catch (e: any) {
@@ -2466,12 +2471,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     try {
       const result = await this.dataService.analyzeAllGrowspaces();
+      
       if (this._growMasterDialog) {
-        // EXTRACT RESPONSE SAFELY
-        if (result && typeof result.response === 'string') {
-          this._growMasterDialog.response = result.response;
-        } else {
-          this._growMasterDialog.response = JSON.stringify(result, null, 2);
+        // FIX: Drill down into nested response structure
+        if (result?.response?.response && typeof result.response.response === 'string') {
+           this._growMasterDialog.response = result.response.response;
+        } 
+        else if (result?.response && typeof result.response === 'string') {
+           this._growMasterDialog.response = result.response;
+        } 
+        else {
+           this._growMasterDialog.response = JSON.stringify(result, null, 2);
         }
       }
     } catch (e: any) {
@@ -2494,13 +2504,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.requestUpdate();
 
     try {
-      const result = await this.dataService.getStrainRecommendation(this._strainRecommendationDialog.userQuery);
+      const result = await this.dataService.getStrainRecommendation(this._strainRecommendationDialog.userQuery) as any;
+      
       if (this._strainRecommendationDialog) {
-        // EXTRACT RESPONSE SAFELY
-        if (result && typeof result.response === 'string') {
-          this._strainRecommendationDialog.response = result.response;
-        } else {
-          this._strainRecommendationDialog.response = JSON.stringify(result, null, 2);
+        // FIX: Drill down into nested response structure
+        if (result?.response?.response && typeof result.response.response === 'string') {
+           this._strainRecommendationDialog.response = result.response.response;
+        } 
+        else if (result?.response && typeof result.response === 'string') {
+           this._strainRecommendationDialog.response = result.response;
+        } 
+        else {
+           this._strainRecommendationDialog.response = JSON.stringify(result, null, 2);
         }
       }
     } catch (e: any) {

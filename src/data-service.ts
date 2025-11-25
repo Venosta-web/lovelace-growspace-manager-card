@@ -502,7 +502,7 @@ export class DataService {
     }
   }
 
-  async askGrowAdvice(growspaceId: string, userQuery: string): Promise<{ response: string }> {
+  async askGrowAdvice(growspaceId: string, userQuery: string): Promise<any> {
     console.log("[DataService:askGrowAdvice] Asking advice for:", growspaceId, userQuery);
     try {
       // Use sendMessagePromise to ensure return_response=true is correctly sent
@@ -522,7 +522,7 @@ export class DataService {
     }
   }
 
-  async analyzeAllGrowspaces(): Promise<{ response: string }> {
+  async analyzeAllGrowspaces(): Promise<any> {
     console.log("[DataService:analyzeAllGrowspaces] Analyzing all growspaces");
     try {
       return await this.hass.connection.sendMessagePromise({
@@ -538,7 +538,7 @@ export class DataService {
     }
   }
 
-  async getStrainRecommendation(userQuery: string): Promise<{ response: string }> {
+  async getStrainRecommendation(userQuery: string): Promise<any> {
     console.log("[DataService:getStrainRecommendation] Getting strain recommendation for:", userQuery);
     try {
       return await this.hass.connection.sendMessagePromise({
