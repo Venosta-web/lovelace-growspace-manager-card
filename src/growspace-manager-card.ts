@@ -16,7 +16,8 @@ import {
   ConfigDialogState,
   GrowMasterDialogState,
   GrowspaceDevice,
-  StrainEntry
+  StrainEntry,
+  StrainRecommendationDialogState
 } from './types';
 import { PlantUtils } from "./utils";
 import { DataService } from './data-service';
@@ -30,6 +31,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _strainLibraryDialog: StrainLibraryDialogState | null = null;
   @state() private _configDialog: ConfigDialogState | null = null;
   @state() private _growMasterDialog: GrowMasterDialogState | null = null;
+  @state() private _strainRecommendationDialog: StrainRecommendationDialogState | null = null;
   @state() private selectedDevice: string | null = null;
   @state() private _draggedPlant: PlantEntity | null = null;
   @state() private _isCompactView: boolean = false;
@@ -2407,7 +2409,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       growspaceId: this.selectedDevice,
       userQuery: '',
       isLoading: false,
-      response: null
+      response: null,
+      mode: 'single'
     };
   }
 
@@ -2430,6 +2433,64 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     } finally {
       if (this._growMasterDialog) {
         this._growMasterDialog.isLoading = false;
+        this.requestUpdate();
+      }
+    }
+  }
+
+  private async _handleAnalyzeAll() {
+    if (!this._growMasterDialog) return;
+
+    this._growMasterDialog.isLoading = true;
+    this._growMasterDialog.response = null;
+    this._growMasterDialog.mode = 'all';
+    this.requestUpdate();
+
+    try {
+      const result = await this.dataService.analyzeAllGrowspaces();
+      if (this._growMasterDialog) {
+        this._growMasterDialog.response = result.response;
+      }
+    } catch (e: any) {
+      if (this._growMasterDialog) {
+        this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'}`;
+      }
+    } finally {
+      if (this._growMasterDialog) {
+        this._growMasterDialog.isLoading = false;
+        this.requestUpdate();
+      }
+    }
+  }
+
+  private _openStrainRecommendationDialog() {
+    this._strainRecommendationDialog = {
+      open: true,
+      userQuery: '',
+      isLoading: false,
+      response: null
+    };
+  }
+
+  private async _handleGetStrainRecommendation() {
+    if (!this._strainRecommendationDialog || !this._strainRecommendationDialog.userQuery) return;
+
+    this._strainRecommendationDialog.isLoading = true;
+    this._strainRecommendationDialog.response = null;
+    this.requestUpdate();
+
+    try {
+      const result = await this.dataService.getStrainRecommendation(this._strainRecommendationDialog.userQuery);
+      if (this._strainRecommendationDialog) {
+        this._strainRecommendationDialog.response = result.response;
+      }
+    } catch (e: any) {
+      if (this._strainRecommendationDialog) {
+        this._strainRecommendationDialog.response = `Error: ${e.message || 'Failed to get recommendation.'}`;
+      }
+    } finally {
+      if (this._strainRecommendationDialog) {
+        this._strainRecommendationDialog.isLoading = false;
         this.requestUpdate();
       }
     }
@@ -3220,6 +3281,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         onOpenImportDialog: () => this._openImportDialog(),
         onImportDialogChange: (c) => this._handleImportDialogChange(c),
         onConfirmImport: () => this._performImport(),
+            onGetRecommendation: () => this._openStrainRecommendationDialog(),
       }
     )}
 
@@ -3277,10 +3339,20 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           {
             onClose: () => this._growMasterDialog = null,
             onQueryChange: (q) => { if (this._growMasterDialog) { this._growMasterDialog.userQuery = q; this.requestUpdate(); } },
-            onAnalyze: () => this._handleAskAdvice()
+            onAnalyze: () => this._handleAskAdvice(),
+            onAnalyzeAll: () => this._handleAnalyzeAll()
           }
         );
       })() : ''}
+
+      ${DialogRenderer.renderStrainRecommendationDialog(
+        this._strainRecommendationDialog,
+        {
+          onClose: () => this._strainRecommendationDialog = null,
+          onQueryChange: (q) => { if (this._strainRecommendationDialog) { this._strainRecommendationDialog.userQuery = q; this.requestUpdate(); } },
+          onGetRecommendation: () => this._handleGetStrainRecommendation()
+        }
+      )}
     `;
   }
 
