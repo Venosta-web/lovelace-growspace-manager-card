@@ -36,7 +36,12 @@ export class DialogRenderer {
       background-position: ${meta.x}% ${meta.y}%;
     `;
    }
-
+   private static formatResponse(response: any): string {
+      if (typeof response === 'object' && response !== null) {
+         return JSON.stringify(response, null, 2);
+      }
+      return String(response);
+   }
    static renderAddPlantDialog(
       dialog: AddPlantDialogState | null,
       strainLibrary: StrainEntry[],
@@ -1912,8 +1917,6 @@ export class DialogRenderer {
    ): TemplateResult {
       if (!dialog?.open) return html``;
 
-      // Border color based on stress
-      // Light Green: #4CAF50, Warning Orange: #FF9800
       const borderColor = isStressed ? '#FF9800' : '#4CAF50';
       const title = personality ? `Ask the ${personality}` : 'Ask the Grow Master';
 
@@ -1926,58 +1929,13 @@ export class DialogRenderer {
         .escapeKeyAction=${''}
       >
         <style>
-           .gm-container {
-              background: #1a1a1a;
-              color: #fff;
-              width: 500px;
-              max-width: 90vw;
-              border-radius: 24px;
-              display: flex;
-              flex-direction: column;
-              overflow: hidden;
-              font-family: 'Roboto', sans-serif;
-              border: 1px solid rgba(255,255,255,0.1);
-           }
-           .gm-header {
-              background: #2d2d2d;
-              padding: 20px 24px;
-              display: flex;
-              align-items: center;
-              gap: 16px;
-              border-bottom: 1px solid rgba(255,255,255,0.1);
-           }
-           .gm-content {
-              padding: 24px;
-              display: flex;
-              flex-direction: column;
-              gap: 20px;
-              overflow-y: auto;
-              max-height: 70vh;
-           }
-           .gm-response-box {
-              background: rgba(255,255,255,0.05);
-              border: 2px solid ${borderColor};
-              border-radius: 16px;
-              padding: 20px;
-              line-height: 1.6;
-              font-size: 0.95rem;
-              white-space: pre-wrap;
-              position: relative;
-           }
-           .gm-loading {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              padding: 40px;
-              color: var(--secondary-text-color);
-              gap: 12px;
-           }
+           .gm-container { background: #1a1a1a; color: #fff; width: 500px; max-width: 90vw; border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; font-family: 'Roboto', sans-serif; border: 1px solid rgba(255,255,255,0.1); }
+           .gm-header { background: #2d2d2d; padding: 20px 24px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+           .gm-content { padding: 24px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; max-height: 70vh; }
+           .gm-response-box { background: rgba(255,255,255,0.05); border: 2px solid ${borderColor}; border-radius: 16px; padding: 20px; line-height: 1.6; font-size: 0.95rem; white-space: pre-wrap; position: relative; }
+           .gm-loading { display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--secondary-text-color); gap: 12px; }
            @keyframes spin { 100% { transform: rotate(360deg); } }
-           .spinner {
-              animation: spin 1s linear infinite;
-              width: 24px;
-              height: 24px;
-           }
+           .spinner { animation: spin 1s linear infinite; width: 24px; height: 24px; }
         </style>
 
         <div class="gm-container">
@@ -1997,7 +1955,6 @@ export class DialogRenderer {
            </div>
 
            <div class="gm-content">
-              <!-- Input Area -->
               <div style="display:flex; flex-direction:column; gap:8px;">
                  <label style="font-size:0.9rem; font-weight:500; color:#ccc;">Your Question</label>
                  <textarea
@@ -2009,7 +1966,6 @@ export class DialogRenderer {
                  ></textarea>
               </div>
 
-              <!-- Action -->
               <div style="display:flex; justify-content:flex-end; gap: 12px;">
                  <button
                     class="md3-button tonal"
@@ -2029,7 +1985,6 @@ export class DialogRenderer {
                  </button>
               </div>
 
-              <!-- Response Area -->
               ${dialog.isLoading ? html`
                  <div class="gm-loading">
                     <svg class="spinner" viewBox="0 0 24 24"><path d="${mdiLoading}" fill="currentColor"></path></svg>
@@ -2039,9 +1994,7 @@ export class DialogRenderer {
 
               ${!dialog.isLoading && dialog.response ? html`
                  <div class="gm-response-box">
-                    ${typeof dialog.response === 'object'
-               ? JSON.stringify(dialog.response, null, 2)
-               : dialog.response}
+                    ${DialogRenderer.formatResponse(dialog.response)}
                  </div>
               ` : nothing}
            </div>
@@ -2082,7 +2035,6 @@ export class DialogRenderer {
            </div>
 
            <div class="gm-content">
-              <!-- Input Area -->
               <div style="display:flex; flex-direction:column; gap:8px;">
                  <label style="font-size:0.9rem; font-weight:500; color:#ccc;">Your Preferences</label>
                  <textarea
@@ -2094,14 +2046,8 @@ export class DialogRenderer {
                  ></textarea>
               </div>
 
-              <!-- Action -->
               <div style="display:flex; justify-content:flex-end; gap: 12px;">
-                 <button
-                    class="md3-button tonal"
-                    @click=${callbacks.onClose}
-                 >
-                    OK
-                 </button>
+                 <button class="md3-button tonal" @click=${callbacks.onClose}>OK</button>
                  <button
                     class="md3-button primary"
                     @click=${callbacks.onGetRecommendation}
@@ -2121,9 +2067,7 @@ export class DialogRenderer {
 
               ${!dialog.isLoading && dialog.response ? html`
                  <div class="gm-response-box">
-                    ${typeof dialog.response === 'object'
-               ? JSON.stringify(dialog.response, null, 2)
-               : dialog.response}
+                    ${DialogRenderer.formatResponse(dialog.response)}
                  </div>
               ` : nothing}
            </div>

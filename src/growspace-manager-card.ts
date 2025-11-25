@@ -3202,6 +3202,53 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     `;
   }
 
+  private _renderGrowMasterDialogWrapper(): TemplateResult | string {
+    if (!this._growMasterDialog) return '';
+
+    // Determine stress state for the dialog
+    let isStressed = false;
+    let personality = undefined;
+
+    // Attempt to find stress sensor
+    if (this.selectedDevice && this.hass) {
+      // Pattern checking for stress sensor
+      const id = this.selectedDevice;
+      const stressEntityIds = [
+        `binary_sensor.${id}_plants_under_stress`,
+        `binary_sensor.${id}_stress`,
+        `binary_sensor.growspace_manager_${id}_stress`
+      ];
+
+      for (const eid of stressEntityIds) {
+        const ent = this.hass.states[eid];
+        if (ent && ent.state === 'on') {
+          isStressed = true;
+          break;
+        }
+      }
+    }
+
+    // Personality check
+    if (this.hass) {
+      const manager = this.hass.states['sensor.growspace_manager'];
+      if (manager && manager.attributes && manager.attributes.ai_settings) {
+        personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
+      }
+    }
+
+    return DialogRenderer.renderGrowMasterDialog(
+      this._growMasterDialog,
+      isStressed,
+      personality,
+      {
+        onClose: () => this._growMasterDialog = null,
+        onQueryChange: (q) => { if (this._growMasterDialog) { this._growMasterDialog.userQuery = q; this.requestUpdate(); } },
+        onAnalyze: () => this._handleAskAdvice(),
+        onAnalyzeAll: () => this._handleAnalyzeAll()
+      }
+    );
+  }
+
   private renderDialogs(): TemplateResult {
     const strainLibrary = this.dataService?.getStrainLibrary() || [];
     const growspaceOptions: Record<string, string> = {};
@@ -3336,61 +3383,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
     )}
 
-    ${this._growMasterDialog ? (() => {
-        // Determine stress state for the dialog
-        let isStressed = false;
-        let personality = undefined;
-
-        // Attempt to find stress sensor
-        if (this.selectedDevice && this.hass) {
-          // Pattern checking for stress sensor
-          const id = this.selectedDevice;
-          const stressEntityIds = [
-            `binary_sensor.${id}_plants_under_stress`,
-            `binary_sensor.${id}_stress`,
-            `binary_sensor.growspace_manager_${id}_stress`
-          ];
-
-          for (const eid of stressEntityIds) {
-            const ent = this.hass.states[eid];
-            if (ent && ent.state === 'on') {
-              isStressed = true;
-              break;
-            }
-          }
-        }
-
-        // Personality check
-        if (this.hass) {
-          const manager = this.hass.states['sensor.growspace_manager'];
-          if (manager && manager.attributes && manager.attributes.ai_settings) {
-            personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
-          }
-        }
-
-        return DialogRenderer.renderGrowMasterDialog(
-          this._growMasterDialog,
-          isStressed,
-          personality,
-          {
-            onClose: () => this._growMasterDialog = null,
-            onQueryChange: (q) => { if (this._growMasterDialog) { this._growMasterDialog.userQuery = q; this.requestUpdate(); } },
-            onAnalyze: () => this._handleAskAdvice(),
-            onAnalyzeAll: () => this._handleAnalyzeAll()
-          }
-        );
-      })() : ''}
+    ${this._renderGrowMasterDialogWrapper()}
 
       ${DialogRenderer.renderStrainRecommendationDialog(
-        this._strainRecommendationDialog,
-        {
-          onClose: () => this._strainRecommendationDialog = null,
-          onQueryChange: (q) => { if (this._strainRecommendationDialog) { this._strainRecommendationDialog.userQuery = q; this.requestUpdate(); } },
-          onGetRecommendation: () => this._handleGetStrainRecommendation()
-        }
-      )}
+      this._strainRecommendationDialog,
+      {
+        onClose: () => this._strainRecommendationDialog = null,
+        onQueryChange: (q) => { if (this._strainRecommendationDialog) { this._strainRecommendationDialog.userQuery = q; this.requestUpdate(); } },
+        onGetRecommendation: () => this._handleGetStrainRecommendation()
+      }
+    )}
     `;
   }
-
-
 }
