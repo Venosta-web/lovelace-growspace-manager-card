@@ -120,7 +120,34 @@ export class DialogRenderer {
       </ha-dialog>
     `;
    }
+   private static parseScheduleString(scheduleString: string | IrrigationTime[]): IrrigationTime[] {
+      if (typeof scheduleString !== 'string') {
+         // If it's already an array (e.g., from a newly added event in the current session), return it.
+         return scheduleString;
+      }
 
+      if (!scheduleString || scheduleString === '[]') {
+         return [];
+      }
+
+      try {
+         // Step 1: Replace single quotes (') with double quotes (") for JSON compatibility.
+         const jsonString = scheduleString.replace(/'/g, '"');
+
+         // Step 2: Safely parse the corrected JSON string.
+         const parsed = JSON.parse(jsonString);
+
+         if (Array.isArray(parsed)) {
+            // Return the parsed array, asserting its type.
+            return parsed as IrrigationTime[];
+         }
+         return [];
+      } catch (e) {
+         // Log the error for debugging and return an empty array to prevent UI breakage.
+         console.error("Failed to parse irrigation schedule string:", scheduleString, e);
+         return [];
+      }
+   }
    private static getTimelineContent(
       dialog: AddPlantDialogState,
       growspaceName: string,
@@ -2281,6 +2308,9 @@ export class DialogRenderer {
 
       const dialogColor = '#2196F3'; // Irrigation Blue
 
+      const parsedIrrigationTimes = DialogRenderer.parseScheduleString(dialog.irrigation_times);
+      const parsedDrainTimes = DialogRenderer.parseScheduleString(dialog.drain_times);
+
       return html`
          <ha-dialog
             open
@@ -2331,7 +2361,7 @@ export class DialogRenderer {
 
                   ${this.renderScheduleSection(
          'Irrigation Schedule',
-         dialog.irrigation_times,
+         parsedIrrigationTimes,
          dialog.irrigation_duration,
          dialog,
          callbacks,
@@ -2341,7 +2371,7 @@ export class DialogRenderer {
 
                            ${this.renderScheduleSection(
          'Drain Schedule',
-         dialog.drain_times,
+         parsedDrainTimes,
          dialog.drain_duration,
          dialog,
          callbacks,
