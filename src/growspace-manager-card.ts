@@ -2189,7 +2189,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       growspace_name: device.name,
       irrigation_pump_entity: '',
       drain_pump_entity: '',
-      irrigation_duration: 5,
+      irrigation_duration: 3,
       drain_duration: 3,
       irrigation_times: [],
       drain_times: []

@@ -2315,9 +2315,9 @@ export class DialogRenderer {
 
                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                         ${this.renderMD3TextInput('Irrigation Pump Entity', dialog.irrigation_pump_entity, callbacks.onIrrigationPumpChange)}
-                        ${this.renderMD3NumberInput('Duration (minutes)', dialog.irrigation_duration, (val) => callbacks.onIrrigationDurationChange(parseInt(val)))}
+                        ${this.renderMD3NumberInput('Duration (seconds)', dialog.irrigation_duration, (val) => callbacks.onIrrigationDurationChange(parseInt(val)))}
                         ${this.renderMD3TextInput('Drain Pump Entity', dialog.drain_pump_entity, callbacks.onDrainPumpChange)}
-                        ${this.renderMD3NumberInput('Drain Duration (minutes)', dialog.drain_duration, (val) => callbacks.onDrainDurationChange(parseInt(val)))}
+                        ${this.renderMD3NumberInput('Drain Duration (seconds)', dialog.drain_duration, (val) => callbacks.onDrainDurationChange(parseInt(val)))}
                      </div>
 
                      <button
