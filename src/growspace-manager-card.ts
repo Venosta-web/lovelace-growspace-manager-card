@@ -3109,6 +3109,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                      <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm
                    </div>` : ''}
 
+                ${hasLightSensor ? html`
+                   <div class="stat-chip ${!this._lightCycleCollapsed ? 'active' : ''}"
+                        @click=${() => this._toggleLightCycle()}>
+                     <svg viewBox="0 0 24 24"><path d="${isLightsOn ? mdiLightbulbOn : mdiLightbulbOff}"></path></svg>
+                     ${isLightsOn ? 'On' : 'Off'}
+                   </div>` : ''}
+
                  ${envEntity ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('optimal') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('optimal')}>
