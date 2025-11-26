@@ -2318,7 +2318,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (dataPoints.length < 2 && type !== 'step') return html``;
 
     const width = 1000;
-    const height = 100;
+    const height = type === 'step' ? 100 : 180; // Taller for line graphs
 
     let minVal = 0;
     let maxVal = 1;
@@ -2333,6 +2333,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const paddedMin = minVal - (range * 0.1);
     const paddedMax = maxVal + (range * 0.1);
     const paddedRange = paddedMax - paddedMin;
+
+    // Calculate average for target line
+    const avgValue = dataPoints.length > 0
+      ? dataPoints.reduce((sum, d) => sum + d.value, 0) / dataPoints.length
+      : (minVal + maxVal) / 2;
 
     let svgPath = "";
 
@@ -2362,42 +2367,102 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
     }
 
-    return html`
-      <div class="gs-light-cycle-card" style="margin-top: 12px; border: 1px solid ${color}40;">
-         <div class="gs-light-header-row" @click=${() => this._toggleEnvGraph(metricKey)}>
-             <div class="gs-light-title" style="font-size: 1.2rem;">
-                 <div class="gs-icon-box" style="color: ${color}; background: ${color}10; border-color: ${color}30; width: 36px; height: 36px;">
-                      <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-                 </div>
-                 <div>
-                    <div>${title}</div>
-                    <div class="gs-light-subtitle">24H HISTORY • ${(() => {
-        if (metricKey === 'light') {
-          // Get the light schedule sensor for this device
-          const devices = this.dataService.getGrowspaceDevices();
-          const device = devices.find(d => d.device_id === this.selectedDevice);
-          if (device) {
-            const lightScheduleSensorId = `binary_sensor.${device.device_id}_light_schedule_correct`;
-            const lightScheduleSensor = this.hass.states[lightScheduleSensorId];
-            if (lightScheduleSensor?.attributes['Expected schedule']) {
-              return lightScheduleSensor.attributes['Expected schedule'];
+    // For step graphs, use compact design
+    if (type === 'step') {
+      return html`
+        <div class="gs-light-cycle-card" style="margin-top: 12px; border: 1px solid ${color}40;">
+           <div class="gs-light-header-row" @click=${() => this._toggleEnvGraph(metricKey)}>
+               <div class="gs-light-title" style="font-size: 1.2rem;">
+                   <div class="gs-icon-box" style="color: ${color}; background: ${color}10; border-color: ${color}30; width: 36px; height: 36px;">
+                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+                   </div>
+                   <div>
+                      <div>${title}</div>
+                      <div class="gs-light-subtitle">24H HISTORY • ${(() => {
+          if (metricKey === 'light') {
+            // Get the light schedule sensor for this device
+            const devices = this.dataService.getGrowspaceDevices();
+            const device = devices.find(d => d.device_id === this.selectedDevice);
+            if (device) {
+              const lightScheduleSensorId = `binary_sensor.${device.device_id}_light_schedule_correct`;
+              const lightScheduleSensor = this.hass.states[lightScheduleSensorId];
+              if (lightScheduleSensor?.attributes['Expected schedule']) {
+                return lightScheduleSensor.attributes['Expected schedule'];
+              }
             }
+            return dataPoints[dataPoints.length - 1]?.value === 1 ? 'ON' : 'OFF';
+          } else if (unit === 'state') {
+            return dataPoints[dataPoints.length - 1]?.value === 1 ? 'OPTIMAL' : 'NOT OPTIMAL';
+          } else {
+            return `${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}`;
           }
-          return dataPoints[dataPoints.length - 1]?.value === 1 ? 'ON' : 'OFF';
-        } else if (unit === 'state') {
-          return dataPoints[dataPoints.length - 1]?.value === 1 ? 'OPTIMAL' : 'NOT OPTIMAL';
-        } else {
-          return `${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}`;
-        }
-      })()}</div>
+        })()}</div>
+                   </div>
+               </div>
+               <div style="opacity: 0.7;">
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronDown}"></path></svg>
+               </div>
+           </div>
+
+           <div class="gs-chart-container" style="height: 100px;"
+                @mousemove=${(e: MouseEvent) => {
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
+        }}
+                @mouseleave=${() => this._tooltip = null}>
+
+               ${this._tooltip && this._tooltip.id === metricKey ? html`
+                   <div class="gs-cursor-line" style="left: ${this._tooltip.x}px;"></div>
+                   <div class="gs-tooltip" style="left: ${this._tooltip.x}px;">
+                      <div class="time">${this._tooltip.time}</div>
+                      <div>${this._tooltip.value}</div>
+                   </div>
+               ` : ''}
+
+               <svg class="gs-chart-svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
+                   <defs>
+                       <linearGradient id="grad-${metricKey}" x1="0%" y1="0%" x2="0%" y2="100%">
+                           <stop offset="0%" style="stop-color:${color};stop-opacity:0.5" />
+                           <stop offset="100%" style="stop-color:${color};stop-opacity:0" />
+                       </linearGradient>
+                   </defs>
+                   <path class="chart-line" d="${svgPath}" style="stroke: ${color};" />
+                   <path class="chart-gradient-fill" d="${svgPath} V 100 H 0 Z" style="fill: url(#grad-${metricKey});" />
+               </svg>
+               <div class="chart-markers">
+                  <span>-24H</span>
+                  <span>NOW</span>
+               </div>
+           </div>
+        </div>
+      `;
+    }
+
+    // For line graphs, use new rectangular design
+    const yLabels = [
+      paddedMax,
+      paddedMax - paddedRange * 0.25,
+      paddedMax - paddedRange * 0.5,
+      paddedMax - paddedRange * 0.75,
+      paddedMin
+    ];
+
+    return html`
+      <div class="gs-env-graph-card" style="margin-top: 12px; background: #1a1a1a; border-radius: 12px; padding: 16px;">
+         <div class="gs-env-graph-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer;" @click=${() => this._toggleEnvGraph(metricKey)}>
+             <div style="display: flex; align-items: center; gap: 12px;">
+                 <svg style="width:24px;height:24px;fill:${color};" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+                 <div>
+                    <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${title}</div>
+                    <div style="font-size: 0.75rem; color: #999;">24H HISTORY</div>
                  </div>
              </div>
-             <div style="opacity: 0.7;">
-                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronDown}"></path></svg>
+             <div style="text-align: right;">
+                <div style="font-size: 0.85rem; color: #999;">${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}</div>
              </div>
          </div>
 
-         <div class="gs-chart-container" style="height: 100px;"
+         <div class="gs-env-chart-container" style="position: relative; height: 180px; background: #0d0d0d; border-radius: 8px; padding: 20px 40px 30px 50px;"
               @mousemove=${(e: MouseEvent) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
@@ -2405,26 +2470,52 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
               @mouseleave=${() => this._tooltip = null}>
 
              ${this._tooltip && this._tooltip.id === metricKey ? html`
-                 <div class="gs-cursor-line" style="left: ${this._tooltip.x}px;"></div>
-                 <div class="gs-tooltip" style="left: ${this._tooltip.x}px;">
-                    <div class="time">${this._tooltip.time}</div>
-                    <div>${this._tooltip.value}</div>
+                 <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: ${color}80; pointer-events: none;"></div>
+                 <div style="position: absolute; left: ${this._tooltip.x + 10}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid ${color}; pointer-events: none; z-index: 1000;">
+                    <div style="color: ${color}; font-weight: 600;">${this._tooltip.time}</div>
+                    <div style="margin-top: 4px;">${this._tooltip.value}</div>
                  </div>
              ` : ''}
 
-             <svg class="gs-chart-svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
+             <!-- Y-axis labels -->
+             <div style="position: absolute; left: 0; top: 20px; bottom: 30px; width: 45px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; color: #666; text-align: right; padding-right: 8px;">
+                ${yLabels.map(val => html`<div>${val.toFixed(1)} ${unit}</div>`)}
+             </div>
+
+             <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px);" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
                  <defs>
                      <linearGradient id="grad-${metricKey}" x1="0%" y1="0%" x2="0%" y2="100%">
-                         <stop offset="0%" style="stop-color:${color};stop-opacity:0.5" />
+                         <stop offset="0%" style="stop-color:${color};stop-opacity:0.3" />
                          <stop offset="100%" style="stop-color:${color};stop-opacity:0" />
                      </linearGradient>
                  </defs>
-                 <path class="chart-line" d="${svgPath}" style="stroke: ${color};" />
-                 <path class="chart-gradient-fill" d="${svgPath} V 100 H 0 Z" style="fill: url(#grad-${metricKey});" />
+                 
+                 <!-- Vertical grid lines -->
+                 <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
+                 <line x1="${width * 0.25}" y1="0" x2="${width * 0.25}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
+                 <line x1="${width * 0.5}" y1="0" x2="${width * 0.5}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
+                 <line x1="${width * 0.75}" y1="0" x2="${width * 0.75}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
+                 <line x1="${width}" y1="0" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
+                 
+                 <!-- Target/average line -->
+                 ${avgValue ? html`
+                   <line x1="0" y1="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
+                         x2="${width}" y2="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
+                         stroke="${color}" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.5" />
+                 ` : ''}
+                 
+                 <!-- Data line and fill -->
+                 <path d="${svgPath} V ${height} H 0 Z" fill="url(#grad-${metricKey})" />
+                 <path d="${svgPath}" fill="none" stroke="${color}" stroke-width="2.5" />
              </svg>
-             <div class="chart-markers">
-                <span>-24H</span>
-                <span>NOW</span>
+             
+             <!-- X-axis markers -->
+             <div style="position: absolute; left: 50px; right: 40px; bottom: 5px; display: flex; justify-content: space-between; font-size: 0.65rem; color: #666;">
+                <span>24H</span>
+                <span>18H</span>
+                <span>12H</span>
+                <span>6H</span>
+                <span style="color: ${color};">NOW</span>
              </div>
          </div>
       </div>
