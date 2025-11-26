@@ -1,7 +1,7 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain, mdiDotsVertical, mdiRadioboxMarked, mdiRadioboxBlank } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
@@ -36,9 +36,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _draggedPlant: PlantEntity | null = null;
   @state() private _isCompactView: boolean = false;
   @state() private _historyData: any[] | null = null;
-  @state() private _lightCycleCollapsed: boolean = true;
+
   @state() private _activeEnvGraphs: Set<string> = new Set();
   @state() private _tooltip: { id: string, x: number, time: string, value: string } | null = null;
+  @state() private _menuOpen: boolean = false;
 
 
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -331,6 +332,126 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
       .light-status-chip.off {
          color: rgba(255, 255, 255, 0.7);
+      }
+
+      /* Menu Button and Dropdown */
+      .menu-container {
+        position: relative;
+        display: inline-block;
+      }
+
+      .menu-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        color: #fff;
+      }
+
+      .menu-button:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .menu-button svg {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+      }
+
+      .menu-dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        min-width: 200px;
+        background: rgba(30, 30, 35, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+        overflow: hidden;
+        animation: menuFadeIn 0.2s cubic-bezier(0.2, 0, 0, 1);
+      }
+
+      @keyframes menuFadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: background 0.2s;
+        color: #fff;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .menu-item:last-child {
+        border-bottom: none;
+      }
+
+      .menu-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .menu-item svg {
+        width: 20px;
+        height: 20px;
+        fill: currentColor;
+        opacity: 0.9;
+      }
+
+      .menu-item-label {
+        flex: 1;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      /* Toggle switch in menu */
+      .menu-toggle-switch {
+        width: 40px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
+        position: relative;
+        transition: background 0.2s;
+      }
+
+      .menu-toggle-switch.active {
+        background: var(--primary-color, #4caf50);
+      }
+
+      .menu-toggle-switch::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        background: #fff;
+        border-radius: 50%;
+        transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+      }
+
+      .menu-toggle-switch.active::after {
+        transform: translateX(20px);
       }
 
       /* 24h Chart */
@@ -1675,6 +1796,27 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
     `
   ];
+
+  connectedCallback() {
+    super.connectedCallback();
+    document.addEventListener('click', this._handleDocumentClick);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    document.removeEventListener('click', this._handleDocumentClick);
+  }
+
+  private _handleDocumentClick = (e: Event) => {
+    if (this._menuOpen) {
+      const path = e.composedPath();
+      const menuContainer = this.shadowRoot?.querySelector('.menu-container');
+      if (menuContainer && !path.includes(menuContainer)) {
+        this._menuOpen = false;
+      }
+    }
+  };
+
   protected firstUpdated() {
     this.dataService = new DataService(this.hass);
     this.initializeSelectedDevice();
@@ -2068,10 +2210,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
   }
 
-  private _toggleLightCycle() {
-    this._lightCycleCollapsed = !this._lightCycleCollapsed;
-  }
-
   private _toggleEnvGraph(metric: string) {
     const newSet = new Set(this._activeEnvGraphs);
     if (newSet.has(metric)) {
@@ -2083,7 +2221,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.requestUpdate();
   }
 
-  private _handleGraphHover(e: MouseEvent, graphId: string, dataPoints: { time: number, value: number }[], rect: DOMRect, unit: string) {
+  private _handleGraphHover(e: MouseEvent, graphId: string, dataPoints: { time: number, value: number, meta?: any }[], rect: DOMRect, unit: string) {
     const x = e.clientX - rect.left;
     const width = rect.width;
 
@@ -2113,7 +2251,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     // For value, if it's light cycle, we need special handling (passed as unit='ON/OFF' maybe?)
     let valStr = `${closest.value} ${unit}`;
     if (unit === 'state') {
-      valStr = closest.value === 1 ? 'ON' : 'OFF';
+      if (closest.value === 1) {
+        valStr = 'Optimal Conditions';
+      } else {
+        valStr = closest.meta || 'Not Optimal';
+      }
     }
 
     this._tooltip = {
@@ -2124,14 +2266,34 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     };
   }
 
-  private renderEnvGraph(metricKey: string, color: string, title: string, unit: string): TemplateResult {
+  private renderEnvGraph(metricKey: string, color: string, title: string, unit: string, type: 'line' | 'step' = 'line'): TemplateResult {
     if (!this._historyData || this._historyData.length === 0) return html``;
 
     const getValue = (ent: any, key: string) => {
       if (!ent || !ent.attributes) return undefined;
+      // Special case for 'state' unit (optimal conditions)
+      if (unit === 'state' && key === 'optimal') {
+        return ent.state === 'on' ? 1 : 0;
+      }
+      // Special case for light cycle
+      if (key === 'light') {
+        const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
+        return isLightsOn === true ? 1 : 0;
+      }
       if (ent.attributes[key] !== undefined) return ent.attributes[key];
       if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
         return ent.attributes.observations[key];
+      }
+      return undefined;
+    };
+
+    const getMeta = (ent: any, key: string) => {
+      if (unit === 'state' && key === 'optimal') {
+        return ent.attributes.reasons;
+      }
+      if (key === 'light') {
+        const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
+        return { state: isLightsOn ? 'ON' : 'OFF' };
       }
       return undefined;
     };
@@ -2140,55 +2302,167 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const dataPoints: { time: number, value: number }[] = [];
+    const dataPoints: { time: number, value: number, meta?: any }[] = [];
 
     sortedHistory.forEach(h => {
       const t = new Date(h.last_changed).getTime();
       if (t < twentyFourHoursAgo.getTime()) return;
       const val = getValue(h, metricKey);
+      const meta = getMeta(h, metricKey);
+
       if (val !== undefined && !isNaN(parseFloat(val))) {
-        dataPoints.push({ time: t, value: parseFloat(val) });
+        dataPoints.push({ time: t, value: parseFloat(val), meta });
       }
     });
 
-    if (dataPoints.length < 2) return html``;
+    if (dataPoints.length < 2 && type !== 'step') return html``;
 
     const width = 1000;
-    const height = 100;
-    const minVal = Math.min(...dataPoints.map(d => d.value));
-    const maxVal = Math.max(...dataPoints.map(d => d.value));
+    const height = type === 'step' ? 100 : 180; // Taller for line graphs
+
+    let minVal = 0;
+    let maxVal = 1;
+
+    if (unit !== 'state') {
+      minVal = Math.min(...dataPoints.map(d => d.value));
+      maxVal = Math.max(...dataPoints.map(d => d.value));
+    }
+
     const range = maxVal - minVal || 1;
 
     const paddedMin = minVal - (range * 0.1);
     const paddedMax = maxVal + (range * 0.1);
     const paddedRange = paddedMax - paddedMin;
 
-    const points: [number, number][] = dataPoints.map(d => {
-      const x = ((d.time - twentyFourHoursAgo.getTime()) / (24 * 60 * 60 * 1000)) * width;
-      const y = height - ((d.value - paddedMin) / paddedRange) * height;
-      return [x, y];
-    });
+    // Calculate average for target line
+    const avgValue = dataPoints.length > 0
+      ? dataPoints.reduce((sum, d) => sum + d.value, 0) / dataPoints.length
+      : (minVal + maxVal) / 2;
 
-    const svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+    let svgPath = "";
+
+    if (type === 'step') {
+      const points: [number, number][] = [];
+      let currentState = dataPoints.length > 0 ? dataPoints[0].value : 0;
+
+      points.push([0, height - ((currentState - paddedMin) / paddedRange) * height]);
+
+      dataPoints.forEach(d => {
+        const x = ((d.time - twentyFourHoursAgo.getTime()) / (24 * 60 * 60 * 1000)) * width;
+        const y = height - ((d.value - paddedMin) / paddedRange) * height;
+        points.push([x, points[points.length - 1][1]]);
+        points.push([x, y]);
+        currentState = d.value;
+      });
+
+      points.push([width, height - ((currentState - paddedMin) / paddedRange) * height]);
+      svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+
+    } else {
+      const points: [number, number][] = dataPoints.map(d => {
+        const x = ((d.time - twentyFourHoursAgo.getTime()) / (24 * 60 * 60 * 1000)) * width;
+        const y = height - ((d.value - paddedMin) / paddedRange) * height;
+        return [x, y];
+      });
+      svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+    }
+
+    // For step graphs, use compact design
+    if (type === 'step') {
+      return html`
+        <div class="gs-light-cycle-card" style="margin-top: 12px; border: 1px solid ${color}40;">
+           <div class="gs-light-header-row" @click=${() => this._toggleEnvGraph(metricKey)}>
+               <div class="gs-light-title" style="font-size: 1.2rem;">
+                   <div class="gs-icon-box" style="color: ${color}; background: ${color}10; border-color: ${color}30; width: 36px; height: 36px;">
+                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+                   </div>
+                   <div>
+                      <div>${title}</div>
+                      <div class="gs-light-subtitle">24H HISTORY • ${(() => {
+          if (metricKey === 'light') {
+            // Get the light schedule sensor for this device
+            const devices = this.dataService.getGrowspaceDevices();
+            const device = devices.find(d => d.device_id === this.selectedDevice);
+            if (device) {
+              const lightScheduleSensorId = `binary_sensor.${device.device_id}_light_schedule_correct`;
+              const lightScheduleSensor = this.hass.states[lightScheduleSensorId];
+              if (lightScheduleSensor?.attributes['Expected schedule']) {
+                return lightScheduleSensor.attributes['Expected schedule'];
+              }
+            }
+            return dataPoints[dataPoints.length - 1]?.value === 1 ? 'ON' : 'OFF';
+          } else if (unit === 'state') {
+            return dataPoints[dataPoints.length - 1]?.value === 1 ? 'OPTIMAL' : 'NOT OPTIMAL';
+          } else {
+            return `${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}`;
+          }
+        })()}</div>
+                   </div>
+               </div>
+               <div style="opacity: 0.7;">
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronDown}"></path></svg>
+               </div>
+           </div>
+
+           <div class="gs-chart-container" style="height: 100px;"
+                @mousemove=${(e: MouseEvent) => {
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
+        }}
+                @mouseleave=${() => this._tooltip = null}>
+
+               ${this._tooltip && this._tooltip.id === metricKey ? html`
+                   <div class="gs-cursor-line" style="left: ${this._tooltip.x}px;"></div>
+                   <div class="gs-tooltip" style="left: ${this._tooltip.x}px;">
+                      <div class="time">${this._tooltip.time}</div>
+                      <div>${this._tooltip.value}</div>
+                   </div>
+               ` : ''}
+
+               <svg class="gs-chart-svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
+                   <defs>
+                       <linearGradient id="grad-${metricKey}" x1="0%" y1="0%" x2="0%" y2="100%">
+                           <stop offset="0%" style="stop-color:${color};stop-opacity:0.5" />
+                           <stop offset="100%" style="stop-color:${color};stop-opacity:0" />
+                       </linearGradient>
+                   </defs>
+                   <path class="chart-line" d="${svgPath}" style="stroke: ${color};" />
+                   <path class="chart-gradient-fill" d="${svgPath} V 100 H 0 Z" style="fill: url(#grad-${metricKey});" />
+               </svg>
+               <div class="chart-markers">
+                  <span>-24H</span>
+                  <span>NOW</span>
+               </div>
+           </div>
+        </div>
+      `;
+    }
+
+    // For line graphs, use new rectangular design
+    const yLabels = [
+      paddedMax,
+      paddedMax - paddedRange * 0.25,
+      paddedMax - paddedRange * 0.5,
+      paddedMax - paddedRange * 0.75,
+      paddedMin
+    ];
 
     return html`
-      <div class="gs-light-cycle-card" style="margin-top: 12px; border: 1px solid ${color}40;">
-         <div class="gs-light-header-row" @click=${() => this._toggleEnvGraph(metricKey)}>
-             <div class="gs-light-title" style="font-size: 1.2rem;">
-                 <div class="gs-icon-box" style="color: ${color}; background: ${color}10; border-color: ${color}30; width: 36px; height: 36px;">
-                      <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-                 </div>
+      <div class="gs-env-graph-card" style="margin-top: 12px; background: #1a1a1a; border-radius: 12px; padding: 16px;">
+         <div class="gs-env-graph-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer;" @click=${() => this._toggleEnvGraph(metricKey)}>
+             <div style="display: flex; align-items: center; gap: 12px;">
+                 <svg style="width:24px;height:24px;fill:${color};" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
                  <div>
-                    <div>${title}</div>
-                    <div class="gs-light-subtitle">24H HISTORY • ${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}</div>
+                    <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${title}</div>
+                    <div style="font-size: 0.75rem; color: #999;">24H HISTORY</div>
                  </div>
              </div>
-             <div style="opacity: 0.7;">
-                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronDown}"></path></svg>
+             <div style="text-align: right;">
+                <div style="font-size: 0.85rem; color: #999;">${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}</div>
              </div>
          </div>
 
-         <div class="gs-chart-container" style="height: 100px;"
+         <div class="gs-env-chart-container" style="position: relative; height: 180px; background: #0d0d0d; border-radius: 8px; padding: 20px 40px 30px 50px;"
               @mousemove=${(e: MouseEvent) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
@@ -2196,26 +2470,52 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
               @mouseleave=${() => this._tooltip = null}>
 
              ${this._tooltip && this._tooltip.id === metricKey ? html`
-                 <div class="gs-cursor-line" style="left: ${this._tooltip.x}px;"></div>
-                 <div class="gs-tooltip" style="left: ${this._tooltip.x}px;">
-                    <div class="time">${this._tooltip.time}</div>
-                    <div>${this._tooltip.value}</div>
+                 <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: ${color}80; pointer-events: none;"></div>
+                 <div style="position: absolute; left: ${this._tooltip.x + 10}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid ${color}; pointer-events: none; z-index: 1000;">
+                    <div style="color: ${color}; font-weight: 600;">${this._tooltip.time}</div>
+                    <div style="margin-top: 4px;">${this._tooltip.value}</div>
                  </div>
              ` : ''}
 
-             <svg class="gs-chart-svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
+             <!-- Y-axis labels -->
+             <div style="position: absolute; left: 0; top: 20px; bottom: 30px; width: 45px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; color: #666; text-align: right; padding-right: 8px;">
+                ${yLabels.map(val => html`<div>${val.toFixed(1)} ${unit}</div>`)}
+             </div>
+
+             <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px);" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
                  <defs>
                      <linearGradient id="grad-${metricKey}" x1="0%" y1="0%" x2="0%" y2="100%">
-                         <stop offset="0%" style="stop-color:${color};stop-opacity:0.5" />
+                         <stop offset="0%" style="stop-color:${color};stop-opacity:0.3" />
                          <stop offset="100%" style="stop-color:${color};stop-opacity:0" />
                      </linearGradient>
                  </defs>
-                 <path class="chart-line" d="${svgPath}" style="stroke: ${color};" />
-                 <path class="chart-gradient-fill" d="${svgPath} V 100 H 0 Z" style="fill: url(#grad-${metricKey});" />
+                 
+                 <!-- Vertical grid lines -->
+                 <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
+                 <line x1="${width * 0.25}" y1="0" x2="${width * 0.25}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
+                 <line x1="${width * 0.5}" y1="0" x2="${width * 0.5}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
+                 <line x1="${width * 0.75}" y1="0" x2="${width * 0.75}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
+                 <line x1="${width}" y1="0" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
+                 
+                 <!-- Target/average line -->
+                 ${avgValue ? html`
+                   <line x1="0" y1="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
+                         x2="${width}" y2="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
+                         stroke="${color}" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.5" />
+                 ` : ''}
+                 
+                 <!-- Data line and fill -->
+                 <path d="${svgPath} V ${height} H 0 Z" fill="url(#grad-${metricKey})" />
+                 <path d="${svgPath}" fill="none" stroke="${color}" stroke-width="2.5" />
              </svg>
-             <div class="chart-markers">
-                <span>-24H</span>
-                <span>NOW</span>
+             
+             <!-- X-axis markers -->
+             <div style="position: absolute; left: 50px; right: 40px; bottom: 5px; display: flex; justify-content: space-between; font-size: 0.65rem; color: #666;">
+                <span>24H</span>
+                <span>18H</span>
+                <span>12H</span>
+                <span>6H</span>
+                <span style="color: ${color};">NOW</span>
              </div>
          </div>
       </div>
@@ -2557,11 +2857,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       const result = await this.dataService.askGrowAdvice(this._growMasterDialog.growspaceId, this._growMasterDialog.userQuery);
       if (this._growMasterDialog) {
         // EXTRACT RESPONSE SAFELY
-        // The service returns { response: "text" }, so we want result.response
-        if (result && typeof result.response === 'string') {
-          this._growMasterDialog.response = result.response;
+        // Backend returns { response: { response: "text" } } or { response: "text" }
+        if (result && result.response) {
+          if (typeof result.response === 'string') {
+            this._growMasterDialog.response = result.response;
+          } else if (typeof result.response === 'object' && 'response' in result.response && typeof result.response.response === 'string') {
+            // Nested response structure
+            this._growMasterDialog.response = result.response.response;
+          } else {
+            // Fallback
+            this._growMasterDialog.response = JSON.stringify(result, null, 2);
+          }
         } else {
-          // Fallback: if structure is unexpected, dump the whole thing so we can debug it
           this._growMasterDialog.response = JSON.stringify(result, null, 2);
         }
       }
@@ -2589,8 +2896,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       const result = await this.dataService.analyzeAllGrowspaces();
       if (this._growMasterDialog) {
         // EXTRACT RESPONSE SAFELY
-        if (result && typeof result.response === 'string') {
-          this._growMasterDialog.response = result.response;
+        if (result && result.response) {
+          if (typeof result.response === 'string') {
+            this._growMasterDialog.response = result.response;
+          } else if (typeof result.response === 'object' && 'response' in result.response && typeof result.response.response === 'string') {
+            // Nested response structure
+            this._growMasterDialog.response = result.response.response;
+          } else {
+            this._growMasterDialog.response = JSON.stringify(result, null, 2);
+          }
         } else {
           this._growMasterDialog.response = JSON.stringify(result, null, 2);
         }
@@ -2875,10 +3189,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                  <h3 class="gs-title">${device.name}</h3>
                `}
 
+
                ${dominant ? html`
-               <div class="gs-stage-chip">
-                 <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
-                 ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Day ${dominant.days}
+               <div style="display: flex; gap: 8px;">
+                <div class="gs-stage-chip">
+                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
+                  ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Day ${dominant.days}
+                </div>
+                <div class="gs-stage-chip">
+                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
+                  ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Week ${Math.ceil(dominant.days / 7)}
+                </div>
                </div>
                ` : ''}
             </div>
@@ -2899,201 +3220,74 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                         @click=${() => this._toggleEnvGraph('vpd')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>${vpd} kPa
                    </div>` : ''}
-                ${co2 !== undefined ? html`
+                 ${co2 !== undefined ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('co2') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('co2')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm
                    </div>` : ''}
 
+                ${hasLightSensor ? html`
+                   <div class="stat-chip ${this._activeEnvGraphs.has('light') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('light')}>
+                     <svg viewBox="0 0 24 24"><path d="${isLightsOn ? mdiLightbulbOn : mdiLightbulbOff}"></path></svg>
+                     ${isLightsOn ? 'On' : 'Off'}
+                   </div>` : ''}
+
+                 ${envEntity ? html`
+                   <div class="stat-chip ${this._activeEnvGraphs.has('optimal') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('optimal')}>
+                     <svg viewBox="0 0 24 24"><path d="${envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank}"></path></svg>
+                     ${envEntity.state === 'on' ? 'Optimal Conditions' : (envEntity.attributes.reasons || 'Not Optimal')}
+                   </div>` : ''}
+
                 ${!this._isCompactView ? html`
-                   <div class="stat-chip" @click=${this._openStrainLibraryDialog} title="Strain Library">
-                      <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-                      Strains
-                   </div>
-
-                   <div class="stat-chip" @click=${this._openConfigDialog} title="Configure">
-                      <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                      Config
-                   </div>
-
-                   <div class="stat-chip" @click=${() => this._isCompactView = true} title="Switch to Compact Mode">
-                       <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-                       Compact
-                   </div>
-
-                   <div class="stat-chip" @click=${this._openGrowMasterDialog} title="Ask the Grow Master">
-                       <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-                       Ask AI
-                   </div>
-                ` : ''}
-            </div>
-         </div>
-
-         <!-- Nested Light Cycle Card -->
-         ${hasLightSensor ? html`
-         <div class="gs-light-cycle-card ${this._lightCycleCollapsed ? 'collapsed' : ''}">
-            <div class="gs-light-header-row" @click=${() => this._toggleLightCycle()}>
-                <div class="gs-light-title">
-                    <div class="gs-icon-box">
-                       <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiWeatherSunny}"></path></svg>
+                  <div class="menu-container">
+                    <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
                     </div>
-                    <div>
-                       <div>Light Cycle</div>
-                       ${!this._lightCycleCollapsed ? html`<div class="gs-light-subtitle">24H HISTORY</div>` : ''}
-                    </div>
-                </div>
-
-                ${envEntity ? html`
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <div>
-                        <div class="light-status-chip ${isLightsOn ? 'on' : 'off'}">
-                           <div class="light-status-text">
-                               <div class="status-dot"></div>
-                               ${isLightsOn ? 'ON' : 'OFF'}
-                           </div>
+                    
+                    ${this._menuOpen ? html`
+                      <div class="menu-dropdown" @click=${(e: Event) => e.stopPropagation()}>
+                        <div class="menu-item" @click=${() => { this._openConfigDialog(); this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                          <span class="menu-item-label">Config</span>
                         </div>
-                        ${!this._lightCycleCollapsed ? html`<div class="target-cycle-text">Target: ${targetCycle}</div>` : ''}
-                    </div>
-                    <div class="rotate-icon ${!this._lightCycleCollapsed ? 'expanded' : ''}" style="opacity: 0.7;">
-                        <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronDown}"></path></svg>
-                    </div>
-                </div>
-                ` : ''}
-            </div>
-
-            ${!this._lightCycleCollapsed ? html`
-            <div class="gs-chart-container"
-                @mousemove=${(e: MouseEvent) => {
-            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-            // Need to construct data points for hover logic
-            // Re-using the transitions array calculated above would be cleaner but it's inside the if block.
-            // I'll reconstruct a simplified points array for the hover handler:
-            // [ {time: t, value: 1/0} ... ] using 'transitions'.
-
-            const hoverPoints: { time: number, value: number }[] = [];
-            // Add initial state at -24h
-            const now = new Date();
-            const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-            // Use 'transitions' calculated above
-            // Oh wait, transitions is in the upper scope? Yes, inside the function.
-
-            // We need to pass points that represent the state changes.
-            // For step line, we should probably pass points at regular intervals or just the transitions?
-            // _handleGraphHover finds the closest point. For a step function, we want the value of the interval.
-            // So we should look for the transition *before* the hovered time.
-
-            // Let's modify _handleGraphHover or create a specific one?
-            // Or just feed it enough points?
-            // Actually, if we feed it transitions, "closest" might be the transition *after*.
-
-            // Let's implement a custom hover for light cycle here inline or adapt logic.
-            // I will use _handleGraphHover but I need to adapt the logic for step function.
-            // Actually, let's just use the transitions array.
-
-            const hoverPointsLocal = transitions.map(t => ({ time: t.time, value: t.state ? 1 : 0 }));
-            // Add start point
-            // Transitions only has changes within window.
-            // Need to insert start point at -24h
-            // 'transitions' is defined in the scope above.
-
-            // Wait, if I use _handleGraphHover with discrete points, it finds the closest point.
-            // If I hover between two points 6 hours apart, it will snap to one.
-            // That's fine for now, or I can refine _handleGraphHover to support 'step' interpolation.
-
-            // Let's stick to _handleGraphHover for consistency but populate it well.
-            // Or better: pass the transitions and let a specialized handler deal with it?
-            // I'll stick to generic for now, but ensure we have points.
-
-            if (hoverPointsLocal.length === 0 || hoverPointsLocal[0].time > twentyFourHoursAgo.getTime()) {
-              // Add the initial state point
-              // We don't have 'currentState' variable available here easily (it was mutated in loop)
-              // But we know 'transitions' and we calculated 'currentState' before loop.
-              // It's tricky because of scope mutation.
-
-              // Let's just rely on the 'transitions' array and add the start/end points.
-              // But I can't easily access the initial state derived above without refactoring.
-              // However, I can re-derive or just use what I have.
-
-              // Hack: I'll just pass the transitions. The user will see the time of the switch.
-              // If they hover in between, they snap to the switch.
-              // "Time: 10:30pm Value: ON" -> implies at 10:30pm it turned ON.
-            }
-
-            this._handleGraphHover(e, 'light-cycle', hoverPointsLocal, rect, 'state');
-          }}
-                @mouseleave=${() => this._tooltip = null}
-            >
-                ${this._tooltip && this._tooltip.id === 'light-cycle' ? html`
-                    <div class="gs-cursor-line" style="left: ${this._tooltip.x}px;"></div>
-                    <div class="gs-tooltip" style="left: ${this._tooltip.x}px;">
-                        <div class="time">${this._tooltip.time}</div>
-                        <div>${this._tooltip.value}</div>
-                    </div>
-                ` : ''}
-
-                <svg class="gs-chart-svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
-                    <defs>
-                        <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" style="stop-color:var(--primary-light-color, #FFEB3B);stop-opacity:0.5" />
-                            <stop offset="100%" style="stop-color:var(--primary-light-color, #FFEB3B);stop-opacity:0" />
-                        </linearGradient>
-                    </defs>
-                    <path class="chart-line" d="${svgPath}" />
-                    <path class="chart-gradient-fill" d="${svgPath} V 100 H 0 Z" />
-                </svg>
-                <div class="chart-markers">
-                   <span>-24H</span>
-                   <span>-18H</span>
-                   <span>-12H</span>
-                   <span>-6H</span>
-                   <span>NOW</span>
-                </div>
-            </div>
-
-            <!-- Bottom Cards -->
-            <div class="gs-action-cards">
-                <div class="action-card">
-                    <div class="ac-content">
-                        <div class="ac-icon on">
-                            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiWeatherSunny}"></path></svg>
+                        
+                        <div class="menu-item" @click=${() => { this._isCompactView = true; this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+                          <span class="menu-item-label">Compact View</span>
+                          <div class="menu-toggle-switch ${this._isCompactView ? 'active' : ''}"></div>
                         </div>
-                        <div class="ac-text">
-                            <h4>LIGHT ON</h4>
-                            <div class="time">${lastOnTime} <span>${lastOnAmPm}</span></div>
+                        
+                        <div class="menu-item" @click=${() => { this._openStrainLibraryDialog(); this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+                          <span class="menu-item-label">Strains</span>
                         </div>
-                    </div>
-                    <div class="ac-arrow">
-                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
-                    </div>
-                </div>
+                        
+                        <div class="menu-item" @click=${() => { this._openGrowMasterDialog(); this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+                          <span class="menu-item-label">Ask AI</span>
+                        </div>
+                      </div>
+                    ` : ''}
+                  </div>
+                ` : ''
+      }
+</div>
+  </div>
+ 
 
-                <div class="action-card">
-                    <div class="ac-content">
-                        <div class="ac-icon off">
-                            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiWeatherNight}"></path></svg>
-                        </div>
-                        <div class="ac-text">
-                            <h4>LIGHT OFF</h4>
-                            <div class="time">${lastOffTime} <span>${lastOffAmPm}</span></div>
-                        </div>
-                    </div>
-                    <div class="ac-arrow">
-                         <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
-                    </div>
-                </div>
-            </div>
-            ` : ''}
-         </div>
-         ` : ''}
 
-         <!-- Active Environmental Graphs -->
-         ${this._activeEnvGraphs.has('temperature') ? this.renderEnvGraph('temperature', '#FF5722', 'Temperature', '°C') : ''}
+<!-- Active Environmental Graphs -->
+  ${this._activeEnvGraphs.has('temperature') ? this.renderEnvGraph('temperature', '#FF5722', 'Temperature', '°C') : ''}
          ${this._activeEnvGraphs.has('humidity') ? this.renderEnvGraph('humidity', '#2196F3', 'Humidity', '%') : ''}
          ${this._activeEnvGraphs.has('vpd') ? this.renderEnvGraph('vpd', '#9C27B0', 'VPD', 'kPa') : ''}
          ${this._activeEnvGraphs.has('co2') ? this.renderEnvGraph('co2', '#90A4AE', 'CO2', 'ppm') : ''}
+         ${this._activeEnvGraphs.has('light') ? this.renderEnvGraph('light', '#FFEB3B', 'Light Cycle', 'state', 'step') : ''}
+         ${this._activeEnvGraphs.has('optimal') ? this.renderEnvGraph('optimal', '#4CAF50', 'Optimal Conditions', 'state', 'step') : ''}
 
-      </div>
-    `;
+</div>
+  `;
   }
 
   private renderHeader(devices: GrowspaceDevice[]): TemplateResult {
@@ -3108,49 +3302,49 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         ${this._config?.title ? html`<h2 class="header-title">${this._config.title}</h2>` : ''}
         
         ${this._isCompactView ? html`
-        <div class="selector-container">
-          ${!this._config?.default_growspace ? html`
-            <label for="device-select">Growspace:</label>
-            <select 
-              id="device-select" 
-              class="growspace-select"
-              .value=${this.selectedDevice || ''} 
-              @change=${this._handleDeviceChange}
-            >
-              ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
-            </select>
-          ` : html`
-            <label for="device-select">Growspace:</label>
-            <!-- Even if default is set, user wants dropdown in compact mode -->
-            <select
-              id="device-select"
-              class="growspace-select"
-              .value=${this.selectedDevice || ''}
-              @change=${this._handleDeviceChange}
-            >
-              ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
-            </select>
-          `}
-        </div>
-
-        <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
-          <div class="view-toggle">
-            <input 
-              type="checkbox" 
-              id="compact-view" 
-              .checked=${this._isCompactView}
-              @change=${(e: Event) => this._isCompactView = (e.target as HTMLInputElement).checked}
-            >
-            <label for="compact-view">Compact</label>
+          <div class="selector-container">
+            ${!this._config?.default_growspace ? html`
+              <label for="device-select">Growspace:</label>
+              <select 
+                id="device-select" 
+                class="growspace-select"
+                .value=${this.selectedDevice || ''} 
+                @change=${this._handleDeviceChange}
+              >
+                ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
+              </select>
+            ` : html`
+              <label for="device-select">Growspace:</label>
+              <!-- Even if default is set, user wants dropdown in compact mode -->
+              <select
+                id="device-select"
+                class="growspace-select"
+                .value=${this.selectedDevice || ''}
+                @change=${this._handleDeviceChange}
+              >
+                ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
+              </select>
+            `}
           </div>
-          
-          <button class="action-button" @click=${this._openStrainLibraryDialog}>
-            <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiDna}"></path>
-            </svg>
-            Strains
-          </button>
-        </div>
+
+          <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
+            <div class="view-toggle">
+              <input 
+                type="checkbox" 
+                id="compact-view" 
+                .checked=${this._isCompactView}
+                @change=${(e: Event) => this._isCompactView = (e.target as HTMLInputElement).checked}
+              >
+              <label for="compact-view">Compact</label>
+            </div>
+            
+            <button class="action-button" @click=${this._openStrainLibraryDialog}>
+              <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiDna}"></path>
+              </svg>
+              Strains
+            </button>
+          </div>
         ` : ''}
       </div>
     `;
@@ -3182,9 +3376,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   private renderEmptySlot(row: number, col: number): TemplateResult {
     return html`
-      <div 
+      <div
         class="plant-card-empty"
-        style="grid-row: ${row}; grid-column: ${col}" 
+        style="grid-row: ${row}; grid-column: ${col}"
         @click=${() => this._openAddPlantDialog(row - 1, col - 1)}
         @dragover=${this._handleDragOver}
         @drop=${(e: DragEvent) => this._handleDrop(e, row, col, null)}
@@ -3200,27 +3394,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private renderPlantSlot(plant: PlantEntity, row: number, col: number, strainLibrary: StrainEntry[]): TemplateResult {
-    // If we are in mobile/compact list mode, use the old renderer structure (modified class names if needed)
-    // The query logic in CSS handles `.plant` but we are changing to `.plant-card-rich`.
-    // Actually, mobile view (<600px) has CSS for `.plant`.
-    // To preserve mobile view, we need to check if we are on mobile or ensure the new class supports the list view via media query.
-    // The request said "list view behaviour should stay on mobile".
-    // The media query targets `.plant`. I should probably keep using `.plant` class on the container or duplicate styles.
-    // I'll add `plant` class to the rich card as well to inherit mobile styles if needed,
-    // BUT the structure is different.
-
-    // Actually, on mobile, the grid is forced to column.
-    // I should create a separate render path for mobile if I want to strictly preserve the "list" look,
-    // OR ensure the new card looks good in a list.
-    // The request says "list view behaviour should stay".
-    // I'll assume that means the "layout" (icon left, text right).
-    // The new structure (bg image, overlay) works well for cards.
-    // If I use the new card structure on mobile, it will look like a stack of cards.
-    // The user might want that? "match the design".
-    // "mostly take the positioning and what gets displayed but make it in the same style"
-    // So likely the card design applies everywhere, just the Grid vs List layout changes.
-
-    // I will use the new card structure.
 
     const stageColor = PlantUtils.getPlantStageColor(plant.state);
 
@@ -3250,9 +3423,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const bgStyle = imageUrl ? `background-image: url('${imageUrl}');` : '';
 
     return html`
-      <div 
+      <div
         class="plant-card-rich"
-        style="grid-row: ${row}; grid-column: ${col}; --stage-color: ${stageColor}" 
+        style="grid-row: ${row}; grid-column: ${col}; --stage-color: ${stageColor}"
         draggable="true"
         @dragstart=${(e: DragEvent) => this._handleDragStart(e, plant)}
         @dragend=${this._handleDragEnd}
@@ -3264,19 +3437,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                           <div class="plant-card-overlay"></div>` : ''}
 
         <div class="plant-card-content">
-            <div class="pc-info">
-                <div class="pc-strain-name" title="${plant.attributes?.strain || ''}">
-                    ${plant.attributes?.strain || 'Unknown Strain'}
-                </div>
-                ${plant.attributes?.phenotype ? html`<div class="pc-pheno">${plant.attributes.phenotype}</div>` : ''}
-                <div class="pc-stage">
-                    ${plant.state || 'Unknown'}
-                </div>
+          <div class="pc-info">
+            <div class="pc-strain-name" title="${plant.attributes?.strain || ''}">
+              ${plant.attributes?.strain || 'Unknown Strain'}
             </div>
+            ${plant.attributes?.phenotype ? html`<div class="pc-pheno">${plant.attributes.phenotype}</div>` : ''}
+            <div class="pc-stage">
+              ${plant.state || 'Unknown'}
+            </div>
+          </div>
 
-            <div class="pc-stats">
-               ${this.renderPlantDaysRich(plant)}
-            </div>
+          <div class="pc-stats">
+            ${this.renderPlantDaysRich(plant)}
+          </div>
         </div>
       </div>
     `;
@@ -3319,7 +3492,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                     <div class="pc-stat-text">${d.days}d</div>
                 </div>
             `;
-    })}
+    })
+      }
     `;
   }
 
@@ -3387,75 +3561,79 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           }
         },
       }
-    )}
+    )
+      }
 
       ${DialogRenderer.renderPlantOverviewDialog(
-      this._plantOverviewDialog,
-      growspaceOptions,
-      {
-        onClose: () => this._plantOverviewDialog = null,
-        onUpdate: () => { this._updatePlant(); },
-        onDelete: (plantId: string) => { this._handleDeletePlant(plantId); },
-        onHarvest: (plantEntity: PlantEntity) => { this._harvestPlant(plantEntity); },
-        onClone: (plantEntity: PlantEntity, numClones: number) => { this.clonePlant(plantEntity, numClones); },
-        onTakeClone: (plantEntity: PlantEntity, numClones: number) => { this.clonePlant(plantEntity, numClones); },
-        onMoveClone: (plant: PlantEntity, targetGrowspace: string) => {
-          this.hass.callService('growspace_manager', 'move_clone', {
-            plant_id: plant.attributes.plant_id,
-            target_growspace_id: targetGrowspace
-          }).then(() => {
-            console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
-            this._plantOverviewDialog = null; // close dialog or refresh state
-          }).catch((err) => {
-            console.error('Error moving clone:', err);
-          });
-        },
-        onFinishDrying: (plantEntity: PlantEntity) => { this._finishDryingPlant(plantEntity); },
-        _harvestPlant: this._harvestPlant.bind(this),
-        _finishDryingPlant: this._finishDryingPlant.bind(this),
-        onAttributeChange: (key: string, value: any) => {
-          if (this._plantOverviewDialog) {
-            this._plantOverviewDialog.editedAttributes[key] = value;
-          }
-        },
+        this._plantOverviewDialog,
+        growspaceOptions,
+        {
+          onClose: () => this._plantOverviewDialog = null,
+          onUpdate: () => { this._updatePlant(); },
+          onDelete: (plantId: string) => { this._handleDeletePlant(plantId); },
+          onHarvest: (plantEntity: PlantEntity) => { this._harvestPlant(plantEntity); },
+          onClone: (plantEntity: PlantEntity, numClones: number) => { this.clonePlant(plantEntity, numClones); },
+          onTakeClone: (plantEntity: PlantEntity, numClones: number) => { this.clonePlant(plantEntity, numClones); },
+          onMoveClone: (plant: PlantEntity, targetGrowspace: string) => {
+            this.hass.callService('growspace_manager', 'move_clone', {
+              plant_id: plant.attributes.plant_id,
+              target_growspace_id: targetGrowspace
+            }).then(() => {
+              console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
+              this._plantOverviewDialog = null; // close dialog or refresh state
+            }).catch((err) => {
+              console.error('Error moving clone:', err);
+            });
+          },
+          onFinishDrying: (plantEntity: PlantEntity) => { this._finishDryingPlant(plantEntity); },
+          _harvestPlant: this._harvestPlant.bind(this),
+          _finishDryingPlant: this._finishDryingPlant.bind(this),
+          onAttributeChange: (key: string, value: any) => {
+            if (this._plantOverviewDialog) {
+              this._plantOverviewDialog.editedAttributes[key] = value;
+            }
+          },
+        }
+      )
       }
-    )}
 
       ${DialogRenderer.renderStrainLibraryDialog(
-      this._strainLibraryDialog,
-      {
-        onClose: () => this._strainLibraryDialog = null,
-        onAddStrain: () => this._addStrain(),
-        onRemoveStrain: (strainKey) => this._removeStrain(strainKey),
-        onClearAll: () => this._clearStrains(),
-        onEditorChange: (field, value) => this._handleStrainEditorChange(field, value),
-        onSwitchView: (view, strain) => this._switchStrainView(view, strain),
-        onSearch: (query) => this._setStrainSearchQuery(query),
-        onToggleCropMode: (active) => this._toggleCropMode(active),
-        onToggleImageSelector: (isOpen) => this._toggleImageSelector(isOpen),
-        onSelectLibraryImage: (img) => this._handleSelectLibraryImage(img),
-        onExportStrains: () => this._handleExportLibrary(),
-        onOpenImportDialog: () => this._openImportDialog(),
-        onImportDialogChange: (c) => this._handleImportDialogChange(c),
-        onConfirmImport: () => this._performImport(),
-        onGetRecommendation: () => this._openStrainRecommendationDialog(),
+        this._strainLibraryDialog,
+        {
+          onClose: () => this._strainLibraryDialog = null,
+          onAddStrain: () => this._addStrain(),
+          onRemoveStrain: (strainKey) => this._removeStrain(strainKey),
+          onClearAll: () => this._clearStrains(),
+          onEditorChange: (field, value) => this._handleStrainEditorChange(field, value),
+          onSwitchView: (view, strain) => this._switchStrainView(view, strain),
+          onSearch: (query) => this._setStrainSearchQuery(query),
+          onToggleCropMode: (active) => this._toggleCropMode(active),
+          onToggleImageSelector: (isOpen) => this._toggleImageSelector(isOpen),
+          onSelectLibraryImage: (img) => this._handleSelectLibraryImage(img),
+          onExportStrains: () => this._handleExportLibrary(),
+          onOpenImportDialog: () => this._openImportDialog(),
+          onImportDialogChange: (c) => this._handleImportDialogChange(c),
+          onConfirmImport: () => this._performImport(),
+          onGetRecommendation: () => this._openStrainRecommendationDialog(),
+        }
+      )
       }
-    )}
 
       ${DialogRenderer.renderConfigDialog(
-      this._configDialog,
-      growspaceOptions,
-      {
-        onClose: () => this._configDialog = null,
-        onSwitchTab: (tab) => { if (this._configDialog) { this._configDialog.currentTab = tab; this.requestUpdate(); } },
-        onAddGrowspaceChange: (f, v) => { if (this._configDialog) { (this._configDialog.addGrowspaceData as any)[f] = v; this.requestUpdate(); } },
-        onAddGrowspaceSubmit: () => this._handleAddGrowspaceSubmit(),
-        onEnvChange: (f, v) => { if (this._configDialog) { (this._configDialog.environmentData as any)[f] = v; this.requestUpdate(); } },
-        onEnvSubmit: () => this._handleEnvSubmit(),
-        onGlobalChange: (f, v) => { if (this._configDialog) { (this._configDialog.globalData as any)[f] = v; this.requestUpdate(); } },
-        onGlobalSubmit: () => this._handleGlobalSubmit(),
+        this._configDialog,
+        growspaceOptions,
+        {
+          onClose: () => this._configDialog = null,
+          onSwitchTab: (tab) => { if (this._configDialog) { this._configDialog.currentTab = tab; this.requestUpdate(); } },
+          onAddGrowspaceChange: (f, v) => { if (this._configDialog) { (this._configDialog.addGrowspaceData as any)[f] = v; this.requestUpdate(); } },
+          onAddGrowspaceSubmit: () => this._handleAddGrowspaceSubmit(),
+          onEnvChange: (f, v) => { if (this._configDialog) { (this._configDialog.environmentData as any)[f] = v; this.requestUpdate(); } },
+          onEnvSubmit: () => this._handleEnvSubmit(),
+          onGlobalChange: (f, v) => { if (this._configDialog) { (this._configDialog.globalData as any)[f] = v; this.requestUpdate(); } },
+          onGlobalSubmit: () => this._handleGlobalSubmit(),
+        }
+      )
       }
-    )}
 
     ${this._growMasterDialog ? (() => {
         // Determine stress state for the dialog
@@ -3500,7 +3678,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             onAnalyzeAll: () => this._handleAnalyzeAll()
           }
         );
-      })() : ''}
+      })() : ''
+      }
 
       ${DialogRenderer.renderStrainRecommendationDialog(
         this._strainRecommendationDialog,
@@ -3509,7 +3688,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           onQueryChange: (q) => { if (this._strainRecommendationDialog) { this._strainRecommendationDialog.userQuery = q; this.requestUpdate(); } },
           onGetRecommendation: () => this._handleGetStrainRecommendation()
         }
-      )}
+      )
+      }
     `;
   }
 

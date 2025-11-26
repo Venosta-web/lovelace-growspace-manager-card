@@ -2039,9 +2039,7 @@ export class DialogRenderer {
 
               ${!dialog.isLoading && dialog.response ? html`
                  <div class="gm-response-box">
-                    ${typeof dialog.response === 'object'
-               ? JSON.stringify(dialog.response, null, 2)
-               : dialog.response}
+                    ${dialog.response}
                  </div>
               ` : nothing}
            </div>
@@ -2121,9 +2119,7 @@ export class DialogRenderer {
 
               ${!dialog.isLoading && dialog.response ? html`
                  <div class="gm-response-box">
-                    ${typeof dialog.response === 'object'
-               ? JSON.stringify(dialog.response, null, 2)
-               : dialog.response}
+                    ${dialog.response}
                  </div>
               ` : nothing}
            </div>
