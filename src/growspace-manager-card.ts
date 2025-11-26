@@ -1,7 +1,7 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain, mdiDotsVertical, mdiRadioboxMarked, mdiRadioboxBlank } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain, mdiDotsVertical, mdiRadioboxMarked, mdiRadioboxBlank, mdiWater } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
@@ -17,7 +17,8 @@ import {
   GrowMasterDialogState,
   GrowspaceDevice,
   StrainEntry,
-  StrainRecommendationDialogState
+  StrainRecommendationDialogState,
+  IrrigationDialogState
 } from './types';
 import { PlantUtils } from "./utils";
 import { DataService } from './data-service';
@@ -32,6 +33,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _configDialog: ConfigDialogState | null = null;
   @state() private _growMasterDialog: GrowMasterDialogState | null = null;
   @state() private _strainRecommendationDialog: StrainRecommendationDialogState | null = null;
+  @state() private _irrigationDialog: IrrigationDialogState | null = null;
   @state() private selectedDevice: string | null = null;
   @state() private _draggedPlant: PlantEntity | null = null;
   @state() private _isCompactView: boolean = false;
@@ -2171,6 +2173,151 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.requestUpdate();
   }
 
+  //Irrigation dialog methods
+  private _openIrrigationDialog() {
+    const devices = this.dataService.getGrowspaceDevices();
+    const device = devices.find(d => d.device_id === this.selectedDevice);
+
+    if (!device) return;
+
+    // TODO: Fetch current irrigation settings from HA config
+    // For now, initialize with defaults
+    this._irrigationDialog = {
+      open: true,
+      growspace_id: device.device_id,
+      growspace_name: device.name,
+      irrigation_pump_entity: '',
+      drain_pump_entity: '',
+      irrigation_duration: 5,
+      drain_duration: 3,
+      irrigation_times: [],
+      drain_times: []
+    };
+  }
+
+  private async _saveIrrigationPumpSettings() {
+    if (!this._irrigationDialog) return;
+
+    try {
+      await this.hass.callService('growspace_manager', 'set_irrigation_settings', {
+        growspace_id: this._irrigationDialog.growspace_id,
+        irrigation_pump_entity: this._irrigationDialog.irrigation_pump_entity,
+        drain_pump_entity: this._irrigationDialog.drain_pump_entity,
+        irrigation_duration: this._irrigationDialog.irrigation_duration,
+        drain_duration: this._irrigationDialog.drain_duration
+      });
+      console.log('Irrigation pump settings saved');
+    } catch (err) {
+      console.error('Error saving irrigation pump settings:', err);
+    }
+  }
+
+  private async _addIrrigationTime(time: string, duration?: number) {
+    if (!this._irrigationDialog) return;
+
+    try {
+      await this.hass.callService('growspace_manager', 'add_irrigation_time', {
+        growspace_id: this._irrigationDialog.growspace_id,
+        time: time,
+        ...(duration !== undefined && { duration })
+      });
+
+      // Add to local state
+      this._irrigationDialog.irrigation_times.push({ time, duration });
+      this._irrigationDialog.adding_irrigation_time = undefined;
+      this.requestUpdate();
+      console.log('Irrigation time added:', time);
+    } catch (err) {
+      console.error('Error adding irrigation time:', err);
+    }
+  }
+
+  private async _removeIrrigationTime(time: string) {
+    if (!this._irrigationDialog) return;
+
+    try {
+      await this.hass.callService('growspace_manager', 'remove_irrigation_time', {
+        growspace_id: this._irrigationDialog.growspace_id,
+        time: time
+      });
+
+      // Remove from local state
+      this._irrigationDialog.irrigation_times = this._irrigationDialog.irrigation_times.filter(t => t.time !== time);
+      this.requestUpdate();
+      console.log('Irrigation time removed:', time);
+    } catch (err) {
+      console.error('Error removing irrigation time:', err);
+    }
+  }
+
+  private async _addDrainTime(time: string, duration?: number) {
+    if (!this._irrigationDialog) return;
+
+    try {
+      await this.hass.callService('growspace_manager', 'add_drain_time', {
+        growspace_id: this._irrigationDialog.growspace_id,
+        time: time,
+        ...(duration !== undefined && { duration })
+      });
+
+      // Add to local state
+      this._irrigationDialog.drain_times.push({ time, duration });
+      this._irrigationDialog.adding_drain_time = undefined;
+      this.requestUpdate();
+      console.log('Drain time added:', time);
+    } catch (err) {
+      console.error('Error adding drain time:', err);
+    }
+  }
+
+  private async _removeDrainTime(time: string) {
+    if (!this._irrigationDialog) return;
+
+    try {
+      await this.hass.callService('growspace_manager', 'remove_drain_time', {
+        growspace_id: this._irrigationDialog.growspace_id,
+        time: time
+      });
+
+      // Remove from local state
+      this._irrigationDialog.drain_times = this._irrigationDialog.drain_times.filter(t => t.time !== time);
+      this.requestUpdate();
+      console.log('Drain time removed:', time);
+    } catch (err) {
+      console.error('Error removing drain time:', err);
+    }
+  }
+
+  private _startAddingIrrigationTime(x: number, containerWidth: number) {
+    if (!this._irrigationDialog) return;
+
+    // Calculate time from position (0-24 hours)
+    const hours = Math.floor((x / containerWidth) * 24);
+    const minutes = Math.floor(((x / containerWidth) * 24 - hours) * 60);
+    const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+    this._irrigationDialog.adding_irrigation_time = {
+      time,
+      duration: this._irrigationDialog.irrigation_duration
+    };
+    this.requestUpdate();
+  }
+
+  private _startAddingDrainTime(x: number, containerWidth: number) {
+    if (!this._irrigationDialog) return;
+
+    // Calculate time from position (0-24 hours)
+    const hours = Math.floor((x / containerWidth) * 24);
+    const minutes = Math.floor(((x / containerWidth) * 24 - hours) * 60);
+    const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+    this._irrigationDialog.adding_drain_time = {
+      time,
+      duration: this._irrigationDialog.drain_duration
+    };
+    this.requestUpdate();
+  }
+
   private _handleStrainEditorChange(field: string, value: any) {
     if (this._strainLibraryDialog && this._strainLibraryDialog.editorState) {
       (this._strainLibraryDialog.editorState as any)[field] = value;
@@ -3259,9 +3406,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                           <div class="menu-toggle-switch ${this._isCompactView ? 'active' : ''}"></div>
                         </div>
                         
+                        
                         <div class="menu-item" @click=${() => { this._openStrainLibraryDialog(); this._menuOpen = false; }}>
                           <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
                           <span class="menu-item-label">Strains</span>
+                        </div>
+                        
+                        <div class="menu-item" @click=${() => { this._openIrrigationDialog(); this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                          <span class="menu-item-label">Irrigation</span>
                         </div>
                         
                         <div class="menu-item" @click=${() => { this._openGrowMasterDialog(); this._menuOpen = false; }}>
@@ -3690,6 +3843,380 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         }
       )
       }
+
+      ${this._irrigationDialog ? html`
+        <div class="dialog-overlay" @click=${() => this._irrigationDialog = null}>
+          <div class="dialog-container" style="max-width: 1000px; max-height: 90vh; overflow-y: auto;" @click=${(e: Event) => e.stopPropagation()}>
+            <div class="dialog-header" style="background: #1a1a1a; padding: 20px; border-bottom: 1px solid #333;">
+              <h2 style="margin: 0; font-size: 1.5rem; color: #fff;">${this._irrigationDialog.growspace_name}</h2>
+              <p style="margin: 8px 0 0 0; color: #999; font-size: 0.9rem;">
+                Pump Entities: ${this._irrigationDialog.irrigation_pump_entity || 'not set'}, ${this._irrigationDialog.drain_pump_entity || 'not set'} | 
+                Default Durations: ${this._irrigationDialog.irrigation_duration}min, ${this._irrigationDialog.drain_duration}min
+              </p>
+            </div>
+
+            <div class="dialog-body" style="padding: 20px; background: #0d0d0d;">
+              <!-- Pump Settings Section -->
+              <div style="background: #1a1a1a; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 16px 0; color: #fff; font-size: 1.1rem;">Pump Settings</h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                  <div>
+                    <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Irrigation Pump Entity</label>
+                    <input
+                      type="text"
+                      .value=${this._irrigationDialog.irrigation_pump_entity}
+                      @input=${(e: Event) => {
+          if (this._irrigationDialog) {
+            this._irrigationDialog.irrigation_pump_entity = (e.target as HTMLInputElement).value;
+          }
+        }}
+                      placeholder="switch.irrigation_pump"
+                      style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
+                    />
+                  </div>
+
+                  <div>
+                    <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Irrigation Duration (minutes)</label>
+                    <input
+                      type="number"
+                      .value=${this._irrigationDialog.irrigation_duration.toString()}
+                      @input=${(e: Event) => {
+          if (this._irrigationDialog) {
+            const val = parseInt((e.target as HTMLInputElement).value);
+            if (!isNaN(val)) this._irrigationDialog.irrigation_duration = val;
+          }
+        }}
+                      min="1"
+                      style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
+                    />
+                  </div>
+
+                  <div>
+                    <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Drain Pump Entity</label>
+                    <input
+                      type="text"
+                      .value=${this._irrigationDialog.drain_pump_entity}
+                      @input=${(e: Event) => {
+          if (this._irrigationDialog) {
+            this._irrigationDialog.drain_pump_entity = (e.target as HTMLInputElement).value;
+          }
+        }}
+                      placeholder="switch.drain_pump"
+                      style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
+                    />
+                  </div>
+
+                  <div>
+                    <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Drain Duration (minutes)</label>
+                    <input
+                      type="number"
+                      .value=${this._irrigationDialog.drain_duration.toString()}
+                      @input=${(e: Event) => {
+          if (this._irrigationDialog) {
+            const val = parseInt((e.target as HTMLInputElement).value);
+            if (!isNaN(val)) this._irrigationDialog.drain_duration = val;
+          }
+        }}
+                      min="1"
+                      style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  @click=${() => this._saveIrrigationPumpSettings()}
+                  style="margin-top: 16px; padding: 10px 20px; background: #4CAF50; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600;"
+                >
+                  SAVE PUMP SETTINGS
+                </button>
+              </div>
+
+              <!-- Irrigation Schedule Section -->
+              <div style="background: #1a1a1a; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                  <h3 style="margin: 0; color: #fff; font-size: 1.1rem;">Irrigation Schedule</h3>
+                  <button
+                    @click=${(e: Event) => {
+          const container = (e.target as HTMLElement).closest('.dialog-body')?.querySelector('.irrigation-time-bar') as HTMLElement;
+          if (container) {
+            const rect = container.getBoundingClientRect();
+            this._startAddingIrrigationTime(rect.width / 2, rect.width);
+          }
+        }}
+                    style="padding: 8px 16px; background: #2196F3; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;"
+                  >
+                    <span style="font-size: 1.2rem;">+</span> ADD
+                  </button>
+                </div>
+
+                <!-- Time Bar -->
+                <div
+                  class="irrigation-time-bar"
+                  @click=${(e: MouseEvent) => {
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          this._startAddingIrrigationTime(x, rect.width);
+        }}
+                  style="position: relative; height: 80px; background: #0d0d0d; border-radius: 4px; cursor: crosshair; border: 1px solid #2196F3;"
+                >
+                  <!-- Hour markers -->
+                  ${Array.from({ length: 25 }, (_, i) => i).map(hour => html`
+                    <div style="position: absolute; left: ${(hour / 24) * 100}%; top: 0; bottom: 0; border-left: 1px solid ${hour % 6 === 0 ? '#444' : '#222'}; pointer-events: none;">
+                      ${hour % 3 === 0 ? html`
+                        <span style="position: absolute; bottom: -20px; left: -12px; font-size: 0.7rem; color: #666;">${hour.toString().padStart(2, '0')}:00</span>
+                      ` : ''}
+                    </div>
+                  `)}
+
+                  <!-- Scheduled times -->
+                  ${this._irrigationDialog.irrigation_times.map(({ time, duration }) => {
+          const [hours, minutes] = time.split(':').map(Number);
+          const position = ((hours + minutes / 60) / 24) * 100;
+          return html`
+                      <div
+                        @click=${(e: Event) => {
+              e.stopPropagation();
+              if (confirm(`Remove irrigation time ${time}?`)) {
+                this._removeIrrigationTime(time);
+              }
+            }}
+                        style="position: absolute; left: ${position}%; top: 20%; bottom: 20%; width: 3px; background: #2196F3; cursor: pointer; box-shadow: 0 0 8px #2196F3;"
+                        title="${time} | Duration: ${duration || this._irrigationDialog.irrigation_duration}min"
+                      >
+                        <div style="position: absolute; left: 6px; top: -20px; background: rgba(33, 150, 243, 0.9); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap;">
+                          ${time} | ${duration || this._irrigationDialog.irrigation_duration}min
+                        </div>
+                      </div>
+                    `;
+        })}
+                </div>
+
+                <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 0.7rem; color: #666;">
+                  <span>00:00</span>
+                  <span>06:00</span>
+                  <span>12:00</span>
+                  <span>18:00</span>
+                  <span>24:00</span>
+                </div>
+              </div>
+
+              <!-- Drain Schedule Section -->
+              <div style="background: #1a1a1a; border-radius: 8px; padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                  <h3 style="margin: 0; color: #fff; font-size: 1.1rem;">Drain Schedule</h3>
+                  <button
+                    @click=${(e: Event) => {
+          const container = (e.target as HTMLElement).closest('.dialog-body')?.querySelector('.drain-time-bar') as HTMLElement;
+          if (container) {
+            const rect = container.getBoundingClientRect();
+            this._startAddingDrainTime(rect.width / 2, rect.width);
+          }
+        }}
+                    style="padding: 8px 16px; background: #FF9800; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;"
+                  >
+                    <span style="font-size: 1.2rem;">+</span> ADD
+                  </button>
+                </div>
+
+                <!-- Time Bar -->
+                <div
+                  class="drain-time-bar"
+                  @click=${(e: MouseEvent) => {
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          this._startAddingDrainTime(x, rect.width);
+        }}
+                  style="position: relative; height: 80px; background: #0d0d0d; border-radius: 4px; cursor: crosshair; border: 1px solid #FF9800;"
+                >
+                  <!-- Hour markers -->
+                  ${Array.from({ length: 25 }, (_, i) => i).map(hour => html`
+                    <div style="position: absolute; left: ${(hour / 24) * 100}%; top: 0; bottom: 0; border-left: 1px solid ${hour % 6 === 0 ? '#444' : '#222'}; pointer-events: none;">
+                      ${hour % 3 === 0 ? html`
+                        <span style="position: absolute; bottom: -20px; left: -12px; font-size: 0.7rem; color: #666;">${hour.toString().padStart(2, '0')}:00</span>
+                      ` : ''}
+                    </div>
+                  `)}
+
+                  <!-- Scheduled times -->
+                  ${this._irrigationDialog.drain_times.map(({ time, duration }) => {
+          const [hours, minutes] = time.split(':').map(Number);
+          const position = ((hours + minutes / 60) / 24) * 100;
+          return html`
+                      <div
+                        @click=${(e: Event) => {
+              e.stopPropagation();
+              if (confirm(`Remove drain time ${time}?`)) {
+                this._removeDrainTime(time);
+              }
+            }}
+                        style="position: absolute; left: ${position}%; top: 20%; bottom: 20%; width: 3px; background: #FF9800; cursor: pointer; box-shadow: 0 0 8px #FF9800;"
+                        title="${time} | Duration: ${duration || this._irrigationDialog.drain_duration}min"
+                      >
+                        <div style="position: absolute; left: 6px; top: -20px; background: rgba(255, 152, 0, 0.9); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap;">
+                          ${time} | ${duration || this._irrigationDialog.drain_duration}min
+                        </div>
+                      </div>
+                    `;
+        })}
+                </div>
+
+                <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 0.7rem; color: #666;">
+                  <span>00:00</span>
+                  <span>06:00</span>
+                  <span>12:00</span>
+                  <span>18:00</span>
+                  <span>24:00</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Add Time Dialogs -->
+            ${this._irrigationDialog.adding_irrigation_time ? html`
+              <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;" @click=${() => {
+            if (this._irrigationDialog) this._irrigationDialog.adding_irrigation_time = undefined;
+          }}>
+                <div style="background: #1a1a1a; padding: 24px; border-radius: 8px; max-width: 400px;" @click=${(e: Event) => e.stopPropagation()}>
+                  <h3 style="margin: 0 0 16px 0; color: #fff;">Add Irrigation Time</h3>
+                  
+                  <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Time</label>
+                    <input
+                      type="time"
+                      .value=${this._irrigationDialog.adding_irrigation_time.time}
+                      @input=${(e: Event) => {
+            if (this._irrigationDialog?.adding_irrigation_time) {
+              this._irrigationDialog.adding_irrigation_time.time = (e.target as HTMLInputElement).value;
+            }
+          }}
+                      style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
+                    />
+                  </div>
+
+                  <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Duration (minutes)</label>
+                    <input
+                      type="number"
+                      .value=${this._irrigationDialog.adding_irrigation_time.duration.toString()}
+                      @input=${(e: Event) => {
+            if (this._irrigationDialog?.adding_irrigation_time) {
+              const val = parseInt((e.target as HTMLInputElement).value);
+              if (!isNaN(val)) this._irrigationDialog.adding_irrigation_time.duration = val;
+            }
+          }}
+                      min="1"
+                      style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
+                    />
+                  </div>
+
+                  <div style="display: flex; gap: 12px;">
+                    <button
+                      @click=${() => {
+            if (this._irrigationDialog) this._irrigationDialog.adding_irrigation_time = undefined;
+          }}
+                      style="flex: 1; padding: 10px; background: #555; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem;"
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      @click=${() => {
+            if (this._irrigationDialog?.adding_irrigation_time) {
+              this._addIrrigationTime(
+                this._irrigationDialog.adding_irrigation_time.time,
+                this._irrigationDialog.adding_irrigation_time.duration
+              );
+            }
+          }}
+                      style="flex: 1; padding: 10px; background: #2196F3; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600;"
+                    >
+                      ADD SCHEDULE
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ` : ''}
+
+            ${this._irrigationDialog.adding_drain_time ? html`
+              <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;" @click=${() => {
+            if (this._irrigationDialog) this._irrigationDialog.adding_drain_time = undefined;
+          }}>
+                <div style="background: #1a1a1a; padding: 24px; border-radius: 8px; max-width: 400px;" @click=${(e: Event) => e.stopPropagation()}>
+                  <h3 style="margin: 0 0 16px 0; color: #fff;">Add Drain Time</h3>
+                  
+                  <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Time</label>
+                    <input
+                      type="time"
+                      .value=${this._irrigationDialog.adding_drain_time.time}
+                      @input=${(e: Event) => {
+            if (this._irrigationDialog?.adding_drain_time) {
+              this._irrigationDialog.adding_drain_time.time = (e.target as HTMLInputElement).value;
+            }
+          }}
+                      style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
+                    />
+                  </div>
+
+                  <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Duration (minutes)</label>
+                    <input
+                      type="number"
+                      .value=${this._irrigationDialog.adding_drain_time.duration.toString()}
+                      @input=${(e: Event) => {
+            if (this._irrigationDialog?.adding_drain_time) {
+              const val = parseInt((e.target as HTMLInputElement).value);
+              if (!isNaN(val)) this._irrigationDialog.adding_drain_time.duration = val;
+            }
+          }}
+                      min="1"
+                      style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
+                    />
+                  </div>
+
+                  <div style="display: flex; gap: 12px;">
+                    <button
+                      @click=${() => {
+            if (this._irrigationDialog) this._irrigationDialog.adding_drain_time = undefined;
+          }}
+                      style="flex: 1; padding: 10px; background: #555; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem;"
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      @click=${() => {
+            if (this._irrigationDialog?.adding_drain_time) {
+              this._addDrainTime(
+                this._irrigationDialog.adding_drain_time.time,
+                this._irrigationDialog.adding_drain_time.duration
+              );
+            }
+          }}
+                      style="flex: 1; padding: 10px; background: #FF9800; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600;"
+                    >
+                      ADD SCHEDULE
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ` : ''}
+
+            <div class="dialog-footer" style="padding: 16px 20px; background: #1a1a1a; border-top: 1px solid #333; display: flex; justify-content: flex-end; gap: 12px;">
+              <button
+                @click=${() => this._irrigationDialog = null}
+                style="padding: 10px 24px; background: #555; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem;"
+              >
+                CANCEL
+              </button>
+              <button
+                @click=${() => this._irrigationDialog = null}
+                style="padding: 10px 24px; background: #4CAF50; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600;"
+              >
+                SUBMIT
+              </button>
+            </div>
+          </div>
+        </div>
+      ` : ''}
     `;
   }
 

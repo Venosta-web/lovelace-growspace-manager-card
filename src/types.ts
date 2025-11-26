@@ -231,3 +231,23 @@ export interface StrainRecommendationDialogState {
   isLoading: boolean;
   response: string | null;
 }
+
+export interface IrrigationTime {
+  time: string;
+  duration?: number;
+}
+
+export interface IrrigationDialogState {
+  open: boolean;
+  growspace_id: string;
+  growspace_name: string;
+  irrigation_pump_entity: string;
+  drain_pump_entity: string;
+  irrigation_duration: number;
+  drain_duration: number;
+  irrigation_times: IrrigationTime[];
+  drain_times: IrrigationTime[];
+  adding_irrigation_time?: { time: string; duration: number };
+  adding_drain_time?: { time: string; duration: number };
+}
+
