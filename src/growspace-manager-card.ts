@@ -2179,20 +2179,38 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const devices = this.dataService.getGrowspaceDevices();
     const device = devices.find(d => d.device_id === this.selectedDevice);
 
-    if (!device) return;
+    // 1. Check if device and its overview sensor entity exist
+    if (!device || !device.overview_entity_id) return;
+
+    const overviewSensor = this.hass.states[device.overview_entity_id];
+    const attrs = overviewSensor?.attributes || {};
+
+    // 2. Retrieve all necessary attributes (including the list and other settings)
+    // These attributes are passed to DialogRenderer.parseScheduleString, which handles 
+    // the conversion from a stringified list (if needed) to an IrrigationTime[] array.
+    const irrigationTimes = attrs.irrigation_times || [];
+    const drainTimes = attrs.drain_times || [];
+
+    // Also retrieve pump entities and durations (with defaults)
+    const irrigationPump = attrs.irrigation_pump_entity || '';
+    const drainPump = attrs.drain_pump_entity || '';
+    const iDuration = attrs.irrigation_duration || 3;
+    const dDuration = attrs.drain_duration || 3;
 
 
-    // For now, initialize with defaults
+    // 3. Initialize the dialog state with the retrieved sensor data
     this._irrigationDialog = {
       open: true,
       growspace_id: device.device_id,
       growspace_name: device.name,
-      irrigation_pump_entity: '',
-      drain_pump_entity: '',
-      irrigation_duration: 3,
-      drain_duration: 3,
-      irrigation_times: [],
-      drain_times: []
+
+      irrigation_pump_entity: irrigationPump,
+      drain_pump_entity: drainPump,
+      irrigation_duration: iDuration,
+      drain_duration: dDuration,
+
+      irrigation_times: irrigationTimes, // <--- FIX: Now reads sensor attribute
+      drain_times: drainTimes // <--- FIX: Now reads sensor attribute
     };
   }
 
