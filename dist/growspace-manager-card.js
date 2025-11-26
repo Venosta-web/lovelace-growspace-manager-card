@@ -1913,7 +1913,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
 
                   ${this.renderScheduleSection("Irrigation Schedule",t.irrigation_times,t.irrigation_duration,t,e,"irrigation",i)}
 
-                  ${this.renderScheduleSection("Drain Schedule",t.drain_times,t.drain_duration,t,e,"drain","#FF9800")}
+                           ${this.renderScheduleSection("Drain Schedule",t.drain_times,t.drain_duration,t,e,"drain","#FF9800")}
 
                </div>
 
@@ -2496,6 +2496,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         font-weight: 500;
         margin: 0;
         letter-spacing: -0.5px;
+        text-transform: capitalize;
       }
 
       .gs-stage-chip {

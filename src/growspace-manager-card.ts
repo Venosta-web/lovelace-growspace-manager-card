@@ -261,6 +261,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         font-weight: 500;
         margin: 0;
         letter-spacing: -0.5px;
+        text-transform: capitalize;
       }
 
       .gs-stage-chip {
