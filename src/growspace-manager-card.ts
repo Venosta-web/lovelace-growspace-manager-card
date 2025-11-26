@@ -2371,7 +2371,25 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                  </div>
                  <div>
                     <div>${title}</div>
-                    <div class="gs-light-subtitle">24H HISTORY • ${unit === 'state' ? (dataPoints[dataPoints.length - 1]?.value === 1 ? 'OPTIMAL' : 'NOT OPTIMAL') : `${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}`}</div>
+                    <div class="gs-light-subtitle">24H HISTORY • ${(() => {
+        if (metricKey === 'light') {
+          // Get the light schedule sensor for this device
+          const devices = this.dataService.getGrowspaceDevices();
+          const device = devices.find(d => d.device_id === this.selectedDevice);
+          if (device) {
+            const lightScheduleSensorId = `binary_sensor.${device.device_id}_light_schedule_correct`;
+            const lightScheduleSensor = this.hass.states[lightScheduleSensorId];
+            if (lightScheduleSensor?.attributes['Expected schedule']) {
+              return lightScheduleSensor.attributes['Expected schedule'];
+            }
+          }
+          return dataPoints[dataPoints.length - 1]?.value === 1 ? 'ON' : 'OFF';
+        } else if (unit === 'state') {
+          return dataPoints[dataPoints.length - 1]?.value === 1 ? 'OPTIMAL' : 'NOT OPTIMAL';
+        } else {
+          return `${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}`;
+        }
+      })()}</div>
                  </div>
              </div>
              <div style="opacity: 0.7;">
