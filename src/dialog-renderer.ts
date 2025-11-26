@@ -131,14 +131,12 @@ export class DialogRenderer {
       }
 
       try {
-         // Step 1: Replace single quotes (') with double quotes (") for JSON compatibility.
+         // FIX/DEFENSE: Replace single quotes with double quotes.
          const jsonString = scheduleString.replace(/'/g, '"');
 
-         // Step 2: Safely parse the corrected JSON string.
          const parsed = JSON.parse(jsonString);
 
          if (Array.isArray(parsed)) {
-            // Return the parsed array, asserting its type.
             return parsed as IrrigationTime[];
          }
          return [];
