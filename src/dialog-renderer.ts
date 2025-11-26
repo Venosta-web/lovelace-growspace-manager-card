@@ -4,7 +4,7 @@ import {
    mdiCannabis, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiCheck,
    mdiContentCopy, mdiArrowRight, mdiWeatherNight, mdiWeatherSunny, mdiTuneVariant,
    mdiLeaf, mdiUpload, mdiArrowLeft, mdiFilterVariant, mdiCloudUpload, mdiPencil,
-   mdiCog, mdiThermometer, mdiEarth, mdiViewDashboard, mdiFan, mdiWeatherPartlyCloudy, mdiBrain, mdiLoading, mdiDownload
+   mdiCog, mdiThermometer, mdiEarth, mdiViewDashboard, mdiFan, mdiWeatherPartlyCloudy, mdiBrain, mdiLoading, mdiDownload, mdiWater
 } from '@mdi/js';
 import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, ConfigDialogState, GrowMasterDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry, CropMeta, StrainRecommendationDialogState, IrrigationDialogState, IrrigationTime } from './types';
 import { PlantUtils } from "./utils";
@@ -2128,6 +2128,132 @@ export class DialogRenderer {
     `;
    }
 
+   private static renderScheduleSection(
+      title: string,
+      times: IrrigationTime[],
+      defaultDuration: number,
+      dialog: IrrigationDialogState,
+      callbacks: any,
+      type: 'irrigation' | 'drain',
+      color: string
+   ): TemplateResult {
+      const addHandler = type === 'irrigation' ? callbacks.onAddIrrigationTime : callbacks.onAddDrainTime;
+      const removeHandler = type === 'irrigation' ? callbacks.onRemoveIrrigationTime : callbacks.onRemoveDrainTime;
+      const startAddingHandler = type === 'irrigation' ? callbacks.onStartAddingIrrigationTime : callbacks.onStartAddingDrainTime;
+      const cancelHandler = type === 'irrigation' ? callbacks.onCancelAddingIrrigationTime : callbacks.onCancelAddingDrainTime;
+      const confirmHandler = type === 'irrigation' ? callbacks.onConfirmAddIrrigationTime : callbacks.onConfirmAddDrainTime;
+      const inputChangeHandler = type === 'irrigation' ? callbacks.onIrrigationTimeInputChange : callbacks.onDrainTimeInputChange;
+      const addingTime = type === 'irrigation' ? dialog.adding_irrigation_time : dialog.adding_drain_time;
+
+      return html`
+         <div class="detail-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+               <h3 style="margin: 0;">${title}</h3>
+               <button
+                  @click=${addHandler}
+                  class="md3-button primary"
+                  style="background: ${color};"
+               >
+                  <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+                  ADD TIME
+               </button>
+            </div>
+
+            <div
+               class="${type}-time-bar"
+               @click=${(e: MouseEvent) => {
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            startAddingHandler(x, rect.width);
+         }}
+               style="position: relative; height: 80px; background: rgba(0,0,0,0.3); border-radius: 8px; cursor: crosshair; border: 2px solid ${color}40;"
+            >
+               ${Array.from({ length: 25 }, (_, i) => i).map(hour => html`
+                  <div style="position: absolute; left: ${(hour / 24) * 100}%; top: 0; bottom: 0; border-left: 1px solid ${hour % 6 === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)'}; pointer-events: none;">
+                     ${hour % 3 === 0 ? html`
+                        <span style="position: absolute; bottom: -22px; left: -12px; font-size: 0.7rem; color: var(--secondary-text-color);">${hour.toString().padStart(2, '0')}:00</span>
+                     ` : ''}
+                  </div>
+               `)}
+
+               ${times.map((t: IrrigationTime) => {
+            const [hours, minutes] = t.time.split(':').map(Number);
+            const position = ((hours + minutes / 60) / 24) * 100;
+            return html`
+                     <div
+                        @click=${(e: Event) => {
+                  e.stopPropagation();
+                  if (confirm(`Remove ${type} time ${t.time}?`)) {
+                     removeHandler(t.time);
+                  }
+               }}
+                        style="position: absolute; left: ${position}%; top: 10%; bottom: 10%; width: 4px; background: ${color}; cursor: pointer; box-shadow: 0 0 8px ${color}; border-radius: 2px;"
+                        title="${t.time} | Duration: ${t.duration || defaultDuration}min"
+                     >
+                        <div style="position: absolute; left: 8px; top: -24px; background: ${color}; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                           ${t.time} | ${t.duration || defaultDuration}min
+                        </div>
+                     </div>
+                  `;
+         })}
+            </div>
+
+            <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--secondary-text-color);">
+               <span>00:00</span>
+               <span>06:00</span>
+               <span>12:00</span>
+               <span>18:00</span>
+               <span>24:00</span>
+            </div>
+
+            ${addingTime ? html`
+               <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;" @click=${cancelHandler}>
+                  <div class="detail-card" style="max-width: 400px; margin: 0;" @click=${(e: Event) => e.stopPropagation()}>
+                     <h3>Add ${title} Time</h3>
+
+                     <div class="md3-input-group">
+                        <label class="md3-label">Time</label>
+                        <input
+                           type="time"
+                           class="md3-input"
+                           .value=${addingTime.time}
+                           @input=${(e: Event) => inputChangeHandler('time', (e.target as HTMLInputElement).value)}
+                        />
+                     </div>
+
+                     <div class="md3-input-group">
+                        <label class="md3-label">Duration (minutes)</label>
+                        <input
+                           type="number"
+                           class="md3-input"
+                           .value=${addingTime.duration.toString()}
+                           @input=${(e: Event) => {
+               const val = parseInt((e.target as HTMLInputElement).value);
+               if (!isNaN(val)) inputChangeHandler('duration', val);
+            }}
+                           min="1"
+                        />
+                     </div>
+
+                     <div class="button-group">
+                        <button class="md3-button tonal" @click=${cancelHandler}>
+                           Cancel
+                        </button>
+                        <button
+                           class="md3-button primary"
+                           @click=${() => confirmHandler(addingTime.time, addingTime.duration)}
+                           style="background: ${color};"
+                        >
+                           Add Schedule
+                        </button>
+                     </div>
+                  </div>
+               </div>
+            ` : ''}
+         </div>
+      `;
+   }
+
    static renderIrrigationDialog(
       dialog: IrrigationDialogState | null,
       callbacks: {
@@ -2153,320 +2279,86 @@ export class DialogRenderer {
    ): TemplateResult | typeof nothing {
       if (!dialog?.open) return nothing;
 
+      const dialogColor = '#2196F3'; // Irrigation Blue
+
       return html`
-       <div class="dialog-overlay" @click=${callbacks.onClose}>
-         <div class="dialog-container" style="max-width: 1000px; max-height: 90vh; overflow-y: auto;" @click=${(e: Event) => e.stopPropagation()}>
-           <div class="dialog-header" style="background: #1a1a1a; padding: 20px; border-bottom: 1px solid #333;">
-             <h2 style="margin: 0; font-size: 1.5rem; color: #fff;">${dialog.growspace_name}</h2>
-             <p style="margin: 8px 0 0 0; color: #999; font-size: 0.9rem;">
-               Pump Entities: ${dialog.irrigation_pump_entity || 'not set'}, ${dialog.drain_pump_entity || 'not set'} | 
-               Default Durations: ${dialog.irrigation_duration}min, ${dialog.drain_duration}min
-             </p>
-           </div>
+         <ha-dialog
+            open
+            @closed=${callbacks.onClose}
+            hideActions
+            .scrimClickAction=${''}
+            .escapeKeyAction=${''}
+         >
+            <div class="glass-dialog-container" style="--stage-color: ${dialogColor}; max-width: 1000px; max-height: 90vh; overflow-y: auto;">
 
-           <div class="dialog-body" style="padding: 20px; background: #0d0d0d;">
-             <!-- Pump Settings Section -->
-             <div style="background: #1a1a1a; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-               <h3 style="margin: 0 0 16px 0; color: #fff; font-size: 1.1rem;">Pump Settings</h3>
-               
-               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                 <div>
-                   <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Irrigation Pump Entity</label>
-                   <input
-                     type="text"
-                     .value=${dialog.irrigation_pump_entity}
-                     @input=${(e: Event) => callbacks.onIrrigationPumpChange((e.target as HTMLInputElement).value)}
-                     placeholder="switch.irrigation_pump"
-                     style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
-                   />
-                 </div>
-
-                 <div>
-                   <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Irrigation Duration (minutes)</label>
-                   <input
-                     type="number"
-                     .value=${dialog.irrigation_duration.toString()}
-                     @input=${(e: Event) => {
-            const val = parseInt((e.target as HTMLInputElement).value);
-            if (!isNaN(val)) callbacks.onIrrigationDurationChange(val);
-         }}
-                     min="1"
-                     style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
-                   />
-                 </div>
-
-                 <div>
-                   <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Drain Pump Entity</label>
-                   <input
-                     type="text"
-                     .value=${dialog.drain_pump_entity}
-                     @input=${(e: Event) => callbacks.onDrainPumpChange((e.target as HTMLInputElement).value)}
-                     placeholder="switch.drain_pump"
-                     style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
-                   />
-                 </div>
-
-                 <div>
-                   <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Drain Duration (minutes)</label>
-                   <input
-                     type="number"
-                     .value=${dialog.drain_duration.toString()}
-                     @input=${(e: Event) => {
-            const val = parseInt((e.target as HTMLInputElement).value);
-            if (!isNaN(val)) callbacks.onDrainDurationChange(val);
-         }}
-                     min="1"
-                     style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
-                   />
-                 </div>
+               <div class="dialog-header">
+                  <div class="dialog-icon" style="background: ${dialogColor}30; color: ${dialogColor};">
+                     <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="${mdiWater}"></path>
+                     </svg>
+                  </div>
+                  <div class="dialog-title-group">
+                     <h2 class="dialog-title">Irrigation Management</h2>
+                     <div class="dialog-subtitle">${dialog.growspace_name}</div>
+                  </div>
+                  <button class="md3-button text" @click=${callbacks.onClose} style="min-width: auto; padding: 8px;">
+                     <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="${mdiClose}"></path>
+                     </svg>
+                  </button>
                </div>
 
-               <button
-                 @click=${callbacks.onSavePumpSettings}
-                 style="margin-top: 16px; padding: 10px 20px; background: #4CAF50; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600;"
-               >
-                 SAVE PUMP SETTINGS
-               </button>
-             </div>
+               <div class="dialog-body" style="padding: 0; background: transparent;">
 
-             <!-- Irrigation Schedule Section -->
-             <div style="background: #1a1a1a; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                 <h3 style="margin: 0; color: #fff; font-size: 1.1rem;">Irrigation Schedule</h3>
-                 <button
-                   @click=${callbacks.onAddIrrigationTime}
-                   style="padding: 8px 16px; background: #2196F3; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;"
-                 >
-                   <span style="font-size: 1.2rem;">+</span> ADD
-                 </button>
-               </div>
+                  <div class="detail-card">
+                     <h3>Pump Settings</h3>
 
-               <!-- Time Bar -->
-               <div
-                 class="irrigation-time-bar"
-                 @click=${(e: MouseEvent) => {
-            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            callbacks.onStartAddingIrrigationTime(x, rect.width);
-         }}
-                 style="position: relative; height: 80px; background: #0d0d0d; border-radius: 4px; cursor: crosshair; border: 1px solid #2196F3;"
-               >
-                 <!-- Hour markers -->
-                 ${Array.from({ length: 25 }, (_, i) => i).map(hour => html`
-                   <div style="position: absolute; left: ${(hour / 24) * 100}%; top: 0; bottom: 0; border-left: 1px solid ${hour % 6 === 0 ? '#444' : '#222'}; pointer-events: none;">
-                     ${hour % 3 === 0 ? html`
-                       <span style="position: absolute; bottom: -20px; left: -12px; font-size: 0.7rem; color: #666;">${hour.toString().padStart(2, '0')}:00</span>
-                     ` : ''}
-                   </div>
-                 `)}
-
-                 <!-- Scheduled times -->
-                 ${dialog.irrigation_times.map(({ time, duration }: IrrigationTime) => {
-            const [hours, minutes] = time.split(':').map(Number);
-            const position = ((hours + minutes / 60) / 24) * 100;
-            return html`
-                     <div
-                       @click=${(e: Event) => {
-                  e.stopPropagation();
-                  if (confirm(`Remove irrigation time ${time}?`)) {
-                     callbacks.onRemoveIrrigationTime(time);
-                  }
-               }}
-                       style="position: absolute; left: ${position}%; top: 20%; bottom: 20%; width: 3px; background: #2196F3; cursor: pointer; box-shadow: 0 0 8px #2196F3;"
-                       title="${time} | Duration: ${duration || dialog.irrigation_duration}min"
-                     >
-                       <div style="position: absolute; left: 6px; top: -20px; background: rgba(33, 150, 243, 0.9); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap;">
-                         ${time} | ${duration || dialog.irrigation_duration}min
-                       </div>
+                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        ${this.renderMD3TextInput('Irrigation Pump Entity', dialog.irrigation_pump_entity, callbacks.onIrrigationPumpChange)}
+                        ${this.renderMD3NumberInput('Duration (minutes)', dialog.irrigation_duration, (val) => callbacks.onIrrigationDurationChange(parseInt(val)))}
+                        ${this.renderMD3TextInput('Drain Pump Entity', dialog.drain_pump_entity, callbacks.onDrainPumpChange)}
+                        ${this.renderMD3NumberInput('Drain Duration (minutes)', dialog.drain_duration, (val) => callbacks.onDrainDurationChange(parseInt(val)))}
                      </div>
-                   `;
-         })}
-               </div>
 
-               <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 0.7rem; color: #666;">
-                 <span>00:00</span>
-                 <span>06:00</span>
-                 <span>12:00</span>
-                 <span>18:00</span>
-                 <span>24:00</span>
-               </div>
-             </div>
-
-             <!-- Drain Schedule Section -->
-             <div style="background: #1a1a1a; border-radius: 8px; padding: 20px;">
-               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                 <h3 style="margin: 0; color: #fff; font-size: 1.1rem;">Drain Schedule</h3>
-                 <button
-                   @click=${callbacks.onAddDrainTime}
-                   style="padding: 8px 16px; background: #FF9800; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;"
-                 >
-                   <span style="font-size: 1.2rem;">+</span> ADD
-                 </button>
-               </div>
-
-               <!-- Time Bar -->
-               <div
-                 class="drain-time-bar"
-                 @click=${(e: MouseEvent) => {
-            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            callbacks.onStartAddingDrainTime(x, rect.width);
-         }}
-                 style="position: relative; height: 80px; background: #0d0d0d; border-radius: 4px; cursor: crosshair; border: 1px solid #FF9800;"
-               >
-                 <!-- Hour markers -->
-                 ${Array.from({ length: 25 }, (_, i) => i).map(hour => html`
-                   <div style="position: absolute; left: ${(hour / 24) * 100}%; top: 0; bottom: 0; border-left: 1px solid ${hour % 6 === 0 ? '#444' : '#222'}; pointer-events: none;">
-                     ${hour % 3 === 0 ? html`
-                       <span style="position: absolute; bottom: -20px; left: -12px; font-size: 0.7rem; color: #666;">${hour.toString().padStart(2, '0')}:00</span>
-                     ` : ''}
-                   </div>
-                 `)}
-
-                 <!-- Scheduled times -->
-                 ${dialog.drain_times.map(({ time, duration }: IrrigationTime) => {
-            const [hours, minutes] = time.split(':').map(Number);
-            const position = ((hours + minutes / 60) / 24) * 100;
-            return html`
-                     <div
-                       @click=${(e: Event) => {
-                  e.stopPropagation();
-                  if (confirm(`Remove drain time ${time}?`)) {
-                     callbacks.onRemoveDrainTime(time);
-                  }
-               }}
-                       style="position: absolute; left: ${position}%; top: 20%; bottom: 20%; width: 3px; background: #FF9800; cursor: pointer; box-shadow: 0 0 8px #FF9800;"
-                       title="${time} | Duration: ${duration || dialog.drain_duration}min"
+                     <button
+                        @click=${callbacks.onSavePumpSettings}
+                        class="md3-button primary"
+                        style="margin-top: 16px; background: ${dialogColor};"
                      >
-                       <div style="position: absolute; left: 6px; top: -20px; background: rgba(255, 152, 0, 0.9); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap;">
-                         ${time} | ${duration || dialog.drain_duration}min
-                       </div>
-                     </div>
-                   `;
-         })}
+                        SAVE PUMP SETTINGS
+                     </button>
+                  </div>
+
+                  ${this.renderScheduleSection(
+         'Irrigation Schedule',
+         dialog.irrigation_times,
+         dialog.irrigation_duration,
+         dialog,
+         callbacks,
+         'irrigation',
+         dialogColor
+      )}
+
+                           ${this.renderScheduleSection(
+         'Drain Schedule',
+         dialog.drain_times,
+         dialog.drain_duration,
+         dialog,
+         callbacks,
+         'drain',
+         '#FF9800'
+      )}
+
                </div>
 
-               <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 0.7rem; color: #666;">
-                 <span>00:00</span>
-                 <span>06:00</span>
-                 <span>12:00</span>
-                 <span>18:00</span>
-                 <span>24:00</span>
+               <div class="button-group">
+                  <button class="md3-button tonal" @click=${callbacks.onClose}>
+                     Close
+                  </button>
                </div>
-             </div>
-           </div>
 
-           <!-- Add Time Dialogs -->
-           ${dialog.adding_irrigation_time ? html`
-             <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;" @click=${callbacks.onCancelAddingIrrigationTime}>
-               <div style="background: #1a1a1a; padding: 24px; border-radius: 8px; max-width: 400px;" @click=${(e: Event) => e.stopPropagation()}>
-                 <h3 style="margin: 0 0 16px 0; color: #fff;">Add Irrigation Time</h3>
-                 
-                 <div style="margin-bottom: 16px;">
-                   <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Time</label>
-                   <input
-                     type="time"
-                     .value=${dialog.adding_irrigation_time.time}
-                     @input=${(e: Event) => callbacks.onIrrigationTimeInputChange('time', (e.target as HTMLInputElement).value)}
-                     style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
-                   />
-                 </div>
-
-                 <div style="margin-bottom: 16px;">
-                   <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Duration (minutes)</label>
-                   <input
-                     type="number"
-                     .value=${dialog.adding_irrigation_time.duration.toString()}
-                     @input=${(e: Event) => {
-               const val = parseInt((e.target as HTMLInputElement).value);
-               if (!isNaN(val)) callbacks.onIrrigationTimeInputChange('duration', val);
-            }}
-                     min="1"
-                     style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
-                   />
-                 </div>
-
-                 <div style="display: flex; gap: 12px;">
-                   <button
-                     @click=${callbacks.onCancelAddingIrrigationTime}
-                     style="flex: 1; padding: 10px; background: #555; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem;"
-                   >
-                     CANCEL
-                   </button>
-                   <button
-                     @click=${() => callbacks.onConfirmAddIrrigationTime(dialog.adding_irrigation_time!.time, dialog.adding_irrigation_time!.duration)}
-                     style="flex: 1; padding: 10px; background: #2196F3; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600;"
-                   >
-                     ADD SCHEDULE
-                   </button>
-                 </div>
-               </div>
-             </div>
-           ` : ''}
-
-           ${dialog.adding_drain_time ? html`
-             <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;" @click=${callbacks.onCancelAddingDrainTime}>
-               <div style="background: #1a1a1a; padding: 24px; border-radius: 8px; max-width: 400px;" @click=${(e: Event) => e.stopPropagation()}>
-                 <h3 style="margin: 0 0 16px 0; color: #fff;">Add Drain Time</h3>
-                 
-                 <div style="margin-bottom: 16px;">
-                   <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Time</label>
-                   <input
-                     type="time"
-                     .value=${dialog.adding_drain_time.time}
-                     @input=${(e: Event) => callbacks.onDrainTimeInputChange('time', (e.target as HTMLInputElement).value)}
-                     style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
-                   />
-                 </div>
-
-                 <div style="margin-bottom: 16px;">
-                   <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 0.9rem;">Duration (minutes)</label>
-                   <input
-                     type="number"
-                     .value=${dialog.adding_drain_time.duration.toString()}
-                     @input=${(e: Event) => {
-               const val = parseInt((e.target as HTMLInputElement).value);
-               if (!isNaN(val)) callbacks.onDrainTimeInputChange('duration', val);
-            }}
-                     min="1"
-                     style="width: 100%; padding: 10px; background: #0d0d0d; border: 1px solid #333; border-radius: 4px; color: #fff; font-size: 0.9rem;"
-                   />
-                 </div>
-
-                 <div style="display: flex; gap: 12px;">
-                   <button
-                     @click=${callbacks.onCancelAddingDrainTime}
-                     style="flex: 1; padding: 10px; background: #555; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem;"
-                   >
-                     CANCEL
-                   </button>
-                   <button
-                     @click=${() => callbacks.onConfirmAddDrainTime(dialog.adding_drain_time!.time, dialog.adding_drain_time!.duration)}
-                     style="flex: 1; padding: 10px; background: #FF9800; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600;"
-                   >
-                     ADD SCHEDULE
-                   </button>
-                 </div>
-               </div>
-             </div>
-           ` : ''}
-
-           <div class="dialog-footer" style="padding: 16px 20px; background: #1a1a1a; border-top: 1px solid #333; display: flex; justify-content: flex-end; gap: 12px;">
-             <button
-               @click=${callbacks.onClose}
-               style="padding: 10px 24px; background: #555; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem;"
-             >
-               CANCEL
-             </button>
-             <button
-               @click=${callbacks.onClose}
-               style="padding: 10px 24px; background: #4CAF50; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600;"
-             >
-               SUBMIT
-             </button>
-           </div>
-         </div>
-       </div>
-     `;
+            </div>
+         </ha-dialog>
+      `;
    }
 }
