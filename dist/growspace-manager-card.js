@@ -2026,105 +2026,105 @@ const ce=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
 
 </div>
   `}renderHeader(e){return this._isCompactView||this._config?.title?(e.find(e=>e.device_id===this.selectedDevice),G`
-  < div class="header" >
-    ${this._config?.title?G`<h2 class="header-title">${this._config.title}</h2>`:""}
+      <div class="header">
+        ${this._config?.title?G`<h2 class="header-title">${this._config.title}</h2>`:""}
         
         ${this._isCompactView?G`
-        <div class="selector-container">
-          ${this._config?.default_growspace?G`
-            <label for="device-select">Growspace:</label>
-            <!-- Even if default is set, user wants dropdown in compact mode -->
-            <select
-              id="device-select"
-              class="growspace-select"
-              .value=${this.selectedDevice||""}
-              @change=${this._handleDeviceChange}
-            >
-              ${e.map(e=>G`<option value="${e.device_id}">${e.name}</option>`)}
-            </select>
-          `:G`
-            <label for="device-select">Growspace:</label>
-            <select 
-              id="device-select" 
-              class="growspace-select"
-              .value=${this.selectedDevice||""} 
-              @change=${this._handleDeviceChange}
-            >
-              ${e.map(e=>G`<option value="${e.device_id}">${e.name}</option>`)}
-            </select>
-          `}
-        </div>
+          <div class="selector-container">
+            ${this._config?.default_growspace?G`
+              <label for="device-select">Growspace:</label>
+              <!-- Even if default is set, user wants dropdown in compact mode -->
+              <select
+                id="device-select"
+                class="growspace-select"
+                .value=${this.selectedDevice||""}
+                @change=${this._handleDeviceChange}
+              >
+                ${e.map(e=>G`<option value="${e.device_id}">${e.name}</option>`)}
+              </select>
+            `:G`
+              <label for="device-select">Growspace:</label>
+              <select 
+                id="device-select" 
+                class="growspace-select"
+                .value=${this.selectedDevice||""} 
+                @change=${this._handleDeviceChange}
+              >
+                ${e.map(e=>G`<option value="${e.device_id}">${e.name}</option>`)}
+              </select>
+            `}
+          </div>
 
-        <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
-          <div class="view-toggle">
-            <input 
-              type="checkbox" 
-              id="compact-view" 
-              .checked=${this._isCompactView}
-              @change=${e=>this._isCompactView=e.target.checked}
-            >
-            <label for="compact-view">Compact</label>
+          <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
+            <div class="view-toggle">
+              <input 
+                type="checkbox" 
+                id="compact-view" 
+                .checked=${this._isCompactView}
+                @change=${e=>this._isCompactView=e.target.checked}
+              >
+              <label for="compact-view">Compact</label>
+            </div>
+            
+            <button class="action-button" @click=${this._openStrainLibraryDialog}>
+              <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${Se}"></path>
+              </svg>
+              Strains
+            </button>
           </div>
-          
-          <button class="action-button" @click=${this._openStrainLibraryDialog}>
-            <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${Se}"></path>
-            </svg>
-            Strains
-          </button>
-        </div>
         `:""}
-</div>
-  `):G``}renderGrid(e,t,r,i){const a=r>5,s=a?"":`grid - template - columns: repeat(${r}, minmax(0, 1fr)); grid - template - rows: repeat(${t}, 1fr); `;return G`
-  < div class="grid ${this._isCompactView?"compact":""} ${a?"force-list-view":""}"
-style = "${s}" >
-  ${e.flat().map((e,t)=>{const a=Math.floor(t/r)+1,s=t%r+1;return e?this.renderPlantSlot(e,a,s,i):this.renderEmptySlot(a,s)})}
-</div>
-  `}renderEmptySlot(e,t){return G`
-  < div
-class="plant-card-empty"
-style = "grid-row: ${e}; grid-column: ${t}"
-@click=${()=>this._openAddPlantDialog(e-1,t-1)}
-@dragover=${this._handleDragOver}
-@drop=${r=>this._handleDrop(r,e,t,null)}
+      </div>
+    `):G``}renderGrid(e,t,r,i){const a=r>5,s=a?"":`grid-template-columns: repeat(${r}, minmax(0, 1fr)); grid-template-rows: repeat(${t}, 1fr);`;return G`
+      <div class="grid ${this._isCompactView?"compact":""} ${a?"force-list-view":""}"
+           style="${s}">
+        ${e.flat().map((e,t)=>{const a=Math.floor(t/r)+1,s=t%r+1;return e?this.renderPlantSlot(e,a,s,i):this.renderEmptySlot(a,s)})}
+      </div>
+    `}renderEmptySlot(e,t){return G`
+      <div
+        class="plant-card-empty"
+        style="grid-row: ${e}; grid-column: ${t}"
+        @click=${()=>this._openAddPlantDialog(e-1,t-1)}
+        @dragover=${this._handleDragOver}
+        @drop=${r=>this._handleDrop(r,e,t,null)}
       >
-  <div class="plant-header" >
-    <svg style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;" viewBox = "0 0 24 24" >
-      <path d="${Te}" > </path>
-        </svg>
+        <div class="plant-header">
+          <svg style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;" viewBox="0 0 24 24">
+            <path d="${Te}"></path>
+          </svg>
         </div>
-        < div style = "font-weight: 500; opacity: 0.8;" > Add Plant </div>
-          </div>
-            `}renderPlantSlot(e,t,r,i){const a=ts.getPlantStageColor(e.state),s=e.attributes?.strain,n=e.attributes?.phenotype;let o;if(s){const e=i.find(e=>e.strain===s&&e.phenotype===n);if(e&&e.image)o=e.image;else{const e=i.find(e=>e.strain===s&&(!e.phenotype||"default"===e.phenotype));if(e&&e.image)o=e.image;else if(!o){const e=i.find(e=>e.strain===s&&e.image);e&&(o=e.image)}}}const l=o?`background - image: url('${o}'); `:"";return G`
-  < div
-class="plant-card-rich"
-style = "grid-row: ${t}; grid-column: ${r}; --stage-color: ${a}"
-draggable = "true"
-@dragstart=${t=>this._handleDragStart(t,e)}
-@dragend=${this._handleDragEnd}
-@dragover=${this._handleDragOver}
-@drop=${i=>this._handleDrop(i,t,r,e)}
-@click=${()=>this._handlePlantClick(e)}
+        <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
+      </div>
+    `}renderPlantSlot(e,t,r,i){const a=ts.getPlantStageColor(e.state),s=e.attributes?.strain,n=e.attributes?.phenotype;let o;if(s){const e=i.find(e=>e.strain===s&&e.phenotype===n);if(e&&e.image)o=e.image;else{const e=i.find(e=>e.strain===s&&(!e.phenotype||"default"===e.phenotype));if(e&&e.image)o=e.image;else if(!o){const e=i.find(e=>e.strain===s&&e.image);e&&(o=e.image)}}}const l=o?`background-image: url('${o}');`:"";return G`
+      <div
+        class="plant-card-rich"
+        style="grid-row: ${t}; grid-column: ${r}; --stage-color: ${a}"
+        draggable="true"
+        @dragstart=${t=>this._handleDragStart(t,e)}
+        @dragend=${this._handleDragEnd}
+        @dragover=${this._handleDragOver}
+        @drop=${i=>this._handleDrop(i,t,r,e)}
+        @click=${()=>this._handlePlantClick(e)}
       >
-  ${o?G`<div class="plant-card-bg" style="${l}"></div>
+        ${o?G`<div class="plant-card-bg" style="${l}"></div>
                           <div class="plant-card-overlay"></div>`:""}
 
-<div class="plant-card-content" >
-  <div class="pc-info" >
-    <div class="pc-strain-name" title = "${e.attributes?.strain||""}" >
-      ${e.attributes?.strain||"Unknown Strain"}
-</div>
-                ${e.attributes?.phenotype?G`<div class="pc-pheno">${e.attributes.phenotype}</div>`:""}
-<div class="pc-stage" >
-  ${e.state||"Unknown"}
-</div>
-  </div>
+        <div class="plant-card-content">
+          <div class="pc-info">
+            <div class="pc-strain-name" title="${e.attributes?.strain||""}">
+              ${e.attributes?.strain||"Unknown Strain"}
+            </div>
+            ${e.attributes?.phenotype?G`<div class="pc-pheno">${e.attributes.phenotype}</div>`:""}
+            <div class="pc-stage">
+              ${e.state||"Unknown"}
+            </div>
+          </div>
 
-  < div class="pc-stats" >
-    ${this.renderPlantDaysRich(e)}
-</div>
-  </div>
-  </div>
+          <div class="pc-stats">
+            ${this.renderPlantDaysRich(e)}
+          </div>
+        </div>
+      </div>
     `}renderPlantDaysRich(e){const t=[{days:e.attributes?.seedling_days,icon:Le,title:"Seedling",stage:"seedling"},{days:e.attributes?.mother_days,icon:Le,title:"Mother",stage:"mother"},{days:e.attributes?.clone_days,icon:Le,title:"Clone",stage:"clone"},{days:e.attributes?.veg_days,icon:Le,title:"Veg",stage:"vegetative"},{days:e.attributes?.flower_days,icon:Ce,title:"Flower",stage:"flower"},{days:e.attributes?.dry_days,icon:De,title:"Dry",stage:"dry"},{days:e.attributes?.cure_days,icon:me,title:"Cure",stage:"cure"}].filter(e=>void 0!==e.days&&null!==e.days),r=t.filter(e=>e.days),i=(e.state||"").toLowerCase(),a="veg"===i?"vegetative":i;return G`
         ${r.map(e=>{const t=ts.getPlantStageColor(e.stage),r=e.stage===a;return G`
                 <div class="pc-stat-item ${r?"current-stage":""}">
@@ -2132,7 +2132,7 @@ draggable = "true"
                     <div class="pc-stat-text">${e.days}d</div>
                 </div>
             `})}
-`}renderDialogs(){const e=this.dataService?.getStrainLibrary()||[],t={},r=this.hass.states["sensor.growspaces_list"]?.attributes?.growspaces;r&&Object.entries(r).forEach(([e,r])=>{t[e]=r});const i=this.dataService.getGrowspaceDevices().find(e=>e.device_id===this.selectedDevice);return G`
+    `}renderDialogs(){const e=this.dataService?.getStrainLibrary()||[],t={},r=this.hass.states["sensor.growspaces_list"]?.attributes?.growspaces;r&&Object.entries(r).forEach(([e,r])=>{t[e]=r});const i=this.dataService.getGrowspaceDevices().find(e=>e.device_id===this.selectedDevice);return G`
       ${is.renderAddPlantDialog(this._addPlantDialog,e,i?.name??"",{onClose:()=>this._addPlantDialog=null,onConfirm:()=>this._confirmAddPlant(),onStrainChange:t=>{if(this._addPlantDialog){this._addPlantDialog.strain=t;const r=e.find(e=>e.strain===t);r&&r.phenotype?this._addPlantDialog.phenotype=r.phenotype:this._addPlantDialog.phenotype="",this.requestUpdate()}},onPhenotypeChange:e=>{this._addPlantDialog&&(this._addPlantDialog.phenotype=e)},onVegStartChange:e=>{this._addPlantDialog&&(this._addPlantDialog.veg_start=e)},onFlowerStartChange:e=>{this._addPlantDialog&&(this._addPlantDialog.flower_start=e)},onSeedlingStartChange:e=>{this._addPlantDialog&&(this._addPlantDialog.seedling_start=e)},onMotherStartChange:e=>{this._addPlantDialog&&(this._addPlantDialog.mother_start=e)},onCloneStartChange:e=>{this._addPlantDialog&&(this._addPlantDialog.clone_start=e)},onDryStartChange:e=>{this._addPlantDialog&&(this._addPlantDialog.dry_start=e)},onCureStartChange:e=>{this._addPlantDialog&&(this._addPlantDialog.cure_start=e)},onRowChange:e=>{if(this._addPlantDialog){const t=parseInt(e);!isNaN(t)&&t>0&&(this._addPlantDialog.row=t-1,this.requestUpdate())}},onColChange:e=>{if(this._addPlantDialog){const t=parseInt(e);!isNaN(t)&&t>0&&(this._addPlantDialog.col=t-1,this.requestUpdate())}}})}
 
       ${is.renderPlantOverviewDialog(this._plantOverviewDialog,t,{onClose:()=>this._plantOverviewDialog=null,onUpdate:()=>{this._updatePlant()},onDelete:e=>{this._handleDeletePlant(e)},onHarvest:e=>{this._harvestPlant(e)},onClone:(e,t)=>{this.clonePlant(e,t)},onTakeClone:(e,t)=>{this.clonePlant(e,t)},onMoveClone:(e,t)=>{this.hass.callService("growspace_manager","move_clone",{plant_id:e.attributes.plant_id,target_growspace_id:t}).then(()=>{console.log(`Clone ${e.attributes.friendly_name} moved to ${t}`),this._plantOverviewDialog=null}).catch(e=>{console.error("Error moving clone:",e)})},onFinishDrying:e=>{this._finishDryingPlant(e)},_harvestPlant:this._harvestPlant.bind(this),_finishDryingPlant:this._finishDryingPlant.bind(this),onAttributeChange:(e,t)=>{this._plantOverviewDialog&&(this._plantOverviewDialog.editedAttributes[e]=t)}})}
@@ -2144,7 +2144,7 @@ draggable = "true"
     ${this._growMasterDialog?(()=>{let e,t=!1;if(this.selectedDevice&&this.hass){const e=this.selectedDevice,r=[`binary_sensor.${e}_plants_under_stress`,`binary_sensor.${e}_stress`,`binary_sensor.growspace_manager_${e}_stress`];for(const e of r){const r=this.hass.states[e];if(r&&"on"===r.state){t=!0;break}}}if(this.hass){const t=this.hass.states["sensor.growspace_manager"];t&&t.attributes&&t.attributes.ai_settings&&(e=t.attributes.personality||t.attributes.ai_settings.personality)}return is.renderGrowMasterDialog(this._growMasterDialog,t,e,{onClose:()=>this._growMasterDialog=null,onQueryChange:e=>{this._growMasterDialog&&(this._growMasterDialog.userQuery=e,this.requestUpdate())},onAnalyze:()=>this._handleAskAdvice(),onAnalyzeAll:()=>this._handleAnalyzeAll()})})():""}
 
       ${is.renderStrainRecommendationDialog(this._strainRecommendationDialog,{onClose:()=>this._strainRecommendationDialog=null,onQueryChange:e=>{this._strainRecommendationDialog&&(this._strainRecommendationDialog.userQuery=e,this.requestUpdate())},onGetRecommendation:()=>this._handleGetStrainRecommendation()})}
-`}};as.styles=[es,o`
+    `}};as.styles=[es,o`
       :host {
         display: block;
         font-family: 'Roboto', sans-serif;

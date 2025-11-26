@@ -3329,57 +3329,56 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const selectedDevice = devices.find(d => d.device_id === this.selectedDevice);
 
     return html`
-  < div class="header" >
-    ${this._config?.title ? html`<h2 class="header-title">${this._config.title}</h2>` : ''}
+      <div class="header">
+        ${this._config?.title ? html`<h2 class="header-title">${this._config.title}</h2>` : ''}
         
         ${this._isCompactView ? html`
-        <div class="selector-container">
-          ${!this._config?.default_growspace ? html`
-            <label for="device-select">Growspace:</label>
-            <select 
-              id="device-select" 
-              class="growspace-select"
-              .value=${this.selectedDevice || ''} 
-              @change=${this._handleDeviceChange}
-            >
-              ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
-            </select>
-          ` : html`
-            <label for="device-select">Growspace:</label>
-            <!-- Even if default is set, user wants dropdown in compact mode -->
-            <select
-              id="device-select"
-              class="growspace-select"
-              .value=${this.selectedDevice || ''}
-              @change=${this._handleDeviceChange}
-            >
-              ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
-            </select>
-          `}
-        </div>
-
-        <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
-          <div class="view-toggle">
-            <input 
-              type="checkbox" 
-              id="compact-view" 
-              .checked=${this._isCompactView}
-              @change=${(e: Event) => this._isCompactView = (e.target as HTMLInputElement).checked}
-            >
-            <label for="compact-view">Compact</label>
+          <div class="selector-container">
+            ${!this._config?.default_growspace ? html`
+              <label for="device-select">Growspace:</label>
+              <select 
+                id="device-select" 
+                class="growspace-select"
+                .value=${this.selectedDevice || ''} 
+                @change=${this._handleDeviceChange}
+              >
+                ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
+              </select>
+            ` : html`
+              <label for="device-select">Growspace:</label>
+              <!-- Even if default is set, user wants dropdown in compact mode -->
+              <select
+                id="device-select"
+                class="growspace-select"
+                .value=${this.selectedDevice || ''}
+                @change=${this._handleDeviceChange}
+              >
+                ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
+              </select>
+            `}
           </div>
-          
-          <button class="action-button" @click=${this._openStrainLibraryDialog}>
-            <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiDna}"></path>
-            </svg>
-            Strains
-          </button>
-        </div>
-        ` : ''
-      }
-</div>
-  `;
+
+          <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
+            <div class="view-toggle">
+              <input 
+                type="checkbox" 
+                id="compact-view" 
+                .checked=${this._isCompactView}
+                @change=${(e: Event) => this._isCompactView = (e.target as HTMLInputElement).checked}
+              >
+              <label for="compact-view">Compact</label>
+            </div>
+            
+            <button class="action-button" @click=${this._openStrainLibraryDialog}>
+              <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiDna}"></path>
+              </svg>
+              Strains
+            </button>
+          </div>
+        ` : ''}
+      </div>
+    `;
   }
 
   private renderGrid(grid: (PlantEntity | null)[][], rows: number, cols: number, strainLibrary: StrainEntry[]): TemplateResult {
@@ -3387,12 +3386,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     // Use minmax(0, 1fr) to allow items to shrink below their content size, fixing overflow issues in 5-col grids.
     const gridStyle = isListView
       ? ''
-      : `grid - template - columns: repeat(${cols}, minmax(0, 1fr)); grid - template - rows: repeat(${rows}, 1fr); `;
+      : `grid-template-columns: repeat(${cols}, minmax(0, 1fr)); grid-template-rows: repeat(${rows}, 1fr);`;
 
     return html`
-  < div class="grid ${this._isCompactView ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
-style = "${gridStyle}" >
-  ${grid.flat().map((plant, index) => {
+      <div class="grid ${this._isCompactView ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
+           style="${gridStyle}">
+        ${grid.flat().map((plant, index) => {
       const row = Math.floor(index / cols) + 1;
       const col = (index % cols) + 1;
 
@@ -3401,53 +3400,31 @@ style = "${gridStyle}" >
       }
 
       return this.renderPlantSlot(plant, row, col, strainLibrary);
-    })
-      }
-</div>
-  `;
+    })}
+      </div>
+    `;
   }
 
   private renderEmptySlot(row: number, col: number): TemplateResult {
     return html`
-  < div
-class="plant-card-empty"
-style = "grid-row: ${row}; grid-column: ${col}"
-@click=${() => this._openAddPlantDialog(row - 1, col - 1)}
-@dragover=${this._handleDragOver}
-@drop=${(e: DragEvent) => this._handleDrop(e, row, col, null)}
+      <div
+        class="plant-card-empty"
+        style="grid-row: ${row}; grid-column: ${col}"
+        @click=${() => this._openAddPlantDialog(row - 1, col - 1)}
+        @dragover=${this._handleDragOver}
+        @drop=${(e: DragEvent) => this._handleDrop(e, row, col, null)}
       >
-  <div class="plant-header" >
-    <svg style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;" viewBox = "0 0 24 24" >
-      <path d="${mdiPlus}" > </path>
-        </svg>
+        <div class="plant-header">
+          <svg style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiPlus}"></path>
+          </svg>
         </div>
-        < div style = "font-weight: 500; opacity: 0.8;" > Add Plant </div>
-          </div>
-            `;
+        <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
+      </div>
+    `;
   }
 
   private renderPlantSlot(plant: PlantEntity, row: number, col: number, strainLibrary: StrainEntry[]): TemplateResult {
-    // If we are in mobile/compact list mode, use the old renderer structure (modified class names if needed)
-    // The query logic in CSS handles `.plant` but we are changing to `.plant - card - rich`.
-    // Actually, mobile view (<600px) has CSS for `.plant`.
-    // To preserve mobile view, we need to check if we are on mobile or ensure the new class supports the list view via media query.
-    // The request said "list view behaviour should stay on mobile".
-    // The media query targets `.plant`. I should probably keep using `.plant` class on the container or duplicate styles.
-    // I'll add `plant` class to the rich card as well to inherit mobile styles if needed,
-    // BUT the structure is different.
-
-    // Actually, on mobile, the grid is forced to column.
-    // I should create a separate render path for mobile if I want to strictly preserve the "list" look,
-    // OR ensure the new card looks good in a list.
-    // The request says "list view behaviour should stay".
-    // I'll assume that means the "layout" (icon left, text right).
-    // The new structure (bg image, overlay) works well for cards.
-    // If I use the new card structure on mobile, it will look like a stack of cards.
-    // The user might want that? "match the design".
-    // "mostly take the positioning and what gets displayed but make it in the same style"
-    // So likely the card design applies everywhere, just the Grid vs List layout changes.
-
-    // I will use the new card structure.
 
     const stageColor = PlantUtils.getPlantStageColor(plant.state);
 
@@ -3474,39 +3451,38 @@ style = "grid-row: ${row}; grid-column: ${col}"
       }
     }
 
-    const bgStyle = imageUrl ? `background - image: url('${imageUrl}'); ` : '';
+    const bgStyle = imageUrl ? `background-image: url('${imageUrl}');` : '';
 
     return html`
-  < div
-class="plant-card-rich"
-style = "grid-row: ${row}; grid-column: ${col}; --stage-color: ${stageColor}"
-draggable = "true"
-@dragstart=${(e: DragEvent) => this._handleDragStart(e, plant)}
-@dragend=${this._handleDragEnd}
-@dragover=${this._handleDragOver}
-@drop=${(e: DragEvent) => this._handleDrop(e, row, col, plant)}
-@click=${() => this._handlePlantClick(plant)}
+      <div
+        class="plant-card-rich"
+        style="grid-row: ${row}; grid-column: ${col}; --stage-color: ${stageColor}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) => this._handleDragStart(e, plant)}
+        @dragend=${this._handleDragEnd}
+        @dragover=${this._handleDragOver}
+        @drop=${(e: DragEvent) => this._handleDrop(e, row, col, plant)}
+        @click=${() => this._handlePlantClick(plant)}
       >
-  ${imageUrl ? html`<div class="plant-card-bg" style="${bgStyle}"></div>
-                          <div class="plant-card-overlay"></div>` : ''
-      }
+        ${imageUrl ? html`<div class="plant-card-bg" style="${bgStyle}"></div>
+                          <div class="plant-card-overlay"></div>` : ''}
 
-<div class="plant-card-content" >
-  <div class="pc-info" >
-    <div class="pc-strain-name" title = "${plant.attributes?.strain || ''}" >
-      ${plant.attributes?.strain || 'Unknown Strain'}
-</div>
-                ${plant.attributes?.phenotype ? html`<div class="pc-pheno">${plant.attributes.phenotype}</div>` : ''}
-<div class="pc-stage" >
-  ${plant.state || 'Unknown'}
-</div>
-  </div>
+        <div class="plant-card-content">
+          <div class="pc-info">
+            <div class="pc-strain-name" title="${plant.attributes?.strain || ''}">
+              ${plant.attributes?.strain || 'Unknown Strain'}
+            </div>
+            ${plant.attributes?.phenotype ? html`<div class="pc-pheno">${plant.attributes.phenotype}</div>` : ''}
+            <div class="pc-stage">
+              ${plant.state || 'Unknown'}
+            </div>
+          </div>
 
-  < div class="pc-stats" >
-    ${this.renderPlantDaysRich(plant)}
-</div>
-  </div>
-  </div>
+          <div class="pc-stats">
+            ${this.renderPlantDaysRich(plant)}
+          </div>
+        </div>
+      </div>
     `;
   }
 
@@ -3549,7 +3525,7 @@ draggable = "true"
             `;
     })
       }
-`;
+    `;
   }
 
   private renderDialogs(): TemplateResult {
@@ -3745,7 +3721,7 @@ draggable = "true"
         }
       )
       }
-`;
+    `;
   }
 
 
