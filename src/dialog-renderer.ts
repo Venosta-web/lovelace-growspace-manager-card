@@ -2144,8 +2144,9 @@ export class DialogRenderer {
                dialogParams: {
                   // The entity ID anchors the flow to the correct configuration entry
                   entity_id: entityId,
-                  // Start step tells the backend where to begin in the flow
-                  startStep: startStep,
+                  // FIX: Rename 'startStep' to 'path'. 
+                  // HA Core's config flow component uses 'path' to specify the starting step ID.
+                  path: startStep,
                },
             });
             resolve();
