@@ -2213,10 +2213,10 @@ export class DialogRenderer {
                   }
                }}
                         style="position: absolute; left: ${position}%; top: 10%; bottom: 10%; width: 4px; background: ${color}; cursor: pointer; box-shadow: 0 0 8px ${color}; border-radius: 2px;"
-                        title="${t.time} | Duration: ${t.duration || defaultDuration}min"
+                        title="${t.time} | Duration: ${t.duration || defaultDuration}seconds"
                      >
                         <div style="position: absolute; left: 8px; top: -24px; background: ${color}; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-                           ${t.time} | ${t.duration || defaultDuration}min
+                           ${t.time} | ${t.duration || defaultDuration}seconds
                         </div>
                      </div>
                   `;
@@ -2337,26 +2337,6 @@ export class DialogRenderer {
                </div>
 
                <div class="dialog-body" style="padding: 0; background: transparent;">
-
-                  <div class="detail-card">
-                     <h3>Pump Settings</h3>
-
-                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                        ${this.renderMD3TextInput('Irrigation Pump Entity', dialog.irrigation_pump_entity, callbacks.onIrrigationPumpChange)}
-                        ${this.renderMD3NumberInput('Duration (seconds)', dialog.irrigation_duration, (val) => callbacks.onIrrigationDurationChange(parseInt(val)))}
-                        ${this.renderMD3TextInput('Drain Pump Entity', dialog.drain_pump_entity, callbacks.onDrainPumpChange)}
-                        ${this.renderMD3NumberInput('Drain Duration (seconds)', dialog.drain_duration, (val) => callbacks.onDrainDurationChange(parseInt(val)))}
-                     </div>
-
-                     <button
-                        @click=${callbacks.onSavePumpSettings}
-                        class="md3-button primary"
-                        style="margin-top: 16px; background: ${dialogColor};"
-                     >
-                        SAVE PUMP SETTINGS
-                     </button>
-                  </div>
-
                   ${this.renderScheduleSection(
          'Irrigation Schedule',
          parsedIrrigationTimes,
