@@ -8,6 +8,7 @@ import {
 } from '@mdi/js';
 import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, ConfigDialogState, GrowMasterDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry, CropMeta, StrainRecommendationDialogState, IrrigationDialogState, IrrigationTime } from './types';
 import { PlantUtils } from "./utils";
+import { fireEvent } from 'custom-card-helpers';
 
 export class DialogRenderer {
    private static getCropStyle(image: string, meta?: CropMeta) {
@@ -2360,5 +2361,29 @@ export class DialogRenderer {
             </div>
          </ha-dialog>
       `;
+   }
+
+   /**
+    * Opens Home Assistant's Options Flow dialog for configuration
+    * This delegates to HA Core's native config flow system instead of managing local dialog state
+    */
+   static openOptionsFlow({ hass, entityId, startStep }: { hass: any; entityId: string; startStep: string }): Promise<void> {
+      return new Promise((resolve, reject) => {
+         try {
+            // Dispatch the show-dialog event that HA's router listens for
+            fireEvent(window, 'show-dialog', {
+               dialogTag: 'ha-config-option-flow',
+               dialogParams: {
+                  // The entity ID anchors the flow to the correct configuration entry
+                  entity_id: entityId,
+                  // Start step tells the backend where to begin in the flow
+                  startStep: startStep,
+               },
+            });
+            resolve();
+         } catch (err) {
+            reject(err);
+         }
+      });
    }
 }
