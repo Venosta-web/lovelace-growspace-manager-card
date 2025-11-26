@@ -36,7 +36,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _draggedPlant: PlantEntity | null = null;
   @state() private _isCompactView: boolean = false;
   @state() private _historyData: any[] | null = null;
-  @state() private _lightCycleCollapsed: boolean = true;
+
   @state() private _activeEnvGraphs: Set<string> = new Set();
   @state() private _tooltip: { id: string, x: number, time: string, value: string } | null = null;
   @state() private _menuOpen: boolean = false;
@@ -2210,10 +2210,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
   }
 
-  private _toggleLightCycle() {
-    this._lightCycleCollapsed = !this._lightCycleCollapsed;
-  }
-
   private _toggleEnvGraph(metric: string) {
     const newSet = new Set(this._activeEnvGraphs);
     if (newSet.has(metric)) {
@@ -2279,6 +2275,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       if (unit === 'state' && key === 'optimal') {
         return ent.state === 'on' ? 1 : 0;
       }
+      // Special case for light cycle
+      if (key === 'light') {
+        const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
+        return isLightsOn === true ? 1 : 0;
+      }
       if (ent.attributes[key] !== undefined) return ent.attributes[key];
       if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
         return ent.attributes.observations[key];
@@ -2289,6 +2290,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const getMeta = (ent: any, key: string) => {
       if (unit === 'state' && key === 'optimal') {
         return ent.attributes.reasons;
+      }
+      if (key === 'light') {
+        const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
+        return { state: isLightsOn ? 'ON' : 'OFF' };
       }
       return undefined;
     };
@@ -3110,8 +3115,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                    </div>` : ''}
 
                 ${hasLightSensor ? html`
-                   <div class="stat-chip ${!this._lightCycleCollapsed ? 'active' : ''}"
-                        @click=${() => this._toggleLightCycle()}>
+                   <div class="stat-chip ${this._activeEnvGraphs.has('light') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('light')}>
                      <svg viewBox="0 0 24 24"><path d="${isLightsOn ? mdiLightbulbOn : mdiLightbulbOff}"></path></svg>
                      ${isLightsOn ? 'On' : 'Off'}
                    </div>` : ''}
@@ -3159,169 +3164,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 </div>
   </div>
  
-  <!-- Nested Light Cycle Card -->
-    ${hasLightSensor ? html`
-         <div class="gs-light-cycle-card ${this._lightCycleCollapsed ? 'collapsed' : ''}">
-            <div class="gs-light-header-row" @click=${() => this._toggleLightCycle()}>
-                <div class="gs-light-title">
-                    <div class="gs-icon-box">
-                       <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiWeatherSunny}"></path></svg>
-                    </div>
-                    <div>
-                       <div>Light Cycle</div>
-                       ${!this._lightCycleCollapsed ? html`<div class="gs-light-subtitle">24H HISTORY</div>` : ''}
-                    </div>
-                </div>
 
-                ${envEntity ? html`
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <div>
-                        <div class="light-status-chip ${isLightsOn ? 'on' : 'off'}">
-                           <div class="light-status-text">
-                               <div class="status-dot"></div>
-                               ${isLightsOn ? 'ON' : 'OFF'}
-                           </div>
-                        </div>
-                        ${!this._lightCycleCollapsed ? html`<div class="target-cycle-text">Target: ${targetCycle}</div>` : ''}
-                    </div>
-                    <div class="rotate-icon ${!this._lightCycleCollapsed ? 'expanded' : ''}" style="opacity: 0.7;">
-                        <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronDown}"></path></svg>
-                    </div>
-                </div>
-                ` : ''}
-            </div>
-
-            ${!this._lightCycleCollapsed ? html`
-            <div class="gs-chart-container"
-                @mousemove=${(e: MouseEvent) => {
-            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-            // Need to construct data points for hover logic
-            // Re-using the transitions array calculated above would be cleaner but it's inside the if block.
-            // I'll reconstruct a simplified points array for the hover handler:
-            // [ {time: t, value: 1/0} ... ] using 'transitions'.
-
-            const hoverPoints: { time: number, value: number }[] = [];
-            // Add initial state at -24h
-            const now = new Date();
-            const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-            // Use 'transitions' calculated above
-            // Oh wait, transitions is in the upper scope? Yes, inside the function.
-
-            // We need to pass points that represent the state changes.
-            // For step line, we should probably pass points at regular intervals or just the transitions?
-            // _handleGraphHover finds the closest point. For a step function, we want the value of the interval.
-            // So we should look for the transition *before* the hovered time.
-
-            // Let's modify _handleGraphHover or create a specific one?
-            // Or just feed it enough points?
-            // Actually, if we feed it transitions, "closest" might be the transition *after*.
-
-            // Let's implement a custom hover for light cycle here inline or adapt logic.
-            // I will use _handleGraphHover but I need to adapt the logic for step function.
-            // Actually, let's just use the transitions array.
-
-            const hoverPointsLocal = transitions.map(t => ({ time: t.time, value: t.state ? 1 : 0 }));
-            // Add start point
-            // Transitions only has changes within window.
-            // Need to insert start point at -24h
-            // 'transitions' is defined in the scope above.
-
-            // Wait, if I use _handleGraphHover with discrete points, it finds the closest point.
-            // If I hover between two points 6 hours apart, it will snap to one.
-            // That's fine for now, or I can refine _handleGraphHover to support 'step' interpolation.
-
-            // Let's stick to _handleGraphHover for consistency but populate it well.
-            // Or better: pass the transitions and let a specialized handler deal with it?
-            // I'll stick to generic for now, but ensure we have points.
-
-            if (hoverPointsLocal.length === 0 || hoverPointsLocal[0].time > twentyFourHoursAgo.getTime()) {
-              // Add the initial state point
-              // We don't have 'currentState' variable available here easily (it was mutated in loop)
-              // But we know 'transitions' and we calculated 'currentState' before loop.
-              // It's tricky because of scope mutation.
-
-              // Let's just rely on the 'transitions' array and add the start/end points.
-              // But I can't easily access the initial state derived above without refactoring.
-              // However, I can re-derive or just use what I have.
-
-              // Hack: I'll just pass the transitions. The user will see the time of the switch.
-              // If they hover in between, they snap to the switch.
-              // "Time: 10:30pm Value: ON" -> implies at 10:30pm it turned ON.
-            }
-
-            this._handleGraphHover(e, 'light-cycle', hoverPointsLocal, rect, 'state');
-          }}
-                @mouseleave=${() => this._tooltip = null}
-            >
-                ${this._tooltip && this._tooltip.id === 'light-cycle' ? html`
-                    <div class="gs-cursor-line" style="left: ${this._tooltip.x}px;"></div>
-                    <div class="gs-tooltip" style="left: ${this._tooltip.x}px;">
-                        <div class="time">${this._tooltip.time}</div>
-                        <div>${this._tooltip.value}</div>
-                    </div>
-                ` : ''}
-
-                <svg class="gs-chart-svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
-                    <defs>
-                        <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" style="stop-color:var(--primary-light-color, #FFEB3B);stop-opacity:0.5" />
-                            <stop offset="100%" style="stop-color:var(--primary-light-color, #FFEB3B);stop-opacity:0" />
-                        </linearGradient>
-                    </defs>
-                    <path class="chart-line" d="${svgPath}" />
-                    <path class="chart-gradient-fill" d="${svgPath} V 100 H 0 Z" />
-                </svg>
-                <div class="chart-markers">
-                   <span>-24H</span>
-                   <span>-18H</span>
-                   <span>-12H</span>
-                   <span>-6H</span>
-                   <span>NOW</span>
-                </div>
-            </div>
-
-            <!-- Bottom Cards -->
-            <div class="gs-action-cards">
-                <div class="action-card">
-                    <div class="ac-content">
-                        <div class="ac-icon on">
-                            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiWeatherSunny}"></path></svg>
-                        </div>
-                        <div class="ac-text">
-                            <h4>LIGHT ON</h4>
-                            <div class="time">${lastOnTime} <span>${lastOnAmPm}</span></div>
-                        </div>
-                    </div>
-                    <div class="ac-arrow">
-                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
-                    </div>
-                </div>
-
-                <div class="action-card">
-                    <div class="ac-content">
-                        <div class="ac-icon off">
-                            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiWeatherNight}"></path></svg>
-                        </div>
-                        <div class="ac-text">
-                            <h4>LIGHT OFF</h4>
-                            <div class="time">${lastOffTime} <span>${lastOffAmPm}</span></div>
-                        </div>
-                    </div>
-                    <div class="ac-arrow">
-                         <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
-                    </div>
-                </div>
-            </div>
-            ` : ''}
-         </div>
-         ` : ''
-      }
 
 <!-- Active Environmental Graphs -->
   ${this._activeEnvGraphs.has('temperature') ? this.renderEnvGraph('temperature', '#FF5722', 'Temperature', '°C') : ''}
          ${this._activeEnvGraphs.has('humidity') ? this.renderEnvGraph('humidity', '#2196F3', 'Humidity', '%') : ''}
          ${this._activeEnvGraphs.has('vpd') ? this.renderEnvGraph('vpd', '#9C27B0', 'VPD', 'kPa') : ''}
          ${this._activeEnvGraphs.has('co2') ? this.renderEnvGraph('co2', '#90A4AE', 'CO2', 'ppm') : ''}
+         ${this._activeEnvGraphs.has('light') ? this.renderEnvGraph('light', '#FFEB3B', 'Light Cycle', 'state', 'step') : ''}
          ${this._activeEnvGraphs.has('optimal') ? this.renderEnvGraph('optimal', '#4CAF50', 'Optimal Conditions', 'state', 'step') : ''}
 
 </div>
