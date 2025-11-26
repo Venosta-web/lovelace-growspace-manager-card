@@ -18,7 +18,7 @@ import {
   GrowspaceDevice,
   StrainEntry,
   StrainRecommendationDialogState,
-  IrrigationDialogState
+
 } from './types';
 import { PlantUtils } from "./utils";
 import { DataService } from './data-service';
@@ -33,7 +33,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _configDialog: ConfigDialogState | null = null;
   @state() private _growMasterDialog: GrowMasterDialogState | null = null;
   @state() private _strainRecommendationDialog: StrainRecommendationDialogState | null = null;
-  @state() private _irrigationDialog: IrrigationDialogState | null = null;
+
   @state() private selectedDevice: string | null = null;
   @state() private _draggedPlant: PlantEntity | null = null;
   @state() private _isCompactView: boolean = false;
@@ -2186,8 +2186,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       return;
     }
 
-    // Clear local state to prevent inline rendering conflicts
-    this._irrigationDialog = null;
+
 
     // Delegate to HA Core's Options Flow system
     DialogRenderer.openOptionsFlow({
