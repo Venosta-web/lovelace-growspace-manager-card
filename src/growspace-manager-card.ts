@@ -2580,6 +2580,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     else if (slug === 'dry') envEntityId = `binary_sensor.dry_optimal_drying`;
 
     const envEntity = this.hass.states[envEntityId];
+    const overviewEntity = device.overview_entity_id ? this.hass.states[device.overview_entity_id] : undefined;
 
     // Data Generation
     let dataPoints: { time: number, value: number, meta?: any }[] = [];
@@ -2589,8 +2590,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (metricKey === 'irrigation' || metricKey === 'drain') {
       // Generate from Schedule
       const times = metricKey === 'irrigation'
-        ? envEntity?.attributes?.irrigation_times
-        : envEntity?.attributes?.drain_times;
+        ? overviewEntity?.attributes?.irrigation_times
+        : overviewEntity?.attributes?.drain_times;
 
       if (times && Array.isArray(times)) {
         // Create a timeline for the last 24h
@@ -3446,6 +3447,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
 
     const envEntity = this.hass.states[envEntityId];
+    const overviewEntity = device.overview_entity_id ? this.hass.states[device.overview_entity_id] : undefined;
 
     // Helper to get attribute from either top-level or nested 'observations'
     const getValue = (ent: any, key: string) => {
@@ -3624,18 +3626,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                      ${isLightsOn ? 'On' : 'Off'}
                    </div>` : ''}
 
-                 ${envEntity?.attributes?.irrigation_times?.length > 0 ? html`
+                 ${overviewEntity?.attributes?.irrigation_times?.length > 0 ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('irrigation') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('irrigation')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                     Irrigation (${envEntity.attributes.irrigation_times.length})
+                     Irrigation (${overviewEntity?.attributes.irrigation_times.length})
                    </div>` : ''}
 
-                 ${envEntity?.attributes?.drain_times?.length > 0 ? html`
+                 ${overviewEntity?.attributes?.drain_times?.length > 0 ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('drain') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('drain')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                     Drain (${envEntity.attributes.drain_times.length})
+                     Drain (${overviewEntity?.attributes.drain_times.length})
                    </div>` : ''}
 
                  ${envEntity ? html`
