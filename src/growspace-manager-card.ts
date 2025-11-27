@@ -2579,6 +2579,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
         return isLightsOn === true ? 1 : 0;
       }
+      // Special case for irrigation
+      if (key === 'irrigation') {
+        const isIrrigationOn = ent.attributes.is_irrigation_on ?? ent.attributes.observations?.is_irrigation_on;
+        return isIrrigationOn === true ? 1 : 0;
+      }
+      // Special case for drain
+      if (key === 'drain') {
+        const isDrainOn = ent.attributes.is_drain_on ?? ent.attributes.observations?.is_drain_on;
+        return isDrainOn === true ? 1 : 0;
+      }
       if (ent.attributes[key] !== undefined) return ent.attributes[key];
       if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
         return ent.attributes.observations[key];
@@ -2593,6 +2603,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       if (key === 'light') {
         const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
         return { state: isLightsOn ? 'ON' : 'OFF' };
+      }
+      if (key === 'irrigation') {
+        const isIrrigationOn = ent.attributes.is_irrigation_on ?? ent.attributes.observations?.is_irrigation_on;
+        return { state: isIrrigationOn ? 'ON' : 'OFF' };
+      }
+      if (key === 'drain') {
+        const isDrainOn = ent.attributes.is_drain_on ?? ent.attributes.observations?.is_drain_on;
+        return { state: isDrainOn ? 'ON' : 'OFF' };
       }
       return undefined;
     };
@@ -3613,6 +3631,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
          ${this._activeEnvGraphs.has('vpd') ? this.renderEnvGraph('vpd', '#9C27B0', 'VPD', 'kPa') : ''}
          ${this._activeEnvGraphs.has('co2') ? this.renderEnvGraph('co2', '#90A4AE', 'CO2', 'ppm') : ''}
          ${this._activeEnvGraphs.has('light') ? this.renderEnvGraph('light', '#FFEB3B', 'Light Cycle', 'state', 'step') : ''}
+         ${this._activeEnvGraphs.has('irrigation') ? this.renderEnvGraph('irrigation', '#2196F3', 'Irrigation', 'state', 'step') : ''}
+         ${this._activeEnvGraphs.has('drain') ? this.renderEnvGraph('drain', '#795548', 'Drain', 'state', 'step') : ''}
          ${this._activeEnvGraphs.has('optimal') ? this.renderEnvGraph('optimal', '#4CAF50', 'Optimal Conditions', 'state', 'step') : ''}
 
 </div>
