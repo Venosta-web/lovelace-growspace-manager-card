@@ -2117,7 +2117,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   // Strain library methods
   private async _openStrainLibraryDialog() {
-    let serviceResponse: { strains: StrainEntry[] } | undefined;
+    // Update the type hint to reflect the object structure you expect
+    let serviceResponse: { strains: Record<string, any> } | undefined;
     try {
       serviceResponse = await this.hass.connection.sendMessagePromise({
         type: 'call_service',
@@ -2130,7 +2131,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       console.error('Failed to fetch strain library:', e);
     }
 
-    const rawStrains = serviceResponse || {};
+    // **THE KEY CHANGE:** Access the 'strains' property of the service response
+    const rawStrains = serviceResponse?.strains || {};
     const currentStrains: StrainEntry[] = [];
 
     Object.entries(rawStrains).forEach(([strainName, data]: [string, any]) => {
