@@ -2122,6 +2122,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       'get_strain_library',
       {},
     ) as unknown as { strains: StrainEntry[] };
+    console.log('Strain Library Response:', serviceResponse);
     const currentStrains = serviceResponse?.strains || [];
 
     this._strainLibraryDialog = {
