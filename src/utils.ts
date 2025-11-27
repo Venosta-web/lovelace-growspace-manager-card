@@ -155,7 +155,7 @@ export class PlantUtils {
   static getCurrentDateTime(): string {
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, "0");
-    return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:00`;
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:00`;
   }
 
   /**
@@ -219,8 +219,8 @@ export class PlantUtils {
         const daysKey = `${stage === 'vegetative' ? 'veg' : stage}_days`;
 
         const daysValues = plantsByStage[stage].map(p => {
-            const val = p.attributes[daysKey];
-            return typeof val === 'number' ? val : 0;
+          const val = p.attributes[daysKey];
+          return typeof val === 'number' ? val : 0;
         });
 
         maxDays = Math.max(...daysValues);
@@ -282,6 +282,15 @@ export class PlantUtils {
         img.onerror = (err) => reject(err);
       };
       reader.onerror = (err) => reject(err);
+    });
+  }
+
+  static preloadImage(url: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = url;
+      img.onload = () => resolve();
+      img.onerror = () => reject();
     });
   }
 }
