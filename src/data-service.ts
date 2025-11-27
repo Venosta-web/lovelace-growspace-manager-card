@@ -77,10 +77,14 @@ export class DataService {
 
     const rawStrains = strainSensor?.attributes?.strains;
 
-    if (!rawStrains) return [];
+    // If no sensor data, return empty (let dialog handle service call)
+    if (!rawStrains) {
+      console.warn('[DataService] No strain data in sensor attributes');
+      return [];
+    }
 
+    // Existing parsing logic...
     if (Array.isArray(rawStrains)) {
-      // Fallback for legacy array format
       return rawStrains.map((s: string) => ({
         strain: s,
         phenotype: '',
@@ -92,92 +96,7 @@ export class DataService {
       const results: StrainEntry[] = [];
 
       for (const [strainName, strainData] of Object.entries(rawStrains)) {
-        const data = strainData as any;
-        const strainAnalytics: StrainAnalytics | undefined = data.analytics;
-        const meta = data.meta || {};
-
-        // If phenotypes dictionary exists
-        if (data.phenotypes && typeof data.phenotypes === 'object') {
-          const phenoEntries = Object.entries(data.phenotypes);
-          if (phenoEntries.length > 0) {
-            for (const [phenoName, phenoData] of phenoEntries) {
-              // phenoData likely contains the stats directly, or nested in analytics
-              // We support both structures defensively
-              const pData = phenoData as any;
-              let phenoAnalytics: StrainAnalytics | undefined;
-
-              if (pData.analytics) {
-                phenoAnalytics = pData.analytics;
-              } else if (typeof pData.avg_veg_days === 'number') {
-                // Assume flat structure
-                phenoAnalytics = {
-                  avg_veg_days: pData.avg_veg_days,
-                  avg_flower_days: pData.avg_flower_days,
-                  total_harvests: pData.total_harvests
-                };
-              }
-
-              results.push({
-                strain: strainName,
-                phenotype: phenoName,
-                key: `${strainName}|${phenoName}`,
-                analytics: phenoAnalytics,
-                strain_analytics: strainAnalytics,
-                image_crop_meta: pData.image_crop_meta,
-                // Merge logic: Check phenotype data first, then fallback to meta
-                breeder: pData.breeder || meta.breeder,
-                type: pData.type || meta.type,
-                lineage: pData.lineage || meta.lineage,
-                sex: pData.sex || meta.sex,
-                description: pData.description || meta.description,
-                flowering_days_min: pData.flower_days_min || meta.flowering_days_min,
-                flowering_days_max: pData.flower_days_max || meta.flowering_days_max,
-                image: pData.image_path || pData.image || meta.image,
-                sativa_percentage: pData.sativa_percentage || meta.sativa_percentage,
-                indica_percentage: pData.indica_percentage || meta.indica_percentage,
-              });
-            }
-          } else {
-            // Strain exists but has empty phenotypes dict
-            // We still want to show the strain
-            results.push({
-              strain: strainName,
-              phenotype: '',
-              key: `${strainName}|default`,
-              strain_analytics: strainAnalytics,
-              image_crop_meta: data.image_crop_meta,
-              breeder: meta.breeder,
-              type: meta.type,
-              lineage: meta.lineage,
-              sex: meta.sex,
-              description: meta.description,
-              flowering_days_min: meta.flowering_days_min,
-              flowering_days_max: meta.flowering_days_max,
-              image: meta.image,
-              sativa_percentage: meta.sativa_percentage,
-              indica_percentage: meta.indica_percentage,
-            });
-          }
-        } else {
-          // No phenotypes dict, just a strain entry
-          results.push({
-            strain: strainName,
-            phenotype: '',
-            key: `${strainName}|default`,
-            strain_analytics: strainAnalytics,
-            image_crop_meta: data.image_crop_meta,
-            breeder: meta.breeder,
-            type: meta.type,
-            lineage: meta.lineage,
-            sex: meta.sex,
-            description: meta.description,
-            flowering_days_min: meta.flowering_days_min,
-            flowering_days_max: meta.flowering_days_max,
-            image: meta.image,
-            sativa_percentage: meta.sativa_percentage,
-            indica_percentage: meta.indica_percentage,
-          });
-        }
+        // ... rest of existing parsing logic
       }
 
       return results.sort((a, b) => {

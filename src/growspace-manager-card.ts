@@ -2130,7 +2130,32 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       console.error('Failed to fetch strain library:', e);
     }
 
-    const currentStrains = serviceResponse?.strains || [];
+    const rawStrains = serviceResponse || {};
+    const currentStrains: StrainEntry[] = [];
+
+    Object.entries(rawStrains).forEach(([strainName, data]: [string, any]) => {
+      const meta = data.meta || {};
+      const phenotypes = data.phenotypes || {};
+
+      Object.entries(phenotypes).forEach(([phenoName, phenoData]: [string, any]) => {
+        currentStrains.push({
+          strain: strainName,
+          phenotype: phenoName,
+          key: `${strainName}_${phenoName}`, // Unique key for list rendering
+          breeder: meta.breeder,
+          type: meta.type,
+          lineage: meta.lineage,
+          sex: meta.sex,
+          sativa_percentage: meta.sativa_percentage,
+          indica_percentage: meta.indica_percentage,
+          description: phenoData.description,
+          image: phenoData.image_path, // Note: backend sends image_path
+          image_crop_meta: phenoData.image_crop_meta,
+          flowering_days_min: phenoData.flower_days_min,
+          flowering_days_max: phenoData.flower_days_max
+        });
+      });
+    });
 
     this._strainLibraryDialog = {
       open: true,
