@@ -2108,11 +2108,29 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   private async _handleDeletePlant(plantId: string) {
     if (!confirm("Are you sure you want to delete this plant?")) return;
 
+    // Optimistic Update: Immediately remove from local state
+    if (this.selectedDevice) {
+      const devices = this.dataService.getGrowspaceDevices();
+      const device = devices.find(d => d.device_id === this.selectedDevice);
+      if (device) {
+        device.plants = device.plants.filter(p => {
+          const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+          return pId !== plantId;
+        });
+        this.requestUpdate();
+      }
+    }
+
+    // Close dialog immediately
+    this._plantOverviewDialog = null;
+
     try {
       await this.dataService.removePlant(plantId);
-      this._plantOverviewDialog = null;
     } catch (err) {
       console.error("Error deleting plant:", err);
+      // Ideally revert the optimistic update here, but for now just alert
+      alert("Failed to delete plant. It may reappear on refresh.");
+      this.updateGrid(); // Force refresh to sync with backend
     }
   }
   private async _movePlantToNextStage(_: PlantEntity) {
