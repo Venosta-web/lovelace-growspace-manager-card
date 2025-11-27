@@ -2066,14 +2066,24 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     ['strain', 'phenotype', 'row', 'col', ...dateFields]
       .forEach(field => {
-        if (editedAttributes[field] !== undefined && editedAttributes[field] !== null) {
+        if (editedAttributes[field] !== undefined) {
           if (dateFields.includes(field)) {
-            const formattedDate = PlantUtils.formatDateForBackend(String(editedAttributes[field]));
-            if (formattedDate) {
-              payload[field] = formattedDate;
+            const val = String(editedAttributes[field] || '');
+            if (!val || val === 'null' || val === 'undefined') {
+              // Explicitly clear the date if it's empty
+              payload[field] = null;
+            } else {
+              const formattedDate = PlantUtils.formatDateForBackend(val);
+              if (formattedDate) {
+                payload[field] = formattedDate;
+              }
             }
           } else {
-            payload[field] = editedAttributes[field];
+            // Only send non-null values for other fields, or allow null if that's intended?
+            // For now, keep existing behavior for non-date fields but allow null if explicitly set
+            if (editedAttributes[field] !== null) {
+              payload[field] = editedAttributes[field];
+            }
           }
         }
       });
