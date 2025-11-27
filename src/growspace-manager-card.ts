@@ -2632,7 +2632,25 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
         // Sort events
         events.sort((a, b) => a.start - b.start);
+        // Convert to points
+        // Start with 0
+        dataPoints.push({ time: twentyFourHoursAgo.getTime(), value: 0 });
 
+        events.forEach(ev => {
+          // Add point before start (0)
+          dataPoints.push({ time: ev.start - 1, value: 0 });
+          // Add start point (1)
+          dataPoints.push({ time: ev.start, value: 1 });
+          // Add end point (1)
+          dataPoints.push({ time: ev.end, value: 1 });
+          // Add point after end (0)
+          dataPoints.push({ time: ev.end + 1, value: 0 });
+        });
+
+        // End with 0 at 'now'
+        dataPoints.push({ time: now.getTime(), value: 0 });
+
+        // Force step type
         type = 'step';
       }
     } else {
