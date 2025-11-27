@@ -1869,6 +1869,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   private async _fetchStrainLibrary() {
     if (!this.hass) return;
 
+    // 1. Try to load from cache first for instant render
+    const cachedLibrary = localStorage.getItem('growspace_strain_library');
+    if (cachedLibrary) {
+      try {
+        this._strainLibrary = JSON.parse(cachedLibrary);
+        this.requestUpdate();
+      } catch (e) {
+        console.warn('Failed to parse cached strain library', e);
+      }
+    }
+
     try {
       const serviceResponse: any = await this.hass.connection.sendMessagePromise({
         type: 'call_service',
@@ -1907,14 +1918,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
       this._strainLibrary = currentStrains;
 
-      // Preload images
-      currentStrains.forEach(strain => {
-        if (strain.image) {
-          PlantUtils.preloadImage(strain.image).catch(() => {
-            // Ignore errors, just best effort
-          });
-        }
-      });
+      // Update cache
+      localStorage.setItem('growspace_strain_library', JSON.stringify(currentStrains));
+
+      // Removed aggressive preloading to improve initial load performance
+      // Images will be lazy-loaded by the browser
     } catch (e) {
       console.error('Failed to fetch strain library for grid:', e);
     }
@@ -3727,8 +3735,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
     }
 
-    const bgStyle = imageUrl ? `background-image: url('${imageUrl}');` : '';
-
     return html`
       <div
         class="plant-card-rich"
@@ -3740,8 +3746,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         @drop=${(e: DragEvent) => this._handleDrop(e, row, col, plant)}
         @click=${() => this._handlePlantClick(plant)}
       >
-        ${imageUrl ? html`<div class="plant-card-bg" style="${bgStyle}"></div>
-                          <div class="plant-card-overlay"></div>` : ''}
+        ${imageUrl ? html`
+          <img 
+            class="plant-card-bg" 
+            src="${imageUrl}" 
+            loading="lazy" 
+            alt="${strainName || 'Plant'}"
+            style="object-fit: cover; width: 100%; height: 100%; position: absolute; top: 0; left: 0;"
+          />
+          <div class="plant-card-overlay"></div>
+        ` : ''}
 
         <div class="plant-card-content">
           <div class="pc-info">

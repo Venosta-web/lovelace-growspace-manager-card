@@ -1234,15 +1234,11 @@ export class DialogRenderer {
       else if (lowerType.includes('hybrid')) typeIcon = mdiTuneVariant;
       else if (lowerType.includes('ruderalis') || lowerType.includes('auto')) typeIcon = mdiLeaf;
 
-      const thumbStyle = strain.image ? DialogRenderer.getCropStyle(strain.image, strain.image_crop_meta) : '';
-
       return html`
        <div class="strain-card" @click=${() => callbacks.onSwitchView('editor', strain)}>
-          <div class="sc-thumb" style="${strain.image ? thumbStyle + '; background-repeat: no-repeat; background-position: center; background-size: cover;' : ''}">
+          <div class="sc-thumb">
              ${strain.image
-            ? (strain.image_crop_meta
-               ? html`<div style="width:100%; height:100%; ${thumbStyle}; background-repeat: no-repeat;"></div>`
-               : html`<img src="${strain.image}" alt="${strain.strain}" />`)
+            ? html`<img src="${strain.image}" loading="lazy" alt="${strain.strain}" />`
             : html`<svg style="width:48px;height:48px;opacity:0.2;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>`
          }
              <div class="sc-actions">
