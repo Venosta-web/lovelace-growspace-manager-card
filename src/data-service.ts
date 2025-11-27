@@ -96,7 +96,27 @@ export class DataService {
       const results: StrainEntry[] = [];
 
       for (const [strainName, strainData] of Object.entries(rawStrains)) {
-        // ... rest of existing parsing logic
+        const meta = (strainData as any).meta || {};
+        const phenotypes = (strainData as any).phenotypes || {};
+
+        Object.entries(phenotypes).forEach(([phenoName, phenoData]: [string, any]) => {
+          results.push({
+            strain: strainName,
+            phenotype: phenoName,
+            key: `${strainName}|${phenoName}`,
+            breeder: meta.breeder,
+            type: meta.type,
+            lineage: meta.lineage,
+            sex: meta.sex,
+            sativa_percentage: meta.sativa_percentage,
+            indica_percentage: meta.indica_percentage,
+            description: phenoData.description,
+            image: phenoData.image_path,
+            image_crop_meta: phenoData.image_crop_meta,
+            flowering_days_min: phenoData.flower_days_min,
+            flowering_days_max: phenoData.flower_days_max
+          });
+        });
       }
 
       return results.sort((a, b) => {
