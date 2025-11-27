@@ -2566,53 +2566,133 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private renderEnvGraph(metricKey: string, color: string, title: string, unit: string, type: 'line' | 'step' = 'line'): TemplateResult {
-    if (!this._historyData || this._historyData.length === 0) return html``;
+    const devices = this.dataService.getGrowspaceDevices();
+    const device = devices.find(d => d.device_id === this.selectedDevice);
+    if (!device) return html``;
 
-    const getValue = (ent: any, key: string) => {
-      if (!ent || !ent.attributes) return undefined;
-      // Special case for 'state' unit (optimal conditions)
-      if (unit === 'state' && key === 'optimal') {
-        return ent.state === 'on' ? 1 : 0;
-      }
-      // Special case for light cycle
-      if (key === 'light') {
-        const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
-        return isLightsOn === true ? 1 : 0;
-      }
-      if (ent.attributes[key] !== undefined) return ent.attributes[key];
-      if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
-        return ent.attributes.observations[key];
-      }
-      return undefined;
-    };
+    // Determine Env Entity ID (replicated logic)
+    let slug = device.name.toLowerCase().replace(/\s+/g, '_');
+    if (device.overview_entity_id) {
+      slug = device.overview_entity_id.replace('sensor.', '');
+    }
+    let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+    if (slug === 'cure') envEntityId = `binary_sensor.cure_optimal_curing`;
+    else if (slug === 'dry') envEntityId = `binary_sensor.dry_optimal_drying`;
 
-    const getMeta = (ent: any, key: string) => {
-      if (unit === 'state' && key === 'optimal') {
-        return ent.attributes.reasons;
-      }
-      if (key === 'light') {
-        const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
-        return { state: isLightsOn ? 'ON' : 'OFF' };
-      }
-      return undefined;
-    };
+    const envEntity = this.hass.states[envEntityId];
 
-    const sortedHistory = [...this._historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+    // Data Generation
+    let dataPoints: { time: number, value: number, meta?: any }[] = [];
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const dataPoints: { time: number, value: number, meta?: any }[] = [];
+    if (metricKey === 'irrigation' || metricKey === 'drain') {
+      // Generate from Schedule
+      const times = metricKey === 'irrigation'
+        ? envEntity?.attributes?.irrigation_times
+        : envEntity?.attributes?.drain_times;
 
-    sortedHistory.forEach(h => {
-      const t = new Date(h.last_changed).getTime();
-      if (t < twentyFourHoursAgo.getTime()) return;
-      const val = getValue(h, metricKey);
-      const meta = getMeta(h, metricKey);
+      if (times && Array.isArray(times)) {
+        // Create a timeline for the last 24h
+        // Default state is 0. Events set state to 1 for duration.
+        // We need to handle wrapping.
+        // Simplest approach: Create a list of events (start, end) in the last 24h window.
 
-      if (val !== undefined && !isNaN(parseFloat(val))) {
-        dataPoints.push({ time: t, value: parseFloat(val), meta });
+        const events: { start: number, end: number }[] = [];
+        const dayMillis = 24 * 60 * 60 * 1000;
+
+        // Check today and yesterday to cover the 24h window
+        const referenceDays = [new Date(now), new Date(twentyFourHoursAgo)];
+
+        times.forEach((t: any) => {
+          const [h, m] = t.time.split(':').map(Number);
+          const duration = (t.duration || 60) * 1000; // default 60s if missing
+
+          referenceDays.forEach(refDay => {
+            const start = new Date(refDay);
+            start.setHours(h, m, 0, 0);
+            const end = new Date(start.getTime() + duration);
+
+            // Check overlap with window [twentyFourHoursAgo, now]
+            if (end.getTime() > twentyFourHoursAgo.getTime() && start.getTime() < now.getTime()) {
+              events.push({
+                start: Math.max(start.getTime(), twentyFourHoursAgo.getTime()),
+                end: Math.min(end.getTime(), now.getTime())
+              });
+            }
+          });
+        });
+
+        // Sort events
+        events.sort((a, b) => a.start - b.start);
+
+        // Convert to points
+        // Start with 0
+        dataPoints.push({ time: twentyFourHoursAgo.getTime(), value: 0 });
+
+        events.forEach(ev => {
+          // Add point before start (0)
+          dataPoints.push({ time: ev.start - 1, value: 0 });
+          // Add start point (1)
+          dataPoints.push({ time: ev.start, value: 1 });
+          // Add end point (1)
+          dataPoints.push({ time: ev.end, value: 1 });
+          // Add point after end (0)
+          dataPoints.push({ time: ev.end + 1, value: 0 });
+        });
+
+        // End with 0 at 'now'
+        dataPoints.push({ time: now.getTime(), value: 0 });
+
+        // Force step type
+        type = 'step';
       }
-    });
+    } else {
+      // Use History Data
+      if (!this._historyData || this._historyData.length === 0) return html``;
+
+      const getValue = (ent: any, key: string) => {
+        if (!ent || !ent.attributes) return undefined;
+        // Special case for 'state' unit (optimal conditions)
+        if (unit === 'state' && key === 'optimal') {
+          return ent.state === 'on' ? 1 : 0;
+        }
+        // Special case for light cycle
+        if (key === 'light') {
+          const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
+          return isLightsOn === true ? 1 : 0;
+        }
+        if (ent.attributes[key] !== undefined) return ent.attributes[key];
+        if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
+          return ent.attributes.observations[key];
+        }
+        return undefined;
+      };
+
+      const getMeta = (ent: any, key: string) => {
+        if (unit === 'state' && key === 'optimal') {
+          return ent.attributes.reasons;
+        }
+        if (key === 'light') {
+          const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
+          return { state: isLightsOn ? 'ON' : 'OFF' };
+        }
+        return undefined;
+      };
+
+      const sortedHistory = [...this._historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+
+      sortedHistory.forEach(h => {
+        const t = new Date(h.last_changed).getTime();
+        if (t < twentyFourHoursAgo.getTime()) return;
+        const val = getValue(h, metricKey);
+        const meta = getMeta(h, metricKey);
+
+        if (val !== undefined && !isNaN(parseFloat(val))) {
+          dataPoints.push({ time: t, value: parseFloat(val), meta });
+        }
+      });
+    }
 
     if (dataPoints.length < 2 && type !== 'step') return html``;
 
@@ -2622,7 +2702,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     let minVal = 0;
     let maxVal = 1;
 
-    if (unit !== 'state') {
+    if (unit !== 'state' && metricKey !== 'irrigation' && metricKey !== 'drain') {
       minVal = Math.min(...dataPoints.map(d => d.value));
       maxVal = Math.max(...dataPoints.map(d => d.value));
     }
@@ -2692,6 +2772,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             return dataPoints[dataPoints.length - 1]?.value === 1 ? 'ON' : 'OFF';
           } else if (unit === 'state') {
             return dataPoints[dataPoints.length - 1]?.value === 1 ? 'OPTIMAL' : 'NOT OPTIMAL';
+          } else if (metricKey === 'irrigation' || metricKey === 'drain') {
+            return dataPoints[dataPoints.length - 1]?.value === 1 ? 'ACTIVE' : 'INACTIVE';
           } else {
             return `${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}`;
           }
@@ -3614,6 +3696,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
          ${this._activeEnvGraphs.has('co2') ? this.renderEnvGraph('co2', '#90A4AE', 'CO2', 'ppm') : ''}
          ${this._activeEnvGraphs.has('light') ? this.renderEnvGraph('light', '#FFEB3B', 'Light Cycle', 'state', 'step') : ''}
          ${this._activeEnvGraphs.has('optimal') ? this.renderEnvGraph('optimal', '#4CAF50', 'Optimal Conditions', 'state', 'step') : ''}
+         ${this._activeEnvGraphs.has('irrigation') ? this.renderEnvGraph('irrigation', '#2196F3', 'Irrigation Schedule', 'state', 'step') : ''}
+         ${this._activeEnvGraphs.has('drain') ? this.renderEnvGraph('drain', '#FF9800', 'Drain Schedule', 'state', 'step') : ''}
 
 </div>
   `;
