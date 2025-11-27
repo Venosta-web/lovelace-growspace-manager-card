@@ -2006,13 +2006,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       col,
       strain: defaultStrain,
       phenotype: defaultPhenotype,
-      veg_start: today,
-      flower_start: today,
-      seedling_start: today,
-      mother_start: today,
-      clone_start: today,
-      dry_start: today,
-      cure_start: today,
+      veg_start: '',
+      flower_start: '',
+      seedling_start: '',
+      mother_start: '',
+      clone_start: '',
+      dry_start: '',
+      cure_start: '',
     };
   }
 
@@ -2036,7 +2036,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
       const dateFields: (keyof AddPlantDialogState)[] = ['veg_start', 'flower_start', 'seedling_start', 'mother_start', 'clone_start', 'dry_start', 'cure_start'];
       dateFields.forEach(field => {
-        const value = this._addPlantDialog![field];
+        const value = this._addPlantDialog![field] as string | undefined;
         if (value) {
           payload[field] = PlantUtils.formatDateForBackend(value);
         }
@@ -2887,7 +2887,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   private async _handleExportLibrary() {
     // 1. Subscribe to the completion event
-    const unsubscribe = await this.hass.connection.subscribeEvents((event) => {
+    const unsubscribe = await this.hass.connection.subscribeEvents((event: any) => {
       // Check if the URL exists in the event data
       if (event.data && event.data.url) {
         // 2. Trigger the download in the browser
