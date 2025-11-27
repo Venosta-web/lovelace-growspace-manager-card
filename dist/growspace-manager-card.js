@@ -1063,10 +1063,10 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
             New Strain
          </button>
       </div>
-    `}static renderStrainCard(t,e){let i=St,r=t.type||"Unknown";const a=(t.type||"").toLowerCase();return a.includes("indica")?i=Nt:a.includes("sativa")?i=Vt:a.includes("hybrid")?i=Et:(a.includes("ruderalis")||a.includes("auto"))&&(i=St),G`
+    `}static getImgStyle(t){return t?`width: 100%; height: 100%; object-fit: cover; object-position: ${t.x}% ${t.y}%; transform: scale(${t.scale}); transform-origin: ${t.x}% ${t.y}%;`:"width: 100%; height: 100%; object-fit: cover;"}static renderStrainCard(t,e){let i=St,r=t.type||"Unknown";const a=(t.type||"").toLowerCase();return a.includes("indica")?i=Nt:a.includes("sativa")?i=Vt:a.includes("hybrid")?i=Et:(a.includes("ruderalis")||a.includes("auto"))&&(i=St),G`
        <div class="strain-card" @click=${()=>e.onSwitchView("editor",t)}>
-          <div class="sc-thumb">
-             ${t.image?G`<img src="${t.image}" loading="lazy" alt="${t.strain}" />`:G`<svg style="width:48px;height:48px;opacity:0.2;fill:currentColor;" viewBox="0 0 24 24"><path d="${mt}"></path></svg>`}
+          <div class="sc-thumb" style="overflow: hidden;">
+             ${t.image?G`<img src="${t.image}" loading="lazy" alt="${t.strain}" style="${an.getImgStyle(t.image_crop_meta)}" />`:G`<svg style="width:48px;height:48px;opacity:0.2;fill:currentColor;" viewBox="0 0 24 24"><path d="${mt}"></path></svg>`}
              <div class="sc-actions">
                 <button class="sc-action-btn" @click=${i=>{i.stopPropagation(),e.onRemoveStrain(t.key)}}>
                    <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${xt}"></path></svg>
@@ -2231,7 +2231,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         </div>
         <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
       </div>
-    `}renderPlantSlot(t,e,i,r){const a=en.getPlantStageColor(t.state),n=t.attributes?.strain,s=t.attributes?.phenotype;let o;if(n){const t=r.find(t=>t.strain===n&&t.phenotype===s);if(t&&t.image)o=t.image;else{const t=r.find(t=>t.strain===n&&(!t.phenotype||"default"===t.phenotype));if(t&&t.image)o=t.image;else if(!o){const t=r.find(t=>t.strain===n&&t.image);t&&(o=t.image)}}}return G`
+    `}renderPlantSlot(t,e,i,r){const a=en.getPlantStageColor(t.state),n=t.attributes?.strain,s=t.attributes?.phenotype;let o,l;if(n){const t=r.find(t=>t.strain===n&&t.phenotype===s);if(t&&t.image)o=t.image,l=t.image_crop_meta;else{const t=r.find(t=>t.strain===n&&(!t.phenotype||"default"===t.phenotype));if(t&&t.image)o=t.image,l=t.image_crop_meta;else if(!o){const t=r.find(t=>t.strain===n&&t.image);t&&(o=t.image,l=t.image_crop_meta)}}}return G`
       <div
         class="plant-card-rich"
         style="grid-row: ${e}; grid-column: ${i}; --stage-color: ${a}"
@@ -2248,7 +2248,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
             src="${o}" 
             loading="lazy" 
             alt="${n||"Plant"}"
-            style="object-fit: cover; width: 100%; height: 100%; position: absolute; top: 0; left: 0;"
+            style="${an.getImgStyle(l)}"
           />
           <div class="plant-card-overlay"></div>
         `:""}
@@ -2279,7 +2279,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
     `}renderDialogs(){const t=this.dataService?.getStrainLibrary()||[],e={},i=this.hass.states["sensor.growspaces_list"]?.attributes?.growspaces;i&&Object.entries(i).forEach(([t,i])=>{e[t]=i});const r=this.dataService.getGrowspaceDevices().find(t=>t.device_id===this.selectedDevice);return G`
       ${an.renderAddPlantDialog(this._addPlantDialog,t,r?.name??"",{onClose:()=>this._addPlantDialog=null,onConfirm:()=>this._confirmAddPlant(),onStrainChange:e=>{if(this._addPlantDialog){this._addPlantDialog.strain=e;const i=t.find(t=>t.strain===e);i&&i.phenotype?this._addPlantDialog.phenotype=i.phenotype:this._addPlantDialog.phenotype="",this.requestUpdate()}},onPhenotypeChange:t=>{this._addPlantDialog&&(this._addPlantDialog.phenotype=t)},onVegStartChange:t=>{this._addPlantDialog&&(this._addPlantDialog.veg_start=t)},onFlowerStartChange:t=>{this._addPlantDialog&&(this._addPlantDialog.flower_start=t)},onSeedlingStartChange:t=>{this._addPlantDialog&&(this._addPlantDialog.seedling_start=t)},onMotherStartChange:t=>{this._addPlantDialog&&(this._addPlantDialog.mother_start=t)},onCloneStartChange:t=>{this._addPlantDialog&&(this._addPlantDialog.clone_start=t)},onDryStartChange:t=>{this._addPlantDialog&&(this._addPlantDialog.dry_start=t)},onCureStartChange:t=>{this._addPlantDialog&&(this._addPlantDialog.cure_start=t)},onRowChange:t=>{if(this._addPlantDialog){const e=parseInt(t);!isNaN(e)&&e>0&&(this._addPlantDialog.row=e-1,this.requestUpdate())}},onColChange:t=>{if(this._addPlantDialog){const e=parseInt(t);!isNaN(e)&&e>0&&(this._addPlantDialog.col=e-1,this.requestUpdate())}}})}
 
-      ${an.renderPlantOverviewDialog(this._plantOverviewDialog,e,{onClose:()=>this._plantOverviewDialog=null,onUpdate:()=>{this._updatePlant()},onDelete:t=>{this._handleDeletePlant(t)},onHarvest:t=>{this._harvestPlant(t)},onClone:(t,e)=>{this.clonePlant(t,e)},onTakeClone:(t,e)=>{this.clonePlant(t,e)},onMoveClone:(t,e)=>{this.hass.callService("growspace_manager","move_clone",{plant_id:t.attributes.plant_id,target_growspace_id:e}).then(()=>{console.log(`Clone ${t.attributes.friendly_name} moved to ${e}`),this._plantOverviewDialog=null}).catch(t=>{console.error("Error moving clone:",t)})},onFinishDrying:t=>{this._finishDryingPlant(t)},_harvestPlant:this._harvestPlant.bind(this),_finishDryingPlant:this._finishDryingPlant.bind(this),onAttributeChange:(t,e)=>{this._plantOverviewDialog&&(this._plantOverviewDialog.editedAttributes[t]=e)},onToggleShowAllDates:()=>{this._plantOverviewDialog&&(this._plantOverviewDialog.showAllDates=!this._plantOverviewDialog.showAllDates,this.requestUpdate())}})}
+      ${an.renderPlantOverviewDialog(this._plantOverviewDialog,e,{onClose:()=>this._plantOverviewDialog=null,onUpdate:()=>{this._updatePlant()},onDelete:t=>{this._handleDeletePlant(t)},onHarvest:t=>{this._harvestPlant(t)},onClone:(t,e)=>{this.clonePlant(t,e)},onTakeClone:(t,e)=>{this.clonePlant(t,e),this._plantOverviewDialog=null},onMoveClone:(t,e)=>{this.hass.callService("growspace_manager","move_clone",{plant_id:t.attributes.plant_id,target_growspace_id:e}).then(()=>{console.log(`Clone ${t.attributes.friendly_name} moved to ${e}`),this._plantOverviewDialog=null}).catch(t=>{console.error("Error moving clone:",t)})},onFinishDrying:t=>{this._finishDryingPlant(t)},_harvestPlant:this._harvestPlant.bind(this),_finishDryingPlant:this._finishDryingPlant.bind(this),onAttributeChange:(t,e)=>{this._plantOverviewDialog&&(this._plantOverviewDialog.editedAttributes[t]=e)},onToggleShowAllDates:()=>{this._plantOverviewDialog&&(this._plantOverviewDialog.showAllDates=!this._plantOverviewDialog.showAllDates,this.requestUpdate())}})}
 
       ${an.renderStrainLibraryDialog(this._strainLibraryDialog,{onClose:()=>this._strainLibraryDialog=null,onAddStrain:()=>this._addStrain(),onRemoveStrain:t=>this._removeStrain(t),onClearAll:()=>this._clearStrains(),onEditorChange:(t,e)=>this._handleStrainEditorChange(t,e),onSwitchView:(t,e)=>this._switchStrainView(t,e),onSearch:t=>this._setStrainSearchQuery(t),onToggleCropMode:t=>this._toggleCropMode(t),onToggleImageSelector:t=>this._toggleImageSelector(t),onSelectLibraryImage:t=>this._handleSelectLibraryImage(t),onExportStrains:()=>this._handleExportLibrary(),onOpenImportDialog:()=>this._openImportDialog(),onImportDialogChange:t=>this._handleImportDialogChange(t),onConfirmImport:()=>this._performImport(),onGetRecommendation:()=>this._openStrainRecommendationDialog()})}
 

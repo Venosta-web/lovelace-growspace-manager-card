@@ -3901,7 +3901,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           onDelete: (plantId: string) => { this._handleDeletePlant(plantId); },
           onHarvest: (plantEntity: PlantEntity) => { this._harvestPlant(plantEntity); },
           onClone: (plantEntity: PlantEntity, numClones: number) => { this.clonePlant(plantEntity, numClones); },
-          onTakeClone: (plantEntity: PlantEntity, numClones: number) => { this.clonePlant(plantEntity, numClones); },
+          onTakeClone: (plantEntity: PlantEntity, numClones: number) => {
+            this.clonePlant(plantEntity, numClones);
+            this._plantOverviewDialog = null;
+          },
           onMoveClone: (plant: PlantEntity, targetGrowspace: string) => {
             this.hass.callService('growspace_manager', 'move_clone', {
               plant_id: plant.attributes.plant_id,
