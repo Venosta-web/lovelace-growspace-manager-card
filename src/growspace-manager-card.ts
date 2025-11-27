@@ -2131,8 +2131,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       console.error('Failed to fetch strain library:', e);
     }
 
-    // **THE KEY CHANGE:** Access the 'strains' property of the service response
-    const rawStrains = serviceResponse?.strains || {};
+    const rawStrains = (serviceResponse as any)?.response || {};
     const currentStrains: StrainEntry[] = [];
 
     Object.entries(rawStrains).forEach(([strainName, data]: [string, any]) => {
