@@ -153,12 +153,8 @@ export interface PlantOverviewDialogState {
   open: boolean;
   plant: PlantEntity;
   editedAttributes: { [key: string]: any };
-  onClose?: () => void;
-  onUpdate?: () => Promise<void>;
-  onDelete?: (plantId: string) => Promise<void>;
-  onHarvest?: (plantEntity: PlantEntity) => Promise<void>;
-  onFinishDrying?: (plantEntity: PlantEntity) => Promise<void>;
-  onAttributeChange?: (key: string, value: any) => void;
+  activeTab: 'dashboard' | 'timeline' | 'genetics';
+  showAllDates?: boolean;
 }
 
 export interface StrainLibraryDialogState {

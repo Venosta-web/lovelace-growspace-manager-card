@@ -1966,7 +1966,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this._plantOverviewDialog = {
       open: true,
       plant,
-      editedAttributes: { ...plant.attributes }
+      editedAttributes: { ...plant.attributes },
+      activeTab: 'dashboard'
     };
   }
   private _handleTakeClone = (motherPlant: PlantEntity) => {
@@ -3860,6 +3861,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           onAttributeChange: (key: string, value: any) => {
             if (this._plantOverviewDialog) {
               this._plantOverviewDialog.editedAttributes[key] = value;
+            }
+          },
+          onToggleShowAllDates: () => {
+            if (this._plantOverviewDialog) {
+              this._plantOverviewDialog.showAllDates = !this._plantOverviewDialog.showAllDates;
+              this.requestUpdate();
             }
           },
         }
