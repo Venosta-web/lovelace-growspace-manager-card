@@ -1223,6 +1223,11 @@ export class DialogRenderer {
     `;
    }
 
+   static getImgStyle(meta?: CropMeta): string {
+      if (!meta) return 'width: 100%; height: 100%; object-fit: cover;';
+      return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
+   }
+
    private static renderStrainCard(strain: StrainEntry, callbacks: any): TemplateResult {
       let typeIcon = mdiLeaf;
       let typeLabel = strain.type || 'Unknown';
@@ -1236,9 +1241,9 @@ export class DialogRenderer {
 
       return html`
        <div class="strain-card" @click=${() => callbacks.onSwitchView('editor', strain)}>
-          <div class="sc-thumb">
+          <div class="sc-thumb" style="overflow: hidden;">
              ${strain.image
-            ? html`<img src="${strain.image}" loading="lazy" alt="${strain.strain}" />`
+            ? html`<img src="${strain.image}" loading="lazy" alt="${strain.strain}" style="${DialogRenderer.getImgStyle(strain.image_crop_meta)}" />`
             : html`<svg style="width:48px;height:48px;opacity:0.2;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>`
          }
              <div class="sc-actions">

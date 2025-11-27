@@ -3717,20 +3717,27 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const pheno = plant.attributes?.phenotype;
 
     let imageUrl: string | undefined;
+    let imageCropMeta: any | undefined;
+
     if (strainName) {
       // Look for specific pheno match first
       const phenoMatch = strainLibrary.find(s => s.strain === strainName && s.phenotype === pheno);
       if (phenoMatch && phenoMatch.image) {
         imageUrl = phenoMatch.image;
+        imageCropMeta = phenoMatch.image_crop_meta;
       } else {
         // Fallback to strain default
         const strainMatch = strainLibrary.find(s => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
         if (strainMatch && strainMatch.image) {
           imageUrl = strainMatch.image;
+          imageCropMeta = strainMatch.image_crop_meta;
         } else if (!imageUrl) {
           // Any match?
           const anyMatch = strainLibrary.find(s => s.strain === strainName && s.image);
-          if (anyMatch) imageUrl = anyMatch.image;
+          if (anyMatch) {
+            imageUrl = anyMatch.image;
+            imageCropMeta = anyMatch.image_crop_meta;
+          }
         }
       }
     }
@@ -3752,7 +3759,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             src="${imageUrl}" 
             loading="lazy" 
             alt="${strainName || 'Plant'}"
-            style="object-fit: cover; width: 100%; height: 100%; position: absolute; top: 0; left: 0;"
+            style="${DialogRenderer.getImgStyle(imageCropMeta)}"
           />
           <div class="plant-card-overlay"></div>
         ` : ''}
