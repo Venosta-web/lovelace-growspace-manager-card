@@ -2011,7 +2011,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _openAddPlantDialog(row: number, col: number) {
-    const today = this.getHaDateTimeString();
     const strainLibrary = this.dataService.getStrainLibrary();
 
     // If library has entries, default to the first one
@@ -2056,7 +2055,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       dateFields.forEach(field => {
         const value = this._addPlantDialog![field] as string | undefined;
         if (value) {
-          payload[field] = PlantUtils.formatDateForBackend(value);
+          // If value is just a date (YYYY-MM-DD), append current time
+          if (value.length === 10 && !value.includes('T')) {
+            const now = new Date();
+            const timePart = now.toTimeString().split(' ')[0]; // HH:MM:SS
+            payload[field] = `${value}T${timePart}`;
+          } else {
+            // If it already has time or is in another format, use it as is (or format if needed)
+            // Previously we stripped time, but now we want to keep it if present
+            payload[field] = value;
+          }
         }
       });
 

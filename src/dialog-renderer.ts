@@ -264,31 +264,31 @@ export class DialogRenderer {
                </div>
                
                ${dialog.showAllDates ? html`
-                  ${DialogRenderer.renderMD3DateInput('Seedling Start', editedAttributes.seedling_start ?? '', (v) => onAttributeChange('seedling_start', v))}
-                  ${DialogRenderer.renderMD3DateInput('Mother Start', editedAttributes.mother_start ?? '', (v) => onAttributeChange('mother_start', v))}
-                  ${DialogRenderer.renderMD3DateInput('Clone Start', editedAttributes.clone_start ?? '', (v) => onAttributeChange('clone_start', v))}
-                  ${DialogRenderer.renderMD3DateInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => onAttributeChange('veg_start', v))}
-                  ${DialogRenderer.renderMD3DateInput('Flower Start', editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))}
-                  ${DialogRenderer.renderMD3DateInput('Dry Start', editedAttributes.dry_start ?? '', (v) => onAttributeChange('dry_start', v))}
-                  ${DialogRenderer.renderMD3DateInput('Cure Start', editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Seedling Start', editedAttributes.seedling_start ?? '', (v) => onAttributeChange('seedling_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Mother Start', editedAttributes.mother_start ?? '', (v) => onAttributeChange('mother_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Clone Start', editedAttributes.clone_start ?? '', (v) => onAttributeChange('clone_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => onAttributeChange('veg_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Flower Start', editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Dry Start', editedAttributes.dry_start ?? '', (v) => onAttributeChange('dry_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Cure Start', editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))}
                ` : html`
                   ${editedAttributes.stage === 'mother'
-               ? DialogRenderer.renderMD3DateInput('Mother Start', editedAttributes.mother_start ?? '', (v) => onAttributeChange('mother_start', v))
+               ? DialogRenderer.renderMD3DateTimeInput('Mother Start', editedAttributes.mother_start ?? '', (v) => onAttributeChange('mother_start', v))
                : nothing}
                   ${editedAttributes.stage === 'clone'
-               ? DialogRenderer.renderMD3DateInput('Clone Start', editedAttributes.clone_start ?? '', (v) => onAttributeChange('clone_start', v))
+               ? DialogRenderer.renderMD3DateTimeInput('Clone Start', editedAttributes.clone_start ?? '', (v) => onAttributeChange('clone_start', v))
                : nothing}
                   ${editedAttributes.stage === 'veg' || editedAttributes.stage === 'flower'
-               ? DialogRenderer.renderMD3DateInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => onAttributeChange('veg_start', v))
+               ? DialogRenderer.renderMD3DateTimeInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => onAttributeChange('veg_start', v))
                : nothing}
                   ${editedAttributes.stage === 'flower'
-               ? DialogRenderer.renderMD3DateInput('Flower Start', editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))
+               ? DialogRenderer.renderMD3DateTimeInput('Flower Start', editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))
                : nothing}
                   ${editedAttributes.stage === 'dry' || editedAttributes.stage === 'cure'
-               ? DialogRenderer.renderMD3DateInput('Dry Start', editedAttributes.dry_start ?? '', (v) => onAttributeChange('dry_start', v))
+               ? DialogRenderer.renderMD3DateTimeInput('Dry Start', editedAttributes.dry_start ?? '', (v) => onAttributeChange('dry_start', v))
                : nothing}
                   ${editedAttributes.stage === 'cure'
-               ? DialogRenderer.renderMD3DateInput('Cure Start', editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))
+               ? DialogRenderer.renderMD3DateTimeInput('Cure Start', editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))
                : nothing}
                `}
              </div>
@@ -1602,13 +1602,29 @@ export class DialogRenderer {
     `;
    }
 
-   private static renderMD3DateInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
+   private static renderMD3DateTimeInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
       const formattedValue = PlantUtils.toDateTimeLocal(value);
       return html`
       <div class="md3-input-group">
         <label class="md3-label">${label}</label>
         <input
           type="datetime-local"
+          class="md3-input"
+          .value=${formattedValue}
+          @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
+        />
+      </div>
+    `;
+   }
+
+   private static renderMD3DateInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
+      // For date input, we need YYYY-MM-DD
+      const formattedValue = value ? value.split('T')[0] : '';
+      return html`
+      <div class="md3-input-group">
+        <label class="md3-label">${label}</label>
+        <input
+          type="date"
           class="md3-input"
           .value=${formattedValue}
           @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
