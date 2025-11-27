@@ -2142,7 +2142,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         currentStrains.push({
           strain: strainName,
           phenotype: phenoName,
-          key: `${strainName}_${phenoName}`, // Unique key for list rendering
+          key: `${strainName}|${phenoName}`, // Unique key for list rendering
           breeder: meta.breeder,
           type: meta.type,
           lineage: meta.lineage,
