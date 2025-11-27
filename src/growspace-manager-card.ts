@@ -37,6 +37,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private selectedDevice: string | null = null;
   @state() private _draggedPlant: PlantEntity | null = null;
   @state() private _isCompactView: boolean = false;
+  @state() private _strainLibrary: StrainEntry[] = [];
   @state() private _historyData: any[] | null = null;
 
   @state() private _activeEnvGraphs: Set<string> = new Set();
@@ -1824,6 +1825,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.dataService = new DataService(this.hass);
     this.initializeSelectedDevice();
     this._fetchHistory();
+    this._fetchStrainLibrary();
   }
 
   protected updated(changedProps: PropertyValues): void {
@@ -1861,6 +1863,51 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       this._historyData = history;
     } catch (e) {
       console.error("Failed to fetch history", e);
+    }
+  }
+
+  private async _fetchStrainLibrary() {
+    if (!this.hass) return;
+
+    try {
+      const serviceResponse: any = await this.hass.connection.sendMessagePromise({
+        type: 'call_service',
+        domain: 'growspace_manager',
+        service: 'get_strain_library',
+        service_data: {},
+        return_response: true,
+      });
+
+      const rawStrains = serviceResponse?.response || {};
+      const currentStrains: StrainEntry[] = [];
+
+      Object.entries(rawStrains).forEach(([strainName, data]: [string, any]) => {
+        const meta = data.meta || {};
+        const phenotypes = data.phenotypes || {};
+
+        Object.entries(phenotypes).forEach(([phenoName, phenoData]: [string, any]) => {
+          currentStrains.push({
+            strain: strainName,
+            phenotype: phenoName,
+            key: `${strainName}|${phenoName}`,
+            breeder: meta.breeder,
+            type: meta.type,
+            lineage: meta.lineage,
+            sex: meta.sex,
+            sativa_percentage: meta.sativa_percentage,
+            indica_percentage: meta.indica_percentage,
+            description: phenoData.description,
+            image: phenoData.image_path,
+            image_crop_meta: phenoData.image_crop_meta,
+            flowering_days_min: phenoData.flower_days_min,
+            flowering_days_max: phenoData.flower_days_max
+          });
+        });
+      });
+
+      this._strainLibrary = currentStrains;
+    } catch (e) {
+      console.error('Failed to fetch strain library for grid:', e);
     }
   }
 
@@ -2797,6 +2844,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       // Switch back to browse
       this._switchStrainView('browse');
 
+      // Refresh full library for grid
+      this._fetchStrainLibrary();
+
     } catch (err) {
       console.error("Error adding strain:", err);
     }
@@ -2815,6 +2865,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
       this._strainLibraryDialog.strains = this._strainLibraryDialog.strains.filter(s => s.key !== strainKey);
       this.requestUpdate();
+
+      // Refresh full library for grid
+      this._fetchStrainLibrary();
     } catch (err) {
       console.error("Error removing strain:", err);
     }
@@ -2826,6 +2879,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       this._strainLibraryDialog.strains = [];
       this._strainLibraryDialog.confirmClearAll = false;
       this.requestUpdate();
+
+      // Refresh full library for grid
+      this._fetchStrainLibrary();
     }
   }
 
@@ -3224,7 +3280,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     );
 
     const isWide = selectedDeviceData.plants_per_row > 6;
-    const strainLibrary = this.dataService.getStrainLibrary();
+    // Use cached library instead of sensor data
+    const strainLibrary = this._strainLibrary;
 
     return html`
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
