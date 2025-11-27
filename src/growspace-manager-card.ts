@@ -3542,6 +3542,20 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                      ${isLightsOn ? 'On' : 'Off'}
                    </div>` : ''}
 
+                 ${envEntity?.attributes?.irrigation_times?.length > 0 ? html`
+                   <div class="stat-chip ${this._activeEnvGraphs.has('irrigation') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('irrigation')}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                     Irrigation (${envEntity.attributes.irrigation_times.length})
+                   </div>` : ''}
+
+                 ${envEntity?.attributes?.drain_times?.length > 0 ? html`
+                   <div class="stat-chip ${this._activeEnvGraphs.has('drain') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('drain')}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                     Drain (${envEntity.attributes.drain_times.length})
+                   </div>` : ''}
+
                  ${envEntity ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('optimal') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('optimal')}>
