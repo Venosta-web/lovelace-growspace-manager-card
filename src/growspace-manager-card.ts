@@ -2117,12 +2117,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   // Strain library methods
   private async _openStrainLibraryDialog() {
-    const serviceResponse = await this.hass.callService(
-      'growspace_manager',
-      'get_strain_library',
-      {},
-    ) as unknown as { strains: StrainEntry[] };
-    console.log('Strain Library Response:', serviceResponse);
+    let serviceResponse: { strains: StrainEntry[] } | undefined;
+    try {
+      serviceResponse = await this.hass.connection.sendMessagePromise({
+        type: 'call_service',
+        domain: 'growspace_manager',
+        service: 'get_strain_library',
+        service_data: {},
+        return_response: true,
+      });
+    } catch (e) {
+      console.error('Failed to fetch strain library:', e);
+    }
+
     const currentStrains = serviceResponse?.strains || [];
 
     this._strainLibraryDialog = {
