@@ -1,0 +1,44 @@
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[2m[WebServer] [22m(node:7195) [DEP0066] DeprecationWarning: OutgoingMessage.prototype._headers is deprecated
+[2m[WebServer] [22m(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+BROWSER ERROR: TypeError: Cannot read properties of undefined (reading 'startsWith')
+BROWSER ERROR: TypeError: Cannot read properties of undefined (reading 'startsWith')
+BROWSER ERROR: TypeError: Cannot read properties of undefined (reading 'startsWith')
+BROWSER ERROR: TypeError: Cannot read properties of undefined (reading 'startsWith')
+BROWSER ERROR: TypeError: Cannot read properties of undefined (reading 'startsWith')
+  ✘  1 [mock] › tests/mockup-verification.spec.ts:10:9 › Verification Mockup › renders all growspace types correctly (5.2s)
+
+
+  1) [mock] › tests/mockup-verification.spec.ts:10:9 › Verification Mockup › renders all growspace types correctly
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator:  locator('#card-standard')
+    Expected: visible
+    Received: hidden
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('#card-standard')[22m
+    [2m    9 × locator resolved to <growspace-manager-card id="card-standard"></growspace-manager-card>[22m
+    [2m      - unexpected value "hidden"[22m
+
+
+      13 |         // Check Standard Card
+      14 |         const standardCard = page.locator('#card-standard');
+    > 15 |         await expect(standardCard).toBeVisible();
+         |                                    ^
+      16 |         await expect(standardCard).toContainText('Strain 1');
+      17 |
+      18 |         // Check Mother Card
+        at /app/tests/mockup-verification.spec.ts:15:36
+
+    Error Context: test-results/mockup-verification-Verifi-869b7-l-growspace-types-correctly-mock/error-context.md
+
+  1 failed
+    [mock] › tests/mockup-verification.spec.ts:10:9 › Verification Mockup › renders all growspace types correctly
