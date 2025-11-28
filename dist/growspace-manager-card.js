@@ -2090,7 +2090,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       </ha-card>
       
       ${this.renderDialogs()}
-    `}renderGrowspaceHeader(t){const e=en.getDominantStage(t.plants),i=this.dataService.getGrowspaceDevices();let r=t.name.toLowerCase().replace(/\s+/g,"_");t.overview_entity_id&&(r=t.overview_entity_id.replace("sensor.",""));let a=`binary_sensor.${r}_optimal_conditions`;const n="cure"===r,s="dry"===r;n?a="binary_sensor.cure_optimal_curing":s&&(a="binary_sensor.dry_optimal_drying");const o=this.hass.states[a],l=t.overview_entity_id?this.hass.states[t.overview_entity_id]:void 0,c=(t,e)=>{if(t&&t.attributes)return void 0!==t.attributes[e]?t.attributes[e]:t.attributes.observations&&"object"==typeof t.attributes.observations?t.attributes.observations[e]:void 0},d=c(o,"temperature"),p=c(o,"humidity"),u=c(o,"vpd"),h=n||s,g=h?void 0:c(o,"co2"),m=c(o,"is_lights_on"),f=!h&&null!=m,v=!0===m;t.plants.some(t=>"flower"===t.attributes.stage);let y=[];if(this._historyData&&this._historyData.length>0){const t=[...this._historyData].sort((t,e)=>new Date(t.last_changed).getTime()-new Date(e.last_changed).getTime()),e=new Date,i=new Date(e.getTime()-864e5),r=1e3,a=100,n=[];let s=t.length>0?!0!==c(t[0],"is_lights_on"):v;t.forEach(t=>{const e=new Date(t.last_changed).getTime(),r=!0===c(t,"is_lights_on");e>=i.getTime()&&y.push({time:e,state:r})}),s=y.length>0?!y[0].state:v,n.push([0,s?0:a]),y.forEach(t=>{const e=(t.time-i.getTime())/864e5*r;n.push([e,s?0:a]),s=t.state,n.push([e,s?0:a])}),n.push([r,s?0:a]),n.map(t=>`${t[0]},${t[1]}`).join(" L ");const o=[...t].reverse(),l=o.find(t=>!0===c(t,"is_lights_on"));if(l){const t=new Date(l.last_changed);t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:!0}).replace(/ [AP]M/,""),t.toLocaleTimeString([],{hour12:!0}).slice(-2)}const d=o.find(t=>!1===c(t,"is_lights_on"));if(d){const t=new Date(d.last_changed);t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:!0}).replace(/ [AP]M/,""),t.toLocaleTimeString([],{hour12:!0}).slice(-2)}}return j`
+    `}renderGrowspaceHeader(t){const e=en.getDominantStage(t.plants),i=this.dataService.getGrowspaceDevices();let r=t.name.toLowerCase().replace(/\s+/g,"_");t.overview_entity_id&&(r=t.overview_entity_id.replace("sensor.",""));let a=`binary_sensor.${r}_optimal_conditions`;const n="cure"===r,s="dry"===r;n?a="binary_sensor.cure_optimal_curing":s&&(a="binary_sensor.dry_optimal_drying");const o=this.hass.states[a],l=t.overview_entity_id?this.hass.states[t.overview_entity_id]:void 0,c=(t,e)=>{if(t&&t.attributes)return void 0!==t.attributes[e]?t.attributes[e]:t.attributes.observations&&"object"==typeof t.attributes.observations?t.attributes.observations[e]:void 0},d=c(o,"temperature"),p=c(o,"humidity"),u=c(o,"vpd"),h=n||s,g=h?void 0:c(o,"co2"),m=c(o,"is_lights_on"),f=!h&&null!=m,v=!0===m;t.plants.some(t=>"flower"===t.attributes.stage);let y=[];if(this._historyData&&this._historyData.length>0){const t=[...this._historyData].sort((t,e)=>new Date(t.last_changed).getTime()-new Date(e.last_changed).getTime()),e=new Date,i=new Date(e.getTime()-864e5),r=1e3,a=100,n=[];let s=t.length>0?!0!==c(t[0],"is_lights_on"):v;t.forEach(t=>{const e=new Date(t.last_changed).getTime(),r=!0===c(t,"is_lights_on");e>=i.getTime()&&y.push({time:e,state:r})}),s=y.length>0?!y[0].state:v,n.push([0,s?0:a]),y.forEach(t=>{const e=(t.time-i.getTime())/864e5*r;n.push([e,s?0:a]),s=t.state,n.push([e,s?0:a])}),n.push([r,s?0:a]),n.map(t=>`${t[0]},${t[1]}`).join(" L ");const o=[...t].reverse(),l=o.find(t=>!0===c(t,"is_lights_on"));if(l){const t=new Date(l.last_changed);t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:!0}).replace(/ [AP]M/,""),t.toLocaleTimeString([],{hour12:!0}).slice(-2)}const d=o.find(t=>!1===c(t,"is_lights_on"));if(d){const t=new Date(d.last_changed);t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:!0}).replace(/ [AP]M/,""),t.toLocaleTimeString([],{hour12:!0}).slice(-2)}}const b=t=>{if(!t||0===t.length)return null;const e=new Date,i=60*e.getHours()+e.getMinutes(),r=[...t].sort((t,e)=>{const[i,r]=t.time.split(":").map(Number),[a,n]=e.time.split(":").map(Number);return 60*i+r-(60*a+n)}),a=r.find(t=>{const[e,r]=t.time.split(":").map(Number);return 60*e+r>i});return a?a.time.slice(0,5):r[0].time.slice(0,5)},w=b(l?.attributes?.irrigation_times),x=b(l?.attributes?.drain_times);return j`
       <div class="gs-stats-container">
          <div class="gs-header-top">
             <div class="gs-title-group">
@@ -2147,18 +2147,18 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                      ${v?"On":"Off"}
                    </div>`:""}
 
-                 ${l?.attributes?.irrigation_times?.length>0?j`
+                 ${w?j`
                    <div class="stat-chip ${this._activeEnvGraphs.has("irrigation")?"active":""}"
                         @click=${()=>this._toggleEnvGraph("irrigation")}>
                      <svg viewBox="0 0 24 24"><path d="${It}"></path></svg>
-                     Irrigation (${l?.attributes.irrigation_times.length})
+                     Next: ${w}
                    </div>`:""}
 
-                 ${l?.attributes?.drain_times?.length>0?j`
+                 ${x?j`
                    <div class="stat-chip ${this._activeEnvGraphs.has("drain")?"active":""}"
                         @click=${()=>this._toggleEnvGraph("drain")}>
                      <svg viewBox="0 0 24 24"><path d="${It}"></path></svg>
-                     Drain (${l?.attributes.drain_times.length})
+                     Next: ${x}
                    </div>`:""}
 
                  ${o?j`

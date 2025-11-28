@@ -3632,6 +3632,35 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
     }
 
+    // Helper to get next event time
+    const getNextEvent = (times: any[]) => {
+      if (!times || times.length === 0) return null;
+
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+      // Sort times
+      const sorted = [...times].sort((a, b) => {
+        const [h1, m1] = a.time.split(':').map(Number);
+        const [h2, m2] = b.time.split(':').map(Number);
+        return (h1 * 60 + m1) - (h2 * 60 + m2);
+      });
+
+      // Find next event today
+      const nextToday = sorted.find(t => {
+        const [h, m] = t.time.split(':').map(Number);
+        return (h * 60 + m) > currentMinutes;
+      });
+
+      if (nextToday) return nextToday.time.slice(0, 5); // HH:MM
+
+      // If no event today, return first event (tomorrow)
+      return sorted[0].time.slice(0, 5);
+    };
+
+    const nextIrrigation = getNextEvent(overviewEntity?.attributes?.irrigation_times);
+    const nextDrain = getNextEvent(overviewEntity?.attributes?.drain_times);
+
     return html`
       <div class="gs-stats-container">
          <div class="gs-header-top">
@@ -3689,18 +3718,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                      ${isLightsOn ? 'On' : 'Off'}
                    </div>` : ''}
 
-                 ${overviewEntity?.attributes?.irrigation_times?.length > 0 ? html`
+                 ${nextIrrigation ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('irrigation') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('irrigation')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                     Irrigation (${overviewEntity?.attributes.irrigation_times.length})
+                     Next: ${nextIrrigation}
                    </div>` : ''}
 
-                 ${overviewEntity?.attributes?.drain_times?.length > 0 ? html`
+                 ${nextDrain ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('drain') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('drain')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                     Drain (${overviewEntity?.attributes.drain_times.length})
+                     Next: ${nextDrain}
                    </div>` : ''}
 
                  ${envEntity ? html`
