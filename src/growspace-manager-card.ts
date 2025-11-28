@@ -2862,7 +2862,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const overviewEntity = device.overview_entity_id ? this.hass.states[device.overview_entity_id] : undefined;
 
     // Determine Time Range
-    const rangeKey = this._graphRanges[metricKey] || '24h';
+    const rangeKey = this._graphRanges[this.selectedDevice || ''] || '24h';
     let durationMillis = 24 * 60 * 60 * 1000;
     if (rangeKey === '1h') durationMillis = 60 * 60 * 1000;
     else if (rangeKey === '6h') durationMillis = 6 * 60 * 60 * 1000;
