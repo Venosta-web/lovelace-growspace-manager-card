@@ -2164,6 +2164,45 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.requestUpdate();
   }
 
+  private _handleKeyboardNav(e: KeyboardEvent) {
+    if (!this.selectedDevice) return;
+    const devices = this.dataService.getGrowspaceDevices();
+    const device = devices.find(d => d.device_id === this.selectedDevice);
+    if (!device) return;
+
+    const plants = device.plants.filter(p => !this._optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
+    if (plants.length === 0) return;
+
+    if (e.key === 'ArrowRight') {
+      this._focusedPlantIndex = (this._focusedPlantIndex + 1) % plants.length;
+      this._focusPlantByIndex(this._focusedPlantIndex);
+    } else if (e.key === 'ArrowLeft') {
+      this._focusedPlantIndex = (this._focusedPlantIndex - 1 + plants.length) % plants.length;
+      this._focusPlantByIndex(this._focusedPlantIndex);
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      if (this._focusedPlantIndex >= 0 && this._focusedPlantIndex < plants.length) {
+        this._handlePlantClick(plants[this._focusedPlantIndex]);
+      }
+    }
+  }
+
+  private _focusPlantByIndex(index: number) {
+    const grid = this.shadowRoot?.querySelector('.growspace-grid');
+    if (grid) {
+      const plantCards = grid.querySelectorAll('.plant-card-rich');
+      if (plantCards[index]) {
+        (plantCards[index] as HTMLElement).focus();
+      }
+    }
+  }
+
+  private _announceToScreenReader(message: string) {
+    const announcer = this.shadowRoot?.querySelector('.sr-only-announcer');
+    if (announcer) {
+      announcer.textContent = message;
+    }
+  }
+
   private _handlePlantClick(plant: PlantEntity) {
     // If in edit mode and we have selections, open dialog for ALL selected plants
     if (this._isEditMode && this._selectedPlants.size > 0) {
@@ -3093,6 +3132,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                  <svg style="width:24px;height:24px;fill:${color};" viewBox="0 0 24 24"><path d="${icon}"></path></svg>
                  <div>
                     <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${title}</div>
+                 </div>
+             </div>
          </div>
 
          <div class="gs-env-chart-container" style="position: relative; height: 180px; background: #0d0d0d; border-radius: 8px; padding: 20px 40px 30px 50px;"
@@ -3667,12 +3708,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     );
 
     const isWide = selectedDeviceData.plants_per_row > 6;
-    // Use cached library instead of sensor data
     const strainLibrary = this._strainLibrary;
 
     return html`
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
-        <div class="unified-growspace-card">
+        <div class="sr-only-announcer" aria-live="polite"></div>
+        <div class="unified-growspace-card" tabindex="0" @keydown=${this._handleKeyboardNav}>
           ${this.renderHeader(devices)}
           ${!this._isCompactView ? this.renderGrowspaceHeader(selectedDeviceData) : ''}
           ${this.renderEditModeBanner()}
@@ -3683,7 +3724,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       ${this.renderDialogs()}
     `;
   }
-
 
   private renderGrowspaceHeader(device: GrowspaceDevice): TemplateResult {
     const dominant = PlantUtils.getDominantStage(device.plants);
@@ -3986,7 +4026,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 </div>
   </div>
   
-  ${this.renderTimeRangeSelector()}
+  ${this._activeEnvGraphs.size > 0 ? this.renderTimeRangeSelector() : ''}
 
 <!-- Active Environmental Graphs -->
   ${this._activeEnvGraphs.has('temperature') ? this.renderEnvGraph('temperature', '#FF5722', 'Temperature', '°C', 'line', mdiThermometer) : ''}
