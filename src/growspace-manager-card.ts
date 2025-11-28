@@ -108,6 +108,26 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         z-index: 1;
       }
 
+      .plant-card-checkbox {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .plant-card-checkbox:hover {
+        background: rgba(0, 0, 0, 0.8);
+        transform: scale(1.1);
+      }
+
       .plant-card-content {
         position: relative;
         z-index: 2;
