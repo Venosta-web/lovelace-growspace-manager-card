@@ -4230,6 +4230,20 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     `;
   }
 
+  private _searchStrains(query: string): StrainEntry[] {
+    if (!query) return this._strainLibrary;
+
+    const lowerQuery = query.toLowerCase();
+    return this._strainLibrary.filter(strain => {
+      return (
+        (strain.strain && strain.strain.toLowerCase().includes(lowerQuery)) ||
+        (strain.phenotype && strain.phenotype.toLowerCase().includes(lowerQuery)) ||
+        (strain.breeder && strain.breeder.toLowerCase().includes(lowerQuery)) ||
+        (strain.lineage && strain.lineage.toLowerCase().includes(lowerQuery))
+      );
+    });
+  }
+
   private renderDialogs(): TemplateResult {
     const strainLibrary = this.dataService?.getStrainLibrary() || [];
     const growspaceOptions: Record<string, string> = {};
@@ -4340,7 +4354,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
 
       ${DialogRenderer.renderStrainLibraryDialog(
-        this._strainLibraryDialog,
+        this._strainLibraryDialog ? { ...this._strainLibraryDialog, strains: this._searchStrains(this._strainLibraryDialog.searchQuery || '') } : null,
         {
           onClose: () => this._strainLibraryDialog = null,
           onAddStrain: () => this._addStrain(),
