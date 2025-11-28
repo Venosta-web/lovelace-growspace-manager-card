@@ -2970,6 +2970,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
       const sortedHistory = [...this._historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
 
+
       sortedHistory.forEach(h => {
         const t = new Date(h.last_changed).getTime();
         if (t < startTime.getTime()) return;
@@ -3120,8 +3121,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                    <path class="chart-gradient-fill" d="${svgPath} V 100 H 0 Z" style="fill: url(#grad-${metricKey});" />
                </svg>
                <div class="chart-markers">
-                  <span>-24H</span>
-                  <span>NOW</span>
+                ${(() => {
+          if (rangeKey === '1h') return html`<span>-60m</span><span>NOW</span>`;
+          if (rangeKey === '6h') return html`<span>-6h</span><span>NOW</span>`;
+          if (rangeKey === '7d') return html`<span>-7d</span><span>NOW</span>`;
+          return html`<span>-24H</span><span>NOW</span>`;
+        })()}
                </div>
            </div>
         </div>
@@ -3196,7 +3201,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
              </svg>
              
              <!-- X-axis markers -->
-             <div style="position: absolute; left: 50px; right: 40px; bottom: 5px; display: flex; justify-content: space-between; font-size: 0.65rem; color: #666;">
+             <div class="chart-markers" style="position: absolute; left: 50px; right: 40px; bottom: 5px; display: flex; justify-content: space-between; font-size: 0.65rem; color: #666;">
                 ${(() => {
         if (rangeKey === '1h') return html`<span>60m</span><span>45m</span><span>30m</span><span>15m</span>`;
         if (rangeKey === '6h') return html`<span>6h</span><span>4.5h</span><span>3h</span><span>1.5h</span>`;

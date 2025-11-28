@@ -1974,8 +1974,7 @@ const ce=e=>(t,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(e,t)}
                    <path class="chart-gradient-fill" d="${S} V 100 H 0 Z" style="fill: url(#grad-${e});" />
                </svg>
                <div class="chart-markers">
-                  <span>-24H</span>
-                  <span>NOW</span>
+                ${"1h"===p?j`<span>-60m</span><span>NOW</span>`:"6h"===p?j`<span>-6h</span><span>NOW</span>`:"7d"===p?j`<span>-7d</span><span>NOW</span>`:j`<span>-24H</span><span>NOW</span>`}
                </div>
            </div>
         </div>
@@ -2035,7 +2034,7 @@ const ce=e=>(t,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(e,t)}
              </svg>
              
              <!-- X-axis markers -->
-             <div style="position: absolute; left: 50px; right: 40px; bottom: 5px; display: flex; justify-content: space-between; font-size: 0.65rem; color: #666;">
+             <div class="chart-markers" style="position: absolute; left: 50px; right: 40px; bottom: 5px; display: flex; justify-content: space-between; font-size: 0.65rem; color: #666;">
                 ${"1h"===p?j`<span>60m</span><span>45m</span><span>30m</span><span>15m</span>`:"6h"===p?j`<span>6h</span><span>4.5h</span><span>3h</span><span>1.5h</span>`:"7d"===p?j`<span>7d</span><span>5d</span><span>3d</span><span>1d</span>`:j`<span>24h</span><span>18h</span><span>12h</span><span>6h</span>`}
                 <span style="color: ${t};">NOW</span>
              </div>

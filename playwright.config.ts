@@ -24,7 +24,7 @@ export default defineConfig({
     projects: [
         {
             name: 'mock',
-            testMatch: /growspace-card\.spec\.ts/,
+            testMatch: /.*\.spec\.ts/,
         },
     ],
 });
