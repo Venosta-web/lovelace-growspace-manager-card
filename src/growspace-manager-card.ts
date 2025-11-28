@@ -2664,7 +2664,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     };
   }
 
-  private renderEnvGraph(metricKey: string, color: string, title: string, unit: string, type: 'line' | 'step' = 'line'): TemplateResult {
+  private renderEnvGraph(metricKey: string, color: string, title: string, unit: string, type: 'line' | 'step' = 'line', icon: string = mdiMagnify): TemplateResult {
     const devices = this.dataService.getGrowspaceDevices();
     const device = devices.find(d => d.device_id === this.selectedDevice);
     if (!device) return html``;
@@ -2867,7 +2867,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
            <div class="gs-light-header-row">
                <div class="gs-light-title" style="font-size: 1.2rem; flex: 1; cursor: pointer;" @click=${() => this._toggleEnvGraph(metricKey)}>
                    <div class="gs-icon-box" style="color: ${color}; background: ${color}10; border-color: ${color}30; width: 36px; height: 36px;">
-                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${icon}"></path></svg>
                    </div>
                    <div>
                       <div>${title}</div>
@@ -2959,7 +2959,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       <div class="gs-env-graph-card" style="margin-top: 12px; background: #1a1a1a; border-radius: 12px; padding: 16px;">
          <div class="gs-env-graph-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer;" @click=${() => this._toggleEnvGraph(metricKey)}>
              <div style="display: flex; align-items: center; gap: 12px;">
-                 <svg style="width:24px;height:24px;fill:${color};" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+                 <svg style="width:24px;height:24px;fill:${color};" viewBox="0 0 24 24"><path d="${icon}"></path></svg>
                  <div>
                     <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${title}</div>
                     <div style="font-size: 0.75rem; color: #999;">${rangeKey.toUpperCase()} HISTORY</div>
@@ -3877,14 +3877,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
 
 <!-- Active Environmental Graphs -->
-  ${this._activeEnvGraphs.has('temperature') ? this.renderEnvGraph('temperature', '#FF5722', 'Temperature', '°C') : ''}
-         ${this._activeEnvGraphs.has('humidity') ? this.renderEnvGraph('humidity', '#2196F3', 'Humidity', '%') : ''}
-         ${this._activeEnvGraphs.has('vpd') ? this.renderEnvGraph('vpd', '#9C27B0', 'VPD', 'kPa') : ''}
-         ${this._activeEnvGraphs.has('co2') ? this.renderEnvGraph('co2', '#90A4AE', 'CO2', 'ppm') : ''}
-         ${this._activeEnvGraphs.has('light') ? this.renderEnvGraph('light', '#FFEB3B', 'Light Cycle', 'state', 'step') : ''}
-         ${this._activeEnvGraphs.has('optimal') ? this.renderEnvGraph('optimal', '#4CAF50', 'Optimal Conditions', 'state', 'step') : ''}
-         ${this._activeEnvGraphs.has('irrigation') ? this.renderEnvGraph('irrigation', '#2196F3', 'Irrigation Schedule', 'state', 'step') : ''}
-         ${this._activeEnvGraphs.has('drain') ? this.renderEnvGraph('drain', '#FF9800', 'Drain Schedule', 'state', 'step') : ''}
+  ${this._activeEnvGraphs.has('temperature') ? this.renderEnvGraph('temperature', '#FF5722', 'Temperature', '°C', 'line', mdiThermometer) : ''}
+         ${this._activeEnvGraphs.has('humidity') ? this.renderEnvGraph('humidity', '#2196F3', 'Humidity', '%', 'line', mdiWaterPercent) : ''}
+         ${this._activeEnvGraphs.has('vpd') ? this.renderEnvGraph('vpd', '#9C27B0', 'VPD', 'kPa', 'line', mdiCloudOutline) : ''}
+         ${this._activeEnvGraphs.has('co2') ? this.renderEnvGraph('co2', '#90A4AE', 'CO2', 'ppm', 'line', mdiWeatherCloudy) : ''}
+         ${this._activeEnvGraphs.has('light') ? this.renderEnvGraph('light', '#FFEB3B', 'Light Cycle', 'state', 'step', mdiLightbulbOn) : ''}
+         ${this._activeEnvGraphs.has('optimal') ? this.renderEnvGraph('optimal', '#4CAF50', 'Optimal Conditions', 'state', 'step', mdiRadioboxMarked) : ''}
+         ${this._activeEnvGraphs.has('irrigation') ? this.renderEnvGraph('irrigation', '#2196F3', 'Irrigation Schedule', 'state', 'step', mdiWater) : ''}
+         ${this._activeEnvGraphs.has('drain') ? this.renderEnvGraph('drain', '#FF9800', 'Drain Schedule', 'state', 'step', mdiWater) : ''}
 
 </div>
   `;
