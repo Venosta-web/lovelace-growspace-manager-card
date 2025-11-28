@@ -2164,6 +2164,45 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.requestUpdate();
   }
 
+  private _handleKeyboardNav(e: KeyboardEvent) {
+    if (!this.selectedDevice) return;
+    const devices = this.dataService.getGrowspaceDevices();
+    const device = devices.find(d => d.device_id === this.selectedDevice);
+    if (!device) return;
+
+    const plants = device.plants.filter(p => !this._optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
+    if (plants.length === 0) return;
+
+    if (e.key === 'ArrowRight') {
+      this._focusedPlantIndex = (this._focusedPlantIndex + 1) % plants.length;
+      this._focusPlantByIndex(this._focusedPlantIndex);
+    } else if (e.key === 'ArrowLeft') {
+      this._focusedPlantIndex = (this._focusedPlantIndex - 1 + plants.length) % plants.length;
+      this._focusPlantByIndex(this._focusedPlantIndex);
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      if (this._focusedPlantIndex >= 0 && this._focusedPlantIndex < plants.length) {
+        this._handlePlantClick(plants[this._focusedPlantIndex]);
+      }
+    }
+  }
+
+  private _focusPlantByIndex(index: number) {
+    const grid = this.shadowRoot?.querySelector('.growspace-grid');
+    if (grid) {
+      const plantCards = grid.querySelectorAll('.plant-card-rich');
+      if (plantCards[index]) {
+        (plantCards[index] as HTMLElement).focus();
+      }
+    }
+  }
+
+  private _announceToScreenReader(message: string) {
+    const announcer = this.shadowRoot?.querySelector('.sr-only-announcer');
+    if (announcer) {
+      announcer.textContent = message;
+    }
+  }
+
   private _handlePlantClick(plant: PlantEntity) {
     // If in edit mode and we have selections, open dialog for ALL selected plants
     if (this._isEditMode && this._selectedPlants.size > 0) {
@@ -3093,9 +3132,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                  <svg style="width:24px;height:24px;fill:${color};" viewBox="0 0 24 24"><path d="${icon}"></path></svg>
                  <div>
                     <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${title}</div>
+                    <div style="font-size: 0.75rem; color: #999;">${rangeKey.toUpperCase()} HISTORY</div>
+                 </div>
+             </div>
+             
+             <div style="display: flex; align-items: center; gap: 12px;">
+                 <div style="text-align: right;">
+                    <div style="font-size: 0.85rem; color: #999;">${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}</div>
+                 </div>
+             </div>
          </div>
 
-         <div class="gs-env-chart-container" style="position: relative; height: 180px; background: #0d0d0d; border-radius: 8px; padding: 20px 40px 30px 50px;"
+         <div class="gs-env-chart-container" style="position: relative; height: 180px; background: #0d0d0d; border-radius: 8px; padding: 20px 40px 30px 60px;"
               @mousemove=${(e: MouseEvent) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
@@ -3111,11 +3159,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
              ` : ''}
 
              <!-- Y-axis labels -->
-             <div style="position: absolute; left: 0; top: 20px; bottom: 30px; width: 45px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; color: #666; text-align: right; padding-right: 8px;">
+             <div style="position: absolute; left: 0; top: 20px; bottom: 30px; width: 55px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; color: #666; text-align: right; padding-right: 8px;">
                 ${yLabels.map(val => html`<div>${val.toFixed(1)} ${unit}</div>`)}
              </div>
 
-             <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px);" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
+             <svg style="position: absolute; left: 60px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 100px); height: calc(100% - 50px);" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
                  <defs>
                      <linearGradient id="grad-${metricKey}" x1="0%" y1="0%" x2="0%" y2="100%">
                          <stop offset="0%" style="stop-color:${color};stop-opacity:0.3" />
@@ -3143,7 +3191,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
              </svg>
              
              <!-- X-axis markers -->
-             <div style="position: absolute; left: 50px; right: 40px; bottom: 5px; display: flex; justify-content: space-between; font-size: 0.65rem; color: #666;">
+             <div style="position: absolute; left: 60px; right: 40px; bottom: 5px; display: flex; justify-content: space-between; font-size: 0.65rem; color: #666;">
                 ${rangeKey === '24h' ? html`
                     <span>24H</span>
                     <span>18H</span>
@@ -3206,7 +3254,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       await this.dataService.addStrain(payload);
 
       // Refetch library to update list or optimistic update
-      const key = `${s.strain}|${s.phenotype || 'default'}`;
+      const key = `${s.strain}| ${s.phenotype || 'default'} `;
       const newEntry: StrainEntry = {
         key: key,
         strain: s.strain,
@@ -3343,7 +3391,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         this.requestUpdate();
       } catch (err: any) {
         console.error("Import failed:", err);
-        alert(`Import failed: ${err.message}`);
+        alert(`Import failed: ${err.message} `);
       }
     };
 
@@ -3426,7 +3474,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       plant_id: plant.attributes.plant_id,
       target_growspace_id: targetGrowspace
     }).then(() => {
-      console.log(`Moved clone ${plant.attributes.friendly_name} to ${targetGrowspace}`);
+      console.log(`Moved clone ${plant.attributes.friendly_name} to ${targetGrowspace} `);
       // Optionally refresh local state
       this._plantOverviewDialog = null;
     }).catch((err) => {
@@ -3451,7 +3499,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (!d.name) { alert('Name is required'); return; }
     this.dataService.addGrowspace(d)
       .then(() => { this._configDialog = null; this.requestUpdate(); })
-      .catch(e => alert(`Error: ${e.message}`));
+      .catch(e => alert(`Error: ${e.message} `));
   }
 
   private _handleEnvSubmit() {
@@ -3471,7 +3519,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       fan_switch: d.fan_switch || undefined
     })
       .then(() => { this._configDialog = null; this.requestUpdate(); })
-      .catch(e => alert(`Error: ${e.message}`));
+      .catch(e => alert(`Error: ${e.message} `));
   }
 
   private _handleGlobalSubmit() {
@@ -3479,7 +3527,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const d = this._configDialog.globalData;
     this.dataService.configureGlobalSettings(d)
       .then(() => { this._configDialog = null; this.requestUpdate(); })
-      .catch(e => alert(`Error: ${e.message}`));
+      .catch(e => alert(`Error: ${e.message} `));
   }
 
   // Grow Master Methods
@@ -3523,7 +3571,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
     } catch (e: any) {
       if (this._growMasterDialog) {
-        this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'}`;
+        this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'} `;
       }
     } finally {
       if (this._growMasterDialog) {
@@ -3560,7 +3608,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
     } catch (e: any) {
       if (this._growMasterDialog) {
-        this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'}`;
+        this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'} `;
       }
     } finally {
       if (this._growMasterDialog) {
@@ -3589,7 +3637,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
     } catch (e: any) {
       if (this._strainRecommendationDialog) {
-        this._strainRecommendationDialog.response = `Error: ${e.message || 'Failed to get recommendation.'}`;
+        this._strainRecommendationDialog.response = `Error: ${e.message || 'Failed to get recommendation.'} `;
       }
     } finally {
       if (this._strainRecommendationDialog) {
@@ -3610,7 +3658,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   protected render(): TemplateResult {
     if (!this.hass) {
-      return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
+      return html`< ha - card > <div class="error" > Home Assistant not available < /div></ha - card > `;
     }
 
 
@@ -3618,7 +3666,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const devices = this.dataService.getGrowspaceDevices();
 
     if (!devices.length) {
-      return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
+      return html`< ha - card > <div class="no-data" > No growspace devices found.< /div></ha - card > `;
     }
 
     // Apply default growspace logic
@@ -3636,19 +3684,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
     if (!selectedDeviceData) {
-      return html`<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
+      return html`< ha - card > <div class="error" > No valid growspace selected.< /div></ha - card > `;
     }
 
     // Check if growspace is empty
 
     /*if (selectedDeviceData.plants.length === ) {
       return html`
-        <ha-card>
-          <div class="no-data" style="text-align:center; padding: 1.5rem;">
-            Growspace <strong>${selectedDeviceData.name}</strong> is currently empty.
-          </div>
-        </ha-card>
-      `;
+  < ha - card >
+  <div class="no-data" style = "text-align:center; padding: 1.5rem;" >
+    Growspace < strong > ${ selectedDeviceData.name } </strong> is currently empty.
+      </div>
+      </ha-card>
+        `;
     }
     */
     const growspaceOptions: Record<string, string> = {};
@@ -3667,23 +3715,22 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     );
 
     const isWide = selectedDeviceData.plants_per_row > 6;
-    // Use cached library instead of sensor data
     const strainLibrary = this._strainLibrary;
 
     return html`
-      <ha-card class=${isWide ? 'wide-growspace' : ''}>
-        <div class="unified-growspace-card">
-          ${this.renderHeader(devices)}
+      < ha - card class=${isWide ? 'wide-growspace' : ''}>
+        <div class="sr-only-announcer" aria - live="polite" > </div>
+          < div class="unified-growspace-card" tabindex = "0" @keydown=${this._handleKeyboardNav}>
+            ${this.renderHeader(devices)}
           ${!this._isCompactView ? this.renderGrowspaceHeader(selectedDeviceData) : ''}
           ${this.renderEditModeBanner()}
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
-        </div>
-      </ha-card>
+</div>
+  </ha-card>
       
       ${this.renderDialogs()}
-    `;
+`;
   }
-
 
   private renderGrowspaceHeader(device: GrowspaceDevice): TemplateResult {
     const dominant = PlantUtils.getDominantStage(device.plants);
@@ -3695,7 +3742,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       slug = device.overview_entity_id.replace('sensor.', '');
     }
 
-    let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+    let envEntityId = `binary_sensor.${slug} _optimal_conditions`;
     // Specific logic for 'cure' and 'dry' growspaces
     const isCure = slug === 'cure';
     const isDry = slug === 'dry';
@@ -3809,7 +3856,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       // Final point at 'now'
       points.push([width, currentState ? 0 : height]);
 
-      svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+      svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')} `;
 
       // Calculate Last ON / OFF Times
       // We need the *latest* transition to ON and the *latest* transition to OFF
@@ -3861,11 +3908,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const nextDrain = getNextEvent(overviewEntity?.attributes?.drain_times);
 
     return html`
-      <div class="gs-stats-container">
-         <div class="gs-header-top">
-            <div class="gs-title-group">
-               <!-- Title as Dropdown if no default is set -->
-               ${!this._config?.default_growspace ? html`
+  < div class="gs-stats-container" >
+    <div class="gs-header-top" >
+      <div class="gs-title-group" >
+        <!--Title as Dropdown if no default is set-- >
+          ${!this._config?.default_growspace ? html`
                  <select class="growspace-select-header" .value=${this.selectedDevice || ''} @change=${this._handleDeviceChange}>
                     ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
                  </select>
@@ -3885,58 +3932,67 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                   ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Week ${Math.ceil(dominant.days / 7)}
                 </div>
                </div>
-               ` : ''}
-            </div>
+               ` : ''
+      }
+</div>
 
-            <div class="gs-stats-chips">
-                ${temp !== undefined ? html`
+  < div class="gs-stats-chips" >
+    ${temp !== undefined ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('temperature') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('temperature')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>${temp}°C
-                   </div>` : ''}
+                   </div>` : ''
+      }
                 ${hum !== undefined ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('humidity') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('humidity')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>${hum}%
-                   </div>` : ''}
+                   </div>` : ''
+      }
                 ${vpd !== undefined ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('vpd') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('vpd')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>${vpd} kPa
-                   </div>` : ''}
+                   </div>` : ''
+      }
                  ${co2 !== undefined ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('co2') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('co2')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm
-                   </div>` : ''}
+                   </div>` : ''
+      }
 
                 ${hasLightSensor ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('light') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('light')}>
                      <svg viewBox="0 0 24 24"><path d="${isLightsOn ? mdiLightbulbOn : mdiLightbulbOff}"></path></svg>
                      ${isLightsOn ? 'On' : 'Off'}
-                   </div>` : ''}
+                   </div>` : ''
+      }
 
                  ${nextIrrigation ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('irrigation') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('irrigation')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
                      Next: ${nextIrrigation}
-                   </div>` : ''}
+                   </div>` : ''
+      }
 
                  ${nextDrain ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('drain') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('drain')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
                      Next: ${nextDrain}
-                   </div>` : ''}
+                   </div>` : ''
+      }
 
                  ${envEntity ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('optimal') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('optimal')}>
                      <svg viewBox="0 0 24 24"><path d="${envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank}"></path></svg>
                      ${envEntity.state === 'on' ? 'Optimal Conditions' : (envEntity.attributes.reasons || 'Not Optimal')}
-                   </div>` : ''}
+                   </div>` : ''
+      }
 
                 ${!this._isCompactView ? html`
                   <div class="menu-container">
@@ -3986,9 +4042,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 </div>
   </div>
   
-  ${this.renderTimeRangeSelector()}
+  ${this._activeEnvGraphs.size > 0 ? this.renderTimeRangeSelector() : ''}
 
-<!-- Active Environmental Graphs -->
+<!--Active Environmental Graphs-- >
   ${this._activeEnvGraphs.has('temperature') ? this.renderEnvGraph('temperature', '#FF5722', 'Temperature', '°C', 'line', mdiThermometer) : ''}
          ${this._activeEnvGraphs.has('humidity') ? this.renderEnvGraph('humidity', '#2196F3', 'Humidity', '%', 'line', mdiWaterPercent) : ''}
          ${this._activeEnvGraphs.has('vpd') ? this.renderEnvGraph('vpd', '#9C27B0', 'VPD', 'kPa', 'line', mdiCloudOutline) : ''}
@@ -4010,8 +4066,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const selectedDevice = devices.find(d => d.device_id === this.selectedDevice);
 
     return html`
-      <div class="header">
-        ${this._config?.title ? html`<h2 class="header-title">${this._config.title}</h2>` : ''}
+  < div class="header" >
+    ${this._config?.title ? html`<h2 class="header-title">${this._config.title}</h2>` : ''}
         
         ${this._isCompactView ? html`
           <div class="selector-container">
@@ -4057,29 +4113,30 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
               Strains
             </button>
           </div>
-        ` : ''}
-      </div>
-    `;
+        ` : ''
+      }
+</div>
+  `;
   }
 
   private renderEditModeBanner(): TemplateResult {
     if (!this._isEditMode) return html``;
 
     return html`
-      <div class="edit-mode-banner">
-        <div class="banner-content">
-          <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiCheckboxMarked}"></path>
+  < div class="edit-mode-banner" >
+    <div class="banner-content" >
+      <svg style="width:20px;height:20px;fill:currentColor;" viewBox = "0 0 24 24" >
+        <path d="${mdiCheckboxMarked}" > </path>
           </svg>
-          <span>${this._selectedPlants.size} plant(s) selected</span>
-        </div>
-        <div class="banner-actions">
-          <button class="md3-button text" @click=${this._selectAllPlants}>Select All</button>
-          <button class="md3-button text" @click=${this._deselectAllPlants}>Clear</button>
-          <button class="md3-button text" @click=${this._exitEditMode}>Exit</button>
-        </div>
-      </div>
-    `;
+          < span > ${this._selectedPlants.size} plant(s) selected </span>
+            </div>
+            < div class="banner-actions" >
+              <button class="md3-button text" @click=${this._selectAllPlants}> Select All </button>
+                < button class="md3-button text" @click=${this._deselectAllPlants}> Clear </button>
+                  < button class="md3-button text" @click=${this._exitEditMode}> Exit </button>
+                    </div>
+                    </div>
+                      `;
   }
 
   private renderGrid(grid: (PlantEntity | null)[][], rows: number, cols: number, strainLibrary: StrainEntry[]): TemplateResult {
@@ -4087,12 +4144,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     // Use minmax(0, 1fr) to allow items to shrink below their content size, fixing overflow issues in 5-col grids.
     const gridStyle = isListView
       ? ''
-      : `grid-template-columns: repeat(${cols}, minmax(0, 1fr)); grid-template-rows: repeat(${rows}, 1fr);`;
+      : `grid - template - columns: repeat(${cols}, minmax(0, 1fr)); grid - template - rows: repeat(${rows}, 1fr); `;
 
     return html`
-      <div class="grid ${this._isCompactView ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
-           style="${gridStyle}">
-        ${grid.flat().map((plant, index) => {
+  < div class="grid ${this._isCompactView ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
+style = "${gridStyle}" >
+  ${grid.flat().map((plant, index) => {
       const row = Math.floor(index / cols) + 1;
       const col = (index % cols) + 1;
 
@@ -4101,28 +4158,29 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
 
       return this.renderPlantSlot(plant, row, col, strainLibrary);
-    })}
-      </div>
-    `;
+    })
+      }
+</div>
+  `;
   }
 
   private renderEmptySlot(row: number, col: number): TemplateResult {
     return html`
-      <div
-        class="plant-card-empty"
-        style="grid-row: ${row}; grid-column: ${col}"
-        @click=${() => this._openAddPlantDialog(row - 1, col - 1)}
-        @dragover=${this._handleDragOver}
-        @drop=${(e: DragEvent) => this._handleDrop(e, row, col, null)}
+  < div
+class="plant-card-empty"
+style = "grid-row: ${row}; grid-column: ${col}"
+@click=${() => this._openAddPlantDialog(row - 1, col - 1)}
+@dragover=${this._handleDragOver}
+@drop=${(e: DragEvent) => this._handleDrop(e, row, col, null)}
       >
-        <div class="plant-header">
-          <svg style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiPlus}"></path>
-          </svg>
+  <div class="plant-header" >
+    <svg style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;" viewBox = "0 0 24 24" >
+      <path d="${mdiPlus}" > </path>
+        </svg>
         </div>
-        <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
-      </div>
-    `;
+        < div style = "font-weight: 500; opacity: 0.8;" > Add Plant </div>
+          </div>
+            `;
   }
 
   private renderPlantSlot(plant: PlantEntity, row: number, col: number, strainLibrary: StrainEntry[]): TemplateResult {
@@ -4162,17 +4220,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const isSelected = this._selectedPlants.has(plant.attributes.plant_id || '');
 
     return html`
-      <div
-        class="plant-card-rich"
-        style="grid-row: ${row}; grid-column: ${col}; --stage-color: ${stageColor}"
-        draggable="true"
-        @dragstart=${(e: DragEvent) => this._handleDragStart(e, plant)}
-        @dragend=${this._handleDragEnd}
-        @dragover=${this._handleDragOver}
-        @drop=${(e: DragEvent) => this._handleDrop(e, row, col, plant)}
-        @click=${() => this._handlePlantClick(plant)}
+          < div
+class="plant-card-rich"
+style = "grid-row: ${row}; grid-column: ${col}; --stage-color: ${stageColor}"
+draggable = "true"
+@dragstart=${(e: DragEvent) => this._handleDragStart(e, plant)}
+@dragend=${this._handleDragEnd}
+@dragover=${this._handleDragOver}
+@drop=${(e: DragEvent) => this._handleDrop(e, row, col, plant)}
+@click=${() => this._handlePlantClick(plant)}
       >
-        ${imageUrl ? html`
+  ${imageUrl ? html`
           <img 
             class="plant-card-bg" 
             src="${imageUrl}" 
@@ -4181,7 +4239,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             style="${DialogRenderer.getImgStyle(imageCropMeta)}"
           />
           <div class="plant-card-overlay"></div>
-        ` : ''}
+        ` : ''
+      }
 
         ${this._isEditMode ? html`
           <div class="plant-card-checkbox" @click=${(e: Event) => { e.stopPropagation(); this._togglePlantSelection(plant); }}>
@@ -4189,24 +4248,25 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                <path d="${isSelected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
              </svg>
           </div>
-        ` : ''}
+        ` : ''
+      }
 
-        <div class="plant-card-content">
-          <div class="pc-info">
-            <div class="pc-strain-name" title="${plant.attributes?.strain || ''}">
-              ${plant.attributes?.strain || 'Unknown Strain'}
-            </div>
+<div class="plant-card-content" >
+  <div class="pc-info" >
+    <div class="pc-strain-name" title = "${plant.attributes?.strain || ''}" >
+      ${plant.attributes?.strain || 'Unknown Strain'}
+</div>
             ${plant.attributes?.phenotype ? html`<div class="pc-pheno">${plant.attributes.phenotype}</div>` : ''}
-            <div class="pc-stage">
-              ${plant.state || 'Unknown'}
-            </div>
-          </div>
+<div class="pc-stage" >
+  ${plant.state || 'Unknown'}
+</div>
+  </div>
 
-          <div class="pc-stats">
-            ${this.renderPlantDaysRich(plant)}
-          </div>
-        </div>
-      </div>
+  < div class="pc-stats" >
+    ${this.renderPlantDaysRich(plant)}
+</div>
+  </div>
+  </div>
     `;
   }
 
@@ -4249,7 +4309,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             `;
     })
       }
-    `;
+`;
   }
 
   private _setGraphRange(range: '1h' | '6h' | '24h' | '7d') {
@@ -4266,17 +4326,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const ranges: ('1h' | '6h' | '24h' | '7d')[] = ['1h', '6h', '24h', '7d'];
 
     return html`
-      <div class="time-range-selector">
-        ${ranges.map(range => html`
+  < div class="time-range-selector" >
+    ${ranges.map(range => html`
           <button 
             class="range-btn ${currentRange === range ? 'active' : ''}"
             @click=${() => this._setGraphRange(range)}
           >
             ${range}
           </button>
-        `)}
-      </div>
-    `;
+        `)
+      }
+</div>
+  `;
   }
 
   private _searchStrains(query: string): StrainEntry[] {
@@ -4584,7 +4645,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         }
       )
       }
-    `;
+`;
   }
 
 
