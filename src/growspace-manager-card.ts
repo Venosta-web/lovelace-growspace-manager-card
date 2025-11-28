@@ -2877,11 +2877,26 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                  <svg style="width:24px;height:24px;fill:${color};" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
                  <div>
                     <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${title}</div>
-                    <div style="font-size: 0.75rem; color: #999;">24H HISTORY</div>
+                    <div style="font-size: 0.75rem; color: #999;">${rangeKey.toUpperCase()} HISTORY</div>
                  </div>
              </div>
-             <div style="text-align: right;">
-                <div style="font-size: 0.85rem; color: #999;">${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}</div>
+             
+             <div style="display: flex; align-items: center; gap: 12px;">
+                <!-- Range Toggle -->
+                 <div style="display: flex; gap: 4px;">
+                    <button 
+                      style="background: ${rangeKey === '24h' ? color + '30' : 'transparent'}; border: 1px solid ${color}40; color: ${rangeKey === '24h' ? '#fff' : '#aaa'}; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;"
+                      @click=${(e: Event) => { e.stopPropagation(); this._setGraphRange(metricKey, '24h'); }}
+                    >24H</button>
+                    <button 
+                      style="background: ${rangeKey === '1h' ? color + '30' : 'transparent'}; border: 1px solid ${color}40; color: ${rangeKey === '1h' ? '#fff' : '#aaa'}; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;"
+                      @click=${(e: Event) => { e.stopPropagation(); this._setGraphRange(metricKey, '1h'); }}
+                    >1H</button>
+                 </div>
+
+                 <div style="text-align: right;">
+                    <div style="font-size: 0.85rem; color: #999;">${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}</div>
+                 </div>
              </div>
          </div>
 
@@ -2934,10 +2949,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
              
              <!-- X-axis markers -->
              <div style="position: absolute; left: 50px; right: 40px; bottom: 5px; display: flex; justify-content: space-between; font-size: 0.65rem; color: #666;">
-                <span>24H</span>
-                <span>18H</span>
-                <span>12H</span>
-                <span>6H</span>
+                ${rangeKey === '24h' ? html`
+                    <span>24H</span>
+                    <span>18H</span>
+                    <span>12H</span>
+                    <span>6H</span>
+                ` : html`
+                    <span>60m</span>
+                    <span>45m</span>
+                    <span>30m</span>
+                    <span>15m</span>
+                `}
                 <span style="color: ${color};">NOW</span>
              </div>
          </div>
