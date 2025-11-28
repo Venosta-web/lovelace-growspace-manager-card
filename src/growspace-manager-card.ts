@@ -482,6 +482,56 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         transform: translateX(20px);
       }
 
+      /* Edit Mode Banner */
+      .edit-mode-banner {
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
+        border: 1px solid rgba(76, 175, 80, 0.4);
+        border-radius: 12px;
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        animation: slideDown 0.3s ease;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .banner-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #fff;
+        font-weight: 500;
+        font-size: 0.95rem;
+      }
+
+      .banner-content svg {
+        width: 20px;
+        height: 20px;
+        fill: currentColor;
+      }
+
+      .banner-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .plant-card-checkbox.selected {
+        background: var(--primary-color, #4caf50);
+        border-color: var(--primary-color, #4caf50);
+        box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
+      }
+
       /* 24h Chart */
       .gs-chart-container {
          margin-top: 8px;
@@ -2014,6 +2064,44 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       newSet.add(plantId);
     }
     this._selectedPlants = newSet;
+    this.requestUpdate();
+  }
+
+  // Bulk Edit Helper Methods
+  private _selectAllPlants() {
+    const devices = this.dataService.getGrowspaceDevices();
+    const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
+    if (!selectedDeviceData) return;
+
+    const allPlantIds = new Set<string>();
+    selectedDeviceData.plants?.forEach(plant => {
+      const plantId = plant.attributes.plant_id;
+      if (plantId && !this._optimisticDeletedPlantIds.has(plantId)) {
+        allPlantIds.add(plantId);
+      }
+    });
+
+    this._selectedPlants = allPlantIds;
+    this.requestUpdate();
+  }
+
+  private _deselectAllPlants() {
+    this._selectedPlants = new Set();
+    this.requestUpdate();
+  }
+
+  private _exitEditMode() {
+    this._isEditMode = false;
+    this._selectedPlants = new Set();
+    this.requestUpdate();
+  }
+
+  private _toggleEditMode() {
+    this._isEditMode = !this._isEditMode;
+    if (!this._isEditMode) {
+      this._selectedPlants = new Set();
+    }
+    this._menuOpen = false;
     this.requestUpdate();
   }
 
@@ -3565,6 +3653,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         <div class="unified-growspace-card">
           ${this.renderHeader(devices)}
           ${!this._isCompactView ? this.renderGrowspaceHeader(selectedDeviceData) : ''}
+          ${this.renderEditModeBanner()}
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
         </div>
       </ha-card>
@@ -3572,6 +3661,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       ${this.renderDialogs()}
     `;
   }
+
 
   private renderGrowspaceHeader(device: GrowspaceDevice): TemplateResult {
     const dominant = PlantUtils.getDominantStage(device.plants);
@@ -3946,6 +4036,26 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             </button>
           </div>
         ` : ''}
+      </div>
+    `;
+  }
+
+  private renderEditModeBanner(): TemplateResult {
+    if (!this._isEditMode) return html``;
+
+    return html`
+      <div class="edit-mode-banner">
+        <div class="banner-content">
+          <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiCheckboxMarked}"></path>
+          </svg>
+          <span>${this._selectedPlants.size} plant(s) selected</span>
+        </div>
+        <div class="banner-actions">
+          <button class="md3-button text" @click=${this._selectAllPlants}>Select All</button>
+          <button class="md3-button text" @click=${this._deselectAllPlants}>Clear</button>
+          <button class="md3-button text" @click=${this._exitEditMode}>Exit</button>
+        </div>
       </div>
     `;
   }
