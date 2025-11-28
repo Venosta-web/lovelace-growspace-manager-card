@@ -2991,6 +2991,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
     }
 
+    // If we have only 1 point (current state), synthesize a start point to draw a flat line
+    if (dataPoints.length === 1) {
+      dataPoints.unshift({
+        time: startTime.getTime(),
+        value: dataPoints[0].value,
+        meta: dataPoints[0].meta
+      });
+    }
+
     if (dataPoints.length < 2 && type !== 'step') return html``;
 
     const width = 1000;
