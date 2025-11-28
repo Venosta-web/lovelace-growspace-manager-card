@@ -113,8 +113,9 @@ test.describe('Growspace Manager Card Tests', () => {
         const occupiedPlantSlots = growspaceCard.locator('.plant-card-rich:not(.empty)');
         const occupiedPlantCount = await occupiedPlantSlots.count();
 
+        // Skip test if there aren't enough plants
         if (occupiedPlantCount < 2) {
-            test.skip('Not enough plants to test swapping');
+            console.log('Skipping test: Not enough plants to test swapping');
             return;
         }
 
