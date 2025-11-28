@@ -66,11 +66,52 @@ export const createMockHass = (options: MockHassOptions = {}) => {
         // Mock service calls to verify card actions (e.g. add_plant)
         callService: async (domain: string, service: string, data: any) => {
             console.log(`[MockHass] Service Called: ${domain}.${service}`, data);
+
+            if (domain === 'growspace_manager' && service === 'get_strain_library') {
+                return Promise.resolve({
+                    response: {
+                        "Gorilla Glue": {
+                            meta: { breeder: "GG Strains", type: "Hybrid" },
+                            phenotypes: {
+                                "#4": { description: "Sticky and pungent", image_path: "/local/gg4.jpg" }
+                            }
+                        },
+                        "Blue Dream": {
+                            meta: { breeder: "Humboldt", type: "Sativa" },
+                            phenotypes: {
+                                "": { description: "Sweet berry aroma", image_path: "/local/bd.jpg" }
+                            }
+                        }
+                    }
+                });
+            }
+
             return Promise.resolve();
         },
         connection: {
             subscribeEvents: () => (() => { }), // No-op unsubscribe
-            sendMessagePromise: () => Promise.resolve(),
+            sendMessagePromise: (msg: any) => {
+                console.log(`[MockHass] sendMessagePromise:`, msg);
+                if (msg.type === 'call_service' && msg.domain === 'growspace_manager' && msg.service === 'get_strain_library') {
+                    return Promise.resolve({
+                        response: {
+                            "Gorilla Glue": {
+                                meta: { breeder: "GG Strains", type: "Hybrid" },
+                                phenotypes: {
+                                    "#4": { description: "Sticky and pungent", image_path: "/local/gg4.jpg" }
+                                }
+                            },
+                            "Blue Dream": {
+                                meta: { breeder: "Humboldt", type: "Sativa" },
+                                phenotypes: {
+                                    "": { description: "Sweet berry aroma", image_path: "/local/bd.jpg" }
+                                }
+                            }
+                        }
+                    });
+                }
+                return Promise.resolve();
+            },
         },
         localize: (key: string) => `[${key}]`, // Dummy localization
         themes: { darkMode: true, theme: 'default' },

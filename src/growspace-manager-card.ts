@@ -2053,9 +2053,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
       // Update cache
       localStorage.setItem('growspace_strain_library', JSON.stringify(currentStrains));
-
-      // Removed aggressive preloading to improve initial load performance
-      // Images will be lazy-loaded by the browser
     } catch (e) {
       console.error('Failed to fetch strain library for grid:', e);
     }
