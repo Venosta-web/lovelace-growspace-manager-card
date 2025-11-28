@@ -184,6 +184,9 @@ export class DialogRenderer {
     `;
    }
 
+
+
+
    static renderPlantOverviewDialog(
       dialog: PlantOverviewDialogState | null,
       growspaceOptions: Record<string, string>,
@@ -204,10 +207,11 @@ export class DialogRenderer {
    ): TemplateResult {
       if (!dialog?.open) return html``;
 
-      const { plant, editedAttributes } = dialog;
+      const { plant, editedAttributes, selectedPlantIds } = dialog;
       const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
       const stageColor = PlantUtils.getPlantStageColor(plant.state);
       const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
+      const isBulkEdit = selectedPlantIds && selectedPlantIds.length > 1;
 
       const onAttributeChange = (key: string, value: PlantAttributeValue) => {
          editedAttributes[key] = typeof value === 'number' ? value.toString() : value;
@@ -223,6 +227,31 @@ export class DialogRenderer {
         .escapeKeyAction=${''}
       >
         <div class="glass-dialog-container" style="--stage-color: ${stageColor}">
+
+          <!-- BULK EDIT BANNER -->
+          ${isBulkEdit ? html`
+            <div style="
+              background: rgba(34, 197, 94, 0.1);
+              border: 1px solid rgba(34, 197, 94, 0.3);
+              border-radius: 8px;
+              padding: 12px 16px;
+              margin-bottom: 16px;
+              color: #22c55e;
+              display: flex;
+              align-items: center;
+              gap: 12px;
+            ">
+              <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiPencil}"></path>
+              </svg>
+              <div>
+                <strong>Bulk Editing ${selectedPlantIds.length} Plants</strong>
+                <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 4px;">
+                  Only date fields can be edited in bulk mode. Identity & location fields are protected.
+                </div>
+              </div>
+            </div>
+          ` : nothing}
 
           <!-- HEADER -->
           <div class="dialog-header">
@@ -244,8 +273,8 @@ export class DialogRenderer {
 
           <div class="overview-grid">
              <!-- IDENTITY & LOCATION CARD -->
-             <div class="detail-card">
-               <h3>Identity & Location</h3>
+             <div class="detail-card" style="${isBulkEdit ? 'opacity: 0.5; pointer-events: none;' : ''}">
+               <h3>Identity & Location ${isBulkEdit ? '(Read-only in bulk mode)' : ''}</h3>
                ${DialogRenderer.renderMD3TextInput('Strain Name', editedAttributes.strain || '', (v) => callbacks.onAttributeChange('strain', v))}
                ${DialogRenderer.renderMD3TextInput('Phenotype', editedAttributes.phenotype || '', (v) => callbacks.onAttributeChange('phenotype', v))}
                <div style="display:flex; gap:16px;">

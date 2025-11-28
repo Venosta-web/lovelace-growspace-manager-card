@@ -2327,40 +2327,45 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     // Determine target IDs: either the single plant or the bulk selection
     const targetIds = (selectedPlantIds && selectedPlantIds.length > 0) ? selectedPlantIds : [plantId];
+    const isBulkEdit = targetIds.length > 1;
 
     const payloadTemplate: any = {};
     const dateFields = ['seedling_start', 'mother_start', 'clone_start', 'veg_start', 'flower_start', 'dry_start', 'cure_start'];
 
-    ['strain', 'phenotype', 'row', 'col', ...dateFields]
-      .forEach(field => {
-        if (editedAttributes[field] !== undefined) {
-          if (dateFields.includes(field)) {
-            const val = String(editedAttributes[field] || '');
-            if (!val || val === 'null' || val === 'undefined') {
-              // Explicitly clear the date if it's empty
-              payloadTemplate[field] = null;
-            } else {
-              const formattedDate = PlantUtils.formatDateForBackend(val);
-              if (formattedDate) {
-                payloadTemplate[field] = formattedDate;
-              }
-            }
+    // SAFEGUARD: For bulk edits, ONLY process date fields
+    // For single edits, process all fields as before
+    const fieldsToProcess = isBulkEdit
+      ? dateFields
+      : ['strain', 'phenotype', 'row', 'col', ...dateFields];
+
+    fieldsToProcess.forEach(field => {
+      if (editedAttributes[field] !== undefined) {
+        if (dateFields.includes(field)) {
+          const val = String(editedAttributes[field] || '');
+          if (!val || val === 'null' || val === 'undefined') {
+            // Explicitly clear the date if it's empty
+            payloadTemplate[field] = null;
           } else {
-            // Only send non-null values for other fields, or allow null if that's intended?
-            // For now, keep existing behavior for non-date fields but allow null if explicitly set
-            if (editedAttributes[field] !== null) {
-              payloadTemplate[field] = editedAttributes[field];
+            const formattedDate = PlantUtils.formatDateForBackend(val);
+            if (formattedDate) {
+              payloadTemplate[field] = formattedDate;
             }
           }
+        } else {
+          // Non-date fields (strain, phenotype, row, col) - only for single edits
+          if (editedAttributes[field] !== null) {
+            payloadTemplate[field] = editedAttributes[field];
+          }
         }
-      });
+      }
+    });
 
     try {
       // Execute updates for all target plants
       const updatePromises = targetIds.map(id => {
         const payload = { ...payloadTemplate, plant_id: id };
         // Don't update row/col for bulk edits as it would stack them
-        if (targetIds.length > 1) {
+        if (isBulkEdit) {
           delete payload.row;
           delete payload.col;
         }
