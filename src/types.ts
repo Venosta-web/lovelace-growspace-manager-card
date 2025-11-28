@@ -155,6 +155,7 @@ export interface PlantOverviewDialogState {
   editedAttributes: { [key: string]: any };
   activeTab: 'dashboard' | 'timeline' | 'genetics';
   showAllDates?: boolean;
+  selectedPlantIds?: string[];
 }
 
 export interface StrainLibraryDialogState {

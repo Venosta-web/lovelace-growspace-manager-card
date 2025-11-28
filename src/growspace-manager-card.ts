@@ -1,7 +1,7 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain, mdiDotsVertical, mdiRadioboxMarked, mdiRadioboxBlank, mdiWater } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain, mdiDotsVertical, mdiRadioboxMarked, mdiRadioboxBlank, mdiWater, mdiPencil, mdiCheckboxMarked, mdiCheckboxBlankOutline } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
@@ -44,6 +44,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _graphRanges: Record<string, '24h' | '1h'> = {};
   @state() private _tooltip: { id: string, x: number, time: string, value: string } | null = null;
   @state() private _menuOpen: boolean = false;
+  @state() private _isEditMode: boolean = false;
+  @state() private _selectedPlants: Set<string> = new Set();
 
 
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -1980,12 +1982,44 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.selectedDevice = target.value;
   }
 
-  private _handlePlantClick(plant: PlantEntity): void {
+  private _togglePlantSelection(plant: PlantEntity) {
+    const plantId = plant.attributes.plant_id;
+    if (!plantId) return;
+
+    const newSet = new Set(this._selectedPlants);
+    if (newSet.has(plantId)) {
+      newSet.delete(plantId);
+    } else {
+      newSet.add(plantId);
+    }
+    this._selectedPlants = newSet;
+    this.requestUpdate();
+  }
+
+  private _handlePlantClick(plant: PlantEntity) {
+    // If in edit mode and we have selections, open dialog for ALL selected plants
+    if (this._isEditMode && this._selectedPlants.size > 0) {
+      const plantId = plant.attributes.plant_id;
+      // If clicked plant is NOT selected, add it to selection then open.
+      if (plantId && !this._selectedPlants.has(plantId)) {
+        this._togglePlantSelection(plant);
+      }
+
+      // Pass the set of IDs to the dialog
+      this._openPlantOverviewDialog(plant, Array.from(this._selectedPlants));
+    } else {
+      // Normal behavior
+      this._openPlantOverviewDialog(plant);
+    }
+  }
+
+  private _openPlantOverviewDialog(plant: PlantEntity, selectedIds?: string[]) {
     this._plantOverviewDialog = {
       open: true,
       plant,
       editedAttributes: { ...plant.attributes },
-      activeTab: 'dashboard'
+      activeTab: 'dashboard',
+      selectedPlantIds: selectedIds
     };
   }
   private _handleTakeClone = (motherPlant: PlantEntity) => {
@@ -2084,10 +2118,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   private async _updatePlant() {
     if (!this._plantOverviewDialog) return;
 
-    const { plant, editedAttributes } = this._plantOverviewDialog;
+    const { plant, editedAttributes, selectedPlantIds } = this._plantOverviewDialog;
     const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
 
-    const payload: any = { plant_id: plantId };
+    // Determine target IDs: either the single plant or the bulk selection
+    const targetIds = (selectedPlantIds && selectedPlantIds.length > 0) ? selectedPlantIds : [plantId];
+
+    const payloadTemplate: any = {};
     const dateFields = ['seedling_start', 'mother_start', 'clone_start', 'veg_start', 'flower_start', 'dry_start', 'cure_start'];
 
     ['strain', 'phenotype', 'row', 'col', ...dateFields]
@@ -2097,28 +2134,46 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             const val = String(editedAttributes[field] || '');
             if (!val || val === 'null' || val === 'undefined') {
               // Explicitly clear the date if it's empty
-              payload[field] = null;
+              payloadTemplate[field] = null;
             } else {
               const formattedDate = PlantUtils.formatDateForBackend(val);
               if (formattedDate) {
-                payload[field] = formattedDate;
+                payloadTemplate[field] = formattedDate;
               }
             }
           } else {
             // Only send non-null values for other fields, or allow null if that's intended?
             // For now, keep existing behavior for non-date fields but allow null if explicitly set
             if (editedAttributes[field] !== null) {
-              payload[field] = editedAttributes[field];
+              payloadTemplate[field] = editedAttributes[field];
             }
           }
         }
       });
 
     try {
-      await this.dataService.updatePlant(payload);
+      // Execute updates for all target plants
+      const updatePromises = targetIds.map(id => {
+        const payload = { ...payloadTemplate, plant_id: id };
+        // Don't update row/col for bulk edits as it would stack them
+        if (targetIds.length > 1) {
+          delete payload.row;
+          delete payload.col;
+        }
+        return this.dataService.updatePlant(payload);
+      });
+
+      await Promise.all(updatePromises);
+
       this._plantOverviewDialog = null;
+
+      // Clear selection after successful bulk update
+      if (this._isEditMode) {
+        this._selectedPlants = new Set();
+        this._isEditMode = false; // Optional: exit edit mode
+      }
     } catch (err) {
-      console.error("Error updating plant:", err);
+      console.error("Error updating plant(s):", err);
     }
   }
 
@@ -3751,6 +3806,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                           <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
                           <span class="menu-item-label">Config</span>
                         </div>
+
+                        <div class="menu-item" @click=${() => { this._isEditMode = !this._isEditMode; this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                          <span class="menu-item-label">Edit</span>
+                          <div class="menu-toggle-switch ${this._isEditMode ? 'active' : ''}"></div>
+                        </div>
                         
                         <div class="menu-item" @click=${() => { this._isCompactView = true; this._menuOpen = false; }}>
                           <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
@@ -3934,6 +3995,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
     }
 
+    const isSelected = this._selectedPlants.has(plant.attributes.plant_id || '');
+
     return html`
       <div
         class="plant-card-rich"
@@ -3954,6 +4017,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             style="${DialogRenderer.getImgStyle(imageCropMeta)}"
           />
           <div class="plant-card-overlay"></div>
+        ` : ''}
+
+        ${this._isEditMode ? html`
+          <div class="plant-card-checkbox" @click=${(e: Event) => { e.stopPropagation(); this._togglePlantSelection(plant); }}>
+             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: ${isSelected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)'};">
+               <path d="${isSelected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
+             </svg>
+          </div>
         ` : ''}
 
         <div class="plant-card-content">
