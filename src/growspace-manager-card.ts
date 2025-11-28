@@ -3616,8 +3616,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     // For cure/dry, we never need co2 or light
     const isSpecialGrowspace = isCure || isDry;
 
-    const co2Sensor = overviewEntity?.attributes?.co2_sensor;
-    const co2 = (isSpecialGrowspace || !co2Sensor) ? undefined : getValue(envEntity, 'co2');
+    // Check for CO2 value directly
+    const co2Value = getValue(envEntity, 'co2');
+    const co2 = (isSpecialGrowspace || co2Value === undefined || co2Value === null) ? undefined : co2Value;
 
     // Light Status Logic with History
     const isLightsOnValue = getValue(envEntity, 'is_lights_on');
