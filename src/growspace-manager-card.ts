@@ -41,6 +41,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _historyData: any[] | null = null;
 
   @state() private _activeEnvGraphs: Set<string> = new Set();
+  @state() private _graphRanges: Record<string, '24h' | '1h'> = {};
   @state() private _tooltip: { id: string, x: number, time: string, value: string } | null = null;
   @state() private _menuOpen: boolean = false;
 
@@ -2528,37 +2529,45 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.requestUpdate();
   }
 
-  private _handleGraphHover(e: MouseEvent, graphId: string, dataPoints: { time: number, value: number, meta?: any }[], rect: DOMRect, unit: string) {
+  private _setGraphRange(metricKey: string, range: '24h' | '1h') {
+    this._graphRanges = {
+      ...this._graphRanges,
+      [metricKey]: range
+    };
+    this.requestUpdate();
+  }
+
+  private _handleGraphHover(e: MouseEvent, metricKey: string, dataPoints: any[], rect: DOMRect, unit: string) {
     const x = e.clientX - rect.left;
     const width = rect.width;
 
+    // Determine range
+    const rangeKey = this._graphRanges[metricKey] || '24h';
+    const durationMillis = rangeKey === '1h' ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
     const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const minTime = twentyFourHoursAgo.getTime();
-    const maxTime = now.getTime();
-    const range = maxTime - minTime;
+    const startTime = now.getTime() - durationMillis;
 
-    const hoveredTime = minTime + (x / width) * range;
+    // Calculate time from x position
+    const time = startTime + (x / width) * durationMillis;
 
     // Find closest data point
     let closest = dataPoints[0];
-    let minDiff = Math.abs(hoveredTime - closest.time);
+    let minDiff = Math.abs(dataPoints[0].time - time);
 
     for (let i = 1; i < dataPoints.length; i++) {
-      const diff = Math.abs(hoveredTime - dataPoints[i].time);
+      const diff = Math.abs(dataPoints[i].time - time);
       if (diff < minDiff) {
         minDiff = diff;
         closest = dataPoints[i];
       }
     }
 
-    const d = new Date(hoveredTime);
-    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
+    const date = new Date(closest.time);
+    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    // For value, if it's light cycle, we need special handling (passed as unit='ON/OFF' maybe?)
     let valStr = `${closest.value} ${unit}`;
     if (unit === 'state') {
-      if (graphId === 'irrigation' || graphId === 'drain') {
+      if (metricKey === 'irrigation' || metricKey === 'drain') {
         if (closest.value === 1) {
           valStr = `ON (${closest.meta?.duration || 'Unknown'})`;
         } else {
@@ -2572,7 +2581,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
 
     this._tooltip = {
-      id: graphId,
+      id: metricKey,
       x: x,
       time: timeStr,
       value: valStr
@@ -2596,10 +2605,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const envEntity = this.hass.states[envEntityId];
     const overviewEntity = device.overview_entity_id ? this.hass.states[device.overview_entity_id] : undefined;
 
+    // Determine Time Range
+    const rangeKey = this._graphRanges[metricKey] || '24h';
+    const durationMillis = rangeKey === '1h' ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+    const now = new Date();
+    const startTime = new Date(now.getTime() - durationMillis);
+
     // Data Generation
     let dataPoints: { time: number, value: number, meta?: any }[] = [];
-    const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
     if (metricKey === 'irrigation' || metricKey === 'drain') {
       // Generate from Schedule
@@ -2608,16 +2621,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         : overviewEntity?.attributes?.drain_times;
 
       if (times && Array.isArray(times)) {
-        // Create a timeline for the last 24h
-        // Default state is 0. Events set state to 1 for duration.
-        // We need to handle wrapping.
-        // Simplest approach: Create a list of events (start, end) in the last 24h window.
-
+        // Create a timeline for the selected range
         const events: { start: number, end: number }[] = [];
-        const dayMillis = 24 * 60 * 60 * 1000;
 
-        // Check today and yesterday to cover the 24h window
-        const referenceDays = [new Date(now), new Date(twentyFourHoursAgo)];
+        // Check today and yesterday to cover the window
+        // For 1h, we might need to check just today, but checking both is safe
+        const referenceDays = [new Date(now), new Date(startTime)];
 
         times.forEach((t: any) => {
           const [h, m] = t.time.split(':').map(Number);
@@ -2628,10 +2637,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             start.setHours(h, m, 0, 0);
             const end = new Date(start.getTime() + duration);
 
-            // Check overlap with window [twentyFourHoursAgo, now]
-            if (end.getTime() > twentyFourHoursAgo.getTime() && start.getTime() < now.getTime()) {
+            // Check overlap with window [startTime, now]
+            if (end.getTime() > startTime.getTime() && start.getTime() < now.getTime()) {
               events.push({
-                start: Math.max(start.getTime(), twentyFourHoursAgo.getTime()),
+                start: Math.max(start.getTime(), startTime.getTime()),
                 end: Math.min(end.getTime(), now.getTime())
               });
             }
@@ -2642,15 +2651,21 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         events.sort((a, b) => a.start - b.start);
         // Convert to points
         // Start with 0
-        dataPoints.push({ time: twentyFourHoursAgo.getTime(), value: 0 });
+        dataPoints.push({ time: startTime.getTime(), value: 0 });
 
         events.forEach(ev => {
+          const durationSeconds = (ev.end - ev.start) / 1000;
+          let durationStr = `${durationSeconds}s`;
+          if (durationSeconds >= 60) {
+            durationStr = `${Math.round(durationSeconds / 60)}m`;
+          }
+
           // Add point before start (0)
           dataPoints.push({ time: ev.start - 1, value: 0 });
           // Add start point (1)
-          dataPoints.push({ time: ev.start, value: 1 });
+          dataPoints.push({ time: ev.start, value: 1, meta: { duration: durationStr } });
           // Add end point (1)
-          dataPoints.push({ time: ev.end, value: 1 });
+          dataPoints.push({ time: ev.end, value: 1, meta: { duration: durationStr } });
           // Add point after end (0)
           dataPoints.push({ time: ev.end + 1, value: 0 });
         });
@@ -2698,7 +2713,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
       sortedHistory.forEach(h => {
         const t = new Date(h.last_changed).getTime();
-        if (t < twentyFourHoursAgo.getTime()) return;
+        if (t < startTime.getTime()) return;
         const val = getValue(h, metricKey);
         const meta = getMeta(h, metricKey);
 
@@ -2741,7 +2756,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       points.push([0, height - ((currentState - paddedMin) / paddedRange) * height]);
 
       dataPoints.forEach(d => {
-        const x = ((d.time - twentyFourHoursAgo.getTime()) / (24 * 60 * 60 * 1000)) * width;
+        const x = ((d.time - startTime.getTime()) / durationMillis) * width;
         const y = height - ((d.value - paddedMin) / paddedRange) * height;
         points.push([x, points[points.length - 1][1]]);
         points.push([x, y]);
@@ -2753,7 +2768,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     } else {
       const points: [number, number][] = dataPoints.map(d => {
-        const x = ((d.time - twentyFourHoursAgo.getTime()) / (24 * 60 * 60 * 1000)) * width;
+        const x = ((d.time - startTime.getTime()) / durationMillis) * width;
         const y = height - ((d.value - paddedMin) / paddedRange) * height;
         return [x, y];
       });
@@ -2764,14 +2779,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (type === 'step') {
       return html`
         <div class="gs-light-cycle-card" style="margin-top: 12px; border: 1px solid ${color}40;">
-           <div class="gs-light-header-row" @click=${() => this._toggleEnvGraph(metricKey)}>
-               <div class="gs-light-title" style="font-size: 1.2rem;">
+           <div class="gs-light-header-row">
+               <div class="gs-light-title" style="font-size: 1.2rem; flex: 1; cursor: pointer;" @click=${() => this._toggleEnvGraph(metricKey)}>
                    <div class="gs-icon-box" style="color: ${color}; background: ${color}10; border-color: ${color}30; width: 36px; height: 36px;">
                         <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
                    </div>
                    <div>
                       <div>${title}</div>
-                      <div class="gs-light-subtitle">24H HISTORY • ${(() => {
+                      <div class="gs-light-subtitle">${rangeKey.toUpperCase()} HISTORY • ${(() => {
           if (metricKey === 'light') {
             // Get the light schedule sensor for this device
             const devices = this.dataService.getGrowspaceDevices();
@@ -2794,7 +2809,20 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         })()}</div>
                    </div>
                </div>
-               <div style="opacity: 0.7;">
+               
+               <!-- Range Toggle -->
+               <div style="display: flex; gap: 4px; margin-right: 12px;">
+                  <button 
+                    style="background: ${rangeKey === '24h' ? color + '30' : 'transparent'}; border: 1px solid ${color}40; color: ${rangeKey === '24h' ? '#fff' : '#aaa'}; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;"
+                    @click=${(e: Event) => { e.stopPropagation(); this._setGraphRange(metricKey, '24h'); }}
+                  >24H</button>
+                  <button 
+                    style="background: ${rangeKey === '1h' ? color + '30' : 'transparent'}; border: 1px solid ${color}40; color: ${rangeKey === '1h' ? '#fff' : '#aaa'}; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;"
+                    @click=${(e: Event) => { e.stopPropagation(); this._setGraphRange(metricKey, '1h'); }}
+                  >1H</button>
+               </div>
+
+               <div style="opacity: 0.7; cursor: pointer;" @click=${() => this._toggleEnvGraph(metricKey)}>
                   <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronDown}"></path></svg>
                </div>
            </div>
