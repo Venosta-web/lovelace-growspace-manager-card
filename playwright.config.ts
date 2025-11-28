@@ -17,7 +17,7 @@ export default defineConfig({
 
     use: {
         baseURL: 'http://localhost:8080',
-        headless: false, // Run headless by default for CI/local testing
+        headless: true, // Run headless by default for CI/local testing
         viewport: { width: 1280, height: 900 },
     },
 

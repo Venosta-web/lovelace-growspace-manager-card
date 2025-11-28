@@ -1,0 +1,86 @@
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+[2m[WebServer] [22m(node:6597) [DEP0066] DeprecationWarning: OutgoingMessage.prototype._headers is deprecated
+[2m[WebServer] [22m(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 16 tests using 2 workers
+
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+BROWSER LOG: [DataService] No strain data in sensor attributes
+BROWSER LOG: [DataService] No strain data in sensor attributes
+BROWSER LOG: [DataService] No strain data in sensor attributes
+BROWSER LOG: [DataService] No strain data in sensor attributes
+BROWSER LOG: [DataService] No strain data in sensor attributes
+BROWSER LOG: [DataService] No strain data in sensor attributes
+BROWSER LOG: [DataService] No strain data in sensor attributes
+BROWSER LOG: [DataService] No strain data in sensor attributes
+  ✓   2 [mock] › tests/graph-time-ranges.spec.ts:12:9 › Graph Time Ranges › time range selector visibility and functionality (820ms)
+BROWSER LOG: [DataService] No strain data in sensor attributes
+BROWSER LOG: [DataService] No strain data in sensor attributes
+BROWSER LOG: [DataService] No strain data in sensor attributes
+BROWSER LOG: [DataService] No strain data in sensor attributes
+BROWSER LOG: [DataService] No strain data in sensor attributes
+  ✓   3 [mock] › tests/graph-time-ranges.spec.ts:108:9 › Graph Time Ranges › square graph (step) scaling (504ms)
+  ✓   4 [mock] › tests/grow-card.spec.ts:28:9 › Growspace Manager Card Tests › Growspace Manager Card renders and Strains button is visible (303ms)
+  ✓   1 [mock] › tests/bulk-edit.spec.ts:11:9 › Growspace Manager Card - Bulk Edit › allows selecting multiple plants and bulk editing them (1.7s)
+  ✓   6 [mock] › tests/growspace-card.spec.ts:11:9 › Growspace Manager Card › renders grid layout and plant details correctly (265ms)
+  ✓   5 [mock] › tests/grow-card.spec.ts:41:9 › Growspace Manager Card Tests › Plant Overview Dialog opens on plant click (443ms)
+  ✓   7 [mock] › tests/growspace-card.spec.ts:38:9 › Growspace Manager Card › displays warning indicators for binary sensors (233ms)
+  ✓   8 [mock] › tests/grow-card.spec.ts:64:9 › Growspace Manager Card Tests › Strain Library Dialog opens (408ms)
+  ✓   9 [mock] › tests/growspace-card.spec.ts:58:9 › Growspace Manager Card › fires "add_plant" service call when clicking empty slot (338ms)
+  ✓  11 [mock] › tests/growspace-card.spec.ts:91:9 › Growspace Manager Card › fires "remove_plant" service call when deleting a plant (410ms)
+  ✓  12 [mock] › tests/growspace-card.spec.ts:139:9 › Growspace Manager Card › fires "update_plant" service call when dragging a plant to an empty slot (425ms)
+  ✓  13 [mock] › tests/growspace-card.spec.ts:184:9 › Growspace Manager Card › fires "update_plant" service call when editing plant details (406ms)
+  ✓  10 [mock] › tests/grow-card.spec.ts:91:9 › Growspace Manager Card Tests › Drag and drop plant to empty slot (1.4s)
+  ✓  15 [mock] › tests/grow-card.spec.ts:109:9 › Growspace Manager Card Tests › Drag and drop plant to occupied slot (switching plants) (1.5s)
+[Browser] [MockHass] sendMessagePromise: {type: call_service, domain: growspace_manager, service: get_strain_library, service_data: Object, return_response: true}
+[Browser] [DataService] No strain data in sensor attributes
+[Browser] [DataService] No strain data in sensor attributes
+[Browser] [DataService] No strain data in sensor attributes
+[Browser] [DataService] No strain data in sensor attributes
+[Browser] [DataService:addStrain] Adding strain: {strain: New Test Strain, phenotype: #1, breeder: , type: , flowering_days_min: undefined}
+[Browser] [DataService:addStrain] Response: undefined
+[Browser] [MockHass] sendMessagePromise: {type: call_service, domain: growspace_manager, service: get_strain_library, service_data: Object, return_response: true}
+[Browser] [DataService] No strain data in sensor attributes
+[Browser] [DataService] No strain data in sensor attributes
+[Browser] Failed to load resource: the server responded with a status of 404 (Not Found)
+[Browser] Failed to load resource: the server responded with a status of 404 (Not Found)
+[Browser] [DataService:removeStrain] Removing strain: Gorilla Glue #4
+[Browser] [DataService:removeStrain] Response: undefined
+[Browser] [MockHass] sendMessagePromise: {type: call_service, domain: growspace_manager, service: get_strain_library, service_data: Object, return_response: true}
+[Browser] [DataService] No strain data in sensor attributes
+[Browser] [DataService] No strain data in sensor attributes
+  ✓  16 [mock] › tests/strain-library.spec.ts:52:9 › Strain Library › can add and remove a strain (1.9s)
+  ✘  14 [mock] › tests/mockup-verification.spec.ts:8:9 › Verification Mockup › renders all growspace types correctly (5.1s)
+
+
+  1) [mock] › tests/mockup-verification.spec.ts:8:9 › Verification Mockup › renders all growspace types correctly
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator:  locator('#card-standard')
+    Expected: visible
+    Received: hidden
+    Timeout:  5000ms
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('#card-standard')[22m
+    [2m    9 × locator resolved to <growspace-manager-card id="card-standard"></growspace-manager-card>[22m
+    [2m      - unexpected value "hidden"[22m
+
+
+      12 |         // Check Standard Card
+      13 |         const standardCard = page.locator('#card-standard');
+    > 14 |         await expect(standardCard).toBeVisible();
+         |                                    ^
+      15 |         // The mock data in verification_mockup.html defines "Strain 1"
+      16 |         await expect(standardCard).toContainText('Strain 1');
+      17 |
+        at /app/tests/mockup-verification.spec.ts:14:36
+
+    Error Context: test-results/mockup-verification-Verifi-869b7-l-growspace-types-correctly-mock/error-context.md
+
+  1 failed
+    [mock] › tests/mockup-verification.spec.ts:8:9 › Verification Mockup › renders all growspace types correctly
+  15 passed (12.9s)
