@@ -42,11 +42,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _historyData: any[] | null = null;
 
   @state() private _activeEnvGraphs: Set<string> = new Set();
-  @state() private _graphRanges: Record<string, '24h' | '1h'> = {};
+  @state() private _graphRanges: Record<string, '1h' | '6h' | '24h' | '7d'> = {};
   @state() private _tooltip: { id: string, x: number, time: string, value: string } | null = null;
   @state() private _menuOpen: boolean = false;
   @state() private _isEditMode: boolean = false;
   @state() private _selectedPlants: Set<string> = new Set();
+  @state() private _focusedPlantIndex: number = -1;
 
 
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -559,6 +560,34 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         opacity: 0.2;
       }
 
+      /* Time Range Selector */
+      .time-range-selector {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        justify-content: flex-end;
+      }
+      .range-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #aaa;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .range-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+      }
+      .range-btn.active {
+        background: var(--primary-color, #22c55e);
+        border-color: var(--primary-color, #22c55e);
+        color: #fff;
+        font-weight: 600;
+      }
+
       /* Time markers for chart */
       .chart-markers {
          display: flex;
@@ -571,6 +600,23 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
          position: relative;
          z-index: 2;
          pointer-events: none;
+      }
+
+      /* Accessibility */
+      .sr-only-announcer {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .plant-card-rich:focus {
+        outline: 2px solid var(--primary-color, #22c55e);
+        outline-offset: 2px;
       }
 
       .gs-tooltip {
@@ -1905,11 +1951,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
     if (changedProps.has('selectedDevice')) {
-      this._fetchHistory();
+      const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
+      this._fetchHistory(range);
     }
   }
 
-  private async _fetchHistory() {
+  private async _fetchHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
     if (!this.hass || !this.selectedDevice) return;
     const devices = this.dataService.getGrowspaceDevices();
     const device = devices.find(d => d.device_id === this.selectedDevice);
@@ -1928,12 +1975,24 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       envEntityId = `binary_sensor.dry_optimal_drying`;
     }
 
-    // Get history for last 24h
+    // Get history based on range
     const now = new Date();
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    switch (range) {
+      case '1h':
+        startTime = new Date(now.getTime() - 60 * 60 * 1000);
+        break;
+      case '6h':
+        startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+        break;
+      case '7d':
+        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+    }
 
     try {
-      const history = await this.dataService.getHistory(envEntityId, yesterday, now);
+      const history = await this.dataService.getHistory(envEntityId, startTime, now);
       this._historyData = history;
     } catch (e) {
       console.error("Failed to fetch history", e);
@@ -2693,13 +2752,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.requestUpdate();
   }
 
-  private _setGraphRange(metricKey: string, range: '24h' | '1h') {
-    this._graphRanges = {
-      ...this._graphRanges,
-      [metricKey]: range
-    };
-    this.requestUpdate();
-  }
+
 
   private _handleGraphHover(e: MouseEvent, metricKey: string, dataPoints: any[], rect: DOMRect, unit: string) {
     const x = e.clientX - rect.left;
@@ -2983,17 +3036,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                    </div>
                </div>
                
-               <!-- Range Toggle -->
-               <div style="display: flex; gap: 4px; margin-right: 12px;">
-                  <button 
-                    style="background: ${rangeKey === '24h' ? color + '30' : 'transparent'}; border: 1px solid ${color}40; color: ${rangeKey === '24h' ? '#fff' : '#aaa'}; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;"
-                    @click=${(e: Event) => { e.stopPropagation(); this._setGraphRange(metricKey, '24h'); }}
-                  >24H</button>
-                  <button 
-                    style="background: ${rangeKey === '1h' ? color + '30' : 'transparent'}; border: 1px solid ${color}40; color: ${rangeKey === '1h' ? '#fff' : '#aaa'}; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;"
-                    @click=${(e: Event) => { e.stopPropagation(); this._setGraphRange(metricKey, '1h'); }}
-                  >1H</button>
-               </div>
+
 
                <div style="opacity: 0.7; cursor: pointer;" @click=${() => this._toggleEnvGraph(metricKey)}>
                   <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronDown}"></path></svg>
@@ -3050,27 +3093,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                  <svg style="width:24px;height:24px;fill:${color};" viewBox="0 0 24 24"><path d="${icon}"></path></svg>
                  <div>
                     <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${title}</div>
-                    <div style="font-size: 0.75rem; color: #999;">${rangeKey.toUpperCase()} HISTORY</div>
-                 </div>
-             </div>
-             
-             <div style="display: flex; align-items: center; gap: 12px;">
-                <!-- Range Toggle -->
-                 <div style="display: flex; gap: 4px;">
-                    <button 
-                      style="background: ${rangeKey === '24h' ? color + '30' : 'transparent'}; border: 1px solid ${color}40; color: ${rangeKey === '24h' ? '#fff' : '#aaa'}; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;"
-                      @click=${(e: Event) => { e.stopPropagation(); this._setGraphRange(metricKey, '24h'); }}
-                    >24H</button>
-                    <button 
-                      style="background: ${rangeKey === '1h' ? color + '30' : 'transparent'}; border: 1px solid ${color}40; color: ${rangeKey === '1h' ? '#fff' : '#aaa'}; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;"
-                      @click=${(e: Event) => { e.stopPropagation(); this._setGraphRange(metricKey, '1h'); }}
-                    >1H</button>
-                 </div>
-
-                 <div style="text-align: right;">
-                    <div style="font-size: 0.85rem; color: #999;">${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}</div>
-                 </div>
-             </div>
          </div>
 
          <div class="gs-env-chart-container" style="position: relative; height: 180px; background: #0d0d0d; border-radius: 8px; padding: 20px 40px 30px 50px;"
@@ -3963,8 +3985,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
 </div>
   </div>
- 
-
+  
+  ${this.renderTimeRangeSelector()}
 
 <!-- Active Environmental Graphs -->
   ${this._activeEnvGraphs.has('temperature') ? this.renderEnvGraph('temperature', '#FF5722', 'Temperature', '°C', 'line', mdiThermometer) : ''}
@@ -4227,6 +4249,33 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             `;
     })
       }
+    `;
+  }
+
+  private _setGraphRange(range: '1h' | '6h' | '24h' | '7d') {
+    if (!this.selectedDevice) return;
+    this._graphRanges = {
+      ...this._graphRanges,
+      [this.selectedDevice]: range
+    };
+    this._fetchHistory(range);
+  }
+
+  private renderTimeRangeSelector(): TemplateResult {
+    const currentRange = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
+    const ranges: ('1h' | '6h' | '24h' | '7d')[] = ['1h', '6h', '24h', '7d'];
+
+    return html`
+      <div class="time-range-selector">
+        ${ranges.map(range => html`
+          <button 
+            class="range-btn ${currentRange === range ? 'active' : ''}"
+            @click=${() => this._setGraphRange(range)}
+          >
+            ${range}
+          </button>
+        `)}
+      </div>
     `;
   }
 
