@@ -29,6 +29,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _addPlantDialog: AddPlantDialogState | null = null;
   @state() private _defaultApplied = false;
   @state() private _plantOverviewDialog: PlantOverviewDialogState | null = null;
+  @state() private _optimisticDeletedPlantIds: Set<string> = new Set();
   @state() private _strainLibraryDialog: StrainLibraryDialogState | null = null;
   @state() private _configDialog: ConfigDialogState | null = null;
   @state() private _growMasterDialog: GrowMasterDialogState | null = null;
@@ -2752,9 +2753,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         type = 'step';
       }
     } else {
-      // Use History Data
-      if (!this._historyData || this._historyData.length === 0) return html``;
-
       const getValue = (ent: any, key: string) => {
         if (!ent || !ent.attributes) return undefined;
         // Special case for 'state' unit (optimal conditions)
@@ -2784,6 +2782,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         return undefined;
       };
 
+      // Use History Data
+      if (!this._historyData || this._historyData.length === 0) return html``;
+
       const sortedHistory = [...this._historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
 
       sortedHistory.forEach(h => {
@@ -2796,6 +2797,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           dataPoints.push({ time: t, value: parseFloat(val), meta });
         }
       });
+
+      // Add current point to extend graph to 'now'
+      if (envEntity) {
+        const currentVal = getValue(envEntity, metricKey);
+        const currentMeta = getMeta(envEntity, metricKey);
+        if (currentVal !== undefined && !isNaN(parseFloat(currentVal))) {
+          dataPoints.push({ time: now.getTime(), value: parseFloat(currentVal), meta: currentMeta });
+        }
+      }
     }
 
     if (dataPoints.length < 2 && type !== 'step') return html``;
