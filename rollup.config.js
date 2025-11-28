@@ -1,21 +1,33 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
-import { terser } from 'rollup-plugin-terser';
 import typescript from '@rollup/plugin-typescript';
+import { terser } from 'rollup-plugin-terser';
 import css from 'rollup-plugin-css-only';
 
+const isProduction = process.env.NODE_ENV === 'production';
+const isCoverage = process.env.COVERAGE === 'true';
+
+const plugins = [
+  resolve(),
+  commonjs(),
+  typescript({
+    tsconfig: './tsconfig.json',
+    sourceMap: !isProduction || isCoverage,
+  }),
+  css({ output: 'dist/styles.css' }),
+];
+
+// Only minify in production and not when collecting coverage
+if (isProduction && !isCoverage) {
+  plugins.push(terser());
+}
+
 export default {
-  input: 'src/growspace-manager-card.ts',
+  input: 'src/index.ts',
   output: {
-    file: 'dist/growspace-manager-card.js',
+    file: isCoverage ? 'dist/growspace-manager-card.instrumented.js' : 'dist/growspace-manager-card.js',
     format: 'es',
-    inlineDynamicImports: true,
+    sourcemap: !isProduction || isCoverage,
   },
-  plugins: [
-    resolve(),
-    commonjs(),
-    typescript({ tsconfig: './tsconfig.json' }),
-    terser(),
-    css({ output: false })
-  ],
+  plugins,
 };

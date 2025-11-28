@@ -19,6 +19,8 @@ export default defineConfig({
         baseURL: 'http://localhost:8080',
         headless: true, // Run headless by default for CI/local testing
         viewport: { width: 1280, height: 900 },
+        // Enable coverage collection
+        trace: 'on-first-retry',
     },
 
     projects: [
@@ -26,5 +28,11 @@ export default defineConfig({
             name: 'mock',
             testMatch: /.*\.spec\.ts/,
         },
+    ],
+
+    // Reporter configuration for coverage
+    reporter: [
+        ['list'],
+        ['html', { outputFolder: 'playwright-report' }],
     ],
 });
