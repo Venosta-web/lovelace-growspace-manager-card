@@ -2863,7 +2863,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     // Determine Time Range
     const rangeKey = this._graphRanges[metricKey] || '24h';
-    const durationMillis = rangeKey === '1h' ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+    let durationMillis = 24 * 60 * 60 * 1000;
+    if (rangeKey === '1h') durationMillis = 60 * 60 * 1000;
+    else if (rangeKey === '6h') durationMillis = 6 * 60 * 60 * 1000;
+    else if (rangeKey === '7d') durationMillis = 7 * 24 * 60 * 60 * 1000;
     const now = new Date();
     const startTime = new Date(now.getTime() - durationMillis);
 
@@ -3185,17 +3188,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
              
              <!-- X-axis markers -->
              <div style="position: absolute; left: 50px; right: 40px; bottom: 5px; display: flex; justify-content: space-between; font-size: 0.65rem; color: #666;">
-                ${rangeKey === '24h' ? html`
-                    <span>24H</span>
-                    <span>18H</span>
-                    <span>12H</span>
-                    <span>6H</span>
-                ` : html`
-                    <span>60m</span>
-                    <span>45m</span>
-                    <span>30m</span>
-                    <span>15m</span>
-                `}
+                ${(() => {
+        if (rangeKey === '1h') return html`<span>60m</span><span>45m</span><span>30m</span><span>15m</span>`;
+        if (rangeKey === '6h') return html`<span>6h</span><span>4.5h</span><span>3h</span><span>1.5h</span>`;
+        if (rangeKey === '7d') return html`<span>7d</span><span>5d</span><span>3d</span><span>1d</span>`;
+        return html`<span>24h</span><span>18h</span><span>12h</span><span>6h</span>`;
+      })()}
                 <span style="color: ${color};">NOW</span>
              </div>
          </div>
