@@ -2387,18 +2387,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   private async _handleDeletePlant(plantId: string) {
     if (!confirm("Are you sure you want to delete this plant?")) return;
 
-    // Optimistic Update: Immediately remove from local state
-    if (this.selectedDevice) {
-      const devices = this.dataService.getGrowspaceDevices();
-      const device = devices.find(d => d.device_id === this.selectedDevice);
-      if (device) {
-        device.plants = device.plants.filter(p => {
-          const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
-          return pId !== plantId;
-        });
-        this.requestUpdate();
-      }
-    }
+    // Optimistic Update: Immediately track as deleted
+    this._optimisticDeletedPlantIds.add(plantId);
+    this.requestUpdate();
 
     // Close dialog immediately
     this._plantOverviewDialog = null;
@@ -3669,6 +3660,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     this.dataService = new DataService(this.hass);
     const devices = this.dataService.getGrowspaceDevices();
+
+    // Filter out optimistically deleted plants
+    devices.forEach(d => {
+      d.plants = d.plants.filter(p => {
+        const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+        return !this._optimisticDeletedPlantIds.has(pId);
+      });
+    });
 
     if (!devices.length) {
       return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;

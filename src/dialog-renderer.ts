@@ -1612,6 +1612,7 @@ export class DialogRenderer {
           class="md3-input"
           .value=${formattedValue}
           @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
+          @click=${(e: Event) => (e.target as HTMLInputElement).showPicker()}
         />
       </div>
     `;
@@ -1628,6 +1629,7 @@ export class DialogRenderer {
           class="md3-input"
           .value=${formattedValue}
           @input=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
+          @click=${(e: Event) => (e.target as HTMLInputElement).showPicker()}
         />
       </div>
     `;
