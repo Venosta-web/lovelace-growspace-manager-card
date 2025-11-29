@@ -2836,9 +2836,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       newSet.delete(metric);
     } else {
       newSet.add(metric);
+      const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
       if (metric === 'dehumidifier') {
-        const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
         this._fetchDehumidifierHistory(range);
+      } else if (metric === 'exhaust') {
+        this._fetchExhaustHistory(range);
+      } else if (metric === 'humidifier') {
+        this._fetchHumidifierHistory(range);
       }
     }
     this._activeEnvGraphs = newSet;
