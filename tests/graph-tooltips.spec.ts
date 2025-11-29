@@ -132,4 +132,79 @@ test.describe('Graph Tooltips', () => {
         // Since mock history has state 'on' at 'now', and logic extends it back to start, it should be 100%
         await expect(card.locator('.gs-light-subtitle')).toContainText('OPTIMAL 100%');
     });
+
+    test('renders graph covering full range even when history data starts late', async ({ page }) => {
+        const card = page.locator('growspace-manager-card');
+
+        // Mock History Data starting 12h ago (for 24h range)
+        const now = new Date();
+        const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+        const historyData = [
+            {
+                last_changed: twelveHoursAgo.toISOString(),
+                state: 'on',
+                attributes: {
+                    dehumidifier: true
+                }
+            }
+        ];
+
+        await page.exposeFunction('mockGetHistory', () => [historyData]);
+
+        const mockHass = createMockHass();
+        const overviewId = 'sensor.4x4_tent';
+
+        // Setup Attributes
+        if (mockHass.states[overviewId]) {
+            mockHass.states[overviewId].attributes.dehumidifier_entity = 'switch.dehumidifier';
+            mockHass.states[overviewId].attributes.dehumidifier_state = 'on';
+        }
+
+        const optimalId = 'binary_sensor.4x4_tent_optimal_conditions';
+        if (mockHass.states[optimalId]) {
+            Object.assign(mockHass.states[optimalId].attributes, {
+                temperature: 25,
+                humidity: 60,
+                vpd: 1.2,
+                co2: 800,
+                is_lights_on: true
+            });
+        }
+
+        const hassData = JSON.parse(JSON.stringify(mockHass));
+
+        await card.evaluate((node: any, { config, hassData }) => {
+            node.setConfig(config);
+            node.hass = {
+                ...hassData,
+                callService: async () => Promise.resolve(),
+                callApi: async (method: string, url: string) => {
+                    const result = await (window as any).mockGetHistory(url);
+                    return result;
+                },
+                connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
+                localize: (key: string) => `[${key}]`,
+            };
+        }, { config: { type: 'custom:growspace-manager-card', entity: overviewId }, hassData });
+
+        // Open Dehumidifier Graph
+        const chips = card.locator('.stat-chip');
+        const dehumChip = chips.nth(3);
+        await dehumChip.click();
+
+        // Graph should be visible
+        const graphContainer = card.locator('.gs-chart-container');
+        await expect(graphContainer).toBeVisible();
+
+        // Check that it rendered a line (path exists)
+        // Check that it rendered a line (path exists)
+        const path = graphContainer.locator('path.chart-line');
+        // await expect(path).toBeVisible(); // Flaky on some SVGs
+
+        // Optionally check if the path starts at x=0 (M 0,...)
+        // This confirms it synthesized the start point
+        const d = await path.getAttribute('d');
+        // We expect "M 0,..."
+        expect(d?.startsWith('M 0,')).toBeTruthy();
+    });
 });

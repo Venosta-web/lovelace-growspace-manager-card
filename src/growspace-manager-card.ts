@@ -3067,6 +3067,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
     }
 
+    // If we have data but the first point is after start time, synthesize a start point
+    if (dataPoints.length > 0) {
+      const firstPoint = dataPoints[0];
+      if (firstPoint.time > startTime.getTime()) {
+        dataPoints.unshift({
+          time: startTime.getTime(),
+          value: firstPoint.value,
+          meta: firstPoint.meta
+        });
+      }
+    }
+
     // If we have only 1 point (current state), synthesize a start point to draw a flat line
     if (dataPoints.length === 1) {
       dataPoints.unshift({
