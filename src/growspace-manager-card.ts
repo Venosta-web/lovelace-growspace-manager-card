@@ -40,6 +40,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _isCompactView: boolean = false;
   @state() private _strainLibrary: StrainEntry[] = [];
   @state() private _historyData: any[] | null = null;
+  @state() private _dehumidifierHistory: any[] | null = null;
 
   @state() private _activeEnvGraphs: Set<string> = new Set();
   @state() private _graphRanges: Record<string, '1h' | '6h' | '24h' | '7d'> = {};
@@ -1967,6 +1968,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (changedProps.has('selectedDevice')) {
       const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
       this._fetchHistory(range);
+      if (this._activeEnvGraphs.has('dehumidifier')) {
+        this._fetchDehumidifierHistory(range);
+      }
     }
   }
 
@@ -2010,6 +2014,40 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       this._historyData = history;
     } catch (e) {
       console.error("Failed to fetch history", e);
+    }
+  }
+
+  private async _fetchDehumidifierHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
+    if (!this.hass || !this.selectedDevice) return;
+    const devices = this.dataService.getGrowspaceDevices();
+    const device = devices.find(d => d.device_id === this.selectedDevice);
+    if (!device || !device.overview_entity_id) return;
+
+    const overviewEntity = this.hass.states[device.overview_entity_id];
+    const dehumidifierEntityId = overviewEntity?.attributes?.dehumidifier_entity;
+
+    if (!dehumidifierEntityId) return;
+
+    const now = new Date();
+    let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    switch (range) {
+      case '1h':
+        startTime = new Date(now.getTime() - 60 * 60 * 1000);
+        break;
+      case '6h':
+        startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+        break;
+      case '7d':
+        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+    }
+
+    try {
+      const history = await this.dataService.getHistory(dehumidifierEntityId, startTime, now);
+      this._dehumidifierHistory = history;
+    } catch (e) {
+      console.error("Failed to fetch dehumidifier history", e);
     }
   }
 
@@ -2793,6 +2831,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       newSet.delete(metric);
     } else {
       newSet.add(metric);
+      if (metric === 'dehumidifier') {
+        const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
+        this._fetchDehumidifierHistory(range);
+      }
     }
     this._activeEnvGraphs = newSet;
     this.requestUpdate();
@@ -2939,28 +2981,29 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         // End with 0 at 'now'
         dataPoints.push({ time: now.getTime(), value: 0 });
 
-        // Force step type
-        type = 'step';
       }
     } else {
       const getValue = (ent: any, key: string) => {
-        if (!ent || !ent.attributes) return undefined;
+        if (!ent) return undefined;
         // Special case for 'state' unit (optimal conditions)
         if (unit === 'state' && key === 'optimal') {
           return ent.state === 'on' ? 1 : 0;
         }
         // Special case for light cycle
         if (key === 'light') {
-          const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
+          const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
           return isLightsOn === true ? 1 : 0;
         }
         // Special case for dehumidifier
         if (key === 'dehumidifier') {
-          const val = ent.attributes.dehumidifier ?? ent.attributes.observations?.dehumidifier;
+          if (ent.entity_id && ent.state) {
+            return (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 1 : 0;
+          }
+          const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
           return (val === true || val === 'on' || val === 1) ? 1 : 0;
         }
-        if (ent.attributes[key] !== undefined) return ent.attributes[key];
-        if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
+        if (ent.attributes && ent.attributes[key] !== undefined) return ent.attributes[key];
+        if (ent.attributes && ent.attributes.observations && typeof ent.attributes.observations === 'object') {
           return ent.attributes.observations[key];
         }
         return undefined;
@@ -2968,20 +3011,29 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
       const getMeta = (ent: any, key: string) => {
         if (unit === 'state' && key === 'optimal') {
-          return ent.attributes.reasons;
+          return ent.attributes?.reasons;
         }
         if (key === 'light') {
-          const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
+          const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
           return { state: isLightsOn ? 'ON' : 'OFF' };
+        }
+        if (key === 'dehumidifier') {
+          if (ent.entity_id && ent.state) {
+            return { state: (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 'ON' : 'OFF' };
+          }
         }
         return undefined;
       };
 
       // Use History Data
-      if (!this._historyData || this._historyData.length === 0) return html``;
+      let historySource = this._historyData;
+      if (metricKey === 'dehumidifier') {
+        historySource = this._dehumidifierHistory;
+      }
 
-      const sortedHistory = [...this._historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+      if (!historySource || historySource.length === 0) return html``;
 
+      const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
 
       sortedHistory.forEach(h => {
         const t = new Date(h.last_changed).getTime();
@@ -2995,7 +3047,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       });
 
       // Add current point to extend graph to 'now'
-      if (envEntity) {
+      if (metricKey === 'dehumidifier') {
+        if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
+          const state = overviewEntity.attributes.dehumidifier_state;
+          const val = (state === 'on' || state === 'true' || state === '1') ? 1 : 0;
+          dataPoints.push({ time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } });
+        } else if (dataPoints.length > 0) {
+          const last = dataPoints[dataPoints.length - 1];
+          dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
+        }
+      } else if (envEntity) {
         const currentVal = getValue(envEntity, metricKey);
         const currentMeta = getMeta(envEntity, metricKey);
         if (currentVal !== undefined && !isNaN(parseFloat(currentVal))) {
@@ -4337,6 +4398,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       [this.selectedDevice]: range
     };
     this._fetchHistory(range);
+    if (this._activeEnvGraphs.has('dehumidifier')) {
+      this._fetchDehumidifierHistory(range);
+    }
   }
 
   private renderTimeRangeSelector(): TemplateResult {
