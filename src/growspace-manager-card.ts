@@ -2954,6 +2954,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
           return isLightsOn === true ? 1 : 0;
         }
+        // Special case for dehumidifier
+        if (key === 'dehumidifier') {
+          const val = ent.attributes.dehumidifier ?? ent.attributes.observations?.dehumidifier;
+          return (val === true || val === 'on' || val === 1) ? 1 : 0;
+        }
         if (ent.attributes[key] !== undefined) return ent.attributes[key];
         if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
           return ent.attributes.observations[key];

@@ -12228,6 +12228,11 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                     const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
                     return isLightsOn === true ? 1 : 0;
                 }
+                // Special case for dehumidifier
+                if (key === 'dehumidifier') {
+                    const val = ent.attributes.dehumidifier ?? ent.attributes.observations?.dehumidifier;
+                    return (val === true || val === 'on' || val === 1) ? 1 : 0;
+                }
                 if (ent.attributes[key] !== undefined)
                     return ent.attributes[key];
                 if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
@@ -13804,6 +13809,49 @@ GrowspaceManagerCard.styles = [
 
       /* Rich Card Style - Glassmorphism 2.0 */
       .plant-card-rich {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        border-radius: 16px;
+        overflow: hidden;
+        /* Default background if no image */
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        aspect-ratio: 1;
+      }
+
+      .plant-card-rich:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .plant-card-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        z-index: 0;
+      }
+
+      .plant-card-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.3) 100%);
+        z-index: 1;
+      }
 
       .plant-card-checkbox {
         position: absolute;
@@ -15305,7 +15353,22 @@ GrowspaceManagerCard.styles = [
         --mdc-dialog-min-width: 400px;
         --mdc-dialog-max-width: 90vw;
       }
+      .glass-dialog-container {
+        background: var(--growspace-card-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        border-radius: 28px; /* MD3 extra large rounding */
+        padding: var(--spacing-lg);
+        color: #ffffff; /* Force white text for contrast against dark glass */
+        margin: -24px; /* Counteract default dialog padding if necessary */
+        min-width: 320px;
+      }
 
+      /* MD3 Dialog Layout */
+      .dialog-header {
+        display: flex;
         align-items: center;
         gap: var(--spacing-md);
         margin-bottom: var(--spacing-lg);
