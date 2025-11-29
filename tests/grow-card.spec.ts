@@ -108,6 +108,27 @@ test.describe('Growspace Manager Card Tests', () => {
 
     test('Drag and drop plant to occupied slot (switching plants)', async ({ page }) => {
         const growspaceCard = page.locator('growspace-manager-card').first();
+        const serviceCalls: any[] = [];
+
+        await page.exposeFunction('trackServiceCall', (domain: string, service: string, data: any) => {
+            serviceCalls.push({ domain, service, data });
+        });
+
+        const mockHass = createMockHass();
+        const hassData = JSON.parse(JSON.stringify(mockHass));
+
+        await growspaceCard.evaluate((node: any, { config, hassData }) => {
+            node.setConfig(config);
+            node.hass = {
+                ...hassData,
+                callService: async (d: string, s: string, data: any) => {
+                    await (window as any).trackServiceCall(d, s, data);
+                    return Promise.resolve();
+                },
+                connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
+                localize: (key: string) => `[${key}]`,
+            };
+        }, { config: { type: 'custom:growspace-manager-card', entity: 'sensor.4x4_tent' }, hassData });
 
         // Find two distinct non-empty plant slots
         const occupiedPlantSlots = growspaceCard.locator('.plant-card-rich:not(.empty)');
@@ -130,5 +151,65 @@ test.describe('Growspace Manager Card Tests', () => {
 
         // Wait for network requests to complete and the UI to update
         await page.waitForTimeout(1000);
+
+        // Verify service call
+        const switchCall = serviceCalls.find((c: any) => c.domain === 'growspace_manager' && c.service === 'switch_plants');
+        expect(switchCall).toBeTruthy();
+        expect(switchCall.data).toHaveProperty('plant1_id');
+        expect(switchCall.data).toHaveProperty('plant2_id');
+    });
+
+    test('fires "harvest_plant" service call when harvesting a flowering plant', async ({ page }) => {
+        const growspaceCard = page.locator('growspace-manager-card').first();
+        const serviceCalls: any[] = [];
+
+        // Setup service call tracking
+        await page.exposeFunction('trackServiceCall', (domain: string, service: string, data: any) => {
+            serviceCalls.push({ domain, service, data });
+        });
+
+        const mockHass = createMockHass();
+        const hassData = JSON.parse(JSON.stringify(mockHass));
+
+        await growspaceCard.evaluate((node: any, { config, hassData }) => {
+            node.setConfig(config);
+            node.hass = {
+                ...hassData,
+                callService: async (d: string, s: string, data: any) => {
+                    await (window as any).trackServiceCall(d, s, data);
+                    return Promise.resolve();
+                },
+                connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
+                localize: (key: string) => `[${key}]`,
+            };
+        }, { config: { type: 'custom:growspace-manager-card', entity: 'sensor.4x4_tent' }, hassData });
+
+        // Find a flowering plant (Blue Dream is flowering in the mock)
+        // We can look for the plant card that contains "Blue Dream"
+        const plantCard = growspaceCard.locator('.plant-card-rich', { hasText: 'Blue Dream' }).first();
+        await expect(plantCard).toBeVisible();
+        await plantCard.click();
+
+        // Wait for dialog
+        const dialog = page.locator('ha-dialog[open]');
+        await expect(dialog).toBeVisible();
+        await expect(dialog).toContainText('Blue Dream');
+
+        // Verify Harvest button is visible (only for flowering plants)
+        const harvestBtn = dialog.locator('button.md3-button.primary', { hasText: 'Harvest' });
+        await expect(harvestBtn).toBeVisible();
+
+        // Click Harvest
+        await harvestBtn.click();
+
+        // Wait for service call
+        await page.waitForTimeout(500);
+
+        // Verify service call
+        const harvestCall = serviceCalls.find((c: any) => c.domain === 'growspace_manager' && c.service === 'harvest_plant');
+        expect(harvestCall).toBeTruthy();
+        expect(harvestCall.data).toHaveProperty('plant_id');
+        // Default behavior is usually moving to 'dry' stage/growspace
+        expect(harvestCall.data).toHaveProperty('target_growspace_id', 'dry_overview');
     });
 });
