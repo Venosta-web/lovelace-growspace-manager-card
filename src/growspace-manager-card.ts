@@ -1,7 +1,7 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain, mdiDotsVertical, mdiRadioboxMarked, mdiRadioboxBlank, mdiWater, mdiPencil, mdiCheckboxMarked, mdiCheckboxBlankOutline, mdiAirHumidifier } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain, mdiDotsVertical, mdiRadioboxMarked, mdiRadioboxBlank, mdiWater, mdiPencil, mdiCheckboxMarked, mdiCheckboxBlankOutline, mdiAirHumidifier, mdiLinkVariant } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
@@ -50,6 +50,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _selectedPlants: Set<string> = new Set();
   @state() private _focusedPlantIndex: number = -1;
   @state() private _mobileEnvExpanded: boolean = false;
+  @state() private _linkedSensors: { [key: string]: string } = {};
 
 
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -2953,59 +2954,53 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     };
   }
 
-  private renderEnvGraph(metricKey: string, color: string, title: string, unit: string, type: 'line' | 'step' = 'line', icon: string = mdiMagnify): TemplateResult {
-    const devices = this.dataService.getGrowspaceDevices();
-    const device = devices.find(d => d.device_id === this.selectedDevice);
-    if (!device) return html``;
+  private _getUnitForMetric(metric: string): string {
+    if (metric === 'temperature') return '°C';
+    if (metric === 'humidity') return '%';
+    if (metric === 'vpd') return 'kPa';
+    if (metric === 'co2') return 'ppm';
+    return '';
+  }
 
-    // Determine Env Entity ID (replicated logic)
-    let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-    if (device.overview_entity_id) {
-      slug = device.overview_entity_id.replace('sensor.', '');
-    }
-    let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
-    if (slug === 'cure') envEntityId = `binary_sensor.cure_optimal_curing`;
-    else if (slug === 'dry') envEntityId = `binary_sensor.dry_optimal_drying`;
+  private _getColorForMetric(metric: string): string {
+    if (metric === 'temperature') return '#ff9800';
+    if (metric === 'humidity') return '#2196f3';
+    if (metric === 'vpd') return '#9c27b0';
+    if (metric === 'co2') return '#4caf50';
+    return '#ffffff';
+  }
+
+  private _fetchGraphData(metricKey: string, unit: string, startTime: Date, now: Date, durationMillis: number, device: GrowspaceDevice): { time: number, value: number, meta?: any }[] {
+    const envEntityId = (() => {
+      let slug = device.name.toLowerCase().replace(/\s+/g, '_');
+      if (device.overview_entity_id) {
+        slug = device.overview_entity_id.replace('sensor.', '');
+      }
+      if (slug === 'cure') return `binary_sensor.cure_optimal_curing`;
+      if (slug === 'dry') return `binary_sensor.dry_optimal_drying`;
+      return `binary_sensor.${slug}_optimal_conditions`;
+    })();
 
     const envEntity = this.hass.states[envEntityId];
     const overviewEntity = device.overview_entity_id ? this.hass.states[device.overview_entity_id] : undefined;
-
-    // Determine Time Range
-    const rangeKey = this._graphRanges[this.selectedDevice || ''] || '24h';
-    let durationMillis = 24 * 60 * 60 * 1000;
-    if (rangeKey === '1h') durationMillis = 60 * 60 * 1000;
-    else if (rangeKey === '6h') durationMillis = 6 * 60 * 60 * 1000;
-    else if (rangeKey === '7d') durationMillis = 7 * 24 * 60 * 60 * 1000;
-    const now = new Date();
-    const startTime = new Date(now.getTime() - durationMillis);
-
-    // Data Generation
     let dataPoints: { time: number, value: number, meta?: any }[] = [];
 
     if (metricKey === 'irrigation' || metricKey === 'drain') {
-      // Generate from Schedule
       const times = metricKey === 'irrigation'
         ? overviewEntity?.attributes?.irrigation_times
         : overviewEntity?.attributes?.drain_times;
 
       if (times && Array.isArray(times)) {
-        // Create a timeline for the selected range
         const events: { start: number, end: number }[] = [];
-
-        // Check today and yesterday to cover the window
-        // For 1h, we might need to check just today, but checking both is safe
         const referenceDays = [new Date(now), new Date(startTime)];
 
         times.forEach((t: any) => {
           const [h, m] = t.time.split(':').map(Number);
-          const duration = (t.duration || 60) * 1000; // default 60s if missing
-
+          const duration = (t.duration || 60) * 1000;
           referenceDays.forEach(refDay => {
             const start = new Date(refDay);
             start.setHours(h, m, 0, 0);
             const end = new Date(start.getTime() + duration);
-
-            // Check overlap with window [startTime, now]
             if (end.getTime() > startTime.getTime() && start.getTime() < now.getTime()) {
               events.push({
                 start: Math.max(start.getTime(), startTime.getTime()),
@@ -3015,98 +3010,65 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           });
         });
 
-        // Sort events
         events.sort((a, b) => a.start - b.start);
-        // Convert to points
-        // Start with 0
         dataPoints.push({ time: startTime.getTime(), value: 0 });
-
         events.forEach(ev => {
           const durationSeconds = (ev.end - ev.start) / 1000;
           let durationStr = `${durationSeconds}s`;
-          if (durationSeconds >= 60) {
-            durationStr = `${Math.round(durationSeconds / 60)}m`;
-          }
-
-          // Add point before start (0)
+          if (durationSeconds >= 60) durationStr = `${Math.round(durationSeconds / 60)}m`;
           dataPoints.push({ time: ev.start - 1, value: 0 });
-          // Add start point (1)
           dataPoints.push({ time: ev.start, value: 1, meta: { duration: durationStr } });
-          // Add end point (1)
           dataPoints.push({ time: ev.end, value: 1, meta: { duration: durationStr } });
-          // Add point after end (0)
           dataPoints.push({ time: ev.end + 1, value: 0 });
         });
-
-        // End with 0 at 'now'
         dataPoints.push({ time: now.getTime(), value: 0 });
-
       }
     } else {
       const getValue = (ent: any, key: string) => {
         if (!ent) return undefined;
-        // Special case for 'state' unit (optimal conditions)
-        if (unit === 'state' && key === 'optimal') {
-          return ent.state === 'on' ? 1 : 0;
-        }
-        // Special case for light cycle
+        if (unit === 'state' && key === 'optimal') return ent.state === 'on' ? 1 : 0;
         if (key === 'light') {
           const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
           return isLightsOn === true ? 1 : 0;
         }
-        // Special case for dehumidifier
         if (key === 'dehumidifier') {
-          if (ent.entity_id && ent.state) {
-            return (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 1 : 0;
-          }
+          if (ent.entity_id && ent.state) return (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 1 : 0;
           const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
           return (val === true || val === 'on' || val === 1) ? 1 : 0;
         }
         if (ent.attributes && ent.attributes[key] !== undefined) return ent.attributes[key];
-        if (ent.attributes && ent.attributes.observations && typeof ent.attributes.observations === 'object') {
-          return ent.attributes.observations[key];
-        }
+        if (ent.attributes?.observations && typeof ent.attributes.observations === 'object') return ent.attributes.observations[key];
         return undefined;
       };
 
       const getMeta = (ent: any, key: string) => {
-        if (unit === 'state' && key === 'optimal') {
-          return ent.attributes?.reasons;
-        }
+        if (unit === 'state' && key === 'optimal') return ent.attributes?.reasons;
         if (key === 'light') {
           const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
           return { state: isLightsOn ? 'ON' : 'OFF' };
         }
         if (key === 'dehumidifier') {
-          if (ent.entity_id && ent.state) {
-            return { state: (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 'ON' : 'OFF' };
-          }
+          if (ent.entity_id && ent.state) return { state: (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 'ON' : 'OFF' };
         }
         return undefined;
       };
 
-      // Use History Data
       let historySource = this._historyData;
-      if (metricKey === 'dehumidifier') {
-        historySource = this._dehumidifierHistory;
+      if (metricKey === 'dehumidifier') historySource = this._dehumidifierHistory;
+
+      if (historySource && historySource.length > 0) {
+        const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+        sortedHistory.forEach(h => {
+          const t = new Date(h.last_changed).getTime();
+          if (t < startTime.getTime()) return;
+          const val = getValue(h, metricKey);
+          const meta = getMeta(h, metricKey);
+          if (val !== undefined && !isNaN(parseFloat(val))) {
+            dataPoints.push({ time: t, value: parseFloat(val), meta });
+          }
+        });
       }
 
-      if (!historySource || historySource.length === 0) return html``;
-
-      const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
-
-      sortedHistory.forEach(h => {
-        const t = new Date(h.last_changed).getTime();
-        if (t < startTime.getTime()) return;
-        const val = getValue(h, metricKey);
-        const meta = getMeta(h, metricKey);
-
-        if (val !== undefined && !isNaN(parseFloat(val))) {
-          dataPoints.push({ time: t, value: parseFloat(val), meta });
-        }
-      });
-
-      // Add current point to extend graph to 'now'
       if (metricKey === 'dehumidifier') {
         if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
           const state = overviewEntity.attributes.dehumidifier_state;
@@ -3125,80 +3087,104 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
     }
 
-    // If we have data but the first point is after start time, synthesize a start point
     if (dataPoints.length > 0) {
       const firstPoint = dataPoints[0];
       if (firstPoint.time > startTime.getTime()) {
-        dataPoints.unshift({
-          time: startTime.getTime(),
-          value: firstPoint.value,
-          meta: firstPoint.meta
-        });
+        dataPoints.unshift({ time: startTime.getTime(), value: firstPoint.value, meta: firstPoint.meta });
       }
     }
-
-    // If we have only 1 point (current state), synthesize a start point to draw a flat line
     if (dataPoints.length === 1) {
-      dataPoints.unshift({
-        time: startTime.getTime(),
-        value: dataPoints[0].value,
-        meta: dataPoints[0].meta
-      });
+      dataPoints.unshift({ time: startTime.getTime(), value: dataPoints[0].value, meta: dataPoints[0].meta });
+    }
+
+    return dataPoints;
+  }
+
+  private renderEnvGraph(metricKey: string, color: string, title: string, unit: string, type: 'line' | 'step' = 'line', icon: string = mdiMagnify): TemplateResult {
+    const devices = this.dataService.getGrowspaceDevices();
+    const device = devices.find(d => d.device_id === this.selectedDevice);
+    if (!device) return html``;
+
+    const rangeKey = this._graphRanges[this.selectedDevice || ''] || '24h';
+    let durationMillis = 24 * 60 * 60 * 1000;
+    if (rangeKey === '1h') durationMillis = 60 * 60 * 1000;
+    else if (rangeKey === '6h') durationMillis = 6 * 60 * 60 * 1000;
+    else if (rangeKey === '7d') durationMillis = 7 * 24 * 60 * 60 * 1000;
+    const now = new Date();
+    const startTime = new Date(now.getTime() - durationMillis);
+
+    const dataPoints = this._fetchGraphData(metricKey, unit, startTime, now, durationMillis, device);
+
+    // Check for linked sensor
+    const linkedMetric = this._linkedSensors[metricKey];
+    let linkedDataPoints: { time: number, value: number, meta?: any }[] | null = null;
+    let linkedColor = '';
+    let linkedUnit = '';
+
+    if (linkedMetric) {
+      linkedUnit = this._getUnitForMetric(linkedMetric);
+      linkedColor = this._getColorForMetric(linkedMetric);
+      linkedDataPoints = this._fetchGraphData(linkedMetric, linkedUnit, startTime, now, durationMillis, device);
     }
 
     if (dataPoints.length < 2 && type !== 'step') return html``;
 
     const width = 1000;
-    const height = type === 'step' ? 100 : 180; // Taller for line graphs
+    const height = type === 'step' ? 100 : 180;
 
-    let minVal = 0;
-    let maxVal = 1;
+    const getPath = (points: { time: number, value: number }[], min: number, range: number) => {
+      if (type === 'step') {
+        const p: [number, number][] = [];
+        let currentState = points.length > 0 ? points[0].value : 0;
+        p.push([0, height - ((currentState - min) / range) * height]);
+        points.forEach(d => {
+          const x = ((d.time - startTime.getTime()) / durationMillis) * width;
+          const y = height - ((d.value - min) / range) * height;
+          p.push([x, p[p.length - 1][1]]);
+          p.push([x, y]);
+          currentState = d.value;
+        });
+        p.push([width, height - ((currentState - min) / range) * height]);
+        return `M ${p.map(pt => `${pt[0]},${pt[1]}`).join(' L ')}`;
+      } else {
+        const p = points.map(d => {
+          const x = ((d.time - startTime.getTime()) / durationMillis) * width;
+          const y = height - ((d.value - min) / range) * height;
+          return [x, y];
+        });
+        return `M ${p.map(pt => `${pt[0]},${pt[1]}`).join(' L ')}`;
+      }
+    };
 
+    let minVal = 0, maxVal = 1;
     if (unit !== 'state' && metricKey !== 'irrigation' && metricKey !== 'drain') {
       minVal = Math.min(...dataPoints.map(d => d.value));
       maxVal = Math.max(...dataPoints.map(d => d.value));
     }
-
     const range = maxVal - minVal || 1;
-
     const paddedMin = minVal - (range * 0.1);
     const paddedMax = maxVal + (range * 0.1);
     const paddedRange = paddedMax - paddedMin;
 
-    // Calculate average for target line
-    const avgValue = dataPoints.length > 0
-      ? dataPoints.reduce((sum, d) => sum + d.value, 0) / dataPoints.length
-      : (minVal + maxVal) / 2;
+    const svgPath = getPath(dataPoints, paddedMin, paddedRange);
 
-    let svgPath = "";
+    let linkedSvgPath = '';
+    let linkedPaddedMin = 0;
+    let linkedPaddedRange = 1;
 
-    if (type === 'step') {
-      const points: [number, number][] = [];
-      let currentState = dataPoints.length > 0 ? dataPoints[0].value : 0;
-
-      points.push([0, height - ((currentState - paddedMin) / paddedRange) * height]);
-
-      dataPoints.forEach(d => {
-        const x = ((d.time - startTime.getTime()) / durationMillis) * width;
-        const y = height - ((d.value - paddedMin) / paddedRange) * height;
-        points.push([x, points[points.length - 1][1]]);
-        points.push([x, y]);
-        currentState = d.value;
-      });
-
-      points.push([width, height - ((currentState - paddedMin) / paddedRange) * height]);
-      svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
-
-    } else {
-      const points: [number, number][] = dataPoints.map(d => {
-        const x = ((d.time - startTime.getTime()) / durationMillis) * width;
-        const y = height - ((d.value - paddedMin) / paddedRange) * height;
-        return [x, y];
-      });
-      svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+    if (linkedDataPoints && linkedDataPoints.length > 0) {
+      let lMin = Math.min(...linkedDataPoints.map(d => d.value));
+      let lMax = Math.max(...linkedDataPoints.map(d => d.value));
+      const lRange = lMax - lMin || 1;
+      linkedPaddedMin = lMin - (lRange * 0.1);
+      const lPaddedMax = lMax + (lRange * 0.1);
+      linkedPaddedRange = lPaddedMax - linkedPaddedMin;
+      linkedSvgPath = getPath(linkedDataPoints, linkedPaddedMin, linkedPaddedRange);
     }
 
-    // For step graphs, use compact design
+    const avgValue = dataPoints.length > 0 ? dataPoints.reduce((sum, d) => sum + d.value, 0) / dataPoints.length : (minVal + maxVal) / 2;
+
+    // Render Step Graph (Compact)
     if (type === 'step') {
       return html`
         <div class="gs-light-cycle-card" style="margin-top: 12px; border: 1px solid ${color}40;">
@@ -3210,62 +3196,22 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                    <div>
                       <div>${title}</div>
                       <div class="gs-light-subtitle">${rangeKey.toUpperCase()} HISTORY • ${(() => {
-          if (metricKey === 'light') {
-            // Get the light schedule sensor for this device
-            const devices = this.dataService.getGrowspaceDevices();
-            const device = devices.find(d => d.device_id === this.selectedDevice);
-            if (device) {
-              const lightScheduleSensorId = `binary_sensor.${device.device_id}_light_schedule_correct`;
-              const lightScheduleSensor = this.hass.states[lightScheduleSensorId];
-              if (lightScheduleSensor?.attributes['Expected schedule']) {
-                return lightScheduleSensor.attributes['Expected schedule'];
-              }
-            }
-            return dataPoints[dataPoints.length - 1]?.value === 1 ? 'ON' : 'OFF';
-          } else if (unit === 'state') {
-            if (metricKey === 'optimal' && dataPoints.length > 0) {
-              let optimalDuration = 0;
-              let currentTime = startTime.getTime();
-              let currentValue = dataPoints[0].value;
-
-              for (let i = 0; i < dataPoints.length; i++) {
-                const point = dataPoints[i];
-                const duration = point.time - currentTime;
-                if (duration > 0 && currentValue === 1) {
-                  optimalDuration += duration;
-                }
-                currentTime = point.time;
-                currentValue = point.value;
-              }
-
-              const totalDuration = now.getTime() - startTime.getTime();
-              const percentage = totalDuration > 0 ? Math.round((optimalDuration / totalDuration) * 100) : 0;
-              return `OPTIMAL ${percentage}%`;
-            }
-            return dataPoints[dataPoints.length - 1]?.value === 1 ? 'OPTIMAL' : 'NOT OPTIMAL';
-          } else if (metricKey === 'irrigation' || metricKey === 'drain') {
-            return dataPoints[dataPoints.length - 1]?.value === 1 ? 'ACTIVE' : 'INACTIVE';
-          } else {
-            return `${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}`;
-          }
+          if (metricKey === 'light') return dataPoints[dataPoints.length - 1]?.value === 1 ? 'ON' : 'OFF';
+          if (unit === 'state') return dataPoints[dataPoints.length - 1]?.value === 1 ? 'OPTIMAL' : 'NOT OPTIMAL';
+          return `${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}`;
         })()}</div>
                    </div>
                </div>
-               
-
-
                <div style="opacity: 0.7; cursor: pointer;" @click=${() => this._toggleEnvGraph(metricKey)}>
                   <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronDown}"></path></svg>
                </div>
            </div>
-
            <div class="gs-chart-container" style="height: 100px;"
                 @mousemove=${(e: MouseEvent) => {
           const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
           this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
         }}
                 @mouseleave=${() => this._tooltip = null}>
-
                ${this._tooltip && this._tooltip.id === metricKey ? html`
                    <div class="gs-cursor-line" style="left: ${this._tooltip.x}px;"></div>
                    <div class="gs-tooltip" style="left: ${this._tooltip.x}px;">
@@ -3273,7 +3219,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                       <div>${this._tooltip.value}</div>
                    </div>
                ` : ''}
-
                <svg class="gs-chart-svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
                    <defs>
                        <linearGradient id="grad-${metricKey}" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -3297,23 +3242,21 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       `;
     }
 
-    // For line graphs, use new rectangular design
-    const yLabels = [
-      paddedMax,
-      paddedMax - paddedRange * 0.25,
-      paddedMax - paddedRange * 0.5,
-      paddedMax - paddedRange * 0.75,
-      paddedMin
-    ];
+    const yLabels = [paddedMax, paddedMax - paddedRange * 0.25, paddedMax - paddedRange * 0.5, paddedMax - paddedRange * 0.75, paddedMin];
 
     return html`
       <div class="gs-env-graph-card" style="margin-top: 12px; background: #1a1a1a; border-radius: 12px; padding: 16px;">
          <div class="gs-env-graph-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer;" @click=${() => this._toggleEnvGraph(metricKey)}>
              <div style="display: flex; align-items: center; gap: 12px;">
                  <svg style="width:24px;height:24px;fill:${color};" viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+                 ${linkedMetric ? html`<svg style="width:20px;height:20px;fill:#fff; opacity:0.5;" viewBox="0 0 24 24"><path d="${mdiLinkVariant}"></path></svg>` : ''}
+                 ${linkedMetric ? html`<div style="width:12px;height:12px;border-radius:50%;background:${linkedColor};"></div>` : ''}
                  <div>
-                    <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${title}</div>
+                    <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">
+                      ${title} ${linkedMetric ? `& ${linkedMetric.charAt(0).toUpperCase() + linkedMetric.slice(1)}` : ''}
+                    </div>
                  </div>
+                 ${linkedMetric ? html`<div @click=${(e: Event) => { e.stopPropagation(); this._unlinkSensors(metricKey); }} style="margin-left:8px; opacity:0.7; hover:opacity:1;"><svg style="width:16px;height:16px;fill:#fff;" viewBox="0 0 24 24"><path d="${mdiLinkVariant}"></path></svg></div>` : ''}
              </div>
          </div>
 
@@ -3345,11 +3288,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                      </linearGradient>
                  </defs>
                  
-                 <!-- Vertical grid lines -->
+                 <!-- Grid lines -->
                  <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
-                 <line x1="${width * 0.25}" y1="0" x2="${width * 0.25}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
-                 <line x1="${width * 0.5}" y1="0" x2="${width * 0.5}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
-                 <line x1="${width * 0.75}" y1="0" x2="${width * 0.75}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
                  <line x1="${width}" y1="0" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
                  
                  <!-- Target/average line -->
@@ -3362,6 +3302,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                  <!-- Data line and fill -->
                  <path d="${svgPath} V ${height} H 0 Z" fill="url(#grad-${metricKey})" />
                  <path d="${svgPath}" fill="none" stroke="${color}" stroke-width="2.5" />
+
+                 <!-- Linked Data Line -->
+                 ${linkedSvgPath ? html`
+                    <path d="${linkedSvgPath}" fill="none" stroke="${linkedColor}" stroke-width="2.5" />
+                 ` : ''}
              </svg>
              
              <!-- X-axis markers -->
@@ -3669,6 +3614,50 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.dataService.addGrowspace(d)
       .then(() => { this._configDialog = null; this.requestUpdate(); })
       .catch(e => alert(`Error: ${e.message}`));
+  }
+
+  private _handleChipDragStart(e: DragEvent, metric: string) {
+    if (e.dataTransfer) {
+      e.dataTransfer.setData('text/plain', metric);
+      e.dataTransfer.effectAllowed = 'link';
+    }
+  }
+
+  private _handleChipDragOver(e: DragEvent) {
+    e.preventDefault();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'link';
+    }
+  }
+
+  private _handleChipDrop(e: DragEvent, targetMetric: string) {
+    e.preventDefault();
+    if (e.dataTransfer) {
+      const sourceMetric = e.dataTransfer.getData('text/plain');
+      if (sourceMetric && sourceMetric !== targetMetric) {
+        if ((sourceMetric === 'temperature' && targetMetric === 'humidity') ||
+          (sourceMetric === 'humidity' && targetMetric === 'temperature')) {
+
+          this._linkedSensors = {
+            ...this._linkedSensors,
+            [targetMetric]: sourceMetric
+          };
+
+          if (!this._activeEnvGraphs.has(targetMetric)) {
+            this._toggleEnvGraph(targetMetric);
+          }
+
+          this.requestUpdate();
+        }
+      }
+    }
+  }
+
+  private _unlinkSensors(primary: string) {
+    const newLinked = { ...this._linkedSensors };
+    delete newLinked[primary];
+    this._linkedSensors = newLinked;
+    this.requestUpdate();
   }
 
   private _handleEnvSubmit() {
@@ -4125,13 +4114,31 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
                 ${temp !== undefined ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('temperature') ? 'active' : ''}"
+                        draggable="true"
+                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'temperature')}
+                        @dragover=${this._handleChipDragOver}
+                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'temperature')}
                         @click=${() => this._toggleEnvGraph('temperature')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>${temp}°C
+                     ${this._linkedSensors['temperature'] ? html`
+                        <div class="chip-link-icon" @click=${(e: Event) => { e.stopPropagation(); this._unlinkSensors('temperature'); }}>
+                           <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; margin-left: 4px; fill: currentColor;"><path d="${mdiLinkVariant}"></path></svg>
+                        </div>
+                     ` : ''}
                    </div>` : ''}
                 ${hum !== undefined ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('humidity') ? 'active' : ''}"
+                        draggable="true"
+                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'humidity')}
+                        @dragover=${this._handleChipDragOver}
+                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'humidity')}
                         @click=${() => this._toggleEnvGraph('humidity')}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>${hum}%
+                     ${this._linkedSensors['humidity'] ? html`
+                        <div class="chip-link-icon" @click=${(e: Event) => { e.stopPropagation(); this._unlinkSensors('humidity'); }}>
+                           <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; margin-left: 4px; fill: currentColor;"><path d="${mdiLinkVariant}"></path></svg>
+                        </div>
+                     ` : ''}
                    </div>` : ''}
                 ${vpd !== undefined ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('vpd') ? 'active' : ''}"
