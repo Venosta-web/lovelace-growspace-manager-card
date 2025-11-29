@@ -2078,7 +2078,7 @@ class DialogRenderer {
                   ` : x `
                      <div style="display: flex; gap: 16px; align-items: center;">
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                           <button class="sd-btn secondary" @click=${(e) => e.currentTarget.nextElementSibling?.dispatchEvent(new MouseEvent('click'))}>
+                           <button class="sd-btn secondary" @click=${(e) => e.currentTarget.nextElementSibling.click()}>
                               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
                               Camera
                            </button>
@@ -2086,7 +2086,7 @@ class DialogRenderer {
                         </div>
                         
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                           <button class="sd-btn secondary" @click=${(e) => e.currentTarget.nextElementSibling?.dispatchEvent(new MouseEvent('click'))}>
+                           <button class="sd-btn secondary" @click=${(e) => e.currentTarget.nextElementSibling.click()}>
                               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
                               Gallery
                            </button>
