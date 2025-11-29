@@ -127,5 +127,9 @@ test.describe('Graph Tooltips', () => {
         // Check Tooltip
         await expect(tooltip).toBeVisible();
         await expect(tooltip).toContainText('Optimal Conditions');
+
+        // Check Subtitle for Percentage
+        // Since mock history has state 'on' at 'now', and logic extends it back to start, it should be 100%
+        await expect(card.locator('.gs-light-subtitle')).toContainText('OPTIMAL 100%');
     });
 });

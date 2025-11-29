@@ -12412,6 +12412,23 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                     return dataPoints[dataPoints.length - 1]?.value === 1 ? 'ON' : 'OFF';
                 }
                 else if (unit === 'state') {
+                    if (metricKey === 'optimal' && dataPoints.length > 0) {
+                        let optimalDuration = 0;
+                        let currentTime = startTime.getTime();
+                        let currentValue = dataPoints[0].value;
+                        for (let i = 0; i < dataPoints.length; i++) {
+                            const point = dataPoints[i];
+                            const duration = point.time - currentTime;
+                            if (duration > 0 && currentValue === 1) {
+                                optimalDuration += duration;
+                            }
+                            currentTime = point.time;
+                            currentValue = point.value;
+                        }
+                        const totalDuration = now.getTime() - startTime.getTime();
+                        const percentage = totalDuration > 0 ? Math.round((optimalDuration / totalDuration) * 100) : 0;
+                        return `OPTIMAL ${percentage}%`;
+                    }
                     return dataPoints[dataPoints.length - 1]?.value === 1 ? 'OPTIMAL' : 'NOT OPTIMAL';
                 }
                 else if (metricKey === 'irrigation' || metricKey === 'drain') {
