@@ -359,6 +359,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           box-sizing: border-box;
           justify-content: flex-start;
         }
+
+        /* Align menu container to right on mobile */
+        .menu-container {
+          width: 100%;
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 8px;
+        }
       }
 
       .stat-chip {
