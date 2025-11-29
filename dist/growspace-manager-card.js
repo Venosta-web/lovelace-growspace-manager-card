@@ -12691,6 +12691,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                 });
             }
         });
+        console.log('Combined Graph Data:', graphData);
         if (graphData.length === 0)
             return x ``;
         const width = 1000;
@@ -12783,6 +12784,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                 return [x, y];
             });
             const path = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+            console.log(`Path for ${g.key}:`, path);
             return x `
                          <path d="${path}" fill="none" stroke="${g.color}" stroke-width="2" />
                          <path d="${path} V ${height} H ${points[0][0]} Z" fill="${g.color}" fill-opacity="0.1" stroke="none" />
@@ -12843,7 +12845,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         try {
             await this.dataService.addStrain(payload);
             // Refetch library to update list or optimistic update
-            const key = `${s.strain}|${s.phenotype || 'default'}`;
+            const key = `${s.strain}| ${s.phenotype || 'default'} `;
             const newEntry = {
                 key: key,
                 strain: s.strain,
@@ -12968,7 +12970,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             }
             catch (err) {
                 console.error("Import failed:", err);
-                alert(`Import failed: ${err.message}`);
+                alert(`Import failed: ${err.message} `);
             }
         };
         input.click();
@@ -13038,7 +13040,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             plant_id: plant.attributes.plant_id,
             target_growspace_id: targetGrowspace
         }).then(() => {
-            console.log(`Moved clone ${plant.attributes.friendly_name} to ${targetGrowspace}`);
+            console.log(`Moved clone ${plant.attributes.friendly_name} to ${targetGrowspace} `);
             // Optionally refresh local state
             this._plantOverviewDialog = null;
         }).catch((err) => {
@@ -13126,7 +13128,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         }
         this.dataService.addGrowspace(d)
             .then(() => { this._configDialog = null; this.requestUpdate(); })
-            .catch(e => alert(`Error: ${e.message}`));
+            .catch(e => alert(`Error: ${e.message} `));
     }
     _handleEnvSubmit() {
         if (!this._configDialog)
@@ -13146,7 +13148,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             fan_switch: d.fan_switch || undefined
         })
             .then(() => { this._configDialog = null; this.requestUpdate(); })
-            .catch(e => alert(`Error: ${e.message}`));
+            .catch(e => alert(`Error: ${e.message} `));
     }
     _handleGlobalSubmit() {
         if (!this._configDialog)
@@ -13154,7 +13156,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         const d = this._configDialog.globalData;
         this.dataService.configureGlobalSettings(d)
             .then(() => { this._configDialog = null; this.requestUpdate(); })
-            .catch(e => alert(`Error: ${e.message}`));
+            .catch(e => alert(`Error: ${e.message} `));
     }
     // Grow Master Methods
     _openGrowMasterDialog() {
@@ -13200,7 +13202,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         }
         catch (e) {
             if (this._growMasterDialog) {
-                this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'}`;
+                this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'} `;
             }
         }
         finally {
@@ -13240,7 +13242,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         }
         catch (e) {
             if (this._growMasterDialog) {
-                this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'}`;
+                this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'} `;
             }
         }
         finally {
@@ -13270,7 +13272,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         }
         catch (e) {
             if (this._strainRecommendationDialog) {
-                this._strainRecommendationDialog.response = `Error: ${e.message || 'Failed to get recommendation.'}`;
+                this._strainRecommendationDialog.response = `Error: ${e.message || 'Failed to get recommendation.'} `;
             }
         }
         finally {
@@ -13331,16 +13333,16 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         return x `
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="sr-only-announcer" aria-live="polite"></div>
-        <div class="unified-growspace-card" tabindex="0" @keydown=${this._handleKeyboardNav}>
-          ${this.renderHeader(devices)}
+          <div class="unified-growspace-card" tabindex="0" @keydown=${this._handleKeyboardNav}>
+            ${this.renderHeader(devices)}
           ${!this._isCompactView ? this.renderGrowspaceHeader(selectedDeviceData) : ''}
           ${this.renderEditModeBanner()}
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
-        </div>
-      </ha-card>
+</div>
+  </ha-card>
       
       ${this.renderDialogs()}
-    `;
+`;
     }
     renderGrowspaceHeader(device) {
         const dominant = PlantUtils.getDominantStage(device.plants);
@@ -13439,7 +13441,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             });
             // Final point at 'now'
             points.push([width, currentState ? 0 : height]);
-            `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+            `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')} `;
             // Calculate Last ON / OFF Times
             // We need the *latest* transition to ON and the *latest* transition to OFF
             // Scan history (Newest -> Oldest)
@@ -13483,42 +13485,42 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         const nextDrain = getNextEvent(overviewEntity?.attributes?.drain_times);
         return x `
       <div class="gs-stats-container">
-         <div class="gs-header-top">
-            <div class="gs-title-group">
-               <!-- Title as Dropdown if no default is set -->
-               ${!this._config?.default_growspace ? x `
-                 <select class="growspace-select-header" .value=${this.selectedDevice || ''} @change=${this._handleDeviceChange}>
-                    ${devices.map(d => x `<option value="${d.device_id}">${d.name}</option>`)}
-                 </select>
-               ` : x `
-                 <h3 class="gs-title">${device.name}</h3>
-               `}
+        <div class="gs-header-top">
+          <div class="gs-title-group">
+            <!-- Title as Dropdown if no default is set -->
+            ${!this._config?.default_growspace ? x `
+                   <select class="growspace-select-header" .value=${this.selectedDevice || ''} @change=${this._handleDeviceChange}>
+                      ${devices.map(d => x `<option value="${d.device_id}">${d.name}</option>`)}
+                   </select>
+                 ` : x `
+                   <h3 class="gs-title">${device.name}</h3>
+                 `}
 
 
-               ${dominant ? x `
-               <div style="display: flex; gap: 8px;">
-                <div class="gs-stage-chip">
-                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
-                  ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Day ${dominant.days}
-                </div>
-                <div class="gs-stage-chip">
-                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
-                  ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Week ${Math.ceil(dominant.days / 7)}
-                </div>
-               </div>
-               ` : ''}
-            </div>
+                 ${dominant ? x `
+                 <div style="display: flex; gap: 8px;">
+                  <div class="gs-stage-chip">
+                    <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
+                    ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Day ${dominant.days}
+                  </div>
+                  <div class="gs-stage-chip">
+                    <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
+                    ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Week ${Math.ceil(dominant.days / 7)}
+                  </div>
+                 </div>
+                 ` : ''}
+  </div>
 
-            <div class="gs-stats-chips ${this._mobileEnvExpanded ? 'expanded' : ''}">
-                <!-- Mobile Toggle Chip -->
-                <div class="stat-chip mobile-env-trigger ${this._mobileEnvExpanded ? 'active' : ''}"
-                     @click=${() => this._mobileEnvExpanded = !this._mobileEnvExpanded}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>
-                  Environment
-                  <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-left: 4px; opacity: 0.7;">
-                    <path d="${this._mobileEnvExpanded ? mdiChevronDown : mdiChevronRight}"></path>
-                  </svg>
-                </div>
+    <div class="gs-stats-chips ${this._mobileEnvExpanded ? 'expanded' : ''}">
+      <!-- Mobile Toggle Chip -->
+        <div class="stat-chip mobile-env-trigger ${this._mobileEnvExpanded ? 'active' : ''}"
+  @click=${() => this._mobileEnvExpanded = !this._mobileEnvExpanded}>
+    <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>
+      Environment
+      <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-left: 4px; opacity: 0.7;">
+        <path d="${this._mobileEnvExpanded ? mdiChevronDown : mdiChevronRight}"></path>
+          </svg>
+          </div>
 
                 ${temp !== undefined ? x `
                    <div class="stat-chip ${this._activeEnvGraphs.has('temperature') ? 'active' : ''}"
@@ -13861,8 +13863,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         }
         devices.find(d => d.device_id === this.selectedDevice);
         return x `
-      <div class="header">
-        ${this._config?.title ? x `<h2 class="header-title">${this._config.title}</h2>` : ''}
+  < div class="header" >
+    ${this._config?.title ? x `<h2 class="header-title">${this._config.title}</h2>` : ''}
         
         ${this._isCompactView ? x `
           <div class="selector-container">
@@ -13909,38 +13911,38 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             </button>
           </div>
         ` : ''}
-      </div>
-    `;
+</div>
+  `;
     }
     renderEditModeBanner() {
         if (!this._isEditMode)
             return x ``;
         return x `
-      <div class="edit-mode-banner">
-        <div class="banner-content">
-          <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiCheckboxMarked}"></path>
+  < div class="edit-mode-banner" >
+    <div class="banner-content" >
+      <svg style="width:20px;height:20px;fill:currentColor;" viewBox = "0 0 24 24" >
+        <path d="${mdiCheckboxMarked}" > </path>
           </svg>
-          <span>${this._selectedPlants.size} plant(s) selected</span>
-        </div>
-        <div class="banner-actions">
-          <button class="md3-button text" @click=${this._selectAllPlants}>Select All</button>
-          <button class="md3-button text" @click=${this._deselectAllPlants}>Clear</button>
-          <button class="md3-button text" @click=${this._exitEditMode}>Exit</button>
-        </div>
-      </div>
-    `;
+          < span > ${this._selectedPlants.size} plant(s) selected </span>
+            </div>
+            < div class="banner-actions" >
+              <button class="md3-button text" @click=${this._selectAllPlants}> Select All </button>
+                < button class="md3-button text" @click=${this._deselectAllPlants}> Clear </button>
+                  < button class="md3-button text" @click=${this._exitEditMode}> Exit </button>
+                    </div>
+                    </div>
+                      `;
     }
     renderGrid(grid, rows, cols, strainLibrary) {
         const isListView = cols > 5;
         // Use minmax(0, 1fr) to allow items to shrink below their content size, fixing overflow issues in 5-col grids.
         const gridStyle = isListView
             ? ''
-            : `grid-template-columns: repeat(${cols}, minmax(0, 1fr)); grid-template-rows: repeat(${rows}, 1fr);`;
+            : `grid - template - columns: repeat(${cols}, minmax(0, 1fr)); grid - template - rows: repeat(${rows}, 1fr); `;
         return x `
-      <div class="grid ${this._isCompactView ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
-           style="${gridStyle}">
-        ${grid.flat().map((plant, index) => {
+  < div class="grid ${this._isCompactView ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
+style = "${gridStyle}" >
+  ${grid.flat().map((plant, index) => {
             const row = Math.floor(index / cols) + 1;
             const col = (index % cols) + 1;
             if (!plant) {
@@ -13948,26 +13950,26 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             }
             return this.renderPlantSlot(plant, row, col, strainLibrary);
         })}
-      </div>
-    `;
+</div>
+  `;
     }
     renderEmptySlot(row, col) {
         return x `
-      <div
-        class="plant-card-empty"
-        style="grid-row: ${row}; grid-column: ${col}"
-        @click=${() => this._openAddPlantDialog(row - 1, col - 1)}
-        @dragover=${this._handleDragOver}
-        @drop=${(e) => this._handleDrop(e, row, col, null)}
+  < div
+class="plant-card-empty"
+style = "grid-row: ${row}; grid-column: ${col}"
+@click=${() => this._openAddPlantDialog(row - 1, col - 1)}
+@dragover=${this._handleDragOver}
+@drop=${(e) => this._handleDrop(e, row, col, null)}
       >
-        <div class="plant-header">
-          <svg style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiPlus}"></path>
-          </svg>
+  <div class="plant-header" >
+    <svg style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;" viewBox = "0 0 24 24" >
+      <path d="${mdiPlus}" > </path>
+        </svg>
         </div>
-        <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
-      </div>
-    `;
+        < div style = "font-weight: 500; opacity: 0.8;" > Add Plant </div>
+          </div>
+            `;
     }
     renderPlantSlot(plant, row, col, strainLibrary) {
         const stageColor = PlantUtils.getPlantStageColor(plant.state);
@@ -14002,17 +14004,17 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         }
         const isSelected = this._selectedPlants.has(plant.attributes.plant_id || '');
         return x `
-      <div
-        class="plant-card-rich"
-        style="grid-row: ${row}; grid-column: ${col}; --stage-color: ${stageColor}"
-        draggable="true"
-        @dragstart=${(e) => this._handleDragStart(e, plant)}
-        @dragend=${this._handleDragEnd}
-        @dragover=${this._handleDragOver}
-        @drop=${(e) => this._handleDrop(e, row, col, plant)}
-        @click=${() => this._handlePlantClick(plant)}
+          < div
+class="plant-card-rich"
+style = "grid-row: ${row}; grid-column: ${col}; --stage-color: ${stageColor}"
+draggable = "true"
+@dragstart=${(e) => this._handleDragStart(e, plant)}
+@dragend=${this._handleDragEnd}
+@dragover=${this._handleDragOver}
+@drop=${(e) => this._handleDrop(e, row, col, plant)}
+@click=${() => this._handlePlantClick(plant)}
       >
-        ${imageUrl ? x `
+  ${imageUrl ? x `
           <img 
             class="plant-card-bg" 
             src="${imageUrl}" 
@@ -14031,22 +14033,22 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
           </div>
         ` : ''}
 
-        <div class="plant-card-content">
-          <div class="pc-info">
-            <div class="pc-strain-name" title="${plant.attributes?.strain || ''}">
-              ${plant.attributes?.strain || 'Unknown Strain'}
-            </div>
+<div class="plant-card-content" >
+  <div class="pc-info" >
+    <div class="pc-strain-name" title = "${plant.attributes?.strain || ''}" >
+      ${plant.attributes?.strain || 'Unknown Strain'}
+</div>
             ${plant.attributes?.phenotype ? x `<div class="pc-pheno">${plant.attributes.phenotype}</div>` : ''}
-            <div class="pc-stage">
-              ${plant.state || 'Unknown'}
-            </div>
-          </div>
+<div class="pc-stage" >
+  ${plant.state || 'Unknown'}
+</div>
+  </div>
 
-          <div class="pc-stats">
-            ${this.renderPlantDaysRich(plant)}
-          </div>
-        </div>
-      </div>
+  < div class="pc-stats" >
+    ${this.renderPlantDaysRich(plant)}
+</div>
+  </div>
+  </div>
     `;
     }
     renderPlantDaysRich(plant) {
@@ -14082,7 +14084,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                 </div>
             `;
         })}
-    `;
+`;
     }
     _setGraphRange(range) {
         if (!this.selectedDevice)
@@ -14100,8 +14102,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         const currentRange = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
         const ranges = ['1h', '6h', '24h', '7d'];
         return x `
-      <div class="time-range-selector">
-        ${ranges.map(range => x `
+  < div class="time-range-selector" >
+    ${ranges.map(range => x `
           <button 
             class="range-btn ${currentRange === range ? 'active' : ''}"
             @click=${() => this._setGraphRange(range)}
@@ -14109,8 +14111,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             ${range}
           </button>
         `)}
-      </div>
-    `;
+</div>
+  `;
     }
     _searchStrains(query) {
         if (!query)
@@ -14403,7 +14405,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                 }
             },
         })}
-    `;
+`;
     }
 };
 GrowspaceManagerCard.styles = [
