@@ -1471,11 +1471,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         }
         /* Switch Grid to List View */
         .grid {
-          display: flex;
-          flex-direction: column;
+          display: flex !important;
+          flex-direction: column !important;
           gap: var(--spacing-sm);
-          grid-template-columns: 1fr !important;
-          grid-template-rows: auto !important;
+          grid-template-columns: unset !important;
+          grid-template-rows: unset !important;
         }
 
         /* Mobile List View for Rich Cards */
