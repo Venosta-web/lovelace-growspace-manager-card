@@ -1492,12 +1492,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
         .plant-card-bg {
            /* Turn background into a thumbnail on mobile */
-           position: relative;
-           width: 64px;
-           height: 64px;
+           position: relative !important;
+           width: 64px !important;
+           height: 64px !important;
            border-radius: 8px;
            flex-shrink: 0;
            background-color: rgba(0,0,0,0.2);
+           object-fit: cover !important;
         }
 
         .plant-card-overlay {
@@ -1531,15 +1532,20 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
         .pc-strain-name {
            font-size: 0.9rem;
+           color: #fff !important;
+           font-weight: 700;
         }
 
         .pc-pheno {
            font-size: 0.8rem;
+           color: rgba(255,255,255,0.7) !important;
         }
 
         .pc-stage {
            margin-top: 2px;
            font-size: 0.8rem;
+           color: var(--stage-color, #fff) !important;
+           font-weight: 600;
         }
 
         .pc-stats {
