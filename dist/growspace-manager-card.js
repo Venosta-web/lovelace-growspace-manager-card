@@ -922,208 +922,6 @@ class DialogRenderer {
       ${content}
     `;
     }
-    static renderPlantOverviewDialog(dialog, growspaceOptions, callbacks) {
-        if (!dialog?.open)
-            return x ``;
-        const { plant, editedAttributes, selectedPlantIds } = dialog;
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        const stageColor = PlantUtils.getPlantStageColor(plant.state);
-        const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
-        const isBulkEdit = selectedPlantIds && selectedPlantIds.length > 1;
-        const onAttributeChange = (key, value) => {
-            editedAttributes[key] = typeof value === 'number' ? value.toString() : value;
-            callbacks.onAttributeChange(key, editedAttributes[key]);
-        };
-        return x `
-      <ha-dialog
-        open
-        @closed=${callbacks.onClose}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
-      >
-        <div class="glass-dialog-container" style="--stage-color: ${stageColor}">
-
-          <!-- BULK EDIT BANNER -->
-          ${isBulkEdit ? x `
-            <div style="
-              background: rgba(34, 197, 94, 0.1);
-              border: 1px solid rgba(34, 197, 94, 0.3);
-              border-radius: 8px;
-              padding: 12px 16px;
-              margin-bottom: 16px;
-              color: #22c55e;
-              display: flex;
-              align-items: center;
-              gap: 12px;
-            ">
-              <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiPencil}"></path>
-              </svg>
-              <div>
-                <strong>Bulk Editing ${selectedPlantIds.length} Plants</strong>
-                <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 4px;">
-                  Only date fields can be edited in bulk mode. Identity & location fields are protected.
-                </div>
-              </div>
-            </div>
-          ` : E}
-
-          <!-- HEADER -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${stageIcon}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-               <h2 class="dialog-title">${editedAttributes.strain || 'Unknown Strain'}</h2>
-               <div class="dialog-subtitle">${plant.state} Stage • ${editedAttributes.phenotype || 'No Phenotype'}</div>
-            </div>
-            <button class="md3-button text" @click=${callbacks.onClose} style="min-width: auto; padding: 8px;">
-               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                 <path d="${mdiClose}"></path>
-               </svg>
-            </button>
-          </div>
-
-          <div class="overview-grid">
-             <!-- IDENTITY & LOCATION CARD -->
-             <div class="detail-card" style="${isBulkEdit ? 'opacity: 0.5; pointer-events: none;' : ''}">
-               <h3>Identity & Location ${isBulkEdit ? '(Read-only in bulk mode)' : ''}</h3>
-               ${DialogRenderer.renderMD3TextInput('Strain Name', editedAttributes.strain || '', (v) => callbacks.onAttributeChange('strain', v))}
-               ${DialogRenderer.renderMD3TextInput('Phenotype', editedAttributes.phenotype || '', (v) => callbacks.onAttributeChange('phenotype', v))}
-               <div style="display:flex; gap:16px;">
-                 ${DialogRenderer.renderMD3NumberInput('Row', editedAttributes.row || 1, (v) => callbacks.onAttributeChange('row', parseInt(v)))}
-                 ${DialogRenderer.renderMD3NumberInput('Col', editedAttributes.col || 1, (v) => callbacks.onAttributeChange('col', parseInt(v)))}
-               </div>
-             </div>
-
-             <!-- TIMELINE CARD -->
-             <div class="detail-card">
-               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                 <h3 style="margin: 0;">Timeline</h3>
-                 <button class="md3-button text" style="min-width: auto; padding: 4px;" @click=${callbacks.onToggleShowAllDates}>
-                    <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-                 </button>
-               </div>
-               
-               ${dialog.showAllDates ? x `
-                  ${DialogRenderer.renderMD3DateTimeInput('Seedling Start', editedAttributes.seedling_start ?? '', (v) => onAttributeChange('seedling_start', v))}
-                  ${DialogRenderer.renderMD3DateTimeInput('Mother Start', editedAttributes.mother_start ?? '', (v) => onAttributeChange('mother_start', v))}
-                  ${DialogRenderer.renderMD3DateTimeInput('Clone Start', editedAttributes.clone_start ?? '', (v) => onAttributeChange('clone_start', v))}
-                  ${DialogRenderer.renderMD3DateTimeInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => onAttributeChange('veg_start', v))}
-                  ${DialogRenderer.renderMD3DateTimeInput('Flower Start', editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))}
-                  ${DialogRenderer.renderMD3DateTimeInput('Dry Start', editedAttributes.dry_start ?? '', (v) => onAttributeChange('dry_start', v))}
-                  ${DialogRenderer.renderMD3DateTimeInput('Cure Start', editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))}
-               ` : x `
-                  ${editedAttributes.stage === 'mother'
-            ? DialogRenderer.renderMD3DateTimeInput('Mother Start', editedAttributes.mother_start ?? '', (v) => onAttributeChange('mother_start', v))
-            : E}
-                  ${editedAttributes.stage === 'clone'
-            ? DialogRenderer.renderMD3DateTimeInput('Clone Start', editedAttributes.clone_start ?? '', (v) => onAttributeChange('clone_start', v))
-            : E}
-                  ${editedAttributes.stage === 'veg' || editedAttributes.stage === 'flower'
-            ? DialogRenderer.renderMD3DateTimeInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => onAttributeChange('veg_start', v))
-            : E}
-                  ${editedAttributes.stage === 'flower'
-            ? DialogRenderer.renderMD3DateTimeInput('Flower Start', editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))
-            : E}
-                  ${editedAttributes.stage === 'dry' || editedAttributes.stage === 'cure'
-            ? DialogRenderer.renderMD3DateTimeInput('Dry Start', editedAttributes.dry_start ?? '', (v) => onAttributeChange('dry_start', v))
-            : E}
-                  ${editedAttributes.stage === 'cure'
-            ? DialogRenderer.renderMD3DateTimeInput('Cure Start', editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))
-            : E}
-               `}
-             </div>
-
-             <!-- STATS CARD -->
-             ${DialogRenderer.renderPlantStatsMD3(plant)}
-
-          </div>
-
-          <!-- ACTION BUTTONS -->
-          <div class="button-group">
-             <button class="md3-button danger" @click=${() => callbacks.onDelete(plantId)}>
-               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
-               Delete
-             </button>
-
-             <button class="md3-button tonal" @click=${callbacks.onUpdate}>
-               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
-               Save Changes
-             </button>
-
-             <!-- DYNAMIC ACTIONS BASED ON STAGE -->
-             ${plant.state.toLowerCase() === 'mother' ? x `
-                <div class="take-clone-container" style="display:contents;" data-plant-id="${plant.entity_id}">
-                  <!-- Ideally this input should be styled nicely too, but for now inline -->
-                   <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value="1"
-                    class="num-clones-input md3-input"
-                    style="width: 60px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 8px; text-align:center; padding:0;"
-                  >
-                  <button class="md3-button primary"
-                    @click=${(e) => {
-            const btn = e.currentTarget;
-            // Find the input sibling (since we used display:contents, they are siblings in the flex container)
-            const input = btn.previousElementSibling;
-            const numClones = input ? parseInt(input.value, 10) : 1;
-            callbacks.onTakeClone(plant, numClones);
-        }}
-                  >
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
-                    Take Clone
-                  </button>
-                </div>
-             ` : E}
-
-             ${plant.state.toLowerCase() === 'flower' ? x `
-               <button class="md3-button primary" @click=${() => callbacks.onHarvest(plant)}>
-                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
-                 Harvest
-               </button>
-             ` : E}
-
-             ${plant.state.toLowerCase() === 'dry' ? x `
-               <button class="md3-button primary" @click=${() => callbacks.onFinishDrying(plant)}>
-                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
-                 Finish Drying
-               </button>
-             ` : E}
-
-             ${plant.state.toLowerCase() === 'clone' ? x `
-               <div style="display:contents;">
-                  <select class="md3-input" style="width: auto; height: 40px; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 0 16px;" id="clone-target-select">
-                    <option value="">Move to...</option>
-                    ${Object.entries(growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
-                  </select>
-                  <button class="md3-button primary"
-                    @click=${(e) => {
-            const btn = e.currentTarget;
-            const select = btn.previousElementSibling;
-            if (!select.value) {
-                alert('Select a growspace');
-                return;
-            }
-            callbacks.onMoveClone(plant, select.value);
-        }}
-                  >
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
-                    Move
-                  </button>
-               </div>
-             ` : E}
-          </div>
-
-        </div>
-      </ha-dialog>
-    `;
-    }
     static renderStrainLibraryDialog(dialog, callbacks) {
         if (!dialog?.open)
             return x ``;
@@ -12186,6 +11984,383 @@ GrowspaceEnvChart = __decorate([
     t('growspace-env-chart')
 ], GrowspaceEnvChart);
 
+let PlantOverviewDialog = class PlantOverviewDialog extends i {
+    constructor() {
+        super(...arguments);
+        this.dialog = null;
+        this.growspaceOptions = {};
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    _update() {
+        this.dispatchEvent(new CustomEvent('update'));
+    }
+    _delete(plantId) {
+        this.dispatchEvent(new CustomEvent('delete', { detail: { plantId } }));
+    }
+    _harvest(plant) {
+        this.dispatchEvent(new CustomEvent('harvest', { detail: { plant } }));
+    }
+    _finishDrying(plant) {
+        this.dispatchEvent(new CustomEvent('finish-drying', { detail: { plant } }));
+    }
+    _takeClone(plant, numClones) {
+        this.dispatchEvent(new CustomEvent('take-clone', { detail: { plant, numClones } }));
+    }
+    _moveClone(plant, targetGrowspace) {
+        this.dispatchEvent(new CustomEvent('move-clone', { detail: { plant, targetGrowspace } }));
+    }
+    _attributeChange(key, value) {
+        this.dispatchEvent(new CustomEvent('attribute-change', { detail: { key, value } }));
+    }
+    _toggleShowAllDates() {
+        this.dispatchEvent(new CustomEvent('toggle-show-all-dates'));
+    }
+    render() {
+        if (!this.dialog?.open)
+            return x ``;
+        const { plant, editedAttributes, selectedPlantIds } = this.dialog;
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        const stageColor = PlantUtils.getPlantStageColor(plant.state);
+        const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
+        const isBulkEdit = selectedPlantIds && selectedPlantIds.length > 1;
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="glass-dialog-container" style="--stage-color: ${stageColor}">
+
+          <!-- BULK EDIT BANNER -->
+          ${isBulkEdit ? x `
+            <div style="
+              background: rgba(34, 197, 94, 0.1);
+              border: 1px solid rgba(34, 197, 94, 0.3);
+              border-radius: 8px;
+              padding: 12px 16px;
+              margin-bottom: 16px;
+              color: #22c55e;
+              display: flex;
+              align-items: center;
+              gap: 12px;
+            ">
+              <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiPencil}"></path>
+              </svg>
+              <div>
+                <strong>Bulk Editing ${selectedPlantIds.length} Plants</strong>
+                <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 4px;">
+                  Only date fields can be edited in bulk mode. Identity & location fields are protected.
+                </div>
+              </div>
+            </div>
+          ` : E}
+
+          <!-- HEADER -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${stageIcon}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+               <h2 class="dialog-title">${editedAttributes.strain || 'Unknown Strain'}</h2>
+               <div class="dialog-subtitle">${plant.state} Stage • ${editedAttributes.phenotype || 'No Phenotype'}</div>
+            </div>
+            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
+               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                 <path d="${mdiClose}"></path>
+               </svg>
+            </button>
+          </div>
+
+          <div class="overview-grid">
+             <!-- IDENTITY & LOCATION CARD -->
+             <div class="detail-card" style="${isBulkEdit ? 'opacity: 0.5; pointer-events: none;' : ''}">
+               <h3>Identity & Location ${isBulkEdit ? '(Read-only in bulk mode)' : ''}</h3>
+               ${DialogRenderer.renderMD3TextInput('Strain Name', editedAttributes.strain || '', (v) => this._attributeChange('strain', v))}
+               ${DialogRenderer.renderMD3TextInput('Phenotype', editedAttributes.phenotype || '', (v) => this._attributeChange('phenotype', v))}
+               <div style="display:flex; gap:16px;">
+                 ${DialogRenderer.renderMD3NumberInput('Row', editedAttributes.row || 1, (v) => this._attributeChange('row', parseInt(v)))}
+                 ${DialogRenderer.renderMD3NumberInput('Col', editedAttributes.col || 1, (v) => this._attributeChange('col', parseInt(v)))}
+               </div>
+             </div>
+
+             <!-- TIMELINE CARD -->
+             <div class="detail-card">
+               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                 <h3 style="margin: 0;">Timeline</h3>
+                 <button class="md3-button text" style="min-width: auto; padding: 4px;" @click=${this._toggleShowAllDates}>
+                    <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                 </button>
+               </div>
+               
+               ${this.dialog.showAllDates ? x `
+                  ${DialogRenderer.renderMD3DateTimeInput('Seedling Start', editedAttributes.seedling_start ?? '', (v) => this._attributeChange('seedling_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Mother Start', editedAttributes.mother_start ?? '', (v) => this._attributeChange('mother_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Clone Start', editedAttributes.clone_start ?? '', (v) => this._attributeChange('clone_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => this._attributeChange('veg_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Flower Start', editedAttributes.flower_start ?? '', (v) => this._attributeChange('flower_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Dry Start', editedAttributes.dry_start ?? '', (v) => this._attributeChange('dry_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Cure Start', editedAttributes.cure_start ?? '', (v) => this._attributeChange('cure_start', v))}
+               ` : x `
+                  ${editedAttributes.stage === 'mother'
+            ? DialogRenderer.renderMD3DateTimeInput('Mother Start', editedAttributes.mother_start ?? '', (v) => this._attributeChange('mother_start', v))
+            : E}
+                  ${editedAttributes.stage === 'clone'
+            ? DialogRenderer.renderMD3DateTimeInput('Clone Start', editedAttributes.clone_start ?? '', (v) => this._attributeChange('clone_start', v))
+            : E}
+                  ${editedAttributes.stage === 'veg' || editedAttributes.stage === 'flower'
+            ? DialogRenderer.renderMD3DateTimeInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => this._attributeChange('veg_start', v))
+            : E}
+                  ${editedAttributes.stage === 'flower'
+            ? DialogRenderer.renderMD3DateTimeInput('Flower Start', editedAttributes.flower_start ?? '', (v) => this._attributeChange('flower_start', v))
+            : E}
+                  ${editedAttributes.stage === 'dry' || editedAttributes.stage === 'cure'
+            ? DialogRenderer.renderMD3DateTimeInput('Dry Start', editedAttributes.dry_start ?? '', (v) => this._attributeChange('dry_start', v))
+            : E}
+                  ${editedAttributes.stage === 'cure'
+            ? DialogRenderer.renderMD3DateTimeInput('Cure Start', editedAttributes.cure_start ?? '', (v) => this._attributeChange('cure_start', v))
+            : E}
+               `}
+             </div>
+
+             <!-- STATS CARD -->
+             ${DialogRenderer.renderPlantStatsMD3(plant)}
+
+          </div>
+
+          <!-- ACTION BUTTONS -->
+          <div class="button-group">
+             <button class="md3-button danger" @click=${() => this._delete(plantId)}>
+               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+               Delete
+             </button>
+
+             <button class="md3-button tonal" @click=${this._update}>
+               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
+               Save Changes
+             </button>
+
+             <!-- DYNAMIC ACTIONS BASED ON STAGE -->
+             ${plant.state.toLowerCase() === 'mother' ? x `
+                <div class="take-clone-container" style="display:contents;" data-plant-id="${plant.entity_id}">
+                  <!-- Ideally this input should be styled nicely too, but for now inline -->
+                   <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value="1"
+                    class="num-clones-input md3-input"
+                    style="width: 60px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 8px; text-align:center; padding:0;"
+                  >
+                  <button class="md3-button primary"
+                    @click=${(e) => {
+            const btn = e.currentTarget;
+            // Find the input sibling (since we used display:contents, they are siblings in the flex container)
+            const input = btn.previousElementSibling;
+            const numClones = input ? parseInt(input.value, 10) : 1;
+            this._takeClone(plant, numClones);
+        }}
+                  >
+                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+                    Take Clone
+                  </button>
+                </div>
+             ` : E}
+
+             ${plant.state.toLowerCase() === 'flower' ? x `
+               <button class="md3-button primary" @click=${() => this._harvest(plant)}>
+                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
+                 Harvest
+               </button>
+             ` : E}
+
+             ${plant.state.toLowerCase() === 'dry' ? x `
+               <button class="md3-button primary" @click=${() => this._finishDrying(plant)}>
+                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
+                 Finish Drying
+               </button>
+             ` : E}
+
+             ${plant.state.toLowerCase() === 'clone' ? x `
+               <div style="display:contents;">
+                  <select class="md3-input" style="width: auto; height: 40px; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 0 16px;" id="clone-target-select">
+                    <option value="">Move to...</option>
+                    ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
+                  </select>
+                  <button class="md3-button primary"
+                    @click=${(e) => {
+            const btn = e.currentTarget;
+            const select = btn.previousElementSibling;
+            if (!select.value) {
+                alert('Select a growspace');
+                return;
+            }
+            this._moveClone(plant, select.value);
+        }}
+                  >
+                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
+                    Move
+                  </button>
+               </div>
+             ` : E}
+          </div>
+
+        </div>
+      </ha-dialog>
+    `;
+    }
+};
+PlantOverviewDialog.styles = i$3 `
+    :host {
+      display: block;
+    }
+    .glass-dialog-container {
+      background: rgba(20, 20, 20, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      max-height: 85vh;
+      color: #fff;
+      font-family: 'Roboto', sans-serif;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+    .dialog-header {
+      display: flex;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.2);
+    }
+    .dialog-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 16px;
+      color: var(--stage-color, #4CAF50);
+    }
+    .dialog-title-group {
+      flex: 1;
+    }
+    .dialog-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 500;
+    }
+    .dialog-subtitle {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+    .overview-grid {
+      padding: 24px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .detail-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .detail-card h3 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 1rem;
+      font-weight: 500;
+      opacity: 0.9;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 8px;
+    }
+    .button-group {
+      padding: 16px 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.2);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    .md3-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 24px;
+      height: 40px;
+      border-radius: 20px;
+      border: none;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .md3-button.text {
+      background: transparent;
+      color: rgba(255, 255, 255, 0.7);
+      padding: 0 12px;
+    }
+    .md3-button.text:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+    }
+    .md3-button.tonal {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .md3-button.tonal:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .md3-button.primary {
+      background: var(--primary-color, #2196F3);
+      color: #fff;
+    }
+    .md3-button.primary:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    }
+    .md3-button.danger {
+      background: rgba(244, 67, 54, 0.1);
+      color: #f44336;
+    }
+    .md3-button.danger:hover {
+      background: rgba(244, 67, 54, 0.2);
+    }
+    .md3-input {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        border-radius: 4px;
+        padding: 8px;
+    }
+    /* Add other styles from dialog-renderer as needed */
+  `;
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "dialog", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "growspaceOptions", void 0);
+PlantOverviewDialog = __decorate([
+    t('plant-overview-dialog')
+], PlantOverviewDialog);
+
 let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
     constructor() {
         super(...arguments);
@@ -14458,42 +14633,43 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             },
         })}
 
-      ${DialogRenderer.renderPlantOverviewDialog(this._plantOverviewDialog, growspaceOptions, {
-            onClose: () => this._plantOverviewDialog = null,
-            onUpdate: () => { this._updatePlant(); },
-            onDelete: (plantId) => { this._handleDeletePlant(plantId); },
-            onHarvest: (plantEntity) => { this._harvestPlant(plantEntity); },
-            onClone: (plantEntity, numClones) => { this.clonePlant(plantEntity, numClones); },
-            onTakeClone: (plantEntity, numClones) => {
-                this.clonePlant(plantEntity, numClones);
+      <plant-overview-dialog
+        .dialog=${this._plantOverviewDialog}
+        .growspaceOptions=${growspaceOptions}
+        @close=${() => this._plantOverviewDialog = null}
+        @update=${() => this._updatePlant()}
+        @delete=${(e) => this._handleDeletePlant(e.detail.plantId)}
+        @harvest=${(e) => this._harvestPlant(e.detail.plant)}
+        @finish-drying=${(e) => this._finishDryingPlant(e.detail.plant)}
+        @take-clone=${(e) => {
+            this.clonePlant(e.detail.plant, e.detail.numClones);
+            this._plantOverviewDialog = null;
+        }}
+        @move-clone=${(e) => {
+            const { plant, targetGrowspace } = e.detail;
+            this.hass.callService('growspace_manager', 'move_clone', {
+                plant_id: plant.attributes.plant_id,
+                target_growspace_id: targetGrowspace
+            }).then(() => {
+                console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
                 this._plantOverviewDialog = null;
-            },
-            onMoveClone: (plant, targetGrowspace) => {
-                this.hass.callService('growspace_manager', 'move_clone', {
-                    plant_id: plant.attributes.plant_id,
-                    target_growspace_id: targetGrowspace
-                }).then(() => {
-                    console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
-                    this._plantOverviewDialog = null; // close dialog or refresh state
-                }).catch((err) => {
-                    console.error('Error moving clone:', err);
-                });
-            },
-            onFinishDrying: (plantEntity) => { this._finishDryingPlant(plantEntity); },
-            _harvestPlant: this._harvestPlant.bind(this),
-            _finishDryingPlant: this._finishDryingPlant.bind(this),
-            onAttributeChange: (key, value) => {
-                if (this._plantOverviewDialog) {
-                    this._plantOverviewDialog.editedAttributes[key] = value;
-                }
-            },
-            onToggleShowAllDates: () => {
-                if (this._plantOverviewDialog) {
-                    this._plantOverviewDialog.showAllDates = !this._plantOverviewDialog.showAllDates;
-                    this.requestUpdate();
-                }
-            },
-        })}
+            }).catch((err) => {
+                console.error('Error moving clone:', err);
+            });
+        }}
+        @attribute-change=${(e) => {
+            if (this._plantOverviewDialog) {
+                this._plantOverviewDialog.editedAttributes[e.detail.key] = e.detail.value;
+            }
+        }}
+        @toggle-show-all-dates=${() => {
+            if (this._plantOverviewDialog) {
+                this._plantOverviewDialog.showAllDates = !this._plantOverviewDialog.showAllDates;
+                this.requestUpdate();
+            }
+        }}
+      ></plant-overview-dialog>
+      }
 
       ${DialogRenderer.renderStrainLibraryDialog(this._strainLibraryDialog ? { ...this._strainLibraryDialog, strains: this._searchStrains(this._strainLibraryDialog.searchQuery || '') } : null, {
             onClose: () => this._strainLibraryDialog = null,

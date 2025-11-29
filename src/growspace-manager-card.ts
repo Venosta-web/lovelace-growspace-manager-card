@@ -24,6 +24,7 @@ import { PlantUtils } from "./utils";
 import { DataService } from './data-service';
 import { DialogRenderer } from './dialog-renderer';
 import './growspace-env-chart';
+import './dialogs/plant-overview-dialog';
 
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
@@ -4448,46 +4449,42 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     )
       }
 
-      ${DialogRenderer.renderPlantOverviewDialog(
-        this._plantOverviewDialog,
-        growspaceOptions,
-        {
-          onClose: () => this._plantOverviewDialog = null,
-          onUpdate: () => { this._updatePlant(); },
-          onDelete: (plantId: string) => { this._handleDeletePlant(plantId); },
-          onHarvest: (plantEntity: PlantEntity) => { this._harvestPlant(plantEntity); },
-          onClone: (plantEntity: PlantEntity, numClones: number) => { this.clonePlant(plantEntity, numClones); },
-          onTakeClone: (plantEntity: PlantEntity, numClones: number) => {
-            this.clonePlant(plantEntity, numClones);
-            this._plantOverviewDialog = null;
-          },
-          onMoveClone: (plant: PlantEntity, targetGrowspace: string) => {
-            this.hass.callService('growspace_manager', 'move_clone', {
-              plant_id: plant.attributes.plant_id,
-              target_growspace_id: targetGrowspace
-            }).then(() => {
-              console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
-              this._plantOverviewDialog = null; // close dialog or refresh state
-            }).catch((err) => {
-              console.error('Error moving clone:', err);
-            });
-          },
-          onFinishDrying: (plantEntity: PlantEntity) => { this._finishDryingPlant(plantEntity); },
-          _harvestPlant: this._harvestPlant.bind(this),
-          _finishDryingPlant: this._finishDryingPlant.bind(this),
-          onAttributeChange: (key: string, value: any) => {
-            if (this._plantOverviewDialog) {
-              this._plantOverviewDialog.editedAttributes[key] = value;
-            }
-          },
-          onToggleShowAllDates: () => {
-            if (this._plantOverviewDialog) {
-              this._plantOverviewDialog.showAllDates = !this._plantOverviewDialog.showAllDates;
-              this.requestUpdate();
-            }
-          },
+      <plant-overview-dialog
+        .dialog=${this._plantOverviewDialog}
+        .growspaceOptions=${growspaceOptions}
+        @close=${() => this._plantOverviewDialog = null}
+        @update=${() => this._updatePlant()}
+        @delete=${(e: CustomEvent) => this._handleDeletePlant(e.detail.plantId)}
+        @harvest=${(e: CustomEvent) => this._harvestPlant(e.detail.plant)}
+        @finish-drying=${(e: CustomEvent) => this._finishDryingPlant(e.detail.plant)}
+        @take-clone=${(e: CustomEvent) => {
+        this.clonePlant(e.detail.plant, e.detail.numClones);
+        this._plantOverviewDialog = null;
+      }}
+        @move-clone=${(e: CustomEvent) => {
+        const { plant, targetGrowspace } = e.detail;
+        this.hass.callService('growspace_manager', 'move_clone', {
+          plant_id: plant.attributes.plant_id,
+          target_growspace_id: targetGrowspace
+        }).then(() => {
+          console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
+          this._plantOverviewDialog = null;
+        }).catch((err) => {
+          console.error('Error moving clone:', err);
+        });
+      }}
+        @attribute-change=${(e: CustomEvent) => {
+        if (this._plantOverviewDialog) {
+          this._plantOverviewDialog.editedAttributes[e.detail.key] = e.detail.value;
         }
-      )
+      }}
+        @toggle-show-all-dates=${() => {
+        if (this._plantOverviewDialog) {
+          this._plantOverviewDialog.showAllDates = !this._plantOverviewDialog.showAllDates;
+          this.requestUpdate();
+        }
+      }}
+      ></plant-overview-dialog>
       }
 
       ${DialogRenderer.renderStrainLibraryDialog(
