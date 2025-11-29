@@ -15342,9 +15342,12 @@ GrowspaceManagerCard.styles = [
         }
 
         .plant-card-content {
+           position: static;
+           z-index: auto;
            display: flex;
            flex: 1;
            min-width: 0;
+           width: 100%;
            flex-direction: row;
            padding: 0;
            align-items: center;
