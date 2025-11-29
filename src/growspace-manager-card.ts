@@ -1,4 +1,4 @@
-import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
+import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues, svg } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain, mdiDotsVertical, mdiRadioboxMarked, mdiRadioboxBlank, mdiWater, mdiPencil, mdiCheckboxMarked, mdiCheckboxBlankOutline, mdiAirHumidifier, mdiLink } from '@mdi/js';
@@ -3481,7 +3481,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
     });
 
-    console.log('Combined Graph Data:', graphData);
+
 
     if (graphData.length === 0) return html``;
 
@@ -3574,9 +3574,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           });
 
           const path = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
-          console.log(`Path for ${g.key}:`, path);
-
-          return html`
+          return svg`
                          <path d="${path}" fill="none" stroke="${g.color}" stroke-width="2" />
                          <path d="${path} V ${height} H ${points[0][0]} Z" fill="${g.color}" fill-opacity="0.1" stroke="none" />
                      `;
