@@ -25,6 +25,7 @@ import { DataService } from './data-service';
 import { DialogRenderer } from './dialog-renderer';
 import './growspace-env-chart';
 import './dialogs/plant-overview-dialog';
+import './dialogs/strain-library-dialog';
 
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
@@ -2587,102 +2588,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   // Strain library methods
   private async _openStrainLibraryDialog() {
-    // Update the type hint to reflect the object structure you expect
-    let serviceResponse: { strains: Record<string, any> } | undefined;
-    try {
-      serviceResponse = await this.hass.connection.sendMessagePromise({
-        type: 'call_service',
-        domain: 'growspace_manager',
-        service: 'get_strain_library',
-        service_data: {},
-        return_response: true,
-      });
-    } catch (e) {
-      console.error('Failed to fetch strain library:', e);
-    }
-
-    const rawStrains = (serviceResponse as any)?.response || {};
-    const currentStrains: StrainEntry[] = [];
-
-    Object.entries(rawStrains).forEach(([strainName, data]: [string, any]) => {
-      const meta = data.meta || {};
-      const phenotypes = data.phenotypes || {};
-
-      Object.entries(phenotypes).forEach(([phenoName, phenoData]: [string, any]) => {
-        currentStrains.push({
-          strain: strainName,
-          phenotype: phenoName,
-          key: `${strainName}|${phenoName}`, // Unique key for list rendering
-          breeder: meta.breeder,
-          type: meta.type,
-          lineage: meta.lineage,
-          sex: meta.sex,
-          sativa_percentage: meta.sativa_percentage,
-          indica_percentage: meta.indica_percentage,
-          description: phenoData.description,
-          image: phenoData.image_path, // Note: backend sends image_path
-          image_crop_meta: phenoData.image_crop_meta,
-          flowering_days_min: phenoData.flower_days_min,
-          flowering_days_max: phenoData.flower_days_max
-        });
-      });
-    });
-
-    this._strainLibraryDialog = {
-      open: true,
-      view: 'browse',
-      strains: currentStrains,
-      searchQuery: '',
-      editorState: this._createEmptyEditorState()
-    };
-  }
-
-  private _createEmptyEditorState() {
-    return {
-      strain: '',
-      phenotype: '',
-      breeder: '',
-      type: '',
-      flowering_min: '',
-      flowering_max: '',
-      lineage: '',
-      sex: '',
-      description: '',
-      image: '',
-      image_crop_meta: undefined
-    };
-  }
-
-  private _switchStrainView(view: 'browse' | 'editor', strainToEdit?: StrainEntry) {
-    if (!this._strainLibraryDialog) return;
-    this._strainLibraryDialog.view = view;
-    this._strainLibraryDialog.isCropping = false; // Reset cropping state
-
-    if (view === 'editor') {
-      if (strainToEdit) {
-        // Populate editor
-        this._strainLibraryDialog.editorState = {
-          strain: strainToEdit.strain,
-          phenotype: strainToEdit.phenotype || '',
-          breeder: strainToEdit.breeder || '',
-          type: strainToEdit.type || '',
-          flowering_min: strainToEdit.flowering_days_min?.toString() || '',
-          flowering_max: strainToEdit.flowering_days_max?.toString() || '',
-          lineage: strainToEdit.lineage || '',
-          sex: strainToEdit.sex || '',
-          description: strainToEdit.description || '',
-          image: strainToEdit.image || '',
-          image_crop_meta: strainToEdit.image_crop_meta,
-          sativa_percentage: strainToEdit.sativa_percentage,
-          indica_percentage: strainToEdit.indica_percentage
-        };
-      } else {
-        // Reset editor
-        this._strainLibraryDialog.editorState = this._createEmptyEditorState();
-      }
-    }
+    await this._fetchStrainLibrary();
+    this._strainLibraryDialog = { open: true };
     this.requestUpdate();
   }
+
+
 
   //Irrigation dialog methods
   private _openIrrigationDialog() {
@@ -2847,44 +2758,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.requestUpdate();
   }
 
-  private _handleStrainEditorChange(field: string, value: any) {
-    if (this._strainLibraryDialog && this._strainLibraryDialog.editorState) {
-      (this._strainLibraryDialog.editorState as any)[field] = value;
-      this.requestUpdate();
-    }
-  }
 
-  private _toggleCropMode(active: boolean) {
-    if (this._strainLibraryDialog) {
-      this._strainLibraryDialog.isCropping = active;
-      this.requestUpdate();
-    }
-  }
-
-  private _toggleImageSelector(isOpen: boolean) {
-    if (this._strainLibraryDialog) {
-      this._strainLibraryDialog.isImageSelectorOpen = isOpen;
-      this.requestUpdate();
-    }
-  }
-
-  private _handleSelectLibraryImage(imageUrl: string) {
-    if (this._strainLibraryDialog && this._strainLibraryDialog.editorState) {
-      this._strainLibraryDialog.editorState.image = imageUrl;
-      // Close selector
-
-      // Find existing crop meta for this image
-      const existing = this._strainLibraryDialog.strains.find(s => s.image === imageUrl && !!s.image_crop_meta);
-      if (existing && existing.image_crop_meta) {
-        this._strainLibraryDialog.editorState.image_crop_meta = { ...existing.image_crop_meta };
-      } else {
-        this._strainLibraryDialog.editorState.image_crop_meta = undefined;
-      }
-
-      this._strainLibraryDialog.isImageSelectorOpen = false;
-      this.requestUpdate();
-    }
-  }
 
   private _toggleEnvGraph(metric: string) {
     const newSet = new Set(this._activeEnvGraphs);
@@ -2905,12 +2779,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
 
 
-  private _setStrainSearchQuery(query: string) {
-    if (this._strainLibraryDialog) {
-      this._strainLibraryDialog.searchQuery = query;
-      this.requestUpdate();
-    }
-  }
+
 
   private _toggleAddStrainForm() {
     // Legacy method removed or kept empty
@@ -2924,67 +2793,35 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     // Removed logic
   }
 
-  private async _addStrain() {
-    if (!this._strainLibraryDialog?.editorState?.strain) return;
-
-    const s = this._strainLibraryDialog.editorState;
+  private async _addStrain(strainData: Partial<StrainEntry>) {
+    if (!strainData.strain) return;
 
     const payload = {
-      strain: s.strain,
-      phenotype: s.phenotype,
-      breeder: s.breeder,
-      type: s.type,
-      flowering_days_min: s.flowering_min ? parseInt(s.flowering_min) : undefined,
-      flowering_days_max: s.flowering_max ? parseInt(s.flowering_max) : undefined,
-      lineage: s.lineage,
-      sex: s.sex,
-      description: s.description,
-      image: s.image,
-      image_crop_meta: s.image_crop_meta,
-      sativa_percentage: s.sativa_percentage,
-      indica_percentage: s.indica_percentage
+      strain: strainData.strain,
+      phenotype: strainData.phenotype,
+      breeder: strainData.breeder,
+      type: strainData.type,
+      flowering_days_min: strainData.flowering_days_min ? Number(strainData.flowering_days_min) : undefined,
+      flowering_days_max: strainData.flowering_days_max ? Number(strainData.flowering_days_max) : undefined,
+      lineage: strainData.lineage,
+      sex: strainData.sex,
+      description: strainData.description,
+      image: strainData.image,
+      image_crop_meta: strainData.image_crop_meta,
+      sativa_percentage: strainData.sativa_percentage,
+      indica_percentage: strainData.indica_percentage
     };
 
     try {
       await this.dataService.addStrain(payload);
-
-      // Refetch library to update list or optimistic update
-      const key = `${s.strain}|${s.phenotype || 'default'}`;
-      const newEntry: StrainEntry = {
-        key: key,
-        strain: s.strain,
-        phenotype: s.phenotype,
-        breeder: s.breeder,
-        type: s.type,
-        flowering_days_min: payload.flowering_days_min,
-        flowering_days_max: payload.flowering_days_max,
-        lineage: s.lineage,
-        sex: s.sex,
-        description: s.description,
-        image: s.image,
-        image_crop_meta: s.image_crop_meta,
-        sativa_percentage: s.sativa_percentage,
-        indica_percentage: s.indica_percentage
-      };
-
-      // Remove existing if update (naive check by key)
-      this._strainLibraryDialog.strains = this._strainLibraryDialog.strains.filter(ex => ex.key !== key);
-      this._strainLibraryDialog.strains.push(newEntry);
-
-      // Switch back to browse
-      this._switchStrainView('browse');
-
-      // Refresh full library for grid
-      this._fetchStrainLibrary();
-
+      // Refresh full library
+      await this._fetchStrainLibrary();
     } catch (err) {
       console.error("Error adding strain:", err);
     }
   }
 
   private async _removeStrain(strainKey: string) {
-    if (!this._strainLibraryDialog) return;
-
     try {
       // The key is constructed as "Strain|Phenotype" or "Strain|default" in data-service
       const parts = strainKey.split('|');
@@ -2993,11 +2830,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
       await this.dataService.removeStrain(strain, phenotype);
 
-      this._strainLibraryDialog.strains = this._strainLibraryDialog.strains.filter(s => s.key !== strainKey);
-      this.requestUpdate();
+      // Optimistic update
+      if (this._strainLibrary) {
+        this._strainLibrary = this._strainLibrary.filter(s => s.key !== strainKey);
+        this.requestUpdate();
+      }
 
       // Refresh full library for grid
-      this._fetchStrainLibrary();
+      await this._fetchStrainLibrary();
     } catch (err) {
       console.error("Error removing strain:", err);
     }
@@ -3005,14 +2845,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   private async _clearStrains() {
     await this.dataService.clearStrainLibrary();
-    if (this._strainLibraryDialog) {
-      this._strainLibraryDialog.strains = [];
-      this._strainLibraryDialog.confirmClearAll = false;
-      this.requestUpdate();
+    this._strainLibrary = [];
+    this.requestUpdate();
 
-      // Refresh full library for grid
-      this._fetchStrainLibrary();
-    }
+    // Refresh full library for grid
+    await this._fetchStrainLibrary();
   }
 
   private async _handleExportLibrary() {
@@ -3048,49 +2885,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     document.body.removeChild(a);
   }
 
-  private _openImportDialog() {
-    if (this._strainLibraryDialog) {
-      this._strainLibraryDialog.importDialog = { open: true, replace: false };
-      this.requestUpdate();
+
+
+  private async _performImport(file: File, replace: boolean) {
+    if (!file) return;
+
+    try {
+      const result = await this.dataService.importStrainLibrary(file, replace);
+      alert(`Import successful! ${result.imported_count || ''} strains imported.`);
+      await this._fetchStrainLibrary();
+    } catch (err: any) {
+      console.error("Import failed:", err);
+      alert(`Import failed: ${err.message}`);
     }
-  }
-
-  private _handleImportDialogChange(changes: { open?: boolean; replace?: boolean }) {
-    if (this._strainLibraryDialog && this._strainLibraryDialog.importDialog) {
-      if (changes.open !== undefined) this._strainLibraryDialog.importDialog.open = changes.open;
-      if (changes.replace !== undefined) this._strainLibraryDialog.importDialog.replace = changes.replace;
-      this.requestUpdate();
-    }
-  }
-
-  private async _performImport() {
-    if (!this._strainLibraryDialog?.importDialog) return;
-    const replace = this._strainLibraryDialog.importDialog.replace;
-
-    // Create file input
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.zip';
-
-    input.onchange = async e => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      try {
-        const result = await this.dataService.importStrainLibrary(file, replace);
-        alert(`Import successful! ${result.imported_count || ''} strains imported.`);
-        // Close dialogs
-        if (this._strainLibraryDialog && this._strainLibraryDialog.importDialog) {
-          this._strainLibraryDialog.importDialog.open = false;
-        }
-        this.requestUpdate();
-      } catch (err: any) {
-        console.error("Import failed:", err);
-        alert(`Import failed: ${err.message}`);
-      }
-    };
-
-    input.click();
   }
 
   private updateGrid(): void {
@@ -4368,19 +4175,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     `;
   }
 
-  private _searchStrains(query: string): StrainEntry[] {
-    if (!query) return this._strainLibrary;
 
-    const lowerQuery = query.toLowerCase();
-    return this._strainLibrary.filter(strain => {
-      return (
-        (strain.strain && strain.strain.toLowerCase().includes(lowerQuery)) ||
-        (strain.phenotype && strain.phenotype.toLowerCase().includes(lowerQuery)) ||
-        (strain.breeder && strain.breeder.toLowerCase().includes(lowerQuery)) ||
-        (strain.lineage && strain.lineage.toLowerCase().includes(lowerQuery))
-      );
-    });
-  }
 
   private renderDialogs(): TemplateResult {
     const strainLibrary = this.dataService?.getStrainLibrary() || [];
@@ -4487,27 +4282,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       ></plant-overview-dialog>
       }
 
-      ${DialogRenderer.renderStrainLibraryDialog(
-        this._strainLibraryDialog ? { ...this._strainLibraryDialog, strains: this._searchStrains(this._strainLibraryDialog.searchQuery || '') } : null,
-        {
-          onClose: () => this._strainLibraryDialog = null,
-          onAddStrain: () => this._addStrain(),
-          onRemoveStrain: (strainKey) => this._removeStrain(strainKey),
-          onClearAll: () => this._clearStrains(),
-          onEditorChange: (field, value) => this._handleStrainEditorChange(field, value),
-          onSwitchView: (view, strain) => this._switchStrainView(view, strain),
-          onSearch: (query) => this._setStrainSearchQuery(query),
-          onToggleCropMode: (active) => this._toggleCropMode(active),
-          onToggleImageSelector: (isOpen) => this._toggleImageSelector(isOpen),
-          onSelectLibraryImage: (img) => this._handleSelectLibraryImage(img),
-          onExportStrains: () => this._handleExportLibrary(),
-          onOpenImportDialog: () => this._openImportDialog(),
-          onImportDialogChange: (c) => this._handleImportDialogChange(c),
-          onConfirmImport: () => this._performImport(),
-          onGetRecommendation: () => this._openStrainRecommendationDialog(),
-        }
-      )
-      }
+      <strain-library-dialog
+        .open=${!!this._strainLibraryDialog?.open}
+        .strains=${this._strainLibrary || []}
+        @close=${() => this._strainLibraryDialog = null}
+        @save-strain=${(e: CustomEvent) => this._addStrain(e.detail)}
+        @delete-strain=${(e: CustomEvent) => this._removeStrain(e.detail.key)}
+        @import-library=${(e: CustomEvent) => this._performImport(e.detail.file, e.detail.replace)}
+        @export-library=${() => this._handleExportLibrary()}
+        @get-recommendation=${() => this._openStrainRecommendationDialog()}
+      ></strain-library-dialog>
 
       ${DialogRenderer.renderConfigDialog(
         this._configDialog,

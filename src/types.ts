@@ -160,32 +160,6 @@ export interface PlantOverviewDialogState {
 
 export interface StrainLibraryDialogState {
   open: boolean;
-  view: 'browse' | 'editor';
-  strains: StrainEntry[];
-  searchQuery?: string;
-  isCropping?: boolean;
-  isImageSelectorOpen?: boolean;
-  editorState: {
-    strain: string;
-    phenotype: string;
-    breeder: string;
-    type: string;
-    flowering_min: string;
-    flowering_max: string;
-    lineage: string;
-    sex: string;
-    description: string;
-    image: string;
-    image_crop_meta?: CropMeta;
-    sativa_percentage?: number;
-    indica_percentage?: number;
-  };
-  expandedStrains?: string[];
-  confirmClearAll?: boolean;
-  importDialog?: {
-    open: boolean;
-    replace: boolean;
-  };
 }
 
 export interface ConfigDialogState {

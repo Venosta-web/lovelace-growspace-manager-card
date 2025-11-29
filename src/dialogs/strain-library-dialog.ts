@@ -1,0 +1,1148 @@
+import { LitElement, html, css, PropertyValues, TemplateResult, nothing } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import {
+    mdiPlus, mdiClose, mdiMagnify, mdiDelete, mdiCheck,
+    mdiContentCopy, mdiWeatherNight, mdiWeatherSunny, mdiTuneVariant,
+    mdiLeaf, mdiArrowLeft, mdiCloudUpload, mdiPencil,
+    mdiDownload, mdiBrain, mdiCamera, mdiImage, mdiViewDashboard
+} from '@mdi/js';
+import { StrainEntry, CropMeta } from '../types';
+import { PlantUtils } from '../utils';
+
+@customElement('strain-library-dialog')
+export class StrainLibraryDialog extends LitElement {
+    @property({ type: Boolean }) open = false;
+    @property({ type: Array }) strains: StrainEntry[] = [];
+
+    @state() private _view: 'browse' | 'editor' = 'browse';
+    @state() private _searchQuery = '';
+    @state() private _editorState: Partial<StrainEntry> = {};
+    @state() private _isCropping = false;
+    @state() private _isImageSelectorOpen = false;
+    @state() private _importDialogOpen = false;
+    @state() private _importReplace = false;
+
+    static styles = css`
+    :host {
+      --accent-green: #22c55e;
+      --card-bg: #2d2d2d;
+      --input-bg: #2d2d2d;
+      --text-secondary: #9ca3af;
+      --border-color: #374151;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    /* STRICT DARK MODE & SHARED STYLES */
+    .strain-dialog-container {
+        background-color: #1a1a1a; /* Deep Charcoal */
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        height: 85vh;
+        width: 90vw;
+        max-width: 1200px;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    /* SCROLLBAR */
+    .strain-dialog-container ::-webkit-scrollbar { width: 8px; }
+    .strain-dialog-container ::-webkit-scrollbar-track { background: transparent; }
+    .strain-dialog-container ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+    .strain-dialog-container ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+
+    /* HEADER */
+    .sd-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+      background: #1a1a1a;
+      z-index: 10;
+    }
+    .sd-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #fff;
+      margin: 0;
+    }
+    .sd-close-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+    .sd-close-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+
+    /* CONTENT AREA */
+    .sd-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      background: #1a1a1a;
+    }
+
+    /* FOOTER */
+    .sd-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-color);
+      background: #1a1a1a;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    /* BUTTONS */
+    .sd-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+    }
+    .sd-btn.primary {
+      background: var(--accent-green);
+      color: #fff;
+    }
+    .sd-btn.primary:hover {
+      background: #16a34a;
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
+    }
+    .sd-btn.secondary {
+      background: var(--card-bg);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+    .sd-btn.secondary:hover {
+      background: #374151;
+      color: #fff;
+    }
+    .sd-btn.danger {
+        background: rgba(220, 38, 38, 0.1);
+        color: #ef4444;
+        border: 1px solid rgba(220, 38, 38, 0.2);
+    }
+    .sd-btn.danger:hover {
+        background: rgba(220, 38, 38, 0.2);
+    }
+
+    /* FORMS */
+    .sd-form-group {
+      margin-bottom: 20px;
+    }
+    .sd-label {
+      display: block;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .sd-input, .sd-textarea, .sd-select {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    .sd-input:focus, .sd-textarea:focus, .sd-select:focus {
+      border-color: var(--accent-green);
+    }
+    .sd-textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    /* GRID & CARDS */
+    .sd-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .strain-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+    .strain-card:hover {
+        border-color: var(--accent-green);
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    }
+    .sc-thumb {
+        height: 180px;
+        background: #222;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #444;
+        position: relative;
+    }
+    .sc-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .sc-content {
+        padding: 16px;
+        flex: 1;
+    }
+    .sc-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        color: #fff;
+    }
+    .sc-type-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--accent-green);
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+    .sc-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+    .sc-actions {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        display: flex;
+        gap: 8px;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .strain-card:hover .sc-actions {
+        opacity: 1;
+    }
+    .sc-action-btn {
+        background: rgba(0,0,0,0.6);
+        border: none;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        cursor: pointer;
+    }
+    .sc-action-btn:hover {
+        background: var(--accent-green);
+    }
+
+    /* SEARCH BAR */
+    .search-bar-container {
+        margin-bottom: 24px;
+    }
+    .search-input-wrapper {
+        position: relative;
+        margin-bottom: 12px;
+    }
+    .search-input-wrapper svg {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        fill: var(--text-secondary);
+    }
+    .search-bar-input {
+        width: 100%;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 14px 14px 14px 48px;
+        color: #fff;
+        font-size: 1rem;
+        outline: none;
+        box-sizing: border-box;
+    }
+    .search-bar-input:focus {
+        border-color: var(--accent-green);
+    }
+    .filter-chips {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .filter-chip {
+        background: #374151;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .clear-link {
+        color: var(--accent-green);
+        font-size: 0.85rem;
+        text-decoration: underline;
+        cursor: pointer;
+        margin-left: 8px;
+    }
+
+    /* EDITOR LAYOUT */
+    .editor-layout {
+        display: grid;
+        grid-template-columns: 1fr 1.5fr;
+        gap: 32px;
+    }
+    @media (max-width: 800px) {
+        .editor-layout { grid-template-columns: 1fr; }
+    }
+
+    /* TYPE SELECTOR */
+    .type-selector-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    .type-option {
+        background: var(--input-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 16px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        text-align: center;
+    }
+    .type-option:hover {
+        border-color: #666;
+    }
+    .type-option.active {
+        background: rgba(34, 197, 94, 0.1);
+        border-color: var(--accent-green);
+        color: #fff;
+    }
+    .type-option svg {
+        width: 28px;
+        height: 28px;
+        fill: var(--text-secondary);
+    }
+    .type-option.active svg {
+        fill: var(--accent-green);
+    }
+    .type-label {
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    /* PHOTO UPLOAD */
+    .photo-upload-area {
+        border: 2px dashed var(--border-color);
+        border-radius: 12px;
+        background: rgba(255,255,255,0.02);
+        height: 240px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+    .photo-upload-area:hover {
+        border-color: var(--accent-green);
+        background: rgba(34, 197, 94, 0.05);
+    }
+    .select-library-btn {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: rgba(0,0,0,0.6);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: #fff;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        z-index: 10;
+        cursor: pointer;
+    }
+    .select-library-btn:hover {
+        background: var(--accent-green);
+        border-color: var(--accent-green);
+    }
+
+    /* Crop Overlay */
+    .crop-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.9);
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .crop-viewport {
+        width: 300px;
+        height: 300px;
+        border: 2px solid var(--accent-green);
+        overflow: hidden;
+        position: relative;
+        cursor: move;
+        box-shadow: 0 0 0 100vmax rgba(0,0,0,0.7);
+    }
+    .crop-controls {
+        margin-top: 20px;
+        width: 300px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .crop-slider {
+        width: 100%;
+        accent-color: var(--accent-green);
+    }
+
+    /* HYBRID GRAPH STYLES */
+    .hg-container {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
+        margin-top: 8px;
+        font-family: 'Roboto', sans-serif;
+    }
+    .hg-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 2px;
+    }
+    .hg-bar-track {
+        height: 18px;
+        width: 100%;
+        background: #333;
+        border-radius: 2px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        border: 1px solid rgba(255,255,255,0.1);
+        cursor: pointer;
+    }
+    .hg-bar-indica {
+        background: #8B5CF6; /* Purple */
+        height: 100%;
+        transition: width 0.2s ease;
+    }
+    .hg-bar-sativa {
+        background: #EAB308; /* Yellow */
+        height: 100%;
+        flex: 1;
+        transition: width 0.2s ease;
+    }
+    .hg-tick {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: rgba(255,255,255,0.4);
+        pointer-events: none;
+    }
+    .hg-legend-container {
+        position: relative;
+        height: 14px;
+        width: 100%;
+        margin-top: 2px;
+    }
+    .hg-legend-label {
+        position: absolute;
+        font-size: 0.65rem;
+        color: var(--text-secondary);
+        transform: translateX(-50%);
+    }
+    .hg-legend-label.start { left: 0; transform: none; }
+    .hg-legend-label.end { right: 0; transform: none; }
+
+    .hg-input-label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .hg-num-input {
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--text-secondary);
+        color: #fff;
+        width: 36px;
+        text-align: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0;
+    }
+    .hg-num-input:focus {
+        outline: none;
+        border-bottom-color: var(--accent-green);
+    }
+  `;
+
+    private _startEdit(strain?: StrainEntry) {
+        if (strain) {
+            this._editorState = { ...strain };
+        } else {
+            this._editorState = {
+                strain: '',
+                phenotype: '',
+                breeder: '',
+                type: 'Hybrid',
+                flowering_days_min: 60,
+                flowering_days_max: 70,
+                lineage: '',
+                sex: 'Feminized',
+                description: '',
+                image: '',
+                sativa_percentage: 50,
+                indica_percentage: 50
+            };
+        }
+        this._view = 'editor';
+    }
+
+    private _handleSave() {
+        if (!this._editorState.strain) return;
+        this.dispatchEvent(new CustomEvent('save-strain', { detail: this._editorState }));
+        this._view = 'browse';
+    }
+
+    private _handleDelete(key: string) {
+        if (confirm('Are you sure you want to delete this strain?')) {
+            this.dispatchEvent(new CustomEvent('delete-strain', { detail: { key } }));
+        }
+    }
+
+    private _handleEditorChange(field: string, value: any) {
+        this._editorState = { ...this._editorState, [field]: value };
+    }
+
+    private _toggleCropMode(active: boolean) {
+        this._isCropping = active;
+    }
+
+    private _toggleImageSelector(isOpen: boolean) {
+        this._isImageSelectorOpen = isOpen;
+    }
+
+    private _handleSelectLibraryImage(imageUrl: string) {
+        this._editorState = { ...this._editorState, image: imageUrl };
+
+        // Find existing crop meta
+        const existing = this.strains.find(s => s.image === imageUrl && !!s.image_crop_meta);
+        if (existing && existing.image_crop_meta) {
+            this._editorState.image_crop_meta = { ...existing.image_crop_meta };
+        } else {
+            delete this._editorState.image_crop_meta;
+        }
+
+        this._isImageSelectorOpen = false;
+    }
+
+    private _handleImportFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.zip';
+        input.onchange = (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (file) {
+                this.dispatchEvent(new CustomEvent('import-library', {
+                    detail: { file, replace: this._importReplace }
+                }));
+                this._importDialogOpen = false;
+            }
+        };
+        input.click();
+    }
+
+    private getCropStyle(image: string, meta?: CropMeta) {
+        if (!meta) return `background-image: url('${image}')`;
+        return `
+      background-image: url('${image}');
+      background-size: ${meta.scale * 100}%;
+      background-position: ${meta.x}% ${meta.y}%;
+    `;
+    }
+
+    private getImgStyle(meta?: CropMeta): string {
+        if (!meta) return 'width: 100%; height: 100%; object-fit: cover;';
+        return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
+    }
+
+    protected render(): TemplateResult {
+        if (!this.open) return html``;
+
+        return html`
+      <ha-dialog
+        open
+        @closed=${() => this.dispatchEvent(new CustomEvent('close'))}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="strain-dialog-container">
+          ${this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView()}
+        </div>
+
+        ${this._isCropping ? this.renderCropOverlay() : nothing}
+        ${this._isImageSelectorOpen ? this.renderImageSelector() : nothing}
+        ${this._importDialogOpen ? this.renderImportDialog() : nothing}
+      </ha-dialog>
+    `;
+    }
+
+    private renderBrowseView(): TemplateResult {
+        const query = this._searchQuery.toLowerCase();
+        const filteredStrains = this.strains.filter(s =>
+            s.strain.toLowerCase().includes(query) ||
+            (s.breeder && s.breeder.toLowerCase().includes(query)) ||
+            (s.phenotype && s.phenotype.toLowerCase().includes(query))
+        );
+
+        return html`
+      <div class="sd-header">
+        <h2 class="sd-title">Strain Library</h2>
+        <button class="sd-close-btn" @click=${() => this.dispatchEvent(new CustomEvent('close'))}>
+          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+        </button>
+      </div>
+
+      <div class="sd-content">
+        <div class="search-bar-container">
+          <div class="search-input-wrapper">
+            <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+            <input
+              type="text"
+              class="search-bar-input"
+              placeholder="Search Strains by Name, Breeder..."
+              .value=${this._searchQuery}
+              @input=${(e: Event) => this._searchQuery = (e.target as HTMLInputElement).value}
+            />
+          </div>
+        </div>
+
+        <div class="sd-grid">
+          ${filteredStrains.map(strain => this.renderStrainCard(strain))}
+        </div>
+
+        ${filteredStrains.length === 0 ? html`
+          <div style="text-align:center; padding: 40px; color: var(--text-secondary);">
+            <svg style="width:48px;height:48px;fill:currentColor; opacity:0.5;" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+            <p>No strains found matching "${query}"</p>
+          </div>
+        ` : nothing}
+      </div>
+
+      <div class="sd-footer">
+        <button class="sd-btn secondary" @click=${() => this.dispatchEvent(new CustomEvent('get-recommendation'))}>
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+          Get Recommendation
+        </button>
+        <button class="sd-btn secondary" @click=${() => this._importDialogOpen = true}>
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
+          Import Strains
+        </button>
+        <button class="sd-btn secondary" @click=${() => this.dispatchEvent(new CustomEvent('export-library'))}>
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg>
+          Export Strains
+        </button>
+        <button class="sd-btn primary" @click=${() => this._startEdit()}>
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+          New Strain
+        </button>
+      </div>
+    `;
+    }
+
+    private renderStrainCard(strain: StrainEntry): TemplateResult {
+        let typeIcon = mdiLeaf;
+        let typeLabel = strain.type || 'Unknown';
+        const lowerType = (strain.type || '').toLowerCase();
+
+        if (lowerType.includes('indica')) typeIcon = mdiWeatherNight;
+        else if (lowerType.includes('sativa')) typeIcon = mdiWeatherSunny;
+        else if (lowerType.includes('hybrid')) typeIcon = mdiTuneVariant;
+
+        return html`
+      <div class="strain-card" @click=${() => this._startEdit(strain)}>
+        <div class="sc-thumb">
+          ${strain.image
+                ? html`<img src="${strain.image}" loading="lazy" alt="${strain.strain}" style="${this.getImgStyle(strain.image_crop_meta)}" />`
+                : html`<svg style="width:48px;height:48px;opacity:0.2;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiLeaf}"></path></svg>`
+            }
+          <div class="sc-actions">
+            <button class="sc-action-btn" @click=${(e: Event) => { e.stopPropagation(); this._handleDelete(strain.key); }}>
+              <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="sc-content">
+          <h3 class="sc-title">${strain.strain} ${strain.phenotype ? `(${strain.phenotype})` : ''}</h3>
+          <div class="sc-type-row">
+            <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${typeIcon}"></path></svg>
+            <span>${typeLabel}</span>
+          </div>
+          <div class="sc-meta">
+            ${strain.flowering_days_min ? html`<span>Flowering: ${strain.flowering_days_min}-${strain.flowering_days_max || '?'} Days</span>` : nothing}
+            ${strain.breeder ? html`<span>Breeder: ${strain.breeder}</span>` : nothing}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+
+    private renderEditorView(): TemplateResult {
+        const s = this._editorState;
+        const isEdit = !!s.strain && this.strains.some(ex => ex.strain === s.strain && ex.phenotype === s.phenotype);
+        const uniqueStrains = [...new Set(this.strains.map(st => st.strain).filter(Boolean))].sort();
+        const uniqueBreeders = [...new Set(this.strains.map(st => st.breeder).filter(Boolean))].sort();
+
+        const handleFileChange = (e: Event) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (file) {
+                PlantUtils.compressImage(file)
+                    .then(base64 => this._handleEditorChange('image', base64))
+                    .catch(err => console.error("Error compressing image:", err));
+            }
+        };
+
+        return html`
+      <datalist id="strain-suggestions">
+        ${uniqueStrains.map(name => html`<option value="${name}"></option>`)}
+      </datalist>
+      <datalist id="breeder-suggestions">
+        ${uniqueBreeders.map(name => html`<option value="${name}"></option>`)}
+      </datalist>
+
+      <div class="sd-header">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <button class="sd-btn secondary" style="padding: 8px 12px;" @click=${() => this._view = 'browse'}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiArrowLeft}"></path></svg>
+            Back
+          </button>
+          <h2 class="sd-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
+        </div>
+        <button class="sd-close-btn" @click=${() => this.dispatchEvent(new CustomEvent('close'))}>
+          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+        </button>
+      </div>
+
+      <div class="sd-content">
+        <div class="editor-layout">
+          <!-- LEFT COL: IDENTITY -->
+          <div class="editor-col">
+            <div class="photo-upload-area"
+                @click=${(e: Event) => {
+                const target = e.target as HTMLElement;
+                if (!target.closest('.crop-btn') && !target.closest('.select-library-btn') && !target.closest('.sd-btn')) {
+                    (e.currentTarget as HTMLElement).querySelector('input')?.click();
+                }
+            }}
+                @dragover=${(e: DragEvent) => { e.preventDefault(); e.dataTransfer!.dropEffect = 'copy'; }}
+                @drop=${(e: DragEvent) => {
+                e.preventDefault();
+                const file = e.dataTransfer?.files[0];
+                if (file) {
+                    PlantUtils.compressImage(file)
+                        .then(base64 => this._handleEditorChange('image', base64))
+                        .catch(err => console.error("Error compressing image:", err));
+                }
+            }}>
+
+              <button class="select-library-btn" @click=${(e: Event) => {
+                e.stopPropagation();
+                this._toggleImageSelector(true);
+            }}>
+                  <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
+                  Select from Library
+              </button>
+
+              ${s.image ? html`
+                ${s.image_crop_meta
+                    ? html`<div style="width:100%; height:100%; border-radius:10px; ${this.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"></div>`
+                    : html`<img src="${s.image}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" />`}
+
+                <div style="position:absolute; bottom:8px; right:8px; display:flex; gap:8px;">
+                    <button class="crop-btn"
+                            style="background:rgba(0,0,0,0.6); border:none; padding:6px; border-radius:50%; cursor:pointer; color:white;"
+                            @click=${(e: Event) => { e.stopPropagation(); this._toggleCropMode(true); }}
+                            title="Crop Image">
+                      <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+                    </button>
+                    <div style="background:rgba(0,0,0,0.6); padding:6px; border-radius:50%; pointer-events:none;">
+                      <svg style="width:18px;height:18px;fill:white;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                    </div>
+                </div>
+              ` : html`
+                <div style="display: flex; gap: 16px; align-items: center;">
+                  <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                      <button class="sd-btn secondary" @click=${(e: Event) => ((e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement).click()}>
+                        <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
+                        Camera
+                      </button>
+                      <input type="file" accept="image/*" capture="environment" style="display:none" @change=${handleFileChange} />
+                  </div>
+                  
+                  <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                      <button class="sd-btn secondary" @click=${(e: Event) => ((e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement).click()}>
+                        <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
+                        Gallery
+                      </button>
+                      <input type="file" accept="image/*" style="display:none" @change=${handleFileChange} />
+                  </div>
+                </div>
+                <span style="font-size:0.8rem; margin-top:12px; opacity: 0.7;">(Or Drag & Drop)</span>
+              `}
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Strain Name *</label>
+              <input type="text" class="sd-input" list="strain-suggestions" .value=${s.strain || ''} @input=${(e: any) => this._handleEditorChange('strain', e.target.value)} />
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Phenotype</label>
+              <input type="text" class="sd-input" placeholder="e.g. #1 (Optional)" .value=${s.phenotype || ''} @input=${(e: any) => this._handleEditorChange('phenotype', e.target.value)} />
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Breeder/Seedbank</label>
+              <input type="text" class="sd-input" list="breeder-suggestions" .value=${s.breeder || ''} @input=${(e: any) => this._handleEditorChange('breeder', e.target.value)} />
+            </div>
+          </div>
+
+          <!-- RIGHT COL: GENETICS -->
+          <div class="editor-col">
+            <div class="sd-form-group">
+              <label class="sd-label">Type *</label>
+              <div class="type-selector-grid">
+                ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map(t => {
+                        let icon = mdiLeaf;
+                        if (t === 'Indica') icon = mdiWeatherNight;
+                        if (t === 'Sativa') icon = mdiWeatherSunny;
+                        if (t === 'Hybrid') icon = mdiTuneVariant;
+
+                        const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
+                        return html`
+                    <div class="type-option ${isActive ? 'active' : ''}"
+                        @click=${() => this._handleEditorChange('type', t)}>
+                      <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+                      <span class="type-label">${t}</span>
+                    </div>
+                  `;
+                    })}
+              </div>
+            </div>
+
+            ${(s.type || '').toLowerCase() === 'hybrid' ? html`
+              <div class="sd-form-group">
+                <label class="sd-label">Hybrid Composition (%)</label>
+                <div class="hg-container" style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;">
+                  <div class="hg-labels">
+                    <div class="hg-input-label">
+                      <span>Indica:</span>
+                      <input class="hg-num-input" type="number" min="0" max="100"
+                        .value=${s.indica_percentage || 0}
+                        @input=${(e: any) => {
+                    let val = Math.floor(parseFloat(e.target.value)) || 0;
+                    if (val < 0) val = 0; if (val > 100) val = 100;
+                    this._handleEditorChange('indica_percentage', val);
+                    this._handleEditorChange('sativa_percentage', 100 - val);
+                }} />
+                      <span>%</span>
+                    </div>
+                    <div class="hg-input-label">
+                      <span>Sativa:</span>
+                      <input class="hg-num-input" type="number" min="0" max="100"
+                        .value=${s.sativa_percentage || 0}
+                        @input=${(e: any) => {
+                    let val = Math.floor(parseFloat(e.target.value)) || 0;
+                    if (val < 0) val = 0; if (val > 100) val = 100;
+                    this._handleEditorChange('sativa_percentage', val);
+                    this._handleEditorChange('indica_percentage', 100 - val);
+                }} />
+                      <span>%</span>
+                    </div>
+                  </div>
+
+                  <div class="hg-bar-track"
+                        @click=${(e: MouseEvent) => {
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    let percent = Math.round((x / rect.width) * 100);
+                    if (percent < 0) percent = 0; if (percent > 100) percent = 100;
+                    this._handleEditorChange('indica_percentage', percent);
+                    this._handleEditorChange('sativa_percentage', 100 - percent);
+                }}>
+                    <div class="hg-bar-indica" style="width: ${s.indica_percentage || 0}%"></div>
+                    <div class="hg-bar-sativa"></div>
+                    <div class="hg-tick" style="left: 25%"></div>
+                    <div class="hg-tick" style="left: 50%"></div>
+                    <div class="hg-tick" style="left: 75%"></div>
+                  </div>
+                </div>
+              </div>
+            ` : nothing}
+
+            <div class="sd-form-group">
+              <label class="sd-label">Flowering Time (Days)</label>
+              <div style="display:flex; gap:16px;">
+                <input type="number" class="sd-input" placeholder="Min" .value=${s.flowering_days_min || ''} @input=${(e: any) => this._handleEditorChange('flowering_days_min', e.target.value)} />
+                <input type="number" class="sd-input" placeholder="Max" .value=${s.flowering_days_max || ''} @input=${(e: any) => this._handleEditorChange('flowering_days_max', e.target.value)} />
+              </div>
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Lineage</label>
+              <input type="text" class="sd-input" .value=${s.lineage || ''} @input=${(e: any) => this._handleEditorChange('lineage', e.target.value)} />
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Sex</label>
+              <div style="display:flex; gap:20px; padding: 8px 0;">
+                ${['Feminized', 'Regular'].map(sex => html`
+                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:white;">
+                    <input type="radio" name="sex_radio"
+                          .checked=${s.sex === sex}
+                          @change=${() => this._handleEditorChange('sex', sex)}
+                          style="accent-color: var(--accent-green); transform: scale(1.2);" />
+                    ${sex}
+                  </label>
+                `)}
+              </div>
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Description</label>
+              <textarea class="sd-textarea" .value=${s.description || ''} @input=${(e: any) => this._handleEditorChange('description', e.target.value)}></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sd-footer">
+        <button class="sd-btn secondary" @click=${() => this._view = 'browse'}>Cancel</button>
+        <button class="sd-btn primary" @click=${() => this._handleSave()}>
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
+          Save Strain
+        </button>
+      </div>
+    `;
+    }
+
+    private renderCropOverlay(): TemplateResult | typeof nothing {
+        const s = this._editorState;
+        if (!s.image) return nothing;
+
+        const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
+
+        const handleWheel = (e: WheelEvent) => {
+            e.preventDefault();
+            const delta = e.deltaY * -0.001;
+            const newScale = Math.min(Math.max(meta.scale + delta, 1), 5);
+            this._handleEditorChange('image_crop_meta', { ...meta, scale: newScale });
+        };
+
+        const handleMouseDown = (e: MouseEvent) => {
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const startMetaX = meta.x;
+            const startMetaY = meta.y;
+
+            const onMouseMove = (ev: MouseEvent) => {
+                const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
+                const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
+                let newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
+                let newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
+                this._handleEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
+            };
+
+            const onMouseUp = () => {
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+            };
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        };
+
+        return html`
+      <div class="crop-overlay">
+        <h3 style="color:white; margin-bottom:20px;">Adjust Image</h3>
+        <div class="crop-viewport"
+              @wheel=${handleWheel}
+              @mousedown=${handleMouseDown}
+              @dragstart=${(e: DragEvent) => e.preventDefault()}>
+          <div style="width: 100%; height: 100%;
+              background-image: url('${s.image}');
+              background-size: ${meta.scale * 100}%;
+              background-position: ${meta.x}% ${meta.y}%;
+              background-repeat: no-repeat;
+              pointer-events: none;">
+          </div>
+        </div>
+
+        <div class="crop-controls">
+          <div style="display:flex; justify-content:space-between; color:#ccc; font-size:0.8rem;">
+            <span>Zoom: ${(meta.scale * 100).toFixed(0)}%</span>
+          </div>
+          <input type="range" class="crop-slider" min="1" max="5" step="0.1"
+                  .value=${meta.scale.toString()}
+                  @input=${(e: Event) => this._handleEditorChange('image_crop_meta', { ...meta, scale: parseFloat((e.target as HTMLInputElement).value) })} />
+
+          <div style="display:flex; gap:12px; margin-top:12px;">
+            <button class="md3-button tonal" style="flex:1" @click=${() => this._toggleCropMode(false)}>Done</button>
+          </div>
+          <div style="text-align:center; font-size:0.8rem; color:#888; margin-top:8px;">
+            Drag to pan • Scroll to zoom
+          </div>
+        </div>
+      </div>
+    `;
+    }
+
+    private renderImageSelector(): TemplateResult {
+        const imageMap = new Map<string, { strain: string, phenotype: string }[]>();
+        this.strains.forEach(s => {
+            if (s.image) {
+                if (!imageMap.has(s.image)) {
+                    imageMap.set(s.image, []);
+                }
+                imageMap.get(s.image)!.push({ strain: s.strain, phenotype: s.phenotype || '' });
+            }
+        });
+
+        return html`
+      <div class="crop-overlay">
+        <div style="background: #1a1a1a; width: 80%; max-width: 800px; height: 80%; max-height: 600px; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color);">
+          <div class="sd-header">
+            <h2 class="sd-title">Select from Library</h2>
+            <button class="sd-close-btn" @click=${() => this._toggleImageSelector(false)}>
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+            </button>
+          </div>
+          <div class="sd-content" style="overflow-y: auto;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;">
+              ${[...imageMap.entries()].map(([img, infoList]) => html`
+                <div style="aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative;"
+                      @click=${() => this._handleSelectLibraryImage(img)}>
+                  <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" />
+                  <div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 8px; font-size: 0.75rem; color: white;">
+                    ${infoList.map((info, index) => html`
+                      <div style="${index < infoList.length - 1 ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);' : ''}">
+                        <div style="font-weight: 700;">Strain: ${info.strain}</div>
+                        <div style="opacity: 0.9;">Pheno: ${info.phenotype || 'N/A'}</div>
+                      </div>
+                    `)}
+                  </div>
+                </div>
+              `)}
+            </div>
+            ${imageMap.size === 0 ? html`<p style="text-align: center; color: var(--text-secondary); margin-top: 40px;">No images found in library.</p>` : nothing}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+
+    private renderImportDialog(): TemplateResult {
+        return html`
+      <div class="crop-overlay">
+        <div style="background: #1a1a1a; width: 400px; max-width: 90vw; border-radius: 16px; padding: 24px; border: 1px solid var(--border-color); color: #fff; display: flex; flex-direction: column; gap: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; font-size: 1.25rem;">Import Strains</h2>
+            <button class="sd-close-btn" @click=${() => this._importDialogOpen = false}>
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+            </button>
+          </div>
+
+          <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">
+            Select a ZIP file containing your strain library export. You can either merge the new strains with your existing library or replace it entirely.
+          </div>
+
+          <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+              <input type="radio" name="import_mode"
+                      .checked=${!this._importReplace}
+                      @change=${() => this._importReplace = false}
+                      style="accent-color: var(--accent-green); transform: scale(1.2);" />
+              <div>
+                <div style="font-weight: 600;">Merge</div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary);">Add new strains, keep existing ones.</div>
+              </div>
+            </label>
+
+            <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 12px 0;"></div>
+
+            <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+              <input type="radio" name="import_mode"
+                    .checked=${this._importReplace}
+                    @change=${() => this._importReplace = true}
+                    style="accent-color: var(--accent-green); transform: scale(1.2);" />
+              <div>
+                <div style="font-weight: 600;">Replace</div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary);">Overwrite entire library with import.</div>
+              </div>
+            </label>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
+            <button class="sd-btn secondary" @click=${() => this._importDialogOpen = false}>
+              Cancel
+            </button>
+            <button class="sd-btn primary" @click=${() => this._handleImportFile()}>
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
+              Select File
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+}
