@@ -32,6 +32,14 @@ export class StrainLibraryDialog extends LitElement {
       font-family: 'Roboto', sans-serif;
     }
 
+    ha-dialog {
+      --mdc-dialog-min-width: 80vw;
+      --mdc-dialog-max-width: 95vw;
+      --dialog-surface-margin: 24px;
+      --dialog-content-padding: 0;
+      --dialog-scrollable-header-padding: 0;
+    }
+
     /* STRICT DARK MODE & SHARED STYLES */
     .strain-dialog-container {
         background-color: #1a1a1a; /* Deep Charcoal */
