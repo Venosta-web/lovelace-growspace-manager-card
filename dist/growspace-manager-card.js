@@ -12691,6 +12691,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                 });
             }
         });
+        console.log('Combined Graph Data:', graphData);
         if (graphData.length === 0)
             return x ``;
         const width = 1000;
@@ -12783,6 +12784,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                 return [x, y];
             });
             const path = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+            console.log(`Path for ${g.key}:`, path);
             return x `
                          <path d="${path}" fill="none" stroke="${g.color}" stroke-width="2" />
                          <path d="${path} V ${height} H ${points[0][0]} Z" fill="${g.color}" fill-opacity="0.1" stroke="none" />

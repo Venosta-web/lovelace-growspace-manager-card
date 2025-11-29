@@ -3481,6 +3481,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
     });
 
+    console.log('Combined Graph Data:', graphData);
+
     if (graphData.length === 0) return html``;
 
     const width = 1000;
@@ -3572,6 +3574,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           });
 
           const path = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+          console.log(`Path for ${g.key}:`, path);
 
           return html`
                          <path d="${path}" fill="none" stroke="${g.color}" stroke-width="2" />
