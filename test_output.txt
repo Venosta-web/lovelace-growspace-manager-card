@@ -1,39 +1,44 @@
-[dotenv@17.2.3] injecting env (3) from .env -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
-[WebServer] (node:37088) [DEP0066] DeprecationWarning: OutgoingMessage.prototype._headers is deprecated
+[dotenv@17.2.3] injecting env (3) from .env -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+[WebServer] (node:20448) [DEP0066] DeprecationWarning: OutgoingMessage.prototype._headers is deprecated
 [WebServer] (Use `node --trace-deprecation ...` to show where the warning was created)
 
-Running 1 test using 1 worker
+Running 7 tests using 1 worker
 
-[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
-  Γ£ÿ  1 [mock] ΓÇ║ tests\env-linking.spec.ts:6:9 ΓÇ║ Environmental Sensor Linking ΓÇ║ Drag and drop links temperature and humidity sensors (5.5s)
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+  Γ£ô  1 [mock] ΓÇ║ tests\grow-card.spec.ts:28:9 ΓÇ║ Growspace Manager Card Tests ΓÇ║ Growspace Manager Card renders and Strains button is visible (514ms)
+  Γ£ô  2 [mock] ΓÇ║ tests\grow-card.spec.ts:41:9 ΓÇ║ Growspace Manager Card Tests ΓÇ║ Plant Overview Dialog opens on plant click (507ms)
+  Γ£ô  3 [mock] ΓÇ║ tests\grow-card.spec.ts:64:9 ΓÇ║ Growspace Manager Card Tests ΓÇ║ Strain Library Dialog opens (724ms)
+  Γ£ô  4 [mock] ΓÇ║ tests\grow-card.spec.ts:91:9 ΓÇ║ Growspace Manager Card Tests ΓÇ║ Drag and drop plant to empty slot (1.5s)
+  Γ£ô  5 [mock] ΓÇ║ tests\grow-card.spec.ts:109:9 ΓÇ║ Growspace Manager Card Tests ΓÇ║ Drag and drop plant to occupied slot (switching plants) (1.5s)
+  Γ£ô  6 [mock] ΓÇ║ tests\grow-card.spec.ts:162:9 ΓÇ║ Growspace Manager Card Tests ΓÇ║ fires "harvest_plant" service call when harvesting a flowering plant (991ms)
+  Γ£ÿ  7 [mock] ΓÇ║ tests\grow-card.spec.ts:215:9 ΓÇ║ Growspace Manager Card Tests ΓÇ║ Mobile View: Plant details are visible (5.4s)
 
 
-  1) [mock] ΓÇ║ tests\env-linking.spec.ts:6:9 ΓÇ║ Environmental Sensor Linking ΓÇ║ Drag and drop links temperature and humidity sensors 
+  1) [mock] ΓÇ║ tests\grow-card.spec.ts:215:9 ΓÇ║ Growspace Manager Card Tests ΓÇ║ Mobile View: Plant details are visible 
 
     Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
 
-    Locator: locator('growspace-manager-card').first().locator('.stat-chip').filter({ hasText: '25.5┬░C' })
+    Locator: locator('growspace-manager-card').first().locator('.plant-card-rich').filter({ hasText: 'Blue Dream' }).first().locator('.pc-pheno')
     Expected: visible
     Timeout: 5000ms
     Error: element(s) not found
 
     Call log:
     [2m  - Expect "toBeVisible" with timeout 5000ms[22m
-    [2m  - waiting for locator('growspace-manager-card').first().locator('.stat-chip').filter({ hasText: '25.5┬░C' })[22m
+    [2m  - waiting for locator('growspace-manager-card').first().locator('.plant-card-rich').filter({ hasText: 'Blue Dream' }).first().locator('.pc-pheno')[22m
 
 
-      57 |         const humChip = growspaceCard.locator('.stat-chip', { hasText: '60%' });
-      58 |
-    > 59 |         await expect(tempChip).toBeVisible();
-         |                                ^
-      60 |         await expect(humChip).toBeVisible();
-      61 |
-      62 |         // Perform Drag and Drop: Drag Temp -> Hum
-        at C:\Users\Maximilian\growspace_manager\lovelace-growspace-manager-card\tests\env-linking.spec.ts:59:32
+      230 |
+      231 |         await expect(name).toBeVisible();
+    > 232 |         await expect(pheno).toBeVisible();
+          |                             ^
+      233 |         await expect(stage).toBeVisible();
+      234 |
+      235 |         // Check CSS layout properties
+        at C:\Users\Maximilian\growspace_manager\lovelace-growspace-manager-card\tests\grow-card.spec.ts:232:29
 
-    Error Context: test-results\env-linking-Environmental--78caf-rature-and-humidity-sensors-mock\error-context.md
+    Error Context: test-results\grow-card-Growspace-Manage-116e9-w-Plant-details-are-visible-mock\error-context.md
 
   1 failed
-    [mock] ΓÇ║ tests\env-linking.spec.ts:6:9 ΓÇ║ Environmental Sensor Linking ΓÇ║ Drag and drop links temperature and humidity sensors 
-
-[36m  Serving HTML report at http://localhost:63048. Press Ctrl+C to quit.[39m
+    [mock] ΓÇ║ tests\grow-card.spec.ts:215:9 ΓÇ║ Growspace Manager Card Tests ΓÇ║ Mobile View: Plant details are visible 
+  6 passed (13.7s)
