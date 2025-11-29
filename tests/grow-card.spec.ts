@@ -212,4 +212,33 @@ test.describe('Growspace Manager Card Tests', () => {
         // Default behavior is usually moving to 'dry' stage/growspace
         expect(harvestCall.data).toHaveProperty('target_growspace_id', 'dry_overview');
     });
+    test('Mobile View: Plant details are visible', async ({ page }) => {
+        // Set viewport to iPhone SE size
+        await page.setViewportSize({ width: 375, height: 667 });
+
+        const growspaceCard = page.locator('growspace-manager-card').first();
+        await expect(growspaceCard).toBeVisible();
+
+        // Find a plant card (Gorilla Glue)
+        const plantCard = growspaceCard.locator('.plant-card-rich', { hasText: 'Gorilla Glue' }).first();
+        await expect(plantCard).toBeVisible();
+
+        // Check visibility of details
+        const name = plantCard.locator('.pc-strain-name');
+        const pheno = plantCard.locator('.pc-pheno');
+        const stage = plantCard.locator('.pc-stage');
+
+        await expect(name).toBeVisible();
+        await expect(pheno).toBeVisible();
+        await expect(stage).toBeVisible();
+
+        // Check CSS layout properties
+        const info = plantCard.locator('.pc-info');
+        await expect(info).toHaveCSS('display', 'flex');
+        await expect(info).toHaveCSS('flex-direction', 'column');
+
+        const content = plantCard.locator('.plant-card-content');
+        await expect(content).toHaveCSS('display', 'flex');
+        await expect(content).toHaveCSS('flex-direction', 'row');
+    });
 });

@@ -1504,21 +1504,25 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         }
 
         .plant-card-content {
+           display: flex;
            flex: 1;
            min-width: 0;
            flex-direction: row;
            padding: 0;
            align-items: center;
            justify-content: space-between;
-           gap: 8px;
+           gap: 12px;
         }
 
         .pc-info {
+           display: flex;
+           flex-direction: column;
            margin-top: 0;
            align-items: flex-start;
            text-align: left;
            flex: 1;
            gap: 2px;
+           min-width: 0;
         }
 
         .pc-strain-name {
