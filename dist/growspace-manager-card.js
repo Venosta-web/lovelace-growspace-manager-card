@@ -15308,16 +15308,17 @@ GrowspaceManagerCard.styles = [
         }
         /* Switch Grid to List View */
         .grid {
-          display: flex;
-          flex-direction: column;
+          display: flex !important;
+          flex-direction: column !important;
           gap: var(--spacing-sm);
-          grid-template-columns: 1fr !important;
-          grid-template-rows: auto !important;
+          grid-template-columns: unset !important;
+          grid-template-rows: unset !important;
         }
 
         /* Mobile List View for Rich Cards */
         .plant-card-rich {
-          width: unset;
+          width: 100%;
+          box-sizing: border-box;
           min-height: auto;
           aspect-ratio: unset;
           flex-direction: row;
@@ -15341,21 +15342,25 @@ GrowspaceManagerCard.styles = [
         }
 
         .plant-card-content {
+           display: flex;
            flex: 1;
            min-width: 0;
            flex-direction: row;
            padding: 0;
            align-items: center;
            justify-content: space-between;
-           gap: 8px;
+           gap: 12px;
         }
 
         .pc-info {
+           display: flex;
+           flex-direction: column;
            margin-top: 0;
            align-items: flex-start;
            text-align: left;
            flex: 1;
            gap: 2px;
+           min-width: 0;
         }
 
         .pc-strain-name {
