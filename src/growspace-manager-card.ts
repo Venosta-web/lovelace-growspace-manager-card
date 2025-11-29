@@ -1480,7 +1480,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
         /* Mobile List View for Rich Cards */
         .plant-card-rich {
-          width: unset;
+          width: 100%;
+          box-sizing: border-box;
           min-height: auto;
           aspect-ratio: unset;
           flex-direction: row;

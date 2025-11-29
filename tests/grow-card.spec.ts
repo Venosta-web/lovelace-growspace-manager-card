@@ -240,5 +240,10 @@ test.describe('Growspace Manager Card Tests', () => {
         const content = plantCard.locator('.plant-card-content');
         await expect(content).toHaveCSS('display', 'flex');
         await expect(content).toHaveCSS('flex-direction', 'row');
+
+        // Verify content has non-zero width
+        const contentBox = await content.boundingBox();
+        expect(contentBox).not.toBeNull();
+        expect(contentBox!.width).toBeGreaterThan(100);
     });
 });
