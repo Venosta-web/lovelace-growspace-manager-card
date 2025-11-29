@@ -1,7 +1,7 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues, svg } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain, mdiDotsVertical, mdiRadioboxMarked, mdiRadioboxBlank, mdiWater, mdiPencil, mdiCheckboxMarked, mdiCheckboxBlankOutline, mdiAirHumidifier, mdiLink } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain, mdiDotsVertical, mdiRadioboxMarked, mdiRadioboxBlank, mdiWater, mdiPencil, mdiCheckboxMarked, mdiCheckboxBlankOutline, mdiAirHumidifier, mdiLink, mdiFan } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
@@ -44,6 +44,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _strainLibrary: StrainEntry[] = [];
   @state() private _historyData: any[] | null = null;
   @state() private _dehumidifierHistory: any[] | null = null;
+  @state() private _exhaustHistory: any[] | null = null;
+  @state() private _humidifierHistory: any[] | null = null;
 
   @state() private _activeEnvGraphs: Set<string> = new Set();
   @state() private _linkedGraphGroups: string[][] = [];
@@ -2113,6 +2115,74 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
   }
 
+  private async _fetchExhaustHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
+    if (!this.hass || !this.selectedDevice) return;
+    const devices = this.dataService.getGrowspaceDevices();
+    const device = devices.find(d => d.device_id === this.selectedDevice);
+    if (!device || !device.overview_entity_id) return;
+
+    const overviewEntity = this.hass.states[device.overview_entity_id];
+    const exhaustEntityId = overviewEntity?.attributes?.exhaust_entity;
+
+    if (!exhaustEntityId) return;
+
+    const now = new Date();
+    let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    switch (range) {
+      case '1h':
+        startTime = new Date(now.getTime() - 60 * 60 * 1000);
+        break;
+      case '6h':
+        startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+        break;
+      case '7d':
+        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+    }
+
+    try {
+      const history = await this.dataService.getHistory(exhaustEntityId, startTime, now);
+      this._exhaustHistory = history;
+    } catch (e) {
+      console.error("Failed to fetch exhaust history", e);
+    }
+  }
+
+  private async _fetchHumidifierHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
+    if (!this.hass || !this.selectedDevice) return;
+    const devices = this.dataService.getGrowspaceDevices();
+    const device = devices.find(d => d.device_id === this.selectedDevice);
+    if (!device || !device.overview_entity_id) return;
+
+    const overviewEntity = this.hass.states[device.overview_entity_id];
+    const humidifierEntityId = overviewEntity?.attributes?.humidifier_entity;
+
+    if (!humidifierEntityId) return;
+
+    const now = new Date();
+    let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    switch (range) {
+      case '1h':
+        startTime = new Date(now.getTime() - 60 * 60 * 1000);
+        break;
+      case '6h':
+        startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+        break;
+      case '7d':
+        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+    }
+
+    try {
+      const history = await this.dataService.getHistory(humidifierEntityId, startTime, now);
+      this._humidifierHistory = history;
+    } catch (e) {
+      console.error("Failed to fetch humidifier history", e);
+    }
+  }
+
   private async _fetchStrainLibrary() {
     if (!this.hass) return;
 
@@ -3602,6 +3672,60 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           return '';
         })()}
                    </div>` : ''}
+                ${overviewEntity?.attributes?.exhaust_entity ? html`
+                   <div class="stat-chip ${this._activeEnvGraphs.has('exhaust') ? 'active' : ''}"
+                        draggable="true"
+                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'exhaust')}
+                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'exhaust')}
+                        @dragover=${(e: DragEvent) => e.preventDefault()}
+                        @click=${(e: Event) => {
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('exhaust');
+        }}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg>${overviewEntity.attributes.exhaust_value}
+                     ${(() => {
+          const { linked, groupIndex } = this._isMetricLinked('exhaust');
+          if (linked) {
+            return html`
+                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                title="Unlink Graph">
+                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                           </div>
+                         `;
+          }
+          return '';
+        })()}
+                   </div>` : ''}
+
+                ${overviewEntity?.attributes?.humidifier_entity ? html`
+                   <div class="stat-chip ${this._activeEnvGraphs.has('humidifier') ? 'active' : ''}"
+                        draggable="true"
+                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'humidifier')}
+                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'humidifier')}
+                        @dragover=${(e: DragEvent) => e.preventDefault()}
+                        @click=${(e: Event) => {
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('humidifier');
+        }}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg>${overviewEntity.attributes.humidifier_value}
+                     ${(() => {
+          const { linked, groupIndex } = this._isMetricLinked('humidifier');
+          if (linked) {
+            return html`
+                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                title="Unlink Graph">
+                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                           </div>
+                         `;
+          }
+          return '';
+        })()}
+                   </div>` : ''}
+
                 ${overviewEntity?.attributes?.dehumidifier_entity ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('dehumidifier') ? 'active' : ''}"
                         draggable="true"
@@ -3840,6 +3964,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                 'vpd': { color: '#9C27B0', title: 'VPD', unit: 'kPa' },
                 'co2': { color: '#90A4AE', title: 'CO2', unit: 'ppm' },
                 'dehumidifier': { color: '#00BCD4', title: 'Dehumidifier', unit: 'state' },
+                'exhaust': { color: '#795548', title: 'Exhaust', unit: '' },
+                'humidifier': { color: '#4CAF50', title: 'Humidifier', unit: '' },
                 'light': { color: '#FFEB3B', title: 'Light', unit: 'state' },
                 'irrigation': { color: '#2196F3', title: 'Irrigation', unit: 'state' },
                 'drain': { color: '#FF9800', title: 'Drain', unit: 'state' },
@@ -3860,6 +3986,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           { key: 'temperature', color: '#FF5722', title: 'Temperature', unit: '°C', type: 'line', icon: mdiThermometer },
           { key: 'humidity', color: '#2196F3', title: 'Humidity', unit: '%', type: 'line', icon: mdiWaterPercent },
           { key: 'vpd', color: '#9C27B0', title: 'VPD', unit: 'kPa', type: 'line', icon: mdiCloudOutline },
+          { key: 'exhaust', color: '#795548', title: 'Exhaust', unit: '', type: 'line', icon: mdiFan },
+          { key: 'humidifier', color: '#4CAF50', title: 'Humidifier', unit: '', type: 'line', icon: mdiAirHumidifier },
           { key: 'dehumidifier', color: '#00BCD4', title: 'Dehumidifier', unit: 'state', type: 'step', icon: mdiAirHumidifier },
           { key: 'co2', color: '#90A4AE', title: 'CO2', unit: 'ppm', type: 'line', icon: mdiWeatherCloudy },
           { key: 'light', color: '#FFEB3B', title: 'Light Cycle', unit: 'state', type: 'step', icon: mdiLightbulbOn },
@@ -3874,7 +4002,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
               <growspace-env-chart
                 .hass=${this.hass}
                 .device=${currentDevice}
-                .history=${m.key === 'dehumidifier' ? this._dehumidifierHistory : this._historyData}
+                .history=${m.key === 'dehumidifier' ? this._dehumidifierHistory : m.key === 'exhaust' ? this._exhaustHistory : m.key === 'humidifier' ? this._humidifierHistory : this._historyData}
                 .metricKey=${m.key}
                 .color=${m.color}
                 .title=${m.title}
@@ -4154,6 +4282,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this._fetchHistory(range);
     if (this._activeEnvGraphs.has('dehumidifier')) {
       this._fetchDehumidifierHistory(range);
+    }
+    if (this._activeEnvGraphs.has('exhaust')) {
+      this._fetchExhaustHistory(range);
+    }
+    if (this._activeEnvGraphs.has('humidifier')) {
+      this._fetchHumidifierHistory(range);
     }
   }
 

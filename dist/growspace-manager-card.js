@@ -20,6 +20,7 @@ var mdiDna = "M4,2H6V4C6,5.44 6.68,6.61 7.88,7.78C8.74,8.61 9.89,9.41 11.09,10.2
 var mdiDotsVertical = "M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z";
 var mdiDownload = "M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z";
 var mdiEarth = "M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
+var mdiFan = "M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z";
 var mdiFlower = "M3,13A9,9 0 0,0 12,22C12,17 7.97,13 3,13M12,5.5A2.5,2.5 0 0,1 14.5,8A2.5,2.5 0 0,1 12,10.5A2.5,2.5 0 0,1 9.5,8A2.5,2.5 0 0,1 12,5.5M5.6,10.25A2.5,2.5 0 0,0 8.1,12.75C8.63,12.75 9.12,12.58 9.5,12.31C9.5,12.37 9.5,12.43 9.5,12.5A2.5,2.5 0 0,0 12,15A2.5,2.5 0 0,0 14.5,12.5C14.5,12.43 14.5,12.37 14.5,12.31C14.88,12.58 15.37,12.75 15.9,12.75C17.28,12.75 18.4,11.63 18.4,10.25C18.4,9.25 17.81,8.4 16.97,8C17.81,7.6 18.4,6.74 18.4,5.75C18.4,4.37 17.28,3.25 15.9,3.25C15.37,3.25 14.88,3.41 14.5,3.69C14.5,3.63 14.5,3.56 14.5,3.5A2.5,2.5 0 0,0 12,1A2.5,2.5 0 0,0 9.5,3.5C9.5,3.56 9.5,3.63 9.5,3.69C9.12,3.41 8.63,3.25 8.1,3.25A2.5,2.5 0 0,0 5.6,5.75C5.6,6.74 6.19,7.6 7.03,8C6.19,8.4 5.6,9.25 5.6,10.25M12,22A9,9 0 0,0 21,13C16,13 12,17 12,22Z";
 var mdiHairDryer = "M22 9A4.32 4.32 0 0 1 19.78 8.45A3.4 3.4 0 0 0 18 8V7A4.32 4.32 0 0 1 20.22 7.55A3.4 3.4 0 0 0 22 8M22 6A3.4 3.4 0 0 1 20.22 5.55A4.32 4.32 0 0 0 18 5V6A3.4 3.4 0 0 1 19.78 6.45A4.32 4.32 0 0 0 22 7M22 10A3.4 3.4 0 0 1 20.22 9.55A4.32 4.32 0 0 0 18 9V10A3.4 3.4 0 0 1 19.78 10.45A4.32 4.32 0 0 0 22 11M10 12.73A70.39 70.39 0 0 0 17 11V4S10.5 2 7.5 2A5.5 5.5 0 0 0 6.12 12.82L7 19H8A3 3 0 0 0 9.46 21.33A3.15 3.15 0 0 1 11 24H12A4.12 4.12 0 0 0 10.09 20.55C9.39 20 9 19.63 9 19H10M7.5 10A2.5 2.5 0 1 1 10 7.5A2.5 2.5 0 0 1 7.5 10Z";
 var mdiImage = "M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z";
@@ -12386,6 +12387,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         this._strainLibrary = [];
         this._historyData = null;
         this._dehumidifierHistory = null;
+        this._exhaustHistory = null;
+        this._humidifierHistory = null;
         this._activeEnvGraphs = new Set();
         this._linkedGraphGroups = [];
         this._graphRanges = {};
@@ -12525,6 +12528,70 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         }
         catch (e) {
             console.error("Failed to fetch dehumidifier history", e);
+        }
+    }
+    async _fetchExhaustHistory(range = '24h') {
+        if (!this.hass || !this.selectedDevice)
+            return;
+        const devices = this.dataService.getGrowspaceDevices();
+        const device = devices.find(d => d.device_id === this.selectedDevice);
+        if (!device || !device.overview_entity_id)
+            return;
+        const overviewEntity = this.hass.states[device.overview_entity_id];
+        const exhaustEntityId = overviewEntity?.attributes?.exhaust_entity;
+        if (!exhaustEntityId)
+            return;
+        const now = new Date();
+        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        switch (range) {
+            case '1h':
+                startTime = new Date(now.getTime() - 60 * 60 * 1000);
+                break;
+            case '6h':
+                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+                break;
+            case '7d':
+                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+        }
+        try {
+            const history = await this.dataService.getHistory(exhaustEntityId, startTime, now);
+            this._exhaustHistory = history;
+        }
+        catch (e) {
+            console.error("Failed to fetch exhaust history", e);
+        }
+    }
+    async _fetchHumidifierHistory(range = '24h') {
+        if (!this.hass || !this.selectedDevice)
+            return;
+        const devices = this.dataService.getGrowspaceDevices();
+        const device = devices.find(d => d.device_id === this.selectedDevice);
+        if (!device || !device.overview_entity_id)
+            return;
+        const overviewEntity = this.hass.states[device.overview_entity_id];
+        const humidifierEntityId = overviewEntity?.attributes?.humidifier_entity;
+        if (!humidifierEntityId)
+            return;
+        const now = new Date();
+        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        switch (range) {
+            case '1h':
+                startTime = new Date(now.getTime() - 60 * 60 * 1000);
+                break;
+            case '6h':
+                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+                break;
+            case '7d':
+                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+        }
+        try {
+            const history = await this.dataService.getHistory(humidifierEntityId, startTime, now);
+            this._humidifierHistory = history;
+        }
+        catch (e) {
+            console.error("Failed to fetch humidifier history", e);
         }
     }
     async _fetchStrainLibrary() {
@@ -13827,6 +13894,62 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             return '';
         })()}
                    </div>` : ''}
+                ${overviewEntity?.attributes?.exhaust_entity ? x `
+                   <div class="stat-chip ${this._activeEnvGraphs.has('exhaust') ? 'active' : ''}"
+                        draggable="true"
+                        @dragstart=${(e) => this._handleChipDragStart(e, 'exhaust')}
+                        @drop=${(e) => this._handleChipDrop(e, 'exhaust')}
+                        @dragover=${(e) => e.preventDefault()}
+                        @click=${(e) => {
+            const target = e.target;
+            if (target.closest('.link-icon'))
+                return;
+            this._toggleEnvGraph('exhaust');
+        }}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg>${overviewEntity.attributes.exhaust_value}
+                     ${(() => {
+            const { linked, groupIndex } = this._isMetricLinked('exhaust');
+            if (linked) {
+                return x `
+                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                title="Unlink Graph">
+                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                           </div>
+                         `;
+            }
+            return '';
+        })()}
+                   </div>` : ''}
+
+                ${overviewEntity?.attributes?.humidifier_entity ? x `
+                   <div class="stat-chip ${this._activeEnvGraphs.has('humidifier') ? 'active' : ''}"
+                        draggable="true"
+                        @dragstart=${(e) => this._handleChipDragStart(e, 'humidifier')}
+                        @drop=${(e) => this._handleChipDrop(e, 'humidifier')}
+                        @dragover=${(e) => e.preventDefault()}
+                        @click=${(e) => {
+            const target = e.target;
+            if (target.closest('.link-icon'))
+                return;
+            this._toggleEnvGraph('humidifier');
+        }}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg>${overviewEntity.attributes.humidifier_value}
+                     ${(() => {
+            const { linked, groupIndex } = this._isMetricLinked('humidifier');
+            if (linked) {
+                return x `
+                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                title="Unlink Graph">
+                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                           </div>
+                         `;
+            }
+            return '';
+        })()}
+                   </div>` : ''}
+
                 ${overviewEntity?.attributes?.dehumidifier_entity ? x `
                    <div class="stat-chip ${this._activeEnvGraphs.has('dehumidifier') ? 'active' : ''}"
                         draggable="true"
@@ -14069,6 +14192,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                         'vpd': { color: '#9C27B0', title: 'VPD', unit: 'kPa' },
                         'co2': { color: '#90A4AE', title: 'CO2', unit: 'ppm' },
                         'dehumidifier': { color: '#00BCD4', title: 'Dehumidifier', unit: 'state' },
+                        'exhaust': { color: '#795548', title: 'Exhaust', unit: '' },
+                        'humidifier': { color: '#4CAF50', title: 'Humidifier', unit: '' },
                         'light': { color: '#FFEB3B', title: 'Light', unit: 'state' },
                         'irrigation': { color: '#2196F3', title: 'Irrigation', unit: 'state' },
                         'drain': { color: '#FF9800', title: 'Drain', unit: 'state' },
@@ -14088,6 +14213,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                 { key: 'temperature', color: '#FF5722', title: 'Temperature', unit: '°C', type: 'line', icon: mdiThermometer },
                 { key: 'humidity', color: '#2196F3', title: 'Humidity', unit: '%', type: 'line', icon: mdiWaterPercent },
                 { key: 'vpd', color: '#9C27B0', title: 'VPD', unit: 'kPa', type: 'line', icon: mdiCloudOutline },
+                { key: 'exhaust', color: '#795548', title: 'Exhaust', unit: '', type: 'line', icon: mdiFan },
+                { key: 'humidifier', color: '#4CAF50', title: 'Humidifier', unit: '', type: 'line', icon: mdiAirHumidifier },
                 { key: 'dehumidifier', color: '#00BCD4', title: 'Dehumidifier', unit: 'state', type: 'step', icon: mdiAirHumidifier },
                 { key: 'co2', color: '#90A4AE', title: 'CO2', unit: 'ppm', type: 'line', icon: mdiWeatherCloudy },
                 { key: 'light', color: '#FFEB3B', title: 'Light Cycle', unit: 'state', type: 'step', icon: mdiLightbulbOn },
@@ -14101,7 +14228,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
               <growspace-env-chart
                 .hass=${this.hass}
                 .device=${currentDevice}
-                .history=${m.key === 'dehumidifier' ? this._dehumidifierHistory : this._historyData}
+                .history=${m.key === 'dehumidifier' ? this._dehumidifierHistory : m.key === 'exhaust' ? this._exhaustHistory : m.key === 'humidifier' ? this._humidifierHistory : this._historyData}
                 .metricKey=${m.key}
                 .color=${m.color}
                 .title=${m.title}
@@ -14359,6 +14486,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         this._fetchHistory(range);
         if (this._activeEnvGraphs.has('dehumidifier')) {
             this._fetchDehumidifierHistory(range);
+        }
+        if (this._activeEnvGraphs.has('exhaust')) {
+            this._fetchExhaustHistory(range);
+        }
+        if (this._activeEnvGraphs.has('humidifier')) {
+            this._fetchHumidifierHistory(range);
         }
     }
     renderTimeRangeSelector() {
@@ -16650,6 +16783,14 @@ __decorate([
     r(),
     __metadata("design:type", Object)
 ], GrowspaceManagerCard.prototype, "_dehumidifierHistory", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_exhaustHistory", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_humidifierHistory", void 0);
 __decorate([
     r(),
     __metadata("design:type", Set)
