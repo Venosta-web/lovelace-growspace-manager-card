@@ -2878,6 +2878,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         } else {
           valStr = 'OFF';
         }
+      } else if (metricKey === 'dehumidifier' || metricKey === 'light') {
+        valStr = closest.value === 1 ? 'ON' : 'OFF';
       } else if (closest.value === 1) {
         valStr = 'Optimal Conditions';
       } else {

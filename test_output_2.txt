@@ -1,55 +1,39 @@
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
-[2m[WebServer] [22m(node:5972) [DEP0066] DeprecationWarning: OutgoingMessage.prototype._headers is deprecated
-[2m[WebServer] [22m(Use `node --trace-deprecation ...` to show where the warning was created)
+[dotenv@17.2.3] injecting env (3) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+[WebServer] (node:20216) [DEP0066] DeprecationWarning: OutgoingMessage.prototype._headers is deprecated
+[WebServer] (Use `node --trace-deprecation ...` to show where the warning was created)
 
-Running 15 tests using 2 workers
+Running 1 test using 1 worker
 
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
-BROWSER LOG: [DataService] No strain data in sensor attributes
-BROWSER LOG: [DataService] No strain data in sensor attributes
-BROWSER LOG: [DataService] No strain data in sensor attributes
-BROWSER LOG: [DataService] No strain data in sensor attributes
-BROWSER LOG: [DataService] No strain data in sensor attributes
-BROWSER LOG: [DataService] No strain data in sensor attributes
-BROWSER LOG: [DataService] No strain data in sensor attributes
-BROWSER LOG: [DataService] No strain data in sensor attributes
-  ✓   2 [mock] › tests/graph-time-ranges.spec.ts:12:9 › Graph Time Ranges › time range selector visibility and functionality (4.8s)
-BROWSER LOG: [DataService] No strain data in sensor attributes
-BROWSER LOG: [DataService] No strain data in sensor attributes
-BROWSER LOG: [DataService] No strain data in sensor attributes
-BROWSER LOG: [DataService] No strain data in sensor attributes
-BROWSER LOG: [DataService] No strain data in sensor attributes
-  ✓   1 [mock] › tests/bulk-edit.spec.ts:11:9 › Growspace Manager Card - Bulk Edit › allows selecting multiple plants and bulk editing them (5.5s)
-  ✓   3 [mock] › tests/graph-time-ranges.spec.ts:108:9 › Graph Time Ranges › square graph (step) scaling (466ms)
-  ✓   5 [mock] › tests/growspace-card.spec.ts:11:9 › Growspace Manager Card › renders grid layout and plant details correctly (282ms)
-  ✓   4 [mock] › tests/grow-card.spec.ts:28:9 › Growspace Manager Card Tests › Growspace Manager Card renders and Strains button is visible (309ms)
-  ✓   6 [mock] › tests/growspace-card.spec.ts:38:9 › Growspace Manager Card › displays warning indicators for binary sensors (222ms)
-  ✓   7 [mock] › tests/grow-card.spec.ts:41:9 › Growspace Manager Card Tests › Plant Overview Dialog opens on plant click (407ms)
-  ✓   8 [mock] › tests/growspace-card.spec.ts:58:9 › Growspace Manager Card › fires "add_plant" service call when clicking empty slot (300ms)
-  ✓  10 [mock] › tests/growspace-card.spec.ts:91:9 › Growspace Manager Card › fires "remove_plant" service call when deleting a plant (427ms)
-  ✓   9 [mock] › tests/grow-card.spec.ts:64:9 › Growspace Manager Card Tests › Strain Library Dialog opens (808ms)
-  ✓  11 [mock] › tests/growspace-card.spec.ts:139:9 › Growspace Manager Card › fires "update_plant" service call when dragging a plant to an empty slot (418ms)
-  ✓  13 [mock] › tests/growspace-card.spec.ts:184:9 › Growspace Manager Card › fires "update_plant" service call when editing plant details (485ms)
-[Browser] [MockHass] sendMessagePromise: {type: call_service, domain: growspace_manager, service: get_strain_library, service_data: Object, return_response: true}
-[Browser] [DataService] No strain data in sensor attributes
-[Browser] [DataService] No strain data in sensor attributes
-[Browser] [DataService] No strain data in sensor attributes
-[Browser] [DataService] No strain data in sensor attributes
-[Browser] [DataService:addStrain] Adding strain: {strain: New Test Strain, phenotype: #1, breeder: , type: , flowering_days_min: undefined}
-[Browser] [DataService:addStrain] Response: undefined
-[Browser] [MockHass] sendMessagePromise: {type: call_service, domain: growspace_manager, service: get_strain_library, service_data: Object, return_response: true}
-[Browser] [DataService] No strain data in sensor attributes
-[Browser] [DataService] No strain data in sensor attributes
-[Browser] Failed to load resource: the server responded with a status of 404 (Not Found)
-[Browser] Failed to load resource: the server responded with a status of 404 (Not Found)
-  ✓  12 [mock] › tests/grow-card.spec.ts:91:9 › Growspace Manager Card Tests › Drag and drop plant to empty slot (1.4s)
-[Browser] [DataService:removeStrain] Removing strain: Gorilla Glue #4
-[Browser] [DataService:removeStrain] Response: undefined
-[Browser] [MockHass] sendMessagePromise: {type: call_service, domain: growspace_manager, service: get_strain_library, service_data: Object, return_response: true}
-[Browser] [DataService] No strain data in sensor attributes
-[Browser] [DataService] No strain data in sensor attributes
-  ✓  14 [mock] › tests/strain-library.spec.ts:52:9 › Strain Library › can add and remove a strain (2.0s)
-  ✓  15 [mock] › tests/grow-card.spec.ts:109:9 › Growspace Manager Card Tests › Drag and drop plant to occupied slot (switching plants) (1.4s)
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+  ✘  1 [mock] › tests\graph-tooltips.spec.ts:10:9 › Graph Tooltips › displays correct tooltip text for dehumidifier, light, and optimal graphs (5.5s)
 
-  15 passed (14.1s)
+
+  1) [mock] › tests\graph-tooltips.spec.ts:10:9 › Graph Tooltips › displays correct tooltip text for dehumidifier, light, and optimal graphs 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('growspace-manager-card').locator('.gs-env-chart-container')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('growspace-manager-card').locator('.gs-env-chart-container')[22m
+
+
+      85 |
+      86 |         const graphContainer = card.locator('.gs-env-chart-container');
+    > 87 |         await expect(graphContainer).toBeVisible();
+         |                                      ^
+      88 |         await expect(card.locator('.chart-title')).toHaveText('Dehumidifier');
+      89 |
+      90 |         // Hover over graph
+        at C:\Users\Maximilian\growspace_manager\lovelace-growspace-manager-card\tests\graph-tooltips.spec.ts:87:38
+
+    Error Context: test-results\graph-tooltips-Graph-Toolt-ed61b-er-light-and-optimal-graphs-mock\error-context.md
+
+  1 failed
+    [mock] › tests\graph-tooltips.spec.ts:10:9 › Graph Tooltips › displays correct tooltip text for dehumidifier, light, and optimal graphs 
+
+[36m  Serving HTML report at http://localhost:56345. Press Ctrl+C to quit.[39m
