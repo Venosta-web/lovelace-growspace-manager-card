@@ -1,0 +1,18 @@
+
+> lovelace-growspace-manager-card@1.0.1-alpha.1 build
+> rollup -c
+
+
+src/index.ts ΓåÆ dist/growspace-manager-card.js...
+[!] Error: Invalid value for option "output.file" - when building multiple chunks, the "output.dir" option must be used, not "output.file". To inline dynamic imports, set the "inlineDynamicImports" option.
+https://rollupjs.org/guide/en/#outputdir
+Error: Invalid value for option "output.file" - when building multiple chunks, the "output.dir" option must be used, not "output.file". To inline dynamic imports, set the "inlineDynamicImports" option.
+    at error (C:\Users\Maximilian\growspace_manager\lovelace-growspace-manager-card\node_modules\rollup\dist\shared\rollup.js:198:30)
+    at validateOptionsForMultiChunkOutput (C:\Users\Maximilian\growspace_manager\lovelace-growspace-manager-card\node_modules\rollup\dist\shared\rollup.js:16078:16)
+    at Bundle.generate (C:\Users\Maximilian\growspace_manager\lovelace-growspace-manager-card\node_modules\rollup\dist\shared\rollup.js:15910:17)
+    at C:\Users\Maximilian\growspace_manager\lovelace-growspace-manager-card\node_modules\rollup\dist\shared\rollup.js:23833:27
+    at catchUnfinishedHookActions (C:\Users\Maximilian\growspace_manager\lovelace-growspace-manager-card\node_modules\rollup\dist\shared\rollup.js:23247:20)
+    at async Promise.all (index 0)
+    at build (C:\Users\Maximilian\growspace_manager\lovelace-growspace-manager-card\node_modules\rollup\dist\bin\rollup:1558:5)
+    at runRollup (C:\Users\Maximilian\growspace_manager\lovelace-growspace-manager-card\node_modules\rollup\dist\bin\rollup:1668:21)
+

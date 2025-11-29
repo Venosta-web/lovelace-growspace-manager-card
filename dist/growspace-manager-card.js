@@ -1,146 +1,825 @@
-function t(t,e,i,r){var a,s=arguments.length,n=s<3?e:null===r?r=Object.getOwnPropertyDescriptor(e,i):r;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)n=Reflect.decorate(t,e,i,r);else for(var o=t.length-1;o>=0;o--)(a=t[o])&&(n=(s<3?a(n):s>3?a(e,i,n):a(e,i))||n);return s>3&&n&&Object.defineProperty(e,i,n),n}function e(t,e){if("object"==typeof Reflect&&"function"==typeof Reflect.metadata)return Reflect.metadata(t,e)}"function"==typeof SuppressedError&&SuppressedError;
+// Material Design Icons v7.4.47
+var mdiAirHumidifier = "M11 9C8.79 9 7 10.79 7 13S8.79 17 11 17 15 15.21 15 13 13.21 9 11 9M11 15C9.9 15 9 14.11 9 13S9.9 11 11 11 13 11.9 13 13 12.11 15 11 15M7 4H14C16.21 4 18 5.79 18 8V9H16V8C16 6.9 15.11 6 14 6H7C5.9 6 5 6.9 5 8V20H16V18H18V22H3V8C3 5.79 4.79 4 7 4M19 10.5C19 10.5 21 12.67 21 14C21 15.1 20.1 16 19 16S17 15.1 17 14C17 12.67 19 10.5 19 10.5";
+var mdiArrowLeft = "M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z";
+var mdiArrowRight = "M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z";
+var mdiBrain = "M21.33,12.91C21.42,14.46 20.71,15.95 19.44,16.86L20.21,18.35C20.44,18.8 20.47,19.33 20.27,19.8C20.08,20.27 19.69,20.64 19.21,20.8L18.42,21.05C18.25,21.11 18.06,21.14 17.88,21.14C17.37,21.14 16.89,20.91 16.56,20.5L14.44,18C13.55,17.85 12.71,17.47 12,16.9C11.5,17.05 11,17.13 10.5,17.13C9.62,17.13 8.74,16.86 8,16.34C7.47,16.5 6.93,16.57 6.38,16.56C5.59,16.57 4.81,16.41 4.08,16.11C2.65,15.47 1.7,14.07 1.65,12.5C1.57,11.78 1.69,11.05 2,10.39C1.71,9.64 1.68,8.82 1.93,8.06C2.3,7.11 3,6.32 3.87,5.82C4.45,4.13 6.08,3 7.87,3.12C9.47,1.62 11.92,1.46 13.7,2.75C14.12,2.64 14.56,2.58 15,2.58C16.36,2.55 17.65,3.15 18.5,4.22C20.54,4.75 22,6.57 22.08,8.69C22.13,9.8 21.83,10.89 21.22,11.82C21.29,12.18 21.33,12.54 21.33,12.91M16.33,11.5C16.9,11.57 17.35,12 17.35,12.57A1,1 0 0,1 16.35,13.57H15.72C15.4,14.47 14.84,15.26 14.1,15.86C14.35,15.95 14.61,16 14.87,16.07C20,16 19.4,12.87 19.4,12.82C19.34,11.39 18.14,10.27 16.71,10.33A1,1 0 0,1 15.71,9.33A1,1 0 0,1 16.71,8.33C17.94,8.36 19.12,8.82 20.04,9.63C20.09,9.34 20.12,9.04 20.12,8.74C20.06,7.5 19.5,6.42 17.25,6.21C16,3.25 12.85,4.89 12.85,5.81V5.81C12.82,6.04 13.06,6.53 13.1,6.56A1,1 0 0,1 14.1,7.56C14.1,8.11 13.65,8.56 13.1,8.56V8.56C12.57,8.54 12.07,8.34 11.67,8C11.19,8.31 10.64,8.5 10.07,8.56V8.56C9.5,8.61 9.03,8.21 9,7.66C8.92,7.1 9.33,6.61 9.88,6.56C10.04,6.54 10.82,6.42 10.82,5.79V5.79C10.82,5.13 11.07,4.5 11.5,4C10.58,3.75 9.59,4.08 8.59,5.29C6.75,5 6,5.25 5.45,7.2C4.5,7.67 4,8 3.78,9C4.86,8.78 5.97,8.87 7,9.25C7.5,9.44 7.78,10 7.59,10.54C7.4,11.06 6.82,11.32 6.3,11.13C5.57,10.81 4.75,10.79 4,11.07C3.68,11.34 3.68,11.9 3.68,12.34C3.68,13.08 4.05,13.77 4.68,14.17C5.21,14.44 5.8,14.58 6.39,14.57C6.24,14.31 6.11,14.04 6,13.76C5.81,13.22 6.1,12.63 6.64,12.44C7.18,12.25 7.77,12.54 7.96,13.08C8.36,14.22 9.38,15 10.58,15.13C11.95,15.06 13.17,14.25 13.77,13C14,11.62 15.11,11.5 16.33,11.5M18.33,18.97L17.71,17.67L17,17.83L18,19.08L18.33,18.97M13.68,10.36C13.7,9.83 13.3,9.38 12.77,9.33C12.06,9.29 11.37,9.53 10.84,10C10.27,10.58 9.97,11.38 10,12.19A1,1 0 0,0 11,13.19C11.57,13.19 12,12.74 12,12.19C12,11.92 12.07,11.65 12.23,11.43C12.35,11.33 12.5,11.28 12.66,11.28C13.21,11.31 13.68,10.9 13.68,10.36Z";
+var mdiCannabis = "M11.5,22V17.35C11,18.13 10,19.09 8.03,19.81C8.03,19.81 8.53,18.1 9.94,16.95C8.64,17.23 6.68,17.19 4,16C4,16 6.47,14.59 9.28,14.97C7.69,14 5.7,12.08 4.17,8.11C4.17,8.11 8.67,9.34 10.91,13.14C8.88,8.24 12,2 12,2C14.43,7.47 13.91,11.1 13.12,13.1C15.37,9.33 19.83,8.11 19.83,8.11C18.3,12.08 16.31,14 14.72,14.97C17.53,14.59 20,16 20,16C17.32,17.19 15.36,17.23 14.06,16.95C15.47,18.1 15.97,19.81 15.97,19.81C14,19.09 13,18.13 12.5,17.35V22H11.5Z";
+var mdiCheck = "M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z";
+var mdiCheckboxBlankOutline = "M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z";
+var mdiCheckboxMarked = "M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z";
+var mdiChevronDown = "M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z";
+var mdiClose = "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z";
+var mdiCloudOutline = "M6.5 20Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20M6.5 18H18.5Q19.55 18 20.27 17.27 21 16.55 21 15.5 21 14.45 20.27 13.73 19.55 13 18.5 13H17V11Q17 8.93 15.54 7.46 14.08 6 12 6 9.93 6 8.46 7.46 7 8.93 7 11H6.5Q5.05 11 4.03 12.03 3 13.05 3 14.5 3 15.95 4.03 17 5.05 18 6.5 18M12 12Z";
+var mdiCloudUpload = "M11 20H6.5Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20H13V12.85L14.6 14.4L16 13L12 9L8 13L9.4 14.4L11 12.85Z";
+var mdiCog = "M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z";
+var mdiContentCopy = "M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z";
+var mdiDelete = "M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z";
+var mdiDna = "M4,2H6V4C6,5.44 6.68,6.61 7.88,7.78C8.74,8.61 9.89,9.41 11.09,10.2L9.26,11.39C8.27,10.72 7.31,10 6.5,9.21C5.07,7.82 4,6.1 4,4V2M18,2H20V4C20,6.1 18.93,7.82 17.5,9.21C16.09,10.59 14.29,11.73 12.54,12.84C10.79,13.96 9.09,15.05 7.88,16.22C6.68,17.39 6,18.56 6,20V22H4V20C4,17.9 5.07,16.18 6.5,14.79C7.91,13.41 9.71,12.27 11.46,11.16C13.21,10.04 14.91,8.95 16.12,7.78C17.32,6.61 18,5.44 18,4V2M14.74,12.61C15.73,13.28 16.69,14 17.5,14.79C18.93,16.18 20,17.9 20,20V22H18V20C18,18.56 17.32,17.39 16.12,16.22C15.26,15.39 14.11,14.59 12.91,13.8L14.74,12.61M7,3H17V4L16.94,4.5H7.06L7,4V3M7.68,6H16.32C16.08,6.34 15.8,6.69 15.42,7.06L14.91,7.5H9.07L8.58,7.06C8.2,6.69 7.92,6.34 7.68,6M9.09,16.5H14.93L15.42,16.94C15.8,17.31 16.08,17.66 16.32,18H7.68C7.92,17.66 8.2,17.31 8.58,16.94L9.09,16.5M7.06,19.5H16.94L17,20V21H7V20L7.06,19.5Z";
+var mdiDotsVertical = "M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z";
+var mdiDownload = "M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z";
+var mdiEarth = "M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
+var mdiFlower = "M3,13A9,9 0 0,0 12,22C12,17 7.97,13 3,13M12,5.5A2.5,2.5 0 0,1 14.5,8A2.5,2.5 0 0,1 12,10.5A2.5,2.5 0 0,1 9.5,8A2.5,2.5 0 0,1 12,5.5M5.6,10.25A2.5,2.5 0 0,0 8.1,12.75C8.63,12.75 9.12,12.58 9.5,12.31C9.5,12.37 9.5,12.43 9.5,12.5A2.5,2.5 0 0,0 12,15A2.5,2.5 0 0,0 14.5,12.5C14.5,12.43 14.5,12.37 14.5,12.31C14.88,12.58 15.37,12.75 15.9,12.75C17.28,12.75 18.4,11.63 18.4,10.25C18.4,9.25 17.81,8.4 16.97,8C17.81,7.6 18.4,6.74 18.4,5.75C18.4,4.37 17.28,3.25 15.9,3.25C15.37,3.25 14.88,3.41 14.5,3.69C14.5,3.63 14.5,3.56 14.5,3.5A2.5,2.5 0 0,0 12,1A2.5,2.5 0 0,0 9.5,3.5C9.5,3.56 9.5,3.63 9.5,3.69C9.12,3.41 8.63,3.25 8.1,3.25A2.5,2.5 0 0,0 5.6,5.75C5.6,6.74 6.19,7.6 7.03,8C6.19,8.4 5.6,9.25 5.6,10.25M12,22A9,9 0 0,0 21,13C16,13 12,17 12,22Z";
+var mdiHairDryer = "M22 9A4.32 4.32 0 0 1 19.78 8.45A3.4 3.4 0 0 0 18 8V7A4.32 4.32 0 0 1 20.22 7.55A3.4 3.4 0 0 0 22 8M22 6A3.4 3.4 0 0 1 20.22 5.55A4.32 4.32 0 0 0 18 5V6A3.4 3.4 0 0 1 19.78 6.45A4.32 4.32 0 0 0 22 7M22 10A3.4 3.4 0 0 1 20.22 9.55A4.32 4.32 0 0 0 18 9V10A3.4 3.4 0 0 1 19.78 10.45A4.32 4.32 0 0 0 22 11M10 12.73A70.39 70.39 0 0 0 17 11V4S10.5 2 7.5 2A5.5 5.5 0 0 0 6.12 12.82L7 19H8A3 3 0 0 0 9.46 21.33A3.15 3.15 0 0 1 11 24H12A4.12 4.12 0 0 0 10.09 20.55C9.39 20 9 19.63 9 19H10M7.5 10A2.5 2.5 0 1 1 10 7.5A2.5 2.5 0 0 1 7.5 10Z";
+var mdiLeaf = "M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z";
+var mdiLightbulbOff = "M12,2C9.76,2 7.78,3.05 6.5,4.68L16.31,14.5C17.94,13.21 19,11.24 19,9A7,7 0 0,0 12,2M3.28,4L2,5.27L5.04,8.3C5,8.53 5,8.76 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H14.73L18.73,22L20,20.72L3.28,4M9,20V21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9Z";
+var mdiLightbulbOn = "M12,6A6,6 0 0,1 18,12C18,14.22 16.79,16.16 15,17.2V19A1,1 0 0,1 14,20H10A1,1 0 0,1 9,19V17.2C7.21,16.16 6,14.22 6,12A6,6 0 0,1 12,6M14,21V22A1,1 0 0,1 13,23H11A1,1 0 0,1 10,22V21H14M20,11H23V13H20V11M1,11H4V13H1V11M13,1V4H11V1H13M4.92,3.5L7.05,5.64L5.63,7.05L3.5,4.93L4.92,3.5M16.95,5.63L19.07,3.5L20.5,4.93L18.37,7.05L16.95,5.63Z";
+var mdiLoading = "M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z";
+var mdiMagnify = "M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z";
+var mdiPencil = "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z";
+var mdiPlus = "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
+var mdiRadioboxBlank = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
+var mdiRadioboxMarked = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7Z";
+var mdiSprout = "M2,22V20C2,20 7,18 12,18C17,18 22,20 22,20V22H2M11.3,9.1C10.1,5.2 4,6.1 4,6.1C4,6.1 4.2,13.9 9.9,12.7C9.5,9.8 8,9 8,9C10.8,9 11,12.4 11,12.4V17C11.3,17 11.7,17 12,17C12.3,17 12.7,17 13,17V12.8C13,12.8 13,8.9 16,7.9C16,7.9 14,10.9 14,12.9C21,13.6 21,4 21,4C21,4 12.1,3 11.3,9.1Z";
+var mdiThermometer = "M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z";
+var mdiTuneVariant = "M8 13C6.14 13 4.59 14.28 4.14 16H2V18H4.14C4.59 19.72 6.14 21 8 21S11.41 19.72 11.86 18H22V16H11.86C11.41 14.28 9.86 13 8 13M8 19C6.9 19 6 18.1 6 17C6 15.9 6.9 15 8 15S10 15.9 10 17C10 18.1 9.1 19 8 19M19.86 6C19.41 4.28 17.86 3 16 3S12.59 4.28 12.14 6H2V8H12.14C12.59 9.72 14.14 11 16 11S19.41 9.72 19.86 8H22V6H19.86M16 9C14.9 9 14 8.1 14 7C14 5.9 14.9 5 16 5S18 5.9 18 7C18 8.1 17.1 9 16 9Z";
+var mdiUpload = "M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z";
+var mdiViewDashboard = "M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z";
+var mdiWater = "M12,20A6,6 0 0,1 6,14C6,10 12,3.25 12,3.25C12,3.25 18,10 18,14A6,6 0 0,1 12,20Z";
+var mdiWaterPercent = "M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,0 18,14C18,10 12,3.25 12,3.25M14.47,9.97L15.53,11.03L9.53,17.03L8.47,15.97M9.75,10A1.25,1.25 0 0,1 11,11.25A1.25,1.25 0 0,1 9.75,12.5A1.25,1.25 0 0,1 8.5,11.25A1.25,1.25 0 0,1 9.75,10M14.25,14.5A1.25,1.25 0 0,1 15.5,15.75A1.25,1.25 0 0,1 14.25,17A1.25,1.25 0 0,1 13,15.75A1.25,1.25 0 0,1 14.25,14.5Z";
+var mdiWeatherCloudy = "M6,19A5,5 0 0,1 1,14A5,5 0 0,1 6,9C7,6.65 9.3,5 12,5C15.43,5 18.24,7.66 18.5,11.03L19,11A4,4 0 0,1 23,15A4,4 0 0,1 19,19H6M19,13H17V12A5,5 0 0,0 12,7C9.5,7 7.45,8.82 7.06,11.19C6.73,11.07 6.37,11 6,11A3,3 0 0,0 3,14A3,3 0 0,0 6,17H19A2,2 0 0,0 21,15A2,2 0 0,0 19,13Z";
+var mdiWeatherNight = "M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z";
+var mdiWeatherSunny = "M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,6.65C6.9,7.16 6.36,7.78 5.94,8.5C5.5,9.24 5.25,10 5.11,10.79L3.34,7M3.36,17L5.12,13.23C5.26,14 5.53,14.78 5.95,15.5C6.37,16.24 6.91,16.86 7.5,17.37L3.36,17M20.65,7L18.88,10.79C18.74,10 18.47,9.23 18.05,8.5C17.63,7.78 17.1,7.15 16.5,6.64L20.65,7M20.64,17L16.5,17.36C17.09,16.85 17.62,16.22 18.04,15.5C18.46,14.77 18.73,14 18.87,13.21L20.64,17M12,22L9.59,18.56C10.33,18.83 11.14,19 12,19C12.82,19 13.63,18.83 14.37,18.56L12,22Z";
+
+const stageInputs = {
+    seedling: [],
+    mother: [
+        { label: "Mother Start", icon: mdiSprout, key: "mother_start" },
+    ],
+    clone: [
+        { label: "Clone Start", icon: mdiSprout, key: "clone_start" },
+    ],
+    vegetative: [
+        { label: "Vegetative Start", icon: mdiSprout, key: "veg_start" },
+    ],
+    flower: [
+        { label: "Vegetative Start", icon: mdiSprout, key: "veg_start" },
+        { label: "Flower Start", icon: mdiFlower, key: "flower_start" },
+    ],
+    dry: [
+        { label: "Dry Start", icon: mdiHairDryer, key: "dry_start" },
+    ],
+    cure: [
+        { label: "Cure Start", icon: mdiCannabis, key: "cure_start" },
+    ],
+};
+function createGrowspaceDevice(params) {
+    return {
+        ...params,
+        type: params.type ?? "normal",
+    };
+}
+
+class PlantUtils {
+    static normalizeStage(state) {
+        const lower = state.toLowerCase();
+        if (lower === 'veg')
+            return 'vegetative';
+        if (lower === 'mom')
+            return 'mother';
+        // Add other aliases if necessary
+        return lower;
+    }
+    static getPlantStageColor(state) {
+        const key = this.normalizeStage(state);
+        return this.stageColors[key] ?? "#757575";
+    }
+    static getPlantStageIcon(state) {
+        const key = this.normalizeStage(state);
+        return this.stageIcons[key] ?? mdiSprout;
+    }
+    // --- helpers at the top ---
+    static getPlantStage(plant) {
+        const attrs = plant?.attributes ?? {};
+        const now = new Date();
+        if (attrs.cure_start)
+            return "cure";
+        if (attrs.dry_start)
+            return "dry";
+        if (attrs.mom_start)
+            return "mother";
+        if (attrs.clone_start)
+            return "clone";
+        if (attrs.flower_start && new Date(attrs.flower_start) <= now)
+            return "flower";
+        if (attrs.veg_start && new Date(attrs.veg_start) <= now)
+            return "vegetative";
+        return "seedling";
+    }
+    static createGridLayout(plants, rows, cols) {
+        const grid = Array.from({ length: rows }, () => Array.from({ length: cols }, () => null));
+        plants.forEach((plant) => {
+            const row = (plant.attributes?.row ?? 1) - 1;
+            const col = (plant.attributes?.col ?? 1) - 1;
+            if (row >= 0 && row < rows && col >= 0 && col < cols) {
+                grid[row][col] = plant;
+            }
+        });
+        return { rows, cols, grid };
+    }
+    static calculateEffectiveRows(device) {
+        const { name, plants, plants_per_row, rows } = device;
+        if (name === "dry" || name === "cure" || name === "mother" || name === "clone") {
+            if (plants.length === 0)
+                return 1;
+            const maxRowUsed = Math.max(...plants.map((p) => p.attributes?.row || 1));
+            const lastRowCount = plants.filter((p) => (p.attributes?.row || 1) === maxRowUsed).length;
+            return lastRowCount >= plants_per_row ? maxRowUsed + 1 : maxRowUsed;
+        }
+        return rows;
+    }
+    /**
+     * Converts a datetime-local input string (YYYY-MM-DDTHH:mm) to ISO string
+     * Returns null if input is empty or invalid
+     */
+    static parseDateTimeLocal(value) {
+        if (!value)
+            return undefined;
+        try {
+            // Append ":00" if only HH:MM is provided
+            const isoString = value.length === 16 ? value + ":00" : value;
+            const dt = new Date(isoString);
+            if (isNaN(dt.getTime()))
+                return undefined;
+            // Format as YYYY-MM-DDTHH:MM:SS (no Z)
+            const yyyy = dt.getFullYear();
+            const mm = String(dt.getMonth() + 1).padStart(2, '0');
+            const dd = String(dt.getDate()).padStart(2, '0');
+            const hh = String(dt.getHours()).padStart(2, '0');
+            const min = String(dt.getMinutes()).padStart(2, '0');
+            const sec = String(dt.getSeconds()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}T${hh}:${min}:${sec}`;
+        }
+        catch {
+            return undefined;
+        }
+    }
+    /**
+     * Extracts YYYY-MM-DD from a date string or datetime-local string
+     */
+    static formatDateForBackend(value) {
+        if (!value)
+            return undefined;
+        try {
+            // If it's already roughly ISO format, extracting the first part is safest
+            // if we assume the user entered local time in the datetime-local input.
+            const parts = value.split('T');
+            if (parts.length > 0 && parts[0].match(/^\d{4}-\d{2}-\d{2}$/)) {
+                return parts[0];
+            }
+            // Fallback to parsing if format is unexpected
+            const dt = new Date(value);
+            if (isNaN(dt.getTime()))
+                return undefined;
+            const yyyy = dt.getFullYear();
+            const mm = String(dt.getMonth() + 1).padStart(2, '0');
+            const dd = String(dt.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+        catch {
+            return undefined;
+        }
+    }
+    static getCurrentDateTime() {
+        const now = new Date();
+        const pad = (n) => n.toString().padStart(2, "0");
+        return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:00`;
+    }
+    /**
+     * Formats a date string (YYYY-MM-DD or ISO) to YYYY-MM-DDThh:mm for datetime-local inputs
+     */
+    static toDateTimeLocal(value) {
+        if (!value)
+            return "";
+        try {
+            const dt = new Date(value);
+            if (isNaN(dt.getTime()))
+                return "";
+            const pad = (n) => n.toString().padStart(2, "0");
+            const yyyy = dt.getFullYear();
+            const mm = pad(dt.getMonth() + 1);
+            const dd = pad(dt.getDate());
+            const hh = pad(dt.getHours());
+            const min = pad(dt.getMinutes());
+            return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+        }
+        catch {
+            return "";
+        }
+    }
+    static getDominantStage(plants) {
+        if (!plants || plants.length === 0)
+            return null;
+        // Defined priority: Cure > Dry > Flower > Vegetative > Clone > Mother > Seedling
+        // Lower index = higher priority
+        const priority = [
+            "cure",
+            "dry",
+            "flower",
+            "vegetative",
+            "clone",
+            "mother",
+            "seedling"
+        ];
+        // Find the highest priority stage present in the plants
+        let bestStage = null;
+        let maxDays = 0;
+        // Group plants by normalized stage
+        const plantsByStage = {};
+        for (const plant of plants) {
+            // Use plant.state directly if possible, or calculate it
+            // plant.state usually contains the stage string
+            const stage = this.normalizeStage(plant.state || this.getPlantStage(plant));
+            if (!plantsByStage[stage])
+                plantsByStage[stage] = [];
+            plantsByStage[stage].push(plant);
+        }
+        // Iterate priority list to find the first matching stage
+        for (const stage of priority) {
+            if (plantsByStage[stage] && plantsByStage[stage].length > 0) {
+                bestStage = stage;
+                // Find max days for this stage
+                // Map stage to attribute key
+                const daysKey = `${stage === 'vegetative' ? 'veg' : stage}_days`;
+                const daysValues = plantsByStage[stage].map(p => {
+                    const val = p.attributes[daysKey];
+                    return typeof val === 'number' ? val : 0;
+                });
+                maxDays = Math.max(...daysValues);
+                break;
+            }
+        }
+        if (!bestStage)
+            return null;
+        return { stage: bestStage, days: maxDays };
+    }
+    /**
+     * Compresses and resizes an image file.
+     * @param file The file object from input.
+     * @param maxWidth Maximum width in pixels.
+     * @param maxHeight Maximum height in pixels.
+     * @param quality Quality between 0 and 1.
+     * @returns Promise resolving to base64 string.
+     */
+    static compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+                    // Calculate new dimensions
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                    }
+                    else {
+                        if (height > maxHeight) {
+                            width = Math.round((width * maxHeight) / height);
+                            height = maxHeight;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        reject(new Error("Failed to get canvas context"));
+                        return;
+                    }
+                    ctx.drawImage(img, 0, 0, width, height);
+                    // Get base64 string
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    resolve(dataUrl);
+                };
+                img.onerror = (err) => reject(err);
+            };
+            reader.onerror = (err) => reject(err);
+        });
+    }
+    static preloadImage(url) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = url;
+            img.onload = () => resolve();
+            img.onerror = () => reject();
+        });
+    }
+}
+PlantUtils.stageColors = {
+    mother: "#E91E63",
+    clone: "#FF5722",
+    seedling: "#4CAF50",
+    vegetative: "#8BC34A",
+    flower: "#FF9800",
+    dry: "#795548",
+    cure: "#9C27B0",
+};
+PlantUtils.stageIcons = {
+    mother: mdiSprout,
+    clone: mdiSprout,
+    seedling: mdiSprout,
+    vegetative: mdiSprout,
+    flower: mdiFlower,
+    dry: mdiHairDryer,
+    cure: mdiCannabis,
+};
+
+class DataService {
+    constructor(hass) {
+        this.hass = hass;
+    }
+    getGrowspaceDevices() {
+        if (!this.hass)
+            return [];
+        const allStates = Object.values(this.hass.states);
+        // Identify overview sensors by their attributes (growspace_id + grid info),
+        // and exclude plant entities (which have row/col).
+        const overviewSensors = allStates.filter((entity) => entity.entity_id.startsWith('sensor.') &&
+            entity.attributes?.growspace_id !== undefined &&
+            entity.attributes?.rows !== undefined &&
+            entity.attributes?.plants_per_row !== undefined &&
+            entity.attributes?.row === undefined &&
+            entity.attributes?.col === undefined);
+        // Initialize device groups with overview sensors (includes empty growspaces)
+        const deviceGroups = new Map();
+        overviewSensors.forEach((ov) => {
+            const gid = ov.attributes.growspace_id;
+            deviceGroups.set(gid, []);
+        });
+        // Collect plants and group by growspace
+        allStates.forEach((entity) => {
+            if (entity.attributes?.row !== undefined && entity.attributes?.col !== undefined) {
+                const growspaceId = this.getGrowspaceId(entity);
+                if (!deviceGroups.has(growspaceId))
+                    deviceGroups.set(growspaceId, []);
+                deviceGroups.get(growspaceId).push(entity);
+            }
+        });
+        // Build devices array
+        return Array.from(deviceGroups.entries()).map(([growspaceId, plants]) => {
+            const overview = overviewSensors.find(ov => ov.attributes?.growspace_id === growspaceId);
+            const name = overview?.attributes?.friendly_name ||
+                `Growspace ${growspaceId}`;
+            const type = overview?.attributes?.type ??
+                (name.toLowerCase().includes('dry') ? 'dry' :
+                    name.toLowerCase().includes('cure') ? 'cure' : 'normal');
+            return createGrowspaceDevice({
+                device_id: growspaceId,
+                overview_entity_id: overview?.entity_id,
+                name,
+                plants,
+                rows: overview?.attributes?.rows ?? 3,
+                plants_per_row: overview?.attributes?.plants_per_row ?? 3,
+                type,
+            });
+        });
+    }
+    getGrowspaceId(entity) {
+        // Plant entities expose growspace_id directly
+        return entity.attributes?.growspace_id || 'unknown';
+    }
+    getStrainLibrary() {
+        const allStates = Object.values(this.hass.states);
+        const strainSensor = allStates.find((s) => s.attributes?.strains !== undefined && s.attributes?.strains !== null);
+        const rawStrains = strainSensor?.attributes?.strains;
+        // If no sensor data, return empty (let dialog handle service call)
+        if (!rawStrains) {
+            console.warn('[DataService] No strain data in sensor attributes');
+            return [];
+        }
+        // Existing parsing logic...
+        if (Array.isArray(rawStrains)) {
+            return rawStrains.map((s) => ({
+                strain: s,
+                phenotype: '',
+                key: `${s}|default`
+            }));
+        }
+        if (typeof rawStrains === 'object') {
+            const results = [];
+            for (const [strainName, strainData] of Object.entries(rawStrains)) {
+                const meta = strainData.meta || {};
+                const phenotypes = strainData.phenotypes || {};
+                Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
+                    results.push({
+                        strain: strainName,
+                        phenotype: phenoName,
+                        key: `${strainName}|${phenoName}`,
+                        breeder: meta.breeder,
+                        type: meta.type,
+                        lineage: meta.lineage,
+                        sex: meta.sex,
+                        sativa_percentage: meta.sativa_percentage,
+                        indica_percentage: meta.indica_percentage,
+                        description: phenoData.description,
+                        image: phenoData.image_path,
+                        image_crop_meta: phenoData.image_crop_meta,
+                        flowering_days_min: phenoData.flower_days_min,
+                        flowering_days_max: phenoData.flower_days_max
+                    });
+                });
+            }
+            return results.sort((a, b) => {
+                const strainComp = a.strain.localeCompare(b.strain);
+                if (strainComp !== 0)
+                    return strainComp;
+                return (a.phenotype || '').localeCompare(b.phenotype || '');
+            });
+        }
+        return [];
+    }
+    async getHistory(entityId, startTime, endTime) {
+        if (!this.hass)
+            return [];
+        const startStr = startTime.toISOString();
+        let url = `history/period/${startStr}?filter_entity_id=${entityId}`;
+        if (endTime) {
+            url += `&end_time=${endTime.toISOString()}`;
+        }
+        try {
+            // TODO: The mockup test for environmental graphs fails when relying on this function,
+            // but passes when history data is injected directly into the component.
+            // This suggests an issue with how the data is fetched or processed here.
+            // The component expects a flat array of states, but the raw API response is a nested array.
+            // Ensure that `res[0]` is the correct way to access the data.
+            const res = await this.hass.callApi('GET', url);
+            return res && res.length > 0 ? res[0] : [];
+        }
+        catch (err) {
+            console.error("Error fetching history:", err);
+            return [];
+        }
+    }
+    // Service calls
+    async addPlant(params) {
+        console.log("[DataService:addPlant] Sending payload:", params);
+        try {
+            if (params.growspace_id === "mother" || params.growspace_id === "mother_overview") {
+                params.mother_start = new Date().toISOString().split('T')[0];
+            }
+            if (params.growspace_id === "clone" || params.growspace_id === "clone_overview") {
+                params.clone_start = new Date().toISOString().split('T')[0];
+            }
+            const res = await this.hass.callService("growspace_manager", "add_plant", params);
+            console.log("[DataService:addPlant] Response:", res);
+            return res;
+        }
+        catch (err) {
+            console.error("[DataService:addPlant] Error:", err);
+            throw err;
+        }
+    }
+    async updatePlant(params) {
+        console.log("[DataService:updatePlant] Sending payload:", params);
+        try {
+            const res = await this.hass.callService("growspace_manager", "update_plant", params);
+            console.log("[DataService:updatePlant] Response:", res);
+            return res;
+        }
+        catch (err) {
+            console.error("[DataService:updatePlant] Error:", err);
+            throw err;
+        }
+    }
+    async removePlant(plantId) {
+        console.log("[DataService:removePlant] Removing plant_id:", plantId);
+        try {
+            const res = await this.hass.callService("growspace_manager", "remove_plant", { plant_id: plantId });
+            console.log("[DataService:removePlant] Response:", res);
+            return res;
+        }
+        catch (err) {
+            console.error("[DataService:removePlant] Error:", err);
+            throw err;
+        }
+    }
+    async harvestPlant(plantId, target = "dry") {
+        console.log("[DataService:harvestPlant] Harvesting plant:", plantId, "→ target:", target);
+        try {
+            const hint = (target || "").toLowerCase();
+            const payload = { plant_id: plantId };
+            // Prefer passing a concrete growspace_id when hint is clear
+            if (hint.includes("dry")) {
+                payload.target_growspace_id = "dry_overview";
+            }
+            else if (hint.includes("cure")) {
+                payload.target_growspace_id = "cure_overview";
+            }
+            else if (hint.includes("mother")) {
+                payload.target_growspace_id = "mother_overview";
+            }
+            else if (hint.includes("clone")) {
+                payload.target_growspace_id = "clone_overview";
+            }
+            else if (hint) {
+                // Fallback to name hint for any custom names
+                payload.target_growspace_name = target;
+            }
+            const res = await this.hass.callService("growspace_manager", "harvest_plant", payload);
+            console.log("[DataService:harvestPlant] Response:", res);
+            return res;
+        }
+        catch (err) {
+            console.error("[DataService:harvestPlant] Error:", err);
+            throw err;
+        }
+    }
+    async takeClone(plantId, target = "clone") {
+        console.log("[DataService:takeClone] Cloning plant:", plantId, "→ target:", target);
+        try {
+            const hint = (target || "").toLowerCase();
+            const payload = { plant_id: plantId };
+            // Prefer passing a concrete growspace_id when hint is clear
+            if (hint.includes("dry")) {
+                payload.target_growspace_id = "dry_overview";
+            }
+            else if (hint.includes("cure")) {
+                payload.target_growspace_id = "cure_overview";
+            }
+            else if (hint.includes("mother")) {
+                payload.target_growspace_id = "mother_overview";
+            }
+            else if (hint.includes("clone")) {
+                payload.target_growspace_id = "clone_overview";
+            }
+            else if (hint) {
+                // Fallback to name hint for any custom names
+                payload.target_growspace_name = target;
+            }
+            const res = await this.hass.callService("growspace_manager", "takeClone", payload);
+            console.log("[DataService:takeClone] Response:", res);
+            return res;
+        }
+        catch (error) {
+            console.error("[DataService:takeClone] Error:", error);
+            throw error;
+        }
+    }
+    async swapPlants(plant1Id, plant2Id) {
+        console.log(`[DataService:swapPlants] Swapping plants: ${plant1Id} and ${plant2Id}`);
+        try {
+            const res = await this.hass.callService("growspace_manager", "switch_plants", {
+                plant1_id: plant1Id,
+                plant2_id: plant2Id,
+            });
+            console.log("[DataService:swapPlants] Response:", res);
+            return res;
+        }
+        catch (err) {
+            console.error("[DataService:swapPlants] Error:", err);
+            throw err;
+        }
+    }
+    async addStrain(data) {
+        console.log("[DataService:addStrain] Adding strain:", data);
+        try {
+            const payload = { ...data };
+            // Clean undefined keys
+            Object.keys(payload).forEach(key => {
+                if (payload[key] === undefined) {
+                    delete payload[key];
+                }
+            });
+            if (data.image) {
+                if (data.image.startsWith("data:")) {
+                    // It's a base64 string (new upload)
+                    payload.image_base64 = data.image;
+                    delete payload.image; // Backend expects image_base64
+                }
+                else {
+                    // It's a path (existing image)
+                    payload.image_path = data.image;
+                    delete payload.image;
+                }
+            }
+            const res = await this.hass.callService("growspace_manager", "add_strain", payload);
+            console.log("[DataService:addStrain] Response:", res);
+            return res;
+        }
+        catch (err) {
+            console.error("[DataService:addStrain] Error:", err);
+            throw err;
+        }
+    }
+    async removeStrain(strain, phenotype) {
+        console.log("[DataService:removeStrain] Removing strain:", strain, phenotype);
+        try {
+            const res = await this.hass.callService("growspace_manager", "remove_strain", {
+                strain,
+                phenotype
+            });
+            console.log("[DataService:removeStrain] Response:", res);
+            return res;
+        }
+        catch (err) {
+            console.error("[DataService:removeStrain] Error:", err);
+            throw err;
+        }
+    }
+    async importStrainLibrary(file, replace) {
+        console.log("[DataService:importStrainLibrary] Importing strain library ZIP via HTTP. Replace:", replace);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('replace', replace.toString());
+        try {
+            const response = await fetch('/api/growspace_manager/import_strains', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Authorization': `Bearer ${this.hass.auth.data.access_token}`
+                }
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || response.statusText);
+            }
+            const result = await response.json();
+            console.log("[DataService:importStrainLibrary] Response:", result);
+            if (result.success) {
+                return result;
+            }
+            else {
+                throw new Error(result.error || 'Unknown import error');
+            }
+        }
+        catch (err) {
+            console.error("[DataService:importStrainLibrary] Error:", err);
+            throw err;
+        }
+    }
+    async clearStrainLibrary() {
+        console.log("[DataService:clearStrainLibrary] Clearing library");
+        try {
+            const res = await this.hass.callService("growspace_manager", "clear_strain_library");
+            console.log("[DataService:clearStrainLibrary] Response:", res);
+            return res;
+        }
+        catch (err) {
+            console.error("[DataService:clearStrainLibrary] Error:", err);
+            throw err;
+        }
+    }
+    // Configuration Services
+    async addGrowspace(data) {
+        console.log("[DataService:addGrowspace] Adding growspace:", data);
+        try {
+            const res = await this.hass.callService("growspace_manager", "add_growspace", data);
+            console.log("[DataService:addGrowspace] Response:", res);
+            return res;
+        }
+        catch (err) {
+            console.error("[DataService:addGrowspace] Error:", err);
+            throw err;
+        }
+    }
+    async configureGrowspaceSensors(data) {
+        console.log("[DataService:configureGrowspaceSensors] Configuring sensors:", data);
+        try {
+            const res = await this.hass.callService("growspace_manager", "configure_growspace", data);
+            console.log("[DataService:configureGrowspaceSensors] Response:", res);
+            return res;
+        }
+        catch (err) {
+            console.error("[DataService:configureGrowspaceSensors] Error:", err);
+            throw err;
+        }
+    }
+    async configureGlobalSettings(data) {
+        console.log("[DataService:configureGlobalSettings] Configuring global settings:", data);
+        try {
+            const res = await this.hass.callService("growspace_manager", "configure_global", data);
+            console.log("[DataService:configureGlobalSettings] Response:", res);
+            return res;
+        }
+        catch (err) {
+            console.error("[DataService:configureGlobalSettings] Error:", err);
+            throw err;
+        }
+    }
+    async askGrowAdvice(growspaceId, userQuery) {
+        console.log("[DataService:askGrowAdvice] Asking advice for:", growspaceId, userQuery);
+        try {
+            // UPDATED: Use sendMessagePromise to send return_response=true
+            return await this.hass.connection.sendMessagePromise({
+                type: 'call_service',
+                domain: 'growspace_manager',
+                service: 'ask_grow_advice',
+                service_data: {
+                    growspace_id: growspaceId,
+                    user_query: userQuery,
+                },
+                return_response: true,
+            });
+        }
+        catch (err) {
+            console.error("[DataService:askGrowAdvice] Error:", err);
+            throw err;
+        }
+    }
+    async analyzeAllGrowspaces() {
+        console.log("[DataService:analyzeAllGrowspaces] Analyzing all growspaces");
+        try {
+            return await this.hass.connection.sendMessagePromise({
+                type: 'call_service',
+                domain: 'growspace_manager',
+                service: 'analyze_all_growspaces',
+                service_data: {},
+                return_response: true,
+            });
+        }
+        catch (err) {
+            console.error("[DataService:analyzeAllGrowspaces] Error:", err);
+            throw err;
+        }
+    }
+    async getStrainRecommendation(userQuery) {
+        console.log("[DataService:getStrainRecommendation] Getting strain recommendation for:", userQuery);
+        try {
+            return await this.hass.connection.sendMessagePromise({
+                type: 'call_service',
+                domain: 'growspace_manager',
+                service: 'strain_recommendation',
+                service_data: {
+                    user_query: userQuery,
+                },
+                return_response: true,
+            });
+        }
+        catch (err) {
+            console.error("[DataService:getStrainRecommendation] Error:", err);
+            throw err;
+        }
+    }
+}
+
 /**
  * @license
  * Copyright 2019 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const i=globalThis,r=i.ShadowRoot&&(void 0===i.ShadyCSS||i.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,a=Symbol(),s=new WeakMap;class n{constructor(t,e,i){if(this._$cssResult$=!0,i!==a)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e}get styleSheet(){let t=this.o;const e=this.t;if(r&&void 0===t){const i=void 0!==e&&1===e.length;i&&(t=s.get(e)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),i&&s.set(e,t))}return t}toString(){return this.cssText}}const o=(t,...e)=>{const i=1===t.length?t[0]:e.reduce((e,i,r)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(i)+t[r+1],t[0]);return new n(i,t,a)},l=r?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const i of t.cssRules)e+=i.cssText;return(t=>new n("string"==typeof t?t:t+"",void 0,a))(e)})(t):t,{is:c,defineProperty:d,getOwnPropertyDescriptor:p,getOwnPropertyNames:h,getOwnPropertySymbols:u,getPrototypeOf:g}=Object,m=globalThis,f=m.trustedTypes,v=f?f.emptyScript:"",y=m.reactiveElementPolyfillSupport,b=(t,e)=>t,w={toAttribute(t,e){switch(e){case Boolean:t=t?v:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t)}return t},fromAttribute(t,e){let i=t;switch(e){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t)}catch(t){i=null}}return i}},x=(t,e)=>!c(t,e),_={attribute:!0,type:String,converter:w,reflect:!1,useDefault:!1,hasChanged:x};
+const t$2=globalThis,e$2=t$2.ShadowRoot&&(void 0===t$2.ShadyCSS||t$2.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$3=Symbol(),o$4=new WeakMap;class n$4{constructor(t,e,o){if(this._$cssResult$=!0,o!==s$3)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$2&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$4.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$4.set(s,t));}return t}toString(){return this.cssText}}const r$4=t=>new n$4("string"==typeof t?t:t+"",void 0,s$3),i$3=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$4(o,t,s$3)},S$1=(s,o)=>{if(e$2)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$2.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$2=e$2?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$4(e)})(t):t;
+
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */Symbol.metadata??=Symbol("metadata"),m.litPropertyMetadata??=new WeakMap;class $ extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,e=_){if(e.state&&(e.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((e=Object.create(e)).wrapped=!0),this.elementProperties.set(t,e),!e.noAccessor){const i=Symbol(),r=this.getPropertyDescriptor(t,i,e);void 0!==r&&d(this.prototype,t,r)}}static getPropertyDescriptor(t,e,i){const{get:r,set:a}=p(this.prototype,t)??{get(){return this[e]},set(t){this[e]=t}};return{get:r,set(e){const s=r?.call(this);a?.call(this,e),this.requestUpdate(t,s,i)},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??_}static _$Ei(){if(this.hasOwnProperty(b("elementProperties")))return;const t=g(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties)}static finalize(){if(this.hasOwnProperty(b("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(b("properties"))){const t=this.properties,e=[...h(t),...u(t)];for(const i of e)this.createProperty(i,t[i])}const t=this[Symbol.metadata];if(null!==t){const e=litPropertyMetadata.get(t);if(void 0!==e)for(const[t,i]of e)this.elementProperties.set(t,i)}this._$Eh=new Map;for(const[t,e]of this.elementProperties){const i=this._$Eu(t,e);void 0!==i&&this._$Eh.set(i,t)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(t){const e=[];if(Array.isArray(t)){const i=new Set(t.flat(1/0).reverse());for(const t of i)e.unshift(l(t))}else void 0!==t&&e.push(l(t));return e}static _$Eu(t,e){const i=e.attribute;return!1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(t=>this.enableUpdating=t),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(t=>t(this))}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.()}removeController(t){this._$EO?.delete(t)}_$E_(){const t=new Map,e=this.constructor.elementProperties;for(const i of e.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t)}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return((t,e)=>{if(r)t.adoptedStyleSheets=e.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(const r of e){const e=document.createElement("style"),a=i.litNonce;void 0!==a&&e.setAttribute("nonce",a),e.textContent=r.cssText,t.appendChild(e)}})(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach(t=>t.hostConnected?.())}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach(t=>t.hostDisconnected?.())}attributeChangedCallback(t,e,i){this._$AK(t,i)}_$ET(t,e){const i=this.constructor.elementProperties.get(t),r=this.constructor._$Eu(t,i);if(void 0!==r&&!0===i.reflect){const a=(void 0!==i.converter?.toAttribute?i.converter:w).toAttribute(e,i.type);this._$Em=t,null==a?this.removeAttribute(r):this.setAttribute(r,a),this._$Em=null}}_$AK(t,e){const i=this.constructor,r=i._$Eh.get(t);if(void 0!==r&&this._$Em!==r){const t=i.getPropertyOptions(r),a="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:w;this._$Em=r;const s=a.fromAttribute(e,t.type);this[r]=s??this._$Ej?.get(r)??s,this._$Em=null}}requestUpdate(t,e,i){if(void 0!==t){const r=this.constructor,a=this[t];if(i??=r.getPropertyOptions(t),!((i.hasChanged??x)(a,e)||i.useDefault&&i.reflect&&a===this._$Ej?.get(t)&&!this.hasAttribute(r._$Eu(t,i))))return;this.C(t,e,i)}!1===this.isUpdatePending&&(this._$ES=this._$EP())}C(t,e,{useDefault:i,reflect:r,wrapped:a},s){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,s??e??this[t]),!0!==a||void 0!==s)||(this._$AL.has(t)||(this.hasUpdated||i||(e=void 0),this._$AL.set(t,e)),!0===r&&this._$Em!==t&&(this._$Eq??=new Set).add(t))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(t){Promise.reject(t)}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,e]of this._$Ep)this[t]=e;this._$Ep=void 0}const t=this.constructor.elementProperties;if(t.size>0)for(const[e,i]of t){const{wrapped:t}=i,r=this[e];!0!==t||this._$AL.has(e)||void 0===r||this.C(e,void 0,i,r)}}let t=!1;const e=this._$AL;try{t=this.shouldUpdate(e),t?(this.willUpdate(e),this._$EO?.forEach(t=>t.hostUpdate?.()),this.update(e)):this._$EM()}catch(e){throw t=!1,this._$EM(),e}t&&this._$AE(e)}willUpdate(t){}_$AE(t){this._$EO?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return!0}update(t){this._$Eq&&=this._$Eq.forEach(t=>this._$ET(t,this[t])),this._$EM()}updated(t){}firstUpdated(t){}}$.elementStyles=[],$.shadowRootOptions={mode:"open"},$[b("elementProperties")]=new Map,$[b("finalized")]=new Map,y?.({ReactiveElement:$}),(m.reactiveElementVersions??=[]).push("2.1.1");
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const D=globalThis,S=D.trustedTypes,C=S?S.createPolicy("lit-html",{createHTML:t=>t}):void 0,k="$lit$",A=`lit$${Math.random().toFixed(9).slice(2)}$`,M="?"+A,T=`<${M}>`,E=document,L=()=>E.createComment(""),O=t=>null===t||"object"!=typeof t&&"function"!=typeof t,I=Array.isArray,N="[ \t\n\f\r]",P=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,V=/-->/g,z=/>/g,H=RegExp(`>|${N}(?:([^\\s"'>=/]+)(${N}*=${N}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),R=/'/g,F=/"/g,G=/^(?:script|style|textarea|title)$/i,j=(t=>(e,...i)=>({_$litType$:t,strings:e,values:i}))(1),U=Symbol.for("lit-noChange"),B=Symbol.for("lit-nothing"),Z=new WeakMap,q=E.createTreeWalker(E,129);function W(t,e){if(!I(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==C?C.createHTML(e):e}const Y=(t,e)=>{const i=t.length-1,r=[];let a,s=2===e?"<svg>":3===e?"<math>":"",n=P;for(let e=0;e<i;e++){const i=t[e];let o,l,c=-1,d=0;for(;d<i.length&&(n.lastIndex=d,l=n.exec(i),null!==l);)d=n.lastIndex,n===P?"!--"===l[1]?n=V:void 0!==l[1]?n=z:void 0!==l[2]?(G.test(l[2])&&(a=RegExp("</"+l[2],"g")),n=H):void 0!==l[3]&&(n=H):n===H?">"===l[0]?(n=a??P,c=-1):void 0===l[1]?c=-2:(c=n.lastIndex-l[2].length,o=l[1],n=void 0===l[3]?H:'"'===l[3]?F:R):n===F||n===R?n=H:n===V||n===z?n=P:(n=H,a=void 0);const p=n===H&&t[e+1].startsWith("/>")?" ":"";s+=n===P?i+T:c>=0?(r.push(o),i.slice(0,c)+k+i.slice(c)+A+p):i+A+(-2===c?e:p)}return[W(t,s+(t[i]||"<?>")+(2===e?"</svg>":3===e?"</math>":"")),r]};class J{constructor({strings:t,_$litType$:e},i){let r;this.parts=[];let a=0,s=0;const n=t.length-1,o=this.parts,[l,c]=Y(t,e);if(this.el=J.createElement(l,i),q.currentNode=this.el.content,2===e||3===e){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes)}for(;null!==(r=q.nextNode())&&o.length<n;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(k)){const e=c[s++],i=r.getAttribute(t).split(A),n=/([.?@])?(.*)/.exec(e);o.push({type:1,index:a,name:n[2],strings:i,ctor:"."===n[1]?et:"?"===n[1]?it:"@"===n[1]?rt:tt}),r.removeAttribute(t)}else t.startsWith(A)&&(o.push({type:6,index:a}),r.removeAttribute(t));if(G.test(r.tagName)){const t=r.textContent.split(A),e=t.length-1;if(e>0){r.textContent=S?S.emptyScript:"";for(let i=0;i<e;i++)r.append(t[i],L()),q.nextNode(),o.push({type:2,index:++a});r.append(t[e],L())}}}else if(8===r.nodeType)if(r.data===M)o.push({type:2,index:a});else{let t=-1;for(;-1!==(t=r.data.indexOf(A,t+1));)o.push({type:7,index:a}),t+=A.length-1}a++}}static createElement(t,e){const i=E.createElement("template");return i.innerHTML=t,i}}function Q(t,e,i=t,r){if(e===U)return e;let a=void 0!==r?i._$Co?.[r]:i._$Cl;const s=O(e)?void 0:e._$litDirective$;return a?.constructor!==s&&(a?._$AO?.(!1),void 0===s?a=void 0:(a=new s(t),a._$AT(t,i,r)),void 0!==r?(i._$Co??=[])[r]=a:i._$Cl=a),void 0!==a&&(e=Q(t,a._$AS(t,e.values),a,r)),e}class K{constructor(t,e){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=e}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:e},parts:i}=this._$AD,r=(t?.creationScope??E).importNode(e,!0);q.currentNode=r;let a=q.nextNode(),s=0,n=0,o=i[0];for(;void 0!==o;){if(s===o.index){let e;2===o.type?e=new X(a,a.nextSibling,this,t):1===o.type?e=new o.ctor(a,o.name,o.strings,this,t):6===o.type&&(e=new at(a,this,t)),this._$AV.push(e),o=i[++n]}s!==o?.index&&(a=q.nextNode(),s++)}return q.currentNode=E,r}p(t){let e=0;for(const i of this._$AV)void 0!==i&&(void 0!==i.strings?(i._$AI(t,i,e),e+=i.strings.length-2):i._$AI(t[e])),e++}}class X{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,e,i,r){this.type=2,this._$AH=B,this._$AN=void 0,this._$AA=t,this._$AB=e,this._$AM=i,this.options=r,this._$Cv=r?.isConnected??!0}get parentNode(){let t=this._$AA.parentNode;const e=this._$AM;return void 0!==e&&11===t?.nodeType&&(t=e.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,e=this){t=Q(this,t,e),O(t)?t===B||null==t||""===t?(this._$AH!==B&&this._$AR(),this._$AH=B):t!==this._$AH&&t!==U&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):(t=>I(t)||"function"==typeof t?.[Symbol.iterator])(t)?this.k(t):this._(t)}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t))}_(t){this._$AH!==B&&O(this._$AH)?this._$AA.nextSibling.data=t:this.T(E.createTextNode(t)),this._$AH=t}$(t){const{values:e,_$litType$:i}=t,r="number"==typeof i?this._$AC(t):(void 0===i.el&&(i.el=J.createElement(W(i.h,i.h[0]),this.options)),i);if(this._$AH?._$AD===r)this._$AH.p(e);else{const t=new K(r,this),i=t.u(this.options);t.p(e),this.T(i),this._$AH=t}}_$AC(t){let e=Z.get(t.strings);return void 0===e&&Z.set(t.strings,e=new J(t)),e}k(t){I(this._$AH)||(this._$AH=[],this._$AR());const e=this._$AH;let i,r=0;for(const a of t)r===e.length?e.push(i=new X(this.O(L()),this.O(L()),this,this.options)):i=e[r],i._$AI(a),r++;r<e.length&&(this._$AR(i&&i._$AB.nextSibling,r),e.length=r)}_$AR(t=this._$AA.nextSibling,e){for(this._$AP?.(!1,!0,e);t!==this._$AB;){const e=t.nextSibling;t.remove(),t=e}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t))}}class tt{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,e,i,r,a){this.type=1,this._$AH=B,this._$AN=void 0,this.element=t,this.name=e,this._$AM=r,this.options=a,i.length>2||""!==i[0]||""!==i[1]?(this._$AH=Array(i.length-1).fill(new String),this.strings=i):this._$AH=B}_$AI(t,e=this,i,r){const a=this.strings;let s=!1;if(void 0===a)t=Q(this,t,e,0),s=!O(t)||t!==this._$AH&&t!==U,s&&(this._$AH=t);else{const r=t;let n,o;for(t=a[0],n=0;n<a.length-1;n++)o=Q(this,r[i+n],e,n),o===U&&(o=this._$AH[n]),s||=!O(o)||o!==this._$AH[n],o===B?t=B:t!==B&&(t+=(o??"")+a[n+1]),this._$AH[n]=o}s&&!r&&this.j(t)}j(t){t===B?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"")}}class et extends tt{constructor(){super(...arguments),this.type=3}j(t){this.element[this.name]=t===B?void 0:t}}class it extends tt{constructor(){super(...arguments),this.type=4}j(t){this.element.toggleAttribute(this.name,!!t&&t!==B)}}class rt extends tt{constructor(t,e,i,r,a){super(t,e,i,r,a),this.type=5}_$AI(t,e=this){if((t=Q(this,t,e,0)??B)===U)return;const i=this._$AH,r=t===B&&i!==B||t.capture!==i.capture||t.once!==i.once||t.passive!==i.passive,a=t!==B&&(i===B||r);r&&this.element.removeEventListener(this.name,this,i),a&&this.element.addEventListener(this.name,this,t),this._$AH=t}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t)}}class at{constructor(t,e,i){this.element=t,this.type=6,this._$AN=void 0,this._$AM=e,this.options=i}get _$AU(){return this._$AM._$AU}_$AI(t){Q(this,t)}}const st=D.litHtmlPolyfillSupport;st?.(J,X),(D.litHtmlVersions??=[]).push("3.3.1");const nt=globalThis;
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */class ot extends ${constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const e=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=((t,e,i)=>{const r=i?.renderBefore??e;let a=r._$litPart$;if(void 0===a){const t=i?.renderBefore??null;r._$litPart$=a=new X(e.insertBefore(L(),t),t,void 0,i??{})}return a._$AI(t),a})(e,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return U}}ot._$litElement$=!0,ot.finalized=!0,nt.litElementHydrateSupport?.({LitElement:ot});const lt=nt.litElementPolyfillSupport;lt?.({LitElement:ot}),(nt.litElementVersions??=[]).push("4.2.1");
+ */const{is:i$2,defineProperty:e$1,getOwnPropertyDescriptor:h$1,getOwnPropertyNames:r$3,getOwnPropertySymbols:o$3,getPrototypeOf:n$3}=Object,a$1=globalThis,c$1=a$1.trustedTypes,l$2=c$1?c$1.emptyScript:"",p$1=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$1={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$1=(t,s)=>!i$2(t,s),b={attribute:!0,type:String,converter:u$1,reflect:!1,useDefault:!1,hasChanged:f$1};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;class y$1 extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b){if(s.state&&(s.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=!0),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$1(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$1(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??b}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$3(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$3(t),...o$3(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$2(s));}else void 0!==s&&i.push(c$2(s));return i}static _$Eu(t,s){const i=s.attribute;return !1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&!0===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$1).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$1;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$1)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);}!1===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),!0!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),!0===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=!0;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];!0!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=!1;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=!1,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return !0}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}}y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$1?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
+
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}):customElements.define(t,e)},dt={attribute:!0,type:String,converter:w,reflect:!1,hasChanged:x},pt=(t=dt,e,i)=>{const{kind:r,metadata:a}=i;let s=globalThis.litPropertyMetadata.get(a);if(void 0===s&&globalThis.litPropertyMetadata.set(a,s=new Map),"setter"===r&&((t=Object.create(t)).wrapped=!0),s.set(i.name,t),"accessor"===r){const{name:r}=i;return{set(i){const a=e.get.call(this);e.set.call(this,i),this.requestUpdate(r,a,t)},init(e){return void 0!==e&&this.C(r,void 0,t,e),e}}}if("setter"===r){const{name:r}=i;return function(i){const a=this[r];e.call(this,i),this.requestUpdate(r,a,t)}}throw Error("Unsupported decorator location: "+r)};
+const t$1=globalThis,i$1=t$1.trustedTypes,s$2=i$1?i$1.createPolicy("lit-html",{createHTML:t=>t}):void 0,e="$lit$",h=`lit$${Math.random().toFixed(9).slice(2)}$`,o$2="?"+h,n$2=`<${o$2}>`,r$2=document,l$1=()=>r$2.createComment(""),c=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v=/-->/g,_=/>/g,m=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$2.createTreeWalker(r$2,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$2?s$2.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f?"!--"===u[1]?c=v:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m):void 0!==u[3]&&(c=m):c===m?">"===u[0]?(c=r??f,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m:'"'===u[3]?g:p):c===g||c===p?c=m:c===v||c===_?c=f:(c=m,r=void 0);const x=c===m&&t[i+1].startsWith("/>")?" ":"";l+=c===f?s+n$2:d>=0?(o.push(a),s.slice(0,d)+e+s.slice(d)+h+x):s+h+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e)){const i=v[a++],s=r.getAttribute(t).split(h),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h),s=t.length-1;if(s>0){r.textContent=i$1?i$1.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$2)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h,t+1));)d.push({type:7,index:c}),t+=h.length-1;}c++;}}static createElement(t,i){const s=r$2.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(!1),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}class M{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$2).importNode(i,!0);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$2,e}p(t){let i=0;for(const s of this._$AV)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??!0;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$2.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(!1,!0,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=!1;if(void 0===h)t=S(this,t,i,0),o=!c(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const j=t$1.litHtmlPolyfillSupport;j?.(N,R),(t$1.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
+
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */function ht(t){return(e,i)=>"object"==typeof i?pt(t,e,i):((t,e,i)=>{const r=e.hasOwnProperty(i);return e.constructor.createProperty(i,t),r?Object.getOwnPropertyDescriptor(e,i):void 0})(t,e,i)}
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */function ut(t){return ht({...t,state:!0,attribute:!1})}var gt="M11 9C8.79 9 7 10.79 7 13S8.79 17 11 17 15 15.21 15 13 13.21 9 11 9M11 15C9.9 15 9 14.11 9 13S9.9 11 11 11 13 11.9 13 13 12.11 15 11 15M7 4H14C16.21 4 18 5.79 18 8V9H16V8C16 6.9 15.11 6 14 6H7C5.9 6 5 6.9 5 8V20H16V18H18V22H3V8C3 5.79 4.79 4 7 4M19 10.5C19 10.5 21 12.67 21 14C21 15.1 20.1 16 19 16S17 15.1 17 14C17 12.67 19 10.5 19 10.5",mt="M21.33,12.91C21.42,14.46 20.71,15.95 19.44,16.86L20.21,18.35C20.44,18.8 20.47,19.33 20.27,19.8C20.08,20.27 19.69,20.64 19.21,20.8L18.42,21.05C18.25,21.11 18.06,21.14 17.88,21.14C17.37,21.14 16.89,20.91 16.56,20.5L14.44,18C13.55,17.85 12.71,17.47 12,16.9C11.5,17.05 11,17.13 10.5,17.13C9.62,17.13 8.74,16.86 8,16.34C7.47,16.5 6.93,16.57 6.38,16.56C5.59,16.57 4.81,16.41 4.08,16.11C2.65,15.47 1.7,14.07 1.65,12.5C1.57,11.78 1.69,11.05 2,10.39C1.71,9.64 1.68,8.82 1.93,8.06C2.3,7.11 3,6.32 3.87,5.82C4.45,4.13 6.08,3 7.87,3.12C9.47,1.62 11.92,1.46 13.7,2.75C14.12,2.64 14.56,2.58 15,2.58C16.36,2.55 17.65,3.15 18.5,4.22C20.54,4.75 22,6.57 22.08,8.69C22.13,9.8 21.83,10.89 21.22,11.82C21.29,12.18 21.33,12.54 21.33,12.91M16.33,11.5C16.9,11.57 17.35,12 17.35,12.57A1,1 0 0,1 16.35,13.57H15.72C15.4,14.47 14.84,15.26 14.1,15.86C14.35,15.95 14.61,16 14.87,16.07C20,16 19.4,12.87 19.4,12.82C19.34,11.39 18.14,10.27 16.71,10.33A1,1 0 0,1 15.71,9.33A1,1 0 0,1 16.71,8.33C17.94,8.36 19.12,8.82 20.04,9.63C20.09,9.34 20.12,9.04 20.12,8.74C20.06,7.5 19.5,6.42 17.25,6.21C16,3.25 12.85,4.89 12.85,5.81V5.81C12.82,6.04 13.06,6.53 13.1,6.56A1,1 0 0,1 14.1,7.56C14.1,8.11 13.65,8.56 13.1,8.56V8.56C12.57,8.54 12.07,8.34 11.67,8C11.19,8.31 10.64,8.5 10.07,8.56V8.56C9.5,8.61 9.03,8.21 9,7.66C8.92,7.1 9.33,6.61 9.88,6.56C10.04,6.54 10.82,6.42 10.82,5.79V5.79C10.82,5.13 11.07,4.5 11.5,4C10.58,3.75 9.59,4.08 8.59,5.29C6.75,5 6,5.25 5.45,7.2C4.5,7.67 4,8 3.78,9C4.86,8.78 5.97,8.87 7,9.25C7.5,9.44 7.78,10 7.59,10.54C7.4,11.06 6.82,11.32 6.3,11.13C5.57,10.81 4.75,10.79 4,11.07C3.68,11.34 3.68,11.9 3.68,12.34C3.68,13.08 4.05,13.77 4.68,14.17C5.21,14.44 5.8,14.58 6.39,14.57C6.24,14.31 6.11,14.04 6,13.76C5.81,13.22 6.1,12.63 6.64,12.44C7.18,12.25 7.77,12.54 7.96,13.08C8.36,14.22 9.38,15 10.58,15.13C11.95,15.06 13.17,14.25 13.77,13C14,11.62 15.11,11.5 16.33,11.5M18.33,18.97L17.71,17.67L17,17.83L18,19.08L18.33,18.97M13.68,10.36C13.7,9.83 13.3,9.38 12.77,9.33C12.06,9.29 11.37,9.53 10.84,10C10.27,10.58 9.97,11.38 10,12.19A1,1 0 0,0 11,13.19C11.57,13.19 12,12.74 12,12.19C12,11.92 12.07,11.65 12.23,11.43C12.35,11.33 12.5,11.28 12.66,11.28C13.21,11.31 13.68,10.9 13.68,10.36Z",ft="M11.5,22V17.35C11,18.13 10,19.09 8.03,19.81C8.03,19.81 8.53,18.1 9.94,16.95C8.64,17.23 6.68,17.19 4,16C4,16 6.47,14.59 9.28,14.97C7.69,14 5.7,12.08 4.17,8.11C4.17,8.11 8.67,9.34 10.91,13.14C8.88,8.24 12,2 12,2C14.43,7.47 13.91,11.1 13.12,13.1C15.37,9.33 19.83,8.11 19.83,8.11C18.3,12.08 16.31,14 14.72,14.97C17.53,14.59 20,16 20,16C17.32,17.19 15.36,17.23 14.06,16.95C15.47,18.1 15.97,19.81 15.97,19.81C14,19.09 13,18.13 12.5,17.35V22H11.5Z",vt="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z",yt="M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z",bt="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z",wt="M6.5 20Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20M6.5 18H18.5Q19.55 18 20.27 17.27 21 16.55 21 15.5 21 14.45 20.27 13.73 19.55 13 18.5 13H17V11Q17 8.93 15.54 7.46 14.08 6 12 6 9.93 6 8.46 7.46 7 8.93 7 11H6.5Q5.05 11 4.03 12.03 3 13.05 3 14.5 3 15.95 4.03 17 5.05 18 6.5 18M12 12Z",xt="M11 20H6.5Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20H13V12.85L14.6 14.4L16 13L12 9L8 13L9.4 14.4L11 12.85Z",_t="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z",$t="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z",Dt="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z",St="M4,2H6V4C6,5.44 6.68,6.61 7.88,7.78C8.74,8.61 9.89,9.41 11.09,10.2L9.26,11.39C8.27,10.72 7.31,10 6.5,9.21C5.07,7.82 4,6.1 4,4V2M18,2H20V4C20,6.1 18.93,7.82 17.5,9.21C16.09,10.59 14.29,11.73 12.54,12.84C10.79,13.96 9.09,15.05 7.88,16.22C6.68,17.39 6,18.56 6,20V22H4V20C4,17.9 5.07,16.18 6.5,14.79C7.91,13.41 9.71,12.27 11.46,11.16C13.21,10.04 14.91,8.95 16.12,7.78C17.32,6.61 18,5.44 18,4V2M14.74,12.61C15.73,13.28 16.69,14 17.5,14.79C18.93,16.18 20,17.9 20,20V22H18V20C18,18.56 17.32,17.39 16.12,16.22C15.26,15.39 14.11,14.59 12.91,13.8L14.74,12.61M7,3H17V4L16.94,4.5H7.06L7,4V3M7.68,6H16.32C16.08,6.34 15.8,6.69 15.42,7.06L14.91,7.5H9.07L8.58,7.06C8.2,6.69 7.92,6.34 7.68,6M9.09,16.5H14.93L15.42,16.94C15.8,17.31 16.08,17.66 16.32,18H7.68C7.92,17.66 8.2,17.31 8.58,16.94L9.09,16.5M7.06,19.5H16.94L17,20V21H7V20L7.06,19.5Z",Ct="M3,13A9,9 0 0,0 12,22C12,17 7.97,13 3,13M12,5.5A2.5,2.5 0 0,1 14.5,8A2.5,2.5 0 0,1 12,10.5A2.5,2.5 0 0,1 9.5,8A2.5,2.5 0 0,1 12,5.5M5.6,10.25A2.5,2.5 0 0,0 8.1,12.75C8.63,12.75 9.12,12.58 9.5,12.31C9.5,12.37 9.5,12.43 9.5,12.5A2.5,2.5 0 0,0 12,15A2.5,2.5 0 0,0 14.5,12.5C14.5,12.43 14.5,12.37 14.5,12.31C14.88,12.58 15.37,12.75 15.9,12.75C17.28,12.75 18.4,11.63 18.4,10.25C18.4,9.25 17.81,8.4 16.97,8C17.81,7.6 18.4,6.74 18.4,5.75C18.4,4.37 17.28,3.25 15.9,3.25C15.37,3.25 14.88,3.41 14.5,3.69C14.5,3.63 14.5,3.56 14.5,3.5A2.5,2.5 0 0,0 12,1A2.5,2.5 0 0,0 9.5,3.5C9.5,3.56 9.5,3.63 9.5,3.69C9.12,3.41 8.63,3.25 8.1,3.25A2.5,2.5 0 0,0 5.6,5.75C5.6,6.74 6.19,7.6 7.03,8C6.19,8.4 5.6,9.25 5.6,10.25M12,22A9,9 0 0,0 21,13C16,13 12,17 12,22Z",kt="M22 9A4.32 4.32 0 0 1 19.78 8.45A3.4 3.4 0 0 0 18 8V7A4.32 4.32 0 0 1 20.22 7.55A3.4 3.4 0 0 0 22 8M22 6A3.4 3.4 0 0 1 20.22 5.55A4.32 4.32 0 0 0 18 5V6A3.4 3.4 0 0 1 19.78 6.45A4.32 4.32 0 0 0 22 7M22 10A3.4 3.4 0 0 1 20.22 9.55A4.32 4.32 0 0 0 18 9V10A3.4 3.4 0 0 1 19.78 10.45A4.32 4.32 0 0 0 22 11M10 12.73A70.39 70.39 0 0 0 17 11V4S10.5 2 7.5 2A5.5 5.5 0 0 0 6.12 12.82L7 19H8A3 3 0 0 0 9.46 21.33A3.15 3.15 0 0 1 11 24H12A4.12 4.12 0 0 0 10.09 20.55C9.39 20 9 19.63 9 19H10M7.5 10A2.5 2.5 0 1 1 10 7.5A2.5 2.5 0 0 1 7.5 10Z",At="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z",Mt="M12,6A6,6 0 0,1 18,12C18,14.22 16.79,16.16 15,17.2V19A1,1 0 0,1 14,20H10A1,1 0 0,1 9,19V17.2C7.21,16.16 6,14.22 6,12A6,6 0 0,1 12,6M14,21V22A1,1 0 0,1 13,23H11A1,1 0 0,1 10,22V21H14M20,11H23V13H20V11M1,11H4V13H1V11M13,1V4H11V1H13M4.92,3.5L7.05,5.64L5.63,7.05L3.5,4.93L4.92,3.5M16.95,5.63L19.07,3.5L20.5,4.93L18.37,7.05L16.95,5.63Z",Tt="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z",Et="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z",Lt="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z",Ot="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z",It="M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7Z",Nt="M2,22V20C2,20 7,18 12,18C17,18 22,20 22,20V22H2M11.3,9.1C10.1,5.2 4,6.1 4,6.1C4,6.1 4.2,13.9 9.9,12.7C9.5,9.8 8,9 8,9C10.8,9 11,12.4 11,12.4V17C11.3,17 11.7,17 12,17C12.3,17 12.7,17 13,17V12.8C13,12.8 13,8.9 16,7.9C16,7.9 14,10.9 14,12.9C21,13.6 21,4 21,4C21,4 12.1,3 11.3,9.1Z",Pt="M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z",Vt="M8 13C6.14 13 4.59 14.28 4.14 16H2V18H4.14C4.59 19.72 6.14 21 8 21S11.41 19.72 11.86 18H22V16H11.86C11.41 14.28 9.86 13 8 13M8 19C6.9 19 6 18.1 6 17C6 15.9 6.9 15 8 15S10 15.9 10 17C10 18.1 9.1 19 8 19M19.86 6C19.41 4.28 17.86 3 16 3S12.59 4.28 12.14 6H2V8H12.14C12.59 9.72 14.14 11 16 11S19.41 9.72 19.86 8H22V6H19.86M16 9C14.9 9 14 8.1 14 7C14 5.9 14.9 5 16 5S18 5.9 18 7C18 8.1 17.1 9 16 9Z",zt="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z",Ht="M12,20A6,6 0 0,1 6,14C6,10 12,3.25 12,3.25C12,3.25 18,10 18,14A6,6 0 0,1 12,20Z",Rt="M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,0 18,14C18,10 12,3.25 12,3.25M14.47,9.97L15.53,11.03L9.53,17.03L8.47,15.97M9.75,10A1.25,1.25 0 0,1 11,11.25A1.25,1.25 0 0,1 9.75,12.5A1.25,1.25 0 0,1 8.5,11.25A1.25,1.25 0 0,1 9.75,10M14.25,14.5A1.25,1.25 0 0,1 15.5,15.75A1.25,1.25 0 0,1 14.25,17A1.25,1.25 0 0,1 13,15.75A1.25,1.25 0 0,1 14.25,14.5Z",Ft="M6,19A5,5 0 0,1 1,14A5,5 0 0,1 6,9C7,6.65 9.3,5 12,5C15.43,5 18.24,7.66 18.5,11.03L19,11A4,4 0 0,1 23,15A4,4 0 0,1 19,19H6M19,13H17V12A5,5 0 0,0 12,7C9.5,7 7.45,8.82 7.06,11.19C6.73,11.07 6.37,11 6,11A3,3 0 0,0 3,14A3,3 0 0,0 6,17H19A2,2 0 0,0 21,15A2,2 0 0,0 19,13Z",Gt="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z",jt="M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,6.65C6.9,7.16 6.36,7.78 5.94,8.5C5.5,9.24 5.25,10 5.11,10.79L3.34,7M3.36,17L5.12,13.23C5.26,14 5.53,14.78 5.95,15.5C6.37,16.24 6.91,16.86 7.5,17.37L3.36,17M20.65,7L18.88,10.79C18.74,10 18.47,9.23 18.05,8.5C17.63,7.78 17.1,7.15 16.5,6.64L20.65,7M20.64,17L16.5,17.36C17.09,16.85 17.62,16.22 18.04,15.5C18.46,14.77 18.73,14 18.87,13.21L20.64,17M12,22L9.59,18.56C10.33,18.83 11.14,19 12,19C12.82,19 13.63,18.83 14.37,18.56L12,22Z";class Ut extends Error{}class Bt extends Ut{constructor(t){super(`Invalid DateTime: ${t.toMessage()}`)}}class Zt extends Ut{constructor(t){super(`Invalid Interval: ${t.toMessage()}`)}}class qt extends Ut{constructor(t){super(`Invalid Duration: ${t.toMessage()}`)}}class Wt extends Ut{}class Yt extends Ut{constructor(t){super(`Invalid unit ${t}`)}}class Jt extends Ut{}class Qt extends Ut{constructor(){super("Zone is an abstract class")}}const Kt="numeric",Xt="short",te="long",ee={year:Kt,month:Kt,day:Kt},ie={year:Kt,month:Xt,day:Kt},re={year:Kt,month:Xt,day:Kt,weekday:Xt},ae={year:Kt,month:te,day:Kt},se={year:Kt,month:te,day:Kt,weekday:te},ne={hour:Kt,minute:Kt},oe={hour:Kt,minute:Kt,second:Kt},le={hour:Kt,minute:Kt,second:Kt,timeZoneName:Xt},ce={hour:Kt,minute:Kt,second:Kt,timeZoneName:te},de={hour:Kt,minute:Kt,hourCycle:"h23"},pe={hour:Kt,minute:Kt,second:Kt,hourCycle:"h23"},he={hour:Kt,minute:Kt,second:Kt,hourCycle:"h23",timeZoneName:Xt},ue={hour:Kt,minute:Kt,second:Kt,hourCycle:"h23",timeZoneName:te},ge={year:Kt,month:Kt,day:Kt,hour:Kt,minute:Kt},me={year:Kt,month:Kt,day:Kt,hour:Kt,minute:Kt,second:Kt},fe={year:Kt,month:Xt,day:Kt,hour:Kt,minute:Kt},ve={year:Kt,month:Xt,day:Kt,hour:Kt,minute:Kt,second:Kt},ye={year:Kt,month:Xt,day:Kt,weekday:Xt,hour:Kt,minute:Kt},be={year:Kt,month:te,day:Kt,hour:Kt,minute:Kt,timeZoneName:Xt},we={year:Kt,month:te,day:Kt,hour:Kt,minute:Kt,second:Kt,timeZoneName:Xt},xe={year:Kt,month:te,day:Kt,weekday:te,hour:Kt,minute:Kt,timeZoneName:te},_e={year:Kt,month:te,day:Kt,weekday:te,hour:Kt,minute:Kt,second:Kt,timeZoneName:te};class $e{get type(){throw new Qt}get name(){throw new Qt}get ianaName(){return this.name}get isUniversal(){throw new Qt}offsetName(t,e){throw new Qt}formatOffset(t,e){throw new Qt}offset(t){throw new Qt}equals(t){throw new Qt}get isValid(){throw new Qt}}let De=null;class Se extends $e{static get instance(){return null===De&&(De=new Se),De}get type(){return"system"}get name(){return(new Intl.DateTimeFormat).resolvedOptions().timeZone}get isUniversal(){return!1}offsetName(t,{format:e,locale:i}){return Bi(t,e,i)}formatOffset(t,e){return Yi(this.offset(t),e)}offset(t){return-new Date(t).getTimezoneOffset()}equals(t){return"system"===t.type}get isValid(){return!0}}const Ce=new Map;const ke={year:0,month:1,day:2,era:3,hour:4,minute:5,second:6};const Ae=new Map;class Me extends $e{static create(t){let e=Ae.get(t);return void 0===e&&Ae.set(t,e=new Me(t)),e}static resetCache(){Ae.clear(),Ce.clear()}static isValidSpecifier(t){return this.isValidZone(t)}static isValidZone(t){if(!t)return!1;try{return new Intl.DateTimeFormat("en-US",{timeZone:t}).format(),!0}catch(t){return!1}}constructor(t){super(),this.zoneName=t,this.valid=Me.isValidZone(t)}get type(){return"iana"}get name(){return this.zoneName}get isUniversal(){return!1}offsetName(t,{format:e,locale:i}){return Bi(t,e,i,this.name)}formatOffset(t,e){return Yi(this.offset(t),e)}offset(t){if(!this.valid)return NaN;const e=new Date(t);if(isNaN(e))return NaN;const i=function(t){let e=Ce.get(t);return void 0===e&&(e=new Intl.DateTimeFormat("en-US",{hour12:!1,timeZone:t,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",era:"short"}),Ce.set(t,e)),e}(this.name);let[r,a,s,n,o,l,c]=i.formatToParts?function(t,e){const i=t.formatToParts(e),r=[];for(let t=0;t<i.length;t++){const{type:e,value:a}=i[t],s=ke[e];"era"===e?r[s]=a:Di(s)||(r[s]=parseInt(a,10))}return r}(i,e):function(t,e){const i=t.format(e).replace(/\u200E/g,""),r=/(\d+)\/(\d+)\/(\d+) (AD|BC),? (\d+):(\d+):(\d+)/.exec(i),[,a,s,n,o,l,c,d]=r;return[n,a,s,o,l,c,d]}(i,e);"BC"===n&&(r=1-Math.abs(r));let d=+e;const p=d%1e3;return d-=p>=0?p:1e3+p,(Fi({year:r,month:a,day:s,hour:24===o?0:o,minute:l,second:c,millisecond:0})-d)/6e4}equals(t){return"iana"===t.type&&t.name===this.name}get isValid(){return this.valid}}let Te={};const Ee=new Map;function Le(t,e={}){const i=JSON.stringify([t,e]);let r=Ee.get(i);return void 0===r&&(r=new Intl.DateTimeFormat(t,e),Ee.set(i,r)),r}const Oe=new Map;const Ie=new Map;let Ne=null;const Pe=new Map;function Ve(t){let e=Pe.get(t);return void 0===e&&(e=new Intl.DateTimeFormat(t).resolvedOptions(),Pe.set(t,e)),e}const ze=new Map;function He(t,e,i,r){const a=t.listingMode();return"error"===a?null:"en"===a?i(e):r(e)}class Re{constructor(t,e,i){this.padTo=i.padTo||0,this.floor=i.floor||!1;const{padTo:r,floor:a,...s}=i;if(!e||Object.keys(s).length>0){const e={useGrouping:!1,...i};i.padTo>0&&(e.minimumIntegerDigits=i.padTo),this.inf=function(t,e={}){const i=JSON.stringify([t,e]);let r=Oe.get(i);return void 0===r&&(r=new Intl.NumberFormat(t,e),Oe.set(i,r)),r}(t,e)}}format(t){if(this.inf){const e=this.floor?Math.floor(t):t;return this.inf.format(e)}return Oi(this.floor?Math.floor(t):Vi(t,3),this.padTo)}}class Fe{constructor(t,e,i){let r;if(this.opts=i,this.originalZone=void 0,this.opts.timeZone)this.dt=t;else if("fixed"===t.zone.type){const e=t.offset/60*-1,i=e>=0?`Etc/GMT+${e}`:`Etc/GMT${e}`;0!==t.offset&&Me.create(i).valid?(r=i,this.dt=t):(r="UTC",this.dt=0===t.offset?t:t.setZone("UTC").plus({minutes:t.offset}),this.originalZone=t.zone)}else"system"===t.zone.type?this.dt=t:"iana"===t.zone.type?(this.dt=t,r=t.zone.name):(r="UTC",this.dt=t.setZone("UTC").plus({minutes:t.offset}),this.originalZone=t.zone);const a={...this.opts};a.timeZone=a.timeZone||r,this.dtf=Le(e,a)}format(){return this.originalZone?this.formatToParts().map(({value:t})=>t).join(""):this.dtf.format(this.dt.toJSDate())}formatToParts(){const t=this.dtf.formatToParts(this.dt.toJSDate());return this.originalZone?t.map(t=>{if("timeZoneName"===t.type){const e=this.originalZone.offsetName(this.dt.ts,{locale:this.dt.locale,format:this.opts.timeZoneName});return{...t,value:e}}return t}):t}resolvedOptions(){return this.dtf.resolvedOptions()}}class Ge{constructor(t,e,i){this.opts={style:"long",...i},!e&&ki()&&(this.rtf=function(t,e={}){const{base:i,...r}=e,a=JSON.stringify([t,r]);let s=Ie.get(a);return void 0===s&&(s=new Intl.RelativeTimeFormat(t,e),Ie.set(a,s)),s}(t,i))}format(t,e){return this.rtf?this.rtf.format(t,e):function(t,e,i="always",r=!1){const a={years:["year","yr."],quarters:["quarter","qtr."],months:["month","mo."],weeks:["week","wk."],days:["day","day","days"],hours:["hour","hr."],minutes:["minute","min."],seconds:["second","sec."]},s=-1===["hours","minutes","seconds"].indexOf(t);if("auto"===i&&s){const i="days"===t;switch(e){case 1:return i?"tomorrow":`next ${a[t][0]}`;case-1:return i?"yesterday":`last ${a[t][0]}`;case 0:return i?"today":`this ${a[t][0]}`}}const n=Object.is(e,-0)||e<0,o=Math.abs(e),l=1===o,c=a[t],d=r?l?c[1]:c[2]||c[1]:l?a[t][0]:t;return n?`${o} ${d} ago`:`in ${o} ${d}`}(e,t,this.opts.numeric,"long"!==this.opts.style)}formatToParts(t,e){return this.rtf?this.rtf.formatToParts(t,e):[]}}const je={firstDay:1,minimalDays:4,weekend:[6,7]};class Ue{static fromOpts(t){return Ue.create(t.locale,t.numberingSystem,t.outputCalendar,t.weekSettings,t.defaultToEN)}static create(t,e,i,r,a=!1){const s=t||li.defaultLocale,n=s||(a?"en-US":Ne||(Ne=(new Intl.DateTimeFormat).resolvedOptions().locale,Ne)),o=e||li.defaultNumberingSystem,l=i||li.defaultOutputCalendar,c=Ei(r)||li.defaultWeekSettings;return new Ue(n,o,l,c,s)}static resetCache(){Ne=null,Ee.clear(),Oe.clear(),Ie.clear(),Pe.clear(),ze.clear()}static fromObject({locale:t,numberingSystem:e,outputCalendar:i,weekSettings:r}={}){return Ue.create(t,e,i,r)}constructor(t,e,i,r,a){const[s,n,o]=function(t){const e=t.indexOf("-x-");-1!==e&&(t=t.substring(0,e));const i=t.indexOf("-u-");if(-1===i)return[t];{let e,r;try{e=Le(t).resolvedOptions(),r=t}catch(a){const s=t.substring(0,i);e=Le(s).resolvedOptions(),r=s}const{numberingSystem:a,calendar:s}=e;return[r,a,s]}}(t);this.locale=s,this.numberingSystem=e||n||null,this.outputCalendar=i||o||null,this.weekSettings=r,this.intl=function(t,e,i){return i||e?(t.includes("-u-")||(t+="-u"),i&&(t+=`-ca-${i}`),e&&(t+=`-nu-${e}`),t):t}(this.locale,this.numberingSystem,this.outputCalendar),this.weekdaysCache={format:{},standalone:{}},this.monthsCache={format:{},standalone:{}},this.meridiemCache=null,this.eraCache={},this.specifiedLocale=a,this.fastNumbersCached=null}get fastNumbers(){var t;return null==this.fastNumbersCached&&(this.fastNumbersCached=(!(t=this).numberingSystem||"latn"===t.numberingSystem)&&("latn"===t.numberingSystem||!t.locale||t.locale.startsWith("en")||"latn"===Ve(t.locale).numberingSystem)),this.fastNumbersCached}listingMode(){const t=this.isEnglish(),e=!(null!==this.numberingSystem&&"latn"!==this.numberingSystem||null!==this.outputCalendar&&"gregory"!==this.outputCalendar);return t&&e?"en":"intl"}clone(t){return t&&0!==Object.getOwnPropertyNames(t).length?Ue.create(t.locale||this.specifiedLocale,t.numberingSystem||this.numberingSystem,t.outputCalendar||this.outputCalendar,Ei(t.weekSettings)||this.weekSettings,t.defaultToEN||!1):this}redefaultToEN(t={}){return this.clone({...t,defaultToEN:!0})}redefaultToSystem(t={}){return this.clone({...t,defaultToEN:!1})}months(t,e=!1){return He(this,t,tr,()=>{const i="ja"===this.intl||this.intl.startsWith("ja-"),r=(e&=!i)?{month:t,day:"numeric"}:{month:t},a=e?"format":"standalone";if(!this.monthsCache[a][t]){const e=i?t=>this.dtFormatter(t,r).format():t=>this.extract(t,r,"month");this.monthsCache[a][t]=function(t){const e=[];for(let i=1;i<=12;i++){const r=ss.utc(2009,i,1);e.push(t(r))}return e}(e)}return this.monthsCache[a][t]})}weekdays(t,e=!1){return He(this,t,ar,()=>{const i=e?{weekday:t,year:"numeric",month:"long",day:"numeric"}:{weekday:t},r=e?"format":"standalone";return this.weekdaysCache[r][t]||(this.weekdaysCache[r][t]=function(t){const e=[];for(let i=1;i<=7;i++){const r=ss.utc(2016,11,13+i);e.push(t(r))}return e}(t=>this.extract(t,i,"weekday"))),this.weekdaysCache[r][t]})}meridiems(){return He(this,void 0,()=>sr,()=>{if(!this.meridiemCache){const t={hour:"numeric",hourCycle:"h12"};this.meridiemCache=[ss.utc(2016,11,13,9),ss.utc(2016,11,13,19)].map(e=>this.extract(e,t,"dayperiod"))}return this.meridiemCache})}eras(t){return He(this,t,cr,()=>{const e={era:t};return this.eraCache[t]||(this.eraCache[t]=[ss.utc(-40,1,1),ss.utc(2017,1,1)].map(t=>this.extract(t,e,"era"))),this.eraCache[t]})}extract(t,e,i){const r=this.dtFormatter(t,e).formatToParts().find(t=>t.type.toLowerCase()===i);return r?r.value:null}numberFormatter(t={}){return new Re(this.intl,t.forceSimple||this.fastNumbers,t)}dtFormatter(t,e={}){return new Fe(t,this.intl,e)}relFormatter(t={}){return new Ge(this.intl,this.isEnglish(),t)}listFormatter(t={}){return function(t,e={}){const i=JSON.stringify([t,e]);let r=Te[i];return r||(r=new Intl.ListFormat(t,e),Te[i]=r),r}(this.intl,t)}isEnglish(){return"en"===this.locale||"en-us"===this.locale.toLowerCase()||Ve(this.intl).locale.startsWith("en-us")}getWeekSettings(){return this.weekSettings?this.weekSettings:Ai()?function(t){let e=ze.get(t);if(!e){const i=new Intl.Locale(t);e="getWeekInfo"in i?i.getWeekInfo():i.weekInfo,"minimalDays"in e||(e={...je,...e}),ze.set(t,e)}return e}(this.locale):je}getStartOfWeek(){return this.getWeekSettings().firstDay}getMinDaysInFirstWeek(){return this.getWeekSettings().minimalDays}getWeekendDays(){return this.getWeekSettings().weekend}equals(t){return this.locale===t.locale&&this.numberingSystem===t.numberingSystem&&this.outputCalendar===t.outputCalendar}toString(){return`Locale(${this.locale}, ${this.numberingSystem}, ${this.outputCalendar})`}}let Be=null;class Ze extends $e{static get utcInstance(){return null===Be&&(Be=new Ze(0)),Be}static instance(t){return 0===t?Ze.utcInstance:new Ze(t)}static parseSpecifier(t){if(t){const e=t.match(/^utc(?:([+-]\d{1,2})(?::(\d{2}))?)?$/i);if(e)return new Ze(Zi(e[1],e[2]))}return null}constructor(t){super(),this.fixed=t}get type(){return"fixed"}get name(){return 0===this.fixed?"UTC":`UTC${Yi(this.fixed,"narrow")}`}get ianaName(){return 0===this.fixed?"Etc/UTC":`Etc/GMT${Yi(-this.fixed,"narrow")}`}offsetName(){return this.name}formatOffset(t,e){return Yi(this.fixed,e)}get isUniversal(){return!0}offset(){return this.fixed}equals(t){return"fixed"===t.type&&t.fixed===this.fixed}get isValid(){return!0}}class qe extends $e{constructor(t){super(),this.zoneName=t}get type(){return"invalid"}get name(){return this.zoneName}get isUniversal(){return!1}offsetName(){return null}formatOffset(){return""}offset(){return NaN}equals(){return!1}get isValid(){return!1}}function We(t,e){if(Di(t)||null===t)return e;if(t instanceof $e)return t;if(function(t){return"string"==typeof t}(t)){const i=t.toLowerCase();return"default"===i?e:"local"===i||"system"===i?Se.instance:"utc"===i||"gmt"===i?Ze.utcInstance:Ze.parseSpecifier(i)||Me.create(t)}return Si(t)?Ze.instance(t):"object"==typeof t&&"offset"in t&&"function"==typeof t.offset?t:new qe(t)}const Ye={arab:"[٠-٩]",arabext:"[۰-۹]",bali:"[᭐-᭙]",beng:"[০-৯]",deva:"[०-९]",fullwide:"[０-９]",gujr:"[૦-૯]",hanidec:"[〇|一|二|三|四|五|六|七|八|九]",khmr:"[០-៩]",knda:"[೦-೯]",laoo:"[໐-໙]",limb:"[᥆-᥏]",mlym:"[൦-൯]",mong:"[᠐-᠙]",mymr:"[၀-၉]",orya:"[୦-୯]",tamldec:"[௦-௯]",telu:"[౦-౯]",thai:"[๐-๙]",tibt:"[༠-༩]",latn:"\\d"},Je={arab:[1632,1641],arabext:[1776,1785],bali:[6992,7001],beng:[2534,2543],deva:[2406,2415],fullwide:[65296,65303],gujr:[2790,2799],khmr:[6112,6121],knda:[3302,3311],laoo:[3792,3801],limb:[6470,6479],mlym:[3430,3439],mong:[6160,6169],mymr:[4160,4169],orya:[2918,2927],tamldec:[3046,3055],telu:[3174,3183],thai:[3664,3673],tibt:[3872,3881]},Qe=Ye.hanidec.replace(/[\[|\]]/g,"").split("");const Ke=new Map;function Xe({numberingSystem:t},e=""){const i=t||"latn";let r=Ke.get(i);void 0===r&&(r=new Map,Ke.set(i,r));let a=r.get(e);return void 0===a&&(a=new RegExp(`${Ye[i]}${e}`),r.set(e,a)),a}let ti,ei=()=>Date.now(),ii="system",ri=null,ai=null,si=null,ni=60,oi=null;class li{static get now(){return ei}static set now(t){ei=t}static set defaultZone(t){ii=t}static get defaultZone(){return We(ii,Se.instance)}static get defaultLocale(){return ri}static set defaultLocale(t){ri=t}static get defaultNumberingSystem(){return ai}static set defaultNumberingSystem(t){ai=t}static get defaultOutputCalendar(){return si}static set defaultOutputCalendar(t){si=t}static get defaultWeekSettings(){return oi}static set defaultWeekSettings(t){oi=Ei(t)}static get twoDigitCutoffYear(){return ni}static set twoDigitCutoffYear(t){ni=t%100}static get throwOnInvalid(){return ti}static set throwOnInvalid(t){ti=t}static resetCaches(){Ue.resetCache(),Me.resetCache(),ss.resetCache(),Ke.clear()}}class ci{constructor(t,e){this.reason=t,this.explanation=e}toMessage(){return this.explanation?`${this.reason}: ${this.explanation}`:this.reason}}const di=[0,31,59,90,120,151,181,212,243,273,304,334],pi=[0,31,60,91,121,152,182,213,244,274,305,335];function hi(t,e){return new ci("unit out of range",`you specified ${e} (of type ${typeof e}) as a ${t}, which is invalid`)}function ui(t,e,i){const r=new Date(Date.UTC(t,e-1,i));t<100&&t>=0&&r.setUTCFullYear(r.getUTCFullYear()-1900);const a=r.getUTCDay();return 0===a?7:a}function gi(t,e,i){return i+(zi(t)?pi:di)[e-1]}function mi(t,e){const i=zi(t)?pi:di,r=i.findIndex(t=>t<e);return{month:r+1,day:e-i[r]}}function fi(t,e){return(t-e+7)%7+1}function vi(t,e=4,i=1){const{year:r,month:a,day:s}=t,n=gi(r,a,s),o=fi(ui(r,a,s),i);let l,c=Math.floor((n-o+14-e)/7);return c<1?(l=r-1,c=ji(l,e,i)):c>ji(r,e,i)?(l=r+1,c=1):l=r,{weekYear:l,weekNumber:c,weekday:o,...Ji(t)}}function yi(t,e=4,i=1){const{weekYear:r,weekNumber:a,weekday:s}=t,n=fi(ui(r,1,e),i),o=Hi(r);let l,c=7*a+s-n-7+e;c<1?(l=r-1,c+=Hi(l)):c>o?(l=r+1,c-=Hi(r)):l=r;const{month:d,day:p}=mi(l,c);return{year:l,month:d,day:p,...Ji(t)}}function bi(t){const{year:e,month:i,day:r}=t;return{year:e,ordinal:gi(e,i,r),...Ji(t)}}function wi(t){const{year:e,ordinal:i}=t,{month:r,day:a}=mi(e,i);return{year:e,month:r,day:a,...Ji(t)}}function xi(t,e){if(!Di(t.localWeekday)||!Di(t.localWeekNumber)||!Di(t.localWeekYear)){if(!Di(t.weekday)||!Di(t.weekNumber)||!Di(t.weekYear))throw new Wt("Cannot mix locale-based week fields with ISO-based week fields");return Di(t.localWeekday)||(t.weekday=t.localWeekday),Di(t.localWeekNumber)||(t.weekNumber=t.localWeekNumber),Di(t.localWeekYear)||(t.weekYear=t.localWeekYear),delete t.localWeekday,delete t.localWeekNumber,delete t.localWeekYear,{minDaysInFirstWeek:e.getMinDaysInFirstWeek(),startOfWeek:e.getStartOfWeek()}}return{minDaysInFirstWeek:4,startOfWeek:1}}function _i(t){const e=Ci(t.year),i=Li(t.month,1,12),r=Li(t.day,1,Ri(t.year,t.month));return e?i?!r&&hi("day",t.day):hi("month",t.month):hi("year",t.year)}function $i(t){const{hour:e,minute:i,second:r,millisecond:a}=t,s=Li(e,0,23)||24===e&&0===i&&0===r&&0===a,n=Li(i,0,59),o=Li(r,0,59),l=Li(a,0,999);return s?n?o?!l&&hi("millisecond",a):hi("second",r):hi("minute",i):hi("hour",e)}function Di(t){return void 0===t}function Si(t){return"number"==typeof t}function Ci(t){return"number"==typeof t&&t%1==0}function ki(){try{return"undefined"!=typeof Intl&&!!Intl.RelativeTimeFormat}catch(t){return!1}}function Ai(){try{return"undefined"!=typeof Intl&&!!Intl.Locale&&("weekInfo"in Intl.Locale.prototype||"getWeekInfo"in Intl.Locale.prototype)}catch(t){return!1}}function Mi(t,e,i){if(0!==t.length)return t.reduce((t,r)=>{const a=[e(r),r];return t&&i(t[0],a[0])===t[0]?t:a},null)[1]}function Ti(t,e){return Object.prototype.hasOwnProperty.call(t,e)}function Ei(t){if(null==t)return null;if("object"!=typeof t)throw new Jt("Week settings must be an object");if(!Li(t.firstDay,1,7)||!Li(t.minimalDays,1,7)||!Array.isArray(t.weekend)||t.weekend.some(t=>!Li(t,1,7)))throw new Jt("Invalid week settings");return{firstDay:t.firstDay,minimalDays:t.minimalDays,weekend:Array.from(t.weekend)}}function Li(t,e,i){return Ci(t)&&t>=e&&t<=i}function Oi(t,e=2){let i;return i=t<0?"-"+(""+-t).padStart(e,"0"):(""+t).padStart(e,"0"),i}function Ii(t){return Di(t)||null===t||""===t?void 0:parseInt(t,10)}function Ni(t){return Di(t)||null===t||""===t?void 0:parseFloat(t)}function Pi(t){if(!Di(t)&&null!==t&&""!==t){const e=1e3*parseFloat("0."+t);return Math.floor(e)}}function Vi(t,e,i="round"){const r=10**e;switch(i){case"expand":return t>0?Math.ceil(t*r)/r:Math.floor(t*r)/r;case"trunc":return Math.trunc(t*r)/r;case"round":return Math.round(t*r)/r;case"floor":return Math.floor(t*r)/r;case"ceil":return Math.ceil(t*r)/r;default:throw new RangeError(`Value rounding ${i} is out of range`)}}function zi(t){return t%4==0&&(t%100!=0||t%400==0)}function Hi(t){return zi(t)?366:365}function Ri(t,e){const i=function(t,e){return t-e*Math.floor(t/e)}(e-1,12)+1;return 2===i?zi(t+(e-i)/12)?29:28:[31,null,31,30,31,30,31,31,30,31,30,31][i-1]}function Fi(t){let e=Date.UTC(t.year,t.month-1,t.day,t.hour,t.minute,t.second,t.millisecond);return t.year<100&&t.year>=0&&(e=new Date(e),e.setUTCFullYear(t.year,t.month-1,t.day)),+e}function Gi(t,e,i){return-fi(ui(t,1,e),i)+e-1}function ji(t,e=4,i=1){const r=Gi(t,e,i),a=Gi(t+1,e,i);return(Hi(t)-r+a)/7}function Ui(t){return t>99?t:t>li.twoDigitCutoffYear?1900+t:2e3+t}function Bi(t,e,i,r=null){const a=new Date(t),s={hourCycle:"h23",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"};r&&(s.timeZone=r);const n={timeZoneName:e,...s},o=new Intl.DateTimeFormat(i,n).formatToParts(a).find(t=>"timezonename"===t.type.toLowerCase());return o?o.value:null}function Zi(t,e){let i=parseInt(t,10);Number.isNaN(i)&&(i=0);const r=parseInt(e,10)||0;return 60*i+(i<0||Object.is(i,-0)?-r:r)}function qi(t){const e=Number(t);if("boolean"==typeof t||""===t||!Number.isFinite(e))throw new Jt(`Invalid unit value ${t}`);return e}function Wi(t,e){const i={};for(const r in t)if(Ti(t,r)){const a=t[r];if(null==a)continue;i[e(r)]=qi(a)}return i}function Yi(t,e){const i=Math.trunc(Math.abs(t/60)),r=Math.trunc(Math.abs(t%60)),a=t>=0?"+":"-";switch(e){case"short":return`${a}${Oi(i,2)}:${Oi(r,2)}`;case"narrow":return`${a}${i}${r>0?`:${r}`:""}`;case"techie":return`${a}${Oi(i,2)}${Oi(r,2)}`;default:throw new RangeError(`Value format ${e} is out of range for property format`)}}function Ji(t){return function(t,e){return e.reduce((e,i)=>(e[i]=t[i],e),{})}(t,["hour","minute","second","millisecond"])}const Qi=["January","February","March","April","May","June","July","August","September","October","November","December"],Ki=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],Xi=["J","F","M","A","M","J","J","A","S","O","N","D"];function tr(t){switch(t){case"narrow":return[...Xi];case"short":return[...Ki];case"long":return[...Qi];case"numeric":return["1","2","3","4","5","6","7","8","9","10","11","12"];case"2-digit":return["01","02","03","04","05","06","07","08","09","10","11","12"];default:return null}}const er=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],ir=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],rr=["M","T","W","T","F","S","S"];function ar(t){switch(t){case"narrow":return[...rr];case"short":return[...ir];case"long":return[...er];case"numeric":return["1","2","3","4","5","6","7"];default:return null}}const sr=["AM","PM"],nr=["Before Christ","Anno Domini"],or=["BC","AD"],lr=["B","A"];function cr(t){switch(t){case"narrow":return[...lr];case"short":return[...or];case"long":return[...nr];default:return null}}function dr(t,e){let i="";for(const r of t)r.literal?i+=r.val:i+=e(r.val);return i}const pr={D:ee,DD:ie,DDD:ae,DDDD:se,t:ne,tt:oe,ttt:le,tttt:ce,T:de,TT:pe,TTT:he,TTTT:ue,f:ge,ff:fe,fff:be,ffff:xe,F:me,FF:ve,FFF:we,FFFF:_e};class hr{static create(t,e={}){return new hr(t,e)}static parseFormat(t){let e=null,i="",r=!1;const a=[];for(let s=0;s<t.length;s++){const n=t.charAt(s);"'"===n?((i.length>0||r)&&a.push({literal:r||/^\s+$/.test(i),val:""===i?"'":i}),e=null,i="",r=!r):r||n===e?i+=n:(i.length>0&&a.push({literal:/^\s+$/.test(i),val:i}),i=n,e=n)}return i.length>0&&a.push({literal:r||/^\s+$/.test(i),val:i}),a}static macroTokenToFormatOpts(t){return pr[t]}constructor(t,e){this.opts=e,this.loc=t,this.systemLoc=null}formatWithSystemDefault(t,e){null===this.systemLoc&&(this.systemLoc=this.loc.redefaultToSystem());return this.systemLoc.dtFormatter(t,{...this.opts,...e}).format()}dtFormatter(t,e={}){return this.loc.dtFormatter(t,{...this.opts,...e})}formatDateTime(t,e){return this.dtFormatter(t,e).format()}formatDateTimeParts(t,e){return this.dtFormatter(t,e).formatToParts()}formatInterval(t,e){return this.dtFormatter(t.start,e).dtf.formatRange(t.start.toJSDate(),t.end.toJSDate())}resolvedOptions(t,e){return this.dtFormatter(t,e).resolvedOptions()}num(t,e=0,i=void 0){if(this.opts.forceSimple)return Oi(t,e);const r={...this.opts};return e>0&&(r.padTo=e),i&&(r.signDisplay=i),this.loc.numberFormatter(r).format(t)}formatDateTimeFromString(t,e){const i="en"===this.loc.listingMode(),r=this.loc.outputCalendar&&"gregory"!==this.loc.outputCalendar,a=(e,i)=>this.loc.extract(t,e,i),s=e=>t.isOffsetFixed&&0===t.offset&&e.allowZ?"Z":t.isValid?t.zone.formatOffset(t.ts,e.format):"",n=()=>i?function(t){return sr[t.hour<12?0:1]}(t):a({hour:"numeric",hourCycle:"h12"},"dayperiod"),o=(e,r)=>i?function(t,e){return tr(e)[t.month-1]}(t,e):a(r?{month:e}:{month:e,day:"numeric"},"month"),l=(e,r)=>i?function(t,e){return ar(e)[t.weekday-1]}(t,e):a(r?{weekday:e}:{weekday:e,month:"long",day:"numeric"},"weekday"),c=e=>{const i=hr.macroTokenToFormatOpts(e);return i?this.formatWithSystemDefault(t,i):e},d=e=>i?function(t,e){return cr(e)[t.year<0?0:1]}(t,e):a({era:e},"era");return dr(hr.parseFormat(e),e=>{switch(e){case"S":return this.num(t.millisecond);case"u":case"SSS":return this.num(t.millisecond,3);case"s":return this.num(t.second);case"ss":return this.num(t.second,2);case"uu":return this.num(Math.floor(t.millisecond/10),2);case"uuu":return this.num(Math.floor(t.millisecond/100));case"m":return this.num(t.minute);case"mm":return this.num(t.minute,2);case"h":return this.num(t.hour%12==0?12:t.hour%12);case"hh":return this.num(t.hour%12==0?12:t.hour%12,2);case"H":return this.num(t.hour);case"HH":return this.num(t.hour,2);case"Z":return s({format:"narrow",allowZ:this.opts.allowZ});case"ZZ":return s({format:"short",allowZ:this.opts.allowZ});case"ZZZ":return s({format:"techie",allowZ:this.opts.allowZ});case"ZZZZ":return t.zone.offsetName(t.ts,{format:"short",locale:this.loc.locale});case"ZZZZZ":return t.zone.offsetName(t.ts,{format:"long",locale:this.loc.locale});case"z":return t.zoneName;case"a":return n();case"d":return r?a({day:"numeric"},"day"):this.num(t.day);case"dd":return r?a({day:"2-digit"},"day"):this.num(t.day,2);case"c":case"E":return this.num(t.weekday);case"ccc":return l("short",!0);case"cccc":return l("long",!0);case"ccccc":return l("narrow",!0);case"EEE":return l("short",!1);case"EEEE":return l("long",!1);case"EEEEE":return l("narrow",!1);case"L":return r?a({month:"numeric",day:"numeric"},"month"):this.num(t.month);case"LL":return r?a({month:"2-digit",day:"numeric"},"month"):this.num(t.month,2);case"LLL":return o("short",!0);case"LLLL":return o("long",!0);case"LLLLL":return o("narrow",!0);case"M":return r?a({month:"numeric"},"month"):this.num(t.month);case"MM":return r?a({month:"2-digit"},"month"):this.num(t.month,2);case"MMM":return o("short",!1);case"MMMM":return o("long",!1);case"MMMMM":return o("narrow",!1);case"y":return r?a({year:"numeric"},"year"):this.num(t.year);case"yy":return r?a({year:"2-digit"},"year"):this.num(t.year.toString().slice(-2),2);case"yyyy":return r?a({year:"numeric"},"year"):this.num(t.year,4);case"yyyyyy":return r?a({year:"numeric"},"year"):this.num(t.year,6);case"G":return d("short");case"GG":return d("long");case"GGGGG":return d("narrow");case"kk":return this.num(t.weekYear.toString().slice(-2),2);case"kkkk":return this.num(t.weekYear,4);case"W":return this.num(t.weekNumber);case"WW":return this.num(t.weekNumber,2);case"n":return this.num(t.localWeekNumber);case"nn":return this.num(t.localWeekNumber,2);case"ii":return this.num(t.localWeekYear.toString().slice(-2),2);case"iiii":return this.num(t.localWeekYear,4);case"o":return this.num(t.ordinal);case"ooo":return this.num(t.ordinal,3);case"q":return this.num(t.quarter);case"qq":return this.num(t.quarter,2);case"X":return this.num(Math.floor(t.ts/1e3));case"x":return this.num(t.ts);default:return c(e)}})}formatDurationFromString(t,e){const i="negativeLargestOnly"===this.opts.signMode?-1:1,r=t=>{switch(t[0]){case"S":return"milliseconds";case"s":return"seconds";case"m":return"minutes";case"h":return"hours";case"d":return"days";case"w":return"weeks";case"M":return"months";case"y":return"years";default:return null}},a=hr.parseFormat(e),s=a.reduce((t,{literal:e,val:i})=>e?t:t.concat(i),[]),n=t.shiftTo(...s.map(r).filter(t=>t));return dr(a,((t,e)=>a=>{const s=r(a);if(s){const r=e.isNegativeDuration&&s!==e.largestUnit?i:1;let n;return n="negativeLargestOnly"===this.opts.signMode&&s!==e.largestUnit?"never":"all"===this.opts.signMode?"always":"auto",this.num(t.get(s)*r,a.length,n)}return a})(n,{isNegativeDuration:n<0,largestUnit:Object.keys(n.values)[0]}))}}const ur=/[A-Za-z_+-]{1,256}(?::?\/[A-Za-z0-9_+-]{1,256}(?:\/[A-Za-z0-9_+-]{1,256})?)?/;function gr(...t){const e=t.reduce((t,e)=>t+e.source,"");return RegExp(`^${e}$`)}function mr(...t){return e=>t.reduce(([t,i,r],a)=>{const[s,n,o]=a(e,r);return[{...t,...s},n||i,o]},[{},null,1]).slice(0,2)}function fr(t,...e){if(null==t)return[null,null];for(const[i,r]of e){const e=i.exec(t);if(e)return r(e)}return[null,null]}function vr(...t){return(e,i)=>{const r={};let a;for(a=0;a<t.length;a++)r[t[a]]=Ii(e[i+a]);return[r,null,i+a]}}const yr=/(?:([Zz])|([+-]\d\d)(?::?(\d\d))?)/,br=/(\d\d)(?::?(\d\d)(?::?(\d\d)(?:[.,](\d{1,30}))?)?)?/,wr=RegExp(`${br.source}${`(?:${yr.source}?(?:\\[(${ur.source})\\])?)?`}`),xr=RegExp(`(?:[Tt]${wr.source})?`),_r=vr("weekYear","weekNumber","weekDay"),$r=vr("year","ordinal"),Dr=RegExp(`${br.source} ?(?:${yr.source}|(${ur.source}))?`),Sr=RegExp(`(?: ${Dr.source})?`);function Cr(t,e,i){const r=t[e];return Di(r)?i:Ii(r)}function kr(t,e){return[{hours:Cr(t,e,0),minutes:Cr(t,e+1,0),seconds:Cr(t,e+2,0),milliseconds:Pi(t[e+3])},null,e+4]}function Ar(t,e){const i=!t[e]&&!t[e+1],r=Zi(t[e+1],t[e+2]);return[{},i?null:Ze.instance(r),e+3]}function Mr(t,e){return[{},t[e]?Me.create(t[e]):null,e+1]}const Tr=RegExp(`^T?${br.source}$`),Er=/^-?P(?:(?:(-?\d{1,20}(?:\.\d{1,20})?)Y)?(?:(-?\d{1,20}(?:\.\d{1,20})?)M)?(?:(-?\d{1,20}(?:\.\d{1,20})?)W)?(?:(-?\d{1,20}(?:\.\d{1,20})?)D)?(?:T(?:(-?\d{1,20}(?:\.\d{1,20})?)H)?(?:(-?\d{1,20}(?:\.\d{1,20})?)M)?(?:(-?\d{1,20})(?:[.,](-?\d{1,20}))?S)?)?)$/;function Lr(t){const[e,i,r,a,s,n,o,l,c]=t,d="-"===e[0],p=l&&"-"===l[0],h=(t,e=!1)=>void 0!==t&&(e||t&&d)?-t:t;return[{years:h(Ni(i)),months:h(Ni(r)),weeks:h(Ni(a)),days:h(Ni(s)),hours:h(Ni(n)),minutes:h(Ni(o)),seconds:h(Ni(l),"-0"===l),milliseconds:h(Pi(c),p)}]}const Or={GMT:0,EDT:-240,EST:-300,CDT:-300,CST:-360,MDT:-360,MST:-420,PDT:-420,PST:-480};function Ir(t,e,i,r,a,s,n){const o={year:2===e.length?Ui(Ii(e)):Ii(e),month:Ki.indexOf(i)+1,day:Ii(r),hour:Ii(a),minute:Ii(s)};return n&&(o.second=Ii(n)),t&&(o.weekday=t.length>3?er.indexOf(t)+1:ir.indexOf(t)+1),o}const Nr=/^(?:(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s)?(\d{1,2})\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d{2,4})\s(\d\d):(\d\d)(?::(\d\d))?\s(?:(UT|GMT|[ECMP][SD]T)|([Zz])|(?:([+-]\d\d)(\d\d)))$/;function Pr(t){const[,e,i,r,a,s,n,o,l,c,d,p]=t,h=Ir(e,a,r,i,s,n,o);let u;return u=l?Or[l]:c?0:Zi(d,p),[h,new Ze(u)]}const Vr=/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\d\d) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{4}) (\d\d):(\d\d):(\d\d) GMT$/,zr=/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), (\d\d)-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d\d) (\d\d):(\d\d):(\d\d) GMT$/,Hr=/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) ( \d|\d\d) (\d\d):(\d\d):(\d\d) (\d{4})$/;function Rr(t){const[,e,i,r,a,s,n,o]=t;return[Ir(e,a,r,i,s,n,o),Ze.utcInstance]}function Fr(t){const[,e,i,r,a,s,n,o]=t;return[Ir(e,o,i,r,a,s,n),Ze.utcInstance]}const Gr=gr(/([+-]\d{6}|\d{4})(?:-?(\d\d)(?:-?(\d\d))?)?/,xr),jr=gr(/(\d{4})-?W(\d\d)(?:-?(\d))?/,xr),Ur=gr(/(\d{4})-?(\d{3})/,xr),Br=gr(wr),Zr=mr(function(t,e){return[{year:Cr(t,e),month:Cr(t,e+1,1),day:Cr(t,e+2,1)},null,e+3]},kr,Ar,Mr),qr=mr(_r,kr,Ar,Mr),Wr=mr($r,kr,Ar,Mr),Yr=mr(kr,Ar,Mr);const Jr=mr(kr);const Qr=gr(/(\d{4})-(\d\d)-(\d\d)/,Sr),Kr=gr(Dr),Xr=mr(kr,Ar,Mr);const ta="Invalid Duration",ea={weeks:{days:7,hours:168,minutes:10080,seconds:604800,milliseconds:6048e5},days:{hours:24,minutes:1440,seconds:86400,milliseconds:864e5},hours:{minutes:60,seconds:3600,milliseconds:36e5},minutes:{seconds:60,milliseconds:6e4},seconds:{milliseconds:1e3}},ia={years:{quarters:4,months:12,weeks:52,days:365,hours:8760,minutes:525600,seconds:31536e3,milliseconds:31536e6},quarters:{months:3,weeks:13,days:91,hours:2184,minutes:131040,seconds:7862400,milliseconds:78624e5},months:{weeks:4,days:30,hours:720,minutes:43200,seconds:2592e3,milliseconds:2592e6},...ea},ra=365.2425,aa=30.436875,sa={years:{quarters:4,months:12,weeks:52.1775,days:ra,hours:8765.82,minutes:525949.2,seconds:525949.2*60,milliseconds:525949.2*60*1e3},quarters:{months:3,weeks:13.044375,days:91.310625,hours:2191.455,minutes:131487.3,seconds:525949.2*60/4,milliseconds:7889237999.999999},months:{weeks:4.3481250000000005,days:aa,hours:730.485,minutes:43829.1,seconds:2629746,milliseconds:2629746e3},...ea},na=["years","quarters","months","weeks","days","hours","minutes","seconds","milliseconds"],oa=na.slice(0).reverse();function la(t,e,i=!1){const r={values:i?e.values:{...t.values,...e.values||{}},loc:t.loc.clone(e.loc),conversionAccuracy:e.conversionAccuracy||t.conversionAccuracy,matrix:e.matrix||t.matrix};return new ha(r)}function ca(t,e){let i=e.milliseconds??0;for(const r of oa.slice(1))e[r]&&(i+=e[r]*t[r].milliseconds);return i}function da(t,e){const i=ca(t,e)<0?-1:1;na.reduceRight((r,a)=>{if(Di(e[a]))return r;if(r){const s=e[r]*i,n=t[a][r],o=Math.floor(s/n);e[a]+=o*i,e[r]-=o*n*i}return a},null),na.reduce((i,r)=>{if(Di(e[r]))return i;if(i){const a=e[i]%1;e[i]-=a,e[r]+=a*t[i][r]}return r},null)}function pa(t){const e={};for(const[i,r]of Object.entries(t))0!==r&&(e[i]=r);return e}class ha{constructor(t){const e="longterm"===t.conversionAccuracy||!1;let i=e?sa:ia;t.matrix&&(i=t.matrix),this.values=t.values,this.loc=t.loc||Ue.create(),this.conversionAccuracy=e?"longterm":"casual",this.invalid=t.invalid||null,this.matrix=i,this.isLuxonDuration=!0}static fromMillis(t,e){return ha.fromObject({milliseconds:t},e)}static fromObject(t,e={}){if(null==t||"object"!=typeof t)throw new Jt("Duration.fromObject: argument expected to be an object, got "+(null===t?"null":typeof t));return new ha({values:Wi(t,ha.normalizeUnit),loc:Ue.fromObject(e),conversionAccuracy:e.conversionAccuracy,matrix:e.matrix})}static fromDurationLike(t){if(Si(t))return ha.fromMillis(t);if(ha.isDuration(t))return t;if("object"==typeof t)return ha.fromObject(t);throw new Jt(`Unknown duration argument ${t} of type ${typeof t}`)}static fromISO(t,e){const[i]=function(t){return fr(t,[Er,Lr])}(t);return i?ha.fromObject(i,e):ha.invalid("unparsable",`the input "${t}" can't be parsed as ISO 8601`)}static fromISOTime(t,e){const[i]=function(t){return fr(t,[Tr,Jr])}(t);return i?ha.fromObject(i,e):ha.invalid("unparsable",`the input "${t}" can't be parsed as ISO 8601`)}static invalid(t,e=null){if(!t)throw new Jt("need to specify a reason the Duration is invalid");const i=t instanceof ci?t:new ci(t,e);if(li.throwOnInvalid)throw new qt(i);return new ha({invalid:i})}static normalizeUnit(t){const e={year:"years",years:"years",quarter:"quarters",quarters:"quarters",month:"months",months:"months",week:"weeks",weeks:"weeks",day:"days",days:"days",hour:"hours",hours:"hours",minute:"minutes",minutes:"minutes",second:"seconds",seconds:"seconds",millisecond:"milliseconds",milliseconds:"milliseconds"}[t?t.toLowerCase():t];if(!e)throw new Yt(t);return e}static isDuration(t){return t&&t.isLuxonDuration||!1}get locale(){return this.isValid?this.loc.locale:null}get numberingSystem(){return this.isValid?this.loc.numberingSystem:null}toFormat(t,e={}){const i={...e,floor:!1!==e.round&&!1!==e.floor};return this.isValid?hr.create(this.loc,i).formatDurationFromString(this,t):ta}toHuman(t={}){if(!this.isValid)return ta;const e=!1!==t.showZeros,i=na.map(i=>{const r=this.values[i];return Di(r)||0===r&&!e?null:this.loc.numberFormatter({style:"unit",unitDisplay:"long",...t,unit:i.slice(0,-1)}).format(r)}).filter(t=>t);return this.loc.listFormatter({type:"conjunction",style:t.listStyle||"narrow",...t}).format(i)}toObject(){return this.isValid?{...this.values}:{}}toISO(){if(!this.isValid)return null;let t="P";return 0!==this.years&&(t+=this.years+"Y"),0===this.months&&0===this.quarters||(t+=this.months+3*this.quarters+"M"),0!==this.weeks&&(t+=this.weeks+"W"),0!==this.days&&(t+=this.days+"D"),0===this.hours&&0===this.minutes&&0===this.seconds&&0===this.milliseconds||(t+="T"),0!==this.hours&&(t+=this.hours+"H"),0!==this.minutes&&(t+=this.minutes+"M"),0===this.seconds&&0===this.milliseconds||(t+=Vi(this.seconds+this.milliseconds/1e3,3)+"S"),"P"===t&&(t+="T0S"),t}toISOTime(t={}){if(!this.isValid)return null;const e=this.toMillis();if(e<0||e>=864e5)return null;t={suppressMilliseconds:!1,suppressSeconds:!1,includePrefix:!1,format:"extended",...t,includeOffset:!1};return ss.fromMillis(e,{zone:"UTC"}).toISOTime(t)}toJSON(){return this.toISO()}toString(){return this.toISO()}[Symbol.for("nodejs.util.inspect.custom")](){return this.isValid?`Duration { values: ${JSON.stringify(this.values)} }`:`Duration { Invalid, reason: ${this.invalidReason} }`}toMillis(){return this.isValid?ca(this.matrix,this.values):NaN}valueOf(){return this.toMillis()}plus(t){if(!this.isValid)return this;const e=ha.fromDurationLike(t),i={};for(const t of na)(Ti(e.values,t)||Ti(this.values,t))&&(i[t]=e.get(t)+this.get(t));return la(this,{values:i},!0)}minus(t){if(!this.isValid)return this;const e=ha.fromDurationLike(t);return this.plus(e.negate())}mapUnits(t){if(!this.isValid)return this;const e={};for(const i of Object.keys(this.values))e[i]=qi(t(this.values[i],i));return la(this,{values:e},!0)}get(t){return this[ha.normalizeUnit(t)]}set(t){if(!this.isValid)return this;return la(this,{values:{...this.values,...Wi(t,ha.normalizeUnit)}})}reconfigure({locale:t,numberingSystem:e,conversionAccuracy:i,matrix:r}={}){return la(this,{loc:this.loc.clone({locale:t,numberingSystem:e}),matrix:r,conversionAccuracy:i})}as(t){return this.isValid?this.shiftTo(t).get(t):NaN}normalize(){if(!this.isValid)return this;const t=this.toObject();return da(this.matrix,t),la(this,{values:t},!0)}rescale(){if(!this.isValid)return this;return la(this,{values:pa(this.normalize().shiftToAll().toObject())},!0)}shiftTo(...t){if(!this.isValid)return this;if(0===t.length)return this;t=t.map(t=>ha.normalizeUnit(t));const e={},i={},r=this.toObject();let a;for(const s of na)if(t.indexOf(s)>=0){a=s;let t=0;for(const e in i)t+=this.matrix[e][s]*i[e],i[e]=0;Si(r[s])&&(t+=r[s]);const n=Math.trunc(t);e[s]=n,i[s]=(1e3*t-1e3*n)/1e3}else Si(r[s])&&(i[s]=r[s]);for(const t in i)0!==i[t]&&(e[a]+=t===a?i[t]:i[t]/this.matrix[a][t]);return da(this.matrix,e),la(this,{values:e},!0)}shiftToAll(){return this.isValid?this.shiftTo("years","months","weeks","days","hours","minutes","seconds","milliseconds"):this}negate(){if(!this.isValid)return this;const t={};for(const e of Object.keys(this.values))t[e]=0===this.values[e]?0:-this.values[e];return la(this,{values:t},!0)}removeZeros(){if(!this.isValid)return this;return la(this,{values:pa(this.values)},!0)}get years(){return this.isValid?this.values.years||0:NaN}get quarters(){return this.isValid?this.values.quarters||0:NaN}get months(){return this.isValid?this.values.months||0:NaN}get weeks(){return this.isValid?this.values.weeks||0:NaN}get days(){return this.isValid?this.values.days||0:NaN}get hours(){return this.isValid?this.values.hours||0:NaN}get minutes(){return this.isValid?this.values.minutes||0:NaN}get seconds(){return this.isValid?this.values.seconds||0:NaN}get milliseconds(){return this.isValid?this.values.milliseconds||0:NaN}get isValid(){return null===this.invalid}get invalidReason(){return this.invalid?this.invalid.reason:null}get invalidExplanation(){return this.invalid?this.invalid.explanation:null}equals(t){if(!this.isValid||!t.isValid)return!1;if(!this.loc.equals(t.loc))return!1;function e(t,e){return void 0===t||0===t?void 0===e||0===e:t===e}for(const i of na)if(!e(this.values[i],t.values[i]))return!1;return!0}}const ua="Invalid Interval";class ga{constructor(t){this.s=t.start,this.e=t.end,this.invalid=t.invalid||null,this.isLuxonInterval=!0}static invalid(t,e=null){if(!t)throw new Jt("need to specify a reason the Interval is invalid");const i=t instanceof ci?t:new ci(t,e);if(li.throwOnInvalid)throw new Zt(i);return new ga({invalid:i})}static fromDateTimes(t,e){const i=ns(t),r=ns(e),a=function(t,e){return t&&t.isValid?e&&e.isValid?e<t?ga.invalid("end before start",`The end of an interval must be after its start, but you had start=${t.toISO()} and end=${e.toISO()}`):null:ga.invalid("missing or invalid end"):ga.invalid("missing or invalid start")}(i,r);return null==a?new ga({start:i,end:r}):a}static after(t,e){const i=ha.fromDurationLike(e),r=ns(t);return ga.fromDateTimes(r,r.plus(i))}static before(t,e){const i=ha.fromDurationLike(e),r=ns(t);return ga.fromDateTimes(r.minus(i),r)}static fromISO(t,e){const[i,r]=(t||"").split("/",2);if(i&&r){let t,a,s,n;try{t=ss.fromISO(i,e),a=t.isValid}catch(r){a=!1}try{s=ss.fromISO(r,e),n=s.isValid}catch(r){n=!1}if(a&&n)return ga.fromDateTimes(t,s);if(a){const i=ha.fromISO(r,e);if(i.isValid)return ga.after(t,i)}else if(n){const t=ha.fromISO(i,e);if(t.isValid)return ga.before(s,t)}}return ga.invalid("unparsable",`the input "${t}" can't be parsed as ISO 8601`)}static isInterval(t){return t&&t.isLuxonInterval||!1}get start(){return this.isValid?this.s:null}get end(){return this.isValid?this.e:null}get lastDateTime(){return this.isValid&&this.e?this.e.minus(1):null}get isValid(){return null===this.invalidReason}get invalidReason(){return this.invalid?this.invalid.reason:null}get invalidExplanation(){return this.invalid?this.invalid.explanation:null}length(t="milliseconds"){return this.isValid?this.toDuration(t).get(t):NaN}count(t="milliseconds",e){if(!this.isValid)return NaN;const i=this.start.startOf(t,e);let r;return r=e?.useLocaleWeeks?this.end.reconfigure({locale:i.locale}):this.end,r=r.startOf(t,e),Math.floor(r.diff(i,t).get(t))+(r.valueOf()!==this.end.valueOf())}hasSame(t){return!!this.isValid&&(this.isEmpty()||this.e.minus(1).hasSame(this.s,t))}isEmpty(){return this.s.valueOf()===this.e.valueOf()}isAfter(t){return!!this.isValid&&this.s>t}isBefore(t){return!!this.isValid&&this.e<=t}contains(t){return!!this.isValid&&(this.s<=t&&this.e>t)}set({start:t,end:e}={}){return this.isValid?ga.fromDateTimes(t||this.s,e||this.e):this}splitAt(...t){if(!this.isValid)return[];const e=t.map(ns).filter(t=>this.contains(t)).sort((t,e)=>t.toMillis()-e.toMillis()),i=[];let{s:r}=this,a=0;for(;r<this.e;){const t=e[a]||this.e,s=+t>+this.e?this.e:t;i.push(ga.fromDateTimes(r,s)),r=s,a+=1}return i}splitBy(t){const e=ha.fromDurationLike(t);if(!this.isValid||!e.isValid||0===e.as("milliseconds"))return[];let i,{s:r}=this,a=1;const s=[];for(;r<this.e;){const t=this.start.plus(e.mapUnits(t=>t*a));i=+t>+this.e?this.e:t,s.push(ga.fromDateTimes(r,i)),r=i,a+=1}return s}divideEqually(t){return this.isValid?this.splitBy(this.length()/t).slice(0,t):[]}overlaps(t){return this.e>t.s&&this.s<t.e}abutsStart(t){return!!this.isValid&&+this.e===+t.s}abutsEnd(t){return!!this.isValid&&+t.e===+this.s}engulfs(t){return!!this.isValid&&(this.s<=t.s&&this.e>=t.e)}equals(t){return!(!this.isValid||!t.isValid)&&(this.s.equals(t.s)&&this.e.equals(t.e))}intersection(t){if(!this.isValid)return this;const e=this.s>t.s?this.s:t.s,i=this.e<t.e?this.e:t.e;return e>=i?null:ga.fromDateTimes(e,i)}union(t){if(!this.isValid)return this;const e=this.s<t.s?this.s:t.s,i=this.e>t.e?this.e:t.e;return ga.fromDateTimes(e,i)}static merge(t){const[e,i]=t.sort((t,e)=>t.s-e.s).reduce(([t,e],i)=>e?e.overlaps(i)||e.abutsStart(i)?[t,e.union(i)]:[t.concat([e]),i]:[t,i],[[],null]);return i&&e.push(i),e}static xor(t){let e=null,i=0;const r=[],a=t.map(t=>[{time:t.s,type:"s"},{time:t.e,type:"e"}]),s=Array.prototype.concat(...a).sort((t,e)=>t.time-e.time);for(const t of s)i+="s"===t.type?1:-1,1===i?e=t.time:(e&&+e!==+t.time&&r.push(ga.fromDateTimes(e,t.time)),e=null);return ga.merge(r)}difference(...t){return ga.xor([this].concat(t)).map(t=>this.intersection(t)).filter(t=>t&&!t.isEmpty())}toString(){return this.isValid?`[${this.s.toISO()} – ${this.e.toISO()})`:ua}[Symbol.for("nodejs.util.inspect.custom")](){return this.isValid?`Interval { start: ${this.s.toISO()}, end: ${this.e.toISO()} }`:`Interval { Invalid, reason: ${this.invalidReason} }`}toLocaleString(t=ee,e={}){return this.isValid?hr.create(this.s.loc.clone(e),t).formatInterval(this):ua}toISO(t){return this.isValid?`${this.s.toISO(t)}/${this.e.toISO(t)}`:ua}toISODate(){return this.isValid?`${this.s.toISODate()}/${this.e.toISODate()}`:ua}toISOTime(t){return this.isValid?`${this.s.toISOTime(t)}/${this.e.toISOTime(t)}`:ua}toFormat(t,{separator:e=" – "}={}){return this.isValid?`${this.s.toFormat(t)}${e}${this.e.toFormat(t)}`:ua}toDuration(t,e){return this.isValid?this.e.diff(this.s,t,e):ha.invalid(this.invalidReason)}mapEndpoints(t){return ga.fromDateTimes(t(this.s),t(this.e))}}class ma{static hasDST(t=li.defaultZone){const e=ss.now().setZone(t).set({month:12});return!t.isUniversal&&e.offset!==e.set({month:6}).offset}static isValidIANAZone(t){return Me.isValidZone(t)}static normalizeZone(t){return We(t,li.defaultZone)}static getStartOfWeek({locale:t=null,locObj:e=null}={}){return(e||Ue.create(t)).getStartOfWeek()}static getMinimumDaysInFirstWeek({locale:t=null,locObj:e=null}={}){return(e||Ue.create(t)).getMinDaysInFirstWeek()}static getWeekendWeekdays({locale:t=null,locObj:e=null}={}){return(e||Ue.create(t)).getWeekendDays().slice()}static months(t="long",{locale:e=null,numberingSystem:i=null,locObj:r=null,outputCalendar:a="gregory"}={}){return(r||Ue.create(e,i,a)).months(t)}static monthsFormat(t="long",{locale:e=null,numberingSystem:i=null,locObj:r=null,outputCalendar:a="gregory"}={}){return(r||Ue.create(e,i,a)).months(t,!0)}static weekdays(t="long",{locale:e=null,numberingSystem:i=null,locObj:r=null}={}){return(r||Ue.create(e,i,null)).weekdays(t)}static weekdaysFormat(t="long",{locale:e=null,numberingSystem:i=null,locObj:r=null}={}){return(r||Ue.create(e,i,null)).weekdays(t,!0)}static meridiems({locale:t=null}={}){return Ue.create(t).meridiems()}static eras(t="short",{locale:e=null}={}){return Ue.create(e,null,"gregory").eras(t)}static features(){return{relative:ki(),localeWeek:Ai()}}}function fa(t,e){const i=t=>t.toUTC(0,{keepLocalTime:!0}).startOf("day").valueOf(),r=i(e)-i(t);return Math.floor(ha.fromMillis(r).as("days"))}function va(t,e,i,r){let[a,s,n,o]=function(t,e,i){const r=[["years",(t,e)=>e.year-t.year],["quarters",(t,e)=>e.quarter-t.quarter+4*(e.year-t.year)],["months",(t,e)=>e.month-t.month+12*(e.year-t.year)],["weeks",(t,e)=>{const i=fa(t,e);return(i-i%7)/7}],["days",fa]],a={},s=t;let n,o;for(const[l,c]of r)i.indexOf(l)>=0&&(n=l,a[l]=c(t,e),o=s.plus(a),o>e?(a[l]--,(t=s.plus(a))>e&&(o=t,a[l]--,t=s.plus(a))):t=o);return[t,a,o,n]}(t,e,i);const l=e-a,c=i.filter(t=>["hours","minutes","seconds","milliseconds"].indexOf(t)>=0);0===c.length&&(n<e&&(n=a.plus({[o]:1})),n!==a&&(s[o]=(s[o]||0)+l/(n-a)));const d=ha.fromObject(s,r);return c.length>0?ha.fromMillis(l,r).shiftTo(...c).plus(d):d}function ya(t,e=t=>t){return{regex:t,deser:([t])=>e(function(t){let e=parseInt(t,10);if(isNaN(e)){e="";for(let i=0;i<t.length;i++){const r=t.charCodeAt(i);if(-1!==t[i].search(Ye.hanidec))e+=Qe.indexOf(t[i]);else for(const t in Je){const[i,a]=Je[t];r>=i&&r<=a&&(e+=r-i)}}return parseInt(e,10)}return e}(t))}}const ba=`[ ${String.fromCharCode(160)}]`,wa=new RegExp(ba,"g");function xa(t){return t.replace(/\./g,"\\.?").replace(wa,ba)}function _a(t){return t.replace(/\./g,"").replace(wa," ").toLowerCase()}function $a(t,e){return null===t?null:{regex:RegExp(t.map(xa).join("|")),deser:([i])=>t.findIndex(t=>_a(i)===_a(t))+e}}function Da(t,e){return{regex:t,deser:([,t,e])=>Zi(t,e),groups:e}}function Sa(t){return{regex:t,deser:([t])=>t}}const Ca={year:{"2-digit":"yy",numeric:"yyyyy"},month:{numeric:"M","2-digit":"MM",short:"MMM",long:"MMMM"},day:{numeric:"d","2-digit":"dd"},weekday:{short:"EEE",long:"EEEE"},dayperiod:"a",dayPeriod:"a",hour12:{numeric:"h","2-digit":"hh"},hour24:{numeric:"H","2-digit":"HH"},minute:{numeric:"m","2-digit":"mm"},second:{numeric:"s","2-digit":"ss"},timeZoneName:{long:"ZZZZZ",short:"ZZZ"}};let ka=null;function Aa(t,e){return Array.prototype.concat(...t.map(t=>function(t,e){if(t.literal)return t;const i=Ea(hr.macroTokenToFormatOpts(t.val),e);return null==i||i.includes(void 0)?t:i}(t,e)))}class Ma{constructor(t,e){if(this.locale=t,this.format=e,this.tokens=Aa(hr.parseFormat(e),t),this.units=this.tokens.map(e=>function(t,e){const i=Xe(e),r=Xe(e,"{2}"),a=Xe(e,"{3}"),s=Xe(e,"{4}"),n=Xe(e,"{6}"),o=Xe(e,"{1,2}"),l=Xe(e,"{1,3}"),c=Xe(e,"{1,6}"),d=Xe(e,"{1,9}"),p=Xe(e,"{2,4}"),h=Xe(e,"{4,6}"),u=t=>{return{regex:RegExp((e=t.val,e.replace(/[\-\[\]{}()*+?.,\\\^$|#\s]/g,"\\$&"))),deser:([t])=>t,literal:!0};var e},g=(g=>{if(t.literal)return u(g);switch(g.val){case"G":return $a(e.eras("short"),0);case"GG":return $a(e.eras("long"),0);case"y":return ya(c);case"yy":case"kk":return ya(p,Ui);case"yyyy":case"kkkk":return ya(s);case"yyyyy":return ya(h);case"yyyyyy":return ya(n);case"M":case"L":case"d":case"H":case"h":case"m":case"q":case"s":case"W":return ya(o);case"MM":case"LL":case"dd":case"HH":case"hh":case"mm":case"qq":case"ss":case"WW":return ya(r);case"MMM":return $a(e.months("short",!0),1);case"MMMM":return $a(e.months("long",!0),1);case"LLL":return $a(e.months("short",!1),1);case"LLLL":return $a(e.months("long",!1),1);case"o":case"S":return ya(l);case"ooo":case"SSS":return ya(a);case"u":return Sa(d);case"uu":return Sa(o);case"uuu":case"E":case"c":return ya(i);case"a":return $a(e.meridiems(),0);case"EEE":return $a(e.weekdays("short",!1),1);case"EEEE":return $a(e.weekdays("long",!1),1);case"ccc":return $a(e.weekdays("short",!0),1);case"cccc":return $a(e.weekdays("long",!0),1);case"Z":case"ZZ":return Da(new RegExp(`([+-]${o.source})(?::(${r.source}))?`),2);case"ZZZ":return Da(new RegExp(`([+-]${o.source})(${r.source})?`),2);case"z":return Sa(/[a-z_+-/]{1,256}?/i);case" ":return Sa(/[^\S\n\r]/);default:return u(g)}})(t)||{invalidReason:"missing Intl.DateTimeFormat.formatToParts support"};return g.token=t,g}(e,t)),this.disqualifyingUnit=this.units.find(t=>t.invalidReason),!this.disqualifyingUnit){const[t,e]=function(t){const e=t.map(t=>t.regex).reduce((t,e)=>`${t}(${e.source})`,"");return[`^${e}$`,t]}(this.units);this.regex=RegExp(t,"i"),this.handlers=e}}explainFromTokens(t){if(this.isValid){const[e,i]=function(t,e,i){const r=t.match(e);if(r){const t={};let e=1;for(const a in i)if(Ti(i,a)){const s=i[a],n=s.groups?s.groups+1:1;!s.literal&&s.token&&(t[s.token.val[0]]=s.deser(r.slice(e,e+n))),e+=n}return[r,t]}return[r,{}]}(t,this.regex,this.handlers),[r,a,s]=i?function(t){let e,i=null;Di(t.z)||(i=Me.create(t.z)),Di(t.Z)||(i||(i=new Ze(t.Z)),e=t.Z),Di(t.q)||(t.M=3*(t.q-1)+1),Di(t.h)||(t.h<12&&1===t.a?t.h+=12:12===t.h&&0===t.a&&(t.h=0)),0===t.G&&t.y&&(t.y=-t.y),Di(t.u)||(t.S=Pi(t.u));const r=Object.keys(t).reduce((e,i)=>{const r=(t=>{switch(t){case"S":return"millisecond";case"s":return"second";case"m":return"minute";case"h":case"H":return"hour";case"d":return"day";case"o":return"ordinal";case"L":case"M":return"month";case"y":return"year";case"E":case"c":return"weekday";case"W":return"weekNumber";case"k":return"weekYear";case"q":return"quarter";default:return null}})(i);return r&&(e[r]=t[i]),e},{});return[r,i,e]}(i):[null,null,void 0];if(Ti(i,"a")&&Ti(i,"H"))throw new Wt("Can't include meridiem when specifying 24-hour format");return{input:t,tokens:this.tokens,regex:this.regex,rawMatches:e,matches:i,result:r,zone:a,specificOffset:s}}return{input:t,tokens:this.tokens,invalidReason:this.invalidReason}}get isValid(){return!this.disqualifyingUnit}get invalidReason(){return this.disqualifyingUnit?this.disqualifyingUnit.invalidReason:null}}function Ta(t,e,i){return new Ma(t,i).explainFromTokens(e)}function Ea(t,e){if(!t)return null;const i=hr.create(e,t).dtFormatter((ka||(ka=ss.fromMillis(1555555555555)),ka)),r=i.formatToParts(),a=i.resolvedOptions();return r.map(e=>function(t,e,i){const{type:r,value:a}=t;if("literal"===r){const t=/^\s+$/.test(a);return{literal:!t,val:t?" ":a}}const s=e[r];let n=r;"hour"===r&&(n=null!=e.hour12?e.hour12?"hour12":"hour24":null!=e.hourCycle?"h11"===e.hourCycle||"h12"===e.hourCycle?"hour12":"hour24":i.hour12?"hour12":"hour24");let o=Ca[n];if("object"==typeof o&&(o=o[s]),o)return{literal:!1,val:o}}(e,t,a))}const La="Invalid DateTime",Oa=864e13;function Ia(t){return new ci("unsupported zone",`the zone "${t.name}" is not supported`)}function Na(t){return null===t.weekData&&(t.weekData=vi(t.c)),t.weekData}function Pa(t){return null===t.localWeekData&&(t.localWeekData=vi(t.c,t.loc.getMinDaysInFirstWeek(),t.loc.getStartOfWeek())),t.localWeekData}function Va(t,e){const i={ts:t.ts,zone:t.zone,c:t.c,o:t.o,loc:t.loc,invalid:t.invalid};return new ss({...i,...e,old:i})}function za(t,e,i){let r=t-60*e*1e3;const a=i.offset(r);if(e===a)return[r,e];r-=60*(a-e)*1e3;const s=i.offset(r);return a===s?[r,a]:[t-60*Math.min(a,s)*1e3,Math.max(a,s)]}function Ha(t,e){const i=new Date(t+=60*e*1e3);return{year:i.getUTCFullYear(),month:i.getUTCMonth()+1,day:i.getUTCDate(),hour:i.getUTCHours(),minute:i.getUTCMinutes(),second:i.getUTCSeconds(),millisecond:i.getUTCMilliseconds()}}function Ra(t,e,i){return za(Fi(t),e,i)}function Fa(t,e){const i=t.o,r=t.c.year+Math.trunc(e.years),a=t.c.month+Math.trunc(e.months)+3*Math.trunc(e.quarters),s={...t.c,year:r,month:a,day:Math.min(t.c.day,Ri(r,a))+Math.trunc(e.days)+7*Math.trunc(e.weeks)},n=ha.fromObject({years:e.years-Math.trunc(e.years),quarters:e.quarters-Math.trunc(e.quarters),months:e.months-Math.trunc(e.months),weeks:e.weeks-Math.trunc(e.weeks),days:e.days-Math.trunc(e.days),hours:e.hours,minutes:e.minutes,seconds:e.seconds,milliseconds:e.milliseconds}).as("milliseconds"),o=Fi(s);let[l,c]=za(o,i,t.zone);return 0!==n&&(l+=n,c=t.zone.offset(l)),{ts:l,o:c}}function Ga(t,e,i,r,a,s){const{setZone:n,zone:o}=i;if(t&&0!==Object.keys(t).length||e){const r=e||o,a=ss.fromObject(t,{...i,zone:r,specificOffset:s});return n?a:a.setZone(o)}return ss.invalid(new ci("unparsable",`the input "${a}" can't be parsed as ${r}`))}function ja(t,e,i=!0){return t.isValid?hr.create(Ue.create("en-US"),{allowZ:i,forceSimple:!0}).formatDateTimeFromString(t,e):null}function Ua(t,e,i){const r=t.c.year>9999||t.c.year<0;let a="";if(r&&t.c.year>=0&&(a+="+"),a+=Oi(t.c.year,r?6:4),"year"===i)return a;if(e){if(a+="-",a+=Oi(t.c.month),"month"===i)return a;a+="-"}else if(a+=Oi(t.c.month),"month"===i)return a;return a+=Oi(t.c.day),a}function Ba(t,e,i,r,a,s,n){let o=!i||0!==t.c.millisecond||0!==t.c.second,l="";switch(n){case"day":case"month":case"year":break;default:if(l+=Oi(t.c.hour),"hour"===n)break;if(e){if(l+=":",l+=Oi(t.c.minute),"minute"===n)break;o&&(l+=":",l+=Oi(t.c.second))}else{if(l+=Oi(t.c.minute),"minute"===n)break;o&&(l+=Oi(t.c.second))}if("second"===n)break;!o||r&&0===t.c.millisecond||(l+=".",l+=Oi(t.c.millisecond,3))}return a&&(t.isOffsetFixed&&0===t.offset&&!s?l+="Z":t.o<0?(l+="-",l+=Oi(Math.trunc(-t.o/60)),l+=":",l+=Oi(Math.trunc(-t.o%60))):(l+="+",l+=Oi(Math.trunc(t.o/60)),l+=":",l+=Oi(Math.trunc(t.o%60)))),s&&(l+="["+t.zone.ianaName+"]"),l}const Za={month:1,day:1,hour:0,minute:0,second:0,millisecond:0},qa={weekNumber:1,weekday:1,hour:0,minute:0,second:0,millisecond:0},Wa={ordinal:1,hour:0,minute:0,second:0,millisecond:0},Ya=["year","month","day","hour","minute","second","millisecond"],Ja=["weekYear","weekNumber","weekday","hour","minute","second","millisecond"],Qa=["year","ordinal","hour","minute","second","millisecond"];function Ka(t){const e={year:"year",years:"year",month:"month",months:"month",day:"day",days:"day",hour:"hour",hours:"hour",minute:"minute",minutes:"minute",quarter:"quarter",quarters:"quarter",second:"second",seconds:"second",millisecond:"millisecond",milliseconds:"millisecond",weekday:"weekday",weekdays:"weekday",weeknumber:"weekNumber",weeksnumber:"weekNumber",weeknumbers:"weekNumber",weekyear:"weekYear",weekyears:"weekYear",ordinal:"ordinal"}[t.toLowerCase()];if(!e)throw new Yt(t);return e}function Xa(t){switch(t.toLowerCase()){case"localweekday":case"localweekdays":return"localWeekday";case"localweeknumber":case"localweeknumbers":return"localWeekNumber";case"localweekyear":case"localweekyears":return"localWeekYear";default:return Ka(t)}}function ts(t,e){const i=We(e.zone,li.defaultZone);if(!i.isValid)return ss.invalid(Ia(i));const r=Ue.fromObject(e);let a,s;if(Di(t.year))a=li.now();else{for(const e of Ya)Di(t[e])&&(t[e]=Za[e]);const e=_i(t)||$i(t);if(e)return ss.invalid(e);const r=function(t){if(void 0===rs&&(rs=li.now()),"iana"!==t.type)return t.offset(rs);const e=t.name;let i=as.get(e);return void 0===i&&(i=t.offset(rs),as.set(e,i)),i}(i);[a,s]=Ra(t,r,i)}return new ss({ts:a,zone:i,loc:r,o:s})}function es(t,e,i){const r=!!Di(i.round)||i.round,a=Di(i.rounding)?"trunc":i.rounding,s=(t,s)=>{t=Vi(t,r||i.calendary?0:2,i.calendary?"round":a);return e.loc.clone(i).relFormatter(i).format(t,s)},n=r=>i.calendary?e.hasSame(t,r)?0:e.startOf(r).diff(t.startOf(r),r).get(r):e.diff(t,r).get(r);if(i.unit)return s(n(i.unit),i.unit);for(const t of i.units){const e=n(t);if(Math.abs(e)>=1)return s(e,t)}return s(t>e?-0:0,i.units[i.units.length-1])}function is(t){let e,i={};return t.length>0&&"object"==typeof t[t.length-1]?(i=t[t.length-1],e=Array.from(t).slice(0,t.length-1)):e=Array.from(t),[i,e]}let rs;const as=new Map;class ss{constructor(t){const e=t.zone||li.defaultZone;let i=t.invalid||(Number.isNaN(t.ts)?new ci("invalid input"):null)||(e.isValid?null:Ia(e));this.ts=Di(t.ts)?li.now():t.ts;let r=null,a=null;if(!i){if(t.old&&t.old.ts===this.ts&&t.old.zone.equals(e))[r,a]=[t.old.c,t.old.o];else{const s=Si(t.o)&&!t.old?t.o:e.offset(this.ts);r=Ha(this.ts,s),i=Number.isNaN(r.year)?new ci("invalid input"):null,r=i?null:r,a=i?null:s}}this._zone=e,this.loc=t.loc||Ue.create(),this.invalid=i,this.weekData=null,this.localWeekData=null,this.c=r,this.o=a,this.isLuxonDateTime=!0}static now(){return new ss({})}static local(){const[t,e]=is(arguments),[i,r,a,s,n,o,l]=e;return ts({year:i,month:r,day:a,hour:s,minute:n,second:o,millisecond:l},t)}static utc(){const[t,e]=is(arguments),[i,r,a,s,n,o,l]=e;return t.zone=Ze.utcInstance,ts({year:i,month:r,day:a,hour:s,minute:n,second:o,millisecond:l},t)}static fromJSDate(t,e={}){const i=function(t){return"[object Date]"===Object.prototype.toString.call(t)}(t)?t.valueOf():NaN;if(Number.isNaN(i))return ss.invalid("invalid input");const r=We(e.zone,li.defaultZone);return r.isValid?new ss({ts:i,zone:r,loc:Ue.fromObject(e)}):ss.invalid(Ia(r))}static fromMillis(t,e={}){if(Si(t))return t<-Oa||t>Oa?ss.invalid("Timestamp out of range"):new ss({ts:t,zone:We(e.zone,li.defaultZone),loc:Ue.fromObject(e)});throw new Jt(`fromMillis requires a numerical input, but received a ${typeof t} with value ${t}`)}static fromSeconds(t,e={}){if(Si(t))return new ss({ts:1e3*t,zone:We(e.zone,li.defaultZone),loc:Ue.fromObject(e)});throw new Jt("fromSeconds requires a numerical input")}static fromObject(t,e={}){t=t||{};const i=We(e.zone,li.defaultZone);if(!i.isValid)return ss.invalid(Ia(i));const r=Ue.fromObject(e),a=Wi(t,Xa),{minDaysInFirstWeek:s,startOfWeek:n}=xi(a,r),o=li.now(),l=Di(e.specificOffset)?i.offset(o):e.specificOffset,c=!Di(a.ordinal),d=!Di(a.year),p=!Di(a.month)||!Di(a.day),h=d||p,u=a.weekYear||a.weekNumber;if((h||c)&&u)throw new Wt("Can't mix weekYear/weekNumber units with year/month/day or ordinals");if(p&&c)throw new Wt("Can't mix ordinal dates with month/day");const g=u||a.weekday&&!h;let m,f,v=Ha(o,l);g?(m=Ja,f=qa,v=vi(v,s,n)):c?(m=Qa,f=Wa,v=bi(v)):(m=Ya,f=Za);let y=!1;for(const t of m){Di(a[t])?a[t]=y?f[t]:v[t]:y=!0}const b=g?function(t,e=4,i=1){const r=Ci(t.weekYear),a=Li(t.weekNumber,1,ji(t.weekYear,e,i)),s=Li(t.weekday,1,7);return r?a?!s&&hi("weekday",t.weekday):hi("week",t.weekNumber):hi("weekYear",t.weekYear)}(a,s,n):c?function(t){const e=Ci(t.year),i=Li(t.ordinal,1,Hi(t.year));return e?!i&&hi("ordinal",t.ordinal):hi("year",t.year)}(a):_i(a),w=b||$i(a);if(w)return ss.invalid(w);const x=g?yi(a,s,n):c?wi(a):a,[_,$]=Ra(x,l,i),D=new ss({ts:_,zone:i,o:$,loc:r});return a.weekday&&h&&t.weekday!==D.weekday?ss.invalid("mismatched weekday",`you can't specify both a weekday of ${a.weekday} and a date of ${D.toISO()}`):D.isValid?D:ss.invalid(D.invalid)}static fromISO(t,e={}){const[i,r]=function(t){return fr(t,[Gr,Zr],[jr,qr],[Ur,Wr],[Br,Yr])}(t);return Ga(i,r,e,"ISO 8601",t)}static fromRFC2822(t,e={}){const[i,r]=function(t){return fr(function(t){return t.replace(/\([^()]*\)|[\n\t]/g," ").replace(/(\s\s+)/g," ").trim()}(t),[Nr,Pr])}(t);return Ga(i,r,e,"RFC 2822",t)}static fromHTTP(t,e={}){const[i,r]=function(t){return fr(t,[Vr,Rr],[zr,Rr],[Hr,Fr])}(t);return Ga(i,r,e,"HTTP",e)}static fromFormat(t,e,i={}){if(Di(t)||Di(e))throw new Jt("fromFormat requires an input string and a format");const{locale:r=null,numberingSystem:a=null}=i,s=Ue.fromOpts({locale:r,numberingSystem:a,defaultToEN:!0}),[n,o,l,c]=function(t,e,i){const{result:r,zone:a,specificOffset:s,invalidReason:n}=Ta(t,e,i);return[r,a,s,n]}(s,t,e);return c?ss.invalid(c):Ga(n,o,i,`format ${e}`,t,l)}static fromString(t,e,i={}){return ss.fromFormat(t,e,i)}static fromSQL(t,e={}){const[i,r]=function(t){return fr(t,[Qr,Zr],[Kr,Xr])}(t);return Ga(i,r,e,"SQL",t)}static invalid(t,e=null){if(!t)throw new Jt("need to specify a reason the DateTime is invalid");const i=t instanceof ci?t:new ci(t,e);if(li.throwOnInvalid)throw new Bt(i);return new ss({invalid:i})}static isDateTime(t){return t&&t.isLuxonDateTime||!1}static parseFormatForOpts(t,e={}){const i=Ea(t,Ue.fromObject(e));return i?i.map(t=>t?t.val:null).join(""):null}static expandFormat(t,e={}){return Aa(hr.parseFormat(t),Ue.fromObject(e)).map(t=>t.val).join("")}static resetCache(){rs=void 0,as.clear()}get(t){return this[t]}get isValid(){return null===this.invalid}get invalidReason(){return this.invalid?this.invalid.reason:null}get invalidExplanation(){return this.invalid?this.invalid.explanation:null}get locale(){return this.isValid?this.loc.locale:null}get numberingSystem(){return this.isValid?this.loc.numberingSystem:null}get outputCalendar(){return this.isValid?this.loc.outputCalendar:null}get zone(){return this._zone}get zoneName(){return this.isValid?this.zone.name:null}get year(){return this.isValid?this.c.year:NaN}get quarter(){return this.isValid?Math.ceil(this.c.month/3):NaN}get month(){return this.isValid?this.c.month:NaN}get day(){return this.isValid?this.c.day:NaN}get hour(){return this.isValid?this.c.hour:NaN}get minute(){return this.isValid?this.c.minute:NaN}get second(){return this.isValid?this.c.second:NaN}get millisecond(){return this.isValid?this.c.millisecond:NaN}get weekYear(){return this.isValid?Na(this).weekYear:NaN}get weekNumber(){return this.isValid?Na(this).weekNumber:NaN}get weekday(){return this.isValid?Na(this).weekday:NaN}get isWeekend(){return this.isValid&&this.loc.getWeekendDays().includes(this.weekday)}get localWeekday(){return this.isValid?Pa(this).weekday:NaN}get localWeekNumber(){return this.isValid?Pa(this).weekNumber:NaN}get localWeekYear(){return this.isValid?Pa(this).weekYear:NaN}get ordinal(){return this.isValid?bi(this.c).ordinal:NaN}get monthShort(){return this.isValid?ma.months("short",{locObj:this.loc})[this.month-1]:null}get monthLong(){return this.isValid?ma.months("long",{locObj:this.loc})[this.month-1]:null}get weekdayShort(){return this.isValid?ma.weekdays("short",{locObj:this.loc})[this.weekday-1]:null}get weekdayLong(){return this.isValid?ma.weekdays("long",{locObj:this.loc})[this.weekday-1]:null}get offset(){return this.isValid?+this.o:NaN}get offsetNameShort(){return this.isValid?this.zone.offsetName(this.ts,{format:"short",locale:this.locale}):null}get offsetNameLong(){return this.isValid?this.zone.offsetName(this.ts,{format:"long",locale:this.locale}):null}get isOffsetFixed(){return this.isValid?this.zone.isUniversal:null}get isInDST(){return!this.isOffsetFixed&&(this.offset>this.set({month:1,day:1}).offset||this.offset>this.set({month:5}).offset)}getPossibleOffsets(){if(!this.isValid||this.isOffsetFixed)return[this];const t=864e5,e=6e4,i=Fi(this.c),r=this.zone.offset(i-t),a=this.zone.offset(i+t),s=this.zone.offset(i-r*e),n=this.zone.offset(i-a*e);if(s===n)return[this];const o=i-s*e,l=i-n*e,c=Ha(o,s),d=Ha(l,n);return c.hour===d.hour&&c.minute===d.minute&&c.second===d.second&&c.millisecond===d.millisecond?[Va(this,{ts:o}),Va(this,{ts:l})]:[this]}get isInLeapYear(){return zi(this.year)}get daysInMonth(){return Ri(this.year,this.month)}get daysInYear(){return this.isValid?Hi(this.year):NaN}get weeksInWeekYear(){return this.isValid?ji(this.weekYear):NaN}get weeksInLocalWeekYear(){return this.isValid?ji(this.localWeekYear,this.loc.getMinDaysInFirstWeek(),this.loc.getStartOfWeek()):NaN}resolvedLocaleOptions(t={}){const{locale:e,numberingSystem:i,calendar:r}=hr.create(this.loc.clone(t),t).resolvedOptions(this);return{locale:e,numberingSystem:i,outputCalendar:r}}toUTC(t=0,e={}){return this.setZone(Ze.instance(t),e)}toLocal(){return this.setZone(li.defaultZone)}setZone(t,{keepLocalTime:e=!1,keepCalendarTime:i=!1}={}){if((t=We(t,li.defaultZone)).equals(this.zone))return this;if(t.isValid){let r=this.ts;if(e||i){const e=t.offset(this.ts),i=this.toObject();[r]=Ra(i,e,t)}return Va(this,{ts:r,zone:t})}return ss.invalid(Ia(t))}reconfigure({locale:t,numberingSystem:e,outputCalendar:i}={}){return Va(this,{loc:this.loc.clone({locale:t,numberingSystem:e,outputCalendar:i})})}setLocale(t){return this.reconfigure({locale:t})}set(t){if(!this.isValid)return this;const e=Wi(t,Xa),{minDaysInFirstWeek:i,startOfWeek:r}=xi(e,this.loc),a=!Di(e.weekYear)||!Di(e.weekNumber)||!Di(e.weekday),s=!Di(e.ordinal),n=!Di(e.year),o=!Di(e.month)||!Di(e.day),l=n||o,c=e.weekYear||e.weekNumber;if((l||s)&&c)throw new Wt("Can't mix weekYear/weekNumber units with year/month/day or ordinals");if(o&&s)throw new Wt("Can't mix ordinal dates with month/day");let d;a?d=yi({...vi(this.c,i,r),...e},i,r):Di(e.ordinal)?(d={...this.toObject(),...e},Di(e.day)&&(d.day=Math.min(Ri(d.year,d.month),d.day))):d=wi({...bi(this.c),...e});const[p,h]=Ra(d,this.o,this.zone);return Va(this,{ts:p,o:h})}plus(t){if(!this.isValid)return this;return Va(this,Fa(this,ha.fromDurationLike(t)))}minus(t){if(!this.isValid)return this;return Va(this,Fa(this,ha.fromDurationLike(t).negate()))}startOf(t,{useLocaleWeeks:e=!1}={}){if(!this.isValid)return this;const i={},r=ha.normalizeUnit(t);switch(r){case"years":i.month=1;case"quarters":case"months":i.day=1;case"weeks":case"days":i.hour=0;case"hours":i.minute=0;case"minutes":i.second=0;case"seconds":i.millisecond=0}if("weeks"===r)if(e){const t=this.loc.getStartOfWeek(),{weekday:e}=this;e<t&&(i.weekNumber=this.weekNumber-1),i.weekday=t}else i.weekday=1;if("quarters"===r){const t=Math.ceil(this.month/3);i.month=3*(t-1)+1}return this.set(i)}endOf(t,e){return this.isValid?this.plus({[t]:1}).startOf(t,e).minus(1):this}toFormat(t,e={}){return this.isValid?hr.create(this.loc.redefaultToEN(e)).formatDateTimeFromString(this,t):La}toLocaleString(t=ee,e={}){return this.isValid?hr.create(this.loc.clone(e),t).formatDateTime(this):La}toLocaleParts(t={}){return this.isValid?hr.create(this.loc.clone(t),t).formatDateTimeParts(this):[]}toISO({format:t="extended",suppressSeconds:e=!1,suppressMilliseconds:i=!1,includeOffset:r=!0,extendedZone:a=!1,precision:s="milliseconds"}={}){if(!this.isValid)return null;const n="extended"===t;let o=Ua(this,n,s=Ka(s));return Ya.indexOf(s)>=3&&(o+="T"),o+=Ba(this,n,e,i,r,a,s),o}toISODate({format:t="extended",precision:e="day"}={}){return this.isValid?Ua(this,"extended"===t,Ka(e)):null}toISOWeekDate(){return ja(this,"kkkk-'W'WW-c")}toISOTime({suppressMilliseconds:t=!1,suppressSeconds:e=!1,includeOffset:i=!0,includePrefix:r=!1,extendedZone:a=!1,format:s="extended",precision:n="milliseconds"}={}){if(!this.isValid)return null;return n=Ka(n),(r&&Ya.indexOf(n)>=3?"T":"")+Ba(this,"extended"===s,e,t,i,a,n)}toRFC2822(){return ja(this,"EEE, dd LLL yyyy HH:mm:ss ZZZ",!1)}toHTTP(){return ja(this.toUTC(),"EEE, dd LLL yyyy HH:mm:ss 'GMT'")}toSQLDate(){return this.isValid?Ua(this,!0):null}toSQLTime({includeOffset:t=!0,includeZone:e=!1,includeOffsetSpace:i=!0}={}){let r="HH:mm:ss.SSS";return(e||t)&&(i&&(r+=" "),e?r+="z":t&&(r+="ZZ")),ja(this,r,!0)}toSQL(t={}){return this.isValid?`${this.toSQLDate()} ${this.toSQLTime(t)}`:null}toString(){return this.isValid?this.toISO():La}[Symbol.for("nodejs.util.inspect.custom")](){return this.isValid?`DateTime { ts: ${this.toISO()}, zone: ${this.zone.name}, locale: ${this.locale} }`:`DateTime { Invalid, reason: ${this.invalidReason} }`}valueOf(){return this.toMillis()}toMillis(){return this.isValid?this.ts:NaN}toSeconds(){return this.isValid?this.ts/1e3:NaN}toUnixInteger(){return this.isValid?Math.floor(this.ts/1e3):NaN}toJSON(){return this.toISO()}toBSON(){return this.toJSDate()}toObject(t={}){if(!this.isValid)return{};const e={...this.c};return t.includeConfig&&(e.outputCalendar=this.outputCalendar,e.numberingSystem=this.loc.numberingSystem,e.locale=this.loc.locale),e}toJSDate(){return new Date(this.isValid?this.ts:NaN)}diff(t,e="milliseconds",i={}){if(!this.isValid||!t.isValid)return ha.invalid("created by diffing an invalid DateTime");const r={locale:this.locale,numberingSystem:this.numberingSystem,...i},a=(o=e,Array.isArray(o)?o:[o]).map(ha.normalizeUnit),s=t.valueOf()>this.valueOf(),n=va(s?this:t,s?t:this,a,r);var o;return s?n.negate():n}diffNow(t="milliseconds",e={}){return this.diff(ss.now(),t,e)}until(t){return this.isValid?ga.fromDateTimes(this,t):this}hasSame(t,e,i){if(!this.isValid)return!1;const r=t.valueOf(),a=this.setZone(t.zone,{keepLocalTime:!0});return a.startOf(e,i)<=r&&r<=a.endOf(e,i)}equals(t){return this.isValid&&t.isValid&&this.valueOf()===t.valueOf()&&this.zone.equals(t.zone)&&this.loc.equals(t.loc)}toRelative(t={}){if(!this.isValid)return null;const e=t.base||ss.fromObject({},{zone:this.zone}),i=t.padding?this<e?-t.padding:t.padding:0;let r=["years","months","days","hours","minutes","seconds"],a=t.unit;return Array.isArray(t.unit)&&(r=t.unit,a=void 0),es(e,this.plus(i),{...t,numeric:"always",units:r,unit:a})}toRelativeCalendar(t={}){return this.isValid?es(t.base||ss.fromObject({},{zone:this.zone}),this,{...t,numeric:"auto",units:["years","months","days"],calendary:!0}):null}static min(...t){if(!t.every(ss.isDateTime))throw new Jt("min requires all arguments be DateTimes");return Mi(t,t=>t.valueOf(),Math.min)}static max(...t){if(!t.every(ss.isDateTime))throw new Jt("max requires all arguments be DateTimes");return Mi(t,t=>t.valueOf(),Math.max)}static fromFormatExplain(t,e,i={}){const{locale:r=null,numberingSystem:a=null}=i;return Ta(Ue.fromOpts({locale:r,numberingSystem:a,defaultToEN:!0}),t,e)}static fromStringExplain(t,e,i={}){return ss.fromFormatExplain(t,e,i)}static buildFormatParser(t,e={}){const{locale:i=null,numberingSystem:r=null}=e,a=Ue.fromOpts({locale:i,numberingSystem:r,defaultToEN:!0});return new Ma(a,t)}static fromFormatParser(t,e,i={}){if(Di(t)||Di(e))throw new Jt("fromFormatParser requires an input string and a format parser");const{locale:r=null,numberingSystem:a=null}=i,s=Ue.fromOpts({locale:r,numberingSystem:a,defaultToEN:!0});if(!s.equals(e.locale))throw new Jt(`fromFormatParser called with a locale of ${s}, but the format parser was created for ${e.locale}`);const{result:n,zone:o,specificOffset:l,invalidReason:c}=e.explainFromTokens(t);return c?ss.invalid(c):Ga(n,o,i,`format ${e.format}`,t,l)}static get DATE_SHORT(){return ee}static get DATE_MED(){return ie}static get DATE_MED_WITH_WEEKDAY(){return re}static get DATE_FULL(){return ae}static get DATE_HUGE(){return se}static get TIME_SIMPLE(){return ne}static get TIME_WITH_SECONDS(){return oe}static get TIME_WITH_SHORT_OFFSET(){return le}static get TIME_WITH_LONG_OFFSET(){return ce}static get TIME_24_SIMPLE(){return de}static get TIME_24_WITH_SECONDS(){return pe}static get TIME_24_WITH_SHORT_OFFSET(){return he}static get TIME_24_WITH_LONG_OFFSET(){return ue}static get DATETIME_SHORT(){return ge}static get DATETIME_SHORT_WITH_SECONDS(){return me}static get DATETIME_MED(){return fe}static get DATETIME_MED_WITH_SECONDS(){return ve}static get DATETIME_MED_WITH_WEEKDAY(){return ye}static get DATETIME_FULL(){return be}static get DATETIME_FULL_WITH_SECONDS(){return we}static get DATETIME_HUGE(){return xe}static get DATETIME_HUGE_WITH_SECONDS(){return _e}}function ns(t){if(ss.isDateTime(t))return t;if(t&&t.valueOf&&Si(t.valueOf()))return ss.fromJSDate(t);if(t&&"object"==typeof t)return ss.fromObject(t);throw new Jt(`Unknown datetime argument: ${t}, of type ${typeof t}`)}const os=o`
-  :host {
-    /* MD3 Color System */
-    --primary-gradient: linear-gradient(135deg, #4CAF50, #45a049);
-    --secondary-gradient: linear-gradient(135deg, #2196F3, #1976D2);
-    --danger-gradient: linear-gradient(135deg, #f44336, #d32f2f);
-    
-    /* MD3 Elevation Levels */
-    --md3-elevation-level0: none;
-    --md3-elevation-level1: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
-    --md3-elevation-level2: 0 1px 2px rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15);
-    --md3-elevation-level3: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3);
-    --md3-elevation-level4: 0 6px 10px 4px rgba(0,0,0,0.15), 0 2px 3px rgba(0,0,0,0.3);
-    --md3-elevation-level5: 0 8px 12px 6px rgba(0,0,0,0.15), 0 4px 4px rgba(0,0,0,0.3);
-    
-    --surface-elevation: var(--md3-elevation-level1);
-    --surface-elevation-hover: var(--md3-elevation-level2);
-    
-    /* Spacing (MD3 spacing system) */
-    --spacing-xs: 4px;
-    --spacing-sm: 8px;
-    --spacing-md: 16px;
-    --spacing-lg: 24px;
-    --spacing-xl: 32px;
-    
-    /* Border Radius (MD3 shape system) */
-    --border-radius-xs: 4px;
-    --border-radius-sm: 8px;
-    --border-radius-md: 12px;
-    --border-radius-lg: 16px;
-    --border-radius-xl: 28px;
-    --border-radius: 12px; /* Default */
-    
-    /* MD3 Typography Scale */
-    --font-size-xs: 0.6875rem;   /* 11px */
-    --font-size-sm: 0.875rem;    /* 14px - Body Small */
-    --font-size-md: 1rem;        /* 16px - Body Medium */
-    --font-size-lg: 1.25rem;     /* 20px - Title Large */
-    --font-size-xl: 1.5rem;      /* 24px - Headline Small */
+ */const s$1=globalThis;class i extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=B(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1);}render(){return T}}i._$litElement$=!0,i["finalized"]=!0,s$1.litElementHydrateSupport?.({LitElement:i});const o$1=s$1.litElementPolyfillSupport;o$1?.({LitElement:i});(s$1.litElementVersions??=[]).push("4.2.1");
 
-    /* Font Weights */
-    --font-weight-regular: 400;
-    --font-weight-medium: 500;
-    --font-weight-bold: 700;
-    
-    /* MD3 Motion Tokens */
-    --md3-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
-    --md3-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
-    --md3-motion-duration-short1: 50ms;
-    --md3-motion-duration-short2: 100ms;
-    --md3-motion-duration-short3: 150ms;
-    --md3-motion-duration-short4: 200ms;
-    --md3-motion-duration-medium1: 250ms;
-    --md3-motion-duration-medium2: 300ms;
-    --md3-motion-duration-long1: 400ms;
-    --md3-motion-duration-long2: 500ms;
-
-    /* Growspace Theme Colors */
-    --growspace-card-bg: var(--card-background-color, #1e1e1e);
-    --growspace-card-text: var(--primary-text-color, #fff);
-    --growspace-card-accent: var(--primary-color, #4caf50);
-    --growspace-empty-bg: rgba(255, 255, 255, 0.05);
-    --growspace-empty-bg-hover: rgba(255, 255, 255, 0.1);
-    --plant-border-color-default: #2196f3;
-
-    /* Card Shadows (using MD3 elevation) */
-    --card-shadow: var(--md3-elevation-level1);
-    --card-shadow-hover: var(--md3-elevation-level2);
-
-    /* Transitions (using MD3 motion) */
-    --transition: all var(--md3-motion-duration-short4) var(--md3-motion-easing-standard);
-    --transition-fast: all var(--md3-motion-duration-short2) var(--md3-motion-easing-standard);
-    --transition-medium: all var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);
-
-    /* Divider */
-    --divider-color: rgba(255, 255, 255, 0.12);
-
-    /* Plant Stage Colors */
-    --stage-veg: #4caf50;
-    --stage-flower: #ff9800;
-    --stage-dry: #9c27b0;
-    --stage-cure: #2196f3;
-
-    /* Error/Warning Colors */
-    --error-color: #f44336;
-    --error-bg: rgba(244, 67, 54, 0.1);
-    --error-border: rgba(244, 67, 54, 0.3);
-    
-    /* Strain Dialog */
-    --strain-dialog-bg: var(--ha-card-background, #1e1e1e);
-    --strain-dialog-color: var(--primary-text-color, #fff);
-    --strain-border-color: #4caf50;
-    --strain-input-bg: #2a2a2a;
-    --strain-input-border: #3a3a3a;
-    
-    /* Light Color */
-    --primary-light-color: #FFEB3B;
-  }
-`;class ls{static normalizeStage(t){const e=t.toLowerCase();return"veg"===e?"vegetative":"mom"===e?"mother":e}static getPlantStageColor(t){const e=this.normalizeStage(t);return this.stageColors[e]??"#757575"}static getPlantStageIcon(t){const e=this.normalizeStage(t);return this.stageIcons[e]??Nt}static getPlantStage(t){const e=t?.attributes??{},i=new Date;return e.cure_start?"cure":e.dry_start?"dry":e.mom_start?"mother":e.clone_start?"clone":e.flower_start&&new Date(e.flower_start)<=i?"flower":e.veg_start&&new Date(e.veg_start)<=i?"vegetative":"seedling"}static createGridLayout(t,e,i){const r=Array.from({length:e},()=>Array.from({length:i},()=>null));return t.forEach(t=>{const a=(t.attributes?.row??1)-1,s=(t.attributes?.col??1)-1;a>=0&&a<e&&s>=0&&s<i&&(r[a][s]=t)}),{rows:e,cols:i,grid:r}}static calculateEffectiveRows(t){const{name:e,plants:i,plants_per_row:r,rows:a}=t;if("dry"===e||"cure"===e||"mother"===e||"clone"===e){if(0===i.length)return 1;const t=Math.max(...i.map(t=>t.attributes?.row||1)),e=i.filter(e=>(e.attributes?.row||1)===t).length;return e>=r?t+1:t}return a}static parseDateTimeLocal(t){if(t)try{const e=16===t.length?t+":00":t,i=new Date(e);if(isNaN(i.getTime()))return;const r=i.getFullYear(),a=String(i.getMonth()+1).padStart(2,"0"),s=String(i.getDate()).padStart(2,"0"),n=String(i.getHours()).padStart(2,"0"),o=String(i.getMinutes()).padStart(2,"0");return`${r}-${a}-${s}T${n}:${o}:${String(i.getSeconds()).padStart(2,"0")}`}catch{return}}static formatDateForBackend(t){if(t)try{const e=t.split("T");if(e.length>0&&e[0].match(/^\d{4}-\d{2}-\d{2}$/))return e[0];const i=new Date(t);if(isNaN(i.getTime()))return;const r=i.getFullYear(),a=String(i.getMonth()+1).padStart(2,"0");return`${r}-${a}-${String(i.getDate()).padStart(2,"0")}`}catch{return}}static getCurrentDateTime(){const t=new Date,e=t=>t.toString().padStart(2,"0");return`${t.getFullYear()}-${e(t.getMonth()+1)}-${e(t.getDate())}T${e(t.getHours())}:${e(t.getMinutes())}:00`}static toDateTimeLocal(t){if(!t)return"";try{const e=new Date(t);if(isNaN(e.getTime()))return"";const i=t=>t.toString().padStart(2,"0"),r=e.getFullYear(),a=i(e.getMonth()+1),s=i(e.getDate()),n=i(e.getHours());return`${r}-${a}-${s}T${n}:${i(e.getMinutes())}`}catch{return""}}static getDominantStage(t){if(!t||0===t.length)return null;const e=["cure","dry","flower","vegetative","clone","mother","seedling"];let i=null,r=0;const a={};for(const e of t){const t=this.normalizeStage(e.state||this.getPlantStage(e));a[t]||(a[t]=[]),a[t].push(e)}for(const t of e)if(a[t]&&a[t].length>0){i=t;const e=`${"vegetative"===t?"veg":t}_days`,s=a[t].map(t=>{const i=t.attributes[e];return"number"==typeof i?i:0});r=Math.max(...s);break}return i?{stage:i,days:r}:null}static compressImage(t,e=800,i=800,r=.7){return new Promise((a,s)=>{const n=new FileReader;n.readAsDataURL(t),n.onload=t=>{const n=new Image;n.src=t.target?.result,n.onload=()=>{let t=n.width,o=n.height;t>o?t>e&&(o=Math.round(o*e/t),t=e):o>i&&(t=Math.round(t*i/o),o=i);const l=document.createElement("canvas");l.width=t,l.height=o;const c=l.getContext("2d");if(!c)return void s(new Error("Failed to get canvas context"));c.drawImage(n,0,0,t,o);const d=l.toDataURL("image/jpeg",r);a(d)},n.onerror=t=>s(t)},n.onerror=t=>s(t)})}static preloadImage(t){return new Promise((e,i)=>{const r=new Image;r.src=t,r.onload=()=>e(),r.onerror=()=>i()})}}ls.stageColors={mother:"#E91E63",clone:"#FF5722",seedling:"#4CAF50",vegetative:"#8BC34A",flower:"#FF9800",dry:"#795548",cure:"#9C27B0"},ls.stageIcons={mother:Nt,clone:Nt,seedling:Nt,vegetative:Nt,flower:Ct,dry:kt,cure:ft};class cs{constructor(t){this.hass=t}getGrowspaceDevices(){if(!this.hass)return[];const t=Object.values(this.hass.states),e=t.filter(t=>t.entity_id.startsWith("sensor.")&&void 0!==t.attributes?.growspace_id&&void 0!==t.attributes?.rows&&void 0!==t.attributes?.plants_per_row&&void 0===t.attributes?.row&&void 0===t.attributes?.col),i=new Map;return e.forEach(t=>{const e=t.attributes.growspace_id;i.set(e,[])}),t.forEach(t=>{if(void 0!==t.attributes?.row&&void 0!==t.attributes?.col){const e=this.getGrowspaceId(t);i.has(e)||i.set(e,[]),i.get(e).push(t)}}),Array.from(i.entries()).map(([t,i])=>{const r=e.find(e=>e.attributes?.growspace_id===t),a=r?.attributes?.friendly_name||`Growspace ${t}`,s=r?.attributes?.type??(a.toLowerCase().includes("dry")?"dry":a.toLowerCase().includes("cure")?"cure":"normal");return n={device_id:t,overview_entity_id:r?.entity_id,name:a,plants:i,rows:r?.attributes?.rows??3,plants_per_row:r?.attributes?.plants_per_row??3,type:s},{...n,type:n.type??"normal"};var n})}getGrowspaceId(t){return t.attributes?.growspace_id||"unknown"}getStrainLibrary(){const t=Object.values(this.hass.states).find(t=>void 0!==t.attributes?.strains&&null!==t.attributes?.strains),e=t?.attributes?.strains;if(!e)return console.warn("[DataService] No strain data in sensor attributes"),[];if(Array.isArray(e))return e.map(t=>({strain:t,phenotype:"",key:`${t}|default`}));if("object"==typeof e){const t=[];for(const[i,r]of Object.entries(e)){const e=r.meta||{},a=r.phenotypes||{};Object.entries(a).forEach(([r,a])=>{t.push({strain:i,phenotype:r,key:`${i}|${r}`,breeder:e.breeder,type:e.type,lineage:e.lineage,sex:e.sex,sativa_percentage:e.sativa_percentage,indica_percentage:e.indica_percentage,description:a.description,image:a.image_path,image_crop_meta:a.image_crop_meta,flowering_days_min:a.flower_days_min,flowering_days_max:a.flower_days_max})})}return t.sort((t,e)=>{const i=t.strain.localeCompare(e.strain);return 0!==i?i:(t.phenotype||"").localeCompare(e.phenotype||"")})}return[]}async getHistory(t,e,i){if(!this.hass)return[];let r=`history/period/${e.toISOString()}?filter_entity_id=${t}`;i&&(r+=`&end_time=${i.toISOString()}`);try{const t=await this.hass.callApi("GET",r);return t&&t.length>0?t[0]:[]}catch(t){return console.error("Error fetching history:",t),[]}}async addPlant(t){console.log("[DataService:addPlant] Sending payload:",t);try{"mother"!==t.growspace_id&&"mother_overview"!==t.growspace_id||(t.mother_start=(new Date).toISOString().split("T")[0]),"clone"!==t.growspace_id&&"clone_overview"!==t.growspace_id||(t.clone_start=(new Date).toISOString().split("T")[0]);const e=await this.hass.callService("growspace_manager","add_plant",t);return console.log("[DataService:addPlant] Response:",e),e}catch(t){throw console.error("[DataService:addPlant] Error:",t),t}}async updatePlant(t){console.log("[DataService:updatePlant] Sending payload:",t);try{const e=await this.hass.callService("growspace_manager","update_plant",t);return console.log("[DataService:updatePlant] Response:",e),e}catch(t){throw console.error("[DataService:updatePlant] Error:",t),t}}async removePlant(t){console.log("[DataService:removePlant] Removing plant_id:",t);try{const e=await this.hass.callService("growspace_manager","remove_plant",{plant_id:t});return console.log("[DataService:removePlant] Response:",e),e}catch(t){throw console.error("[DataService:removePlant] Error:",t),t}}async harvestPlant(t,e="dry"){console.log("[DataService:harvestPlant] Harvesting plant:",t,"→ target:",e);try{const i=(e||"").toLowerCase(),r={plant_id:t};i.includes("dry")?r.target_growspace_id="dry_overview":i.includes("cure")?r.target_growspace_id="cure_overview":i.includes("mother")?r.target_growspace_id="mother_overview":i.includes("clone")?r.target_growspace_id="clone_overview":i&&(r.target_growspace_name=e);const a=await this.hass.callService("growspace_manager","harvest_plant",r);return console.log("[DataService:harvestPlant] Response:",a),a}catch(t){throw console.error("[DataService:harvestPlant] Error:",t),t}}async takeClone(t,e="clone"){console.log("[DataService:takeClone] Cloning plant:",t,"→ target:",e);try{const i=(e||"").toLowerCase(),r={plant_id:t};i.includes("dry")?r.target_growspace_id="dry_overview":i.includes("cure")?r.target_growspace_id="cure_overview":i.includes("mother")?r.target_growspace_id="mother_overview":i.includes("clone")?r.target_growspace_id="clone_overview":i&&(r.target_growspace_name=e);const a=await this.hass.callService("growspace_manager","takeClone",r);return console.log("[DataService:takeClone] Response:",a),a}catch(t){throw console.error("[DataService:takeClone] Error:",t),t}}async swapPlants(t,e){console.log(`[DataService:swapPlants] Swapping plants: ${t} and ${e}`);try{const i=await this.hass.callService("growspace_manager","switch_plants",{plant1_id:t,plant2_id:e});return console.log("[DataService:swapPlants] Response:",i),i}catch(t){throw console.error("[DataService:swapPlants] Error:",t),t}}async addStrain(t){console.log("[DataService:addStrain] Adding strain:",t);try{const e={...t};Object.keys(e).forEach(t=>{void 0===e[t]&&delete e[t]}),t.image&&(t.image.startsWith("data:")?(e.image_base64=t.image,delete e.image):(e.image_path=t.image,delete e.image));const i=await this.hass.callService("growspace_manager","add_strain",e);return console.log("[DataService:addStrain] Response:",i),i}catch(t){throw console.error("[DataService:addStrain] Error:",t),t}}async removeStrain(t,e){console.log("[DataService:removeStrain] Removing strain:",t,e);try{const i=await this.hass.callService("growspace_manager","remove_strain",{strain:t,phenotype:e});return console.log("[DataService:removeStrain] Response:",i),i}catch(t){throw console.error("[DataService:removeStrain] Error:",t),t}}async importStrainLibrary(t,e){console.log("[DataService:importStrainLibrary] Importing strain library ZIP via HTTP. Replace:",e);const i=new FormData;i.append("file",t),i.append("replace",e.toString());try{const t=await fetch("/api/growspace_manager/import_strains",{method:"POST",body:i,headers:{Authorization:`Bearer ${this.hass.auth.data.access_token}`}});if(!t.ok){const e=await t.text();throw new Error(e||t.statusText)}const e=await t.json();if(console.log("[DataService:importStrainLibrary] Response:",e),e.success)return e;throw new Error(e.error||"Unknown import error")}catch(t){throw console.error("[DataService:importStrainLibrary] Error:",t),t}}async clearStrainLibrary(){console.log("[DataService:clearStrainLibrary] Clearing library");try{const t=await this.hass.callService("growspace_manager","clear_strain_library");return console.log("[DataService:clearStrainLibrary] Response:",t),t}catch(t){throw console.error("[DataService:clearStrainLibrary] Error:",t),t}}async addGrowspace(t){console.log("[DataService:addGrowspace] Adding growspace:",t);try{const e=await this.hass.callService("growspace_manager","add_growspace",t);return console.log("[DataService:addGrowspace] Response:",e),e}catch(t){throw console.error("[DataService:addGrowspace] Error:",t),t}}async configureGrowspaceSensors(t){console.log("[DataService:configureGrowspaceSensors] Configuring sensors:",t);try{const e=await this.hass.callService("growspace_manager","configure_growspace",t);return console.log("[DataService:configureGrowspaceSensors] Response:",e),e}catch(t){throw console.error("[DataService:configureGrowspaceSensors] Error:",t),t}}async configureGlobalSettings(t){console.log("[DataService:configureGlobalSettings] Configuring global settings:",t);try{const e=await this.hass.callService("growspace_manager","configure_global",t);return console.log("[DataService:configureGlobalSettings] Response:",e),e}catch(t){throw console.error("[DataService:configureGlobalSettings] Error:",t),t}}async askGrowAdvice(t,e){console.log("[DataService:askGrowAdvice] Asking advice for:",t,e);try{return await this.hass.connection.sendMessagePromise({type:"call_service",domain:"growspace_manager",service:"ask_grow_advice",service_data:{growspace_id:t,user_query:e},return_response:!0})}catch(t){throw console.error("[DataService:askGrowAdvice] Error:",t),t}}async analyzeAllGrowspaces(){console.log("[DataService:analyzeAllGrowspaces] Analyzing all growspaces");try{return await this.hass.connection.sendMessagePromise({type:"call_service",domain:"growspace_manager",service:"analyze_all_growspaces",service_data:{},return_response:!0})}catch(t){throw console.error("[DataService:analyzeAllGrowspaces] Error:",t),t}}async getStrainRecommendation(t){console.log("[DataService:getStrainRecommendation] Getting strain recommendation for:",t);try{return await this.hass.connection.sendMessagePromise({type:"call_service",domain:"growspace_manager",service:"strain_recommendation",service_data:{user_query:t},return_response:!0})}catch(t){throw console.error("[DataService:getStrainRecommendation] Error:",t),t}}}class ds{static getCropStyle(t,e){return e?`\n      background-image: url('${t}');\n      background-size: ${100*e.scale}%;\n      background-position: ${e.x}% ${e.y}%;\n    `:`background-image: url('${t}')`}static renderAddPlantDialog(t,e,i,r){if(!t?.open)return j``;const a=[...new Set(e.map(t=>t.strain))].sort(),s=ds.getTimelineContent(t,i,r);return j`
+class DialogRenderer {
+    static getCropStyle(image, meta) {
+        if (!meta)
+            return `background-image: url('${image}')`;
+        // Math:
+        // meta.scale is the zoom level (>=1)
+        // meta.x, meta.y are offsets in % relative to the image dimensions
+        // To display:
+        // background-size: {scale * 100}%
+        // background-position: {x}% {y}%
+        // Wait, standard background-position percentage works differently:
+        // 0% 0% aligns left edge with left edge.
+        // 100% 100% aligns right edge with right edge.
+        // If we store the center point or top-left, we need to map it.
+        // Let's assume we store:
+        // x: offset X in percentage (0-100)
+        // y: offset Y in percentage (0-100)
+        // scale: zoom factor (1 = fit cover)
+        return `
+      background-image: url('${image}');
+      background-size: ${meta.scale * 100}%;
+      background-position: ${meta.x}% ${meta.y}%;
+    `;
+    }
+    static renderAddPlantDialog(dialog, strainLibrary, growspaceName, callbacks) {
+        if (!dialog?.open)
+            return x ``;
+        // Extract unique strain names from the library
+        const uniqueStrains = [...new Set(strainLibrary.map(s => s.strain))].sort();
+        const timelineContent = DialogRenderer.getTimelineContent(dialog, growspaceName, callbacks);
+        return x `
       <ha-dialog
         open
-        @closed=${r.onClose}
+        @closed=${callbacks.onClose}
         hideActions
-        .scrimClickAction=${""}
-        .escapeKeyAction=${""}
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
       >
         <div class="glass-dialog-container" style="--stage-color: var(--plant-border-color-default)">
 
@@ -150,9 +829,9 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                <h2 class="dialog-title">Add New Plant</h2>
                <div class="dialog-subtitle">Enter plant details below</div>
             </div>
-            <button class="md3-button text" @click=${r.onClose} style="min-width: auto; padding: 8px;">
+            <button class="md3-button text" @click=${callbacks.onClose} style="min-width: auto; padding: 8px;">
                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                 <path d="${bt}"></path>
+                 <path d="${mdiClose}"></path>
                </svg>
             </button>
           </div>
@@ -161,52 +840,109 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
              <!-- IDENTITY CARD -->
              <div class="detail-card">
                <h3>Identity & Location</h3>
-               ${ds.renderMD3SelectInput("Strain *",t.strain||"",a,r.onStrainChange)}
-               ${ds.renderMD3TextInput("Phenotype",t.phenotype||"",r.onPhenotypeChange)}
+               ${DialogRenderer.renderMD3SelectInput('Strain *', dialog.strain || '', uniqueStrains, callbacks.onStrainChange)}
+               ${DialogRenderer.renderMD3TextInput('Phenotype', dialog.phenotype || '', callbacks.onPhenotypeChange)}
                <div style="display:flex; gap:16px;">
-                 ${ds.renderMD3NumberInput("Row",t.row+1,t=>r.onRowChange(t))}
-                 ${ds.renderMD3NumberInput("Col",t.col+1,t=>r.onColChange(t))}
+                 ${DialogRenderer.renderMD3NumberInput('Row', dialog.row + 1, (v) => callbacks.onRowChange(v))}
+                 ${DialogRenderer.renderMD3NumberInput('Col', dialog.col + 1, (v) => callbacks.onColChange(v))}
                </div>
              </div>
 
              <!-- TIMELINE CARD -->
              <div class="detail-card">
-                ${s}
+                ${timelineContent}
              </div>
           </div>
 
           <!-- ACTION BUTTONS -->
           <div class="button-group">
-            <button class="md3-button tonal" @click=${r.onClose}>
+            <button class="md3-button tonal" @click=${callbacks.onClose}>
               Cancel
             </button>
-            <button class="md3-button primary" @click=${r.onConfirm}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${Nt}"></path></svg>
+            <button class="md3-button primary" @click=${callbacks.onConfirm}>
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
               Add Plant
             </button>
           </div>
 
         </div>
       </ha-dialog>
-    `}static parseScheduleString(t){if("string"!=typeof t)return t;if(!t||"[]"===t)return[];try{const e=t.replace(/'/g,'"'),i=JSON.parse(e);return Array.isArray(i)?i:[]}catch(e){return console.error("Failed to parse irrigation schedule string:",t,e),[]}}static getTimelineContent(t,e,i){const r=e.toLowerCase();let a;return a=r.includes("mother")?j`${ds.renderMD3DateInput("Mother Start",t.mother_start||"",i.onMotherStartChange)}`:r.includes("clone")?j`${ds.renderMD3DateInput("Clone Start",t.clone_start||"",i.onCloneStartChange)}`:r.includes("dry")?j`${ds.renderMD3DateInput("Dry Start",t.dry_start||"",i.onDryStartChange)}`:r.includes("cure")?j`${ds.renderMD3DateInput("Cure Start",t.cure_start||"",i.onCureStartChange)}`:j`
-        ${ds.renderMD3DateInput("Seedling Start",t.seedling_start||"",i.onSeedlingStartChange)}
-        ${ds.renderMD3DateInput("Vegetative Start",t.veg_start||"",i.onVegStartChange)}
-        ${ds.renderMD3DateInput("Flower Start",t.flower_start||"",i.onFlowerStartChange)}
-      `,j`
+    `;
+    }
+    static parseScheduleString(scheduleString) {
+        if (typeof scheduleString !== 'string') {
+            // If it's already an array (e.g., from a newly added event in the current session), return it.
+            return scheduleString;
+        }
+        if (!scheduleString || scheduleString === '[]') {
+            return [];
+        }
+        try {
+            // FIX/DEFENSE: Replace single quotes with double quotes.
+            const jsonString = scheduleString.replace(/'/g, '"');
+            const parsed = JSON.parse(jsonString);
+            if (Array.isArray(parsed)) {
+                return parsed;
+            }
+            return [];
+        }
+        catch (e) {
+            // Log the error for debugging and return an empty array to prevent UI breakage.
+            console.error("Failed to parse irrigation schedule string:", scheduleString, e);
+            return [];
+        }
+    }
+    static getTimelineContent(dialog, growspaceName, callbacks) {
+        const name = growspaceName.toLowerCase();
+        let content;
+        if (name.includes('mother')) {
+            content = x `${DialogRenderer.renderMD3DateInput('Mother Start', dialog.mother_start || '', callbacks.onMotherStartChange)}`;
+        }
+        else if (name.includes('clone')) {
+            content = x `${DialogRenderer.renderMD3DateInput('Clone Start', dialog.clone_start || '', callbacks.onCloneStartChange)}`;
+        }
+        else if (name.includes('dry')) {
+            content = x `${DialogRenderer.renderMD3DateInput('Dry Start', dialog.dry_start || '', callbacks.onDryStartChange)}`;
+        }
+        else if (name.includes('cure')) {
+            content = x `${DialogRenderer.renderMD3DateInput('Cure Start', dialog.cure_start || '', callbacks.onCureStartChange)}`;
+        }
+        else {
+            content = x `
+        ${DialogRenderer.renderMD3DateInput('Seedling Start', dialog.seedling_start || '', callbacks.onSeedlingStartChange)}
+        ${DialogRenderer.renderMD3DateInput('Vegetative Start', dialog.veg_start || '', callbacks.onVegStartChange)}
+        ${DialogRenderer.renderMD3DateInput('Flower Start', dialog.flower_start || '', callbacks.onFlowerStartChange)}
+      `;
+        }
+        return x `
       <h3>Timeline</h3>
-      ${a}
-    `}static renderPlantOverviewDialog(t,e,i){if(!t?.open)return j``;const{plant:r,editedAttributes:a,selectedPlantIds:s}=t,n=r.attributes?.plant_id||r.entity_id.replace("sensor.",""),o=ls.getPlantStageColor(r.state),l=ls.getPlantStageIcon(r.state),c=s&&s.length>1,d=(t,e)=>{a[t]="number"==typeof e?e.toString():e,i.onAttributeChange(t,a[t])};return j`
+      ${content}
+    `;
+    }
+    static renderPlantOverviewDialog(dialog, growspaceOptions, callbacks) {
+        if (!dialog?.open)
+            return x ``;
+        const { plant, editedAttributes, selectedPlantIds } = dialog;
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        const stageColor = PlantUtils.getPlantStageColor(plant.state);
+        const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
+        const isBulkEdit = selectedPlantIds && selectedPlantIds.length > 1;
+        const onAttributeChange = (key, value) => {
+            editedAttributes[key] = typeof value === 'number' ? value.toString() : value;
+            callbacks.onAttributeChange(key, editedAttributes[key]);
+        };
+        return x `
       <ha-dialog
         open
-        @closed=${i.onClose}
+        @closed=${callbacks.onClose}
         hideActions
-        .scrimClickAction=${""}
-        .escapeKeyAction=${""}
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
       >
-        <div class="glass-dialog-container" style="--stage-color: ${o}">
+        <div class="glass-dialog-container" style="--stage-color: ${stageColor}">
 
           <!-- BULK EDIT BANNER -->
-          ${c?j`
+          ${isBulkEdit ? x `
             <div style="
               background: rgba(34, 197, 94, 0.1);
               border: 1px solid rgba(34, 197, 94, 0.3);
@@ -219,44 +955,44 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
               gap: 12px;
             ">
               <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${Lt}"></path>
+                <path d="${mdiPencil}"></path>
               </svg>
               <div>
-                <strong>Bulk Editing ${s.length} Plants</strong>
+                <strong>Bulk Editing ${selectedPlantIds.length} Plants</strong>
                 <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 4px;">
                   Only date fields can be edited in bulk mode. Identity & location fields are protected.
                 </div>
               </div>
             </div>
-          `:B}
+          ` : E}
 
           <!-- HEADER -->
           <div class="dialog-header">
             <div class="dialog-icon">
               <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${l}"></path>
+                <path d="${stageIcon}"></path>
               </svg>
             </div>
             <div class="dialog-title-group">
-               <h2 class="dialog-title">${a.strain||"Unknown Strain"}</h2>
-               <div class="dialog-subtitle">${r.state} Stage • ${a.phenotype||"No Phenotype"}</div>
+               <h2 class="dialog-title">${editedAttributes.strain || 'Unknown Strain'}</h2>
+               <div class="dialog-subtitle">${plant.state} Stage • ${editedAttributes.phenotype || 'No Phenotype'}</div>
             </div>
-            <button class="md3-button text" @click=${i.onClose} style="min-width: auto; padding: 8px;">
+            <button class="md3-button text" @click=${callbacks.onClose} style="min-width: auto; padding: 8px;">
                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                 <path d="${bt}"></path>
+                 <path d="${mdiClose}"></path>
                </svg>
             </button>
           </div>
 
           <div class="overview-grid">
              <!-- IDENTITY & LOCATION CARD -->
-             <div class="detail-card" style="${c?"opacity: 0.5; pointer-events: none;":""}">
-               <h3>Identity & Location ${c?"(Read-only in bulk mode)":""}</h3>
-               ${ds.renderMD3TextInput("Strain Name",a.strain||"",t=>i.onAttributeChange("strain",t))}
-               ${ds.renderMD3TextInput("Phenotype",a.phenotype||"",t=>i.onAttributeChange("phenotype",t))}
+             <div class="detail-card" style="${isBulkEdit ? 'opacity: 0.5; pointer-events: none;' : ''}">
+               <h3>Identity & Location ${isBulkEdit ? '(Read-only in bulk mode)' : ''}</h3>
+               ${DialogRenderer.renderMD3TextInput('Strain Name', editedAttributes.strain || '', (v) => callbacks.onAttributeChange('strain', v))}
+               ${DialogRenderer.renderMD3TextInput('Phenotype', editedAttributes.phenotype || '', (v) => callbacks.onAttributeChange('phenotype', v))}
                <div style="display:flex; gap:16px;">
-                 ${ds.renderMD3NumberInput("Row",a.row||1,t=>i.onAttributeChange("row",parseInt(t)))}
-                 ${ds.renderMD3NumberInput("Col",a.col||1,t=>i.onAttributeChange("col",parseInt(t)))}
+                 ${DialogRenderer.renderMD3NumberInput('Row', editedAttributes.row || 1, (v) => callbacks.onAttributeChange('row', parseInt(v)))}
+                 ${DialogRenderer.renderMD3NumberInput('Col', editedAttributes.col || 1, (v) => callbacks.onAttributeChange('col', parseInt(v)))}
                </div>
              </div>
 
@@ -264,49 +1000,61 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
              <div class="detail-card">
                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                  <h3 style="margin: 0;">Timeline</h3>
-                 <button class="md3-button text" style="min-width: auto; padding: 4px;" @click=${i.onToggleShowAllDates}>
-                    <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${Lt}"></path></svg>
+                 <button class="md3-button text" style="min-width: auto; padding: 4px;" @click=${callbacks.onToggleShowAllDates}>
+                    <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
                  </button>
                </div>
                
-               ${t.showAllDates?j`
-                  ${ds.renderMD3DateTimeInput("Seedling Start",a.seedling_start??"",t=>d("seedling_start",t))}
-                  ${ds.renderMD3DateTimeInput("Mother Start",a.mother_start??"",t=>d("mother_start",t))}
-                  ${ds.renderMD3DateTimeInput("Clone Start",a.clone_start??"",t=>d("clone_start",t))}
-                  ${ds.renderMD3DateTimeInput("Vegetative Start",a.veg_start??"",t=>d("veg_start",t))}
-                  ${ds.renderMD3DateTimeInput("Flower Start",a.flower_start??"",t=>d("flower_start",t))}
-                  ${ds.renderMD3DateTimeInput("Dry Start",a.dry_start??"",t=>d("dry_start",t))}
-                  ${ds.renderMD3DateTimeInput("Cure Start",a.cure_start??"",t=>d("cure_start",t))}
-               `:j`
-                  ${"mother"===a.stage?ds.renderMD3DateTimeInput("Mother Start",a.mother_start??"",t=>d("mother_start",t)):B}
-                  ${"clone"===a.stage?ds.renderMD3DateTimeInput("Clone Start",a.clone_start??"",t=>d("clone_start",t)):B}
-                  ${"veg"===a.stage||"flower"===a.stage?ds.renderMD3DateTimeInput("Vegetative Start",a.veg_start??"",t=>d("veg_start",t)):B}
-                  ${"flower"===a.stage?ds.renderMD3DateTimeInput("Flower Start",a.flower_start??"",t=>d("flower_start",t)):B}
-                  ${"dry"===a.stage||"cure"===a.stage?ds.renderMD3DateTimeInput("Dry Start",a.dry_start??"",t=>d("dry_start",t)):B}
-                  ${"cure"===a.stage?ds.renderMD3DateTimeInput("Cure Start",a.cure_start??"",t=>d("cure_start",t)):B}
+               ${dialog.showAllDates ? x `
+                  ${DialogRenderer.renderMD3DateTimeInput('Seedling Start', editedAttributes.seedling_start ?? '', (v) => onAttributeChange('seedling_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Mother Start', editedAttributes.mother_start ?? '', (v) => onAttributeChange('mother_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Clone Start', editedAttributes.clone_start ?? '', (v) => onAttributeChange('clone_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => onAttributeChange('veg_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Flower Start', editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Dry Start', editedAttributes.dry_start ?? '', (v) => onAttributeChange('dry_start', v))}
+                  ${DialogRenderer.renderMD3DateTimeInput('Cure Start', editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))}
+               ` : x `
+                  ${editedAttributes.stage === 'mother'
+            ? DialogRenderer.renderMD3DateTimeInput('Mother Start', editedAttributes.mother_start ?? '', (v) => onAttributeChange('mother_start', v))
+            : E}
+                  ${editedAttributes.stage === 'clone'
+            ? DialogRenderer.renderMD3DateTimeInput('Clone Start', editedAttributes.clone_start ?? '', (v) => onAttributeChange('clone_start', v))
+            : E}
+                  ${editedAttributes.stage === 'veg' || editedAttributes.stage === 'flower'
+            ? DialogRenderer.renderMD3DateTimeInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => onAttributeChange('veg_start', v))
+            : E}
+                  ${editedAttributes.stage === 'flower'
+            ? DialogRenderer.renderMD3DateTimeInput('Flower Start', editedAttributes.flower_start ?? '', (v) => onAttributeChange('flower_start', v))
+            : E}
+                  ${editedAttributes.stage === 'dry' || editedAttributes.stage === 'cure'
+            ? DialogRenderer.renderMD3DateTimeInput('Dry Start', editedAttributes.dry_start ?? '', (v) => onAttributeChange('dry_start', v))
+            : E}
+                  ${editedAttributes.stage === 'cure'
+            ? DialogRenderer.renderMD3DateTimeInput('Cure Start', editedAttributes.cure_start ?? '', (v) => onAttributeChange('cure_start', v))
+            : E}
                `}
              </div>
 
              <!-- STATS CARD -->
-             ${ds.renderPlantStatsMD3(r)}
+             ${DialogRenderer.renderPlantStatsMD3(plant)}
 
           </div>
 
           <!-- ACTION BUTTONS -->
           <div class="button-group">
-             <button class="md3-button danger" @click=${()=>i.onDelete(n)}>
-               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${Dt}"></path></svg>
+             <button class="md3-button danger" @click=${() => callbacks.onDelete(plantId)}>
+               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
                Delete
              </button>
 
-             <button class="md3-button tonal" @click=${i.onUpdate}>
-               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${vt}"></path></svg>
+             <button class="md3-button tonal" @click=${callbacks.onUpdate}>
+               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
                Save Changes
              </button>
 
              <!-- DYNAMIC ACTIONS BASED ON STAGE -->
-             ${"mother"===r.state.toLowerCase()?j`
-                <div class="take-clone-container" style="display:contents;" data-plant-id="${r.entity_id}">
+             ${plant.state.toLowerCase() === 'mother' ? x `
+                <div class="take-clone-container" style="display:contents;" data-plant-id="${plant.entity_id}">
                   <!-- Ideally this input should be styled nicely too, but for now inline -->
                    <input
                     type="number"
@@ -317,53 +1065,72 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                     style="width: 60px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 8px; text-align:center; padding:0;"
                   >
                   <button class="md3-button primary"
-                    @click=${t=>{const e=t.currentTarget.previousElementSibling,a=e?parseInt(e.value,10):1;i.onTakeClone(r,a)}}
+                    @click=${(e) => {
+            const btn = e.currentTarget;
+            // Find the input sibling (since we used display:contents, they are siblings in the flex container)
+            const input = btn.previousElementSibling;
+            const numClones = input ? parseInt(input.value, 10) : 1;
+            callbacks.onTakeClone(plant, numClones);
+        }}
                   >
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${$t}"></path></svg>
+                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
                     Take Clone
                   </button>
                 </div>
-             `:B}
+             ` : E}
 
-             ${"flower"===r.state.toLowerCase()?j`
-               <button class="md3-button primary" @click=${()=>i.onHarvest(r)}>
-                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${Ct}"></path></svg>
+             ${plant.state.toLowerCase() === 'flower' ? x `
+               <button class="md3-button primary" @click=${() => callbacks.onHarvest(plant)}>
+                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
                  Harvest
                </button>
-             `:B}
+             ` : E}
 
-             ${"dry"===r.state.toLowerCase()?j`
-               <button class="md3-button primary" @click=${()=>i.onFinishDrying(r)}>
-                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${ft}"></path></svg>
+             ${plant.state.toLowerCase() === 'dry' ? x `
+               <button class="md3-button primary" @click=${() => callbacks.onFinishDrying(plant)}>
+                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
                  Finish Drying
                </button>
-             `:B}
+             ` : E}
 
-             ${"clone"===r.state.toLowerCase()?j`
+             ${plant.state.toLowerCase() === 'clone' ? x `
                <div style="display:contents;">
                   <select class="md3-input" style="width: auto; height: 40px; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 0 16px;" id="clone-target-select">
                     <option value="">Move to...</option>
-                    ${Object.entries(e).map(([t,e])=>j`<option value="${t}">${e}</option>`)}
+                    ${Object.entries(growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
                   </select>
                   <button class="md3-button primary"
-                    @click=${t=>{const e=t.currentTarget.previousElementSibling;e.value?i.onMoveClone(r,e.value):alert("Select a growspace")}}
+                    @click=${(e) => {
+            const btn = e.currentTarget;
+            const select = btn.previousElementSibling;
+            if (!select.value) {
+                alert('Select a growspace');
+                return;
+            }
+            callbacks.onMoveClone(plant, select.value);
+        }}
                   >
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${"M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z"}"></path></svg>
+                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
                     Move
                   </button>
                </div>
-             `:B}
+             ` : E}
           </div>
 
         </div>
       </ha-dialog>
-    `}static renderStrainLibraryDialog(t,e){return t?.open?j`
+    `;
+    }
+    static renderStrainLibraryDialog(dialog, callbacks) {
+        if (!dialog?.open)
+            return x ``;
+        return x `
       <ha-dialog
         open
-        @closed=${e.onClose}
+        @closed=${callbacks.onClose}
         hideActions
-        .scrimClickAction=${""}
-        .escapeKeyAction=${""}
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
       >
         <style>
           /* STRICT DARK MODE & SHARED STYLES */
@@ -891,22 +1658,28 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         </style>
 
         <div class="strain-dialog-container">
-           ${"browse"===t.view?this.renderStrainBrowseView(t,e):this.renderStrainEditorView(t,e)}
+           ${dialog.view === 'browse'
+            ? this.renderStrainBrowseView(dialog, callbacks)
+            : this.renderStrainEditorView(dialog, callbacks)}
         </div>
 
-        ${t.isCropping?this.renderCropOverlay(t,e):B}
-        ${t.isImageSelectorOpen?this.renderImageSelector(t,e):B}
-        ${t.importDialog?.open?this.renderImportDialog(t,e):B}
+        ${dialog.isCropping ? this.renderCropOverlay(dialog, callbacks) : E}
+        ${dialog.isImageSelectorOpen ? this.renderImageSelector(dialog, callbacks) : E}
+        ${dialog.importDialog?.open ? this.renderImportDialog(dialog, callbacks) : E}
 
       </ha-dialog>
-    `:j``}static renderImportDialog(t,e){const i=t.importDialog?.replace||!1;return j`
+    `;
+    }
+    static renderImportDialog(dialog, callbacks) {
+        const isReplace = dialog.importDialog?.replace || false;
+        return x `
         <div class="crop-overlay">
            <div style="background: #1a1a1a; width: 400px; max-width: 90vw; border-radius: 16px; padding: 24px; border: 1px solid var(--border-color); color: #fff; display: flex; flex-direction: column; gap: 20px;">
 
               <div style="display: flex; justify-content: space-between; align-items: center;">
                  <h2 style="margin: 0; font-size: 1.25rem;">Import Strains</h2>
-                 <button class="sd-close-btn" @click=${()=>e.onImportDialogChange({open:!1})}>
-                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${bt}"></path></svg>
+                 <button class="sd-close-btn" @click=${() => callbacks.onImportDialogChange({ open: false })}>
+                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
                  </button>
               </div>
 
@@ -917,8 +1690,8 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
               <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
                  <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
                     <input type="radio" name="import_mode"
-                           .checked=${!i}
-                           @change=${()=>e.onImportDialogChange({replace:!1})}
+                           .checked=${!isReplace}
+                           @change=${() => callbacks.onImportDialogChange({ replace: false })}
                            style="accent-color: var(--accent-green); transform: scale(1.2);" />
                     <div>
                        <div style="font-weight: 600;">Merge</div>
@@ -930,8 +1703,8 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
 
                  <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
                      <input type="radio" name="import_mode"
-                           .checked=${i}
-                           @change=${()=>e.onImportDialogChange({replace:!0})}
+                           .checked=${isReplace}
+                           @change=${() => callbacks.onImportDialogChange({ replace: true })}
                            style="accent-color: var(--accent-green); transform: scale(1.2);" />
                      <div>
                        <div style="font-weight: 600;">Replace</div>
@@ -941,39 +1714,52 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
               </div>
 
               <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
-                 <button class="sd-btn secondary" @click=${()=>e.onImportDialogChange({open:!1})}>
+                 <button class="sd-btn secondary" @click=${() => callbacks.onImportDialogChange({ open: false })}>
                     Cancel
                  </button>
-                 <button class="sd-btn primary" @click=${e.onConfirmImport}>
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${xt}"></path></svg>
+                 <button class="sd-btn primary" @click=${callbacks.onConfirmImport}>
+                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
                     Select File
                  </button>
               </div>
 
            </div>
         </div>
-     `}static renderImageSelector(t,e){const i=new Map;return t.strains.forEach(t=>{t.image&&(i.has(t.image)||i.set(t.image,[]),i.get(t.image).push({strain:t.strain,phenotype:t.phenotype||""}))}),j`
+     `;
+    }
+    static renderImageSelector(dialog, callbacks) {
+        // Group strains by image
+        const imageMap = new Map();
+        dialog.strains.forEach(s => {
+            if (s.image) {
+                if (!imageMap.has(s.image)) {
+                    imageMap.set(s.image, []);
+                }
+                imageMap.get(s.image).push({ strain: s.strain, phenotype: s.phenotype || '' });
+            }
+        });
+        return x `
         <div class="crop-overlay">
            <div style="background: #1a1a1a; width: 80%; max-width: 800px; height: 80%; max-height: 600px; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color);">
               <div class="sd-header">
                  <h2 class="sd-title">Select from Library</h2>
-                 <button class="sd-close-btn" @click=${()=>e.onToggleImageSelector(!1)}>
-                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${bt}"></path></svg>
+                 <button class="sd-close-btn" @click=${() => callbacks.onToggleImageSelector(false)}>
+                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
                  </button>
               </div>
               <div class="sd-content" style="overflow-y: auto;">
                  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;">
-                    ${[...i.entries()].map(([t,i])=>j`
+                    ${[...imageMap.entries()].map(([img, infoList]) => x `
                        <div style="aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative;"
-                            @click=${()=>e.onSelectLibraryImage(t)}>
-                          <img src="${t}" style="width: 100%; height: 100%; object-fit: cover;" />
+                            @click=${() => callbacks.onSelectLibraryImage(img)}>
+                          <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" />
 
                           <!-- Info Overlay -->
                           <div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 8px; font-size: 0.75rem; color: white;">
-                             ${i.map((t,e)=>j`
-                                <div style="${e<i.length-1?"margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);":""}">
-                                   <div style="font-weight: 700;">Strain: ${t.strain}</div>
-                                   <div style="opacity: 0.9;">Pheno: ${t.phenotype||"N/A"}</div>
+                             ${infoList.map((info, index) => x `
+                                <div style="${index < infoList.length - 1 ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);' : ''}">
+                                   <div style="font-weight: 700;">Strain: ${info.strain}</div>
+                                   <div style="opacity: 0.9;">Pheno: ${info.phenotype || 'N/A'}</div>
                                 </div>
                              `)}
                           </div>
@@ -982,25 +1768,62 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                        </div>
                     `)}
                  </div>
-                 ${0===i.size?j`<p style="text-align: center; color: var(--text-secondary); margin-top: 40px;">No images found in library.</p>`:B}
+                 ${imageMap.size === 0 ? x `<p style="text-align: center; color: var(--text-secondary); margin-top: 40px;">No images found in library.</p>` : E}
               </div>
            </div>
         </div>
-     `}static renderCropOverlay(t,e){const i=t.editorState;if(!i.image)return B;const r=i.image_crop_meta||{x:50,y:50,scale:1};return j`
+     `;
+    }
+    static renderCropOverlay(dialog, callbacks) {
+        const s = dialog.editorState;
+        if (!s.image)
+            return E;
+        // Local state handling for drag/zoom would ideally be in the component instance,
+        // but since this is a static renderer, we rely on the dialog state.
+        // We need the offsets and scale in the state.
+        // For smooth dragging, we might need to use DOM events that update the state via callback.
+        const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
+        const handleWheel = (e) => {
+            e.preventDefault();
+            const delta = e.deltaY * -0.001;
+            const newScale = Math.min(Math.max(meta.scale + delta, 1), 5);
+            callbacks.onEditorChange('image_crop_meta', { ...meta, scale: newScale });
+        };
+        const handleMouseDown = (e) => {
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const startMetaX = meta.x;
+            const startMetaY = meta.y;
+            const onMouseMove = (ev) => {
+                // Sensitivity factor needs tuning
+                const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
+                const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
+                let newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
+                let newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
+                callbacks.onEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
+            };
+            const onMouseUp = () => {
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+            };
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        };
+        return x `
        <div class="crop-overlay">
           <h3 style="color:white; margin-bottom:20px;">Adjust Image</h3>
           <div class="crop-viewport"
-               @wheel=${t=>{t.preventDefault();const i=-.001*t.deltaY,a=Math.min(Math.max(r.scale+i,1),5);e.onEditorChange("image_crop_meta",{...r,scale:a})}}
-               @mousedown=${t=>{const i=t.clientX,a=t.clientY,s=r.x,n=r.y,o=t=>{const o=(i-t.clientX)*(.2/r.scale),l=(a-t.clientY)*(.2/r.scale);let c=Math.min(Math.max(s+o,0),100),d=Math.min(Math.max(n+l,0),100);e.onEditorChange("image_crop_meta",{...r,x:c,y:d})},l=()=>{window.removeEventListener("mousemove",o),window.removeEventListener("mouseup",l)};window.addEventListener("mousemove",o),window.addEventListener("mouseup",l)}}
-               @dragstart=${t=>t.preventDefault()}>
+               @wheel=${handleWheel}
+               @mousedown=${handleMouseDown}
+               @dragstart=${(e) => e.preventDefault()}>
              <!--
                 We are updating the CropMeta which maps to background-position %.
                 background-position: 50% 50% is center. 0% 0% is left/top.
              -->
              <div style="width: 100%; height: 100%;
-                 background-image: url('${i.image}');
-                 background-size: ${100*r.scale}%;
-                 background-position: ${r.x}% ${r.y}%;
+                 background-image: url('${s.image}');
+                 background-size: ${meta.scale * 100}%;
+                 background-position: ${meta.x}% ${meta.y}%;
                  background-repeat: no-repeat;
                  pointer-events: none;">
              </div>
@@ -1008,25 +1831,33 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
 
           <div class="crop-controls">
              <div style="display:flex; justify-content:space-between; color:#ccc; font-size:0.8rem;">
-                <span>Zoom: ${(100*r.scale).toFixed(0)}%</span>
+                <span>Zoom: ${(meta.scale * 100).toFixed(0)}%</span>
              </div>
              <input type="range" class="crop-slider" min="1" max="5" step="0.1"
-                    .value=${r.scale}
-                    @input=${t=>e.onEditorChange("image_crop_meta",{...r,scale:parseFloat(t.target.value)})} />
+                    .value=${meta.scale}
+                    @input=${(e) => callbacks.onEditorChange('image_crop_meta', { ...meta, scale: parseFloat(e.target.value) })} />
 
              <div style="display:flex; gap:12px; margin-top:12px;">
-                <button class="md3-button tonal" style="flex:1" @click=${()=>e.onToggleCropMode(!1)}>Done</button>
+                <button class="md3-button tonal" style="flex:1" @click=${() => callbacks.onToggleCropMode(false)}>Done</button>
              </div>
              <div style="text-align:center; font-size:0.8rem; color:#888; margin-top:8px;">
                 Drag to pan • Scroll to zoom
              </div>
           </div>
        </div>
-    `}static renderStrainBrowseView(t,e){const i=(t.searchQuery||"").toLowerCase(),r=t.strains.filter(t=>t.strain.toLowerCase().includes(i)||t.breeder&&t.breeder.toLowerCase().includes(i)||t.phenotype&&t.phenotype.toLowerCase().includes(i));return j`
+    `;
+    }
+    static renderStrainBrowseView(dialog, callbacks) {
+        // Filter Logic
+        const query = (dialog.searchQuery || '').toLowerCase();
+        const filteredStrains = dialog.strains.filter(s => s.strain.toLowerCase().includes(query) ||
+            (s.breeder && s.breeder.toLowerCase().includes(query)) ||
+            (s.phenotype && s.phenotype.toLowerCase().includes(query)));
+        return x `
       <div class="sd-header">
          <h2 class="sd-title">Strain Library</h2>
-         <button class="sd-close-btn" @click=${e.onClose}>
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${bt}"></path></svg>
+         <button class="sd-close-btn" @click=${callbacks.onClose}>
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
          </button>
       </div>
 
@@ -1034,24 +1865,24 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
          <!-- SEARCH & FILTER -->
          <div class="search-bar-container">
             <div class="search-input-wrapper">
-               <svg viewBox="0 0 24 24"><path d="${Et}"></path></svg>
+               <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
                <input
                   type="text"
                   class="search-bar-input"
                   placeholder="Search Strains by Name, Breeder..."
-                  .value=${t.searchQuery||""}
-                  @input=${t=>e.onSearch(t.target.value)}
+                  .value=${dialog.searchQuery || ''}
+                  @input=${(e) => callbacks.onSearch(e.target.value)}
                />
             </div>
             <div class="filter-chips">
                <!-- Placeholder Chips -->
                <div class="filter-chip">
                   <span>Sativa Dom</span>
-                  <svg style="width:16px;height:16px;fill:currentColor;cursor:pointer" viewBox="0 0 24 24"><path d="${bt}"></path></svg>
+                  <svg style="width:16px;height:16px;fill:currentColor;cursor:pointer" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
                </div>
                <div class="filter-chip">
                   <span>Under 60 Days</span>
-                  <svg style="width:16px;height:16px;fill:currentColor;cursor:pointer" viewBox="0 0 24 24"><path d="${bt}"></path></svg>
+                  <svg style="width:16px;height:16px;fill:currentColor;cursor:pointer" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
                </div>
                <a class="clear-link">Clear All</a>
             </div>
@@ -1059,60 +1890,82 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
 
          <!-- GRID -->
          <div class="sd-grid">
-            ${r.map(t=>this.renderStrainCard(t,e))}
+            ${filteredStrains.map(strain => this.renderStrainCard(strain, callbacks))}
          </div>
 
-         ${0===r.length?j`
+         ${filteredStrains.length === 0 ? x `
             <div style="text-align:center; padding: 40px; color: var(--text-secondary);">
-               <svg style="width:48px;height:48px;fill:currentColor; opacity:0.5;" viewBox="0 0 24 24"><path d="${Et}"></path></svg>
-               <p>No strains found matching "${i}"</p>
+               <svg style="width:48px;height:48px;fill:currentColor; opacity:0.5;" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+               <p>No strains found matching "${query}"</p>
             </div>
-         `:B}
+         ` : E}
       </div>
 
       <div class="sd-footer">
-         <button class="sd-btn secondary" @click=${e.onGetRecommendation}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mt}"></path></svg>
+         <button class="sd-btn secondary" @click=${callbacks.onGetRecommendation}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
             Get Recommendation
          </button>
-         <button class="sd-btn secondary" @click=${e.onOpenImportDialog}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${xt}"></path></svg>
+         <button class="sd-btn secondary" @click=${callbacks.onOpenImportDialog}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
             Import Strains
          </button>
-         <button class="sd-btn secondary" @click=${e.onExportStrains}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${"M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"}"></path></svg>
+         <button class="sd-btn secondary" @click=${callbacks.onExportStrains}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg>
             Export Strains
          </button>
-         <button class="sd-btn primary" @click=${()=>e.onSwitchView("editor")}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${Ot}"></path></svg>
+         <button class="sd-btn primary" @click=${() => callbacks.onSwitchView('editor')}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
             New Strain
          </button>
       </div>
-    `}static getImgStyle(t){return t?`width: 100%; height: 100%; object-fit: cover; object-position: ${t.x}% ${t.y}%; transform: scale(${t.scale}); transform-origin: ${t.x}% ${t.y}%;`:"width: 100%; height: 100%; object-fit: cover;"}static renderStrainCard(t,e){let i=At,r=t.type||"Unknown";const a=(t.type||"").toLowerCase();return a.includes("indica")?i=Gt:a.includes("sativa")?i=jt:a.includes("hybrid")?i=Vt:(a.includes("ruderalis")||a.includes("auto"))&&(i=At),j`
-       <div class="strain-card" @click=${()=>e.onSwitchView("editor",t)}>
+    `;
+    }
+    static getImgStyle(meta) {
+        if (!meta)
+            return 'width: 100%; height: 100%; object-fit: cover;';
+        return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
+    }
+    static renderStrainCard(strain, callbacks) {
+        let typeIcon = mdiLeaf;
+        let typeLabel = strain.type || 'Unknown';
+        // Icon Mapping
+        const lowerType = (strain.type || '').toLowerCase();
+        if (lowerType.includes('indica'))
+            typeIcon = mdiWeatherNight; // Moon/Fat Leaf approx
+        else if (lowerType.includes('sativa'))
+            typeIcon = mdiWeatherSunny; // Sun/Tall Leaf approx
+        else if (lowerType.includes('hybrid'))
+            typeIcon = mdiTuneVariant;
+        else if (lowerType.includes('ruderalis') || lowerType.includes('auto'))
+            typeIcon = mdiLeaf;
+        return x `
+       <div class="strain-card" @click=${() => callbacks.onSwitchView('editor', strain)}>
           <div class="sc-thumb" style="overflow: hidden;">
-             ${t.image?j`<img src="${t.image}" loading="lazy" alt="${t.strain}" style="${ds.getImgStyle(t.image_crop_meta)}" />`:j`<svg style="width:48px;height:48px;opacity:0.2;fill:currentColor;" viewBox="0 0 24 24"><path d="${ft}"></path></svg>`}
+             ${strain.image
+            ? x `<img src="${strain.image}" loading="lazy" alt="${strain.strain}" style="${DialogRenderer.getImgStyle(strain.image_crop_meta)}" />`
+            : x `<svg style="width:48px;height:48px;opacity:0.2;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>`}
              <div class="sc-actions">
-                <button class="sc-action-btn" @click=${i=>{i.stopPropagation(),e.onRemoveStrain(t.key)}}>
-                   <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${Dt}"></path></svg>
+                <button class="sc-action-btn" @click=${(e) => { e.stopPropagation(); callbacks.onRemoveStrain(strain.key); }}>
+                   <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
                 </button>
              </div>
           </div>
           <div class="sc-content">
-             <h3 class="sc-title">${t.strain} ${t.phenotype?`(${t.phenotype})`:""}</h3>
+             <h3 class="sc-title">${strain.strain} ${strain.phenotype ? `(${strain.phenotype})` : ''}</h3>
              <div class="sc-type-row" style="flex-wrap: wrap;">
                 <div style="display:flex; align-items:center; gap:6px; width: 100%;">
-                   <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${i}"></path></svg>
-                   <span>${r}</span>
+                   <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${typeIcon}"></path></svg>
+                   <span>${typeLabel}</span>
                 </div>
-                ${a.includes("hybrid")?j`
-                   <div class="hg-container" title="Indica: ${t.indica_percentage||0}% | Sativa: ${t.sativa_percentage||0}%">
+                ${lowerType.includes('hybrid') ? x `
+                   <div class="hg-container" title="Indica: ${strain.indica_percentage || 0}% | Sativa: ${strain.sativa_percentage || 0}%">
                       <div class="hg-labels">
-                         <span>Indica: ${t.indica_percentage||0}%</span>
-                         <span>Sativa: ${t.sativa_percentage||0}%</span>
+                         <span>Indica: ${strain.indica_percentage || 0}%</span>
+                         <span>Sativa: ${strain.sativa_percentage || 0}%</span>
                       </div>
                       <div class="hg-bar-track" style="cursor: default;">
-                         <div class="hg-bar-indica" style="width: ${t.indica_percentage||0}%"></div>
+                         <div class="hg-bar-indica" style="width: ${strain.indica_percentage || 0}%"></div>
                          <div class="hg-bar-sativa"></div>
 
                          <div class="hg-tick" style="left: 25%"></div>
@@ -1127,32 +1980,41 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                          <span class="hg-legend-label end">100%</span>
                       </div>
                    </div>
-                `:B}
+                ` : E}
              </div>
              <div class="sc-meta">
-                ${t.flowering_days_min?j`<span>Flowering: ${t.flowering_days_min}-${t.flowering_days_max||"?"} Days</span>`:B}
-                ${t.breeder?j`<span>Breeder: ${t.breeder}</span>`:B}
+                ${strain.flowering_days_min ? x `<span>Flowering: ${strain.flowering_days_min}-${strain.flowering_days_max || '?'} Days</span>` : E}
+                ${strain.breeder ? x `<span>Breeder: ${strain.breeder}</span>` : E}
              </div>
           </div>
        </div>
-     `}static renderStrainEditorView(t,e){const i=t.editorState||{},r=!!i.strain&&t.strains.some(t=>t.strain===i.strain&&t.phenotype===i.phenotype),a=(t,i)=>e.onEditorChange(t,i),s=[...new Set(t.strains.map(t=>t.strain).filter(Boolean))].sort(),n=[...new Set(t.strains.map(t=>t.breeder).filter(Boolean))].sort();return j`
+     `;
+    }
+    static renderStrainEditorView(dialog, callbacks) {
+        const s = dialog.editorState || {};
+        const isEdit = !!s.strain && dialog.strains.some(ex => ex.strain === s.strain && ex.phenotype === s.phenotype); // Check if exists
+        const update = (field, value) => callbacks.onEditorChange(field, value);
+        // Filter unique lists for autocomplete
+        const uniqueStrains = [...new Set(dialog.strains.map(st => st.strain).filter(Boolean))].sort();
+        const uniqueBreeders = [...new Set(dialog.strains.map(st => st.breeder).filter(Boolean))].sort();
+        return x `
       <datalist id="strain-suggestions">
-         ${s.map(t=>j`<option value="${t}"></option>`)}
+         ${uniqueStrains.map(name => x `<option value="${name}"></option>`)}
       </datalist>
       <datalist id="breeder-suggestions">
-         ${n.map(t=>j`<option value="${t}"></option>`)}
+         ${uniqueBreeders.map(name => x `<option value="${name}"></option>`)}
       </datalist>
 
       <div class="sd-header">
          <div style="display:flex; align-items:center; gap:16px;">
-            <button class="sd-btn secondary" style="padding: 8px 12px;" @click=${()=>e.onSwitchView("browse")}>
-               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${"M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"}"></path></svg>
+            <button class="sd-btn secondary" style="padding: 8px 12px;" @click=${() => callbacks.onSwitchView('browse')}>
+               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiArrowLeft}"></path></svg>
                Back
             </button>
-            <h2 class="sd-title">${r?"Edit Strain":"Add New Strain"}</h2>
+            <h2 class="sd-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
          </div>
-         <button class="sd-close-btn" @click=${e.onClose}>
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${bt}"></path></svg>
+         <button class="sd-close-btn" @click=${callbacks.onClose}>
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
          </button>
       </div>
 
@@ -1161,51 +2023,77 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
             <!-- LEFT COL: IDENTITY -->
             <div class="editor-col">
                <div class="photo-upload-area"
-                    @click=${t=>{const e=t.target;e.closest(".crop-btn")||e.closest(".select-library-btn")||t.currentTarget.querySelector("input")?.click()}}
-                    @dragover=${t=>{t.preventDefault(),t.dataTransfer.dropEffect="copy"}}
-                    @drop=${t=>{t.preventDefault();const e=t.dataTransfer?.files[0];e&&ls.compressImage(e).then(t=>a("image",t)).catch(t=>console.error("Error compressing image:",t))}}>
+                    @click=${(e) => {
+            // Only click input if not clicking the crop button or select lib button
+            const target = e.target;
+            if (!target.closest('.crop-btn') && !target.closest('.select-library-btn')) {
+                e.currentTarget.querySelector('input')?.click();
+            }
+        }}
+                    @dragover=${(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
+                    @drop=${(e) => {
+            e.preventDefault();
+            const file = e.dataTransfer?.files[0];
+            if (file) {
+                PlantUtils.compressImage(file)
+                    .then(base64 => update('image', base64))
+                    .catch(err => console.error("Error compressing image:", err));
+            }
+        }}>
 
-                  <button class="select-library-btn" @click=${t=>{t.stopPropagation(),e.onToggleImageSelector(!0)}}>
-                      <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24"><path d="${zt}"></path></svg>
+                  <button class="select-library-btn" @click=${(e) => {
+            e.stopPropagation();
+            callbacks.onToggleImageSelector(true);
+        }}>
+                      <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
                       Select from Library
                   </button>
 
-                  ${i.image?j`
-                     ${i.image_crop_meta?j`<div style="width:100%; height:100%; border-radius:10px; ${ds.getCropStyle(i.image,i.image_crop_meta)}; background-repeat: no-repeat;"></div>`:j`<img src="${i.image}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" />`}
+                  ${s.image ? x `
+                     ${s.image_crop_meta
+            ? x `<div style="width:100%; height:100%; border-radius:10px; ${DialogRenderer.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"></div>`
+            : x `<img src="${s.image}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" />`}
 
                      <div style="position:absolute; bottom:8px; right:8px; display:flex; gap:8px;">
                          <button class="crop-btn"
                                  style="background:rgba(0,0,0,0.6); border:none; padding:6px; border-radius:50%; cursor:pointer; color:white;"
-                                 @click=${t=>{t.stopPropagation(),e.onToggleCropMode(!0)}}
+                                 @click=${(e) => { e.stopPropagation(); callbacks.onToggleCropMode(true); }}
                                  title="Crop Image">
-                            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${$t}"></path></svg>
+                            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
                          </button>
                          <div style="background:rgba(0,0,0,0.6); padding:6px; border-radius:50%; pointer-events:none;">
-                            <svg style="width:18px;height:18px;fill:white;" viewBox="0 0 24 24"><path d="${Lt}"></path></svg>
+                            <svg style="width:18px;height:18px;fill:white;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
                          </div>
                      </div>
-                  `:j`
-                     <svg style="width:48px;height:48px;fill:currentColor;margin-bottom:16px;" viewBox="0 0 24 24"><path d="${"M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"}"></path></svg>
+                  ` : x `
+                     <svg style="width:48px;height:48px;fill:currentColor;margin-bottom:16px;" viewBox="0 0 24 24"><path d="${mdiUpload}"></path></svg>
                      <span style="font-weight:600;">PHOTO UPLOAD AREA</span>
                      <span style="font-size:0.8rem; margin-top:4px;">(Drag & Drop or Click)</span>
                   `}
                   <input type="file" id="strain-image-upload" style="display:none" accept="image/*"
-                         @change=${t=>{const e=t.target.files?.[0];e&&ls.compressImage(e).then(t=>a("image",t)).catch(t=>console.error("Error compressing image:",t))}} />
+                         @change=${(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                PlantUtils.compressImage(file)
+                    .then(base64 => update('image', base64))
+                    .catch(err => console.error("Error compressing image:", err));
+            }
+        }} />
                </div>
 
                <div class="sd-form-group">
                   <label class="sd-label">Strain Name *</label>
-                  <input type="text" class="sd-input" list="strain-suggestions" .value=${i.strain} @input=${t=>a("strain",t.target.value)} />
+                  <input type="text" class="sd-input" list="strain-suggestions" .value=${s.strain} @input=${(e) => update('strain', e.target.value)} />
                </div>
 
                <div class="sd-form-group">
                   <label class="sd-label">Phenotype</label>
-                  <input type="text" class="sd-input" placeholder="e.g. #1 (Optional)" .value=${i.phenotype} @input=${t=>a("phenotype",t.target.value)} />
+                  <input type="text" class="sd-input" placeholder="e.g. #1 (Optional)" .value=${s.phenotype} @input=${(e) => update('phenotype', e.target.value)} />
                </div>
 
                <div class="sd-form-group">
                   <label class="sd-label">Breeder/Seedbank</label>
-                  <input type="text" class="sd-input" list="breeder-suggestions" .value=${i.breeder} @input=${t=>a("breeder",t.target.value)} />
+                  <input type="text" class="sd-input" list="breeder-suggestions" .value=${s.breeder} @input=${(e) => update('breeder', e.target.value)} />
                </div>
             </div>
 
@@ -1214,17 +2102,27 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                <div class="sd-form-group">
                   <label class="sd-label">Type *</label>
                   <div class="type-selector-grid">
-                     ${["Indica","Sativa","Hybrid","Ruderalis"].map(t=>{let e=At;"Indica"===t&&(e=Gt),"Sativa"===t&&(e=jt),"Hybrid"===t&&(e=Vt);const r=(i.type||"").toLowerCase()===t.toLowerCase();return j`
-                           <div class="type-option ${r?"active":""}"
-                                @click=${()=>a("type",t)}>
-                              <svg viewBox="0 0 24 24"><path d="${e}"></path></svg>
+                     ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map(t => {
+            let icon = mdiLeaf;
+            if (t === 'Indica')
+                icon = mdiWeatherNight;
+            if (t === 'Sativa')
+                icon = mdiWeatherSunny;
+            if (t === 'Hybrid')
+                icon = mdiTuneVariant;
+            const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
+            return x `
+                           <div class="type-option ${isActive ? 'active' : ''}"
+                                @click=${() => update('type', t)}>
+                              <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
                               <span class="type-label">${t}</span>
                            </div>
-                        `})}
+                        `;
+        })}
                   </div>
                </div>
 
-               ${"hybrid"===(i.type||"").toLowerCase()?j`
+               ${(s.type || '').toLowerCase() === 'hybrid' ? x `
                   <div class="sd-form-group">
                      <label class="sd-label">Hybrid Composition (%)</label>
                      <div class="hg-container" style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;">
@@ -1234,24 +2132,56 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                            <div class="hg-input-label">
                               <span>Indica:</span>
                               <input class="hg-num-input" type="number" min="0" max="100"
-                                 .value=${i.indica_percentage||0}
-                                 @input=${t=>{let e=Math.floor(parseFloat(t.target.value))||0;e<0&&(e=0),e>100&&(e=100),a("indica_percentage",e),a("sativa_percentage",100-e)}} />
+                                 .value=${s.indica_percentage || 0}
+                                 @input=${(e) => {
+            let val = Math.floor(parseFloat(e.target.value)) || 0;
+            if (val < 0)
+                val = 0;
+            if (val > 100)
+                val = 100;
+            // Update Indica, Auto-calc Sativa
+            update('indica_percentage', val);
+            update('sativa_percentage', 100 - val);
+        }} />
                               <span>%</span>
                            </div>
 
                            <div class="hg-input-label">
                               <span>Sativa:</span>
                               <input class="hg-num-input" type="number" min="0" max="100"
-                                 .value=${i.sativa_percentage||0}
-                                 @input=${t=>{let e=Math.floor(parseFloat(t.target.value))||0;e<0&&(e=0),e>100&&(e=100),a("sativa_percentage",e),a("indica_percentage",100-e)}} />
+                                 .value=${s.sativa_percentage || 0}
+                                 @input=${(e) => {
+            let val = Math.floor(parseFloat(e.target.value)) || 0;
+            if (val < 0)
+                val = 0;
+            if (val > 100)
+                val = 100;
+            // Update Sativa, Auto-calc Indica
+            update('sativa_percentage', val);
+            update('indica_percentage', 100 - val);
+        }} />
                               <span>%</span>
                            </div>
                         </div>
 
                         <!-- Bar -->
                         <div class="hg-bar-track"
-                             @click=${t=>{const e=t.currentTarget.getBoundingClientRect(),i=t.clientX-e.left,r=e.width;let s=Math.round(i/r*100);s<0&&(s=0),s>100&&(s=100),a("indica_percentage",s),a("sativa_percentage",100-s)}}>
-                           <div class="hg-bar-indica" style="width: ${i.indica_percentage||0}%"></div>
+                             @click=${(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const width = rect.width;
+            // 0 on Left means 0% Indica?
+            // Left Bar is Indica. So Width = Indica %.
+            // if x is at 40% of width, then Indica is 40%.
+            let percent = Math.round((x / width) * 100);
+            if (percent < 0)
+                percent = 0;
+            if (percent > 100)
+                percent = 100;
+            update('indica_percentage', percent);
+            update('sativa_percentage', 100 - percent);
+        }}>
+                           <div class="hg-bar-indica" style="width: ${s.indica_percentage || 0}%"></div>
                            <div class="hg-bar-sativa"></div>
 
                            <div class="hg-tick" style="left: 25%"></div>
@@ -1273,31 +2203,31 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                         </div>
                      </div>
                   </div>
-               `:B}
+               ` : E}
 
                <div class="sd-form-group">
                   <label class="sd-label">Flowering Time (Days)</label>
                   <div style="display:flex; gap:16px;">
-                     <input type="number" class="sd-input" placeholder="Min" .value=${i.flowering_min} @input=${t=>a("flowering_min",t.target.value)} />
-                     <input type="number" class="sd-input" placeholder="Max" .value=${i.flowering_max} @input=${t=>a("flowering_max",t.target.value)} />
+                     <input type="number" class="sd-input" placeholder="Min" .value=${s.flowering_min} @input=${(e) => update('flowering_min', e.target.value)} />
+                     <input type="number" class="sd-input" placeholder="Max" .value=${s.flowering_max} @input=${(e) => update('flowering_max', e.target.value)} />
                   </div>
                </div>
 
                <div class="sd-form-group">
                   <label class="sd-label">Lineage</label>
-                  <input type="text" class="sd-input" .value=${i.lineage} @input=${t=>a("lineage",t.target.value)} />
+                  <input type="text" class="sd-input" .value=${s.lineage} @input=${(e) => update('lineage', e.target.value)} />
                </div>
 
                <div class="sd-form-group">
                   <label class="sd-label">Sex</label>
                   <div style="display:flex; gap:20px; padding: 8px 0;">
-                     ${["Feminized","Regular"].map(t=>j`
+                     ${['Feminized', 'Regular'].map(sex => x `
                         <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:white;">
                            <input type="radio" name="sex_radio"
-                                  .checked=${i.sex===t}
-                                  @change=${()=>a("sex",t)}
+                                  .checked=${s.sex === sex}
+                                  @change=${() => update('sex', sex)}
                                   style="accent-color: var(--accent-green); transform: scale(1.2);" />
-                           ${t}
+                           ${sex}
                         </label>
                      `)}
                   </div>
@@ -1305,149 +2235,194 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
 
                <div class="sd-form-group">
                   <label class="sd-label">Description</label>
-                  <textarea class="sd-textarea" .value=${i.description} @input=${t=>a("description",t.target.value)}></textarea>
+                  <textarea class="sd-textarea" .value=${s.description} @input=${(e) => update('description', e.target.value)}></textarea>
                </div>
             </div>
          </div>
       </div>
 
       <div class="sd-footer">
-         <button class="sd-btn secondary" @click=${()=>e.onSwitchView("browse")}>
+         <button class="sd-btn secondary" @click=${() => callbacks.onSwitchView('browse')}>
             Cancel
          </button>
-         <button class="sd-btn primary" @click=${e.onAddStrain}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${vt}"></path></svg>
+         <button class="sd-btn primary" @click=${callbacks.onAddStrain}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
             Save Strain
          </button>
       </div>
-    `}static renderMD3TextInput(t,e,i){return j`
+    `;
+    }
+    static renderMD3TextInput(label, value, onChange) {
+        return x `
       <div class="md3-input-group">
-        <label class="md3-label">${t}</label>
+        <label class="md3-label">${label}</label>
         <input
           type="text"
           class="md3-input"
-          .value=${e}
-          @input=${t=>i(t.target.value)}
+          .value=${value}
+          @input=${(e) => onChange(e.target.value)}
         />
       </div>
-    `}static renderMD3SelectInput(t,e,i,r){return j`
+    `;
+    }
+    static renderMD3SelectInput(label, value, options, onChange) {
+        return x `
       <div class="md3-input-group">
-        <label class="md3-label">${t}</label>
+        <label class="md3-label">${label}</label>
         <select
           class="md3-input"
-          .value=${e}
-          @change=${t=>r(t.target.value)}
+          .value=${value}
+          @change=${(e) => onChange(e.target.value)}
         >
           <option value="">Select...</option>
-          ${i.map(t=>j`<option value="${t}" ?selected=${t===e}>${t}</option>`)}
+          ${options.map(opt => x `<option value="${opt}" ?selected=${opt === value}>${opt}</option>`)}
         </select>
       </div>
-    `}static renderMD3NumberInput(t,e,i){return j`
+    `;
+    }
+    static renderMD3NumberInput(label, value, onChange) {
+        return x `
       <div class="md3-input-group">
-        <label class="md3-label">${t}</label>
+        <label class="md3-label">${label}</label>
         <input
           type="number"
           class="md3-input"
           min="1"
-          .value=${e}
-          @input=${t=>i(t.target.value)}
+          .value=${value}
+          @input=${(e) => onChange(e.target.value)}
         />
       </div>
-    `}static renderMD3DateTimeInput(t,e,i){const r=ls.toDateTimeLocal(e);return j`
+    `;
+    }
+    static renderMD3DateTimeInput(label, value, onChange) {
+        const formattedValue = PlantUtils.toDateTimeLocal(value);
+        return x `
       <div class="md3-input-group">
-        <label class="md3-label">${t}</label>
+        <label class="md3-label">${label}</label>
         <input
           type="datetime-local"
           class="md3-input"
-          .value=${r}
-          @input=${t=>i(t.target.value)}
-          @click=${t=>t.target.showPicker()}
+          .value=${formattedValue}
+          @input=${(e) => onChange(e.target.value)}
+          @click=${(e) => e.target.showPicker()}
         />
       </div>
-    `}static renderMD3DateInput(t,e,i){const r=e?e.split("T")[0]:"";return j`
+    `;
+    }
+    static renderMD3DateInput(label, value, onChange) {
+        // For date input, we need YYYY-MM-DD
+        const formattedValue = value ? value.split('T')[0] : '';
+        return x `
       <div class="md3-input-group">
-        <label class="md3-label">${t}</label>
+        <label class="md3-label">${label}</label>
         <input
           type="date"
           class="md3-input"
-          .value=${r}
-          @input=${t=>i(t.target.value)}
-          @click=${t=>t.target.showPicker()}
+          .value=${formattedValue}
+          @input=${(e) => onChange(e.target.value)}
+          @click=${(e) => e.target.showPicker()}
         />
       </div>
-    `}static renderTextInput(t,e,i){return j`
+    `;
+    }
+    // Legacy render methods for Add Dialog (kept simple for now as requested focused on Overview)
+    static renderTextInput(label, value, onChange) {
+        return x `
       <div class="form-group">
-        <label>${t}</label>
+        <label>${label}</label>
         <input 
           type="text" 
           class="form-input"
-          .value=${e}
-          @input=${t=>i(t.target.value)}
+          .value=${value}
+          @input=${(e) => onChange(e.target.value)}
         />
       </div>
-    `}static renderNumberInput(t,e,i){return j`
+    `;
+    }
+    static renderNumberInput(label, value, onChange) {
+        return x `
       <div class="form-group">
-        <label>${t}</label>
+        <label>${label}</label>
         <input 
           type="number" 
           class="form-input"
           min="1"
-          .value=${e}
-          @input=${t=>i(t.target.value)}
+          .value=${value}
+          @input=${(e) => onChange(e.target.value)}
         />
       </div>
-    `}static renderDateTimeInput(t,e,i,r){return j`
+    `;
+    }
+    static renderDateTimeInput(label, icon, value, onChange) {
+        return x `
       <div class="form-group">
         <label>
           <svg style="width:16px;height:16px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-            <path d="${e}"></path>
+            <path d="${icon}"></path>
           </svg>
-          ${t}
+          ${label}
         </label>
         <input 
           type="datetime-local" 
           class="form-input"
-          .value=${i}
-          @input=${t=>r(t.target.value)}
+          .value=${value}
+          @input=${(e) => onChange(e.target.value)}
         />
       </div>
-    `}static renderPlantStatsMD3(t){return t.attributes?.veg_days||t.attributes?.flower_days||t.attributes?.dry_days||t.attributes?.cure_days?j`
+    `;
+    }
+    static renderPlantStatsMD3(plant) {
+        const hasStats = plant.attributes?.veg_days || plant.attributes?.flower_days ||
+            plant.attributes?.dry_days || plant.attributes?.cure_days;
+        if (!hasStats)
+            return x ``;
+        return x `
       <div class="detail-card">
         <h3>Current Progress</h3>
         <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-           ${t.attributes?.veg_days?j`
+           ${plant.attributes?.veg_days ? x `
              <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
-               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-veg);">${t.attributes.veg_days}</span>
+               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-veg);">${plant.attributes.veg_days}</span>
                <span style="font-size:0.7rem; opacity:0.7;">Veg Days</span>
              </div>
-           `:""}
-           ${t.attributes?.flower_days?j`
+           ` : ''}
+           ${plant.attributes?.flower_days ? x `
              <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
-               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-flower);">${t.attributes.flower_days}</span>
+               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-flower);">${plant.attributes.flower_days}</span>
                <span style="font-size:0.7rem; opacity:0.7;">Flower Days</span>
              </div>
-           `:""}
-           ${t.attributes?.dry_days?j`
+           ` : ''}
+           ${plant.attributes?.dry_days ? x `
              <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
-               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-dry);">${t.attributes.dry_days}</span>
+               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-dry);">${plant.attributes.dry_days}</span>
                <span style="font-size:0.7rem; opacity:0.7;">Drying Days</span>
              </div>
-           `:""}
-           ${t.attributes?.cure_days?j`
+           ` : ''}
+           ${plant.attributes?.cure_days ? x `
              <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
-               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-cure);">${t.attributes.cure_days}</span>
+               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-cure);">${plant.attributes.cure_days}</span>
                <span style="font-size:0.7rem; opacity:0.7;">Curing Days</span>
              </div>
-           `:""}
+           ` : ''}
         </div>
       </div>
-    `:j``}static renderPlantStats(t){return this.renderPlantStatsMD3(t)}static renderConfigDialog(t,e,i){if(!t?.open)return j``;const r=t.currentTab;return j`
+    `;
+    }
+    static renderPlantStats(plant) {
+        // Keeping for legacy/Add dialog if needed, though Add dialog doesn't show stats usually
+        return this.renderPlantStatsMD3(plant);
+    }
+    static renderConfigDialog(dialog, growspaceOptions, callbacks) {
+        if (!dialog?.open)
+            return x ``;
+        const activeTab = dialog.currentTab;
+        return x `
       <ha-dialog
         open
-        @closed=${i.onClose}
+        @closed=${callbacks.onClose}
         hideActions
-        .scrimClickAction=${""}
-        .escapeKeyAction=${""}
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
       >
         <style>
           /* CONFIG DIALOG SPECIFIC STYLES */
@@ -1530,114 +2505,137 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
            <!-- Header -->
            <div class="config-header">
               <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 12px;">
-                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${_t}"></path></svg>
+                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
               </div>
               <h2 class="config-title">Configuration</h2>
               <div style="flex:1"></div>
-              <button class="md3-button text" @click=${i.onClose} style="min-width: auto; padding: 8px;">
-                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${bt}"></path></svg>
+              <button class="md3-button text" @click=${callbacks.onClose} style="min-width: auto; padding: 8px;">
+                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
               </button>
            </div>
 
            <!-- Tabs -->
            <div class="config-tabs">
-              <div class="config-tab ${"add_growspace"===r?"active":""}"
-                   @click=${()=>i.onSwitchTab("add_growspace")}>
-                 <svg viewBox="0 0 24 24"><path d="${zt}"></path></svg>
+              <div class="config-tab ${activeTab === 'add_growspace' ? 'active' : ''}"
+                   @click=${() => callbacks.onSwitchTab('add_growspace')}>
+                 <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
                  Add Growspace
               </div>
-              <div class="config-tab ${"environment"===r?"active":""}"
-                   @click=${()=>i.onSwitchTab("environment")}>
-                 <svg viewBox="0 0 24 24"><path d="${Pt}"></path></svg>
+              <div class="config-tab ${activeTab === 'environment' ? 'active' : ''}"
+                   @click=${() => callbacks.onSwitchTab('environment')}>
+                 <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
                  Environment
               </div>
-              <div class="config-tab ${"global"===r?"active":""}"
-                   @click=${()=>i.onSwitchTab("global")}>
-                 <svg viewBox="0 0 24 24"><path d="${"M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"}"></path></svg>
+              <div class="config-tab ${activeTab === 'global' ? 'active' : ''}"
+                   @click=${() => callbacks.onSwitchTab('global')}>
+                 <svg viewBox="0 0 24 24"><path d="${mdiEarth}"></path></svg>
                  Global
               </div>
            </div>
 
            <!-- Content -->
            <div class="config-content">
-              ${"add_growspace"===r?this.renderAddGrowspaceTab(t,i):B}
-              ${"environment"===r?this.renderEnvironmentTab(t,e,i):B}
-              ${"global"===r?this.renderGlobalTab(t,i):B}
+              ${activeTab === 'add_growspace' ? this.renderAddGrowspaceTab(dialog, callbacks) : E}
+              ${activeTab === 'environment' ? this.renderEnvironmentTab(dialog, growspaceOptions, callbacks) : E}
+              ${activeTab === 'global' ? this.renderGlobalTab(dialog, callbacks) : E}
            </div>
 
            <!-- Actions -->
            <div class="config-actions">
-              <button class="md3-button tonal" @click=${i.onClose}>Cancel</button>
-              ${"add_growspace"===r?j`
-                 <button class="md3-button primary" @click=${i.onAddGrowspaceSubmit}>Add Growspace</button>
-              `:B}
-              ${"environment"===r?j`
-                 <button class="md3-button primary" @click=${i.onEnvSubmit}>Save Sensors</button>
-              `:B}
-              ${"global"===r?j`
-                 <button class="md3-button primary" @click=${i.onGlobalSubmit}>Save Global</button>
-              `:B}
+              <button class="md3-button tonal" @click=${callbacks.onClose}>Cancel</button>
+              ${activeTab === 'add_growspace' ? x `
+                 <button class="md3-button primary" @click=${callbacks.onAddGrowspaceSubmit}>Add Growspace</button>
+              ` : E}
+              ${activeTab === 'environment' ? x `
+                 <button class="md3-button primary" @click=${callbacks.onEnvSubmit}>Save Sensors</button>
+              ` : E}
+              ${activeTab === 'global' ? x `
+                 <button class="md3-button primary" @click=${callbacks.onGlobalSubmit}>Save Global</button>
+              ` : E}
            </div>
         </div>
       </ha-dialog>
-    `}static renderAddGrowspaceTab(t,e){const i=t.addGrowspaceData;return j`
+    `;
+    }
+    static renderAddGrowspaceTab(dialog, callbacks) {
+        const d = dialog.addGrowspaceData;
+        return x `
       <div style="display:flex; flex-direction:column; gap:20px;">
          <div class="detail-card">
             <h3>New Growspace Details</h3>
-            ${this.renderMD3TextInput("Growspace Name",i.name,t=>e.onAddGrowspaceChange("name",t))}
+            ${this.renderMD3TextInput('Growspace Name', d.name, (v) => callbacks.onAddGrowspaceChange('name', v))}
             <div style="display:flex; gap:16px;">
-               ${this.renderMD3NumberInput("Rows",i.rows,t=>e.onAddGrowspaceChange("rows",parseInt(t)))}
-               ${this.renderMD3NumberInput("Plants per Row",i.plants_per_row,t=>e.onAddGrowspaceChange("plants_per_row",parseInt(t)))}
+               ${this.renderMD3NumberInput('Rows', d.rows, (v) => callbacks.onAddGrowspaceChange('rows', parseInt(v)))}
+               ${this.renderMD3NumberInput('Plants per Row', d.plants_per_row, (v) => callbacks.onAddGrowspaceChange('plants_per_row', parseInt(v)))}
             </div>
-            ${this.renderMD3TextInput("Notification Service (Optional)",i.notification_service,t=>e.onAddGrowspaceChange("notification_service",t))}
+            ${this.renderMD3TextInput('Notification Service (Optional)', d.notification_service, (v) => callbacks.onAddGrowspaceChange('notification_service', v))}
          </div>
       </div>
-    `}static renderEnvironmentTab(t,e,i){const r=t.environmentData,a=Object.entries(e).map(([t,e])=>({id:t,name:e}));return j`
+    `;
+    }
+    static renderEnvironmentTab(dialog, growspaces, callbacks) {
+        const d = dialog.environmentData;
+        // Convert record to array for select
+        const options = Object.entries(growspaces).map(([id, name]) => ({ id, name }));
+        return x `
        <div style="display:flex; flex-direction:column; gap:20px;">
           <div class="detail-card">
              <h3>Select Target</h3>
              <div class="md3-input-group">
                 <label class="md3-label">Growspace</label>
-                <select class="md3-input" .value=${r.selectedGrowspaceId} @change=${t=>i.onEnvChange("selectedGrowspaceId",t.target.value)}>
+                <select class="md3-input" .value=${d.selectedGrowspaceId} @change=${(e) => callbacks.onEnvChange('selectedGrowspaceId', e.target.value)}>
                    <option value="">Select...</option>
-                   ${a.map(t=>j`<option value="${t.id}">${t.name}</option>`)}
+                   ${options.map(o => x `<option value="${o.id}">${o.name}</option>`)}
                 </select>
              </div>
           </div>
 
           <div class="detail-card">
              <h3>Sensors</h3>
-             ${this.renderMD3TextInput("Temperature Sensor ID",r.temp_sensor,t=>i.onEnvChange("temp_sensor",t))}
-             ${this.renderMD3TextInput("Humidity Sensor ID",r.humidity_sensor,t=>i.onEnvChange("humidity_sensor",t))}
-             ${this.renderMD3TextInput("VPD Sensor ID",r.vpd_sensor,t=>i.onEnvChange("vpd_sensor",t))}
+             ${this.renderMD3TextInput('Temperature Sensor ID', d.temp_sensor, (v) => callbacks.onEnvChange('temp_sensor', v))}
+             ${this.renderMD3TextInput('Humidity Sensor ID', d.humidity_sensor, (v) => callbacks.onEnvChange('humidity_sensor', v))}
+             ${this.renderMD3TextInput('VPD Sensor ID', d.vpd_sensor, (v) => callbacks.onEnvChange('vpd_sensor', v))}
           </div>
 
           <div class="detail-card">
              <h3>Optional</h3>
-             ${this.renderMD3TextInput("CO2 Sensor ID",r.co2_sensor,t=>i.onEnvChange("co2_sensor",t))}
-             ${this.renderMD3TextInput("Light Sensor/State ID",r.light_sensor,t=>i.onEnvChange("light_sensor",t))}
-             ${this.renderMD3TextInput("Fan Switch ID",r.fan_switch,t=>i.onEnvChange("fan_switch",t))}
+             ${this.renderMD3TextInput('CO2 Sensor ID', d.co2_sensor, (v) => callbacks.onEnvChange('co2_sensor', v))}
+             ${this.renderMD3TextInput('Light Sensor/State ID', d.light_sensor, (v) => callbacks.onEnvChange('light_sensor', v))}
+             ${this.renderMD3TextInput('Fan Switch ID', d.fan_switch, (v) => callbacks.onEnvChange('fan_switch', v))}
           </div>
        </div>
-    `}static renderGlobalTab(t,e){const i=t.globalData;return j`
+    `;
+    }
+    static renderGlobalTab(dialog, callbacks) {
+        const d = dialog.globalData;
+        return x `
        <div style="display:flex; flex-direction:column; gap:20px;">
           <div class="detail-card">
              <h3>Global Environment</h3>
-             ${this.renderMD3TextInput("Weather Entity ID",i.weather_entity,t=>e.onGlobalChange("weather_entity",t))}
+             ${this.renderMD3TextInput('Weather Entity ID', d.weather_entity, (v) => callbacks.onGlobalChange('weather_entity', v))}
           </div>
           <div class="detail-card">
              <h3>Lung Room</h3>
-             ${this.renderMD3TextInput("Lung Room Temp Sensor",i.lung_room_temp,t=>e.onGlobalChange("lung_room_temp",t))}
-             ${this.renderMD3TextInput("Lung Room Humidity Sensor",i.lung_room_humidity,t=>e.onGlobalChange("lung_room_humidity",t))}
+             ${this.renderMD3TextInput('Lung Room Temp Sensor', d.lung_room_temp, (v) => callbacks.onGlobalChange('lung_room_temp', v))}
+             ${this.renderMD3TextInput('Lung Room Humidity Sensor', d.lung_room_humidity, (v) => callbacks.onGlobalChange('lung_room_humidity', v))}
           </div>
        </div>
-    `}static renderGrowMasterDialog(t,e,i,r){if(!t?.open)return j``;const a=e?"#FF9800":"#4CAF50",s=i?`Ask the ${i}`:"Ask the Grow Master";return j`
+    `;
+    }
+    static renderGrowMasterDialog(dialog, isStressed, personality, callbacks) {
+        if (!dialog?.open)
+            return x ``;
+        // Border color based on stress
+        // Light Green: #4CAF50, Warning Orange: #FF9800
+        const borderColor = isStressed ? '#FF9800' : '#4CAF50';
+        const title = personality ? `Ask the ${personality}` : 'Ask the Grow Master';
+        return x `
       <ha-dialog
         open
-        @closed=${r.onClose}
+        @closed=${callbacks.onClose}
         hideActions
-        .scrimClickAction=${""}
-        .escapeKeyAction=${""}
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
       >
         <style>
            .gm-container {
@@ -1670,7 +2668,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
            }
            .gm-response-box {
               background: rgba(255,255,255,0.05);
-              border: 2px solid ${a};
+              border: 2px solid ${borderColor};
               border-radius: 16px;
               padding: 20px;
               line-height: 1.6;
@@ -1696,17 +2694,17 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
 
         <div class="gm-container">
            <div class="gm-header">
-              <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; color: ${a}">
-                 <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mt}"></path></svg>
+              <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; color: ${borderColor}">
+                 <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
               </div>
               <div style="flex:1">
-                 <h2 style="margin:0; font-size:1.25rem;">${s}</h2>
+                 <h2 style="margin:0; font-size:1.25rem;">${title}</h2>
                  <div style="font-size:0.8rem; color:var(--secondary-text-color); margin-top:4px;">
-                    ${e?"Warning: Plant Stress Detected":"All systems normal"}
+                    ${isStressed ? 'Warning: Plant Stress Detected' : 'All systems normal'}
                  </div>
               </div>
-              <button class="md3-button text" @click=${r.onClose} style="min-width:auto; padding:8px;">
-                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${bt}"></path></svg>
+              <button class="md3-button text" @click=${callbacks.onClose} style="min-width:auto; padding:8px;">
+                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
               </button>
            </div>
 
@@ -1717,8 +2715,8 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                  <textarea
                     class="sd-textarea"
                     placeholder="Ask about this growspace..."
-                    .value=${t.userQuery}
-                    @input=${t=>r.onQueryChange(t.target.value)}
+                    .value=${dialog.userQuery}
+                    @input=${(e) => callbacks.onQueryChange(e.target.value)}
                     style="min-height: 80px;"
                  ></textarea>
               </div>
@@ -1727,56 +2725,61 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
               <div style="display:flex; justify-content:flex-end; gap: 12px;">
                  <button
                     class="md3-button tonal"
-                    @click=${r.onAnalyzeAll}
-                    ?disabled=${t.isLoading}
-                    style="opacity: ${t.isLoading?.7:1}"
+                    @click=${callbacks.onAnalyzeAll}
+                    ?disabled=${dialog.isLoading}
+                    style="opacity: ${dialog.isLoading ? 0.7 : 1}"
                  >
                     Analyze All
                  </button>
                  <button
                     class="md3-button primary"
-                    @click=${r.onAnalyze}
-                    ?disabled=${t.isLoading}
-                    style="opacity: ${t.isLoading?.7:1}"
+                    @click=${callbacks.onAnalyze}
+                    ?disabled=${dialog.isLoading}
+                    style="opacity: ${dialog.isLoading ? 0.7 : 1}"
                  >
-                    ${t.isLoading?"Analyzing...":"Analyze Environment"}
+                    ${dialog.isLoading ? 'Analyzing...' : 'Analyze Environment'}
                  </button>
               </div>
 
               <!-- Response Area -->
-              ${t.isLoading?j`
+              ${dialog.isLoading ? x `
                  <div class="gm-loading">
-                    <svg class="spinner" viewBox="0 0 24 24"><path d="${Tt}" fill="currentColor"></path></svg>
+                    <svg class="spinner" viewBox="0 0 24 24"><path d="${mdiLoading}" fill="currentColor"></path></svg>
                     <span>Consulting the archives...</span>
                  </div>
-              `:B}
+              ` : E}
 
-              ${!t.isLoading&&t.response?j`
+              ${!dialog.isLoading && dialog.response ? x `
                  <div class="gm-response-box">
-                    ${t.response}
+                    ${dialog.response}
                  </div>
-              `:B}
+              ` : E}
            </div>
         </div>
       </ha-dialog>
-    `}static renderStrainRecommendationDialog(t,e){return t?.open?j`
+    `;
+    }
+    static renderStrainRecommendationDialog(dialog, callbacks) {
+        if (!dialog?.open)
+            return x ``;
+        return x `
       <ha-dialog
         open
-        @closed=${e.onClose}
+        @closed=${callbacks.onClose}
         hideActions
-        .scrimClickAction=${""}
-        .escapeKeyAction=${""}
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
       >
         <div class="gm-container">
            <div class="gm-header">
               <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; color: #4CAF50">
-                 <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mt}"></path></svg>
+                 <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
               </div>
               <div style="flex:1">
                  <h2 style="margin:0; font-size:1.25rem;">Get Strain Recommendation</h2>
               </div>
-              <button class="md3-button text" @click=${e.onClose} style="min-width:auto; padding:8px;">
-                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${bt}"></path></svg>
+              <button class="md3-button text" @click=${callbacks.onClose} style="min-width:auto; padding:8px;">
+                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
               </button>
            </div>
 
@@ -1787,8 +2790,8 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                  <textarea
                     class="sd-textarea"
                     placeholder="e.g., something fruity and good for daytime use..."
-                    .value=${t.userQuery}
-                    @input=${t=>e.onQueryChange(t.target.value)}
+                    .value=${dialog.userQuery}
+                    @input=${(e) => callbacks.onQueryChange(e.target.value)}
                     style="min-height: 80px;"
                  ></textarea>
               </div>
@@ -1797,73 +2800,96 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
               <div style="display:flex; justify-content:flex-end; gap: 12px;">
                  <button
                     class="md3-button tonal"
-                    @click=${e.onClose}
+                    @click=${callbacks.onClose}
                  >
                     OK
                  </button>
                  <button
                     class="md3-button primary"
-                    @click=${e.onGetRecommendation}
-                    ?disabled=${t.isLoading}
-                    style="opacity: ${t.isLoading?.7:1}"
+                    @click=${callbacks.onGetRecommendation}
+                    ?disabled=${dialog.isLoading}
+                    style="opacity: ${dialog.isLoading ? 0.7 : 1}"
                  >
-                    ${t.isLoading?"Getting Recommendation...":"Get Recommendation"}
+                    ${dialog.isLoading ? 'Getting Recommendation...' : 'Get Recommendation'}
                  </button>
               </div>
 
-              ${t.isLoading?j`
+              ${dialog.isLoading ? x `
                  <div class="gm-loading">
-                    <svg class="spinner" viewBox="0 0 24 24"><path d="${Tt}" fill="currentColor"></path></svg>
+                    <svg class="spinner" viewBox="0 0 24 24"><path d="${mdiLoading}" fill="currentColor"></path></svg>
                     <span>Consulting the archives...</span>
                  </div>
-              `:B}
+              ` : E}
 
-              ${!t.isLoading&&t.response?j`
+              ${!dialog.isLoading && dialog.response ? x `
                  <div class="gm-response-box">
-                    ${t.response}
+                    ${dialog.response}
                  </div>
-              `:B}
+              ` : E}
            </div>
         </div>
       </ha-dialog>
-    `:j``}static renderScheduleSection(t,e,i,r,a,s,n){const o="irrigation"===s?a.onAddIrrigationTime:a.onAddDrainTime,l="irrigation"===s?a.onRemoveIrrigationTime:a.onRemoveDrainTime,c="irrigation"===s?a.onStartAddingIrrigationTime:a.onStartAddingDrainTime,d="irrigation"===s?a.onCancelAddingIrrigationTime:a.onCancelAddingDrainTime,p="irrigation"===s?a.onConfirmAddIrrigationTime:a.onConfirmAddDrainTime,h="irrigation"===s?a.onIrrigationTimeInputChange:a.onDrainTimeInputChange,u="irrigation"===s?r.adding_irrigation_time:r.adding_drain_time;return j`
+    `;
+    }
+    static renderScheduleSection(title, times, defaultDuration, dialog, callbacks, type, color) {
+        const addHandler = type === 'irrigation' ? callbacks.onAddIrrigationTime : callbacks.onAddDrainTime;
+        const removeHandler = type === 'irrigation' ? callbacks.onRemoveIrrigationTime : callbacks.onRemoveDrainTime;
+        const startAddingHandler = type === 'irrigation' ? callbacks.onStartAddingIrrigationTime : callbacks.onStartAddingDrainTime;
+        const cancelHandler = type === 'irrigation' ? callbacks.onCancelAddingIrrigationTime : callbacks.onCancelAddingDrainTime;
+        const confirmHandler = type === 'irrigation' ? callbacks.onConfirmAddIrrigationTime : callbacks.onConfirmAddDrainTime;
+        const inputChangeHandler = type === 'irrigation' ? callbacks.onIrrigationTimeInputChange : callbacks.onDrainTimeInputChange;
+        const addingTime = type === 'irrigation' ? dialog.adding_irrigation_time : dialog.adding_drain_time;
+        return x `
          <div class="detail-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-               <h3 style="margin: 0;">${t}</h3>
+               <h3 style="margin: 0;">${title}</h3>
                <button
-                  @click=${o}
+                  @click=${addHandler}
                   class="md3-button primary"
-                  style="background: ${n};"
+                  style="background: ${color};"
                >
-                  <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${Ot}"></path></svg>
+                  <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
                   ADD TIME
                </button>
             </div>
 
             <div
-               class="${s}-time-bar"
-               @click=${t=>{const e=t.currentTarget.getBoundingClientRect(),i=t.clientX-e.left;c(i,e.width)}}
-               style="position: relative; height: 80px; background: rgba(0,0,0,0.3); border-radius: 8px; cursor: crosshair; border: 2px solid ${n}40;"
+               class="${type}-time-bar"
+               @click=${(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            startAddingHandler(x, rect.width);
+        }}
+               style="position: relative; height: 80px; background: rgba(0,0,0,0.3); border-radius: 8px; cursor: crosshair; border: 2px solid ${color}40;"
             >
-               ${Array.from({length:25},(t,e)=>e).map(t=>j`
-                  <div style="position: absolute; left: ${t/24*100}%; top: 0; bottom: 0; border-left: 1px solid ${t%6==0?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.05)"}; pointer-events: none;">
-                     ${t%3==0?j`
-                        <span style="position: absolute; bottom: -22px; left: -12px; font-size: 0.7rem; color: var(--secondary-text-color);">${t.toString().padStart(2,"0")}:00</span>
-                     `:""}
+               ${Array.from({ length: 25 }, (_, i) => i).map(hour => x `
+                  <div style="position: absolute; left: ${(hour / 24) * 100}%; top: 0; bottom: 0; border-left: 1px solid ${hour % 6 === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)'}; pointer-events: none;">
+                     ${hour % 3 === 0 ? x `
+                        <span style="position: absolute; bottom: -22px; left: -12px; font-size: 0.7rem; color: var(--secondary-text-color);">${hour.toString().padStart(2, '0')}:00</span>
+                     ` : ''}
                   </div>
                `)}
 
-               ${e.map(t=>{const[e,r]=t.time.split(":").map(Number);return j`
+               ${times.map((t) => {
+            const [hours, minutes] = t.time.split(':').map(Number);
+            const position = ((hours + minutes / 60) / 24) * 100;
+            return x `
                      <div
-                        @click=${e=>{e.stopPropagation(),confirm(`Remove ${s} time ${t.time}?`)&&l(t.time)}}
-                        style="position: absolute; left: ${(e+r/60)/24*100}%; top: 10%; bottom: 10%; width: 4px; background: ${n}; cursor: pointer; box-shadow: 0 0 8px ${n}; border-radius: 2px;"
-                        title="${t.time} | Duration: ${t.duration||i}seconds"
+                        @click=${(e) => {
+                e.stopPropagation();
+                if (confirm(`Remove ${type} time ${t.time}?`)) {
+                    removeHandler(t.time);
+                }
+            }}
+                        style="position: absolute; left: ${position}%; top: 10%; bottom: 10%; width: 4px; background: ${color}; cursor: pointer; box-shadow: 0 0 8px ${color}; border-radius: 2px;"
+                        title="${t.time} | Duration: ${t.duration || defaultDuration}seconds"
                      >
-                        <div style="position: absolute; left: 8px; top: -24px; background: ${n}; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-                           ${t.time} | ${t.duration||i}seconds
+                        <div style="position: absolute; left: 8px; top: -24px; background: ${color}; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                           ${t.time} | ${t.duration || defaultDuration}seconds
                         </div>
                      </div>
-                  `})}
+                  `;
+        })}
             </div>
 
             <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--secondary-text-color);">
@@ -1874,18 +2900,18 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                <span>24:00</span>
             </div>
 
-            ${u?j`
-               <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;" @click=${d}>
-                  <div class="detail-card" style="max-width: 400px; margin: 0;" @click=${t=>t.stopPropagation()}>
-                     <h3>Add ${t} Time</h3>
+            ${addingTime ? x `
+               <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;" @click=${cancelHandler}>
+                  <div class="detail-card" style="max-width: 400px; margin: 0;" @click=${(e) => e.stopPropagation()}>
+                     <h3>Add ${title} Time</h3>
 
                      <div class="md3-input-group">
                         <label class="md3-label">Time</label>
                         <input
                            type="time"
                            class="md3-input"
-                           .value=${u.time}
-                           @input=${t=>h("time",t.target.value)}
+                           .value=${addingTime.time}
+                           @input=${(e) => inputChangeHandler('time', e.target.value)}
                         />
                      </div>
 
@@ -1894,361 +2920,10362 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                         <input
                            type="number"
                            class="md3-input"
-                           .value=${u.duration.toString()}
-                           @input=${t=>{const e=parseInt(t.target.value);isNaN(e)||h("duration",e)}}
+                           .value=${addingTime.duration.toString()}
+                           @input=${(e) => {
+            const val = parseInt(e.target.value);
+            if (!isNaN(val))
+                inputChangeHandler('duration', val);
+        }}
                            min="1"
                         />
                      </div>
 
                      <div class="button-group">
-                        <button class="md3-button tonal" @click=${d}>
+                        <button class="md3-button tonal" @click=${cancelHandler}>
                            Cancel
                         </button>
                         <button
                            class="md3-button primary"
-                           @click=${()=>p(u.time,u.duration)}
-                           style="background: ${n};"
+                           @click=${() => confirmHandler(addingTime.time, addingTime.duration)}
+                           style="background: ${color};"
                         >
                            Add Schedule
                         </button>
                      </div>
                   </div>
                </div>
-            `:""}
+            ` : ''}
          </div>
-      `}static renderIrrigationDialog(t,e){if(!t?.open)return B;const i="#2196F3",r=ds.parseScheduleString(t.irrigation_times),a=ds.parseScheduleString(t.drain_times);return j`
+      `;
+    }
+    static renderIrrigationDialog(dialog, callbacks) {
+        if (!dialog?.open)
+            return E;
+        const dialogColor = '#2196F3'; // Irrigation Blue
+        const parsedIrrigationTimes = DialogRenderer.parseScheduleString(dialog.irrigation_times);
+        const parsedDrainTimes = DialogRenderer.parseScheduleString(dialog.drain_times);
+        return x `
          <ha-dialog
             open
-            @closed=${e.onClose}
+            @closed=${callbacks.onClose}
             hideActions
-            .scrimClickAction=${""}
-            .escapeKeyAction=${""}
+            .scrimClickAction=${''}
+            .escapeKeyAction=${''}
          >
-            <div class="glass-dialog-container" style="--stage-color: ${i}; max-width: 1000px; max-height: 90vh; overflow-y: auto;">
+            <div class="glass-dialog-container" style="--stage-color: ${dialogColor}; max-width: 1000px; max-height: 90vh; overflow-y: auto;">
 
                <div class="dialog-header">
-                  <div class="dialog-icon" style="background: ${i}30; color: ${i};">
+                  <div class="dialog-icon" style="background: ${dialogColor}30; color: ${dialogColor};">
                      <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                        <path d="${Ht}"></path>
+                        <path d="${mdiWater}"></path>
                      </svg>
                   </div>
                   <div class="dialog-title-group">
                      <h2 class="dialog-title">Irrigation Management</h2>
-                     <div class="dialog-subtitle">${t.growspace_name}</div>
+                     <div class="dialog-subtitle">${dialog.growspace_name}</div>
                   </div>
-                  <button class="md3-button text" @click=${e.onClose} style="min-width: auto; padding: 8px;">
+                  <button class="md3-button text" @click=${callbacks.onClose} style="min-width: auto; padding: 8px;">
                      <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                        <path d="${bt}"></path>
+                        <path d="${mdiClose}"></path>
                      </svg>
                   </button>
                </div>
 
                <div class="dialog-body" style="padding: 0; background: transparent;">
-                  ${this.renderScheduleSection("Irrigation Schedule",r,t.irrigation_duration,t,e,"irrigation",i)}
+                  ${this.renderScheduleSection('Irrigation Schedule', parsedIrrigationTimes, dialog.irrigation_duration, dialog, callbacks, 'irrigation', dialogColor)}
 
-                           ${this.renderScheduleSection("Drain Schedule",a,t.drain_duration,t,e,"drain","#FF9800")}
+                           ${this.renderScheduleSection('Drain Schedule', parsedDrainTimes, dialog.drain_duration, dialog, callbacks, 'drain', '#FF9800')}
 
                </div>
 
                <div class="button-group">
-                  <button class="md3-button tonal" @click=${e.onClose}>
+                  <button class="md3-button tonal" @click=${callbacks.onClose}>
                      Close
                   </button>
                </div>
 
             </div>
          </ha-dialog>
-      `}}let ps=class extends ot{constructor(){super(...arguments),this._addPlantDialog=null,this._defaultApplied=!1,this._plantOverviewDialog=null,this._optimisticDeletedPlantIds=new Set,this._strainLibraryDialog=null,this._configDialog=null,this._growMasterDialog=null,this._strainRecommendationDialog=null,this._irrigationDialog=null,this.selectedDevice=null,this._draggedPlant=null,this._isCompactView=!1,this._strainLibrary=[],this._historyData=null,this._activeEnvGraphs=new Set,this._graphRanges={},this._tooltip=null,this._menuOpen=!1,this._isEditMode=!1,this._selectedPlants=new Set,this._focusedPlantIndex=-1,this._handleDocumentClick=t=>{if(this._menuOpen){const e=t.composedPath(),i=this.shadowRoot?.querySelector(".menu-container");i&&!e.includes(i)&&(this._menuOpen=!1)}},this._handleTakeClone=t=>{const e=t.attributes?.plant_id||t.entity_id.replace("sensor.","");this.hass.callService("growspace_manager","take_clone",{mother_plant_id:e}).then(()=>{console.log(`Clone taken from ${t.attributes?.strain||"plant"}`)}).catch(t=>{console.error(`Failed to take clone: ${t.message}`)})},this.clonePlant=(t,e)=>{const i=t.attributes?.plant_id||t.entity_id.replace("sensor.",""),r=e;this.hass.callService("growspace_manager","take_clone",{mother_plant_id:i,num_clones:r}).then(()=>{console.log(`Clone taken from ${t.attributes?.strain||"plant"}`)}).catch(t=>{console.error(`Failed to take clone: ${t.message}`)})}}connectedCallback(){super.connectedCallback(),document.addEventListener("click",this._handleDocumentClick)}disconnectedCallback(){super.disconnectedCallback(),document.removeEventListener("click",this._handleDocumentClick)}firstUpdated(){this.dataService=new cs(this.hass),this.initializeSelectedDevice(),this._fetchHistory(),this._fetchStrainLibrary()}updated(t){if(super.updated(t),t.has("selectedDevice")){const t=this.selectedDevice&&this._graphRanges[this.selectedDevice]||"24h";this._fetchHistory(t)}}async _fetchHistory(t="24h"){if(!this.hass||!this.selectedDevice)return;const e=this.dataService.getGrowspaceDevices().find(t=>t.device_id===this.selectedDevice);if(!e)return;let i=e.name.toLowerCase().replace(/\s+/g,"_");e.overview_entity_id&&(i=e.overview_entity_id.replace("sensor.",""));let r=`binary_sensor.${i}_optimal_conditions`;"cure"===i?r="binary_sensor.cure_optimal_curing":"dry"===i&&(r="binary_sensor.dry_optimal_drying");const a=new Date;let s=new Date(a.getTime()-864e5);switch(t){case"1h":s=new Date(a.getTime()-36e5);break;case"6h":s=new Date(a.getTime()-216e5);break;case"7d":s=new Date(a.getTime()-6048e5)}try{const t=await this.dataService.getHistory(r,s,a);this._historyData=t}catch(t){console.error("Failed to fetch history",t)}}async _fetchStrainLibrary(){if(!this.hass)return;const t=localStorage.getItem("growspace_strain_library");if(t)try{this._strainLibrary=JSON.parse(t),this.requestUpdate()}catch(t){console.warn("Failed to parse cached strain library",t)}try{const t=await this.hass.connection.sendMessagePromise({type:"call_service",domain:"growspace_manager",service:"get_strain_library",service_data:{},return_response:!0}),e=t?.response||{},i=[];Object.entries(e).forEach(([t,e])=>{const r=e.meta||{},a=e.phenotypes||{};Object.entries(a).forEach(([e,a])=>{i.push({strain:t,phenotype:e,key:`${t}|${e}`,breeder:r.breeder,type:r.type,lineage:r.lineage,sex:r.sex,sativa_percentage:r.sativa_percentage,indica_percentage:r.indica_percentage,description:a.description,image:a.image_path,image_crop_meta:a.image_crop_meta,flowering_days_min:a.flower_days_min,flowering_days_max:a.flower_days_max})})}),this._strainLibrary=i,localStorage.setItem("growspace_strain_library",JSON.stringify(i))}catch(t){console.error("Failed to fetch strain library for grid:",t)}}initializeSelectedDevice(){const t=this.dataService.getGrowspaceDevices();if(t.length&&!this.selectedDevice){if(this._config?.default_growspace){const e=t.find(t=>t.device_id===this._config.default_growspace||t.name===this._config.default_growspace);if(e)return void(this.selectedDevice=e.device_id)}this.selectedDevice=t[0].device_id}}static async getConfigElement(){await Promise.resolve().then(function(){return us});return document.createElement("growspace-manager-card-editor")}static getStubConfig(){return{default_growspace:"4x4",compact:!0}}setConfig(t){if(!t)throw new Error("Invalid configuration");this._config=t,void 0!==this._config.compact&&(this._isCompactView=this._config.compact)}getCardSize(){return 4}_handleDeviceChange(t){const e=t.target;this.selectedDevice=e.value}_togglePlantSelection(t){const e=t.attributes.plant_id;if(!e)return;const i=new Set(this._selectedPlants);i.has(e)?i.delete(e):i.add(e),this._selectedPlants=i,this.requestUpdate()}_selectAllPlants(){const t=this.dataService.getGrowspaceDevices().find(t=>t.device_id===this.selectedDevice);if(!t)return;const e=new Set;t.plants?.forEach(t=>{const i=t.attributes.plant_id;i&&!this._optimisticDeletedPlantIds.has(i)&&e.add(i)}),this._selectedPlants=e,this.requestUpdate()}_deselectAllPlants(){this._selectedPlants=new Set,this.requestUpdate()}_exitEditMode(){this._isEditMode=!1,this._selectedPlants=new Set,this.requestUpdate()}_toggleEditMode(){this._isEditMode=!this._isEditMode,this._isEditMode||(this._selectedPlants=new Set),this._menuOpen=!1,this.requestUpdate()}_handleKeyboardNav(t){if(!this.selectedDevice)return;const e=this.dataService.getGrowspaceDevices().find(t=>t.device_id===this.selectedDevice);if(!e)return;const i=e.plants.filter(t=>!this._optimisticDeletedPlantIds.has(t.attributes.plant_id||""));0!==i.length&&("ArrowRight"===t.key?(this._focusedPlantIndex=(this._focusedPlantIndex+1)%i.length,this._focusPlantByIndex(this._focusedPlantIndex)):"ArrowLeft"===t.key?(this._focusedPlantIndex=(this._focusedPlantIndex-1+i.length)%i.length,this._focusPlantByIndex(this._focusedPlantIndex)):"Enter"!==t.key&&" "!==t.key||this._focusedPlantIndex>=0&&this._focusedPlantIndex<i.length&&this._handlePlantClick(i[this._focusedPlantIndex]))}_focusPlantByIndex(t){const e=this.shadowRoot?.querySelector(".growspace-grid");if(e){const i=e.querySelectorAll(".plant-card-rich");i[t]&&i[t].focus()}}_announceToScreenReader(t){const e=this.shadowRoot?.querySelector(".sr-only-announcer");e&&(e.textContent=t)}_handlePlantClick(t){if(this._isEditMode&&this._selectedPlants.size>0){const e=t.attributes.plant_id;e&&!this._selectedPlants.has(e)&&this._togglePlantSelection(t),this._openPlantOverviewDialog(t,Array.from(this._selectedPlants))}else this._openPlantOverviewDialog(t)}_openPlantOverviewDialog(t,e){this._plantOverviewDialog={open:!0,plant:t,editedAttributes:{...t.attributes},activeTab:"dashboard",selectedPlantIds:e}}getHaDateTimeString(){const t=this.hass.config.time_zone||Intl.DateTimeFormat().resolvedOptions().timeZone;return ss.now().setZone(t).toFormat("yyyy-LL-dd'T'HH:mm")}_openAddPlantDialog(t,e){const i=this.dataService.getStrainLibrary(),r=i.length>0?i[0].strain:"",a=i.length>0?i[0].phenotype:"";this._addPlantDialog={open:!0,row:t,col:e,strain:r,phenotype:a,veg_start:"",flower_start:"",seedling_start:"",mother_start:"",clone_start:"",dry_start:"",cure_start:""}}async _confirmAddPlant(){if(!this._addPlantDialog||!this.selectedDevice)return;if(!this._addPlantDialog.strain)return void alert("Please enter a strain!");const{row:t,col:e,strain:i,phenotype:r,veg_start:a,flower_start:s,seedling_start:n,mother_start:o,clone_start:l,dry_start:c,cure_start:d}=this._addPlantDialog;try{const a={growspace_id:this.selectedDevice,row:t+1,col:e+1,strain:i,phenotype:r};["veg_start","flower_start","seedling_start","mother_start","clone_start","dry_start","cure_start"].forEach(t=>{const e=this._addPlantDialog[t];if(e)if(10!==e.length||e.includes("T"))a[t]=e;else{const i=(new Date).toTimeString().split(" ")[0];a[t]=`${e}T${i}`}}),console.log("Adding plant to growspace:",this.selectedDevice,a),console.log("Adding plant:",a),await this.dataService.addPlant(a),this._addPlantDialog=null}catch(t){console.error("Error adding plant:",t)}}async _updatePlant(){if(!this._plantOverviewDialog)return;const{plant:t,editedAttributes:e,selectedPlantIds:i}=this._plantOverviewDialog,r=t.attributes?.plant_id||t.entity_id.replace("sensor.",""),a=i&&i.length>0?i:[r],s=a.length>1,n={},o=["seedling_start","mother_start","clone_start","veg_start","flower_start","dry_start","cure_start"];(s?o:["strain","phenotype","row","col",...o]).forEach(t=>{if(void 0!==e[t])if(o.includes(t)){const i=String(e[t]||"");if(i&&"null"!==i&&"undefined"!==i){const e=ls.formatDateForBackend(i);e&&(n[t]=e)}else n[t]=null}else null!==e[t]&&(n[t]=e[t])});try{const t=a.map(t=>{const e={...n,plant_id:t};return s&&(delete e.row,delete e.col),this.dataService.updatePlant(e)});await Promise.all(t),this._plantOverviewDialog=null,this._isEditMode&&(this._selectedPlants=new Set,this._isEditMode=!1)}catch(t){console.error("Error updating plant(s):",t)}}async _handleDeletePlant(t){if(confirm("Are you sure you want to delete this plant?")){this._optimisticDeletedPlantIds.add(t),this.requestUpdate(),this._plantOverviewDialog=null;try{await this.dataService.removePlant(t)}catch(t){console.error("Error deleting plant:",t),alert("Failed to delete plant. It may reappear on refresh."),this.updateGrid()}}}async _movePlantToNextStage(t){if(!this._plantOverviewDialog?.plant)return void console.error("No plant found in overview dialog");const e=this._plantOverviewDialog.plant,i=e.attributes?.stage;let r="";const a=new Set(["mother","flower","dry","cure"]);if(i&&a.has(i)){"flower"===i?r="dry":"dry"===i?r="cure":"mother"===i?r="clone":(console.error("Unknown stage, cannot move plant",r),r="error");try{const t=e.attributes?.plant_id||e.entity_id.replace("sensor.","");await this.dataService.harvestPlant(t,r),this._plantOverviewDialog=null}catch(t){console.error("Error moving plant to next stage:",t)}}else alert("Plant must be in mother or flower or dry or cure stage to move. stage is "+i)}async _harvestPlant(t){await this._movePlantToNextStage(t)}async _finishDryingPlant(t){await this._movePlantToNextStage(t)}async _openStrainLibraryDialog(){let t;try{t=await this.hass.connection.sendMessagePromise({type:"call_service",domain:"growspace_manager",service:"get_strain_library",service_data:{},return_response:!0})}catch(t){console.error("Failed to fetch strain library:",t)}const e=t?.response||{},i=[];Object.entries(e).forEach(([t,e])=>{const r=e.meta||{},a=e.phenotypes||{};Object.entries(a).forEach(([e,a])=>{i.push({strain:t,phenotype:e,key:`${t}|${e}`,breeder:r.breeder,type:r.type,lineage:r.lineage,sex:r.sex,sativa_percentage:r.sativa_percentage,indica_percentage:r.indica_percentage,description:a.description,image:a.image_path,image_crop_meta:a.image_crop_meta,flowering_days_min:a.flower_days_min,flowering_days_max:a.flower_days_max})})}),this._strainLibraryDialog={open:!0,view:"browse",strains:i,searchQuery:"",editorState:this._createEmptyEditorState()}}_createEmptyEditorState(){return{strain:"",phenotype:"",breeder:"",type:"",flowering_min:"",flowering_max:"",lineage:"",sex:"",description:"",image:"",image_crop_meta:void 0}}_switchStrainView(t,e){this._strainLibraryDialog&&(this._strainLibraryDialog.view=t,this._strainLibraryDialog.isCropping=!1,"editor"===t&&(this._strainLibraryDialog.editorState=e?{strain:e.strain,phenotype:e.phenotype||"",breeder:e.breeder||"",type:e.type||"",flowering_min:e.flowering_days_min?.toString()||"",flowering_max:e.flowering_days_max?.toString()||"",lineage:e.lineage||"",sex:e.sex||"",description:e.description||"",image:e.image||"",image_crop_meta:e.image_crop_meta,sativa_percentage:e.sativa_percentage,indica_percentage:e.indica_percentage}:this._createEmptyEditorState()),this.requestUpdate())}_openIrrigationDialog(){const t=this.dataService.getGrowspaceDevices().find(t=>t.device_id===this.selectedDevice);if(!t||!t.overview_entity_id)return;const e=this.hass.states[t.overview_entity_id],i=e?.attributes||{},r=i.irrigation_times||[],a=i.drain_times||[],s=i.irrigation_pump_entity||"",n=i.drain_pump_entity||"",o=i.irrigation_duration||3,l=i.drain_duration||3;this._irrigationDialog={open:!0,growspace_id:t.device_id,growspace_name:t.name,irrigation_pump_entity:s,drain_pump_entity:n,irrigation_duration:o,drain_duration:l,irrigation_times:r,drain_times:a}}async _saveIrrigationPumpSettings(){if(this._irrigationDialog)try{await this.hass.callService("growspace_manager","set_irrigation_settings",{growspace_id:this._irrigationDialog.growspace_id,irrigation_pump_entity:this._irrigationDialog.irrigation_pump_entity,drain_pump_entity:this._irrigationDialog.drain_pump_entity,irrigation_duration:this._irrigationDialog.irrigation_duration,drain_duration:this._irrigationDialog.drain_duration}),console.log("Irrigation pump settings saved")}catch(t){console.error("Error saving irrigation pump settings:",t)}}async _addIrrigationTime(t,e){if(this._irrigationDialog)try{await this.hass.callService("growspace_manager","add_irrigation_time",{growspace_id:this._irrigationDialog.growspace_id,time:t,...void 0!==e&&{duration:e}}),this._irrigationDialog.irrigation_times.push({time:t,duration:e}),this._irrigationDialog.adding_irrigation_time=void 0,this.requestUpdate(),console.log("Irrigation time added:",t)}catch(t){console.error("Error adding irrigation time:",t)}}async _removeIrrigationTime(t){if(this._irrigationDialog)try{await this.hass.callService("growspace_manager","remove_irrigation_time",{growspace_id:this._irrigationDialog.growspace_id,time:t}),this._irrigationDialog.irrigation_times=this._irrigationDialog.irrigation_times.filter(e=>e.time!==t),this.requestUpdate(),console.log("Irrigation time removed:",t)}catch(t){console.error("Error removing irrigation time:",t)}}async _addDrainTime(t,e){if(this._irrigationDialog)try{await this.hass.callService("growspace_manager","add_drain_time",{growspace_id:this._irrigationDialog.growspace_id,time:t,...void 0!==e&&{duration:e}}),this._irrigationDialog.drain_times.push({time:t,duration:e}),this._irrigationDialog.adding_drain_time=void 0,this.requestUpdate(),console.log("Drain time added:",t)}catch(t){console.error("Error adding drain time:",t)}}async _removeDrainTime(t){if(this._irrigationDialog)try{await this.hass.callService("growspace_manager","remove_drain_time",{growspace_id:this._irrigationDialog.growspace_id,time:t}),this._irrigationDialog.drain_times=this._irrigationDialog.drain_times.filter(e=>e.time!==t),this.requestUpdate(),console.log("Drain time removed:",t)}catch(t){console.error("Error removing drain time:",t)}}_startAddingIrrigationTime(t,e){if(!this._irrigationDialog)return;const i=Math.floor(t/e*24),r=Math.floor(60*(t/e*24-i)),a=`${i.toString().padStart(2,"0")}:${r.toString().padStart(2,"0")}`;this._irrigationDialog.adding_irrigation_time={time:a,duration:this._irrigationDialog.irrigation_duration},this.requestUpdate()}_startAddingDrainTime(t,e){if(!this._irrigationDialog)return;const i=Math.floor(t/e*24),r=Math.floor(60*(t/e*24-i)),a=`${i.toString().padStart(2,"0")}:${r.toString().padStart(2,"0")}`;this._irrigationDialog.adding_drain_time={time:a,duration:this._irrigationDialog.drain_duration},this.requestUpdate()}_handleStrainEditorChange(t,e){this._strainLibraryDialog&&this._strainLibraryDialog.editorState&&(this._strainLibraryDialog.editorState[t]=e,this.requestUpdate())}_toggleCropMode(t){this._strainLibraryDialog&&(this._strainLibraryDialog.isCropping=t,this.requestUpdate())}_toggleImageSelector(t){this._strainLibraryDialog&&(this._strainLibraryDialog.isImageSelectorOpen=t,this.requestUpdate())}_handleSelectLibraryImage(t){if(this._strainLibraryDialog&&this._strainLibraryDialog.editorState){this._strainLibraryDialog.editorState.image=t;const e=this._strainLibraryDialog.strains.find(e=>e.image===t&&!!e.image_crop_meta);e&&e.image_crop_meta?this._strainLibraryDialog.editorState.image_crop_meta={...e.image_crop_meta}:this._strainLibraryDialog.editorState.image_crop_meta=void 0,this._strainLibraryDialog.isImageSelectorOpen=!1,this.requestUpdate()}}_toggleEnvGraph(t){const e=new Set(this._activeEnvGraphs);e.has(t)?e.delete(t):e.add(t),this._activeEnvGraphs=e,this.requestUpdate()}_handleGraphHover(t,e,i,r,a){const s=t.clientX-r.left,n=r.width,o="1h"===(this._graphRanges[e]||"24h")?36e5:864e5,l=(new Date).getTime()-o+s/n*o;let c=i[0],d=Math.abs(i[0].time-l);for(let t=1;t<i.length;t++){const e=Math.abs(i[t].time-l);e<d&&(d=e,c=i[t])}const p=new Date(c.time).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});let h=`${c.value} ${a}`;"state"===a&&(h="irrigation"===e||"drain"===e?1===c.value?`ON (${c.meta?.duration||"Unknown"})`:"OFF":1===c.value?"Optimal Conditions":c.meta||"Not Optimal"),this._tooltip={id:e,x:s,time:p,value:h}}renderEnvGraph(t,e,i,r,a="line",s=Et){const n=this.dataService.getGrowspaceDevices().find(t=>t.device_id===this.selectedDevice);if(!n)return j``;let o=n.name.toLowerCase().replace(/\s+/g,"_");n.overview_entity_id&&(o=n.overview_entity_id.replace("sensor.",""));let l=`binary_sensor.${o}_optimal_conditions`;"cure"===o?l="binary_sensor.cure_optimal_curing":"dry"===o&&(l="binary_sensor.dry_optimal_drying");const c=this.hass.states[l],d=n.overview_entity_id?this.hass.states[n.overview_entity_id]:void 0,p=this._graphRanges[this.selectedDevice||""]||"24h";let h=864e5;"1h"===p?h=36e5:"6h"===p?h=216e5:"7d"===p&&(h=6048e5);const u=new Date,g=new Date(u.getTime()-h);let m=[];if("irrigation"===t||"drain"===t){const e="irrigation"===t?d?.attributes?.irrigation_times:d?.attributes?.drain_times;if(e&&Array.isArray(e)){const t=[],i=[new Date(u),new Date(g)];e.forEach(e=>{const[r,a]=e.time.split(":").map(Number),s=1e3*(e.duration||60);i.forEach(e=>{const i=new Date(e);i.setHours(r,a,0,0);const n=new Date(i.getTime()+s);n.getTime()>g.getTime()&&i.getTime()<u.getTime()&&t.push({start:Math.max(i.getTime(),g.getTime()),end:Math.min(n.getTime(),u.getTime())})})}),t.sort((t,e)=>t.start-e.start),m.push({time:g.getTime(),value:0}),t.forEach(t=>{const e=(t.end-t.start)/1e3;let i=`${e}s`;e>=60&&(i=`${Math.round(e/60)}m`),m.push({time:t.start-1,value:0}),m.push({time:t.start,value:1,meta:{duration:i}}),m.push({time:t.end,value:1,meta:{duration:i}}),m.push({time:t.end+1,value:0})}),m.push({time:u.getTime(),value:0}),a="step"}}else{const e=(t,e)=>{if(t&&t.attributes){if("state"===r&&"optimal"===e)return"on"===t.state?1:0;if("light"===e){return!0===(t.attributes.is_lights_on??t.attributes.observations?.is_lights_on)?1:0}return void 0!==t.attributes[e]?t.attributes[e]:t.attributes.observations&&"object"==typeof t.attributes.observations?t.attributes.observations[e]:void 0}},i=(t,e)=>{if("state"===r&&"optimal"===e)return t.attributes.reasons;if("light"===e){return{state:t.attributes.is_lights_on??t.attributes.observations?.is_lights_on?"ON":"OFF"}}};if(!this._historyData||0===this._historyData.length)return j``;const a=[...this._historyData].sort((t,e)=>new Date(t.last_changed).getTime()-new Date(e.last_changed).getTime());if(a.forEach(r=>{const a=new Date(r.last_changed).getTime();if(a<g.getTime())return;const s=e(r,t),n=i(r,t);void 0===s||isNaN(parseFloat(s))||m.push({time:a,value:parseFloat(s),meta:n})}),c){const r=e(c,t),a=i(c,t);void 0===r||isNaN(parseFloat(r))||m.push({time:u.getTime(),value:parseFloat(r),meta:a})}}if(1===m.length&&m.unshift({time:g.getTime(),value:m[0].value,meta:m[0].meta}),m.length<2&&"step"!==a)return j``;const f=1e3,v="step"===a?100:180;let y=0,b=1;"state"!==r&&"irrigation"!==t&&"drain"!==t&&(y=Math.min(...m.map(t=>t.value)),b=Math.max(...m.map(t=>t.value)));const w=b-y||1,x=y-.1*w,_=b+.1*w,$=_-x,D=m.length>0?m.reduce((t,e)=>t+e.value,0)/m.length:(y+b)/2;let S="";if("step"===a){const t=[];let e=m.length>0?m[0].value:0;t.push([0,v-(e-x)/$*v]),m.forEach(i=>{const r=(i.time-g.getTime())/h*f,a=v-(i.value-x)/$*v;t.push([r,t[t.length-1][1]]),t.push([r,a]),e=i.value}),t.push([f,v-(e-x)/$*v]),S=`M ${t.map(t=>`${t[0]},${t[1]}`).join(" L ")}`}else{const t=m.map(t=>[(t.time-g.getTime())/h*f,v-(t.value-x)/$*v]);S=`M ${t.map(t=>`${t[0]},${t[1]}`).join(" L ")}`}if("step"===a)return j`
-        <div class="gs-light-cycle-card" style="margin-top: 12px; border: 1px solid ${e}40;">
+      `;
+    }
+}
+
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+
+function __decorate(decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+
+function __metadata(metadataKey, metadataValue) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+}
+
+typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+    var e = new Error(message);
+    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+};
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const t=t=>(e,o)=>{void 0!==o?o.addInitializer((()=>{customElements.define(t,e);})):customElements.define(t,e);};
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const o={attribute:!0,type:String,converter:u$1,reflect:!1,hasChanged:f$1},r$1=(t=o,e,r)=>{const{kind:n,metadata:i}=r;let s=globalThis.litPropertyMetadata.get(i);if(void 0===s&&globalThis.litPropertyMetadata.set(i,s=new Map),"setter"===n&&((t=Object.create(t)).wrapped=!0),s.set(r.name,t),"accessor"===n){const{name:o}=r;return {set(r){const n=e.get.call(this);e.set.call(this,r),this.requestUpdate(o,n,t);},init(e){return void 0!==e&&this.C(o,void 0,t,e),e}}}if("setter"===n){const{name:o}=r;return function(r){const n=this[o];e.call(this,r),this.requestUpdate(o,n,t);}}throw Error("Unsupported decorator location: "+n)};function n$1(t){return (e,o)=>"object"==typeof o?r$1(t,e,o):((t,e,o)=>{const r=e.hasOwnProperty(o);return e.constructor.createProperty(o,t),r?Object.getOwnPropertyDescriptor(e,o):void 0})(t,e,o)}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */function r(r){return n$1({...r,state:!0,attribute:!1})}
+
+// these aren't really private, but nor are they really useful to document
+
+/**
+ * @private
+ */
+class LuxonError extends Error {}
+
+/**
+ * @private
+ */
+class InvalidDateTimeError extends LuxonError {
+  constructor(reason) {
+    super(`Invalid DateTime: ${reason.toMessage()}`);
+  }
+}
+
+/**
+ * @private
+ */
+class InvalidIntervalError extends LuxonError {
+  constructor(reason) {
+    super(`Invalid Interval: ${reason.toMessage()}`);
+  }
+}
+
+/**
+ * @private
+ */
+class InvalidDurationError extends LuxonError {
+  constructor(reason) {
+    super(`Invalid Duration: ${reason.toMessage()}`);
+  }
+}
+
+/**
+ * @private
+ */
+class ConflictingSpecificationError extends LuxonError {}
+
+/**
+ * @private
+ */
+class InvalidUnitError extends LuxonError {
+  constructor(unit) {
+    super(`Invalid unit ${unit}`);
+  }
+}
+
+/**
+ * @private
+ */
+class InvalidArgumentError extends LuxonError {}
+
+/**
+ * @private
+ */
+class ZoneIsAbstractError extends LuxonError {
+  constructor() {
+    super("Zone is an abstract class");
+  }
+}
+
+/**
+ * @private
+ */
+
+const n = "numeric",
+  s = "short",
+  l = "long";
+
+const DATE_SHORT = {
+  year: n,
+  month: n,
+  day: n,
+};
+
+const DATE_MED = {
+  year: n,
+  month: s,
+  day: n,
+};
+
+const DATE_MED_WITH_WEEKDAY = {
+  year: n,
+  month: s,
+  day: n,
+  weekday: s,
+};
+
+const DATE_FULL = {
+  year: n,
+  month: l,
+  day: n,
+};
+
+const DATE_HUGE = {
+  year: n,
+  month: l,
+  day: n,
+  weekday: l,
+};
+
+const TIME_SIMPLE = {
+  hour: n,
+  minute: n,
+};
+
+const TIME_WITH_SECONDS = {
+  hour: n,
+  minute: n,
+  second: n,
+};
+
+const TIME_WITH_SHORT_OFFSET = {
+  hour: n,
+  minute: n,
+  second: n,
+  timeZoneName: s,
+};
+
+const TIME_WITH_LONG_OFFSET = {
+  hour: n,
+  minute: n,
+  second: n,
+  timeZoneName: l,
+};
+
+const TIME_24_SIMPLE = {
+  hour: n,
+  minute: n,
+  hourCycle: "h23",
+};
+
+const TIME_24_WITH_SECONDS = {
+  hour: n,
+  minute: n,
+  second: n,
+  hourCycle: "h23",
+};
+
+const TIME_24_WITH_SHORT_OFFSET = {
+  hour: n,
+  minute: n,
+  second: n,
+  hourCycle: "h23",
+  timeZoneName: s,
+};
+
+const TIME_24_WITH_LONG_OFFSET = {
+  hour: n,
+  minute: n,
+  second: n,
+  hourCycle: "h23",
+  timeZoneName: l,
+};
+
+const DATETIME_SHORT = {
+  year: n,
+  month: n,
+  day: n,
+  hour: n,
+  minute: n,
+};
+
+const DATETIME_SHORT_WITH_SECONDS = {
+  year: n,
+  month: n,
+  day: n,
+  hour: n,
+  minute: n,
+  second: n,
+};
+
+const DATETIME_MED = {
+  year: n,
+  month: s,
+  day: n,
+  hour: n,
+  minute: n,
+};
+
+const DATETIME_MED_WITH_SECONDS = {
+  year: n,
+  month: s,
+  day: n,
+  hour: n,
+  minute: n,
+  second: n,
+};
+
+const DATETIME_MED_WITH_WEEKDAY = {
+  year: n,
+  month: s,
+  day: n,
+  weekday: s,
+  hour: n,
+  minute: n,
+};
+
+const DATETIME_FULL = {
+  year: n,
+  month: l,
+  day: n,
+  hour: n,
+  minute: n,
+  timeZoneName: s,
+};
+
+const DATETIME_FULL_WITH_SECONDS = {
+  year: n,
+  month: l,
+  day: n,
+  hour: n,
+  minute: n,
+  second: n,
+  timeZoneName: s,
+};
+
+const DATETIME_HUGE = {
+  year: n,
+  month: l,
+  day: n,
+  weekday: l,
+  hour: n,
+  minute: n,
+  timeZoneName: l,
+};
+
+const DATETIME_HUGE_WITH_SECONDS = {
+  year: n,
+  month: l,
+  day: n,
+  weekday: l,
+  hour: n,
+  minute: n,
+  second: n,
+  timeZoneName: l,
+};
+
+/**
+ * @interface
+ */
+class Zone {
+  /**
+   * The type of zone
+   * @abstract
+   * @type {string}
+   */
+  get type() {
+    throw new ZoneIsAbstractError();
+  }
+
+  /**
+   * The name of this zone.
+   * @abstract
+   * @type {string}
+   */
+  get name() {
+    throw new ZoneIsAbstractError();
+  }
+
+  /**
+   * The IANA name of this zone.
+   * Defaults to `name` if not overwritten by a subclass.
+   * @abstract
+   * @type {string}
+   */
+  get ianaName() {
+    return this.name;
+  }
+
+  /**
+   * Returns whether the offset is known to be fixed for the whole year.
+   * @abstract
+   * @type {boolean}
+   */
+  get isUniversal() {
+    throw new ZoneIsAbstractError();
+  }
+
+  /**
+   * Returns the offset's common name (such as EST) at the specified timestamp
+   * @abstract
+   * @param {number} ts - Epoch milliseconds for which to get the name
+   * @param {Object} opts - Options to affect the format
+   * @param {string} opts.format - What style of offset to return. Accepts 'long' or 'short'.
+   * @param {string} opts.locale - What locale to return the offset name in.
+   * @return {string}
+   */
+  offsetName(ts, opts) {
+    throw new ZoneIsAbstractError();
+  }
+
+  /**
+   * Returns the offset's value as a string
+   * @abstract
+   * @param {number} ts - Epoch milliseconds for which to get the offset
+   * @param {string} format - What style of offset to return.
+   *                          Accepts 'narrow', 'short', or 'techie'. Returning '+6', '+06:00', or '+0600' respectively
+   * @return {string}
+   */
+  formatOffset(ts, format) {
+    throw new ZoneIsAbstractError();
+  }
+
+  /**
+   * Return the offset in minutes for this zone at the specified timestamp.
+   * @abstract
+   * @param {number} ts - Epoch milliseconds for which to compute the offset
+   * @return {number}
+   */
+  offset(ts) {
+    throw new ZoneIsAbstractError();
+  }
+
+  /**
+   * Return whether this Zone is equal to another zone
+   * @abstract
+   * @param {Zone} otherZone - the zone to compare
+   * @return {boolean}
+   */
+  equals(otherZone) {
+    throw new ZoneIsAbstractError();
+  }
+
+  /**
+   * Return whether this Zone is valid.
+   * @abstract
+   * @type {boolean}
+   */
+  get isValid() {
+    throw new ZoneIsAbstractError();
+  }
+}
+
+let singleton$1 = null;
+
+/**
+ * Represents the local zone for this JavaScript environment.
+ * @implements {Zone}
+ */
+class SystemZone extends Zone {
+  /**
+   * Get a singleton instance of the local zone
+   * @return {SystemZone}
+   */
+  static get instance() {
+    if (singleton$1 === null) {
+      singleton$1 = new SystemZone();
+    }
+    return singleton$1;
+  }
+
+  /** @override **/
+  get type() {
+    return "system";
+  }
+
+  /** @override **/
+  get name() {
+    return new Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
+
+  /** @override **/
+  get isUniversal() {
+    return false;
+  }
+
+  /** @override **/
+  offsetName(ts, { format, locale }) {
+    return parseZoneInfo(ts, format, locale);
+  }
+
+  /** @override **/
+  formatOffset(ts, format) {
+    return formatOffset(this.offset(ts), format);
+  }
+
+  /** @override **/
+  offset(ts) {
+    return -new Date(ts).getTimezoneOffset();
+  }
+
+  /** @override **/
+  equals(otherZone) {
+    return otherZone.type === "system";
+  }
+
+  /** @override **/
+  get isValid() {
+    return true;
+  }
+}
+
+const dtfCache = new Map();
+function makeDTF(zoneName) {
+  let dtf = dtfCache.get(zoneName);
+  if (dtf === undefined) {
+    dtf = new Intl.DateTimeFormat("en-US", {
+      hour12: false,
+      timeZone: zoneName,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      era: "short",
+    });
+    dtfCache.set(zoneName, dtf);
+  }
+  return dtf;
+}
+
+const typeToPos = {
+  year: 0,
+  month: 1,
+  day: 2,
+  era: 3,
+  hour: 4,
+  minute: 5,
+  second: 6,
+};
+
+function hackyOffset(dtf, date) {
+  const formatted = dtf.format(date).replace(/\u200E/g, ""),
+    parsed = /(\d+)\/(\d+)\/(\d+) (AD|BC),? (\d+):(\d+):(\d+)/.exec(formatted),
+    [, fMonth, fDay, fYear, fadOrBc, fHour, fMinute, fSecond] = parsed;
+  return [fYear, fMonth, fDay, fadOrBc, fHour, fMinute, fSecond];
+}
+
+function partsOffset(dtf, date) {
+  const formatted = dtf.formatToParts(date);
+  const filled = [];
+  for (let i = 0; i < formatted.length; i++) {
+    const { type, value } = formatted[i];
+    const pos = typeToPos[type];
+
+    if (type === "era") {
+      filled[pos] = value;
+    } else if (!isUndefined(pos)) {
+      filled[pos] = parseInt(value, 10);
+    }
+  }
+  return filled;
+}
+
+const ianaZoneCache = new Map();
+/**
+ * A zone identified by an IANA identifier, like America/New_York
+ * @implements {Zone}
+ */
+class IANAZone extends Zone {
+  /**
+   * @param {string} name - Zone name
+   * @return {IANAZone}
+   */
+  static create(name) {
+    let zone = ianaZoneCache.get(name);
+    if (zone === undefined) {
+      ianaZoneCache.set(name, (zone = new IANAZone(name)));
+    }
+    return zone;
+  }
+
+  /**
+   * Reset local caches. Should only be necessary in testing scenarios.
+   * @return {void}
+   */
+  static resetCache() {
+    ianaZoneCache.clear();
+    dtfCache.clear();
+  }
+
+  /**
+   * Returns whether the provided string is a valid specifier. This only checks the string's format, not that the specifier identifies a known zone; see isValidZone for that.
+   * @param {string} s - The string to check validity on
+   * @example IANAZone.isValidSpecifier("America/New_York") //=> true
+   * @example IANAZone.isValidSpecifier("Sport~~blorp") //=> false
+   * @deprecated For backward compatibility, this forwards to isValidZone, better use `isValidZone()` directly instead.
+   * @return {boolean}
+   */
+  static isValidSpecifier(s) {
+    return this.isValidZone(s);
+  }
+
+  /**
+   * Returns whether the provided string identifies a real zone
+   * @param {string} zone - The string to check
+   * @example IANAZone.isValidZone("America/New_York") //=> true
+   * @example IANAZone.isValidZone("Fantasia/Castle") //=> false
+   * @example IANAZone.isValidZone("Sport~~blorp") //=> false
+   * @return {boolean}
+   */
+  static isValidZone(zone) {
+    if (!zone) {
+      return false;
+    }
+    try {
+      new Intl.DateTimeFormat("en-US", { timeZone: zone }).format();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  constructor(name) {
+    super();
+    /** @private **/
+    this.zoneName = name;
+    /** @private **/
+    this.valid = IANAZone.isValidZone(name);
+  }
+
+  /**
+   * The type of zone. `iana` for all instances of `IANAZone`.
+   * @override
+   * @type {string}
+   */
+  get type() {
+    return "iana";
+  }
+
+  /**
+   * The name of this zone (i.e. the IANA zone name).
+   * @override
+   * @type {string}
+   */
+  get name() {
+    return this.zoneName;
+  }
+
+  /**
+   * Returns whether the offset is known to be fixed for the whole year:
+   * Always returns false for all IANA zones.
+   * @override
+   * @type {boolean}
+   */
+  get isUniversal() {
+    return false;
+  }
+
+  /**
+   * Returns the offset's common name (such as EST) at the specified timestamp
+   * @override
+   * @param {number} ts - Epoch milliseconds for which to get the name
+   * @param {Object} opts - Options to affect the format
+   * @param {string} opts.format - What style of offset to return. Accepts 'long' or 'short'.
+   * @param {string} opts.locale - What locale to return the offset name in.
+   * @return {string}
+   */
+  offsetName(ts, { format, locale }) {
+    return parseZoneInfo(ts, format, locale, this.name);
+  }
+
+  /**
+   * Returns the offset's value as a string
+   * @override
+   * @param {number} ts - Epoch milliseconds for which to get the offset
+   * @param {string} format - What style of offset to return.
+   *                          Accepts 'narrow', 'short', or 'techie'. Returning '+6', '+06:00', or '+0600' respectively
+   * @return {string}
+   */
+  formatOffset(ts, format) {
+    return formatOffset(this.offset(ts), format);
+  }
+
+  /**
+   * Return the offset in minutes for this zone at the specified timestamp.
+   * @override
+   * @param {number} ts - Epoch milliseconds for which to compute the offset
+   * @return {number}
+   */
+  offset(ts) {
+    if (!this.valid) return NaN;
+    const date = new Date(ts);
+
+    if (isNaN(date)) return NaN;
+
+    const dtf = makeDTF(this.name);
+    let [year, month, day, adOrBc, hour, minute, second] = dtf.formatToParts
+      ? partsOffset(dtf, date)
+      : hackyOffset(dtf, date);
+
+    if (adOrBc === "BC") {
+      year = -Math.abs(year) + 1;
+    }
+
+    // because we're using hour12 and https://bugs.chromium.org/p/chromium/issues/detail?id=1025564&can=2&q=%2224%3A00%22%20datetimeformat
+    const adjustedHour = hour === 24 ? 0 : hour;
+
+    const asUTC = objToLocalTS({
+      year,
+      month,
+      day,
+      hour: adjustedHour,
+      minute,
+      second,
+      millisecond: 0,
+    });
+
+    let asTS = +date;
+    const over = asTS % 1000;
+    asTS -= over >= 0 ? over : 1000 + over;
+    return (asUTC - asTS) / (60 * 1000);
+  }
+
+  /**
+   * Return whether this Zone is equal to another zone
+   * @override
+   * @param {Zone} otherZone - the zone to compare
+   * @return {boolean}
+   */
+  equals(otherZone) {
+    return otherZone.type === "iana" && otherZone.name === this.name;
+  }
+
+  /**
+   * Return whether this Zone is valid.
+   * @override
+   * @type {boolean}
+   */
+  get isValid() {
+    return this.valid;
+  }
+}
+
+// todo - remap caching
+
+let intlLFCache = {};
+function getCachedLF(locString, opts = {}) {
+  const key = JSON.stringify([locString, opts]);
+  let dtf = intlLFCache[key];
+  if (!dtf) {
+    dtf = new Intl.ListFormat(locString, opts);
+    intlLFCache[key] = dtf;
+  }
+  return dtf;
+}
+
+const intlDTCache = new Map();
+function getCachedDTF(locString, opts = {}) {
+  const key = JSON.stringify([locString, opts]);
+  let dtf = intlDTCache.get(key);
+  if (dtf === undefined) {
+    dtf = new Intl.DateTimeFormat(locString, opts);
+    intlDTCache.set(key, dtf);
+  }
+  return dtf;
+}
+
+const intlNumCache = new Map();
+function getCachedINF(locString, opts = {}) {
+  const key = JSON.stringify([locString, opts]);
+  let inf = intlNumCache.get(key);
+  if (inf === undefined) {
+    inf = new Intl.NumberFormat(locString, opts);
+    intlNumCache.set(key, inf);
+  }
+  return inf;
+}
+
+const intlRelCache = new Map();
+function getCachedRTF(locString, opts = {}) {
+  const { base, ...cacheKeyOpts } = opts; // exclude `base` from the options
+  const key = JSON.stringify([locString, cacheKeyOpts]);
+  let inf = intlRelCache.get(key);
+  if (inf === undefined) {
+    inf = new Intl.RelativeTimeFormat(locString, opts);
+    intlRelCache.set(key, inf);
+  }
+  return inf;
+}
+
+let sysLocaleCache = null;
+function systemLocale() {
+  if (sysLocaleCache) {
+    return sysLocaleCache;
+  } else {
+    sysLocaleCache = new Intl.DateTimeFormat().resolvedOptions().locale;
+    return sysLocaleCache;
+  }
+}
+
+const intlResolvedOptionsCache = new Map();
+function getCachedIntResolvedOptions(locString) {
+  let opts = intlResolvedOptionsCache.get(locString);
+  if (opts === undefined) {
+    opts = new Intl.DateTimeFormat(locString).resolvedOptions();
+    intlResolvedOptionsCache.set(locString, opts);
+  }
+  return opts;
+}
+
+const weekInfoCache = new Map();
+function getCachedWeekInfo(locString) {
+  let data = weekInfoCache.get(locString);
+  if (!data) {
+    const locale = new Intl.Locale(locString);
+    // browsers currently implement this as a property, but spec says it should be a getter function
+    data = "getWeekInfo" in locale ? locale.getWeekInfo() : locale.weekInfo;
+    // minimalDays was removed from WeekInfo: https://github.com/tc39/proposal-intl-locale-info/issues/86
+    if (!("minimalDays" in data)) {
+      data = { ...fallbackWeekSettings, ...data };
+    }
+    weekInfoCache.set(locString, data);
+  }
+  return data;
+}
+
+function parseLocaleString(localeStr) {
+  // I really want to avoid writing a BCP 47 parser
+  // see, e.g. https://github.com/wooorm/bcp-47
+  // Instead, we'll do this:
+
+  // a) if the string has no -u extensions, just leave it alone
+  // b) if it does, use Intl to resolve everything
+  // c) if Intl fails, try again without the -u
+
+  // private subtags and unicode subtags have ordering requirements,
+  // and we're not properly parsing this, so just strip out the
+  // private ones if they exist.
+  const xIndex = localeStr.indexOf("-x-");
+  if (xIndex !== -1) {
+    localeStr = localeStr.substring(0, xIndex);
+  }
+
+  const uIndex = localeStr.indexOf("-u-");
+  if (uIndex === -1) {
+    return [localeStr];
+  } else {
+    let options;
+    let selectedStr;
+    try {
+      options = getCachedDTF(localeStr).resolvedOptions();
+      selectedStr = localeStr;
+    } catch (e) {
+      const smaller = localeStr.substring(0, uIndex);
+      options = getCachedDTF(smaller).resolvedOptions();
+      selectedStr = smaller;
+    }
+
+    const { numberingSystem, calendar } = options;
+    return [selectedStr, numberingSystem, calendar];
+  }
+}
+
+function intlConfigString(localeStr, numberingSystem, outputCalendar) {
+  if (outputCalendar || numberingSystem) {
+    if (!localeStr.includes("-u-")) {
+      localeStr += "-u";
+    }
+
+    if (outputCalendar) {
+      localeStr += `-ca-${outputCalendar}`;
+    }
+
+    if (numberingSystem) {
+      localeStr += `-nu-${numberingSystem}`;
+    }
+    return localeStr;
+  } else {
+    return localeStr;
+  }
+}
+
+function mapMonths(f) {
+  const ms = [];
+  for (let i = 1; i <= 12; i++) {
+    const dt = DateTime.utc(2009, i, 1);
+    ms.push(f(dt));
+  }
+  return ms;
+}
+
+function mapWeekdays(f) {
+  const ms = [];
+  for (let i = 1; i <= 7; i++) {
+    const dt = DateTime.utc(2016, 11, 13 + i);
+    ms.push(f(dt));
+  }
+  return ms;
+}
+
+function listStuff(loc, length, englishFn, intlFn) {
+  const mode = loc.listingMode();
+
+  if (mode === "error") {
+    return null;
+  } else if (mode === "en") {
+    return englishFn(length);
+  } else {
+    return intlFn(length);
+  }
+}
+
+function supportsFastNumbers(loc) {
+  if (loc.numberingSystem && loc.numberingSystem !== "latn") {
+    return false;
+  } else {
+    return (
+      loc.numberingSystem === "latn" ||
+      !loc.locale ||
+      loc.locale.startsWith("en") ||
+      getCachedIntResolvedOptions(loc.locale).numberingSystem === "latn"
+    );
+  }
+}
+
+/**
+ * @private
+ */
+
+class PolyNumberFormatter {
+  constructor(intl, forceSimple, opts) {
+    this.padTo = opts.padTo || 0;
+    this.floor = opts.floor || false;
+
+    const { padTo, floor, ...otherOpts } = opts;
+
+    if (!forceSimple || Object.keys(otherOpts).length > 0) {
+      const intlOpts = { useGrouping: false, ...opts };
+      if (opts.padTo > 0) intlOpts.minimumIntegerDigits = opts.padTo;
+      this.inf = getCachedINF(intl, intlOpts);
+    }
+  }
+
+  format(i) {
+    if (this.inf) {
+      const fixed = this.floor ? Math.floor(i) : i;
+      return this.inf.format(fixed);
+    } else {
+      // to match the browser's numberformatter defaults
+      const fixed = this.floor ? Math.floor(i) : roundTo(i, 3);
+      return padStart(fixed, this.padTo);
+    }
+  }
+}
+
+/**
+ * @private
+ */
+
+class PolyDateFormatter {
+  constructor(dt, intl, opts) {
+    this.opts = opts;
+    this.originalZone = undefined;
+
+    let z = undefined;
+    if (this.opts.timeZone) {
+      // Don't apply any workarounds if a timeZone is explicitly provided in opts
+      this.dt = dt;
+    } else if (dt.zone.type === "fixed") {
+      // UTC-8 or Etc/UTC-8 are not part of tzdata, only Etc/GMT+8 and the like.
+      // That is why fixed-offset TZ is set to that unless it is:
+      // 1. Representing offset 0 when UTC is used to maintain previous behavior and does not become GMT.
+      // 2. Unsupported by the browser:
+      //    - some do not support Etc/
+      //    - < Etc/GMT-14, > Etc/GMT+12, and 30-minute or 45-minute offsets are not part of tzdata
+      const gmtOffset = -1 * (dt.offset / 60);
+      const offsetZ = gmtOffset >= 0 ? `Etc/GMT+${gmtOffset}` : `Etc/GMT${gmtOffset}`;
+      if (dt.offset !== 0 && IANAZone.create(offsetZ).valid) {
+        z = offsetZ;
+        this.dt = dt;
+      } else {
+        // Not all fixed-offset zones like Etc/+4:30 are present in tzdata so
+        // we manually apply the offset and substitute the zone as needed.
+        z = "UTC";
+        this.dt = dt.offset === 0 ? dt : dt.setZone("UTC").plus({ minutes: dt.offset });
+        this.originalZone = dt.zone;
+      }
+    } else if (dt.zone.type === "system") {
+      this.dt = dt;
+    } else if (dt.zone.type === "iana") {
+      this.dt = dt;
+      z = dt.zone.name;
+    } else {
+      // Custom zones can have any offset / offsetName so we just manually
+      // apply the offset and substitute the zone as needed.
+      z = "UTC";
+      this.dt = dt.setZone("UTC").plus({ minutes: dt.offset });
+      this.originalZone = dt.zone;
+    }
+
+    const intlOpts = { ...this.opts };
+    intlOpts.timeZone = intlOpts.timeZone || z;
+    this.dtf = getCachedDTF(intl, intlOpts);
+  }
+
+  format() {
+    if (this.originalZone) {
+      // If we have to substitute in the actual zone name, we have to use
+      // formatToParts so that the timezone can be replaced.
+      return this.formatToParts()
+        .map(({ value }) => value)
+        .join("");
+    }
+    return this.dtf.format(this.dt.toJSDate());
+  }
+
+  formatToParts() {
+    const parts = this.dtf.formatToParts(this.dt.toJSDate());
+    if (this.originalZone) {
+      return parts.map((part) => {
+        if (part.type === "timeZoneName") {
+          const offsetName = this.originalZone.offsetName(this.dt.ts, {
+            locale: this.dt.locale,
+            format: this.opts.timeZoneName,
+          });
+          return {
+            ...part,
+            value: offsetName,
+          };
+        } else {
+          return part;
+        }
+      });
+    }
+    return parts;
+  }
+
+  resolvedOptions() {
+    return this.dtf.resolvedOptions();
+  }
+}
+
+/**
+ * @private
+ */
+class PolyRelFormatter {
+  constructor(intl, isEnglish, opts) {
+    this.opts = { style: "long", ...opts };
+    if (!isEnglish && hasRelative()) {
+      this.rtf = getCachedRTF(intl, opts);
+    }
+  }
+
+  format(count, unit) {
+    if (this.rtf) {
+      return this.rtf.format(count, unit);
+    } else {
+      return formatRelativeTime(unit, count, this.opts.numeric, this.opts.style !== "long");
+    }
+  }
+
+  formatToParts(count, unit) {
+    if (this.rtf) {
+      return this.rtf.formatToParts(count, unit);
+    } else {
+      return [];
+    }
+  }
+}
+
+const fallbackWeekSettings = {
+  firstDay: 1,
+  minimalDays: 4,
+  weekend: [6, 7],
+};
+
+/**
+ * @private
+ */
+class Locale {
+  static fromOpts(opts) {
+    return Locale.create(
+      opts.locale,
+      opts.numberingSystem,
+      opts.outputCalendar,
+      opts.weekSettings,
+      opts.defaultToEN
+    );
+  }
+
+  static create(locale, numberingSystem, outputCalendar, weekSettings, defaultToEN = false) {
+    const specifiedLocale = locale || Settings.defaultLocale;
+    // the system locale is useful for human-readable strings but annoying for parsing/formatting known formats
+    const localeR = specifiedLocale || (defaultToEN ? "en-US" : systemLocale());
+    const numberingSystemR = numberingSystem || Settings.defaultNumberingSystem;
+    const outputCalendarR = outputCalendar || Settings.defaultOutputCalendar;
+    const weekSettingsR = validateWeekSettings(weekSettings) || Settings.defaultWeekSettings;
+    return new Locale(localeR, numberingSystemR, outputCalendarR, weekSettingsR, specifiedLocale);
+  }
+
+  static resetCache() {
+    sysLocaleCache = null;
+    intlDTCache.clear();
+    intlNumCache.clear();
+    intlRelCache.clear();
+    intlResolvedOptionsCache.clear();
+    weekInfoCache.clear();
+  }
+
+  static fromObject({ locale, numberingSystem, outputCalendar, weekSettings } = {}) {
+    return Locale.create(locale, numberingSystem, outputCalendar, weekSettings);
+  }
+
+  constructor(locale, numbering, outputCalendar, weekSettings, specifiedLocale) {
+    const [parsedLocale, parsedNumberingSystem, parsedOutputCalendar] = parseLocaleString(locale);
+
+    this.locale = parsedLocale;
+    this.numberingSystem = numbering || parsedNumberingSystem || null;
+    this.outputCalendar = outputCalendar || parsedOutputCalendar || null;
+    this.weekSettings = weekSettings;
+    this.intl = intlConfigString(this.locale, this.numberingSystem, this.outputCalendar);
+
+    this.weekdaysCache = { format: {}, standalone: {} };
+    this.monthsCache = { format: {}, standalone: {} };
+    this.meridiemCache = null;
+    this.eraCache = {};
+
+    this.specifiedLocale = specifiedLocale;
+    this.fastNumbersCached = null;
+  }
+
+  get fastNumbers() {
+    if (this.fastNumbersCached == null) {
+      this.fastNumbersCached = supportsFastNumbers(this);
+    }
+
+    return this.fastNumbersCached;
+  }
+
+  listingMode() {
+    const isActuallyEn = this.isEnglish();
+    const hasNoWeirdness =
+      (this.numberingSystem === null || this.numberingSystem === "latn") &&
+      (this.outputCalendar === null || this.outputCalendar === "gregory");
+    return isActuallyEn && hasNoWeirdness ? "en" : "intl";
+  }
+
+  clone(alts) {
+    if (!alts || Object.getOwnPropertyNames(alts).length === 0) {
+      return this;
+    } else {
+      return Locale.create(
+        alts.locale || this.specifiedLocale,
+        alts.numberingSystem || this.numberingSystem,
+        alts.outputCalendar || this.outputCalendar,
+        validateWeekSettings(alts.weekSettings) || this.weekSettings,
+        alts.defaultToEN || false
+      );
+    }
+  }
+
+  redefaultToEN(alts = {}) {
+    return this.clone({ ...alts, defaultToEN: true });
+  }
+
+  redefaultToSystem(alts = {}) {
+    return this.clone({ ...alts, defaultToEN: false });
+  }
+
+  months(length, format = false) {
+    return listStuff(this, length, months, () => {
+      // Workaround for "ja" locale: formatToParts does not label all parts of the month
+      // as "month" and for this locale there is no difference between "format" and "non-format".
+      // As such, just use format() instead of formatToParts() and take the whole string
+      const monthSpecialCase = this.intl === "ja" || this.intl.startsWith("ja-");
+      format &= !monthSpecialCase;
+      const intl = format ? { month: length, day: "numeric" } : { month: length },
+        formatStr = format ? "format" : "standalone";
+      if (!this.monthsCache[formatStr][length]) {
+        const mapper = !monthSpecialCase
+          ? (dt) => this.extract(dt, intl, "month")
+          : (dt) => this.dtFormatter(dt, intl).format();
+        this.monthsCache[formatStr][length] = mapMonths(mapper);
+      }
+      return this.monthsCache[formatStr][length];
+    });
+  }
+
+  weekdays(length, format = false) {
+    return listStuff(this, length, weekdays, () => {
+      const intl = format
+          ? { weekday: length, year: "numeric", month: "long", day: "numeric" }
+          : { weekday: length },
+        formatStr = format ? "format" : "standalone";
+      if (!this.weekdaysCache[formatStr][length]) {
+        this.weekdaysCache[formatStr][length] = mapWeekdays((dt) =>
+          this.extract(dt, intl, "weekday")
+        );
+      }
+      return this.weekdaysCache[formatStr][length];
+    });
+  }
+
+  meridiems() {
+    return listStuff(
+      this,
+      undefined,
+      () => meridiems,
+      () => {
+        // In theory there could be aribitrary day periods. We're gonna assume there are exactly two
+        // for AM and PM. This is probably wrong, but it's makes parsing way easier.
+        if (!this.meridiemCache) {
+          const intl = { hour: "numeric", hourCycle: "h12" };
+          this.meridiemCache = [DateTime.utc(2016, 11, 13, 9), DateTime.utc(2016, 11, 13, 19)].map(
+            (dt) => this.extract(dt, intl, "dayperiod")
+          );
+        }
+
+        return this.meridiemCache;
+      }
+    );
+  }
+
+  eras(length) {
+    return listStuff(this, length, eras, () => {
+      const intl = { era: length };
+
+      // This is problematic. Different calendars are going to define eras totally differently. What I need is the minimum set of dates
+      // to definitely enumerate them.
+      if (!this.eraCache[length]) {
+        this.eraCache[length] = [DateTime.utc(-40, 1, 1), DateTime.utc(2017, 1, 1)].map((dt) =>
+          this.extract(dt, intl, "era")
+        );
+      }
+
+      return this.eraCache[length];
+    });
+  }
+
+  extract(dt, intlOpts, field) {
+    const df = this.dtFormatter(dt, intlOpts),
+      results = df.formatToParts(),
+      matching = results.find((m) => m.type.toLowerCase() === field);
+    return matching ? matching.value : null;
+  }
+
+  numberFormatter(opts = {}) {
+    // this forcesimple option is never used (the only caller short-circuits on it, but it seems safer to leave)
+    // (in contrast, the rest of the condition is used heavily)
+    return new PolyNumberFormatter(this.intl, opts.forceSimple || this.fastNumbers, opts);
+  }
+
+  dtFormatter(dt, intlOpts = {}) {
+    return new PolyDateFormatter(dt, this.intl, intlOpts);
+  }
+
+  relFormatter(opts = {}) {
+    return new PolyRelFormatter(this.intl, this.isEnglish(), opts);
+  }
+
+  listFormatter(opts = {}) {
+    return getCachedLF(this.intl, opts);
+  }
+
+  isEnglish() {
+    return (
+      this.locale === "en" ||
+      this.locale.toLowerCase() === "en-us" ||
+      getCachedIntResolvedOptions(this.intl).locale.startsWith("en-us")
+    );
+  }
+
+  getWeekSettings() {
+    if (this.weekSettings) {
+      return this.weekSettings;
+    } else if (!hasLocaleWeekInfo()) {
+      return fallbackWeekSettings;
+    } else {
+      return getCachedWeekInfo(this.locale);
+    }
+  }
+
+  getStartOfWeek() {
+    return this.getWeekSettings().firstDay;
+  }
+
+  getMinDaysInFirstWeek() {
+    return this.getWeekSettings().minimalDays;
+  }
+
+  getWeekendDays() {
+    return this.getWeekSettings().weekend;
+  }
+
+  equals(other) {
+    return (
+      this.locale === other.locale &&
+      this.numberingSystem === other.numberingSystem &&
+      this.outputCalendar === other.outputCalendar
+    );
+  }
+
+  toString() {
+    return `Locale(${this.locale}, ${this.numberingSystem}, ${this.outputCalendar})`;
+  }
+}
+
+let singleton = null;
+
+/**
+ * A zone with a fixed offset (meaning no DST)
+ * @implements {Zone}
+ */
+class FixedOffsetZone extends Zone {
+  /**
+   * Get a singleton instance of UTC
+   * @return {FixedOffsetZone}
+   */
+  static get utcInstance() {
+    if (singleton === null) {
+      singleton = new FixedOffsetZone(0);
+    }
+    return singleton;
+  }
+
+  /**
+   * Get an instance with a specified offset
+   * @param {number} offset - The offset in minutes
+   * @return {FixedOffsetZone}
+   */
+  static instance(offset) {
+    return offset === 0 ? FixedOffsetZone.utcInstance : new FixedOffsetZone(offset);
+  }
+
+  /**
+   * Get an instance of FixedOffsetZone from a UTC offset string, like "UTC+6"
+   * @param {string} s - The offset string to parse
+   * @example FixedOffsetZone.parseSpecifier("UTC+6")
+   * @example FixedOffsetZone.parseSpecifier("UTC+06")
+   * @example FixedOffsetZone.parseSpecifier("UTC-6:00")
+   * @return {FixedOffsetZone}
+   */
+  static parseSpecifier(s) {
+    if (s) {
+      const r = s.match(/^utc(?:([+-]\d{1,2})(?::(\d{2}))?)?$/i);
+      if (r) {
+        return new FixedOffsetZone(signedOffset(r[1], r[2]));
+      }
+    }
+    return null;
+  }
+
+  constructor(offset) {
+    super();
+    /** @private **/
+    this.fixed = offset;
+  }
+
+  /**
+   * The type of zone. `fixed` for all instances of `FixedOffsetZone`.
+   * @override
+   * @type {string}
+   */
+  get type() {
+    return "fixed";
+  }
+
+  /**
+   * The name of this zone.
+   * All fixed zones' names always start with "UTC" (plus optional offset)
+   * @override
+   * @type {string}
+   */
+  get name() {
+    return this.fixed === 0 ? "UTC" : `UTC${formatOffset(this.fixed, "narrow")}`;
+  }
+
+  /**
+   * The IANA name of this zone, i.e. `Etc/UTC` or `Etc/GMT+/-nn`
+   *
+   * @override
+   * @type {string}
+   */
+  get ianaName() {
+    if (this.fixed === 0) {
+      return "Etc/UTC";
+    } else {
+      return `Etc/GMT${formatOffset(-this.fixed, "narrow")}`;
+    }
+  }
+
+  /**
+   * Returns the offset's common name at the specified timestamp.
+   *
+   * For fixed offset zones this equals to the zone name.
+   * @override
+   */
+  offsetName() {
+    return this.name;
+  }
+
+  /**
+   * Returns the offset's value as a string
+   * @override
+   * @param {number} ts - Epoch milliseconds for which to get the offset
+   * @param {string} format - What style of offset to return.
+   *                          Accepts 'narrow', 'short', or 'techie'. Returning '+6', '+06:00', or '+0600' respectively
+   * @return {string}
+   */
+  formatOffset(ts, format) {
+    return formatOffset(this.fixed, format);
+  }
+
+  /**
+   * Returns whether the offset is known to be fixed for the whole year:
+   * Always returns true for all fixed offset zones.
+   * @override
+   * @type {boolean}
+   */
+  get isUniversal() {
+    return true;
+  }
+
+  /**
+   * Return the offset in minutes for this zone at the specified timestamp.
+   *
+   * For fixed offset zones, this is constant and does not depend on a timestamp.
+   * @override
+   * @return {number}
+   */
+  offset() {
+    return this.fixed;
+  }
+
+  /**
+   * Return whether this Zone is equal to another zone (i.e. also fixed and same offset)
+   * @override
+   * @param {Zone} otherZone - the zone to compare
+   * @return {boolean}
+   */
+  equals(otherZone) {
+    return otherZone.type === "fixed" && otherZone.fixed === this.fixed;
+  }
+
+  /**
+   * Return whether this Zone is valid:
+   * All fixed offset zones are valid.
+   * @override
+   * @type {boolean}
+   */
+  get isValid() {
+    return true;
+  }
+}
+
+/**
+ * A zone that failed to parse. You should never need to instantiate this.
+ * @implements {Zone}
+ */
+class InvalidZone extends Zone {
+  constructor(zoneName) {
+    super();
+    /**  @private */
+    this.zoneName = zoneName;
+  }
+
+  /** @override **/
+  get type() {
+    return "invalid";
+  }
+
+  /** @override **/
+  get name() {
+    return this.zoneName;
+  }
+
+  /** @override **/
+  get isUniversal() {
+    return false;
+  }
+
+  /** @override **/
+  offsetName() {
+    return null;
+  }
+
+  /** @override **/
+  formatOffset() {
+    return "";
+  }
+
+  /** @override **/
+  offset() {
+    return NaN;
+  }
+
+  /** @override **/
+  equals() {
+    return false;
+  }
+
+  /** @override **/
+  get isValid() {
+    return false;
+  }
+}
+
+/**
+ * @private
+ */
+
+function normalizeZone(input, defaultZone) {
+  if (isUndefined(input) || input === null) {
+    return defaultZone;
+  } else if (input instanceof Zone) {
+    return input;
+  } else if (isString(input)) {
+    const lowered = input.toLowerCase();
+    if (lowered === "default") return defaultZone;
+    else if (lowered === "local" || lowered === "system") return SystemZone.instance;
+    else if (lowered === "utc" || lowered === "gmt") return FixedOffsetZone.utcInstance;
+    else return FixedOffsetZone.parseSpecifier(lowered) || IANAZone.create(input);
+  } else if (isNumber(input)) {
+    return FixedOffsetZone.instance(input);
+  } else if (typeof input === "object" && "offset" in input && typeof input.offset === "function") {
+    // This is dumb, but the instanceof check above doesn't seem to really work
+    // so we're duck checking it
+    return input;
+  } else {
+    return new InvalidZone(input);
+  }
+}
+
+const numberingSystems = {
+  arab: "[\u0660-\u0669]",
+  arabext: "[\u06F0-\u06F9]",
+  bali: "[\u1B50-\u1B59]",
+  beng: "[\u09E6-\u09EF]",
+  deva: "[\u0966-\u096F]",
+  fullwide: "[\uFF10-\uFF19]",
+  gujr: "[\u0AE6-\u0AEF]",
+  hanidec: "[〇|一|二|三|四|五|六|七|八|九]",
+  khmr: "[\u17E0-\u17E9]",
+  knda: "[\u0CE6-\u0CEF]",
+  laoo: "[\u0ED0-\u0ED9]",
+  limb: "[\u1946-\u194F]",
+  mlym: "[\u0D66-\u0D6F]",
+  mong: "[\u1810-\u1819]",
+  mymr: "[\u1040-\u1049]",
+  orya: "[\u0B66-\u0B6F]",
+  tamldec: "[\u0BE6-\u0BEF]",
+  telu: "[\u0C66-\u0C6F]",
+  thai: "[\u0E50-\u0E59]",
+  tibt: "[\u0F20-\u0F29]",
+  latn: "\\d",
+};
+
+const numberingSystemsUTF16 = {
+  arab: [1632, 1641],
+  arabext: [1776, 1785],
+  bali: [6992, 7001],
+  beng: [2534, 2543],
+  deva: [2406, 2415],
+  fullwide: [65296, 65303],
+  gujr: [2790, 2799],
+  khmr: [6112, 6121],
+  knda: [3302, 3311],
+  laoo: [3792, 3801],
+  limb: [6470, 6479],
+  mlym: [3430, 3439],
+  mong: [6160, 6169],
+  mymr: [4160, 4169],
+  orya: [2918, 2927],
+  tamldec: [3046, 3055],
+  telu: [3174, 3183],
+  thai: [3664, 3673],
+  tibt: [3872, 3881],
+};
+
+const hanidecChars = numberingSystems.hanidec.replace(/[\[|\]]/g, "").split("");
+
+function parseDigits(str) {
+  let value = parseInt(str, 10);
+  if (isNaN(value)) {
+    value = "";
+    for (let i = 0; i < str.length; i++) {
+      const code = str.charCodeAt(i);
+
+      if (str[i].search(numberingSystems.hanidec) !== -1) {
+        value += hanidecChars.indexOf(str[i]);
+      } else {
+        for (const key in numberingSystemsUTF16) {
+          const [min, max] = numberingSystemsUTF16[key];
+          if (code >= min && code <= max) {
+            value += code - min;
+          }
+        }
+      }
+    }
+    return parseInt(value, 10);
+  } else {
+    return value;
+  }
+}
+
+// cache of {numberingSystem: {append: regex}}
+const digitRegexCache = new Map();
+function resetDigitRegexCache() {
+  digitRegexCache.clear();
+}
+
+function digitRegex({ numberingSystem }, append = "") {
+  const ns = numberingSystem || "latn";
+
+  let appendCache = digitRegexCache.get(ns);
+  if (appendCache === undefined) {
+    appendCache = new Map();
+    digitRegexCache.set(ns, appendCache);
+  }
+  let regex = appendCache.get(append);
+  if (regex === undefined) {
+    regex = new RegExp(`${numberingSystems[ns]}${append}`);
+    appendCache.set(append, regex);
+  }
+
+  return regex;
+}
+
+let now = () => Date.now(),
+  defaultZone = "system",
+  defaultLocale = null,
+  defaultNumberingSystem = null,
+  defaultOutputCalendar = null,
+  twoDigitCutoffYear = 60,
+  throwOnInvalid,
+  defaultWeekSettings = null;
+
+/**
+ * Settings contains static getters and setters that control Luxon's overall behavior. Luxon is a simple library with few options, but the ones it does have live here.
+ */
+class Settings {
+  /**
+   * Get the callback for returning the current timestamp.
+   * @type {function}
+   */
+  static get now() {
+    return now;
+  }
+
+  /**
+   * Set the callback for returning the current timestamp.
+   * The function should return a number, which will be interpreted as an Epoch millisecond count
+   * @type {function}
+   * @example Settings.now = () => Date.now() + 3000 // pretend it is 3 seconds in the future
+   * @example Settings.now = () => 0 // always pretend it's Jan 1, 1970 at midnight in UTC time
+   */
+  static set now(n) {
+    now = n;
+  }
+
+  /**
+   * Set the default time zone to create DateTimes in. Does not affect existing instances.
+   * Use the value "system" to reset this value to the system's time zone.
+   * @type {string}
+   */
+  static set defaultZone(zone) {
+    defaultZone = zone;
+  }
+
+  /**
+   * Get the default time zone object currently used to create DateTimes. Does not affect existing instances.
+   * The default value is the system's time zone (the one set on the machine that runs this code).
+   * @type {Zone}
+   */
+  static get defaultZone() {
+    return normalizeZone(defaultZone, SystemZone.instance);
+  }
+
+  /**
+   * Get the default locale to create DateTimes with. Does not affect existing instances.
+   * @type {string}
+   */
+  static get defaultLocale() {
+    return defaultLocale;
+  }
+
+  /**
+   * Set the default locale to create DateTimes with. Does not affect existing instances.
+   * @type {string}
+   */
+  static set defaultLocale(locale) {
+    defaultLocale = locale;
+  }
+
+  /**
+   * Get the default numbering system to create DateTimes with. Does not affect existing instances.
+   * @type {string}
+   */
+  static get defaultNumberingSystem() {
+    return defaultNumberingSystem;
+  }
+
+  /**
+   * Set the default numbering system to create DateTimes with. Does not affect existing instances.
+   * @type {string}
+   */
+  static set defaultNumberingSystem(numberingSystem) {
+    defaultNumberingSystem = numberingSystem;
+  }
+
+  /**
+   * Get the default output calendar to create DateTimes with. Does not affect existing instances.
+   * @type {string}
+   */
+  static get defaultOutputCalendar() {
+    return defaultOutputCalendar;
+  }
+
+  /**
+   * Set the default output calendar to create DateTimes with. Does not affect existing instances.
+   * @type {string}
+   */
+  static set defaultOutputCalendar(outputCalendar) {
+    defaultOutputCalendar = outputCalendar;
+  }
+
+  /**
+   * @typedef {Object} WeekSettings
+   * @property {number} firstDay
+   * @property {number} minimalDays
+   * @property {number[]} weekend
+   */
+
+  /**
+   * @return {WeekSettings|null}
+   */
+  static get defaultWeekSettings() {
+    return defaultWeekSettings;
+  }
+
+  /**
+   * Allows overriding the default locale week settings, i.e. the start of the week, the weekend and
+   * how many days are required in the first week of a year.
+   * Does not affect existing instances.
+   *
+   * @param {WeekSettings|null} weekSettings
+   */
+  static set defaultWeekSettings(weekSettings) {
+    defaultWeekSettings = validateWeekSettings(weekSettings);
+  }
+
+  /**
+   * Get the cutoff year for whether a 2-digit year string is interpreted in the current or previous century. Numbers higher than the cutoff will be considered to mean 19xx and numbers lower or equal to the cutoff will be considered 20xx.
+   * @type {number}
+   */
+  static get twoDigitCutoffYear() {
+    return twoDigitCutoffYear;
+  }
+
+  /**
+   * Set the cutoff year for whether a 2-digit year string is interpreted in the current or previous century. Numbers higher than the cutoff will be considered to mean 19xx and numbers lower or equal to the cutoff will be considered 20xx.
+   * @type {number}
+   * @example Settings.twoDigitCutoffYear = 0 // all 'yy' are interpreted as 20th century
+   * @example Settings.twoDigitCutoffYear = 99 // all 'yy' are interpreted as 21st century
+   * @example Settings.twoDigitCutoffYear = 50 // '49' -> 2049; '50' -> 1950
+   * @example Settings.twoDigitCutoffYear = 1950 // interpreted as 50
+   * @example Settings.twoDigitCutoffYear = 2050 // ALSO interpreted as 50
+   */
+  static set twoDigitCutoffYear(cutoffYear) {
+    twoDigitCutoffYear = cutoffYear % 100;
+  }
+
+  /**
+   * Get whether Luxon will throw when it encounters invalid DateTimes, Durations, or Intervals
+   * @type {boolean}
+   */
+  static get throwOnInvalid() {
+    return throwOnInvalid;
+  }
+
+  /**
+   * Set whether Luxon will throw when it encounters invalid DateTimes, Durations, or Intervals
+   * @type {boolean}
+   */
+  static set throwOnInvalid(t) {
+    throwOnInvalid = t;
+  }
+
+  /**
+   * Reset Luxon's global caches. Should only be necessary in testing scenarios.
+   * @return {void}
+   */
+  static resetCaches() {
+    Locale.resetCache();
+    IANAZone.resetCache();
+    DateTime.resetCache();
+    resetDigitRegexCache();
+  }
+}
+
+class Invalid {
+  constructor(reason, explanation) {
+    this.reason = reason;
+    this.explanation = explanation;
+  }
+
+  toMessage() {
+    if (this.explanation) {
+      return `${this.reason}: ${this.explanation}`;
+    } else {
+      return this.reason;
+    }
+  }
+}
+
+const nonLeapLadder = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334],
+  leapLadder = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
+
+function unitOutOfRange(unit, value) {
+  return new Invalid(
+    "unit out of range",
+    `you specified ${value} (of type ${typeof value}) as a ${unit}, which is invalid`
+  );
+}
+
+function dayOfWeek(year, month, day) {
+  const d = new Date(Date.UTC(year, month - 1, day));
+
+  if (year < 100 && year >= 0) {
+    d.setUTCFullYear(d.getUTCFullYear() - 1900);
+  }
+
+  const js = d.getUTCDay();
+
+  return js === 0 ? 7 : js;
+}
+
+function computeOrdinal(year, month, day) {
+  return day + (isLeapYear(year) ? leapLadder : nonLeapLadder)[month - 1];
+}
+
+function uncomputeOrdinal(year, ordinal) {
+  const table = isLeapYear(year) ? leapLadder : nonLeapLadder,
+    month0 = table.findIndex((i) => i < ordinal),
+    day = ordinal - table[month0];
+  return { month: month0 + 1, day };
+}
+
+function isoWeekdayToLocal(isoWeekday, startOfWeek) {
+  return ((isoWeekday - startOfWeek + 7) % 7) + 1;
+}
+
+/**
+ * @private
+ */
+
+function gregorianToWeek(gregObj, minDaysInFirstWeek = 4, startOfWeek = 1) {
+  const { year, month, day } = gregObj,
+    ordinal = computeOrdinal(year, month, day),
+    weekday = isoWeekdayToLocal(dayOfWeek(year, month, day), startOfWeek);
+
+  let weekNumber = Math.floor((ordinal - weekday + 14 - minDaysInFirstWeek) / 7),
+    weekYear;
+
+  if (weekNumber < 1) {
+    weekYear = year - 1;
+    weekNumber = weeksInWeekYear(weekYear, minDaysInFirstWeek, startOfWeek);
+  } else if (weekNumber > weeksInWeekYear(year, minDaysInFirstWeek, startOfWeek)) {
+    weekYear = year + 1;
+    weekNumber = 1;
+  } else {
+    weekYear = year;
+  }
+
+  return { weekYear, weekNumber, weekday, ...timeObject(gregObj) };
+}
+
+function weekToGregorian(weekData, minDaysInFirstWeek = 4, startOfWeek = 1) {
+  const { weekYear, weekNumber, weekday } = weekData,
+    weekdayOfJan4 = isoWeekdayToLocal(dayOfWeek(weekYear, 1, minDaysInFirstWeek), startOfWeek),
+    yearInDays = daysInYear(weekYear);
+
+  let ordinal = weekNumber * 7 + weekday - weekdayOfJan4 - 7 + minDaysInFirstWeek,
+    year;
+
+  if (ordinal < 1) {
+    year = weekYear - 1;
+    ordinal += daysInYear(year);
+  } else if (ordinal > yearInDays) {
+    year = weekYear + 1;
+    ordinal -= daysInYear(weekYear);
+  } else {
+    year = weekYear;
+  }
+
+  const { month, day } = uncomputeOrdinal(year, ordinal);
+  return { year, month, day, ...timeObject(weekData) };
+}
+
+function gregorianToOrdinal(gregData) {
+  const { year, month, day } = gregData;
+  const ordinal = computeOrdinal(year, month, day);
+  return { year, ordinal, ...timeObject(gregData) };
+}
+
+function ordinalToGregorian(ordinalData) {
+  const { year, ordinal } = ordinalData;
+  const { month, day } = uncomputeOrdinal(year, ordinal);
+  return { year, month, day, ...timeObject(ordinalData) };
+}
+
+/**
+ * Check if local week units like localWeekday are used in obj.
+ * If so, validates that they are not mixed with ISO week units and then copies them to the normal week unit properties.
+ * Modifies obj in-place!
+ * @param obj the object values
+ */
+function usesLocalWeekValues(obj, loc) {
+  const hasLocaleWeekData =
+    !isUndefined(obj.localWeekday) ||
+    !isUndefined(obj.localWeekNumber) ||
+    !isUndefined(obj.localWeekYear);
+  if (hasLocaleWeekData) {
+    const hasIsoWeekData =
+      !isUndefined(obj.weekday) || !isUndefined(obj.weekNumber) || !isUndefined(obj.weekYear);
+
+    if (hasIsoWeekData) {
+      throw new ConflictingSpecificationError(
+        "Cannot mix locale-based week fields with ISO-based week fields"
+      );
+    }
+    if (!isUndefined(obj.localWeekday)) obj.weekday = obj.localWeekday;
+    if (!isUndefined(obj.localWeekNumber)) obj.weekNumber = obj.localWeekNumber;
+    if (!isUndefined(obj.localWeekYear)) obj.weekYear = obj.localWeekYear;
+    delete obj.localWeekday;
+    delete obj.localWeekNumber;
+    delete obj.localWeekYear;
+    return {
+      minDaysInFirstWeek: loc.getMinDaysInFirstWeek(),
+      startOfWeek: loc.getStartOfWeek(),
+    };
+  } else {
+    return { minDaysInFirstWeek: 4, startOfWeek: 1 };
+  }
+}
+
+function hasInvalidWeekData(obj, minDaysInFirstWeek = 4, startOfWeek = 1) {
+  const validYear = isInteger(obj.weekYear),
+    validWeek = integerBetween(
+      obj.weekNumber,
+      1,
+      weeksInWeekYear(obj.weekYear, minDaysInFirstWeek, startOfWeek)
+    ),
+    validWeekday = integerBetween(obj.weekday, 1, 7);
+
+  if (!validYear) {
+    return unitOutOfRange("weekYear", obj.weekYear);
+  } else if (!validWeek) {
+    return unitOutOfRange("week", obj.weekNumber);
+  } else if (!validWeekday) {
+    return unitOutOfRange("weekday", obj.weekday);
+  } else return false;
+}
+
+function hasInvalidOrdinalData(obj) {
+  const validYear = isInteger(obj.year),
+    validOrdinal = integerBetween(obj.ordinal, 1, daysInYear(obj.year));
+
+  if (!validYear) {
+    return unitOutOfRange("year", obj.year);
+  } else if (!validOrdinal) {
+    return unitOutOfRange("ordinal", obj.ordinal);
+  } else return false;
+}
+
+function hasInvalidGregorianData(obj) {
+  const validYear = isInteger(obj.year),
+    validMonth = integerBetween(obj.month, 1, 12),
+    validDay = integerBetween(obj.day, 1, daysInMonth(obj.year, obj.month));
+
+  if (!validYear) {
+    return unitOutOfRange("year", obj.year);
+  } else if (!validMonth) {
+    return unitOutOfRange("month", obj.month);
+  } else if (!validDay) {
+    return unitOutOfRange("day", obj.day);
+  } else return false;
+}
+
+function hasInvalidTimeData(obj) {
+  const { hour, minute, second, millisecond } = obj;
+  const validHour =
+      integerBetween(hour, 0, 23) ||
+      (hour === 24 && minute === 0 && second === 0 && millisecond === 0),
+    validMinute = integerBetween(minute, 0, 59),
+    validSecond = integerBetween(second, 0, 59),
+    validMillisecond = integerBetween(millisecond, 0, 999);
+
+  if (!validHour) {
+    return unitOutOfRange("hour", hour);
+  } else if (!validMinute) {
+    return unitOutOfRange("minute", minute);
+  } else if (!validSecond) {
+    return unitOutOfRange("second", second);
+  } else if (!validMillisecond) {
+    return unitOutOfRange("millisecond", millisecond);
+  } else return false;
+}
+
+/*
+  This is just a junk drawer, containing anything used across multiple classes.
+  Because Luxon is small(ish), this should stay small and we won't worry about splitting
+  it up into, say, parsingUtil.js and basicUtil.js and so on. But they are divided up by feature area.
+*/
+
+/**
+ * @private
+ */
+
+// TYPES
+
+function isUndefined(o) {
+  return typeof o === "undefined";
+}
+
+function isNumber(o) {
+  return typeof o === "number";
+}
+
+function isInteger(o) {
+  return typeof o === "number" && o % 1 === 0;
+}
+
+function isString(o) {
+  return typeof o === "string";
+}
+
+function isDate(o) {
+  return Object.prototype.toString.call(o) === "[object Date]";
+}
+
+// CAPABILITIES
+
+function hasRelative() {
+  try {
+    return typeof Intl !== "undefined" && !!Intl.RelativeTimeFormat;
+  } catch (e) {
+    return false;
+  }
+}
+
+function hasLocaleWeekInfo() {
+  try {
+    return (
+      typeof Intl !== "undefined" &&
+      !!Intl.Locale &&
+      ("weekInfo" in Intl.Locale.prototype || "getWeekInfo" in Intl.Locale.prototype)
+    );
+  } catch (e) {
+    return false;
+  }
+}
+
+// OBJECTS AND ARRAYS
+
+function maybeArray(thing) {
+  return Array.isArray(thing) ? thing : [thing];
+}
+
+function bestBy(arr, by, compare) {
+  if (arr.length === 0) {
+    return undefined;
+  }
+  return arr.reduce((best, next) => {
+    const pair = [by(next), next];
+    if (!best) {
+      return pair;
+    } else if (compare(best[0], pair[0]) === best[0]) {
+      return best;
+    } else {
+      return pair;
+    }
+  }, null)[1];
+}
+
+function pick(obj, keys) {
+  return keys.reduce((a, k) => {
+    a[k] = obj[k];
+    return a;
+  }, {});
+}
+
+function hasOwnProperty(obj, prop) {
+  return Object.prototype.hasOwnProperty.call(obj, prop);
+}
+
+function validateWeekSettings(settings) {
+  if (settings == null) {
+    return null;
+  } else if (typeof settings !== "object") {
+    throw new InvalidArgumentError("Week settings must be an object");
+  } else {
+    if (
+      !integerBetween(settings.firstDay, 1, 7) ||
+      !integerBetween(settings.minimalDays, 1, 7) ||
+      !Array.isArray(settings.weekend) ||
+      settings.weekend.some((v) => !integerBetween(v, 1, 7))
+    ) {
+      throw new InvalidArgumentError("Invalid week settings");
+    }
+    return {
+      firstDay: settings.firstDay,
+      minimalDays: settings.minimalDays,
+      weekend: Array.from(settings.weekend),
+    };
+  }
+}
+
+// NUMBERS AND STRINGS
+
+function integerBetween(thing, bottom, top) {
+  return isInteger(thing) && thing >= bottom && thing <= top;
+}
+
+// x % n but takes the sign of n instead of x
+function floorMod(x, n) {
+  return x - n * Math.floor(x / n);
+}
+
+function padStart(input, n = 2) {
+  const isNeg = input < 0;
+  let padded;
+  if (isNeg) {
+    padded = "-" + ("" + -input).padStart(n, "0");
+  } else {
+    padded = ("" + input).padStart(n, "0");
+  }
+  return padded;
+}
+
+function parseInteger(string) {
+  if (isUndefined(string) || string === null || string === "") {
+    return undefined;
+  } else {
+    return parseInt(string, 10);
+  }
+}
+
+function parseFloating(string) {
+  if (isUndefined(string) || string === null || string === "") {
+    return undefined;
+  } else {
+    return parseFloat(string);
+  }
+}
+
+function parseMillis(fraction) {
+  // Return undefined (instead of 0) in these cases, where fraction is not set
+  if (isUndefined(fraction) || fraction === null || fraction === "") {
+    return undefined;
+  } else {
+    const f = parseFloat("0." + fraction) * 1000;
+    return Math.floor(f);
+  }
+}
+
+function roundTo(number, digits, rounding = "round") {
+  const factor = 10 ** digits;
+  switch (rounding) {
+    case "expand":
+      return number > 0
+        ? Math.ceil(number * factor) / factor
+        : Math.floor(number * factor) / factor;
+    case "trunc":
+      return Math.trunc(number * factor) / factor;
+    case "round":
+      return Math.round(number * factor) / factor;
+    case "floor":
+      return Math.floor(number * factor) / factor;
+    case "ceil":
+      return Math.ceil(number * factor) / factor;
+    default:
+      throw new RangeError(`Value rounding ${rounding} is out of range`);
+  }
+}
+
+// DATE BASICS
+
+function isLeapYear(year) {
+  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+}
+
+function daysInYear(year) {
+  return isLeapYear(year) ? 366 : 365;
+}
+
+function daysInMonth(year, month) {
+  const modMonth = floorMod(month - 1, 12) + 1,
+    modYear = year + (month - modMonth) / 12;
+
+  if (modMonth === 2) {
+    return isLeapYear(modYear) ? 29 : 28;
+  } else {
+    return [31, null, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][modMonth - 1];
+  }
+}
+
+// convert a calendar object to a local timestamp (epoch, but with the offset baked in)
+function objToLocalTS(obj) {
+  let d = Date.UTC(
+    obj.year,
+    obj.month - 1,
+    obj.day,
+    obj.hour,
+    obj.minute,
+    obj.second,
+    obj.millisecond
+  );
+
+  // for legacy reasons, years between 0 and 99 are interpreted as 19XX; revert that
+  if (obj.year < 100 && obj.year >= 0) {
+    d = new Date(d);
+    // set the month and day again, this is necessary because year 2000 is a leap year, but year 100 is not
+    // so if obj.year is in 99, but obj.day makes it roll over into year 100,
+    // the calculations done by Date.UTC are using year 2000 - which is incorrect
+    d.setUTCFullYear(obj.year, obj.month - 1, obj.day);
+  }
+  return +d;
+}
+
+// adapted from moment.js: https://github.com/moment/moment/blob/000ac1800e620f770f4eb31b5ae908f6167b0ab2/src/lib/units/week-calendar-utils.js
+function firstWeekOffset(year, minDaysInFirstWeek, startOfWeek) {
+  const fwdlw = isoWeekdayToLocal(dayOfWeek(year, 1, minDaysInFirstWeek), startOfWeek);
+  return -fwdlw + minDaysInFirstWeek - 1;
+}
+
+function weeksInWeekYear(weekYear, minDaysInFirstWeek = 4, startOfWeek = 1) {
+  const weekOffset = firstWeekOffset(weekYear, minDaysInFirstWeek, startOfWeek);
+  const weekOffsetNext = firstWeekOffset(weekYear + 1, minDaysInFirstWeek, startOfWeek);
+  return (daysInYear(weekYear) - weekOffset + weekOffsetNext) / 7;
+}
+
+function untruncateYear(year) {
+  if (year > 99) {
+    return year;
+  } else return year > Settings.twoDigitCutoffYear ? 1900 + year : 2000 + year;
+}
+
+// PARSING
+
+function parseZoneInfo(ts, offsetFormat, locale, timeZone = null) {
+  const date = new Date(ts),
+    intlOpts = {
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    };
+
+  if (timeZone) {
+    intlOpts.timeZone = timeZone;
+  }
+
+  const modified = { timeZoneName: offsetFormat, ...intlOpts };
+
+  const parsed = new Intl.DateTimeFormat(locale, modified)
+    .formatToParts(date)
+    .find((m) => m.type.toLowerCase() === "timezonename");
+  return parsed ? parsed.value : null;
+}
+
+// signedOffset('-5', '30') -> -330
+function signedOffset(offHourStr, offMinuteStr) {
+  let offHour = parseInt(offHourStr, 10);
+
+  // don't || this because we want to preserve -0
+  if (Number.isNaN(offHour)) {
+    offHour = 0;
+  }
+
+  const offMin = parseInt(offMinuteStr, 10) || 0,
+    offMinSigned = offHour < 0 || Object.is(offHour, -0) ? -offMin : offMin;
+  return offHour * 60 + offMinSigned;
+}
+
+// COERCION
+
+function asNumber(value) {
+  const numericValue = Number(value);
+  if (typeof value === "boolean" || value === "" || !Number.isFinite(numericValue))
+    throw new InvalidArgumentError(`Invalid unit value ${value}`);
+  return numericValue;
+}
+
+function normalizeObject(obj, normalizer) {
+  const normalized = {};
+  for (const u in obj) {
+    if (hasOwnProperty(obj, u)) {
+      const v = obj[u];
+      if (v === undefined || v === null) continue;
+      normalized[normalizer(u)] = asNumber(v);
+    }
+  }
+  return normalized;
+}
+
+/**
+ * Returns the offset's value as a string
+ * @param {number} ts - Epoch milliseconds for which to get the offset
+ * @param {string} format - What style of offset to return.
+ *                          Accepts 'narrow', 'short', or 'techie'. Returning '+6', '+06:00', or '+0600' respectively
+ * @return {string}
+ */
+function formatOffset(offset, format) {
+  const hours = Math.trunc(Math.abs(offset / 60)),
+    minutes = Math.trunc(Math.abs(offset % 60)),
+    sign = offset >= 0 ? "+" : "-";
+
+  switch (format) {
+    case "short":
+      return `${sign}${padStart(hours, 2)}:${padStart(minutes, 2)}`;
+    case "narrow":
+      return `${sign}${hours}${minutes > 0 ? `:${minutes}` : ""}`;
+    case "techie":
+      return `${sign}${padStart(hours, 2)}${padStart(minutes, 2)}`;
+    default:
+      throw new RangeError(`Value format ${format} is out of range for property format`);
+  }
+}
+
+function timeObject(obj) {
+  return pick(obj, ["hour", "minute", "second", "millisecond"]);
+}
+
+/**
+ * @private
+ */
+
+const monthsLong = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const monthsShort = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+const monthsNarrow = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+
+function months(length) {
+  switch (length) {
+    case "narrow":
+      return [...monthsNarrow];
+    case "short":
+      return [...monthsShort];
+    case "long":
+      return [...monthsLong];
+    case "numeric":
+      return ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+    case "2-digit":
+      return ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+    default:
+      return null;
+  }
+}
+
+const weekdaysLong = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
+const weekdaysShort = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const weekdaysNarrow = ["M", "T", "W", "T", "F", "S", "S"];
+
+function weekdays(length) {
+  switch (length) {
+    case "narrow":
+      return [...weekdaysNarrow];
+    case "short":
+      return [...weekdaysShort];
+    case "long":
+      return [...weekdaysLong];
+    case "numeric":
+      return ["1", "2", "3", "4", "5", "6", "7"];
+    default:
+      return null;
+  }
+}
+
+const meridiems = ["AM", "PM"];
+
+const erasLong = ["Before Christ", "Anno Domini"];
+
+const erasShort = ["BC", "AD"];
+
+const erasNarrow = ["B", "A"];
+
+function eras(length) {
+  switch (length) {
+    case "narrow":
+      return [...erasNarrow];
+    case "short":
+      return [...erasShort];
+    case "long":
+      return [...erasLong];
+    default:
+      return null;
+  }
+}
+
+function meridiemForDateTime(dt) {
+  return meridiems[dt.hour < 12 ? 0 : 1];
+}
+
+function weekdayForDateTime(dt, length) {
+  return weekdays(length)[dt.weekday - 1];
+}
+
+function monthForDateTime(dt, length) {
+  return months(length)[dt.month - 1];
+}
+
+function eraForDateTime(dt, length) {
+  return eras(length)[dt.year < 0 ? 0 : 1];
+}
+
+function formatRelativeTime(unit, count, numeric = "always", narrow = false) {
+  const units = {
+    years: ["year", "yr."],
+    quarters: ["quarter", "qtr."],
+    months: ["month", "mo."],
+    weeks: ["week", "wk."],
+    days: ["day", "day", "days"],
+    hours: ["hour", "hr."],
+    minutes: ["minute", "min."],
+    seconds: ["second", "sec."],
+  };
+
+  const lastable = ["hours", "minutes", "seconds"].indexOf(unit) === -1;
+
+  if (numeric === "auto" && lastable) {
+    const isDay = unit === "days";
+    switch (count) {
+      case 1:
+        return isDay ? "tomorrow" : `next ${units[unit][0]}`;
+      case -1:
+        return isDay ? "yesterday" : `last ${units[unit][0]}`;
+      case 0:
+        return isDay ? "today" : `this ${units[unit][0]}`;
+    }
+  }
+
+  const isInPast = Object.is(count, -0) || count < 0,
+    fmtValue = Math.abs(count),
+    singular = fmtValue === 1,
+    lilUnits = units[unit],
+    fmtUnit = narrow
+      ? singular
+        ? lilUnits[1]
+        : lilUnits[2] || lilUnits[1]
+      : singular
+      ? units[unit][0]
+      : unit;
+  return isInPast ? `${fmtValue} ${fmtUnit} ago` : `in ${fmtValue} ${fmtUnit}`;
+}
+
+function stringifyTokens(splits, tokenToString) {
+  let s = "";
+  for (const token of splits) {
+    if (token.literal) {
+      s += token.val;
+    } else {
+      s += tokenToString(token.val);
+    }
+  }
+  return s;
+}
+
+const macroTokenToFormatOpts = {
+  D: DATE_SHORT,
+  DD: DATE_MED,
+  DDD: DATE_FULL,
+  DDDD: DATE_HUGE,
+  t: TIME_SIMPLE,
+  tt: TIME_WITH_SECONDS,
+  ttt: TIME_WITH_SHORT_OFFSET,
+  tttt: TIME_WITH_LONG_OFFSET,
+  T: TIME_24_SIMPLE,
+  TT: TIME_24_WITH_SECONDS,
+  TTT: TIME_24_WITH_SHORT_OFFSET,
+  TTTT: TIME_24_WITH_LONG_OFFSET,
+  f: DATETIME_SHORT,
+  ff: DATETIME_MED,
+  fff: DATETIME_FULL,
+  ffff: DATETIME_HUGE,
+  F: DATETIME_SHORT_WITH_SECONDS,
+  FF: DATETIME_MED_WITH_SECONDS,
+  FFF: DATETIME_FULL_WITH_SECONDS,
+  FFFF: DATETIME_HUGE_WITH_SECONDS,
+};
+
+/**
+ * @private
+ */
+
+class Formatter {
+  static create(locale, opts = {}) {
+    return new Formatter(locale, opts);
+  }
+
+  static parseFormat(fmt) {
+    // white-space is always considered a literal in user-provided formats
+    // the " " token has a special meaning (see unitForToken)
+
+    let current = null,
+      currentFull = "",
+      bracketed = false;
+    const splits = [];
+    for (let i = 0; i < fmt.length; i++) {
+      const c = fmt.charAt(i);
+      if (c === "'") {
+        // turn '' into a literal signal quote instead of just skipping the empty literal
+        if (currentFull.length > 0 || bracketed) {
+          splits.push({
+            literal: bracketed || /^\s+$/.test(currentFull),
+            val: currentFull === "" ? "'" : currentFull,
+          });
+        }
+        current = null;
+        currentFull = "";
+        bracketed = !bracketed;
+      } else if (bracketed) {
+        currentFull += c;
+      } else if (c === current) {
+        currentFull += c;
+      } else {
+        if (currentFull.length > 0) {
+          splits.push({ literal: /^\s+$/.test(currentFull), val: currentFull });
+        }
+        currentFull = c;
+        current = c;
+      }
+    }
+
+    if (currentFull.length > 0) {
+      splits.push({ literal: bracketed || /^\s+$/.test(currentFull), val: currentFull });
+    }
+
+    return splits;
+  }
+
+  static macroTokenToFormatOpts(token) {
+    return macroTokenToFormatOpts[token];
+  }
+
+  constructor(locale, formatOpts) {
+    this.opts = formatOpts;
+    this.loc = locale;
+    this.systemLoc = null;
+  }
+
+  formatWithSystemDefault(dt, opts) {
+    if (this.systemLoc === null) {
+      this.systemLoc = this.loc.redefaultToSystem();
+    }
+    const df = this.systemLoc.dtFormatter(dt, { ...this.opts, ...opts });
+    return df.format();
+  }
+
+  dtFormatter(dt, opts = {}) {
+    return this.loc.dtFormatter(dt, { ...this.opts, ...opts });
+  }
+
+  formatDateTime(dt, opts) {
+    return this.dtFormatter(dt, opts).format();
+  }
+
+  formatDateTimeParts(dt, opts) {
+    return this.dtFormatter(dt, opts).formatToParts();
+  }
+
+  formatInterval(interval, opts) {
+    const df = this.dtFormatter(interval.start, opts);
+    return df.dtf.formatRange(interval.start.toJSDate(), interval.end.toJSDate());
+  }
+
+  resolvedOptions(dt, opts) {
+    return this.dtFormatter(dt, opts).resolvedOptions();
+  }
+
+  num(n, p = 0, signDisplay = undefined) {
+    // we get some perf out of doing this here, annoyingly
+    if (this.opts.forceSimple) {
+      return padStart(n, p);
+    }
+
+    const opts = { ...this.opts };
+
+    if (p > 0) {
+      opts.padTo = p;
+    }
+    if (signDisplay) {
+      opts.signDisplay = signDisplay;
+    }
+
+    return this.loc.numberFormatter(opts).format(n);
+  }
+
+  formatDateTimeFromString(dt, fmt) {
+    const knownEnglish = this.loc.listingMode() === "en",
+      useDateTimeFormatter = this.loc.outputCalendar && this.loc.outputCalendar !== "gregory",
+      string = (opts, extract) => this.loc.extract(dt, opts, extract),
+      formatOffset = (opts) => {
+        if (dt.isOffsetFixed && dt.offset === 0 && opts.allowZ) {
+          return "Z";
+        }
+
+        return dt.isValid ? dt.zone.formatOffset(dt.ts, opts.format) : "";
+      },
+      meridiem = () =>
+        knownEnglish
+          ? meridiemForDateTime(dt)
+          : string({ hour: "numeric", hourCycle: "h12" }, "dayperiod"),
+      month = (length, standalone) =>
+        knownEnglish
+          ? monthForDateTime(dt, length)
+          : string(standalone ? { month: length } : { month: length, day: "numeric" }, "month"),
+      weekday = (length, standalone) =>
+        knownEnglish
+          ? weekdayForDateTime(dt, length)
+          : string(
+              standalone ? { weekday: length } : { weekday: length, month: "long", day: "numeric" },
+              "weekday"
+            ),
+      maybeMacro = (token) => {
+        const formatOpts = Formatter.macroTokenToFormatOpts(token);
+        if (formatOpts) {
+          return this.formatWithSystemDefault(dt, formatOpts);
+        } else {
+          return token;
+        }
+      },
+      era = (length) =>
+        knownEnglish ? eraForDateTime(dt, length) : string({ era: length }, "era"),
+      tokenToString = (token) => {
+        // Where possible: https://cldr.unicode.org/translation/date-time/date-time-symbols
+        switch (token) {
+          // ms
+          case "S":
+            return this.num(dt.millisecond);
+          case "u":
+          // falls through
+          case "SSS":
+            return this.num(dt.millisecond, 3);
+          // seconds
+          case "s":
+            return this.num(dt.second);
+          case "ss":
+            return this.num(dt.second, 2);
+          // fractional seconds
+          case "uu":
+            return this.num(Math.floor(dt.millisecond / 10), 2);
+          case "uuu":
+            return this.num(Math.floor(dt.millisecond / 100));
+          // minutes
+          case "m":
+            return this.num(dt.minute);
+          case "mm":
+            return this.num(dt.minute, 2);
+          // hours
+          case "h":
+            return this.num(dt.hour % 12 === 0 ? 12 : dt.hour % 12);
+          case "hh":
+            return this.num(dt.hour % 12 === 0 ? 12 : dt.hour % 12, 2);
+          case "H":
+            return this.num(dt.hour);
+          case "HH":
+            return this.num(dt.hour, 2);
+          // offset
+          case "Z":
+            // like +6
+            return formatOffset({ format: "narrow", allowZ: this.opts.allowZ });
+          case "ZZ":
+            // like +06:00
+            return formatOffset({ format: "short", allowZ: this.opts.allowZ });
+          case "ZZZ":
+            // like +0600
+            return formatOffset({ format: "techie", allowZ: this.opts.allowZ });
+          case "ZZZZ":
+            // like EST
+            return dt.zone.offsetName(dt.ts, { format: "short", locale: this.loc.locale });
+          case "ZZZZZ":
+            // like Eastern Standard Time
+            return dt.zone.offsetName(dt.ts, { format: "long", locale: this.loc.locale });
+          // zone
+          case "z":
+            // like America/New_York
+            return dt.zoneName;
+          // meridiems
+          case "a":
+            return meridiem();
+          // dates
+          case "d":
+            return useDateTimeFormatter ? string({ day: "numeric" }, "day") : this.num(dt.day);
+          case "dd":
+            return useDateTimeFormatter ? string({ day: "2-digit" }, "day") : this.num(dt.day, 2);
+          // weekdays - standalone
+          case "c":
+            // like 1
+            return this.num(dt.weekday);
+          case "ccc":
+            // like 'Tues'
+            return weekday("short", true);
+          case "cccc":
+            // like 'Tuesday'
+            return weekday("long", true);
+          case "ccccc":
+            // like 'T'
+            return weekday("narrow", true);
+          // weekdays - format
+          case "E":
+            // like 1
+            return this.num(dt.weekday);
+          case "EEE":
+            // like 'Tues'
+            return weekday("short", false);
+          case "EEEE":
+            // like 'Tuesday'
+            return weekday("long", false);
+          case "EEEEE":
+            // like 'T'
+            return weekday("narrow", false);
+          // months - standalone
+          case "L":
+            // like 1
+            return useDateTimeFormatter
+              ? string({ month: "numeric", day: "numeric" }, "month")
+              : this.num(dt.month);
+          case "LL":
+            // like 01, doesn't seem to work
+            return useDateTimeFormatter
+              ? string({ month: "2-digit", day: "numeric" }, "month")
+              : this.num(dt.month, 2);
+          case "LLL":
+            // like Jan
+            return month("short", true);
+          case "LLLL":
+            // like January
+            return month("long", true);
+          case "LLLLL":
+            // like J
+            return month("narrow", true);
+          // months - format
+          case "M":
+            // like 1
+            return useDateTimeFormatter
+              ? string({ month: "numeric" }, "month")
+              : this.num(dt.month);
+          case "MM":
+            // like 01
+            return useDateTimeFormatter
+              ? string({ month: "2-digit" }, "month")
+              : this.num(dt.month, 2);
+          case "MMM":
+            // like Jan
+            return month("short", false);
+          case "MMMM":
+            // like January
+            return month("long", false);
+          case "MMMMM":
+            // like J
+            return month("narrow", false);
+          // years
+          case "y":
+            // like 2014
+            return useDateTimeFormatter ? string({ year: "numeric" }, "year") : this.num(dt.year);
+          case "yy":
+            // like 14
+            return useDateTimeFormatter
+              ? string({ year: "2-digit" }, "year")
+              : this.num(dt.year.toString().slice(-2), 2);
+          case "yyyy":
+            // like 0012
+            return useDateTimeFormatter
+              ? string({ year: "numeric" }, "year")
+              : this.num(dt.year, 4);
+          case "yyyyyy":
+            // like 000012
+            return useDateTimeFormatter
+              ? string({ year: "numeric" }, "year")
+              : this.num(dt.year, 6);
+          // eras
+          case "G":
+            // like AD
+            return era("short");
+          case "GG":
+            // like Anno Domini
+            return era("long");
+          case "GGGGG":
+            return era("narrow");
+          case "kk":
+            return this.num(dt.weekYear.toString().slice(-2), 2);
+          case "kkkk":
+            return this.num(dt.weekYear, 4);
+          case "W":
+            return this.num(dt.weekNumber);
+          case "WW":
+            return this.num(dt.weekNumber, 2);
+          case "n":
+            return this.num(dt.localWeekNumber);
+          case "nn":
+            return this.num(dt.localWeekNumber, 2);
+          case "ii":
+            return this.num(dt.localWeekYear.toString().slice(-2), 2);
+          case "iiii":
+            return this.num(dt.localWeekYear, 4);
+          case "o":
+            return this.num(dt.ordinal);
+          case "ooo":
+            return this.num(dt.ordinal, 3);
+          case "q":
+            // like 1
+            return this.num(dt.quarter);
+          case "qq":
+            // like 01
+            return this.num(dt.quarter, 2);
+          case "X":
+            return this.num(Math.floor(dt.ts / 1000));
+          case "x":
+            return this.num(dt.ts);
+          default:
+            return maybeMacro(token);
+        }
+      };
+
+    return stringifyTokens(Formatter.parseFormat(fmt), tokenToString);
+  }
+
+  formatDurationFromString(dur, fmt) {
+    const invertLargest = this.opts.signMode === "negativeLargestOnly" ? -1 : 1;
+    const tokenToField = (token) => {
+        switch (token[0]) {
+          case "S":
+            return "milliseconds";
+          case "s":
+            return "seconds";
+          case "m":
+            return "minutes";
+          case "h":
+            return "hours";
+          case "d":
+            return "days";
+          case "w":
+            return "weeks";
+          case "M":
+            return "months";
+          case "y":
+            return "years";
+          default:
+            return null;
+        }
+      },
+      tokenToString = (lildur, info) => (token) => {
+        const mapped = tokenToField(token);
+        if (mapped) {
+          const inversionFactor =
+            info.isNegativeDuration && mapped !== info.largestUnit ? invertLargest : 1;
+          let signDisplay;
+          if (this.opts.signMode === "negativeLargestOnly" && mapped !== info.largestUnit) {
+            signDisplay = "never";
+          } else if (this.opts.signMode === "all") {
+            signDisplay = "always";
+          } else {
+            // "auto" and "negative" are the same, but "auto" has better support
+            signDisplay = "auto";
+          }
+          return this.num(lildur.get(mapped) * inversionFactor, token.length, signDisplay);
+        } else {
+          return token;
+        }
+      },
+      tokens = Formatter.parseFormat(fmt),
+      realTokens = tokens.reduce(
+        (found, { literal, val }) => (literal ? found : found.concat(val)),
+        []
+      ),
+      collapsed = dur.shiftTo(...realTokens.map(tokenToField).filter((t) => t)),
+      durationInfo = {
+        isNegativeDuration: collapsed < 0,
+        // this relies on "collapsed" being based on "shiftTo", which builds up the object
+        // in order
+        largestUnit: Object.keys(collapsed.values)[0],
+      };
+    return stringifyTokens(tokens, tokenToString(collapsed, durationInfo));
+  }
+}
+
+/*
+ * This file handles parsing for well-specified formats. Here's how it works:
+ * Two things go into parsing: a regex to match with and an extractor to take apart the groups in the match.
+ * An extractor is just a function that takes a regex match array and returns a { year: ..., month: ... } object
+ * parse() does the work of executing the regex and applying the extractor. It takes multiple regex/extractor pairs to try in sequence.
+ * Extractors can take a "cursor" representing the offset in the match to look at. This makes it easy to combine extractors.
+ * combineExtractors() does the work of combining them, keeping track of the cursor through multiple extractions.
+ * Some extractions are super dumb and simpleParse and fromStrings help DRY them.
+ */
+
+const ianaRegex = /[A-Za-z_+-]{1,256}(?::?\/[A-Za-z0-9_+-]{1,256}(?:\/[A-Za-z0-9_+-]{1,256})?)?/;
+
+function combineRegexes(...regexes) {
+  const full = regexes.reduce((f, r) => f + r.source, "");
+  return RegExp(`^${full}$`);
+}
+
+function combineExtractors(...extractors) {
+  return (m) =>
+    extractors
+      .reduce(
+        ([mergedVals, mergedZone, cursor], ex) => {
+          const [val, zone, next] = ex(m, cursor);
+          return [{ ...mergedVals, ...val }, zone || mergedZone, next];
+        },
+        [{}, null, 1]
+      )
+      .slice(0, 2);
+}
+
+function parse(s, ...patterns) {
+  if (s == null) {
+    return [null, null];
+  }
+
+  for (const [regex, extractor] of patterns) {
+    const m = regex.exec(s);
+    if (m) {
+      return extractor(m);
+    }
+  }
+  return [null, null];
+}
+
+function simpleParse(...keys) {
+  return (match, cursor) => {
+    const ret = {};
+    let i;
+
+    for (i = 0; i < keys.length; i++) {
+      ret[keys[i]] = parseInteger(match[cursor + i]);
+    }
+    return [ret, null, cursor + i];
+  };
+}
+
+// ISO and SQL parsing
+const offsetRegex = /(?:([Zz])|([+-]\d\d)(?::?(\d\d))?)/;
+const isoExtendedZone = `(?:${offsetRegex.source}?(?:\\[(${ianaRegex.source})\\])?)?`;
+const isoTimeBaseRegex = /(\d\d)(?::?(\d\d)(?::?(\d\d)(?:[.,](\d{1,30}))?)?)?/;
+const isoTimeRegex = RegExp(`${isoTimeBaseRegex.source}${isoExtendedZone}`);
+const isoTimeExtensionRegex = RegExp(`(?:[Tt]${isoTimeRegex.source})?`);
+const isoYmdRegex = /([+-]\d{6}|\d{4})(?:-?(\d\d)(?:-?(\d\d))?)?/;
+const isoWeekRegex = /(\d{4})-?W(\d\d)(?:-?(\d))?/;
+const isoOrdinalRegex = /(\d{4})-?(\d{3})/;
+const extractISOWeekData = simpleParse("weekYear", "weekNumber", "weekDay");
+const extractISOOrdinalData = simpleParse("year", "ordinal");
+const sqlYmdRegex = /(\d{4})-(\d\d)-(\d\d)/; // dumbed-down version of the ISO one
+const sqlTimeRegex = RegExp(
+  `${isoTimeBaseRegex.source} ?(?:${offsetRegex.source}|(${ianaRegex.source}))?`
+);
+const sqlTimeExtensionRegex = RegExp(`(?: ${sqlTimeRegex.source})?`);
+
+function int(match, pos, fallback) {
+  const m = match[pos];
+  return isUndefined(m) ? fallback : parseInteger(m);
+}
+
+function extractISOYmd(match, cursor) {
+  const item = {
+    year: int(match, cursor),
+    month: int(match, cursor + 1, 1),
+    day: int(match, cursor + 2, 1),
+  };
+
+  return [item, null, cursor + 3];
+}
+
+function extractISOTime(match, cursor) {
+  const item = {
+    hours: int(match, cursor, 0),
+    minutes: int(match, cursor + 1, 0),
+    seconds: int(match, cursor + 2, 0),
+    milliseconds: parseMillis(match[cursor + 3]),
+  };
+
+  return [item, null, cursor + 4];
+}
+
+function extractISOOffset(match, cursor) {
+  const local = !match[cursor] && !match[cursor + 1],
+    fullOffset = signedOffset(match[cursor + 1], match[cursor + 2]),
+    zone = local ? null : FixedOffsetZone.instance(fullOffset);
+  return [{}, zone, cursor + 3];
+}
+
+function extractIANAZone(match, cursor) {
+  const zone = match[cursor] ? IANAZone.create(match[cursor]) : null;
+  return [{}, zone, cursor + 1];
+}
+
+// ISO time parsing
+
+const isoTimeOnly = RegExp(`^T?${isoTimeBaseRegex.source}$`);
+
+// ISO duration parsing
+
+const isoDuration =
+  /^-?P(?:(?:(-?\d{1,20}(?:\.\d{1,20})?)Y)?(?:(-?\d{1,20}(?:\.\d{1,20})?)M)?(?:(-?\d{1,20}(?:\.\d{1,20})?)W)?(?:(-?\d{1,20}(?:\.\d{1,20})?)D)?(?:T(?:(-?\d{1,20}(?:\.\d{1,20})?)H)?(?:(-?\d{1,20}(?:\.\d{1,20})?)M)?(?:(-?\d{1,20})(?:[.,](-?\d{1,20}))?S)?)?)$/;
+
+function extractISODuration(match) {
+  const [s, yearStr, monthStr, weekStr, dayStr, hourStr, minuteStr, secondStr, millisecondsStr] =
+    match;
+
+  const hasNegativePrefix = s[0] === "-";
+  const negativeSeconds = secondStr && secondStr[0] === "-";
+
+  const maybeNegate = (num, force = false) =>
+    num !== undefined && (force || (num && hasNegativePrefix)) ? -num : num;
+
+  return [
+    {
+      years: maybeNegate(parseFloating(yearStr)),
+      months: maybeNegate(parseFloating(monthStr)),
+      weeks: maybeNegate(parseFloating(weekStr)),
+      days: maybeNegate(parseFloating(dayStr)),
+      hours: maybeNegate(parseFloating(hourStr)),
+      minutes: maybeNegate(parseFloating(minuteStr)),
+      seconds: maybeNegate(parseFloating(secondStr), secondStr === "-0"),
+      milliseconds: maybeNegate(parseMillis(millisecondsStr), negativeSeconds),
+    },
+  ];
+}
+
+// These are a little braindead. EDT *should* tell us that we're in, say, America/New_York
+// and not just that we're in -240 *right now*. But since I don't think these are used that often
+// I'm just going to ignore that
+const obsOffsets = {
+  GMT: 0,
+  EDT: -4 * 60,
+  EST: -5 * 60,
+  CDT: -5 * 60,
+  CST: -6 * 60,
+  MDT: -6 * 60,
+  MST: -7 * 60,
+  PDT: -7 * 60,
+  PST: -8 * 60,
+};
+
+function fromStrings(weekdayStr, yearStr, monthStr, dayStr, hourStr, minuteStr, secondStr) {
+  const result = {
+    year: yearStr.length === 2 ? untruncateYear(parseInteger(yearStr)) : parseInteger(yearStr),
+    month: monthsShort.indexOf(monthStr) + 1,
+    day: parseInteger(dayStr),
+    hour: parseInteger(hourStr),
+    minute: parseInteger(minuteStr),
+  };
+
+  if (secondStr) result.second = parseInteger(secondStr);
+  if (weekdayStr) {
+    result.weekday =
+      weekdayStr.length > 3
+        ? weekdaysLong.indexOf(weekdayStr) + 1
+        : weekdaysShort.indexOf(weekdayStr) + 1;
+  }
+
+  return result;
+}
+
+// RFC 2822/5322
+const rfc2822 =
+  /^(?:(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s)?(\d{1,2})\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d{2,4})\s(\d\d):(\d\d)(?::(\d\d))?\s(?:(UT|GMT|[ECMP][SD]T)|([Zz])|(?:([+-]\d\d)(\d\d)))$/;
+
+function extractRFC2822(match) {
+  const [
+      ,
+      weekdayStr,
+      dayStr,
+      monthStr,
+      yearStr,
+      hourStr,
+      minuteStr,
+      secondStr,
+      obsOffset,
+      milOffset,
+      offHourStr,
+      offMinuteStr,
+    ] = match,
+    result = fromStrings(weekdayStr, yearStr, monthStr, dayStr, hourStr, minuteStr, secondStr);
+
+  let offset;
+  if (obsOffset) {
+    offset = obsOffsets[obsOffset];
+  } else if (milOffset) {
+    offset = 0;
+  } else {
+    offset = signedOffset(offHourStr, offMinuteStr);
+  }
+
+  return [result, new FixedOffsetZone(offset)];
+}
+
+function preprocessRFC2822(s) {
+  // Remove comments and folding whitespace and replace multiple-spaces with a single space
+  return s
+    .replace(/\([^()]*\)|[\n\t]/g, " ")
+    .replace(/(\s\s+)/g, " ")
+    .trim();
+}
+
+// http date
+
+const rfc1123 =
+    /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\d\d) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{4}) (\d\d):(\d\d):(\d\d) GMT$/,
+  rfc850 =
+    /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), (\d\d)-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d\d) (\d\d):(\d\d):(\d\d) GMT$/,
+  ascii =
+    /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) ( \d|\d\d) (\d\d):(\d\d):(\d\d) (\d{4})$/;
+
+function extractRFC1123Or850(match) {
+  const [, weekdayStr, dayStr, monthStr, yearStr, hourStr, minuteStr, secondStr] = match,
+    result = fromStrings(weekdayStr, yearStr, monthStr, dayStr, hourStr, minuteStr, secondStr);
+  return [result, FixedOffsetZone.utcInstance];
+}
+
+function extractASCII(match) {
+  const [, weekdayStr, monthStr, dayStr, hourStr, minuteStr, secondStr, yearStr] = match,
+    result = fromStrings(weekdayStr, yearStr, monthStr, dayStr, hourStr, minuteStr, secondStr);
+  return [result, FixedOffsetZone.utcInstance];
+}
+
+const isoYmdWithTimeExtensionRegex = combineRegexes(isoYmdRegex, isoTimeExtensionRegex);
+const isoWeekWithTimeExtensionRegex = combineRegexes(isoWeekRegex, isoTimeExtensionRegex);
+const isoOrdinalWithTimeExtensionRegex = combineRegexes(isoOrdinalRegex, isoTimeExtensionRegex);
+const isoTimeCombinedRegex = combineRegexes(isoTimeRegex);
+
+const extractISOYmdTimeAndOffset = combineExtractors(
+  extractISOYmd,
+  extractISOTime,
+  extractISOOffset,
+  extractIANAZone
+);
+const extractISOWeekTimeAndOffset = combineExtractors(
+  extractISOWeekData,
+  extractISOTime,
+  extractISOOffset,
+  extractIANAZone
+);
+const extractISOOrdinalDateAndTime = combineExtractors(
+  extractISOOrdinalData,
+  extractISOTime,
+  extractISOOffset,
+  extractIANAZone
+);
+const extractISOTimeAndOffset = combineExtractors(
+  extractISOTime,
+  extractISOOffset,
+  extractIANAZone
+);
+
+/*
+ * @private
+ */
+
+function parseISODate(s) {
+  return parse(
+    s,
+    [isoYmdWithTimeExtensionRegex, extractISOYmdTimeAndOffset],
+    [isoWeekWithTimeExtensionRegex, extractISOWeekTimeAndOffset],
+    [isoOrdinalWithTimeExtensionRegex, extractISOOrdinalDateAndTime],
+    [isoTimeCombinedRegex, extractISOTimeAndOffset]
+  );
+}
+
+function parseRFC2822Date(s) {
+  return parse(preprocessRFC2822(s), [rfc2822, extractRFC2822]);
+}
+
+function parseHTTPDate(s) {
+  return parse(
+    s,
+    [rfc1123, extractRFC1123Or850],
+    [rfc850, extractRFC1123Or850],
+    [ascii, extractASCII]
+  );
+}
+
+function parseISODuration(s) {
+  return parse(s, [isoDuration, extractISODuration]);
+}
+
+const extractISOTimeOnly = combineExtractors(extractISOTime);
+
+function parseISOTimeOnly(s) {
+  return parse(s, [isoTimeOnly, extractISOTimeOnly]);
+}
+
+const sqlYmdWithTimeExtensionRegex = combineRegexes(sqlYmdRegex, sqlTimeExtensionRegex);
+const sqlTimeCombinedRegex = combineRegexes(sqlTimeRegex);
+
+const extractISOTimeOffsetAndIANAZone = combineExtractors(
+  extractISOTime,
+  extractISOOffset,
+  extractIANAZone
+);
+
+function parseSQL(s) {
+  return parse(
+    s,
+    [sqlYmdWithTimeExtensionRegex, extractISOYmdTimeAndOffset],
+    [sqlTimeCombinedRegex, extractISOTimeOffsetAndIANAZone]
+  );
+}
+
+const INVALID$2 = "Invalid Duration";
+
+// unit conversion constants
+const lowOrderMatrix = {
+    weeks: {
+      days: 7,
+      hours: 7 * 24,
+      minutes: 7 * 24 * 60,
+      seconds: 7 * 24 * 60 * 60,
+      milliseconds: 7 * 24 * 60 * 60 * 1000,
+    },
+    days: {
+      hours: 24,
+      minutes: 24 * 60,
+      seconds: 24 * 60 * 60,
+      milliseconds: 24 * 60 * 60 * 1000,
+    },
+    hours: { minutes: 60, seconds: 60 * 60, milliseconds: 60 * 60 * 1000 },
+    minutes: { seconds: 60, milliseconds: 60 * 1000 },
+    seconds: { milliseconds: 1000 },
+  },
+  casualMatrix = {
+    years: {
+      quarters: 4,
+      months: 12,
+      weeks: 52,
+      days: 365,
+      hours: 365 * 24,
+      minutes: 365 * 24 * 60,
+      seconds: 365 * 24 * 60 * 60,
+      milliseconds: 365 * 24 * 60 * 60 * 1000,
+    },
+    quarters: {
+      months: 3,
+      weeks: 13,
+      days: 91,
+      hours: 91 * 24,
+      minutes: 91 * 24 * 60,
+      seconds: 91 * 24 * 60 * 60,
+      milliseconds: 91 * 24 * 60 * 60 * 1000,
+    },
+    months: {
+      weeks: 4,
+      days: 30,
+      hours: 30 * 24,
+      minutes: 30 * 24 * 60,
+      seconds: 30 * 24 * 60 * 60,
+      milliseconds: 30 * 24 * 60 * 60 * 1000,
+    },
+
+    ...lowOrderMatrix,
+  },
+  daysInYearAccurate = 146097.0 / 400,
+  daysInMonthAccurate = 146097.0 / 4800,
+  accurateMatrix = {
+    years: {
+      quarters: 4,
+      months: 12,
+      weeks: daysInYearAccurate / 7,
+      days: daysInYearAccurate,
+      hours: daysInYearAccurate * 24,
+      minutes: daysInYearAccurate * 24 * 60,
+      seconds: daysInYearAccurate * 24 * 60 * 60,
+      milliseconds: daysInYearAccurate * 24 * 60 * 60 * 1000,
+    },
+    quarters: {
+      months: 3,
+      weeks: daysInYearAccurate / 28,
+      days: daysInYearAccurate / 4,
+      hours: (daysInYearAccurate * 24) / 4,
+      minutes: (daysInYearAccurate * 24 * 60) / 4,
+      seconds: (daysInYearAccurate * 24 * 60 * 60) / 4,
+      milliseconds: (daysInYearAccurate * 24 * 60 * 60 * 1000) / 4,
+    },
+    months: {
+      weeks: daysInMonthAccurate / 7,
+      days: daysInMonthAccurate,
+      hours: daysInMonthAccurate * 24,
+      minutes: daysInMonthAccurate * 24 * 60,
+      seconds: daysInMonthAccurate * 24 * 60 * 60,
+      milliseconds: daysInMonthAccurate * 24 * 60 * 60 * 1000,
+    },
+    ...lowOrderMatrix,
+  };
+
+// units ordered by size
+const orderedUnits$1 = [
+  "years",
+  "quarters",
+  "months",
+  "weeks",
+  "days",
+  "hours",
+  "minutes",
+  "seconds",
+  "milliseconds",
+];
+
+const reverseUnits = orderedUnits$1.slice(0).reverse();
+
+// clone really means "create another instance just like this one, but with these changes"
+function clone$1(dur, alts, clear = false) {
+  // deep merge for vals
+  const conf = {
+    values: clear ? alts.values : { ...dur.values, ...(alts.values || {}) },
+    loc: dur.loc.clone(alts.loc),
+    conversionAccuracy: alts.conversionAccuracy || dur.conversionAccuracy,
+    matrix: alts.matrix || dur.matrix,
+  };
+  return new Duration(conf);
+}
+
+function durationToMillis(matrix, vals) {
+  let sum = vals.milliseconds ?? 0;
+  for (const unit of reverseUnits.slice(1)) {
+    if (vals[unit]) {
+      sum += vals[unit] * matrix[unit]["milliseconds"];
+    }
+  }
+  return sum;
+}
+
+// NB: mutates parameters
+function normalizeValues(matrix, vals) {
+  // the logic below assumes the overall value of the duration is positive
+  // if this is not the case, factor is used to make it so
+  const factor = durationToMillis(matrix, vals) < 0 ? -1 : 1;
+
+  orderedUnits$1.reduceRight((previous, current) => {
+    if (!isUndefined(vals[current])) {
+      if (previous) {
+        const previousVal = vals[previous] * factor;
+        const conv = matrix[current][previous];
+
+        // if (previousVal < 0):
+        // lower order unit is negative (e.g. { years: 2, days: -2 })
+        // normalize this by reducing the higher order unit by the appropriate amount
+        // and increasing the lower order unit
+        // this can never make the higher order unit negative, because this function only operates
+        // on positive durations, so the amount of time represented by the lower order unit cannot
+        // be larger than the higher order unit
+        // else:
+        // lower order unit is positive (e.g. { years: 2, days: 450 } or { years: -2, days: 450 })
+        // in this case we attempt to convert as much as possible from the lower order unit into
+        // the higher order one
+        //
+        // Math.floor takes care of both of these cases, rounding away from 0
+        // if previousVal < 0 it makes the absolute value larger
+        // if previousVal >= it makes the absolute value smaller
+        const rollUp = Math.floor(previousVal / conv);
+        vals[current] += rollUp * factor;
+        vals[previous] -= rollUp * conv * factor;
+      }
+      return current;
+    } else {
+      return previous;
+    }
+  }, null);
+
+  // try to convert any decimals into smaller units if possible
+  // for example for { years: 2.5, days: 0, seconds: 0 } we want to get { years: 2, days: 182, hours: 12 }
+  orderedUnits$1.reduce((previous, current) => {
+    if (!isUndefined(vals[current])) {
+      if (previous) {
+        const fraction = vals[previous] % 1;
+        vals[previous] -= fraction;
+        vals[current] += fraction * matrix[previous][current];
+      }
+      return current;
+    } else {
+      return previous;
+    }
+  }, null);
+}
+
+// Remove all properties with a value of 0 from an object
+function removeZeroes(vals) {
+  const newVals = {};
+  for (const [key, value] of Object.entries(vals)) {
+    if (value !== 0) {
+      newVals[key] = value;
+    }
+  }
+  return newVals;
+}
+
+/**
+ * A Duration object represents a period of time, like "2 months" or "1 day, 1 hour". Conceptually, it's just a map of units to their quantities, accompanied by some additional configuration and methods for creating, parsing, interrogating, transforming, and formatting them. They can be used on their own or in conjunction with other Luxon types; for example, you can use {@link DateTime#plus} to add a Duration object to a DateTime, producing another DateTime.
+ *
+ * Here is a brief overview of commonly used methods and getters in Duration:
+ *
+ * * **Creation** To create a Duration, use {@link Duration.fromMillis}, {@link Duration.fromObject}, or {@link Duration.fromISO}.
+ * * **Unit values** See the {@link Duration#years}, {@link Duration#months}, {@link Duration#weeks}, {@link Duration#days}, {@link Duration#hours}, {@link Duration#minutes}, {@link Duration#seconds}, {@link Duration#milliseconds} accessors.
+ * * **Configuration** See  {@link Duration#locale} and {@link Duration#numberingSystem} accessors.
+ * * **Transformation** To create new Durations out of old ones use {@link Duration#plus}, {@link Duration#minus}, {@link Duration#normalize}, {@link Duration#set}, {@link Duration#reconfigure}, {@link Duration#shiftTo}, and {@link Duration#negate}.
+ * * **Output** To convert the Duration into other representations, see {@link Duration#as}, {@link Duration#toISO}, {@link Duration#toFormat}, and {@link Duration#toJSON}
+ *
+ * There's are more methods documented below. In addition, for more information on subtler topics like internationalization and validity, see the external documentation.
+ */
+class Duration {
+  /**
+   * @private
+   */
+  constructor(config) {
+    const accurate = config.conversionAccuracy === "longterm" || false;
+    let matrix = accurate ? accurateMatrix : casualMatrix;
+
+    if (config.matrix) {
+      matrix = config.matrix;
+    }
+
+    /**
+     * @access private
+     */
+    this.values = config.values;
+    /**
+     * @access private
+     */
+    this.loc = config.loc || Locale.create();
+    /**
+     * @access private
+     */
+    this.conversionAccuracy = accurate ? "longterm" : "casual";
+    /**
+     * @access private
+     */
+    this.invalid = config.invalid || null;
+    /**
+     * @access private
+     */
+    this.matrix = matrix;
+    /**
+     * @access private
+     */
+    this.isLuxonDuration = true;
+  }
+
+  /**
+   * Create Duration from a number of milliseconds.
+   * @param {number} count of milliseconds
+   * @param {Object} opts - options for parsing
+   * @param {string} [opts.locale='en-US'] - the locale to use
+   * @param {string} opts.numberingSystem - the numbering system to use
+   * @param {string} [opts.conversionAccuracy='casual'] - the conversion system to use
+   * @return {Duration}
+   */
+  static fromMillis(count, opts) {
+    return Duration.fromObject({ milliseconds: count }, opts);
+  }
+
+  /**
+   * Create a Duration from a JavaScript object with keys like 'years' and 'hours'.
+   * If this object is empty then a zero milliseconds duration is returned.
+   * @param {Object} obj - the object to create the DateTime from
+   * @param {number} obj.years
+   * @param {number} obj.quarters
+   * @param {number} obj.months
+   * @param {number} obj.weeks
+   * @param {number} obj.days
+   * @param {number} obj.hours
+   * @param {number} obj.minutes
+   * @param {number} obj.seconds
+   * @param {number} obj.milliseconds
+   * @param {Object} [opts=[]] - options for creating this Duration
+   * @param {string} [opts.locale='en-US'] - the locale to use
+   * @param {string} opts.numberingSystem - the numbering system to use
+   * @param {string} [opts.conversionAccuracy='casual'] - the preset conversion system to use
+   * @param {string} [opts.matrix=Object] - the custom conversion system to use
+   * @return {Duration}
+   */
+  static fromObject(obj, opts = {}) {
+    if (obj == null || typeof obj !== "object") {
+      throw new InvalidArgumentError(
+        `Duration.fromObject: argument expected to be an object, got ${
+          obj === null ? "null" : typeof obj
+        }`
+      );
+    }
+
+    return new Duration({
+      values: normalizeObject(obj, Duration.normalizeUnit),
+      loc: Locale.fromObject(opts),
+      conversionAccuracy: opts.conversionAccuracy,
+      matrix: opts.matrix,
+    });
+  }
+
+  /**
+   * Create a Duration from DurationLike.
+   *
+   * @param {Object | number | Duration} durationLike
+   * One of:
+   * - object with keys like 'years' and 'hours'.
+   * - number representing milliseconds
+   * - Duration instance
+   * @return {Duration}
+   */
+  static fromDurationLike(durationLike) {
+    if (isNumber(durationLike)) {
+      return Duration.fromMillis(durationLike);
+    } else if (Duration.isDuration(durationLike)) {
+      return durationLike;
+    } else if (typeof durationLike === "object") {
+      return Duration.fromObject(durationLike);
+    } else {
+      throw new InvalidArgumentError(
+        `Unknown duration argument ${durationLike} of type ${typeof durationLike}`
+      );
+    }
+  }
+
+  /**
+   * Create a Duration from an ISO 8601 duration string.
+   * @param {string} text - text to parse
+   * @param {Object} opts - options for parsing
+   * @param {string} [opts.locale='en-US'] - the locale to use
+   * @param {string} opts.numberingSystem - the numbering system to use
+   * @param {string} [opts.conversionAccuracy='casual'] - the preset conversion system to use
+   * @param {string} [opts.matrix=Object] - the preset conversion system to use
+   * @see https://en.wikipedia.org/wiki/ISO_8601#Durations
+   * @example Duration.fromISO('P3Y6M1W4DT12H30M5S').toObject() //=> { years: 3, months: 6, weeks: 1, days: 4, hours: 12, minutes: 30, seconds: 5 }
+   * @example Duration.fromISO('PT23H').toObject() //=> { hours: 23 }
+   * @example Duration.fromISO('P5Y3M').toObject() //=> { years: 5, months: 3 }
+   * @return {Duration}
+   */
+  static fromISO(text, opts) {
+    const [parsed] = parseISODuration(text);
+    if (parsed) {
+      return Duration.fromObject(parsed, opts);
+    } else {
+      return Duration.invalid("unparsable", `the input "${text}" can't be parsed as ISO 8601`);
+    }
+  }
+
+  /**
+   * Create a Duration from an ISO 8601 time string.
+   * @param {string} text - text to parse
+   * @param {Object} opts - options for parsing
+   * @param {string} [opts.locale='en-US'] - the locale to use
+   * @param {string} opts.numberingSystem - the numbering system to use
+   * @param {string} [opts.conversionAccuracy='casual'] - the preset conversion system to use
+   * @param {string} [opts.matrix=Object] - the conversion system to use
+   * @see https://en.wikipedia.org/wiki/ISO_8601#Times
+   * @example Duration.fromISOTime('11:22:33.444').toObject() //=> { hours: 11, minutes: 22, seconds: 33, milliseconds: 444 }
+   * @example Duration.fromISOTime('11:00').toObject() //=> { hours: 11, minutes: 0, seconds: 0 }
+   * @example Duration.fromISOTime('T11:00').toObject() //=> { hours: 11, minutes: 0, seconds: 0 }
+   * @example Duration.fromISOTime('1100').toObject() //=> { hours: 11, minutes: 0, seconds: 0 }
+   * @example Duration.fromISOTime('T1100').toObject() //=> { hours: 11, minutes: 0, seconds: 0 }
+   * @return {Duration}
+   */
+  static fromISOTime(text, opts) {
+    const [parsed] = parseISOTimeOnly(text);
+    if (parsed) {
+      return Duration.fromObject(parsed, opts);
+    } else {
+      return Duration.invalid("unparsable", `the input "${text}" can't be parsed as ISO 8601`);
+    }
+  }
+
+  /**
+   * Create an invalid Duration.
+   * @param {string} reason - simple string of why this datetime is invalid. Should not contain parameters or anything else data-dependent
+   * @param {string} [explanation=null] - longer explanation, may include parameters and other useful debugging information
+   * @return {Duration}
+   */
+  static invalid(reason, explanation = null) {
+    if (!reason) {
+      throw new InvalidArgumentError("need to specify a reason the Duration is invalid");
+    }
+
+    const invalid = reason instanceof Invalid ? reason : new Invalid(reason, explanation);
+
+    if (Settings.throwOnInvalid) {
+      throw new InvalidDurationError(invalid);
+    } else {
+      return new Duration({ invalid });
+    }
+  }
+
+  /**
+   * @private
+   */
+  static normalizeUnit(unit) {
+    const normalized = {
+      year: "years",
+      years: "years",
+      quarter: "quarters",
+      quarters: "quarters",
+      month: "months",
+      months: "months",
+      week: "weeks",
+      weeks: "weeks",
+      day: "days",
+      days: "days",
+      hour: "hours",
+      hours: "hours",
+      minute: "minutes",
+      minutes: "minutes",
+      second: "seconds",
+      seconds: "seconds",
+      millisecond: "milliseconds",
+      milliseconds: "milliseconds",
+    }[unit ? unit.toLowerCase() : unit];
+
+    if (!normalized) throw new InvalidUnitError(unit);
+
+    return normalized;
+  }
+
+  /**
+   * Check if an object is a Duration. Works across context boundaries
+   * @param {object} o
+   * @return {boolean}
+   */
+  static isDuration(o) {
+    return (o && o.isLuxonDuration) || false;
+  }
+
+  /**
+   * Get  the locale of a Duration, such 'en-GB'
+   * @type {string}
+   */
+  get locale() {
+    return this.isValid ? this.loc.locale : null;
+  }
+
+  /**
+   * Get the numbering system of a Duration, such 'beng'. The numbering system is used when formatting the Duration
+   *
+   * @type {string}
+   */
+  get numberingSystem() {
+    return this.isValid ? this.loc.numberingSystem : null;
+  }
+
+  /**
+   * Returns a string representation of this Duration formatted according to the specified format string. You may use these tokens:
+   * * `S` for milliseconds
+   * * `s` for seconds
+   * * `m` for minutes
+   * * `h` for hours
+   * * `d` for days
+   * * `w` for weeks
+   * * `M` for months
+   * * `y` for years
+   * Notes:
+   * * Add padding by repeating the token, e.g. "yy" pads the years to two digits, "hhhh" pads the hours out to four digits
+   * * Tokens can be escaped by wrapping with single quotes.
+   * * The duration will be converted to the set of units in the format string using {@link Duration#shiftTo} and the Durations's conversion accuracy setting.
+   * @param {string} fmt - the format string
+   * @param {Object} opts - options
+   * @param {boolean} [opts.floor=true] - floor numerical values
+   * @param {'negative'|'all'|'negativeLargestOnly'} [opts.signMode=negative] - How to handle signs
+   * @example Duration.fromObject({ years: 1, days: 6, seconds: 2 }).toFormat("y d s") //=> "1 6 2"
+   * @example Duration.fromObject({ years: 1, days: 6, seconds: 2 }).toFormat("yy dd sss") //=> "01 06 002"
+   * @example Duration.fromObject({ years: 1, days: 6, seconds: 2 }).toFormat("M S") //=> "12 518402000"
+   * @example Duration.fromObject({ days: 6, seconds: 2 }).toFormat("d s", { signMode: "all" }) //=> "+6 +2"
+   * @example Duration.fromObject({ days: -6, seconds: -2 }).toFormat("d s", { signMode: "all" }) //=> "-6 -2"
+   * @example Duration.fromObject({ days: -6, seconds: -2 }).toFormat("d s", { signMode: "negativeLargestOnly" }) //=> "-6 2"
+   * @return {string}
+   */
+  toFormat(fmt, opts = {}) {
+    // reverse-compat since 1.2; we always round down now, never up, and we do it by default
+    const fmtOpts = {
+      ...opts,
+      floor: opts.round !== false && opts.floor !== false,
+    };
+    return this.isValid
+      ? Formatter.create(this.loc, fmtOpts).formatDurationFromString(this, fmt)
+      : INVALID$2;
+  }
+
+  /**
+   * Returns a string representation of a Duration with all units included.
+   * To modify its behavior, use `listStyle` and any Intl.NumberFormat option, though `unitDisplay` is especially relevant.
+   * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat/NumberFormat#options
+   * @param {Object} opts - Formatting options. Accepts the same keys as the options parameter of the native `Intl.NumberFormat` constructor, as well as `listStyle`.
+   * @param {string} [opts.listStyle='narrow'] - How to format the merged list. Corresponds to the `style` property of the options parameter of the native `Intl.ListFormat` constructor.
+   * @param {boolean} [opts.showZeros=true] - Show all units previously used by the duration even if they are zero
+   * @example
+   * ```js
+   * var dur = Duration.fromObject({ months: 1, weeks: 0, hours: 5, minutes: 6 })
+   * dur.toHuman() //=> '1 month, 0 weeks, 5 hours, 6 minutes'
+   * dur.toHuman({ listStyle: "long" }) //=> '1 month, 0 weeks, 5 hours, and 6 minutes'
+   * dur.toHuman({ unitDisplay: "short" }) //=> '1 mth, 0 wks, 5 hr, 6 min'
+   * dur.toHuman({ showZeros: false }) //=> '1 month, 5 hours, 6 minutes'
+   * ```
+   */
+  toHuman(opts = {}) {
+    if (!this.isValid) return INVALID$2;
+
+    const showZeros = opts.showZeros !== false;
+
+    const l = orderedUnits$1
+      .map((unit) => {
+        const val = this.values[unit];
+        if (isUndefined(val) || (val === 0 && !showZeros)) {
+          return null;
+        }
+        return this.loc
+          .numberFormatter({ style: "unit", unitDisplay: "long", ...opts, unit: unit.slice(0, -1) })
+          .format(val);
+      })
+      .filter((n) => n);
+
+    return this.loc
+      .listFormatter({ type: "conjunction", style: opts.listStyle || "narrow", ...opts })
+      .format(l);
+  }
+
+  /**
+   * Returns a JavaScript object with this Duration's values.
+   * @example Duration.fromObject({ years: 1, days: 6, seconds: 2 }).toObject() //=> { years: 1, days: 6, seconds: 2 }
+   * @return {Object}
+   */
+  toObject() {
+    if (!this.isValid) return {};
+    return { ...this.values };
+  }
+
+  /**
+   * Returns an ISO 8601-compliant string representation of this Duration.
+   * @see https://en.wikipedia.org/wiki/ISO_8601#Durations
+   * @example Duration.fromObject({ years: 3, seconds: 45 }).toISO() //=> 'P3YT45S'
+   * @example Duration.fromObject({ months: 4, seconds: 45 }).toISO() //=> 'P4MT45S'
+   * @example Duration.fromObject({ months: 5 }).toISO() //=> 'P5M'
+   * @example Duration.fromObject({ minutes: 5 }).toISO() //=> 'PT5M'
+   * @example Duration.fromObject({ milliseconds: 6 }).toISO() //=> 'PT0.006S'
+   * @return {string}
+   */
+  toISO() {
+    // we could use the formatter, but this is an easier way to get the minimum string
+    if (!this.isValid) return null;
+
+    let s = "P";
+    if (this.years !== 0) s += this.years + "Y";
+    if (this.months !== 0 || this.quarters !== 0) s += this.months + this.quarters * 3 + "M";
+    if (this.weeks !== 0) s += this.weeks + "W";
+    if (this.days !== 0) s += this.days + "D";
+    if (this.hours !== 0 || this.minutes !== 0 || this.seconds !== 0 || this.milliseconds !== 0)
+      s += "T";
+    if (this.hours !== 0) s += this.hours + "H";
+    if (this.minutes !== 0) s += this.minutes + "M";
+    if (this.seconds !== 0 || this.milliseconds !== 0)
+      // this will handle "floating point madness" by removing extra decimal places
+      // https://stackoverflow.com/questions/588004/is-floating-point-math-broken
+      s += roundTo(this.seconds + this.milliseconds / 1000, 3) + "S";
+    if (s === "P") s += "T0S";
+    return s;
+  }
+
+  /**
+   * Returns an ISO 8601-compliant string representation of this Duration, formatted as a time of day.
+   * Note that this will return null if the duration is invalid, negative, or equal to or greater than 24 hours.
+   * @see https://en.wikipedia.org/wiki/ISO_8601#Times
+   * @param {Object} opts - options
+   * @param {boolean} [opts.suppressMilliseconds=false] - exclude milliseconds from the format if they're 0
+   * @param {boolean} [opts.suppressSeconds=false] - exclude seconds from the format if they're 0
+   * @param {boolean} [opts.includePrefix=false] - include the `T` prefix
+   * @param {string} [opts.format='extended'] - choose between the basic and extended format
+   * @example Duration.fromObject({ hours: 11 }).toISOTime() //=> '11:00:00.000'
+   * @example Duration.fromObject({ hours: 11 }).toISOTime({ suppressMilliseconds: true }) //=> '11:00:00'
+   * @example Duration.fromObject({ hours: 11 }).toISOTime({ suppressSeconds: true }) //=> '11:00'
+   * @example Duration.fromObject({ hours: 11 }).toISOTime({ includePrefix: true }) //=> 'T11:00:00.000'
+   * @example Duration.fromObject({ hours: 11 }).toISOTime({ format: 'basic' }) //=> '110000.000'
+   * @return {string}
+   */
+  toISOTime(opts = {}) {
+    if (!this.isValid) return null;
+
+    const millis = this.toMillis();
+    if (millis < 0 || millis >= 86400000) return null;
+
+    opts = {
+      suppressMilliseconds: false,
+      suppressSeconds: false,
+      includePrefix: false,
+      format: "extended",
+      ...opts,
+      includeOffset: false,
+    };
+
+    const dateTime = DateTime.fromMillis(millis, { zone: "UTC" });
+    return dateTime.toISOTime(opts);
+  }
+
+  /**
+   * Returns an ISO 8601 representation of this Duration appropriate for use in JSON.
+   * @return {string}
+   */
+  toJSON() {
+    return this.toISO();
+  }
+
+  /**
+   * Returns an ISO 8601 representation of this Duration appropriate for use in debugging.
+   * @return {string}
+   */
+  toString() {
+    return this.toISO();
+  }
+
+  /**
+   * Returns a string representation of this Duration appropriate for the REPL.
+   * @return {string}
+   */
+  [Symbol.for("nodejs.util.inspect.custom")]() {
+    if (this.isValid) {
+      return `Duration { values: ${JSON.stringify(this.values)} }`;
+    } else {
+      return `Duration { Invalid, reason: ${this.invalidReason} }`;
+    }
+  }
+
+  /**
+   * Returns an milliseconds value of this Duration.
+   * @return {number}
+   */
+  toMillis() {
+    if (!this.isValid) return NaN;
+
+    return durationToMillis(this.matrix, this.values);
+  }
+
+  /**
+   * Returns an milliseconds value of this Duration. Alias of {@link toMillis}
+   * @return {number}
+   */
+  valueOf() {
+    return this.toMillis();
+  }
+
+  /**
+   * Make this Duration longer by the specified amount. Return a newly-constructed Duration.
+   * @param {Duration|Object|number} duration - The amount to add. Either a Luxon Duration, a number of milliseconds, the object argument to Duration.fromObject()
+   * @return {Duration}
+   */
+  plus(duration) {
+    if (!this.isValid) return this;
+
+    const dur = Duration.fromDurationLike(duration),
+      result = {};
+
+    for (const k of orderedUnits$1) {
+      if (hasOwnProperty(dur.values, k) || hasOwnProperty(this.values, k)) {
+        result[k] = dur.get(k) + this.get(k);
+      }
+    }
+
+    return clone$1(this, { values: result }, true);
+  }
+
+  /**
+   * Make this Duration shorter by the specified amount. Return a newly-constructed Duration.
+   * @param {Duration|Object|number} duration - The amount to subtract. Either a Luxon Duration, a number of milliseconds, the object argument to Duration.fromObject()
+   * @return {Duration}
+   */
+  minus(duration) {
+    if (!this.isValid) return this;
+
+    const dur = Duration.fromDurationLike(duration);
+    return this.plus(dur.negate());
+  }
+
+  /**
+   * Scale this Duration by the specified amount. Return a newly-constructed Duration.
+   * @param {function} fn - The function to apply to each unit. Arity is 1 or 2: the value of the unit and, optionally, the unit name. Must return a number.
+   * @example Duration.fromObject({ hours: 1, minutes: 30 }).mapUnits(x => x * 2) //=> { hours: 2, minutes: 60 }
+   * @example Duration.fromObject({ hours: 1, minutes: 30 }).mapUnits((x, u) => u === "hours" ? x * 2 : x) //=> { hours: 2, minutes: 30 }
+   * @return {Duration}
+   */
+  mapUnits(fn) {
+    if (!this.isValid) return this;
+    const result = {};
+    for (const k of Object.keys(this.values)) {
+      result[k] = asNumber(fn(this.values[k], k));
+    }
+    return clone$1(this, { values: result }, true);
+  }
+
+  /**
+   * Get the value of unit.
+   * @param {string} unit - a unit such as 'minute' or 'day'
+   * @example Duration.fromObject({years: 2, days: 3}).get('years') //=> 2
+   * @example Duration.fromObject({years: 2, days: 3}).get('months') //=> 0
+   * @example Duration.fromObject({years: 2, days: 3}).get('days') //=> 3
+   * @return {number}
+   */
+  get(unit) {
+    return this[Duration.normalizeUnit(unit)];
+  }
+
+  /**
+   * "Set" the values of specified units. Return a newly-constructed Duration.
+   * @param {Object} values - a mapping of units to numbers
+   * @example dur.set({ years: 2017 })
+   * @example dur.set({ hours: 8, minutes: 30 })
+   * @return {Duration}
+   */
+  set(values) {
+    if (!this.isValid) return this;
+
+    const mixed = { ...this.values, ...normalizeObject(values, Duration.normalizeUnit) };
+    return clone$1(this, { values: mixed });
+  }
+
+  /**
+   * "Set" the locale and/or numberingSystem.  Returns a newly-constructed Duration.
+   * @example dur.reconfigure({ locale: 'en-GB' })
+   * @return {Duration}
+   */
+  reconfigure({ locale, numberingSystem, conversionAccuracy, matrix } = {}) {
+    const loc = this.loc.clone({ locale, numberingSystem });
+    const opts = { loc, matrix, conversionAccuracy };
+    return clone$1(this, opts);
+  }
+
+  /**
+   * Return the length of the duration in the specified unit.
+   * @param {string} unit - a unit such as 'minutes' or 'days'
+   * @example Duration.fromObject({years: 1}).as('days') //=> 365
+   * @example Duration.fromObject({years: 1}).as('months') //=> 12
+   * @example Duration.fromObject({hours: 60}).as('days') //=> 2.5
+   * @return {number}
+   */
+  as(unit) {
+    return this.isValid ? this.shiftTo(unit).get(unit) : NaN;
+  }
+
+  /**
+   * Reduce this Duration to its canonical representation in its current units.
+   * Assuming the overall value of the Duration is positive, this means:
+   * - excessive values for lower-order units are converted to higher-order units (if possible, see first and second example)
+   * - negative lower-order units are converted to higher order units (there must be such a higher order unit, otherwise
+   *   the overall value would be negative, see third example)
+   * - fractional values for higher-order units are converted to lower-order units (if possible, see fourth example)
+   *
+   * If the overall value is negative, the result of this method is equivalent to `this.negate().normalize().negate()`.
+   * @example Duration.fromObject({ years: 2, days: 5000 }).normalize().toObject() //=> { years: 15, days: 255 }
+   * @example Duration.fromObject({ days: 5000 }).normalize().toObject() //=> { days: 5000 }
+   * @example Duration.fromObject({ hours: 12, minutes: -45 }).normalize().toObject() //=> { hours: 11, minutes: 15 }
+   * @example Duration.fromObject({ years: 2.5, days: 0, hours: 0 }).normalize().toObject() //=> { years: 2, days: 182, hours: 12 }
+   * @return {Duration}
+   */
+  normalize() {
+    if (!this.isValid) return this;
+    const vals = this.toObject();
+    normalizeValues(this.matrix, vals);
+    return clone$1(this, { values: vals }, true);
+  }
+
+  /**
+   * Rescale units to its largest representation
+   * @example Duration.fromObject({ milliseconds: 90000 }).rescale().toObject() //=> { minutes: 1, seconds: 30 }
+   * @return {Duration}
+   */
+  rescale() {
+    if (!this.isValid) return this;
+    const vals = removeZeroes(this.normalize().shiftToAll().toObject());
+    return clone$1(this, { values: vals }, true);
+  }
+
+  /**
+   * Convert this Duration into its representation in a different set of units.
+   * @example Duration.fromObject({ hours: 1, seconds: 30 }).shiftTo('minutes', 'milliseconds').toObject() //=> { minutes: 60, milliseconds: 30000 }
+   * @return {Duration}
+   */
+  shiftTo(...units) {
+    if (!this.isValid) return this;
+
+    if (units.length === 0) {
+      return this;
+    }
+
+    units = units.map((u) => Duration.normalizeUnit(u));
+
+    const built = {},
+      accumulated = {},
+      vals = this.toObject();
+    let lastUnit;
+
+    for (const k of orderedUnits$1) {
+      if (units.indexOf(k) >= 0) {
+        lastUnit = k;
+
+        let own = 0;
+
+        // anything we haven't boiled down yet should get boiled to this unit
+        for (const ak in accumulated) {
+          own += this.matrix[ak][k] * accumulated[ak];
+          accumulated[ak] = 0;
+        }
+
+        // plus anything that's already in this unit
+        if (isNumber(vals[k])) {
+          own += vals[k];
+        }
+
+        // only keep the integer part for now in the hopes of putting any decimal part
+        // into a smaller unit later
+        const i = Math.trunc(own);
+        built[k] = i;
+        accumulated[k] = (own * 1000 - i * 1000) / 1000;
+
+        // otherwise, keep it in the wings to boil it later
+      } else if (isNumber(vals[k])) {
+        accumulated[k] = vals[k];
+      }
+    }
+
+    // anything leftover becomes the decimal for the last unit
+    // lastUnit must be defined since units is not empty
+    for (const key in accumulated) {
+      if (accumulated[key] !== 0) {
+        built[lastUnit] +=
+          key === lastUnit ? accumulated[key] : accumulated[key] / this.matrix[lastUnit][key];
+      }
+    }
+
+    normalizeValues(this.matrix, built);
+    return clone$1(this, { values: built }, true);
+  }
+
+  /**
+   * Shift this Duration to all available units.
+   * Same as shiftTo("years", "months", "weeks", "days", "hours", "minutes", "seconds", "milliseconds")
+   * @return {Duration}
+   */
+  shiftToAll() {
+    if (!this.isValid) return this;
+    return this.shiftTo(
+      "years",
+      "months",
+      "weeks",
+      "days",
+      "hours",
+      "minutes",
+      "seconds",
+      "milliseconds"
+    );
+  }
+
+  /**
+   * Return the negative of this Duration.
+   * @example Duration.fromObject({ hours: 1, seconds: 30 }).negate().toObject() //=> { hours: -1, seconds: -30 }
+   * @return {Duration}
+   */
+  negate() {
+    if (!this.isValid) return this;
+    const negated = {};
+    for (const k of Object.keys(this.values)) {
+      negated[k] = this.values[k] === 0 ? 0 : -this.values[k];
+    }
+    return clone$1(this, { values: negated }, true);
+  }
+
+  /**
+   * Removes all units with values equal to 0 from this Duration.
+   * @example Duration.fromObject({ years: 2, days: 0, hours: 0, minutes: 0 }).removeZeros().toObject() //=> { years: 2 }
+   * @return {Duration}
+   */
+  removeZeros() {
+    if (!this.isValid) return this;
+    const vals = removeZeroes(this.values);
+    return clone$1(this, { values: vals }, true);
+  }
+
+  /**
+   * Get the years.
+   * @type {number}
+   */
+  get years() {
+    return this.isValid ? this.values.years || 0 : NaN;
+  }
+
+  /**
+   * Get the quarters.
+   * @type {number}
+   */
+  get quarters() {
+    return this.isValid ? this.values.quarters || 0 : NaN;
+  }
+
+  /**
+   * Get the months.
+   * @type {number}
+   */
+  get months() {
+    return this.isValid ? this.values.months || 0 : NaN;
+  }
+
+  /**
+   * Get the weeks
+   * @type {number}
+   */
+  get weeks() {
+    return this.isValid ? this.values.weeks || 0 : NaN;
+  }
+
+  /**
+   * Get the days.
+   * @type {number}
+   */
+  get days() {
+    return this.isValid ? this.values.days || 0 : NaN;
+  }
+
+  /**
+   * Get the hours.
+   * @type {number}
+   */
+  get hours() {
+    return this.isValid ? this.values.hours || 0 : NaN;
+  }
+
+  /**
+   * Get the minutes.
+   * @type {number}
+   */
+  get minutes() {
+    return this.isValid ? this.values.minutes || 0 : NaN;
+  }
+
+  /**
+   * Get the seconds.
+   * @return {number}
+   */
+  get seconds() {
+    return this.isValid ? this.values.seconds || 0 : NaN;
+  }
+
+  /**
+   * Get the milliseconds.
+   * @return {number}
+   */
+  get milliseconds() {
+    return this.isValid ? this.values.milliseconds || 0 : NaN;
+  }
+
+  /**
+   * Returns whether the Duration is invalid. Invalid durations are returned by diff operations
+   * on invalid DateTimes or Intervals.
+   * @return {boolean}
+   */
+  get isValid() {
+    return this.invalid === null;
+  }
+
+  /**
+   * Returns an error code if this Duration became invalid, or null if the Duration is valid
+   * @return {string}
+   */
+  get invalidReason() {
+    return this.invalid ? this.invalid.reason : null;
+  }
+
+  /**
+   * Returns an explanation of why this Duration became invalid, or null if the Duration is valid
+   * @type {string}
+   */
+  get invalidExplanation() {
+    return this.invalid ? this.invalid.explanation : null;
+  }
+
+  /**
+   * Equality check
+   * Two Durations are equal iff they have the same units and the same values for each unit.
+   * @param {Duration} other
+   * @return {boolean}
+   */
+  equals(other) {
+    if (!this.isValid || !other.isValid) {
+      return false;
+    }
+
+    if (!this.loc.equals(other.loc)) {
+      return false;
+    }
+
+    function eq(v1, v2) {
+      // Consider 0 and undefined as equal
+      if (v1 === undefined || v1 === 0) return v2 === undefined || v2 === 0;
+      return v1 === v2;
+    }
+
+    for (const u of orderedUnits$1) {
+      if (!eq(this.values[u], other.values[u])) {
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
+const INVALID$1 = "Invalid Interval";
+
+// checks if the start is equal to or before the end
+function validateStartEnd(start, end) {
+  if (!start || !start.isValid) {
+    return Interval.invalid("missing or invalid start");
+  } else if (!end || !end.isValid) {
+    return Interval.invalid("missing or invalid end");
+  } else if (end < start) {
+    return Interval.invalid(
+      "end before start",
+      `The end of an interval must be after its start, but you had start=${start.toISO()} and end=${end.toISO()}`
+    );
+  } else {
+    return null;
+  }
+}
+
+/**
+ * An Interval object represents a half-open interval of time, where each endpoint is a {@link DateTime}. Conceptually, it's a container for those two endpoints, accompanied by methods for creating, parsing, interrogating, comparing, transforming, and formatting them.
+ *
+ * Here is a brief overview of the most commonly used methods and getters in Interval:
+ *
+ * * **Creation** To create an Interval, use {@link Interval.fromDateTimes}, {@link Interval.after}, {@link Interval.before}, or {@link Interval.fromISO}.
+ * * **Accessors** Use {@link Interval#start} and {@link Interval#end} to get the start and end.
+ * * **Interrogation** To analyze the Interval, use {@link Interval#count}, {@link Interval#length}, {@link Interval#hasSame}, {@link Interval#contains}, {@link Interval#isAfter}, or {@link Interval#isBefore}.
+ * * **Transformation** To create other Intervals out of this one, use {@link Interval#set}, {@link Interval#splitAt}, {@link Interval#splitBy}, {@link Interval#divideEqually}, {@link Interval.merge}, {@link Interval.xor}, {@link Interval#union}, {@link Interval#intersection}, or {@link Interval#difference}.
+ * * **Comparison** To compare this Interval to another one, use {@link Interval#equals}, {@link Interval#overlaps}, {@link Interval#abutsStart}, {@link Interval#abutsEnd}, {@link Interval#engulfs}
+ * * **Output** To convert the Interval into other representations, see {@link Interval#toString}, {@link Interval#toLocaleString}, {@link Interval#toISO}, {@link Interval#toISODate}, {@link Interval#toISOTime}, {@link Interval#toFormat}, and {@link Interval#toDuration}.
+ */
+class Interval {
+  /**
+   * @private
+   */
+  constructor(config) {
+    /**
+     * @access private
+     */
+    this.s = config.start;
+    /**
+     * @access private
+     */
+    this.e = config.end;
+    /**
+     * @access private
+     */
+    this.invalid = config.invalid || null;
+    /**
+     * @access private
+     */
+    this.isLuxonInterval = true;
+  }
+
+  /**
+   * Create an invalid Interval.
+   * @param {string} reason - simple string of why this Interval is invalid. Should not contain parameters or anything else data-dependent
+   * @param {string} [explanation=null] - longer explanation, may include parameters and other useful debugging information
+   * @return {Interval}
+   */
+  static invalid(reason, explanation = null) {
+    if (!reason) {
+      throw new InvalidArgumentError("need to specify a reason the Interval is invalid");
+    }
+
+    const invalid = reason instanceof Invalid ? reason : new Invalid(reason, explanation);
+
+    if (Settings.throwOnInvalid) {
+      throw new InvalidIntervalError(invalid);
+    } else {
+      return new Interval({ invalid });
+    }
+  }
+
+  /**
+   * Create an Interval from a start DateTime and an end DateTime. Inclusive of the start but not the end.
+   * @param {DateTime|Date|Object} start
+   * @param {DateTime|Date|Object} end
+   * @return {Interval}
+   */
+  static fromDateTimes(start, end) {
+    const builtStart = friendlyDateTime(start),
+      builtEnd = friendlyDateTime(end);
+
+    const validateError = validateStartEnd(builtStart, builtEnd);
+
+    if (validateError == null) {
+      return new Interval({
+        start: builtStart,
+        end: builtEnd,
+      });
+    } else {
+      return validateError;
+    }
+  }
+
+  /**
+   * Create an Interval from a start DateTime and a Duration to extend to.
+   * @param {DateTime|Date|Object} start
+   * @param {Duration|Object|number} duration - the length of the Interval.
+   * @return {Interval}
+   */
+  static after(start, duration) {
+    const dur = Duration.fromDurationLike(duration),
+      dt = friendlyDateTime(start);
+    return Interval.fromDateTimes(dt, dt.plus(dur));
+  }
+
+  /**
+   * Create an Interval from an end DateTime and a Duration to extend backwards to.
+   * @param {DateTime|Date|Object} end
+   * @param {Duration|Object|number} duration - the length of the Interval.
+   * @return {Interval}
+   */
+  static before(end, duration) {
+    const dur = Duration.fromDurationLike(duration),
+      dt = friendlyDateTime(end);
+    return Interval.fromDateTimes(dt.minus(dur), dt);
+  }
+
+  /**
+   * Create an Interval from an ISO 8601 string.
+   * Accepts `<start>/<end>`, `<start>/<duration>`, and `<duration>/<end>` formats.
+   * @param {string} text - the ISO string to parse
+   * @param {Object} [opts] - options to pass {@link DateTime#fromISO} and optionally {@link Duration#fromISO}
+   * @see https://en.wikipedia.org/wiki/ISO_8601#Time_intervals
+   * @return {Interval}
+   */
+  static fromISO(text, opts) {
+    const [s, e] = (text || "").split("/", 2);
+    if (s && e) {
+      let start, startIsValid;
+      try {
+        start = DateTime.fromISO(s, opts);
+        startIsValid = start.isValid;
+      } catch (e) {
+        startIsValid = false;
+      }
+
+      let end, endIsValid;
+      try {
+        end = DateTime.fromISO(e, opts);
+        endIsValid = end.isValid;
+      } catch (e) {
+        endIsValid = false;
+      }
+
+      if (startIsValid && endIsValid) {
+        return Interval.fromDateTimes(start, end);
+      }
+
+      if (startIsValid) {
+        const dur = Duration.fromISO(e, opts);
+        if (dur.isValid) {
+          return Interval.after(start, dur);
+        }
+      } else if (endIsValid) {
+        const dur = Duration.fromISO(s, opts);
+        if (dur.isValid) {
+          return Interval.before(end, dur);
+        }
+      }
+    }
+    return Interval.invalid("unparsable", `the input "${text}" can't be parsed as ISO 8601`);
+  }
+
+  /**
+   * Check if an object is an Interval. Works across context boundaries
+   * @param {object} o
+   * @return {boolean}
+   */
+  static isInterval(o) {
+    return (o && o.isLuxonInterval) || false;
+  }
+
+  /**
+   * Returns the start of the Interval
+   * @type {DateTime}
+   */
+  get start() {
+    return this.isValid ? this.s : null;
+  }
+
+  /**
+   * Returns the end of the Interval. This is the first instant which is not part of the interval
+   * (Interval is half-open).
+   * @type {DateTime}
+   */
+  get end() {
+    return this.isValid ? this.e : null;
+  }
+
+  /**
+   * Returns the last DateTime included in the interval (since end is not part of the interval)
+   * @type {DateTime}
+   */
+  get lastDateTime() {
+    return this.isValid ? (this.e ? this.e.minus(1) : null) : null;
+  }
+
+  /**
+   * Returns whether this Interval's end is at least its start, meaning that the Interval isn't 'backwards'.
+   * @type {boolean}
+   */
+  get isValid() {
+    return this.invalidReason === null;
+  }
+
+  /**
+   * Returns an error code if this Interval is invalid, or null if the Interval is valid
+   * @type {string}
+   */
+  get invalidReason() {
+    return this.invalid ? this.invalid.reason : null;
+  }
+
+  /**
+   * Returns an explanation of why this Interval became invalid, or null if the Interval is valid
+   * @type {string}
+   */
+  get invalidExplanation() {
+    return this.invalid ? this.invalid.explanation : null;
+  }
+
+  /**
+   * Returns the length of the Interval in the specified unit.
+   * @param {string} unit - the unit (such as 'hours' or 'days') to return the length in.
+   * @return {number}
+   */
+  length(unit = "milliseconds") {
+    return this.isValid ? this.toDuration(...[unit]).get(unit) : NaN;
+  }
+
+  /**
+   * Returns the count of minutes, hours, days, months, or years included in the Interval, even in part.
+   * Unlike {@link Interval#length} this counts sections of the calendar, not periods of time, e.g. specifying 'day'
+   * asks 'what dates are included in this interval?', not 'how many days long is this interval?'
+   * @param {string} [unit='milliseconds'] - the unit of time to count.
+   * @param {Object} opts - options
+   * @param {boolean} [opts.useLocaleWeeks=false] - If true, use weeks based on the locale, i.e. use the locale-dependent start of the week; this operation will always use the locale of the start DateTime
+   * @return {number}
+   */
+  count(unit = "milliseconds", opts) {
+    if (!this.isValid) return NaN;
+    const start = this.start.startOf(unit, opts);
+    let end;
+    if (opts?.useLocaleWeeks) {
+      end = this.end.reconfigure({ locale: start.locale });
+    } else {
+      end = this.end;
+    }
+    end = end.startOf(unit, opts);
+    return Math.floor(end.diff(start, unit).get(unit)) + (end.valueOf() !== this.end.valueOf());
+  }
+
+  /**
+   * Returns whether this Interval's start and end are both in the same unit of time
+   * @param {string} unit - the unit of time to check sameness on
+   * @return {boolean}
+   */
+  hasSame(unit) {
+    return this.isValid ? this.isEmpty() || this.e.minus(1).hasSame(this.s, unit) : false;
+  }
+
+  /**
+   * Return whether this Interval has the same start and end DateTimes.
+   * @return {boolean}
+   */
+  isEmpty() {
+    return this.s.valueOf() === this.e.valueOf();
+  }
+
+  /**
+   * Return whether this Interval's start is after the specified DateTime.
+   * @param {DateTime} dateTime
+   * @return {boolean}
+   */
+  isAfter(dateTime) {
+    if (!this.isValid) return false;
+    return this.s > dateTime;
+  }
+
+  /**
+   * Return whether this Interval's end is before the specified DateTime.
+   * @param {DateTime} dateTime
+   * @return {boolean}
+   */
+  isBefore(dateTime) {
+    if (!this.isValid) return false;
+    return this.e <= dateTime;
+  }
+
+  /**
+   * Return whether this Interval contains the specified DateTime.
+   * @param {DateTime} dateTime
+   * @return {boolean}
+   */
+  contains(dateTime) {
+    if (!this.isValid) return false;
+    return this.s <= dateTime && this.e > dateTime;
+  }
+
+  /**
+   * "Sets" the start and/or end dates. Returns a newly-constructed Interval.
+   * @param {Object} values - the values to set
+   * @param {DateTime} values.start - the starting DateTime
+   * @param {DateTime} values.end - the ending DateTime
+   * @return {Interval}
+   */
+  set({ start, end } = {}) {
+    if (!this.isValid) return this;
+    return Interval.fromDateTimes(start || this.s, end || this.e);
+  }
+
+  /**
+   * Split this Interval at each of the specified DateTimes
+   * @param {...DateTime} dateTimes - the unit of time to count.
+   * @return {Array}
+   */
+  splitAt(...dateTimes) {
+    if (!this.isValid) return [];
+    const sorted = dateTimes
+        .map(friendlyDateTime)
+        .filter((d) => this.contains(d))
+        .sort((a, b) => a.toMillis() - b.toMillis()),
+      results = [];
+    let { s } = this,
+      i = 0;
+
+    while (s < this.e) {
+      const added = sorted[i] || this.e,
+        next = +added > +this.e ? this.e : added;
+      results.push(Interval.fromDateTimes(s, next));
+      s = next;
+      i += 1;
+    }
+
+    return results;
+  }
+
+  /**
+   * Split this Interval into smaller Intervals, each of the specified length.
+   * Left over time is grouped into a smaller interval
+   * @param {Duration|Object|number} duration - The length of each resulting interval.
+   * @return {Array}
+   */
+  splitBy(duration) {
+    const dur = Duration.fromDurationLike(duration);
+
+    if (!this.isValid || !dur.isValid || dur.as("milliseconds") === 0) {
+      return [];
+    }
+
+    let { s } = this,
+      idx = 1,
+      next;
+
+    const results = [];
+    while (s < this.e) {
+      const added = this.start.plus(dur.mapUnits((x) => x * idx));
+      next = +added > +this.e ? this.e : added;
+      results.push(Interval.fromDateTimes(s, next));
+      s = next;
+      idx += 1;
+    }
+
+    return results;
+  }
+
+  /**
+   * Split this Interval into the specified number of smaller intervals.
+   * @param {number} numberOfParts - The number of Intervals to divide the Interval into.
+   * @return {Array}
+   */
+  divideEqually(numberOfParts) {
+    if (!this.isValid) return [];
+    return this.splitBy(this.length() / numberOfParts).slice(0, numberOfParts);
+  }
+
+  /**
+   * Return whether this Interval overlaps with the specified Interval
+   * @param {Interval} other
+   * @return {boolean}
+   */
+  overlaps(other) {
+    return this.e > other.s && this.s < other.e;
+  }
+
+  /**
+   * Return whether this Interval's end is adjacent to the specified Interval's start.
+   * @param {Interval} other
+   * @return {boolean}
+   */
+  abutsStart(other) {
+    if (!this.isValid) return false;
+    return +this.e === +other.s;
+  }
+
+  /**
+   * Return whether this Interval's start is adjacent to the specified Interval's end.
+   * @param {Interval} other
+   * @return {boolean}
+   */
+  abutsEnd(other) {
+    if (!this.isValid) return false;
+    return +other.e === +this.s;
+  }
+
+  /**
+   * Returns true if this Interval fully contains the specified Interval, specifically if the intersect (of this Interval and the other Interval) is equal to the other Interval; false otherwise.
+   * @param {Interval} other
+   * @return {boolean}
+   */
+  engulfs(other) {
+    if (!this.isValid) return false;
+    return this.s <= other.s && this.e >= other.e;
+  }
+
+  /**
+   * Return whether this Interval has the same start and end as the specified Interval.
+   * @param {Interval} other
+   * @return {boolean}
+   */
+  equals(other) {
+    if (!this.isValid || !other.isValid) {
+      return false;
+    }
+
+    return this.s.equals(other.s) && this.e.equals(other.e);
+  }
+
+  /**
+   * Return an Interval representing the intersection of this Interval and the specified Interval.
+   * Specifically, the resulting Interval has the maximum start time and the minimum end time of the two Intervals.
+   * Returns null if the intersection is empty, meaning, the intervals don't intersect.
+   * @param {Interval} other
+   * @return {Interval}
+   */
+  intersection(other) {
+    if (!this.isValid) return this;
+    const s = this.s > other.s ? this.s : other.s,
+      e = this.e < other.e ? this.e : other.e;
+
+    if (s >= e) {
+      return null;
+    } else {
+      return Interval.fromDateTimes(s, e);
+    }
+  }
+
+  /**
+   * Return an Interval representing the union of this Interval and the specified Interval.
+   * Specifically, the resulting Interval has the minimum start time and the maximum end time of the two Intervals.
+   * @param {Interval} other
+   * @return {Interval}
+   */
+  union(other) {
+    if (!this.isValid) return this;
+    const s = this.s < other.s ? this.s : other.s,
+      e = this.e > other.e ? this.e : other.e;
+    return Interval.fromDateTimes(s, e);
+  }
+
+  /**
+   * Merge an array of Intervals into an equivalent minimal set of Intervals.
+   * Combines overlapping and adjacent Intervals.
+   * The resulting array will contain the Intervals in ascending order, that is, starting with the earliest Interval
+   * and ending with the latest.
+   *
+   * @param {Array} intervals
+   * @return {Array}
+   */
+  static merge(intervals) {
+    const [found, final] = intervals
+      .sort((a, b) => a.s - b.s)
+      .reduce(
+        ([sofar, current], item) => {
+          if (!current) {
+            return [sofar, item];
+          } else if (current.overlaps(item) || current.abutsStart(item)) {
+            return [sofar, current.union(item)];
+          } else {
+            return [sofar.concat([current]), item];
+          }
+        },
+        [[], null]
+      );
+    if (final) {
+      found.push(final);
+    }
+    return found;
+  }
+
+  /**
+   * Return an array of Intervals representing the spans of time that only appear in one of the specified Intervals.
+   * @param {Array} intervals
+   * @return {Array}
+   */
+  static xor(intervals) {
+    let start = null,
+      currentCount = 0;
+    const results = [],
+      ends = intervals.map((i) => [
+        { time: i.s, type: "s" },
+        { time: i.e, type: "e" },
+      ]),
+      flattened = Array.prototype.concat(...ends),
+      arr = flattened.sort((a, b) => a.time - b.time);
+
+    for (const i of arr) {
+      currentCount += i.type === "s" ? 1 : -1;
+
+      if (currentCount === 1) {
+        start = i.time;
+      } else {
+        if (start && +start !== +i.time) {
+          results.push(Interval.fromDateTimes(start, i.time));
+        }
+
+        start = null;
+      }
+    }
+
+    return Interval.merge(results);
+  }
+
+  /**
+   * Return an Interval representing the span of time in this Interval that doesn't overlap with any of the specified Intervals.
+   * @param {...Interval} intervals
+   * @return {Array}
+   */
+  difference(...intervals) {
+    return Interval.xor([this].concat(intervals))
+      .map((i) => this.intersection(i))
+      .filter((i) => i && !i.isEmpty());
+  }
+
+  /**
+   * Returns a string representation of this Interval appropriate for debugging.
+   * @return {string}
+   */
+  toString() {
+    if (!this.isValid) return INVALID$1;
+    return `[${this.s.toISO()} – ${this.e.toISO()})`;
+  }
+
+  /**
+   * Returns a string representation of this Interval appropriate for the REPL.
+   * @return {string}
+   */
+  [Symbol.for("nodejs.util.inspect.custom")]() {
+    if (this.isValid) {
+      return `Interval { start: ${this.s.toISO()}, end: ${this.e.toISO()} }`;
+    } else {
+      return `Interval { Invalid, reason: ${this.invalidReason} }`;
+    }
+  }
+
+  /**
+   * Returns a localized string representing this Interval. Accepts the same options as the
+   * Intl.DateTimeFormat constructor and any presets defined by Luxon, such as
+   * {@link DateTime.DATE_FULL} or {@link DateTime.TIME_SIMPLE}. The exact behavior of this method
+   * is browser-specific, but in general it will return an appropriate representation of the
+   * Interval in the assigned locale. Defaults to the system's locale if no locale has been
+   * specified.
+   * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DateTimeFormat
+   * @param {Object} [formatOpts=DateTime.DATE_SHORT] - Either a DateTime preset or
+   * Intl.DateTimeFormat constructor options.
+   * @param {Object} opts - Options to override the configuration of the start DateTime.
+   * @example Interval.fromISO('2022-11-07T09:00Z/2022-11-08T09:00Z').toLocaleString(); //=> 11/7/2022 – 11/8/2022
+   * @example Interval.fromISO('2022-11-07T09:00Z/2022-11-08T09:00Z').toLocaleString(DateTime.DATE_FULL); //=> November 7 – 8, 2022
+   * @example Interval.fromISO('2022-11-07T09:00Z/2022-11-08T09:00Z').toLocaleString(DateTime.DATE_FULL, { locale: 'fr-FR' }); //=> 7–8 novembre 2022
+   * @example Interval.fromISO('2022-11-07T17:00Z/2022-11-07T19:00Z').toLocaleString(DateTime.TIME_SIMPLE); //=> 6:00 – 8:00 PM
+   * @example Interval.fromISO('2022-11-07T17:00Z/2022-11-07T19:00Z').toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }); //=> Mon, Nov 07, 6:00 – 8:00 p
+   * @return {string}
+   */
+  toLocaleString(formatOpts = DATE_SHORT, opts = {}) {
+    return this.isValid
+      ? Formatter.create(this.s.loc.clone(opts), formatOpts).formatInterval(this)
+      : INVALID$1;
+  }
+
+  /**
+   * Returns an ISO 8601-compliant string representation of this Interval.
+   * @see https://en.wikipedia.org/wiki/ISO_8601#Time_intervals
+   * @param {Object} opts - The same options as {@link DateTime#toISO}
+   * @return {string}
+   */
+  toISO(opts) {
+    if (!this.isValid) return INVALID$1;
+    return `${this.s.toISO(opts)}/${this.e.toISO(opts)}`;
+  }
+
+  /**
+   * Returns an ISO 8601-compliant string representation of date of this Interval.
+   * The time components are ignored.
+   * @see https://en.wikipedia.org/wiki/ISO_8601#Time_intervals
+   * @return {string}
+   */
+  toISODate() {
+    if (!this.isValid) return INVALID$1;
+    return `${this.s.toISODate()}/${this.e.toISODate()}`;
+  }
+
+  /**
+   * Returns an ISO 8601-compliant string representation of time of this Interval.
+   * The date components are ignored.
+   * @see https://en.wikipedia.org/wiki/ISO_8601#Time_intervals
+   * @param {Object} opts - The same options as {@link DateTime#toISO}
+   * @return {string}
+   */
+  toISOTime(opts) {
+    if (!this.isValid) return INVALID$1;
+    return `${this.s.toISOTime(opts)}/${this.e.toISOTime(opts)}`;
+  }
+
+  /**
+   * Returns a string representation of this Interval formatted according to the specified format
+   * string. **You may not want this.** See {@link Interval#toLocaleString} for a more flexible
+   * formatting tool.
+   * @param {string} dateFormat - The format string. This string formats the start and end time.
+   * See {@link DateTime#toFormat} for details.
+   * @param {Object} opts - Options.
+   * @param {string} [opts.separator =  ' – '] - A separator to place between the start and end
+   * representations.
+   * @return {string}
+   */
+  toFormat(dateFormat, { separator = " – " } = {}) {
+    if (!this.isValid) return INVALID$1;
+    return `${this.s.toFormat(dateFormat)}${separator}${this.e.toFormat(dateFormat)}`;
+  }
+
+  /**
+   * Return a Duration representing the time spanned by this interval.
+   * @param {string|string[]} [unit=['milliseconds']] - the unit or units (such as 'hours' or 'days') to include in the duration.
+   * @param {Object} opts - options that affect the creation of the Duration
+   * @param {string} [opts.conversionAccuracy='casual'] - the conversion system to use
+   * @example Interval.fromDateTimes(dt1, dt2).toDuration().toObject() //=> { milliseconds: 88489257 }
+   * @example Interval.fromDateTimes(dt1, dt2).toDuration('days').toObject() //=> { days: 1.0241812152777778 }
+   * @example Interval.fromDateTimes(dt1, dt2).toDuration(['hours', 'minutes']).toObject() //=> { hours: 24, minutes: 34.82095 }
+   * @example Interval.fromDateTimes(dt1, dt2).toDuration(['hours', 'minutes', 'seconds']).toObject() //=> { hours: 24, minutes: 34, seconds: 49.257 }
+   * @example Interval.fromDateTimes(dt1, dt2).toDuration('seconds').toObject() //=> { seconds: 88489.257 }
+   * @return {Duration}
+   */
+  toDuration(unit, opts) {
+    if (!this.isValid) {
+      return Duration.invalid(this.invalidReason);
+    }
+    return this.e.diff(this.s, unit, opts);
+  }
+
+  /**
+   * Run mapFn on the interval start and end, returning a new Interval from the resulting DateTimes
+   * @param {function} mapFn
+   * @return {Interval}
+   * @example Interval.fromDateTimes(dt1, dt2).mapEndpoints(endpoint => endpoint.toUTC())
+   * @example Interval.fromDateTimes(dt1, dt2).mapEndpoints(endpoint => endpoint.plus({ hours: 2 }))
+   */
+  mapEndpoints(mapFn) {
+    return Interval.fromDateTimes(mapFn(this.s), mapFn(this.e));
+  }
+}
+
+/**
+ * The Info class contains static methods for retrieving general time and date related data. For example, it has methods for finding out if a time zone has a DST, for listing the months in any supported locale, and for discovering which of Luxon features are available in the current environment.
+ */
+class Info {
+  /**
+   * Return whether the specified zone contains a DST.
+   * @param {string|Zone} [zone='local'] - Zone to check. Defaults to the environment's local zone.
+   * @return {boolean}
+   */
+  static hasDST(zone = Settings.defaultZone) {
+    const proto = DateTime.now().setZone(zone).set({ month: 12 });
+
+    return !zone.isUniversal && proto.offset !== proto.set({ month: 6 }).offset;
+  }
+
+  /**
+   * Return whether the specified zone is a valid IANA specifier.
+   * @param {string} zone - Zone to check
+   * @return {boolean}
+   */
+  static isValidIANAZone(zone) {
+    return IANAZone.isValidZone(zone);
+  }
+
+  /**
+   * Converts the input into a {@link Zone} instance.
+   *
+   * * If `input` is already a Zone instance, it is returned unchanged.
+   * * If `input` is a string containing a valid time zone name, a Zone instance
+   *   with that name is returned.
+   * * If `input` is a string that doesn't refer to a known time zone, a Zone
+   *   instance with {@link Zone#isValid} == false is returned.
+   * * If `input is a number, a Zone instance with the specified fixed offset
+   *   in minutes is returned.
+   * * If `input` is `null` or `undefined`, the default zone is returned.
+   * @param {string|Zone|number} [input] - the value to be converted
+   * @return {Zone}
+   */
+  static normalizeZone(input) {
+    return normalizeZone(input, Settings.defaultZone);
+  }
+
+  /**
+   * Get the weekday on which the week starts according to the given locale.
+   * @param {Object} opts - options
+   * @param {string} [opts.locale] - the locale code
+   * @param {string} [opts.locObj=null] - an existing locale object to use
+   * @returns {number} the start of the week, 1 for Monday through 7 for Sunday
+   */
+  static getStartOfWeek({ locale = null, locObj = null } = {}) {
+    return (locObj || Locale.create(locale)).getStartOfWeek();
+  }
+
+  /**
+   * Get the minimum number of days necessary in a week before it is considered part of the next year according
+   * to the given locale.
+   * @param {Object} opts - options
+   * @param {string} [opts.locale] - the locale code
+   * @param {string} [opts.locObj=null] - an existing locale object to use
+   * @returns {number}
+   */
+  static getMinimumDaysInFirstWeek({ locale = null, locObj = null } = {}) {
+    return (locObj || Locale.create(locale)).getMinDaysInFirstWeek();
+  }
+
+  /**
+   * Get the weekdays, which are considered the weekend according to the given locale
+   * @param {Object} opts - options
+   * @param {string} [opts.locale] - the locale code
+   * @param {string} [opts.locObj=null] - an existing locale object to use
+   * @returns {number[]} an array of weekdays, 1 for Monday through 7 for Sunday
+   */
+  static getWeekendWeekdays({ locale = null, locObj = null } = {}) {
+    // copy the array, because we cache it internally
+    return (locObj || Locale.create(locale)).getWeekendDays().slice();
+  }
+
+  /**
+   * Return an array of standalone month names.
+   * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DateTimeFormat
+   * @param {string} [length='long'] - the length of the month representation, such as "numeric", "2-digit", "narrow", "short", "long"
+   * @param {Object} opts - options
+   * @param {string} [opts.locale] - the locale code
+   * @param {string} [opts.numberingSystem=null] - the numbering system
+   * @param {string} [opts.locObj=null] - an existing locale object to use
+   * @param {string} [opts.outputCalendar='gregory'] - the calendar
+   * @example Info.months()[0] //=> 'January'
+   * @example Info.months('short')[0] //=> 'Jan'
+   * @example Info.months('numeric')[0] //=> '1'
+   * @example Info.months('short', { locale: 'fr-CA' } )[0] //=> 'janv.'
+   * @example Info.months('numeric', { locale: 'ar' })[0] //=> '١'
+   * @example Info.months('long', { outputCalendar: 'islamic' })[0] //=> 'Rabiʻ I'
+   * @return {Array}
+   */
+  static months(
+    length = "long",
+    { locale = null, numberingSystem = null, locObj = null, outputCalendar = "gregory" } = {}
+  ) {
+    return (locObj || Locale.create(locale, numberingSystem, outputCalendar)).months(length);
+  }
+
+  /**
+   * Return an array of format month names.
+   * Format months differ from standalone months in that they're meant to appear next to the day of the month. In some languages, that
+   * changes the string.
+   * See {@link Info#months}
+   * @param {string} [length='long'] - the length of the month representation, such as "numeric", "2-digit", "narrow", "short", "long"
+   * @param {Object} opts - options
+   * @param {string} [opts.locale] - the locale code
+   * @param {string} [opts.numberingSystem=null] - the numbering system
+   * @param {string} [opts.locObj=null] - an existing locale object to use
+   * @param {string} [opts.outputCalendar='gregory'] - the calendar
+   * @return {Array}
+   */
+  static monthsFormat(
+    length = "long",
+    { locale = null, numberingSystem = null, locObj = null, outputCalendar = "gregory" } = {}
+  ) {
+    return (locObj || Locale.create(locale, numberingSystem, outputCalendar)).months(length, true);
+  }
+
+  /**
+   * Return an array of standalone week names.
+   * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DateTimeFormat
+   * @param {string} [length='long'] - the length of the weekday representation, such as "narrow", "short", "long".
+   * @param {Object} opts - options
+   * @param {string} [opts.locale] - the locale code
+   * @param {string} [opts.numberingSystem=null] - the numbering system
+   * @param {string} [opts.locObj=null] - an existing locale object to use
+   * @example Info.weekdays()[0] //=> 'Monday'
+   * @example Info.weekdays('short')[0] //=> 'Mon'
+   * @example Info.weekdays('short', { locale: 'fr-CA' })[0] //=> 'lun.'
+   * @example Info.weekdays('short', { locale: 'ar' })[0] //=> 'الاثنين'
+   * @return {Array}
+   */
+  static weekdays(length = "long", { locale = null, numberingSystem = null, locObj = null } = {}) {
+    return (locObj || Locale.create(locale, numberingSystem, null)).weekdays(length);
+  }
+
+  /**
+   * Return an array of format week names.
+   * Format weekdays differ from standalone weekdays in that they're meant to appear next to more date information. In some languages, that
+   * changes the string.
+   * See {@link Info#weekdays}
+   * @param {string} [length='long'] - the length of the month representation, such as "narrow", "short", "long".
+   * @param {Object} opts - options
+   * @param {string} [opts.locale=null] - the locale code
+   * @param {string} [opts.numberingSystem=null] - the numbering system
+   * @param {string} [opts.locObj=null] - an existing locale object to use
+   * @return {Array}
+   */
+  static weekdaysFormat(
+    length = "long",
+    { locale = null, numberingSystem = null, locObj = null } = {}
+  ) {
+    return (locObj || Locale.create(locale, numberingSystem, null)).weekdays(length, true);
+  }
+
+  /**
+   * Return an array of meridiems.
+   * @param {Object} opts - options
+   * @param {string} [opts.locale] - the locale code
+   * @example Info.meridiems() //=> [ 'AM', 'PM' ]
+   * @example Info.meridiems({ locale: 'my' }) //=> [ 'နံနက်', 'ညနေ' ]
+   * @return {Array}
+   */
+  static meridiems({ locale = null } = {}) {
+    return Locale.create(locale).meridiems();
+  }
+
+  /**
+   * Return an array of eras, such as ['BC', 'AD']. The locale can be specified, but the calendar system is always Gregorian.
+   * @param {string} [length='short'] - the length of the era representation, such as "short" or "long".
+   * @param {Object} opts - options
+   * @param {string} [opts.locale] - the locale code
+   * @example Info.eras() //=> [ 'BC', 'AD' ]
+   * @example Info.eras('long') //=> [ 'Before Christ', 'Anno Domini' ]
+   * @example Info.eras('long', { locale: 'fr' }) //=> [ 'avant Jésus-Christ', 'après Jésus-Christ' ]
+   * @return {Array}
+   */
+  static eras(length = "short", { locale = null } = {}) {
+    return Locale.create(locale, null, "gregory").eras(length);
+  }
+
+  /**
+   * Return the set of available features in this environment.
+   * Some features of Luxon are not available in all environments. For example, on older browsers, relative time formatting support is not available. Use this function to figure out if that's the case.
+   * Keys:
+   * * `relative`: whether this environment supports relative time formatting
+   * * `localeWeek`: whether this environment supports different weekdays for the start of the week based on the locale
+   * @example Info.features() //=> { relative: false, localeWeek: true }
+   * @return {Object}
+   */
+  static features() {
+    return { relative: hasRelative(), localeWeek: hasLocaleWeekInfo() };
+  }
+}
+
+function dayDiff(earlier, later) {
+  const utcDayStart = (dt) => dt.toUTC(0, { keepLocalTime: true }).startOf("day").valueOf(),
+    ms = utcDayStart(later) - utcDayStart(earlier);
+  return Math.floor(Duration.fromMillis(ms).as("days"));
+}
+
+function highOrderDiffs(cursor, later, units) {
+  const differs = [
+    ["years", (a, b) => b.year - a.year],
+    ["quarters", (a, b) => b.quarter - a.quarter + (b.year - a.year) * 4],
+    ["months", (a, b) => b.month - a.month + (b.year - a.year) * 12],
+    [
+      "weeks",
+      (a, b) => {
+        const days = dayDiff(a, b);
+        return (days - (days % 7)) / 7;
+      },
+    ],
+    ["days", dayDiff],
+  ];
+
+  const results = {};
+  const earlier = cursor;
+  let lowestOrder, highWater;
+
+  /* This loop tries to diff using larger units first.
+     If we overshoot, we backtrack and try the next smaller unit.
+     "cursor" starts out at the earlier timestamp and moves closer and closer to "later"
+     as we use smaller and smaller units.
+     highWater keeps track of where we would be if we added one more of the smallest unit,
+     this is used later to potentially convert any difference smaller than the smallest higher order unit
+     into a fraction of that smallest higher order unit
+  */
+  for (const [unit, differ] of differs) {
+    if (units.indexOf(unit) >= 0) {
+      lowestOrder = unit;
+
+      results[unit] = differ(cursor, later);
+      highWater = earlier.plus(results);
+
+      if (highWater > later) {
+        // we overshot the end point, backtrack cursor by 1
+        results[unit]--;
+        cursor = earlier.plus(results);
+
+        // if we are still overshooting now, we need to backtrack again
+        // this happens in certain situations when diffing times in different zones,
+        // because this calculation ignores time zones
+        if (cursor > later) {
+          // keep the "overshot by 1" around as highWater
+          highWater = cursor;
+          // backtrack cursor by 1
+          results[unit]--;
+          cursor = earlier.plus(results);
+        }
+      } else {
+        cursor = highWater;
+      }
+    }
+  }
+
+  return [cursor, results, highWater, lowestOrder];
+}
+
+function diff (earlier, later, units, opts) {
+  let [cursor, results, highWater, lowestOrder] = highOrderDiffs(earlier, later, units);
+
+  const remainingMillis = later - cursor;
+
+  const lowerOrderUnits = units.filter(
+    (u) => ["hours", "minutes", "seconds", "milliseconds"].indexOf(u) >= 0
+  );
+
+  if (lowerOrderUnits.length === 0) {
+    if (highWater < later) {
+      highWater = cursor.plus({ [lowestOrder]: 1 });
+    }
+
+    if (highWater !== cursor) {
+      results[lowestOrder] = (results[lowestOrder] || 0) + remainingMillis / (highWater - cursor);
+    }
+  }
+
+  const duration = Duration.fromObject(results, opts);
+
+  if (lowerOrderUnits.length > 0) {
+    return Duration.fromMillis(remainingMillis, opts)
+      .shiftTo(...lowerOrderUnits)
+      .plus(duration);
+  } else {
+    return duration;
+  }
+}
+
+const MISSING_FTP = "missing Intl.DateTimeFormat.formatToParts support";
+
+function intUnit(regex, post = (i) => i) {
+  return { regex, deser: ([s]) => post(parseDigits(s)) };
+}
+
+const NBSP = String.fromCharCode(160);
+const spaceOrNBSP = `[ ${NBSP}]`;
+const spaceOrNBSPRegExp = new RegExp(spaceOrNBSP, "g");
+
+function fixListRegex(s) {
+  // make dots optional and also make them literal
+  // make space and non breakable space characters interchangeable
+  return s.replace(/\./g, "\\.?").replace(spaceOrNBSPRegExp, spaceOrNBSP);
+}
+
+function stripInsensitivities(s) {
+  return s
+    .replace(/\./g, "") // ignore dots that were made optional
+    .replace(spaceOrNBSPRegExp, " ") // interchange space and nbsp
+    .toLowerCase();
+}
+
+function oneOf(strings, startIndex) {
+  if (strings === null) {
+    return null;
+  } else {
+    return {
+      regex: RegExp(strings.map(fixListRegex).join("|")),
+      deser: ([s]) =>
+        strings.findIndex((i) => stripInsensitivities(s) === stripInsensitivities(i)) + startIndex,
+    };
+  }
+}
+
+function offset(regex, groups) {
+  return { regex, deser: ([, h, m]) => signedOffset(h, m), groups };
+}
+
+function simple(regex) {
+  return { regex, deser: ([s]) => s };
+}
+
+function escapeToken(value) {
+  return value.replace(/[\-\[\]{}()*+?.,\\\^$|#\s]/g, "\\$&");
+}
+
+/**
+ * @param token
+ * @param {Locale} loc
+ */
+function unitForToken(token, loc) {
+  const one = digitRegex(loc),
+    two = digitRegex(loc, "{2}"),
+    three = digitRegex(loc, "{3}"),
+    four = digitRegex(loc, "{4}"),
+    six = digitRegex(loc, "{6}"),
+    oneOrTwo = digitRegex(loc, "{1,2}"),
+    oneToThree = digitRegex(loc, "{1,3}"),
+    oneToSix = digitRegex(loc, "{1,6}"),
+    oneToNine = digitRegex(loc, "{1,9}"),
+    twoToFour = digitRegex(loc, "{2,4}"),
+    fourToSix = digitRegex(loc, "{4,6}"),
+    literal = (t) => ({ regex: RegExp(escapeToken(t.val)), deser: ([s]) => s, literal: true }),
+    unitate = (t) => {
+      if (token.literal) {
+        return literal(t);
+      }
+      switch (t.val) {
+        // era
+        case "G":
+          return oneOf(loc.eras("short"), 0);
+        case "GG":
+          return oneOf(loc.eras("long"), 0);
+        // years
+        case "y":
+          return intUnit(oneToSix);
+        case "yy":
+          return intUnit(twoToFour, untruncateYear);
+        case "yyyy":
+          return intUnit(four);
+        case "yyyyy":
+          return intUnit(fourToSix);
+        case "yyyyyy":
+          return intUnit(six);
+        // months
+        case "M":
+          return intUnit(oneOrTwo);
+        case "MM":
+          return intUnit(two);
+        case "MMM":
+          return oneOf(loc.months("short", true), 1);
+        case "MMMM":
+          return oneOf(loc.months("long", true), 1);
+        case "L":
+          return intUnit(oneOrTwo);
+        case "LL":
+          return intUnit(two);
+        case "LLL":
+          return oneOf(loc.months("short", false), 1);
+        case "LLLL":
+          return oneOf(loc.months("long", false), 1);
+        // dates
+        case "d":
+          return intUnit(oneOrTwo);
+        case "dd":
+          return intUnit(two);
+        // ordinals
+        case "o":
+          return intUnit(oneToThree);
+        case "ooo":
+          return intUnit(three);
+        // time
+        case "HH":
+          return intUnit(two);
+        case "H":
+          return intUnit(oneOrTwo);
+        case "hh":
+          return intUnit(two);
+        case "h":
+          return intUnit(oneOrTwo);
+        case "mm":
+          return intUnit(two);
+        case "m":
+          return intUnit(oneOrTwo);
+        case "q":
+          return intUnit(oneOrTwo);
+        case "qq":
+          return intUnit(two);
+        case "s":
+          return intUnit(oneOrTwo);
+        case "ss":
+          return intUnit(two);
+        case "S":
+          return intUnit(oneToThree);
+        case "SSS":
+          return intUnit(three);
+        case "u":
+          return simple(oneToNine);
+        case "uu":
+          return simple(oneOrTwo);
+        case "uuu":
+          return intUnit(one);
+        // meridiem
+        case "a":
+          return oneOf(loc.meridiems(), 0);
+        // weekYear (k)
+        case "kkkk":
+          return intUnit(four);
+        case "kk":
+          return intUnit(twoToFour, untruncateYear);
+        // weekNumber (W)
+        case "W":
+          return intUnit(oneOrTwo);
+        case "WW":
+          return intUnit(two);
+        // weekdays
+        case "E":
+        case "c":
+          return intUnit(one);
+        case "EEE":
+          return oneOf(loc.weekdays("short", false), 1);
+        case "EEEE":
+          return oneOf(loc.weekdays("long", false), 1);
+        case "ccc":
+          return oneOf(loc.weekdays("short", true), 1);
+        case "cccc":
+          return oneOf(loc.weekdays("long", true), 1);
+        // offset/zone
+        case "Z":
+        case "ZZ":
+          return offset(new RegExp(`([+-]${oneOrTwo.source})(?::(${two.source}))?`), 2);
+        case "ZZZ":
+          return offset(new RegExp(`([+-]${oneOrTwo.source})(${two.source})?`), 2);
+        // we don't support ZZZZ (PST) or ZZZZZ (Pacific Standard Time) in parsing
+        // because we don't have any way to figure out what they are
+        case "z":
+          return simple(/[a-z_+-/]{1,256}?/i);
+        // this special-case "token" represents a place where a macro-token expanded into a white-space literal
+        // in this case we accept any non-newline white-space
+        case " ":
+          return simple(/[^\S\n\r]/);
+        default:
+          return literal(t);
+      }
+    };
+
+  const unit = unitate(token) || {
+    invalidReason: MISSING_FTP,
+  };
+
+  unit.token = token;
+
+  return unit;
+}
+
+const partTypeStyleToTokenVal = {
+  year: {
+    "2-digit": "yy",
+    numeric: "yyyyy",
+  },
+  month: {
+    numeric: "M",
+    "2-digit": "MM",
+    short: "MMM",
+    long: "MMMM",
+  },
+  day: {
+    numeric: "d",
+    "2-digit": "dd",
+  },
+  weekday: {
+    short: "EEE",
+    long: "EEEE",
+  },
+  dayperiod: "a",
+  dayPeriod: "a",
+  hour12: {
+    numeric: "h",
+    "2-digit": "hh",
+  },
+  hour24: {
+    numeric: "H",
+    "2-digit": "HH",
+  },
+  minute: {
+    numeric: "m",
+    "2-digit": "mm",
+  },
+  second: {
+    numeric: "s",
+    "2-digit": "ss",
+  },
+  timeZoneName: {
+    long: "ZZZZZ",
+    short: "ZZZ",
+  },
+};
+
+function tokenForPart(part, formatOpts, resolvedOpts) {
+  const { type, value } = part;
+
+  if (type === "literal") {
+    const isSpace = /^\s+$/.test(value);
+    return {
+      literal: !isSpace,
+      val: isSpace ? " " : value,
+    };
+  }
+
+  const style = formatOpts[type];
+
+  // The user might have explicitly specified hour12 or hourCycle
+  // if so, respect their decision
+  // if not, refer back to the resolvedOpts, which are based on the locale
+  let actualType = type;
+  if (type === "hour") {
+    if (formatOpts.hour12 != null) {
+      actualType = formatOpts.hour12 ? "hour12" : "hour24";
+    } else if (formatOpts.hourCycle != null) {
+      if (formatOpts.hourCycle === "h11" || formatOpts.hourCycle === "h12") {
+        actualType = "hour12";
+      } else {
+        actualType = "hour24";
+      }
+    } else {
+      // tokens only differentiate between 24 hours or not,
+      // so we do not need to check hourCycle here, which is less supported anyways
+      actualType = resolvedOpts.hour12 ? "hour12" : "hour24";
+    }
+  }
+  let val = partTypeStyleToTokenVal[actualType];
+  if (typeof val === "object") {
+    val = val[style];
+  }
+
+  if (val) {
+    return {
+      literal: false,
+      val,
+    };
+  }
+
+  return undefined;
+}
+
+function buildRegex(units) {
+  const re = units.map((u) => u.regex).reduce((f, r) => `${f}(${r.source})`, "");
+  return [`^${re}$`, units];
+}
+
+function match(input, regex, handlers) {
+  const matches = input.match(regex);
+
+  if (matches) {
+    const all = {};
+    let matchIndex = 1;
+    for (const i in handlers) {
+      if (hasOwnProperty(handlers, i)) {
+        const h = handlers[i],
+          groups = h.groups ? h.groups + 1 : 1;
+        if (!h.literal && h.token) {
+          all[h.token.val[0]] = h.deser(matches.slice(matchIndex, matchIndex + groups));
+        }
+        matchIndex += groups;
+      }
+    }
+    return [matches, all];
+  } else {
+    return [matches, {}];
+  }
+}
+
+function dateTimeFromMatches(matches) {
+  const toField = (token) => {
+    switch (token) {
+      case "S":
+        return "millisecond";
+      case "s":
+        return "second";
+      case "m":
+        return "minute";
+      case "h":
+      case "H":
+        return "hour";
+      case "d":
+        return "day";
+      case "o":
+        return "ordinal";
+      case "L":
+      case "M":
+        return "month";
+      case "y":
+        return "year";
+      case "E":
+      case "c":
+        return "weekday";
+      case "W":
+        return "weekNumber";
+      case "k":
+        return "weekYear";
+      case "q":
+        return "quarter";
+      default:
+        return null;
+    }
+  };
+
+  let zone = null;
+  let specificOffset;
+  if (!isUndefined(matches.z)) {
+    zone = IANAZone.create(matches.z);
+  }
+
+  if (!isUndefined(matches.Z)) {
+    if (!zone) {
+      zone = new FixedOffsetZone(matches.Z);
+    }
+    specificOffset = matches.Z;
+  }
+
+  if (!isUndefined(matches.q)) {
+    matches.M = (matches.q - 1) * 3 + 1;
+  }
+
+  if (!isUndefined(matches.h)) {
+    if (matches.h < 12 && matches.a === 1) {
+      matches.h += 12;
+    } else if (matches.h === 12 && matches.a === 0) {
+      matches.h = 0;
+    }
+  }
+
+  if (matches.G === 0 && matches.y) {
+    matches.y = -matches.y;
+  }
+
+  if (!isUndefined(matches.u)) {
+    matches.S = parseMillis(matches.u);
+  }
+
+  const vals = Object.keys(matches).reduce((r, k) => {
+    const f = toField(k);
+    if (f) {
+      r[f] = matches[k];
+    }
+
+    return r;
+  }, {});
+
+  return [vals, zone, specificOffset];
+}
+
+let dummyDateTimeCache = null;
+
+function getDummyDateTime() {
+  if (!dummyDateTimeCache) {
+    dummyDateTimeCache = DateTime.fromMillis(1555555555555);
+  }
+
+  return dummyDateTimeCache;
+}
+
+function maybeExpandMacroToken(token, locale) {
+  if (token.literal) {
+    return token;
+  }
+
+  const formatOpts = Formatter.macroTokenToFormatOpts(token.val);
+  const tokens = formatOptsToTokens(formatOpts, locale);
+
+  if (tokens == null || tokens.includes(undefined)) {
+    return token;
+  }
+
+  return tokens;
+}
+
+function expandMacroTokens(tokens, locale) {
+  return Array.prototype.concat(...tokens.map((t) => maybeExpandMacroToken(t, locale)));
+}
+
+/**
+ * @private
+ */
+
+class TokenParser {
+  constructor(locale, format) {
+    this.locale = locale;
+    this.format = format;
+    this.tokens = expandMacroTokens(Formatter.parseFormat(format), locale);
+    this.units = this.tokens.map((t) => unitForToken(t, locale));
+    this.disqualifyingUnit = this.units.find((t) => t.invalidReason);
+
+    if (!this.disqualifyingUnit) {
+      const [regexString, handlers] = buildRegex(this.units);
+      this.regex = RegExp(regexString, "i");
+      this.handlers = handlers;
+    }
+  }
+
+  explainFromTokens(input) {
+    if (!this.isValid) {
+      return { input, tokens: this.tokens, invalidReason: this.invalidReason };
+    } else {
+      const [rawMatches, matches] = match(input, this.regex, this.handlers),
+        [result, zone, specificOffset] = matches
+          ? dateTimeFromMatches(matches)
+          : [null, null, undefined];
+      if (hasOwnProperty(matches, "a") && hasOwnProperty(matches, "H")) {
+        throw new ConflictingSpecificationError(
+          "Can't include meridiem when specifying 24-hour format"
+        );
+      }
+      return {
+        input,
+        tokens: this.tokens,
+        regex: this.regex,
+        rawMatches,
+        matches,
+        result,
+        zone,
+        specificOffset,
+      };
+    }
+  }
+
+  get isValid() {
+    return !this.disqualifyingUnit;
+  }
+
+  get invalidReason() {
+    return this.disqualifyingUnit ? this.disqualifyingUnit.invalidReason : null;
+  }
+}
+
+function explainFromTokens(locale, input, format) {
+  const parser = new TokenParser(locale, format);
+  return parser.explainFromTokens(input);
+}
+
+function parseFromTokens(locale, input, format) {
+  const { result, zone, specificOffset, invalidReason } = explainFromTokens(locale, input, format);
+  return [result, zone, specificOffset, invalidReason];
+}
+
+function formatOptsToTokens(formatOpts, locale) {
+  if (!formatOpts) {
+    return null;
+  }
+
+  const formatter = Formatter.create(locale, formatOpts);
+  const df = formatter.dtFormatter(getDummyDateTime());
+  const parts = df.formatToParts();
+  const resolvedOpts = df.resolvedOptions();
+  return parts.map((p) => tokenForPart(p, formatOpts, resolvedOpts));
+}
+
+const INVALID = "Invalid DateTime";
+const MAX_DATE = 8.64e15;
+
+function unsupportedZone(zone) {
+  return new Invalid("unsupported zone", `the zone "${zone.name}" is not supported`);
+}
+
+// we cache week data on the DT object and this intermediates the cache
+/**
+ * @param {DateTime} dt
+ */
+function possiblyCachedWeekData(dt) {
+  if (dt.weekData === null) {
+    dt.weekData = gregorianToWeek(dt.c);
+  }
+  return dt.weekData;
+}
+
+/**
+ * @param {DateTime} dt
+ */
+function possiblyCachedLocalWeekData(dt) {
+  if (dt.localWeekData === null) {
+    dt.localWeekData = gregorianToWeek(
+      dt.c,
+      dt.loc.getMinDaysInFirstWeek(),
+      dt.loc.getStartOfWeek()
+    );
+  }
+  return dt.localWeekData;
+}
+
+// clone really means, "make a new object with these modifications". all "setters" really use this
+// to create a new object while only changing some of the properties
+function clone(inst, alts) {
+  const current = {
+    ts: inst.ts,
+    zone: inst.zone,
+    c: inst.c,
+    o: inst.o,
+    loc: inst.loc,
+    invalid: inst.invalid,
+  };
+  return new DateTime({ ...current, ...alts, old: current });
+}
+
+// find the right offset a given local time. The o input is our guess, which determines which
+// offset we'll pick in ambiguous cases (e.g. there are two 3 AMs b/c Fallback DST)
+function fixOffset(localTS, o, tz) {
+  // Our UTC time is just a guess because our offset is just a guess
+  let utcGuess = localTS - o * 60 * 1000;
+
+  // Test whether the zone matches the offset for this ts
+  const o2 = tz.offset(utcGuess);
+
+  // If so, offset didn't change and we're done
+  if (o === o2) {
+    return [utcGuess, o];
+  }
+
+  // If not, change the ts by the difference in the offset
+  utcGuess -= (o2 - o) * 60 * 1000;
+
+  // If that gives us the local time we want, we're done
+  const o3 = tz.offset(utcGuess);
+  if (o2 === o3) {
+    return [utcGuess, o2];
+  }
+
+  // If it's different, we're in a hole time. The offset has changed, but the we don't adjust the time
+  return [localTS - Math.min(o2, o3) * 60 * 1000, Math.max(o2, o3)];
+}
+
+// convert an epoch timestamp into a calendar object with the given offset
+function tsToObj(ts, offset) {
+  ts += offset * 60 * 1000;
+
+  const d = new Date(ts);
+
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+    hour: d.getUTCHours(),
+    minute: d.getUTCMinutes(),
+    second: d.getUTCSeconds(),
+    millisecond: d.getUTCMilliseconds(),
+  };
+}
+
+// convert a calendar object to a epoch timestamp
+function objToTS(obj, offset, zone) {
+  return fixOffset(objToLocalTS(obj), offset, zone);
+}
+
+// create a new DT instance by adding a duration, adjusting for DSTs
+function adjustTime(inst, dur) {
+  const oPre = inst.o,
+    year = inst.c.year + Math.trunc(dur.years),
+    month = inst.c.month + Math.trunc(dur.months) + Math.trunc(dur.quarters) * 3,
+    c = {
+      ...inst.c,
+      year,
+      month,
+      day:
+        Math.min(inst.c.day, daysInMonth(year, month)) +
+        Math.trunc(dur.days) +
+        Math.trunc(dur.weeks) * 7,
+    },
+    millisToAdd = Duration.fromObject({
+      years: dur.years - Math.trunc(dur.years),
+      quarters: dur.quarters - Math.trunc(dur.quarters),
+      months: dur.months - Math.trunc(dur.months),
+      weeks: dur.weeks - Math.trunc(dur.weeks),
+      days: dur.days - Math.trunc(dur.days),
+      hours: dur.hours,
+      minutes: dur.minutes,
+      seconds: dur.seconds,
+      milliseconds: dur.milliseconds,
+    }).as("milliseconds"),
+    localTS = objToLocalTS(c);
+
+  let [ts, o] = fixOffset(localTS, oPre, inst.zone);
+
+  if (millisToAdd !== 0) {
+    ts += millisToAdd;
+    // that could have changed the offset by going over a DST, but we want to keep the ts the same
+    o = inst.zone.offset(ts);
+  }
+
+  return { ts, o };
+}
+
+// helper useful in turning the results of parsing into real dates
+// by handling the zone options
+function parseDataToDateTime(parsed, parsedZone, opts, format, text, specificOffset) {
+  const { setZone, zone } = opts;
+  if ((parsed && Object.keys(parsed).length !== 0) || parsedZone) {
+    const interpretationZone = parsedZone || zone,
+      inst = DateTime.fromObject(parsed, {
+        ...opts,
+        zone: interpretationZone,
+        specificOffset,
+      });
+    return setZone ? inst : inst.setZone(zone);
+  } else {
+    return DateTime.invalid(
+      new Invalid("unparsable", `the input "${text}" can't be parsed as ${format}`)
+    );
+  }
+}
+
+// if you want to output a technical format (e.g. RFC 2822), this helper
+// helps handle the details
+function toTechFormat(dt, format, allowZ = true) {
+  return dt.isValid
+    ? Formatter.create(Locale.create("en-US"), {
+        allowZ,
+        forceSimple: true,
+      }).formatDateTimeFromString(dt, format)
+    : null;
+}
+
+function toISODate(o, extended, precision) {
+  const longFormat = o.c.year > 9999 || o.c.year < 0;
+  let c = "";
+  if (longFormat && o.c.year >= 0) c += "+";
+  c += padStart(o.c.year, longFormat ? 6 : 4);
+  if (precision === "year") return c;
+  if (extended) {
+    c += "-";
+    c += padStart(o.c.month);
+    if (precision === "month") return c;
+    c += "-";
+  } else {
+    c += padStart(o.c.month);
+    if (precision === "month") return c;
+  }
+  c += padStart(o.c.day);
+  return c;
+}
+
+function toISOTime(
+  o,
+  extended,
+  suppressSeconds,
+  suppressMilliseconds,
+  includeOffset,
+  extendedZone,
+  precision
+) {
+  let showSeconds = !suppressSeconds || o.c.millisecond !== 0 || o.c.second !== 0,
+    c = "";
+  switch (precision) {
+    case "day":
+    case "month":
+    case "year":
+      break;
+    default:
+      c += padStart(o.c.hour);
+      if (precision === "hour") break;
+      if (extended) {
+        c += ":";
+        c += padStart(o.c.minute);
+        if (precision === "minute") break;
+        if (showSeconds) {
+          c += ":";
+          c += padStart(o.c.second);
+        }
+      } else {
+        c += padStart(o.c.minute);
+        if (precision === "minute") break;
+        if (showSeconds) {
+          c += padStart(o.c.second);
+        }
+      }
+      if (precision === "second") break;
+      if (showSeconds && (!suppressMilliseconds || o.c.millisecond !== 0)) {
+        c += ".";
+        c += padStart(o.c.millisecond, 3);
+      }
+  }
+
+  if (includeOffset) {
+    if (o.isOffsetFixed && o.offset === 0 && !extendedZone) {
+      c += "Z";
+    } else if (o.o < 0) {
+      c += "-";
+      c += padStart(Math.trunc(-o.o / 60));
+      c += ":";
+      c += padStart(Math.trunc(-o.o % 60));
+    } else {
+      c += "+";
+      c += padStart(Math.trunc(o.o / 60));
+      c += ":";
+      c += padStart(Math.trunc(o.o % 60));
+    }
+  }
+
+  if (extendedZone) {
+    c += "[" + o.zone.ianaName + "]";
+  }
+  return c;
+}
+
+// defaults for unspecified units in the supported calendars
+const defaultUnitValues = {
+    month: 1,
+    day: 1,
+    hour: 0,
+    minute: 0,
+    second: 0,
+    millisecond: 0,
+  },
+  defaultWeekUnitValues = {
+    weekNumber: 1,
+    weekday: 1,
+    hour: 0,
+    minute: 0,
+    second: 0,
+    millisecond: 0,
+  },
+  defaultOrdinalUnitValues = {
+    ordinal: 1,
+    hour: 0,
+    minute: 0,
+    second: 0,
+    millisecond: 0,
+  };
+
+// Units in the supported calendars, sorted by bigness
+const orderedUnits = ["year", "month", "day", "hour", "minute", "second", "millisecond"],
+  orderedWeekUnits = [
+    "weekYear",
+    "weekNumber",
+    "weekday",
+    "hour",
+    "minute",
+    "second",
+    "millisecond",
+  ],
+  orderedOrdinalUnits = ["year", "ordinal", "hour", "minute", "second", "millisecond"];
+
+// standardize case and plurality in units
+function normalizeUnit(unit) {
+  const normalized = {
+    year: "year",
+    years: "year",
+    month: "month",
+    months: "month",
+    day: "day",
+    days: "day",
+    hour: "hour",
+    hours: "hour",
+    minute: "minute",
+    minutes: "minute",
+    quarter: "quarter",
+    quarters: "quarter",
+    second: "second",
+    seconds: "second",
+    millisecond: "millisecond",
+    milliseconds: "millisecond",
+    weekday: "weekday",
+    weekdays: "weekday",
+    weeknumber: "weekNumber",
+    weeksnumber: "weekNumber",
+    weeknumbers: "weekNumber",
+    weekyear: "weekYear",
+    weekyears: "weekYear",
+    ordinal: "ordinal",
+  }[unit.toLowerCase()];
+
+  if (!normalized) throw new InvalidUnitError(unit);
+
+  return normalized;
+}
+
+function normalizeUnitWithLocalWeeks(unit) {
+  switch (unit.toLowerCase()) {
+    case "localweekday":
+    case "localweekdays":
+      return "localWeekday";
+    case "localweeknumber":
+    case "localweeknumbers":
+      return "localWeekNumber";
+    case "localweekyear":
+    case "localweekyears":
+      return "localWeekYear";
+    default:
+      return normalizeUnit(unit);
+  }
+}
+
+// cache offsets for zones based on the current timestamp when this function is
+// first called. When we are handling a datetime from components like (year,
+// month, day, hour) in a time zone, we need a guess about what the timezone
+// offset is so that we can convert into a UTC timestamp. One way is to find the
+// offset of now in the zone. The actual date may have a different offset (for
+// example, if we handle a date in June while we're in December in a zone that
+// observes DST), but we can check and adjust that.
+//
+// When handling many dates, calculating the offset for now every time is
+// expensive. It's just a guess, so we can cache the offset to use even if we
+// are right on a time change boundary (we'll just correct in the other
+// direction). Using a timestamp from first read is a slight optimization for
+// handling dates close to the current date, since those dates will usually be
+// in the same offset (we could set the timestamp statically, instead). We use a
+// single timestamp for all zones to make things a bit more predictable.
+//
+// This is safe for quickDT (used by local() and utc()) because we don't fill in
+// higher-order units from tsNow (as we do in fromObject, this requires that
+// offset is calculated from tsNow).
+/**
+ * @param {Zone} zone
+ * @return {number}
+ */
+function guessOffsetForZone(zone) {
+  if (zoneOffsetTs === undefined) {
+    zoneOffsetTs = Settings.now();
+  }
+
+  // Do not cache anything but IANA zones, because it is not safe to do so.
+  // Guessing an offset which is not present in the zone can cause wrong results from fixOffset
+  if (zone.type !== "iana") {
+    return zone.offset(zoneOffsetTs);
+  }
+  const zoneName = zone.name;
+  let offsetGuess = zoneOffsetGuessCache.get(zoneName);
+  if (offsetGuess === undefined) {
+    offsetGuess = zone.offset(zoneOffsetTs);
+    zoneOffsetGuessCache.set(zoneName, offsetGuess);
+  }
+  return offsetGuess;
+}
+
+// this is a dumbed down version of fromObject() that runs about 60% faster
+// but doesn't do any validation, makes a bunch of assumptions about what units
+// are present, and so on.
+function quickDT(obj, opts) {
+  const zone = normalizeZone(opts.zone, Settings.defaultZone);
+  if (!zone.isValid) {
+    return DateTime.invalid(unsupportedZone(zone));
+  }
+
+  const loc = Locale.fromObject(opts);
+
+  let ts, o;
+
+  // assume we have the higher-order units
+  if (!isUndefined(obj.year)) {
+    for (const u of orderedUnits) {
+      if (isUndefined(obj[u])) {
+        obj[u] = defaultUnitValues[u];
+      }
+    }
+
+    const invalid = hasInvalidGregorianData(obj) || hasInvalidTimeData(obj);
+    if (invalid) {
+      return DateTime.invalid(invalid);
+    }
+
+    const offsetProvis = guessOffsetForZone(zone);
+    [ts, o] = objToTS(obj, offsetProvis, zone);
+  } else {
+    ts = Settings.now();
+  }
+
+  return new DateTime({ ts, zone, loc, o });
+}
+
+function diffRelative(start, end, opts) {
+  const round = isUndefined(opts.round) ? true : opts.round,
+    rounding = isUndefined(opts.rounding) ? "trunc" : opts.rounding,
+    format = (c, unit) => {
+      c = roundTo(c, round || opts.calendary ? 0 : 2, opts.calendary ? "round" : rounding);
+      const formatter = end.loc.clone(opts).relFormatter(opts);
+      return formatter.format(c, unit);
+    },
+    differ = (unit) => {
+      if (opts.calendary) {
+        if (!end.hasSame(start, unit)) {
+          return end.startOf(unit).diff(start.startOf(unit), unit).get(unit);
+        } else return 0;
+      } else {
+        return end.diff(start, unit).get(unit);
+      }
+    };
+
+  if (opts.unit) {
+    return format(differ(opts.unit), opts.unit);
+  }
+
+  for (const unit of opts.units) {
+    const count = differ(unit);
+    if (Math.abs(count) >= 1) {
+      return format(count, unit);
+    }
+  }
+  return format(start > end ? -0 : 0, opts.units[opts.units.length - 1]);
+}
+
+function lastOpts(argList) {
+  let opts = {},
+    args;
+  if (argList.length > 0 && typeof argList[argList.length - 1] === "object") {
+    opts = argList[argList.length - 1];
+    args = Array.from(argList).slice(0, argList.length - 1);
+  } else {
+    args = Array.from(argList);
+  }
+  return [opts, args];
+}
+
+/**
+ * Timestamp to use for cached zone offset guesses (exposed for test)
+ */
+let zoneOffsetTs;
+/**
+ * Cache for zone offset guesses (exposed for test).
+ *
+ * This optimizes quickDT via guessOffsetForZone to avoid repeated calls of
+ * zone.offset().
+ */
+const zoneOffsetGuessCache = new Map();
+
+/**
+ * A DateTime is an immutable data structure representing a specific date and time and accompanying methods. It contains class and instance methods for creating, parsing, interrogating, transforming, and formatting them.
+ *
+ * A DateTime comprises of:
+ * * A timestamp. Each DateTime instance refers to a specific millisecond of the Unix epoch.
+ * * A time zone. Each instance is considered in the context of a specific zone (by default the local system's zone).
+ * * Configuration properties that effect how output strings are formatted, such as `locale`, `numberingSystem`, and `outputCalendar`.
+ *
+ * Here is a brief overview of the most commonly used functionality it provides:
+ *
+ * * **Creation**: To create a DateTime from its components, use one of its factory class methods: {@link DateTime.local}, {@link DateTime.utc}, and (most flexibly) {@link DateTime.fromObject}. To create one from a standard string format, use {@link DateTime.fromISO}, {@link DateTime.fromHTTP}, and {@link DateTime.fromRFC2822}. To create one from a custom string format, use {@link DateTime.fromFormat}. To create one from a native JS date, use {@link DateTime.fromJSDate}.
+ * * **Gregorian calendar and time**: To examine the Gregorian properties of a DateTime individually (i.e as opposed to collectively through {@link DateTime#toObject}), use the {@link DateTime#year}, {@link DateTime#month},
+ * {@link DateTime#day}, {@link DateTime#hour}, {@link DateTime#minute}, {@link DateTime#second}, {@link DateTime#millisecond} accessors.
+ * * **Week calendar**: For ISO week calendar attributes, see the {@link DateTime#weekYear}, {@link DateTime#weekNumber}, and {@link DateTime#weekday} accessors.
+ * * **Configuration** See the {@link DateTime#locale} and {@link DateTime#numberingSystem} accessors.
+ * * **Transformation**: To transform the DateTime into other DateTimes, use {@link DateTime#set}, {@link DateTime#reconfigure}, {@link DateTime#setZone}, {@link DateTime#setLocale}, {@link DateTime.plus}, {@link DateTime#minus}, {@link DateTime#endOf}, {@link DateTime#startOf}, {@link DateTime#toUTC}, and {@link DateTime#toLocal}.
+ * * **Output**: To convert the DateTime to other representations, use the {@link DateTime#toRelative}, {@link DateTime#toRelativeCalendar}, {@link DateTime#toJSON}, {@link DateTime#toISO}, {@link DateTime#toHTTP}, {@link DateTime#toObject}, {@link DateTime#toRFC2822}, {@link DateTime#toString}, {@link DateTime#toLocaleString}, {@link DateTime#toFormat}, {@link DateTime#toMillis} and {@link DateTime#toJSDate}.
+ *
+ * There's plenty others documented below. In addition, for more information on subtler topics like internationalization, time zones, alternative calendars, validity, and so on, see the external documentation.
+ */
+class DateTime {
+  /**
+   * @access private
+   */
+  constructor(config) {
+    const zone = config.zone || Settings.defaultZone;
+
+    let invalid =
+      config.invalid ||
+      (Number.isNaN(config.ts) ? new Invalid("invalid input") : null) ||
+      (!zone.isValid ? unsupportedZone(zone) : null);
+    /**
+     * @access private
+     */
+    this.ts = isUndefined(config.ts) ? Settings.now() : config.ts;
+
+    let c = null,
+      o = null;
+    if (!invalid) {
+      const unchanged = config.old && config.old.ts === this.ts && config.old.zone.equals(zone);
+
+      if (unchanged) {
+        [c, o] = [config.old.c, config.old.o];
+      } else {
+        // If an offset has been passed and we have not been called from
+        // clone(), we can trust it and avoid the offset calculation.
+        const ot = isNumber(config.o) && !config.old ? config.o : zone.offset(this.ts);
+        c = tsToObj(this.ts, ot);
+        invalid = Number.isNaN(c.year) ? new Invalid("invalid input") : null;
+        c = invalid ? null : c;
+        o = invalid ? null : ot;
+      }
+    }
+
+    /**
+     * @access private
+     */
+    this._zone = zone;
+    /**
+     * @access private
+     */
+    this.loc = config.loc || Locale.create();
+    /**
+     * @access private
+     */
+    this.invalid = invalid;
+    /**
+     * @access private
+     */
+    this.weekData = null;
+    /**
+     * @access private
+     */
+    this.localWeekData = null;
+    /**
+     * @access private
+     */
+    this.c = c;
+    /**
+     * @access private
+     */
+    this.o = o;
+    /**
+     * @access private
+     */
+    this.isLuxonDateTime = true;
+  }
+
+  // CONSTRUCT
+
+  /**
+   * Create a DateTime for the current instant, in the system's time zone.
+   *
+   * Use Settings to override these default values if needed.
+   * @example DateTime.now().toISO() //~> now in the ISO format
+   * @return {DateTime}
+   */
+  static now() {
+    return new DateTime({});
+  }
+
+  /**
+   * Create a local DateTime
+   * @param {number} [year] - The calendar year. If omitted (as in, call `local()` with no arguments), the current time will be used
+   * @param {number} [month=1] - The month, 1-indexed
+   * @param {number} [day=1] - The day of the month, 1-indexed
+   * @param {number} [hour=0] - The hour of the day, in 24-hour time
+   * @param {number} [minute=0] - The minute of the hour, meaning a number between 0 and 59
+   * @param {number} [second=0] - The second of the minute, meaning a number between 0 and 59
+   * @param {number} [millisecond=0] - The millisecond of the second, meaning a number between 0 and 999
+   * @example DateTime.local()                                  //~> now
+   * @example DateTime.local({ zone: "America/New_York" })      //~> now, in US east coast time
+   * @example DateTime.local(2017)                              //~> 2017-01-01T00:00:00
+   * @example DateTime.local(2017, 3)                           //~> 2017-03-01T00:00:00
+   * @example DateTime.local(2017, 3, 12, { locale: "fr" })     //~> 2017-03-12T00:00:00, with a French locale
+   * @example DateTime.local(2017, 3, 12, 5)                    //~> 2017-03-12T05:00:00
+   * @example DateTime.local(2017, 3, 12, 5, { zone: "utc" })   //~> 2017-03-12T05:00:00, in UTC
+   * @example DateTime.local(2017, 3, 12, 5, 45)                //~> 2017-03-12T05:45:00
+   * @example DateTime.local(2017, 3, 12, 5, 45, 10)            //~> 2017-03-12T05:45:10
+   * @example DateTime.local(2017, 3, 12, 5, 45, 10, 765)       //~> 2017-03-12T05:45:10.765
+   * @return {DateTime}
+   */
+  static local() {
+    const [opts, args] = lastOpts(arguments),
+      [year, month, day, hour, minute, second, millisecond] = args;
+    return quickDT({ year, month, day, hour, minute, second, millisecond }, opts);
+  }
+
+  /**
+   * Create a DateTime in UTC
+   * @param {number} [year] - The calendar year. If omitted (as in, call `utc()` with no arguments), the current time will be used
+   * @param {number} [month=1] - The month, 1-indexed
+   * @param {number} [day=1] - The day of the month
+   * @param {number} [hour=0] - The hour of the day, in 24-hour time
+   * @param {number} [minute=0] - The minute of the hour, meaning a number between 0 and 59
+   * @param {number} [second=0] - The second of the minute, meaning a number between 0 and 59
+   * @param {number} [millisecond=0] - The millisecond of the second, meaning a number between 0 and 999
+   * @param {Object} options - configuration options for the DateTime
+   * @param {string} [options.locale] - a locale to set on the resulting DateTime instance
+   * @param {string} [options.outputCalendar] - the output calendar to set on the resulting DateTime instance
+   * @param {string} [options.numberingSystem] - the numbering system to set on the resulting DateTime instance
+   * @param {string} [options.weekSettings] - the week settings to set on the resulting DateTime instance
+   * @example DateTime.utc()                                              //~> now
+   * @example DateTime.utc(2017)                                          //~> 2017-01-01T00:00:00Z
+   * @example DateTime.utc(2017, 3)                                       //~> 2017-03-01T00:00:00Z
+   * @example DateTime.utc(2017, 3, 12)                                   //~> 2017-03-12T00:00:00Z
+   * @example DateTime.utc(2017, 3, 12, 5)                                //~> 2017-03-12T05:00:00Z
+   * @example DateTime.utc(2017, 3, 12, 5, 45)                            //~> 2017-03-12T05:45:00Z
+   * @example DateTime.utc(2017, 3, 12, 5, 45, { locale: "fr" })          //~> 2017-03-12T05:45:00Z with a French locale
+   * @example DateTime.utc(2017, 3, 12, 5, 45, 10)                        //~> 2017-03-12T05:45:10Z
+   * @example DateTime.utc(2017, 3, 12, 5, 45, 10, 765, { locale: "fr" }) //~> 2017-03-12T05:45:10.765Z with a French locale
+   * @return {DateTime}
+   */
+  static utc() {
+    const [opts, args] = lastOpts(arguments),
+      [year, month, day, hour, minute, second, millisecond] = args;
+
+    opts.zone = FixedOffsetZone.utcInstance;
+    return quickDT({ year, month, day, hour, minute, second, millisecond }, opts);
+  }
+
+  /**
+   * Create a DateTime from a JavaScript Date object. Uses the default zone.
+   * @param {Date} date - a JavaScript Date object
+   * @param {Object} options - configuration options for the DateTime
+   * @param {string|Zone} [options.zone='local'] - the zone to place the DateTime into
+   * @return {DateTime}
+   */
+  static fromJSDate(date, options = {}) {
+    const ts = isDate(date) ? date.valueOf() : NaN;
+    if (Number.isNaN(ts)) {
+      return DateTime.invalid("invalid input");
+    }
+
+    const zoneToUse = normalizeZone(options.zone, Settings.defaultZone);
+    if (!zoneToUse.isValid) {
+      return DateTime.invalid(unsupportedZone(zoneToUse));
+    }
+
+    return new DateTime({
+      ts: ts,
+      zone: zoneToUse,
+      loc: Locale.fromObject(options),
+    });
+  }
+
+  /**
+   * Create a DateTime from a number of milliseconds since the epoch (meaning since 1 January 1970 00:00:00 UTC). Uses the default zone.
+   * @param {number} milliseconds - a number of milliseconds since 1970 UTC
+   * @param {Object} options - configuration options for the DateTime
+   * @param {string|Zone} [options.zone='local'] - the zone to place the DateTime into
+   * @param {string} [options.locale] - a locale to set on the resulting DateTime instance
+   * @param {string} options.outputCalendar - the output calendar to set on the resulting DateTime instance
+   * @param {string} options.numberingSystem - the numbering system to set on the resulting DateTime instance
+   * @param {string} options.weekSettings - the week settings to set on the resulting DateTime instance
+   * @return {DateTime}
+   */
+  static fromMillis(milliseconds, options = {}) {
+    if (!isNumber(milliseconds)) {
+      throw new InvalidArgumentError(
+        `fromMillis requires a numerical input, but received a ${typeof milliseconds} with value ${milliseconds}`
+      );
+    } else if (milliseconds < -MAX_DATE || milliseconds > MAX_DATE) {
+      // this isn't perfect because we can still end up out of range because of additional shifting, but it's a start
+      return DateTime.invalid("Timestamp out of range");
+    } else {
+      return new DateTime({
+        ts: milliseconds,
+        zone: normalizeZone(options.zone, Settings.defaultZone),
+        loc: Locale.fromObject(options),
+      });
+    }
+  }
+
+  /**
+   * Create a DateTime from a number of seconds since the epoch (meaning since 1 January 1970 00:00:00 UTC). Uses the default zone.
+   * @param {number} seconds - a number of seconds since 1970 UTC
+   * @param {Object} options - configuration options for the DateTime
+   * @param {string|Zone} [options.zone='local'] - the zone to place the DateTime into
+   * @param {string} [options.locale] - a locale to set on the resulting DateTime instance
+   * @param {string} options.outputCalendar - the output calendar to set on the resulting DateTime instance
+   * @param {string} options.numberingSystem - the numbering system to set on the resulting DateTime instance
+   * @param {string} options.weekSettings - the week settings to set on the resulting DateTime instance
+   * @return {DateTime}
+   */
+  static fromSeconds(seconds, options = {}) {
+    if (!isNumber(seconds)) {
+      throw new InvalidArgumentError("fromSeconds requires a numerical input");
+    } else {
+      return new DateTime({
+        ts: seconds * 1000,
+        zone: normalizeZone(options.zone, Settings.defaultZone),
+        loc: Locale.fromObject(options),
+      });
+    }
+  }
+
+  /**
+   * Create a DateTime from a JavaScript object with keys like 'year' and 'hour' with reasonable defaults.
+   * @param {Object} obj - the object to create the DateTime from
+   * @param {number} obj.year - a year, such as 1987
+   * @param {number} obj.month - a month, 1-12
+   * @param {number} obj.day - a day of the month, 1-31, depending on the month
+   * @param {number} obj.ordinal - day of the year, 1-365 or 366
+   * @param {number} obj.weekYear - an ISO week year
+   * @param {number} obj.weekNumber - an ISO week number, between 1 and 52 or 53, depending on the year
+   * @param {number} obj.weekday - an ISO weekday, 1-7, where 1 is Monday and 7 is Sunday
+   * @param {number} obj.localWeekYear - a week year, according to the locale
+   * @param {number} obj.localWeekNumber - a week number, between 1 and 52 or 53, depending on the year, according to the locale
+   * @param {number} obj.localWeekday - a weekday, 1-7, where 1 is the first and 7 is the last day of the week, according to the locale
+   * @param {number} obj.hour - hour of the day, 0-23
+   * @param {number} obj.minute - minute of the hour, 0-59
+   * @param {number} obj.second - second of the minute, 0-59
+   * @param {number} obj.millisecond - millisecond of the second, 0-999
+   * @param {Object} opts - options for creating this DateTime
+   * @param {string|Zone} [opts.zone='local'] - interpret the numbers in the context of a particular zone. Can take any value taken as the first argument to setZone()
+   * @param {string} [opts.locale='system\'s locale'] - a locale to set on the resulting DateTime instance
+   * @param {string} opts.outputCalendar - the output calendar to set on the resulting DateTime instance
+   * @param {string} opts.numberingSystem - the numbering system to set on the resulting DateTime instance
+   * @param {string} opts.weekSettings - the week settings to set on the resulting DateTime instance
+   * @example DateTime.fromObject({ year: 1982, month: 5, day: 25}).toISODate() //=> '1982-05-25'
+   * @example DateTime.fromObject({ year: 1982 }).toISODate() //=> '1982-01-01'
+   * @example DateTime.fromObject({ hour: 10, minute: 26, second: 6 }) //~> today at 10:26:06
+   * @example DateTime.fromObject({ hour: 10, minute: 26, second: 6 }, { zone: 'utc' }),
+   * @example DateTime.fromObject({ hour: 10, minute: 26, second: 6 }, { zone: 'local' })
+   * @example DateTime.fromObject({ hour: 10, minute: 26, second: 6 }, { zone: 'America/New_York' })
+   * @example DateTime.fromObject({ weekYear: 2016, weekNumber: 2, weekday: 3 }).toISODate() //=> '2016-01-13'
+   * @example DateTime.fromObject({ localWeekYear: 2022, localWeekNumber: 1, localWeekday: 1 }, { locale: "en-US" }).toISODate() //=> '2021-12-26'
+   * @return {DateTime}
+   */
+  static fromObject(obj, opts = {}) {
+    obj = obj || {};
+    const zoneToUse = normalizeZone(opts.zone, Settings.defaultZone);
+    if (!zoneToUse.isValid) {
+      return DateTime.invalid(unsupportedZone(zoneToUse));
+    }
+
+    const loc = Locale.fromObject(opts);
+    const normalized = normalizeObject(obj, normalizeUnitWithLocalWeeks);
+    const { minDaysInFirstWeek, startOfWeek } = usesLocalWeekValues(normalized, loc);
+
+    const tsNow = Settings.now(),
+      offsetProvis = !isUndefined(opts.specificOffset)
+        ? opts.specificOffset
+        : zoneToUse.offset(tsNow),
+      containsOrdinal = !isUndefined(normalized.ordinal),
+      containsGregorYear = !isUndefined(normalized.year),
+      containsGregorMD = !isUndefined(normalized.month) || !isUndefined(normalized.day),
+      containsGregor = containsGregorYear || containsGregorMD,
+      definiteWeekDef = normalized.weekYear || normalized.weekNumber;
+
+    // cases:
+    // just a weekday -> this week's instance of that weekday, no worries
+    // (gregorian data or ordinal) + (weekYear or weekNumber) -> error
+    // (gregorian month or day) + ordinal -> error
+    // otherwise just use weeks or ordinals or gregorian, depending on what's specified
+
+    if ((containsGregor || containsOrdinal) && definiteWeekDef) {
+      throw new ConflictingSpecificationError(
+        "Can't mix weekYear/weekNumber units with year/month/day or ordinals"
+      );
+    }
+
+    if (containsGregorMD && containsOrdinal) {
+      throw new ConflictingSpecificationError("Can't mix ordinal dates with month/day");
+    }
+
+    const useWeekData = definiteWeekDef || (normalized.weekday && !containsGregor);
+
+    // configure ourselves to deal with gregorian dates or week stuff
+    let units,
+      defaultValues,
+      objNow = tsToObj(tsNow, offsetProvis);
+    if (useWeekData) {
+      units = orderedWeekUnits;
+      defaultValues = defaultWeekUnitValues;
+      objNow = gregorianToWeek(objNow, minDaysInFirstWeek, startOfWeek);
+    } else if (containsOrdinal) {
+      units = orderedOrdinalUnits;
+      defaultValues = defaultOrdinalUnitValues;
+      objNow = gregorianToOrdinal(objNow);
+    } else {
+      units = orderedUnits;
+      defaultValues = defaultUnitValues;
+    }
+
+    // set default values for missing stuff
+    let foundFirst = false;
+    for (const u of units) {
+      const v = normalized[u];
+      if (!isUndefined(v)) {
+        foundFirst = true;
+      } else if (foundFirst) {
+        normalized[u] = defaultValues[u];
+      } else {
+        normalized[u] = objNow[u];
+      }
+    }
+
+    // make sure the values we have are in range
+    const higherOrderInvalid = useWeekData
+        ? hasInvalidWeekData(normalized, minDaysInFirstWeek, startOfWeek)
+        : containsOrdinal
+        ? hasInvalidOrdinalData(normalized)
+        : hasInvalidGregorianData(normalized),
+      invalid = higherOrderInvalid || hasInvalidTimeData(normalized);
+
+    if (invalid) {
+      return DateTime.invalid(invalid);
+    }
+
+    // compute the actual time
+    const gregorian = useWeekData
+        ? weekToGregorian(normalized, minDaysInFirstWeek, startOfWeek)
+        : containsOrdinal
+        ? ordinalToGregorian(normalized)
+        : normalized,
+      [tsFinal, offsetFinal] = objToTS(gregorian, offsetProvis, zoneToUse),
+      inst = new DateTime({
+        ts: tsFinal,
+        zone: zoneToUse,
+        o: offsetFinal,
+        loc,
+      });
+
+    // gregorian data + weekday serves only to validate
+    if (normalized.weekday && containsGregor && obj.weekday !== inst.weekday) {
+      return DateTime.invalid(
+        "mismatched weekday",
+        `you can't specify both a weekday of ${normalized.weekday} and a date of ${inst.toISO()}`
+      );
+    }
+
+    if (!inst.isValid) {
+      return DateTime.invalid(inst.invalid);
+    }
+
+    return inst;
+  }
+
+  /**
+   * Create a DateTime from an ISO 8601 string
+   * @param {string} text - the ISO string
+   * @param {Object} opts - options to affect the creation
+   * @param {string|Zone} [opts.zone='local'] - use this zone if no offset is specified in the input string itself. Will also convert the time to this zone
+   * @param {boolean} [opts.setZone=false] - override the zone with a fixed-offset zone specified in the string itself, if it specifies one
+   * @param {string} [opts.locale='system's locale'] - a locale to set on the resulting DateTime instance
+   * @param {string} [opts.outputCalendar] - the output calendar to set on the resulting DateTime instance
+   * @param {string} [opts.numberingSystem] - the numbering system to set on the resulting DateTime instance
+   * @param {string} [opts.weekSettings] - the week settings to set on the resulting DateTime instance
+   * @example DateTime.fromISO('2016-05-25T09:08:34.123')
+   * @example DateTime.fromISO('2016-05-25T09:08:34.123+06:00')
+   * @example DateTime.fromISO('2016-05-25T09:08:34.123+06:00', {setZone: true})
+   * @example DateTime.fromISO('2016-05-25T09:08:34.123', {zone: 'utc'})
+   * @example DateTime.fromISO('2016-W05-4')
+   * @return {DateTime}
+   */
+  static fromISO(text, opts = {}) {
+    const [vals, parsedZone] = parseISODate(text);
+    return parseDataToDateTime(vals, parsedZone, opts, "ISO 8601", text);
+  }
+
+  /**
+   * Create a DateTime from an RFC 2822 string
+   * @param {string} text - the RFC 2822 string
+   * @param {Object} opts - options to affect the creation
+   * @param {string|Zone} [opts.zone='local'] - convert the time to this zone. Since the offset is always specified in the string itself, this has no effect on the interpretation of string, merely the zone the resulting DateTime is expressed in.
+   * @param {boolean} [opts.setZone=false] - override the zone with a fixed-offset zone specified in the string itself, if it specifies one
+   * @param {string} [opts.locale='system's locale'] - a locale to set on the resulting DateTime instance
+   * @param {string} opts.outputCalendar - the output calendar to set on the resulting DateTime instance
+   * @param {string} opts.numberingSystem - the numbering system to set on the resulting DateTime instance
+   * @param {string} opts.weekSettings - the week settings to set on the resulting DateTime instance
+   * @example DateTime.fromRFC2822('25 Nov 2016 13:23:12 GMT')
+   * @example DateTime.fromRFC2822('Fri, 25 Nov 2016 13:23:12 +0600')
+   * @example DateTime.fromRFC2822('25 Nov 2016 13:23 Z')
+   * @return {DateTime}
+   */
+  static fromRFC2822(text, opts = {}) {
+    const [vals, parsedZone] = parseRFC2822Date(text);
+    return parseDataToDateTime(vals, parsedZone, opts, "RFC 2822", text);
+  }
+
+  /**
+   * Create a DateTime from an HTTP header date
+   * @see https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.3.1
+   * @param {string} text - the HTTP header date
+   * @param {Object} opts - options to affect the creation
+   * @param {string|Zone} [opts.zone='local'] - convert the time to this zone. Since HTTP dates are always in UTC, this has no effect on the interpretation of string, merely the zone the resulting DateTime is expressed in.
+   * @param {boolean} [opts.setZone=false] - override the zone with the fixed-offset zone specified in the string. For HTTP dates, this is always UTC, so this option is equivalent to setting the `zone` option to 'utc', but this option is included for consistency with similar methods.
+   * @param {string} [opts.locale='system's locale'] - a locale to set on the resulting DateTime instance
+   * @param {string} opts.outputCalendar - the output calendar to set on the resulting DateTime instance
+   * @param {string} opts.numberingSystem - the numbering system to set on the resulting DateTime instance
+   * @param {string} opts.weekSettings - the week settings to set on the resulting DateTime instance
+   * @example DateTime.fromHTTP('Sun, 06 Nov 1994 08:49:37 GMT')
+   * @example DateTime.fromHTTP('Sunday, 06-Nov-94 08:49:37 GMT')
+   * @example DateTime.fromHTTP('Sun Nov  6 08:49:37 1994')
+   * @return {DateTime}
+   */
+  static fromHTTP(text, opts = {}) {
+    const [vals, parsedZone] = parseHTTPDate(text);
+    return parseDataToDateTime(vals, parsedZone, opts, "HTTP", opts);
+  }
+
+  /**
+   * Create a DateTime from an input string and format string.
+   * Defaults to en-US if no locale has been specified, regardless of the system's locale. For a table of tokens and their interpretations, see [here](https://moment.github.io/luxon/#/parsing?id=table-of-tokens).
+   * @param {string} text - the string to parse
+   * @param {string} fmt - the format the string is expected to be in (see the link below for the formats)
+   * @param {Object} opts - options to affect the creation
+   * @param {string|Zone} [opts.zone='local'] - use this zone if no offset is specified in the input string itself. Will also convert the DateTime to this zone
+   * @param {boolean} [opts.setZone=false] - override the zone with a zone specified in the string itself, if it specifies one
+   * @param {string} [opts.locale='en-US'] - a locale string to use when parsing. Will also set the DateTime to this locale
+   * @param {string} opts.numberingSystem - the numbering system to use when parsing. Will also set the resulting DateTime to this numbering system
+   * @param {string} opts.weekSettings - the week settings to set on the resulting DateTime instance
+   * @param {string} opts.outputCalendar - the output calendar to set on the resulting DateTime instance
+   * @return {DateTime}
+   */
+  static fromFormat(text, fmt, opts = {}) {
+    if (isUndefined(text) || isUndefined(fmt)) {
+      throw new InvalidArgumentError("fromFormat requires an input string and a format");
+    }
+
+    const { locale = null, numberingSystem = null } = opts,
+      localeToUse = Locale.fromOpts({
+        locale,
+        numberingSystem,
+        defaultToEN: true,
+      }),
+      [vals, parsedZone, specificOffset, invalid] = parseFromTokens(localeToUse, text, fmt);
+    if (invalid) {
+      return DateTime.invalid(invalid);
+    } else {
+      return parseDataToDateTime(vals, parsedZone, opts, `format ${fmt}`, text, specificOffset);
+    }
+  }
+
+  /**
+   * @deprecated use fromFormat instead
+   */
+  static fromString(text, fmt, opts = {}) {
+    return DateTime.fromFormat(text, fmt, opts);
+  }
+
+  /**
+   * Create a DateTime from a SQL date, time, or datetime
+   * Defaults to en-US if no locale has been specified, regardless of the system's locale
+   * @param {string} text - the string to parse
+   * @param {Object} opts - options to affect the creation
+   * @param {string|Zone} [opts.zone='local'] - use this zone if no offset is specified in the input string itself. Will also convert the DateTime to this zone
+   * @param {boolean} [opts.setZone=false] - override the zone with a zone specified in the string itself, if it specifies one
+   * @param {string} [opts.locale='en-US'] - a locale string to use when parsing. Will also set the DateTime to this locale
+   * @param {string} opts.numberingSystem - the numbering system to use when parsing. Will also set the resulting DateTime to this numbering system
+   * @param {string} opts.weekSettings - the week settings to set on the resulting DateTime instance
+   * @param {string} opts.outputCalendar - the output calendar to set on the resulting DateTime instance
+   * @example DateTime.fromSQL('2017-05-15')
+   * @example DateTime.fromSQL('2017-05-15 09:12:34')
+   * @example DateTime.fromSQL('2017-05-15 09:12:34.342')
+   * @example DateTime.fromSQL('2017-05-15 09:12:34.342+06:00')
+   * @example DateTime.fromSQL('2017-05-15 09:12:34.342 America/Los_Angeles')
+   * @example DateTime.fromSQL('2017-05-15 09:12:34.342 America/Los_Angeles', { setZone: true })
+   * @example DateTime.fromSQL('2017-05-15 09:12:34.342', { zone: 'America/Los_Angeles' })
+   * @example DateTime.fromSQL('09:12:34.342')
+   * @return {DateTime}
+   */
+  static fromSQL(text, opts = {}) {
+    const [vals, parsedZone] = parseSQL(text);
+    return parseDataToDateTime(vals, parsedZone, opts, "SQL", text);
+  }
+
+  /**
+   * Create an invalid DateTime.
+   * @param {string} reason - simple string of why this DateTime is invalid. Should not contain parameters or anything else data-dependent.
+   * @param {string} [explanation=null] - longer explanation, may include parameters and other useful debugging information
+   * @return {DateTime}
+   */
+  static invalid(reason, explanation = null) {
+    if (!reason) {
+      throw new InvalidArgumentError("need to specify a reason the DateTime is invalid");
+    }
+
+    const invalid = reason instanceof Invalid ? reason : new Invalid(reason, explanation);
+
+    if (Settings.throwOnInvalid) {
+      throw new InvalidDateTimeError(invalid);
+    } else {
+      return new DateTime({ invalid });
+    }
+  }
+
+  /**
+   * Check if an object is an instance of DateTime. Works across context boundaries
+   * @param {object} o
+   * @return {boolean}
+   */
+  static isDateTime(o) {
+    return (o && o.isLuxonDateTime) || false;
+  }
+
+  /**
+   * Produce the format string for a set of options
+   * @param formatOpts
+   * @param localeOpts
+   * @returns {string}
+   */
+  static parseFormatForOpts(formatOpts, localeOpts = {}) {
+    const tokenList = formatOptsToTokens(formatOpts, Locale.fromObject(localeOpts));
+    return !tokenList ? null : tokenList.map((t) => (t ? t.val : null)).join("");
+  }
+
+  /**
+   * Produce the the fully expanded format token for the locale
+   * Does NOT quote characters, so quoted tokens will not round trip correctly
+   * @param fmt
+   * @param localeOpts
+   * @returns {string}
+   */
+  static expandFormat(fmt, localeOpts = {}) {
+    const expanded = expandMacroTokens(Formatter.parseFormat(fmt), Locale.fromObject(localeOpts));
+    return expanded.map((t) => t.val).join("");
+  }
+
+  static resetCache() {
+    zoneOffsetTs = undefined;
+    zoneOffsetGuessCache.clear();
+  }
+
+  // INFO
+
+  /**
+   * Get the value of unit.
+   * @param {string} unit - a unit such as 'minute' or 'day'
+   * @example DateTime.local(2017, 7, 4).get('month'); //=> 7
+   * @example DateTime.local(2017, 7, 4).get('day'); //=> 4
+   * @return {number}
+   */
+  get(unit) {
+    return this[unit];
+  }
+
+  /**
+   * Returns whether the DateTime is valid. Invalid DateTimes occur when:
+   * * The DateTime was created from invalid calendar information, such as the 13th month or February 30
+   * * The DateTime was created by an operation on another invalid date
+   * @type {boolean}
+   */
+  get isValid() {
+    return this.invalid === null;
+  }
+
+  /**
+   * Returns an error code if this DateTime is invalid, or null if the DateTime is valid
+   * @type {string}
+   */
+  get invalidReason() {
+    return this.invalid ? this.invalid.reason : null;
+  }
+
+  /**
+   * Returns an explanation of why this DateTime became invalid, or null if the DateTime is valid
+   * @type {string}
+   */
+  get invalidExplanation() {
+    return this.invalid ? this.invalid.explanation : null;
+  }
+
+  /**
+   * Get the locale of a DateTime, such 'en-GB'. The locale is used when formatting the DateTime
+   *
+   * @type {string}
+   */
+  get locale() {
+    return this.isValid ? this.loc.locale : null;
+  }
+
+  /**
+   * Get the numbering system of a DateTime, such 'beng'. The numbering system is used when formatting the DateTime
+   *
+   * @type {string}
+   */
+  get numberingSystem() {
+    return this.isValid ? this.loc.numberingSystem : null;
+  }
+
+  /**
+   * Get the output calendar of a DateTime, such 'islamic'. The output calendar is used when formatting the DateTime
+   *
+   * @type {string}
+   */
+  get outputCalendar() {
+    return this.isValid ? this.loc.outputCalendar : null;
+  }
+
+  /**
+   * Get the time zone associated with this DateTime.
+   * @type {Zone}
+   */
+  get zone() {
+    return this._zone;
+  }
+
+  /**
+   * Get the name of the time zone.
+   * @type {string}
+   */
+  get zoneName() {
+    return this.isValid ? this.zone.name : null;
+  }
+
+  /**
+   * Get the year
+   * @example DateTime.local(2017, 5, 25).year //=> 2017
+   * @type {number}
+   */
+  get year() {
+    return this.isValid ? this.c.year : NaN;
+  }
+
+  /**
+   * Get the quarter
+   * @example DateTime.local(2017, 5, 25).quarter //=> 2
+   * @type {number}
+   */
+  get quarter() {
+    return this.isValid ? Math.ceil(this.c.month / 3) : NaN;
+  }
+
+  /**
+   * Get the month (1-12).
+   * @example DateTime.local(2017, 5, 25).month //=> 5
+   * @type {number}
+   */
+  get month() {
+    return this.isValid ? this.c.month : NaN;
+  }
+
+  /**
+   * Get the day of the month (1-30ish).
+   * @example DateTime.local(2017, 5, 25).day //=> 25
+   * @type {number}
+   */
+  get day() {
+    return this.isValid ? this.c.day : NaN;
+  }
+
+  /**
+   * Get the hour of the day (0-23).
+   * @example DateTime.local(2017, 5, 25, 9).hour //=> 9
+   * @type {number}
+   */
+  get hour() {
+    return this.isValid ? this.c.hour : NaN;
+  }
+
+  /**
+   * Get the minute of the hour (0-59).
+   * @example DateTime.local(2017, 5, 25, 9, 30).minute //=> 30
+   * @type {number}
+   */
+  get minute() {
+    return this.isValid ? this.c.minute : NaN;
+  }
+
+  /**
+   * Get the second of the minute (0-59).
+   * @example DateTime.local(2017, 5, 25, 9, 30, 52).second //=> 52
+   * @type {number}
+   */
+  get second() {
+    return this.isValid ? this.c.second : NaN;
+  }
+
+  /**
+   * Get the millisecond of the second (0-999).
+   * @example DateTime.local(2017, 5, 25, 9, 30, 52, 654).millisecond //=> 654
+   * @type {number}
+   */
+  get millisecond() {
+    return this.isValid ? this.c.millisecond : NaN;
+  }
+
+  /**
+   * Get the week year
+   * @see https://en.wikipedia.org/wiki/ISO_week_date
+   * @example DateTime.local(2014, 12, 31).weekYear //=> 2015
+   * @type {number}
+   */
+  get weekYear() {
+    return this.isValid ? possiblyCachedWeekData(this).weekYear : NaN;
+  }
+
+  /**
+   * Get the week number of the week year (1-52ish).
+   * @see https://en.wikipedia.org/wiki/ISO_week_date
+   * @example DateTime.local(2017, 5, 25).weekNumber //=> 21
+   * @type {number}
+   */
+  get weekNumber() {
+    return this.isValid ? possiblyCachedWeekData(this).weekNumber : NaN;
+  }
+
+  /**
+   * Get the day of the week.
+   * 1 is Monday and 7 is Sunday
+   * @see https://en.wikipedia.org/wiki/ISO_week_date
+   * @example DateTime.local(2014, 11, 31).weekday //=> 4
+   * @type {number}
+   */
+  get weekday() {
+    return this.isValid ? possiblyCachedWeekData(this).weekday : NaN;
+  }
+
+  /**
+   * Returns true if this date is on a weekend according to the locale, false otherwise
+   * @returns {boolean}
+   */
+  get isWeekend() {
+    return this.isValid && this.loc.getWeekendDays().includes(this.weekday);
+  }
+
+  /**
+   * Get the day of the week according to the locale.
+   * 1 is the first day of the week and 7 is the last day of the week.
+   * If the locale assigns Sunday as the first day of the week, then a date which is a Sunday will return 1,
+   * @returns {number}
+   */
+  get localWeekday() {
+    return this.isValid ? possiblyCachedLocalWeekData(this).weekday : NaN;
+  }
+
+  /**
+   * Get the week number of the week year according to the locale. Different locales assign week numbers differently,
+   * because the week can start on different days of the week (see localWeekday) and because a different number of days
+   * is required for a week to count as the first week of a year.
+   * @returns {number}
+   */
+  get localWeekNumber() {
+    return this.isValid ? possiblyCachedLocalWeekData(this).weekNumber : NaN;
+  }
+
+  /**
+   * Get the week year according to the locale. Different locales assign week numbers (and therefor week years)
+   * differently, see localWeekNumber.
+   * @returns {number}
+   */
+  get localWeekYear() {
+    return this.isValid ? possiblyCachedLocalWeekData(this).weekYear : NaN;
+  }
+
+  /**
+   * Get the ordinal (meaning the day of the year)
+   * @example DateTime.local(2017, 5, 25).ordinal //=> 145
+   * @type {number|DateTime}
+   */
+  get ordinal() {
+    return this.isValid ? gregorianToOrdinal(this.c).ordinal : NaN;
+  }
+
+  /**
+   * Get the human readable short month name, such as 'Oct'.
+   * Defaults to the system's locale if no locale has been specified
+   * @example DateTime.local(2017, 10, 30).monthShort //=> Oct
+   * @type {string}
+   */
+  get monthShort() {
+    return this.isValid ? Info.months("short", { locObj: this.loc })[this.month - 1] : null;
+  }
+
+  /**
+   * Get the human readable long month name, such as 'October'.
+   * Defaults to the system's locale if no locale has been specified
+   * @example DateTime.local(2017, 10, 30).monthLong //=> October
+   * @type {string}
+   */
+  get monthLong() {
+    return this.isValid ? Info.months("long", { locObj: this.loc })[this.month - 1] : null;
+  }
+
+  /**
+   * Get the human readable short weekday, such as 'Mon'.
+   * Defaults to the system's locale if no locale has been specified
+   * @example DateTime.local(2017, 10, 30).weekdayShort //=> Mon
+   * @type {string}
+   */
+  get weekdayShort() {
+    return this.isValid ? Info.weekdays("short", { locObj: this.loc })[this.weekday - 1] : null;
+  }
+
+  /**
+   * Get the human readable long weekday, such as 'Monday'.
+   * Defaults to the system's locale if no locale has been specified
+   * @example DateTime.local(2017, 10, 30).weekdayLong //=> Monday
+   * @type {string}
+   */
+  get weekdayLong() {
+    return this.isValid ? Info.weekdays("long", { locObj: this.loc })[this.weekday - 1] : null;
+  }
+
+  /**
+   * Get the UTC offset of this DateTime in minutes
+   * @example DateTime.now().offset //=> -240
+   * @example DateTime.utc().offset //=> 0
+   * @type {number}
+   */
+  get offset() {
+    return this.isValid ? +this.o : NaN;
+  }
+
+  /**
+   * Get the short human name for the zone's current offset, for example "EST" or "EDT".
+   * Defaults to the system's locale if no locale has been specified
+   * @type {string}
+   */
+  get offsetNameShort() {
+    if (this.isValid) {
+      return this.zone.offsetName(this.ts, {
+        format: "short",
+        locale: this.locale,
+      });
+    } else {
+      return null;
+    }
+  }
+
+  /**
+   * Get the long human name for the zone's current offset, for example "Eastern Standard Time" or "Eastern Daylight Time".
+   * Defaults to the system's locale if no locale has been specified
+   * @type {string}
+   */
+  get offsetNameLong() {
+    if (this.isValid) {
+      return this.zone.offsetName(this.ts, {
+        format: "long",
+        locale: this.locale,
+      });
+    } else {
+      return null;
+    }
+  }
+
+  /**
+   * Get whether this zone's offset ever changes, as in a DST.
+   * @type {boolean}
+   */
+  get isOffsetFixed() {
+    return this.isValid ? this.zone.isUniversal : null;
+  }
+
+  /**
+   * Get whether the DateTime is in a DST.
+   * @type {boolean}
+   */
+  get isInDST() {
+    if (this.isOffsetFixed) {
+      return false;
+    } else {
+      return (
+        this.offset > this.set({ month: 1, day: 1 }).offset ||
+        this.offset > this.set({ month: 5 }).offset
+      );
+    }
+  }
+
+  /**
+   * Get those DateTimes which have the same local time as this DateTime, but a different offset from UTC
+   * in this DateTime's zone. During DST changes local time can be ambiguous, for example
+   * `2023-10-29T02:30:00` in `Europe/Berlin` can have offset `+01:00` or `+02:00`.
+   * This method will return both possible DateTimes if this DateTime's local time is ambiguous.
+   * @returns {DateTime[]}
+   */
+  getPossibleOffsets() {
+    if (!this.isValid || this.isOffsetFixed) {
+      return [this];
+    }
+    const dayMs = 86400000;
+    const minuteMs = 60000;
+    const localTS = objToLocalTS(this.c);
+    const oEarlier = this.zone.offset(localTS - dayMs);
+    const oLater = this.zone.offset(localTS + dayMs);
+
+    const o1 = this.zone.offset(localTS - oEarlier * minuteMs);
+    const o2 = this.zone.offset(localTS - oLater * minuteMs);
+    if (o1 === o2) {
+      return [this];
+    }
+    const ts1 = localTS - o1 * minuteMs;
+    const ts2 = localTS - o2 * minuteMs;
+    const c1 = tsToObj(ts1, o1);
+    const c2 = tsToObj(ts2, o2);
+    if (
+      c1.hour === c2.hour &&
+      c1.minute === c2.minute &&
+      c1.second === c2.second &&
+      c1.millisecond === c2.millisecond
+    ) {
+      return [clone(this, { ts: ts1 }), clone(this, { ts: ts2 })];
+    }
+    return [this];
+  }
+
+  /**
+   * Returns true if this DateTime is in a leap year, false otherwise
+   * @example DateTime.local(2016).isInLeapYear //=> true
+   * @example DateTime.local(2013).isInLeapYear //=> false
+   * @type {boolean}
+   */
+  get isInLeapYear() {
+    return isLeapYear(this.year);
+  }
+
+  /**
+   * Returns the number of days in this DateTime's month
+   * @example DateTime.local(2016, 2).daysInMonth //=> 29
+   * @example DateTime.local(2016, 3).daysInMonth //=> 31
+   * @type {number}
+   */
+  get daysInMonth() {
+    return daysInMonth(this.year, this.month);
+  }
+
+  /**
+   * Returns the number of days in this DateTime's year
+   * @example DateTime.local(2016).daysInYear //=> 366
+   * @example DateTime.local(2013).daysInYear //=> 365
+   * @type {number}
+   */
+  get daysInYear() {
+    return this.isValid ? daysInYear(this.year) : NaN;
+  }
+
+  /**
+   * Returns the number of weeks in this DateTime's year
+   * @see https://en.wikipedia.org/wiki/ISO_week_date
+   * @example DateTime.local(2004).weeksInWeekYear //=> 53
+   * @example DateTime.local(2013).weeksInWeekYear //=> 52
+   * @type {number}
+   */
+  get weeksInWeekYear() {
+    return this.isValid ? weeksInWeekYear(this.weekYear) : NaN;
+  }
+
+  /**
+   * Returns the number of weeks in this DateTime's local week year
+   * @example DateTime.local(2020, 6, {locale: 'en-US'}).weeksInLocalWeekYear //=> 52
+   * @example DateTime.local(2020, 6, {locale: 'de-DE'}).weeksInLocalWeekYear //=> 53
+   * @type {number}
+   */
+  get weeksInLocalWeekYear() {
+    return this.isValid
+      ? weeksInWeekYear(
+          this.localWeekYear,
+          this.loc.getMinDaysInFirstWeek(),
+          this.loc.getStartOfWeek()
+        )
+      : NaN;
+  }
+
+  /**
+   * Returns the resolved Intl options for this DateTime.
+   * This is useful in understanding the behavior of formatting methods
+   * @param {Object} opts - the same options as toLocaleString
+   * @return {Object}
+   */
+  resolvedLocaleOptions(opts = {}) {
+    const { locale, numberingSystem, calendar } = Formatter.create(
+      this.loc.clone(opts),
+      opts
+    ).resolvedOptions(this);
+    return { locale, numberingSystem, outputCalendar: calendar };
+  }
+
+  // TRANSFORM
+
+  /**
+   * "Set" the DateTime's zone to UTC. Returns a newly-constructed DateTime.
+   *
+   * Equivalent to {@link DateTime#setZone}('utc')
+   * @param {number} [offset=0] - optionally, an offset from UTC in minutes
+   * @param {Object} [opts={}] - options to pass to `setZone()`
+   * @return {DateTime}
+   */
+  toUTC(offset = 0, opts = {}) {
+    return this.setZone(FixedOffsetZone.instance(offset), opts);
+  }
+
+  /**
+   * "Set" the DateTime's zone to the host's local zone. Returns a newly-constructed DateTime.
+   *
+   * Equivalent to `setZone('local')`
+   * @return {DateTime}
+   */
+  toLocal() {
+    return this.setZone(Settings.defaultZone);
+  }
+
+  /**
+   * "Set" the DateTime's zone to specified zone. Returns a newly-constructed DateTime.
+   *
+   * By default, the setter keeps the underlying time the same (as in, the same timestamp), but the new instance will report different local times and consider DSTs when making computations, as with {@link DateTime#plus}. You may wish to use {@link DateTime#toLocal} and {@link DateTime#toUTC} which provide simple convenience wrappers for commonly used zones.
+   * @param {string|Zone} [zone='local'] - a zone identifier. As a string, that can be any IANA zone supported by the host environment, or a fixed-offset name of the form 'UTC+3', or the strings 'local' or 'utc'. You may also supply an instance of a {@link DateTime#Zone} class.
+   * @param {Object} opts - options
+   * @param {boolean} [opts.keepLocalTime=false] - If true, adjust the underlying time so that the local time stays the same, but in the target zone. You should rarely need this.
+   * @return {DateTime}
+   */
+  setZone(zone, { keepLocalTime = false, keepCalendarTime = false } = {}) {
+    zone = normalizeZone(zone, Settings.defaultZone);
+    if (zone.equals(this.zone)) {
+      return this;
+    } else if (!zone.isValid) {
+      return DateTime.invalid(unsupportedZone(zone));
+    } else {
+      let newTS = this.ts;
+      if (keepLocalTime || keepCalendarTime) {
+        const offsetGuess = zone.offset(this.ts);
+        const asObj = this.toObject();
+        [newTS] = objToTS(asObj, offsetGuess, zone);
+      }
+      return clone(this, { ts: newTS, zone });
+    }
+  }
+
+  /**
+   * "Set" the locale, numberingSystem, or outputCalendar. Returns a newly-constructed DateTime.
+   * @param {Object} properties - the properties to set
+   * @example DateTime.local(2017, 5, 25).reconfigure({ locale: 'en-GB' })
+   * @return {DateTime}
+   */
+  reconfigure({ locale, numberingSystem, outputCalendar } = {}) {
+    const loc = this.loc.clone({ locale, numberingSystem, outputCalendar });
+    return clone(this, { loc });
+  }
+
+  /**
+   * "Set" the locale. Returns a newly-constructed DateTime.
+   * Just a convenient alias for reconfigure({ locale })
+   * @example DateTime.local(2017, 5, 25).setLocale('en-GB')
+   * @return {DateTime}
+   */
+  setLocale(locale) {
+    return this.reconfigure({ locale });
+  }
+
+  /**
+   * "Set" the values of specified units. Returns a newly-constructed DateTime.
+   * You can only set units with this method; for "setting" metadata, see {@link DateTime#reconfigure} and {@link DateTime#setZone}.
+   *
+   * This method also supports setting locale-based week units, i.e. `localWeekday`, `localWeekNumber` and `localWeekYear`.
+   * They cannot be mixed with ISO-week units like `weekday`.
+   * @param {Object} values - a mapping of units to numbers
+   * @example dt.set({ year: 2017 })
+   * @example dt.set({ hour: 8, minute: 30 })
+   * @example dt.set({ weekday: 5 })
+   * @example dt.set({ year: 2005, ordinal: 234 })
+   * @return {DateTime}
+   */
+  set(values) {
+    if (!this.isValid) return this;
+
+    const normalized = normalizeObject(values, normalizeUnitWithLocalWeeks);
+    const { minDaysInFirstWeek, startOfWeek } = usesLocalWeekValues(normalized, this.loc);
+
+    const settingWeekStuff =
+        !isUndefined(normalized.weekYear) ||
+        !isUndefined(normalized.weekNumber) ||
+        !isUndefined(normalized.weekday),
+      containsOrdinal = !isUndefined(normalized.ordinal),
+      containsGregorYear = !isUndefined(normalized.year),
+      containsGregorMD = !isUndefined(normalized.month) || !isUndefined(normalized.day),
+      containsGregor = containsGregorYear || containsGregorMD,
+      definiteWeekDef = normalized.weekYear || normalized.weekNumber;
+
+    if ((containsGregor || containsOrdinal) && definiteWeekDef) {
+      throw new ConflictingSpecificationError(
+        "Can't mix weekYear/weekNumber units with year/month/day or ordinals"
+      );
+    }
+
+    if (containsGregorMD && containsOrdinal) {
+      throw new ConflictingSpecificationError("Can't mix ordinal dates with month/day");
+    }
+
+    let mixed;
+    if (settingWeekStuff) {
+      mixed = weekToGregorian(
+        { ...gregorianToWeek(this.c, minDaysInFirstWeek, startOfWeek), ...normalized },
+        minDaysInFirstWeek,
+        startOfWeek
+      );
+    } else if (!isUndefined(normalized.ordinal)) {
+      mixed = ordinalToGregorian({ ...gregorianToOrdinal(this.c), ...normalized });
+    } else {
+      mixed = { ...this.toObject(), ...normalized };
+
+      // if we didn't set the day but we ended up on an overflow date,
+      // use the last day of the right month
+      if (isUndefined(normalized.day)) {
+        mixed.day = Math.min(daysInMonth(mixed.year, mixed.month), mixed.day);
+      }
+    }
+
+    const [ts, o] = objToTS(mixed, this.o, this.zone);
+    return clone(this, { ts, o });
+  }
+
+  /**
+   * Add a period of time to this DateTime and return the resulting DateTime
+   *
+   * Adding hours, minutes, seconds, or milliseconds increases the timestamp by the right number of milliseconds. Adding days, months, or years shifts the calendar, accounting for DSTs and leap years along the way. Thus, `dt.plus({ hours: 24 })` may result in a different time than `dt.plus({ days: 1 })` if there's a DST shift in between.
+   * @param {Duration|Object|number} duration - The amount to add. Either a Luxon Duration, a number of milliseconds, the object argument to Duration.fromObject()
+   * @example DateTime.now().plus(123) //~> in 123 milliseconds
+   * @example DateTime.now().plus({ minutes: 15 }) //~> in 15 minutes
+   * @example DateTime.now().plus({ days: 1 }) //~> this time tomorrow
+   * @example DateTime.now().plus({ days: -1 }) //~> this time yesterday
+   * @example DateTime.now().plus({ hours: 3, minutes: 13 }) //~> in 3 hr, 13 min
+   * @example DateTime.now().plus(Duration.fromObject({ hours: 3, minutes: 13 })) //~> in 3 hr, 13 min
+   * @return {DateTime}
+   */
+  plus(duration) {
+    if (!this.isValid) return this;
+    const dur = Duration.fromDurationLike(duration);
+    return clone(this, adjustTime(this, dur));
+  }
+
+  /**
+   * Subtract a period of time to this DateTime and return the resulting DateTime
+   * See {@link DateTime#plus}
+   * @param {Duration|Object|number} duration - The amount to subtract. Either a Luxon Duration, a number of milliseconds, the object argument to Duration.fromObject()
+   @return {DateTime}
+   */
+  minus(duration) {
+    if (!this.isValid) return this;
+    const dur = Duration.fromDurationLike(duration).negate();
+    return clone(this, adjustTime(this, dur));
+  }
+
+  /**
+   * "Set" this DateTime to the beginning of a unit of time.
+   * @param {string} unit - The unit to go to the beginning of. Can be 'year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second', or 'millisecond'.
+   * @param {Object} opts - options
+   * @param {boolean} [opts.useLocaleWeeks=false] - If true, use weeks based on the locale, i.e. use the locale-dependent start of the week
+   * @example DateTime.local(2014, 3, 3).startOf('month').toISODate(); //=> '2014-03-01'
+   * @example DateTime.local(2014, 3, 3).startOf('year').toISODate(); //=> '2014-01-01'
+   * @example DateTime.local(2014, 3, 3).startOf('week').toISODate(); //=> '2014-03-03', weeks always start on Mondays
+   * @example DateTime.local(2014, 3, 3, 5, 30).startOf('day').toISOTime(); //=> '00:00.000-05:00'
+   * @example DateTime.local(2014, 3, 3, 5, 30).startOf('hour').toISOTime(); //=> '05:00:00.000-05:00'
+   * @return {DateTime}
+   */
+  startOf(unit, { useLocaleWeeks = false } = {}) {
+    if (!this.isValid) return this;
+
+    const o = {},
+      normalizedUnit = Duration.normalizeUnit(unit);
+    switch (normalizedUnit) {
+      case "years":
+        o.month = 1;
+      // falls through
+      case "quarters":
+      case "months":
+        o.day = 1;
+      // falls through
+      case "weeks":
+      case "days":
+        o.hour = 0;
+      // falls through
+      case "hours":
+        o.minute = 0;
+      // falls through
+      case "minutes":
+        o.second = 0;
+      // falls through
+      case "seconds":
+        o.millisecond = 0;
+        break;
+      // no default, invalid units throw in normalizeUnit()
+    }
+
+    if (normalizedUnit === "weeks") {
+      if (useLocaleWeeks) {
+        const startOfWeek = this.loc.getStartOfWeek();
+        const { weekday } = this;
+        if (weekday < startOfWeek) {
+          o.weekNumber = this.weekNumber - 1;
+        }
+        o.weekday = startOfWeek;
+      } else {
+        o.weekday = 1;
+      }
+    }
+
+    if (normalizedUnit === "quarters") {
+      const q = Math.ceil(this.month / 3);
+      o.month = (q - 1) * 3 + 1;
+    }
+
+    return this.set(o);
+  }
+
+  /**
+   * "Set" this DateTime to the end (meaning the last millisecond) of a unit of time
+   * @param {string} unit - The unit to go to the end of. Can be 'year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second', or 'millisecond'.
+   * @param {Object} opts - options
+   * @param {boolean} [opts.useLocaleWeeks=false] - If true, use weeks based on the locale, i.e. use the locale-dependent start of the week
+   * @example DateTime.local(2014, 3, 3).endOf('month').toISO(); //=> '2014-03-31T23:59:59.999-05:00'
+   * @example DateTime.local(2014, 3, 3).endOf('year').toISO(); //=> '2014-12-31T23:59:59.999-05:00'
+   * @example DateTime.local(2014, 3, 3).endOf('week').toISO(); // => '2014-03-09T23:59:59.999-05:00', weeks start on Mondays
+   * @example DateTime.local(2014, 3, 3, 5, 30).endOf('day').toISO(); //=> '2014-03-03T23:59:59.999-05:00'
+   * @example DateTime.local(2014, 3, 3, 5, 30).endOf('hour').toISO(); //=> '2014-03-03T05:59:59.999-05:00'
+   * @return {DateTime}
+   */
+  endOf(unit, opts) {
+    return this.isValid
+      ? this.plus({ [unit]: 1 })
+          .startOf(unit, opts)
+          .minus(1)
+      : this;
+  }
+
+  // OUTPUT
+
+  /**
+   * Returns a string representation of this DateTime formatted according to the specified format string.
+   * **You may not want this.** See {@link DateTime#toLocaleString} for a more flexible formatting tool. For a table of tokens and their interpretations, see [here](https://moment.github.io/luxon/#/formatting?id=table-of-tokens).
+   * Defaults to en-US if no locale has been specified, regardless of the system's locale.
+   * @param {string} fmt - the format string
+   * @param {Object} opts - opts to override the configuration options on this DateTime
+   * @example DateTime.now().toFormat('yyyy LLL dd') //=> '2017 Apr 22'
+   * @example DateTime.now().setLocale('fr').toFormat('yyyy LLL dd') //=> '2017 avr. 22'
+   * @example DateTime.now().toFormat('yyyy LLL dd', { locale: "fr" }) //=> '2017 avr. 22'
+   * @example DateTime.now().toFormat("HH 'hours and' mm 'minutes'") //=> '20 hours and 55 minutes'
+   * @return {string}
+   */
+  toFormat(fmt, opts = {}) {
+    return this.isValid
+      ? Formatter.create(this.loc.redefaultToEN(opts)).formatDateTimeFromString(this, fmt)
+      : INVALID;
+  }
+
+  /**
+   * Returns a localized string representing this date. Accepts the same options as the Intl.DateTimeFormat constructor and any presets defined by Luxon, such as `DateTime.DATE_FULL` or `DateTime.TIME_SIMPLE`.
+   * The exact behavior of this method is browser-specific, but in general it will return an appropriate representation
+   * of the DateTime in the assigned locale.
+   * Defaults to the system's locale if no locale has been specified
+   * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DateTimeFormat
+   * @param formatOpts {Object} - Intl.DateTimeFormat constructor options and configuration options
+   * @param {Object} opts - opts to override the configuration options on this DateTime
+   * @example DateTime.now().toLocaleString(); //=> 4/20/2017
+   * @example DateTime.now().setLocale('en-gb').toLocaleString(); //=> '20/04/2017'
+   * @example DateTime.now().toLocaleString(DateTime.DATE_FULL); //=> 'April 20, 2017'
+   * @example DateTime.now().toLocaleString(DateTime.DATE_FULL, { locale: 'fr' }); //=> '28 août 2022'
+   * @example DateTime.now().toLocaleString(DateTime.TIME_SIMPLE); //=> '11:32 AM'
+   * @example DateTime.now().toLocaleString(DateTime.DATETIME_SHORT); //=> '4/20/2017, 11:32 AM'
+   * @example DateTime.now().toLocaleString({ weekday: 'long', month: 'long', day: '2-digit' }); //=> 'Thursday, April 20'
+   * @example DateTime.now().toLocaleString({ weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }); //=> 'Thu, Apr 20, 11:27 AM'
+   * @example DateTime.now().toLocaleString({ hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); //=> '11:32'
+   * @return {string}
+   */
+  toLocaleString(formatOpts = DATE_SHORT, opts = {}) {
+    return this.isValid
+      ? Formatter.create(this.loc.clone(opts), formatOpts).formatDateTime(this)
+      : INVALID;
+  }
+
+  /**
+   * Returns an array of format "parts", meaning individual tokens along with metadata. This is allows callers to post-process individual sections of the formatted output.
+   * Defaults to the system's locale if no locale has been specified
+   * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DateTimeFormat/formatToParts
+   * @param opts {Object} - Intl.DateTimeFormat constructor options, same as `toLocaleString`.
+   * @example DateTime.now().toLocaleParts(); //=> [
+   *                                   //=>   { type: 'day', value: '25' },
+   *                                   //=>   { type: 'literal', value: '/' },
+   *                                   //=>   { type: 'month', value: '05' },
+   *                                   //=>   { type: 'literal', value: '/' },
+   *                                   //=>   { type: 'year', value: '1982' }
+   *                                   //=> ]
+   */
+  toLocaleParts(opts = {}) {
+    return this.isValid
+      ? Formatter.create(this.loc.clone(opts), opts).formatDateTimeParts(this)
+      : [];
+  }
+
+  /**
+   * Returns an ISO 8601-compliant string representation of this DateTime
+   * @param {Object} opts - options
+   * @param {boolean} [opts.suppressMilliseconds=false] - exclude milliseconds from the format if they're 0
+   * @param {boolean} [opts.suppressSeconds=false] - exclude seconds from the format if they're 0
+   * @param {boolean} [opts.includeOffset=true] - include the offset, such as 'Z' or '-04:00'
+   * @param {boolean} [opts.extendedZone=false] - add the time zone format extension
+   * @param {string} [opts.format='extended'] - choose between the basic and extended format
+   * @param {string} [opts.precision='milliseconds'] - truncate output to desired presicion: 'years', 'months', 'days', 'hours', 'minutes', 'seconds' or 'milliseconds'. When precision and suppressSeconds or suppressMilliseconds are used together, precision sets the maximum unit shown in the output, however seconds or milliseconds will still be suppressed if they are 0.
+   * @example DateTime.utc(1983, 5, 25).toISO() //=> '1982-05-25T00:00:00.000Z'
+   * @example DateTime.now().toISO() //=> '2017-04-22T20:47:05.335-04:00'
+   * @example DateTime.now().toISO({ includeOffset: false }) //=> '2017-04-22T20:47:05.335'
+   * @example DateTime.now().toISO({ format: 'basic' }) //=> '20170422T204705.335-0400'
+   * @example DateTime.now().toISO({ precision: 'day' }) //=> '2017-04-22Z'
+   * @example DateTime.now().toISO({ precision: 'minute' }) //=> '2017-04-22T20:47Z'
+   * @return {string|null}
+   */
+  toISO({
+    format = "extended",
+    suppressSeconds = false,
+    suppressMilliseconds = false,
+    includeOffset = true,
+    extendedZone = false,
+    precision = "milliseconds",
+  } = {}) {
+    if (!this.isValid) {
+      return null;
+    }
+
+    precision = normalizeUnit(precision);
+    const ext = format === "extended";
+
+    let c = toISODate(this, ext, precision);
+    if (orderedUnits.indexOf(precision) >= 3) c += "T";
+    c += toISOTime(
+      this,
+      ext,
+      suppressSeconds,
+      suppressMilliseconds,
+      includeOffset,
+      extendedZone,
+      precision
+    );
+    return c;
+  }
+
+  /**
+   * Returns an ISO 8601-compliant string representation of this DateTime's date component
+   * @param {Object} opts - options
+   * @param {string} [opts.format='extended'] - choose between the basic and extended format
+   * @param {string} [opts.precision='day'] - truncate output to desired precision: 'years', 'months', or 'days'.
+   * @example DateTime.utc(1982, 5, 25).toISODate() //=> '1982-05-25'
+   * @example DateTime.utc(1982, 5, 25).toISODate({ format: 'basic' }) //=> '19820525'
+   * @example DateTime.utc(1982, 5, 25).toISODate({ precision: 'month' }) //=> '1982-05'
+   * @return {string|null}
+   */
+  toISODate({ format = "extended", precision = "day" } = {}) {
+    if (!this.isValid) {
+      return null;
+    }
+    return toISODate(this, format === "extended", normalizeUnit(precision));
+  }
+
+  /**
+   * Returns an ISO 8601-compliant string representation of this DateTime's week date
+   * @example DateTime.utc(1982, 5, 25).toISOWeekDate() //=> '1982-W21-2'
+   * @return {string}
+   */
+  toISOWeekDate() {
+    return toTechFormat(this, "kkkk-'W'WW-c");
+  }
+
+  /**
+   * Returns an ISO 8601-compliant string representation of this DateTime's time component
+   * @param {Object} opts - options
+   * @param {boolean} [opts.suppressMilliseconds=false] - exclude milliseconds from the format if they're 0
+   * @param {boolean} [opts.suppressSeconds=false] - exclude seconds from the format if they're 0
+   * @param {boolean} [opts.includeOffset=true] - include the offset, such as 'Z' or '-04:00'
+   * @param {boolean} [opts.extendedZone=true] - add the time zone format extension
+   * @param {boolean} [opts.includePrefix=false] - include the `T` prefix
+   * @param {string} [opts.format='extended'] - choose between the basic and extended format
+   * @param {string} [opts.precision='milliseconds'] - truncate output to desired presicion: 'hours', 'minutes', 'seconds' or 'milliseconds'. When precision and suppressSeconds or suppressMilliseconds are used together, precision sets the maximum unit shown in the output, however seconds or milliseconds will still be suppressed if they are 0.
+   * @example DateTime.utc().set({ hour: 7, minute: 34 }).toISOTime() //=> '07:34:19.361Z'
+   * @example DateTime.utc().set({ hour: 7, minute: 34, seconds: 0, milliseconds: 0 }).toISOTime({ suppressSeconds: true }) //=> '07:34Z'
+   * @example DateTime.utc().set({ hour: 7, minute: 34 }).toISOTime({ format: 'basic' }) //=> '073419.361Z'
+   * @example DateTime.utc().set({ hour: 7, minute: 34 }).toISOTime({ includePrefix: true }) //=> 'T07:34:19.361Z'
+   * @example DateTime.utc().set({ hour: 7, minute: 34, second: 56 }).toISOTime({ precision: 'minute' }) //=> '07:34Z'
+   * @return {string}
+   */
+  toISOTime({
+    suppressMilliseconds = false,
+    suppressSeconds = false,
+    includeOffset = true,
+    includePrefix = false,
+    extendedZone = false,
+    format = "extended",
+    precision = "milliseconds",
+  } = {}) {
+    if (!this.isValid) {
+      return null;
+    }
+
+    precision = normalizeUnit(precision);
+    let c = includePrefix && orderedUnits.indexOf(precision) >= 3 ? "T" : "";
+    return (
+      c +
+      toISOTime(
+        this,
+        format === "extended",
+        suppressSeconds,
+        suppressMilliseconds,
+        includeOffset,
+        extendedZone,
+        precision
+      )
+    );
+  }
+
+  /**
+   * Returns an RFC 2822-compatible string representation of this DateTime
+   * @example DateTime.utc(2014, 7, 13).toRFC2822() //=> 'Sun, 13 Jul 2014 00:00:00 +0000'
+   * @example DateTime.local(2014, 7, 13).toRFC2822() //=> 'Sun, 13 Jul 2014 00:00:00 -0400'
+   * @return {string}
+   */
+  toRFC2822() {
+    return toTechFormat(this, "EEE, dd LLL yyyy HH:mm:ss ZZZ", false);
+  }
+
+  /**
+   * Returns a string representation of this DateTime appropriate for use in HTTP headers. The output is always expressed in GMT.
+   * Specifically, the string conforms to RFC 1123.
+   * @see https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.3.1
+   * @example DateTime.utc(2014, 7, 13).toHTTP() //=> 'Sun, 13 Jul 2014 00:00:00 GMT'
+   * @example DateTime.utc(2014, 7, 13, 19).toHTTP() //=> 'Sun, 13 Jul 2014 19:00:00 GMT'
+   * @return {string}
+   */
+  toHTTP() {
+    return toTechFormat(this.toUTC(), "EEE, dd LLL yyyy HH:mm:ss 'GMT'");
+  }
+
+  /**
+   * Returns a string representation of this DateTime appropriate for use in SQL Date
+   * @example DateTime.utc(2014, 7, 13).toSQLDate() //=> '2014-07-13'
+   * @return {string|null}
+   */
+  toSQLDate() {
+    if (!this.isValid) {
+      return null;
+    }
+    return toISODate(this, true);
+  }
+
+  /**
+   * Returns a string representation of this DateTime appropriate for use in SQL Time
+   * @param {Object} opts - options
+   * @param {boolean} [opts.includeZone=false] - include the zone, such as 'America/New_York'. Overrides includeOffset.
+   * @param {boolean} [opts.includeOffset=true] - include the offset, such as 'Z' or '-04:00'
+   * @param {boolean} [opts.includeOffsetSpace=true] - include the space between the time and the offset, such as '05:15:16.345 -04:00'
+   * @example DateTime.utc().toSQL() //=> '05:15:16.345'
+   * @example DateTime.now().toSQL() //=> '05:15:16.345 -04:00'
+   * @example DateTime.now().toSQL({ includeOffset: false }) //=> '05:15:16.345'
+   * @example DateTime.now().toSQL({ includeZone: false }) //=> '05:15:16.345 America/New_York'
+   * @return {string}
+   */
+  toSQLTime({ includeOffset = true, includeZone = false, includeOffsetSpace = true } = {}) {
+    let fmt = "HH:mm:ss.SSS";
+
+    if (includeZone || includeOffset) {
+      if (includeOffsetSpace) {
+        fmt += " ";
+      }
+      if (includeZone) {
+        fmt += "z";
+      } else if (includeOffset) {
+        fmt += "ZZ";
+      }
+    }
+
+    return toTechFormat(this, fmt, true);
+  }
+
+  /**
+   * Returns a string representation of this DateTime appropriate for use in SQL DateTime
+   * @param {Object} opts - options
+   * @param {boolean} [opts.includeZone=false] - include the zone, such as 'America/New_York'. Overrides includeOffset.
+   * @param {boolean} [opts.includeOffset=true] - include the offset, such as 'Z' or '-04:00'
+   * @param {boolean} [opts.includeOffsetSpace=true] - include the space between the time and the offset, such as '05:15:16.345 -04:00'
+   * @example DateTime.utc(2014, 7, 13).toSQL() //=> '2014-07-13 00:00:00.000 Z'
+   * @example DateTime.local(2014, 7, 13).toSQL() //=> '2014-07-13 00:00:00.000 -04:00'
+   * @example DateTime.local(2014, 7, 13).toSQL({ includeOffset: false }) //=> '2014-07-13 00:00:00.000'
+   * @example DateTime.local(2014, 7, 13).toSQL({ includeZone: true }) //=> '2014-07-13 00:00:00.000 America/New_York'
+   * @return {string}
+   */
+  toSQL(opts = {}) {
+    if (!this.isValid) {
+      return null;
+    }
+
+    return `${this.toSQLDate()} ${this.toSQLTime(opts)}`;
+  }
+
+  /**
+   * Returns a string representation of this DateTime appropriate for debugging
+   * @return {string}
+   */
+  toString() {
+    return this.isValid ? this.toISO() : INVALID;
+  }
+
+  /**
+   * Returns a string representation of this DateTime appropriate for the REPL.
+   * @return {string}
+   */
+  [Symbol.for("nodejs.util.inspect.custom")]() {
+    if (this.isValid) {
+      return `DateTime { ts: ${this.toISO()}, zone: ${this.zone.name}, locale: ${this.locale} }`;
+    } else {
+      return `DateTime { Invalid, reason: ${this.invalidReason} }`;
+    }
+  }
+
+  /**
+   * Returns the epoch milliseconds of this DateTime. Alias of {@link DateTime#toMillis}
+   * @return {number}
+   */
+  valueOf() {
+    return this.toMillis();
+  }
+
+  /**
+   * Returns the epoch milliseconds of this DateTime.
+   * @return {number}
+   */
+  toMillis() {
+    return this.isValid ? this.ts : NaN;
+  }
+
+  /**
+   * Returns the epoch seconds (including milliseconds in the fractional part) of this DateTime.
+   * @return {number}
+   */
+  toSeconds() {
+    return this.isValid ? this.ts / 1000 : NaN;
+  }
+
+  /**
+   * Returns the epoch seconds (as a whole number) of this DateTime.
+   * @return {number}
+   */
+  toUnixInteger() {
+    return this.isValid ? Math.floor(this.ts / 1000) : NaN;
+  }
+
+  /**
+   * Returns an ISO 8601 representation of this DateTime appropriate for use in JSON.
+   * @return {string}
+   */
+  toJSON() {
+    return this.toISO();
+  }
+
+  /**
+   * Returns a BSON serializable equivalent to this DateTime.
+   * @return {Date}
+   */
+  toBSON() {
+    return this.toJSDate();
+  }
+
+  /**
+   * Returns a JavaScript object with this DateTime's year, month, day, and so on.
+   * @param opts - options for generating the object
+   * @param {boolean} [opts.includeConfig=false] - include configuration attributes in the output
+   * @example DateTime.now().toObject() //=> { year: 2017, month: 4, day: 22, hour: 20, minute: 49, second: 42, millisecond: 268 }
+   * @return {Object}
+   */
+  toObject(opts = {}) {
+    if (!this.isValid) return {};
+
+    const base = { ...this.c };
+
+    if (opts.includeConfig) {
+      base.outputCalendar = this.outputCalendar;
+      base.numberingSystem = this.loc.numberingSystem;
+      base.locale = this.loc.locale;
+    }
+    return base;
+  }
+
+  /**
+   * Returns a JavaScript Date equivalent to this DateTime.
+   * @return {Date}
+   */
+  toJSDate() {
+    return new Date(this.isValid ? this.ts : NaN);
+  }
+
+  // COMPARE
+
+  /**
+   * Return the difference between two DateTimes as a Duration.
+   * @param {DateTime} otherDateTime - the DateTime to compare this one to
+   * @param {string|string[]} [unit=['milliseconds']] - the unit or array of units (such as 'hours' or 'days') to include in the duration.
+   * @param {Object} opts - options that affect the creation of the Duration
+   * @param {string} [opts.conversionAccuracy='casual'] - the conversion system to use
+   * @example
+   * var i1 = DateTime.fromISO('1982-05-25T09:45'),
+   *     i2 = DateTime.fromISO('1983-10-14T10:30');
+   * i2.diff(i1).toObject() //=> { milliseconds: 43807500000 }
+   * i2.diff(i1, 'hours').toObject() //=> { hours: 12168.75 }
+   * i2.diff(i1, ['months', 'days']).toObject() //=> { months: 16, days: 19.03125 }
+   * i2.diff(i1, ['months', 'days', 'hours']).toObject() //=> { months: 16, days: 19, hours: 0.75 }
+   * @return {Duration}
+   */
+  diff(otherDateTime, unit = "milliseconds", opts = {}) {
+    if (!this.isValid || !otherDateTime.isValid) {
+      return Duration.invalid("created by diffing an invalid DateTime");
+    }
+
+    const durOpts = { locale: this.locale, numberingSystem: this.numberingSystem, ...opts };
+
+    const units = maybeArray(unit).map(Duration.normalizeUnit),
+      otherIsLater = otherDateTime.valueOf() > this.valueOf(),
+      earlier = otherIsLater ? this : otherDateTime,
+      later = otherIsLater ? otherDateTime : this,
+      diffed = diff(earlier, later, units, durOpts);
+
+    return otherIsLater ? diffed.negate() : diffed;
+  }
+
+  /**
+   * Return the difference between this DateTime and right now.
+   * See {@link DateTime#diff}
+   * @param {string|string[]} [unit=['milliseconds']] - the unit or units units (such as 'hours' or 'days') to include in the duration
+   * @param {Object} opts - options that affect the creation of the Duration
+   * @param {string} [opts.conversionAccuracy='casual'] - the conversion system to use
+   * @return {Duration}
+   */
+  diffNow(unit = "milliseconds", opts = {}) {
+    return this.diff(DateTime.now(), unit, opts);
+  }
+
+  /**
+   * Return an Interval spanning between this DateTime and another DateTime
+   * @param {DateTime} otherDateTime - the other end point of the Interval
+   * @return {Interval|DateTime}
+   */
+  until(otherDateTime) {
+    return this.isValid ? Interval.fromDateTimes(this, otherDateTime) : this;
+  }
+
+  /**
+   * Return whether this DateTime is in the same unit of time as another DateTime.
+   * Higher-order units must also be identical for this function to return `true`.
+   * Note that time zones are **ignored** in this comparison, which compares the **local** calendar time. Use {@link DateTime#setZone} to convert one of the dates if needed.
+   * @param {DateTime} otherDateTime - the other DateTime
+   * @param {string} unit - the unit of time to check sameness on
+   * @param {Object} opts - options
+   * @param {boolean} [opts.useLocaleWeeks=false] - If true, use weeks based on the locale, i.e. use the locale-dependent start of the week; only the locale of this DateTime is used
+   * @example DateTime.now().hasSame(otherDT, 'day'); //~> true if otherDT is in the same current calendar day
+   * @return {boolean}
+   */
+  hasSame(otherDateTime, unit, opts) {
+    if (!this.isValid) return false;
+
+    const inputMs = otherDateTime.valueOf();
+    const adjustedToZone = this.setZone(otherDateTime.zone, { keepLocalTime: true });
+    return (
+      adjustedToZone.startOf(unit, opts) <= inputMs && inputMs <= adjustedToZone.endOf(unit, opts)
+    );
+  }
+
+  /**
+   * Equality check
+   * Two DateTimes are equal if and only if they represent the same millisecond, have the same zone and location, and are both valid.
+   * To compare just the millisecond values, use `+dt1 === +dt2`.
+   * @param {DateTime} other - the other DateTime
+   * @return {boolean}
+   */
+  equals(other) {
+    return (
+      this.isValid &&
+      other.isValid &&
+      this.valueOf() === other.valueOf() &&
+      this.zone.equals(other.zone) &&
+      this.loc.equals(other.loc)
+    );
+  }
+
+  /**
+   * Returns a string representation of a this time relative to now, such as "in two days". Can only internationalize if your
+   * platform supports Intl.RelativeTimeFormat. Rounds towards zero by default.
+   * @param {Object} options - options that affect the output
+   * @param {DateTime} [options.base=DateTime.now()] - the DateTime to use as the basis to which this time is compared. Defaults to now.
+   * @param {string} [options.style="long"] - the style of units, must be "long", "short", or "narrow"
+   * @param {string|string[]} options.unit - use a specific unit or array of units; if omitted, or an array, the method will pick the best unit. Use an array or one of "years", "quarters", "months", "weeks", "days", "hours", "minutes", or "seconds"
+   * @param {boolean} [options.round=true] - whether to round the numbers in the output.
+   * @param {string} [options.rounding="trunc"] - rounding method to use when rounding the numbers in the output. Can be "trunc" (toward zero), "expand" (away from zero), "round", "floor", or "ceil".
+   * @param {number} [options.padding=0] - padding in milliseconds. This allows you to round up the result if it fits inside the threshold. Don't use in combination with {round: false} because the decimal output will include the padding.
+   * @param {string} options.locale - override the locale of this DateTime
+   * @param {string} options.numberingSystem - override the numberingSystem of this DateTime. The Intl system may choose not to honor this
+   * @example DateTime.now().plus({ days: 1 }).toRelative() //=> "in 1 day"
+   * @example DateTime.now().setLocale("es").toRelative({ days: 1 }) //=> "dentro de 1 día"
+   * @example DateTime.now().plus({ days: 1 }).toRelative({ locale: "fr" }) //=> "dans 23 heures"
+   * @example DateTime.now().minus({ days: 2 }).toRelative() //=> "2 days ago"
+   * @example DateTime.now().minus({ days: 2 }).toRelative({ unit: "hours" }) //=> "48 hours ago"
+   * @example DateTime.now().minus({ hours: 36 }).toRelative({ round: false }) //=> "1.5 days ago"
+   */
+  toRelative(options = {}) {
+    if (!this.isValid) return null;
+    const base = options.base || DateTime.fromObject({}, { zone: this.zone }),
+      padding = options.padding ? (this < base ? -options.padding : options.padding) : 0;
+    let units = ["years", "months", "days", "hours", "minutes", "seconds"];
+    let unit = options.unit;
+    if (Array.isArray(options.unit)) {
+      units = options.unit;
+      unit = undefined;
+    }
+    return diffRelative(base, this.plus(padding), {
+      ...options,
+      numeric: "always",
+      units,
+      unit,
+    });
+  }
+
+  /**
+   * Returns a string representation of this date relative to today, such as "yesterday" or "next month".
+   * Only internationalizes on platforms that supports Intl.RelativeTimeFormat.
+   * @param {Object} options - options that affect the output
+   * @param {DateTime} [options.base=DateTime.now()] - the DateTime to use as the basis to which this time is compared. Defaults to now.
+   * @param {string} options.locale - override the locale of this DateTime
+   * @param {string} options.unit - use a specific unit; if omitted, the method will pick the unit. Use one of "years", "quarters", "months", "weeks", or "days"
+   * @param {string} options.numberingSystem - override the numberingSystem of this DateTime. The Intl system may choose not to honor this
+   * @example DateTime.now().plus({ days: 1 }).toRelativeCalendar() //=> "tomorrow"
+   * @example DateTime.now().setLocale("es").plus({ days: 1 }).toRelative() //=> ""mañana"
+   * @example DateTime.now().plus({ days: 1 }).toRelativeCalendar({ locale: "fr" }) //=> "demain"
+   * @example DateTime.now().minus({ days: 2 }).toRelativeCalendar() //=> "2 days ago"
+   */
+  toRelativeCalendar(options = {}) {
+    if (!this.isValid) return null;
+
+    return diffRelative(options.base || DateTime.fromObject({}, { zone: this.zone }), this, {
+      ...options,
+      numeric: "auto",
+      units: ["years", "months", "days"],
+      calendary: true,
+    });
+  }
+
+  /**
+   * Return the min of several date times
+   * @param {...DateTime} dateTimes - the DateTimes from which to choose the minimum
+   * @return {DateTime} the min DateTime, or undefined if called with no argument
+   */
+  static min(...dateTimes) {
+    if (!dateTimes.every(DateTime.isDateTime)) {
+      throw new InvalidArgumentError("min requires all arguments be DateTimes");
+    }
+    return bestBy(dateTimes, (i) => i.valueOf(), Math.min);
+  }
+
+  /**
+   * Return the max of several date times
+   * @param {...DateTime} dateTimes - the DateTimes from which to choose the maximum
+   * @return {DateTime} the max DateTime, or undefined if called with no argument
+   */
+  static max(...dateTimes) {
+    if (!dateTimes.every(DateTime.isDateTime)) {
+      throw new InvalidArgumentError("max requires all arguments be DateTimes");
+    }
+    return bestBy(dateTimes, (i) => i.valueOf(), Math.max);
+  }
+
+  // MISC
+
+  /**
+   * Explain how a string would be parsed by fromFormat()
+   * @param {string} text - the string to parse
+   * @param {string} fmt - the format the string is expected to be in (see description)
+   * @param {Object} options - options taken by fromFormat()
+   * @return {Object}
+   */
+  static fromFormatExplain(text, fmt, options = {}) {
+    const { locale = null, numberingSystem = null } = options,
+      localeToUse = Locale.fromOpts({
+        locale,
+        numberingSystem,
+        defaultToEN: true,
+      });
+    return explainFromTokens(localeToUse, text, fmt);
+  }
+
+  /**
+   * @deprecated use fromFormatExplain instead
+   */
+  static fromStringExplain(text, fmt, options = {}) {
+    return DateTime.fromFormatExplain(text, fmt, options);
+  }
+
+  /**
+   * Build a parser for `fmt` using the given locale. This parser can be passed
+   * to {@link DateTime.fromFormatParser} to a parse a date in this format. This
+   * can be used to optimize cases where many dates need to be parsed in a
+   * specific format.
+   *
+   * @param {String} fmt - the format the string is expected to be in (see
+   * description)
+   * @param {Object} options - options used to set locale and numberingSystem
+   * for parser
+   * @returns {TokenParser} - opaque object to be used
+   */
+  static buildFormatParser(fmt, options = {}) {
+    const { locale = null, numberingSystem = null } = options,
+      localeToUse = Locale.fromOpts({
+        locale,
+        numberingSystem,
+        defaultToEN: true,
+      });
+    return new TokenParser(localeToUse, fmt);
+  }
+
+  /**
+   * Create a DateTime from an input string and format parser.
+   *
+   * The format parser must have been created with the same locale as this call.
+   *
+   * @param {String} text - the string to parse
+   * @param {TokenParser} formatParser - parser from {@link DateTime.buildFormatParser}
+   * @param {Object} opts - options taken by fromFormat()
+   * @returns {DateTime}
+   */
+  static fromFormatParser(text, formatParser, opts = {}) {
+    if (isUndefined(text) || isUndefined(formatParser)) {
+      throw new InvalidArgumentError(
+        "fromFormatParser requires an input string and a format parser"
+      );
+    }
+    const { locale = null, numberingSystem = null } = opts,
+      localeToUse = Locale.fromOpts({
+        locale,
+        numberingSystem,
+        defaultToEN: true,
+      });
+
+    if (!localeToUse.equals(formatParser.locale)) {
+      throw new InvalidArgumentError(
+        `fromFormatParser called with a locale of ${localeToUse}, ` +
+          `but the format parser was created for ${formatParser.locale}`
+      );
+    }
+
+    const { result, zone, specificOffset, invalidReason } = formatParser.explainFromTokens(text);
+
+    if (invalidReason) {
+      return DateTime.invalid(invalidReason);
+    } else {
+      return parseDataToDateTime(
+        result,
+        zone,
+        opts,
+        `format ${formatParser.format}`,
+        text,
+        specificOffset
+      );
+    }
+  }
+
+  // FORMAT PRESETS
+
+  /**
+   * {@link DateTime#toLocaleString} format like 10/14/1983
+   * @type {Object}
+   */
+  static get DATE_SHORT() {
+    return DATE_SHORT;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like 'Oct 14, 1983'
+   * @type {Object}
+   */
+  static get DATE_MED() {
+    return DATE_MED;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like 'Fri, Oct 14, 1983'
+   * @type {Object}
+   */
+  static get DATE_MED_WITH_WEEKDAY() {
+    return DATE_MED_WITH_WEEKDAY;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like 'October 14, 1983'
+   * @type {Object}
+   */
+  static get DATE_FULL() {
+    return DATE_FULL;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like 'Tuesday, October 14, 1983'
+   * @type {Object}
+   */
+  static get DATE_HUGE() {
+    return DATE_HUGE;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like '09:30 AM'. Only 12-hour if the locale is.
+   * @type {Object}
+   */
+  static get TIME_SIMPLE() {
+    return TIME_SIMPLE;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like '09:30:23 AM'. Only 12-hour if the locale is.
+   * @type {Object}
+   */
+  static get TIME_WITH_SECONDS() {
+    return TIME_WITH_SECONDS;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like '09:30:23 AM EDT'. Only 12-hour if the locale is.
+   * @type {Object}
+   */
+  static get TIME_WITH_SHORT_OFFSET() {
+    return TIME_WITH_SHORT_OFFSET;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like '09:30:23 AM Eastern Daylight Time'. Only 12-hour if the locale is.
+   * @type {Object}
+   */
+  static get TIME_WITH_LONG_OFFSET() {
+    return TIME_WITH_LONG_OFFSET;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like '09:30', always 24-hour.
+   * @type {Object}
+   */
+  static get TIME_24_SIMPLE() {
+    return TIME_24_SIMPLE;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like '09:30:23', always 24-hour.
+   * @type {Object}
+   */
+  static get TIME_24_WITH_SECONDS() {
+    return TIME_24_WITH_SECONDS;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like '09:30:23 EDT', always 24-hour.
+   * @type {Object}
+   */
+  static get TIME_24_WITH_SHORT_OFFSET() {
+    return TIME_24_WITH_SHORT_OFFSET;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like '09:30:23 Eastern Daylight Time', always 24-hour.
+   * @type {Object}
+   */
+  static get TIME_24_WITH_LONG_OFFSET() {
+    return TIME_24_WITH_LONG_OFFSET;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like '10/14/1983, 9:30 AM'. Only 12-hour if the locale is.
+   * @type {Object}
+   */
+  static get DATETIME_SHORT() {
+    return DATETIME_SHORT;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like '10/14/1983, 9:30:33 AM'. Only 12-hour if the locale is.
+   * @type {Object}
+   */
+  static get DATETIME_SHORT_WITH_SECONDS() {
+    return DATETIME_SHORT_WITH_SECONDS;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like 'Oct 14, 1983, 9:30 AM'. Only 12-hour if the locale is.
+   * @type {Object}
+   */
+  static get DATETIME_MED() {
+    return DATETIME_MED;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like 'Oct 14, 1983, 9:30:33 AM'. Only 12-hour if the locale is.
+   * @type {Object}
+   */
+  static get DATETIME_MED_WITH_SECONDS() {
+    return DATETIME_MED_WITH_SECONDS;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like 'Fri, 14 Oct 1983, 9:30 AM'. Only 12-hour if the locale is.
+   * @type {Object}
+   */
+  static get DATETIME_MED_WITH_WEEKDAY() {
+    return DATETIME_MED_WITH_WEEKDAY;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like 'October 14, 1983, 9:30 AM EDT'. Only 12-hour if the locale is.
+   * @type {Object}
+   */
+  static get DATETIME_FULL() {
+    return DATETIME_FULL;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like 'October 14, 1983, 9:30:33 AM EDT'. Only 12-hour if the locale is.
+   * @type {Object}
+   */
+  static get DATETIME_FULL_WITH_SECONDS() {
+    return DATETIME_FULL_WITH_SECONDS;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like 'Friday, October 14, 1983, 9:30 AM Eastern Daylight Time'. Only 12-hour if the locale is.
+   * @type {Object}
+   */
+  static get DATETIME_HUGE() {
+    return DATETIME_HUGE;
+  }
+
+  /**
+   * {@link DateTime#toLocaleString} format like 'Friday, October 14, 1983, 9:30:33 AM Eastern Daylight Time'. Only 12-hour if the locale is.
+   * @type {Object}
+   */
+  static get DATETIME_HUGE_WITH_SECONDS() {
+    return DATETIME_HUGE_WITH_SECONDS;
+  }
+}
+
+/**
+ * @private
+ */
+function friendlyDateTime(dateTimeish) {
+  if (DateTime.isDateTime(dateTimeish)) {
+    return dateTimeish;
+  } else if (dateTimeish && dateTimeish.valueOf && isNumber(dateTimeish.valueOf())) {
+    return DateTime.fromJSDate(dateTimeish);
+  } else if (dateTimeish && typeof dateTimeish === "object") {
+    return DateTime.fromObject(dateTimeish);
+  } else {
+    throw new InvalidArgumentError(
+      `Unknown datetime argument: ${dateTimeish}, of type ${typeof dateTimeish}`
+    );
+  }
+}
+
+const variables = i$3 `
+  :host {
+    /* MD3 Color System */
+    --primary-gradient: linear-gradient(135deg, #4CAF50, #45a049);
+    --secondary-gradient: linear-gradient(135deg, #2196F3, #1976D2);
+    --danger-gradient: linear-gradient(135deg, #f44336, #d32f2f);
+    
+    /* MD3 Elevation Levels */
+    --md3-elevation-level0: none;
+    --md3-elevation-level1: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
+    --md3-elevation-level2: 0 1px 2px rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15);
+    --md3-elevation-level3: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3);
+    --md3-elevation-level4: 0 6px 10px 4px rgba(0,0,0,0.15), 0 2px 3px rgba(0,0,0,0.3);
+    --md3-elevation-level5: 0 8px 12px 6px rgba(0,0,0,0.15), 0 4px 4px rgba(0,0,0,0.3);
+    
+    --surface-elevation: var(--md3-elevation-level1);
+    --surface-elevation-hover: var(--md3-elevation-level2);
+    
+    /* Spacing (MD3 spacing system) */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    
+    /* Border Radius (MD3 shape system) */
+    --border-radius-xs: 4px;
+    --border-radius-sm: 8px;
+    --border-radius-md: 12px;
+    --border-radius-lg: 16px;
+    --border-radius-xl: 28px;
+    --border-radius: 12px; /* Default */
+    
+    /* MD3 Typography Scale */
+    --font-size-xs: 0.6875rem;   /* 11px */
+    --font-size-sm: 0.875rem;    /* 14px - Body Small */
+    --font-size-md: 1rem;        /* 16px - Body Medium */
+    --font-size-lg: 1.25rem;     /* 20px - Title Large */
+    --font-size-xl: 1.5rem;      /* 24px - Headline Small */
+
+    /* Font Weights */
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+    
+    /* MD3 Motion Tokens */
+    --md3-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+    --md3-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --md3-motion-duration-short1: 50ms;
+    --md3-motion-duration-short2: 100ms;
+    --md3-motion-duration-short3: 150ms;
+    --md3-motion-duration-short4: 200ms;
+    --md3-motion-duration-medium1: 250ms;
+    --md3-motion-duration-medium2: 300ms;
+    --md3-motion-duration-long1: 400ms;
+    --md3-motion-duration-long2: 500ms;
+
+    /* Growspace Theme Colors */
+    --growspace-card-bg: var(--card-background-color, #1e1e1e);
+    --growspace-card-text: var(--primary-text-color, #fff);
+    --growspace-card-accent: var(--primary-color, #4caf50);
+    --growspace-empty-bg: rgba(255, 255, 255, 0.05);
+    --growspace-empty-bg-hover: rgba(255, 255, 255, 0.1);
+    --plant-border-color-default: #2196f3;
+
+    /* Card Shadows (using MD3 elevation) */
+    --card-shadow: var(--md3-elevation-level1);
+    --card-shadow-hover: var(--md3-elevation-level2);
+
+    /* Transitions (using MD3 motion) */
+    --transition: all var(--md3-motion-duration-short4) var(--md3-motion-easing-standard);
+    --transition-fast: all var(--md3-motion-duration-short2) var(--md3-motion-easing-standard);
+    --transition-medium: all var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);
+
+    /* Divider */
+    --divider-color: rgba(255, 255, 255, 0.12);
+
+    /* Plant Stage Colors */
+    --stage-veg: #4caf50;
+    --stage-flower: #ff9800;
+    --stage-dry: #9c27b0;
+    --stage-cure: #2196f3;
+
+    /* Error/Warning Colors */
+    --error-color: #f44336;
+    --error-bg: rgba(244, 67, 54, 0.1);
+    --error-border: rgba(244, 67, 54, 0.3);
+    
+    /* Strain Dialog */
+    --strain-dialog-bg: var(--ha-card-background, #1e1e1e);
+    --strain-dialog-color: var(--primary-text-color, #fff);
+    --strain-border-color: #4caf50;
+    --strain-input-bg: #2a2a2a;
+    --strain-input-border: #3a3a3a;
+    
+    /* Light Color */
+    --primary-light-color: #FFEB3B;
+  }
+`;
+
+let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
+    constructor() {
+        super(...arguments);
+        this._addPlantDialog = null;
+        this._defaultApplied = false;
+        this._plantOverviewDialog = null;
+        this._optimisticDeletedPlantIds = new Set();
+        this._strainLibraryDialog = null;
+        this._configDialog = null;
+        this._growMasterDialog = null;
+        this._strainRecommendationDialog = null;
+        this._irrigationDialog = null;
+        this.selectedDevice = null;
+        this._draggedPlant = null;
+        this._isCompactView = false;
+        this._strainLibrary = [];
+        this._historyData = null;
+        this._activeEnvGraphs = new Set();
+        this._graphRanges = {};
+        this._tooltip = null;
+        this._menuOpen = false;
+        this._isEditMode = false;
+        this._selectedPlants = new Set();
+        this._focusedPlantIndex = -1;
+        this._handleDocumentClick = (e) => {
+            if (this._menuOpen) {
+                const path = e.composedPath();
+                const menuContainer = this.shadowRoot?.querySelector('.menu-container');
+                if (menuContainer && !path.includes(menuContainer)) {
+                    this._menuOpen = false;
+                }
+            }
+        };
+        this._handleTakeClone = (motherPlant) => {
+            const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
+            // Call your Home Assistant service to take a clone
+            this.hass.callService('growspace_manager', 'take_clone', {
+                mother_plant_id: plantId,
+                // The service will automatically find an available position in the clone growspace
+            }).then(() => {
+                console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
+            }).catch((error) => {
+                console.error(`Failed to take clone: ${error.message}`);
+            });
+        };
+        this.clonePlant = (motherPlant, numClones) => {
+            const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
+            const num_clones = numClones;
+            // Call your Home Assistant service to take a clone
+            this.hass.callService('growspace_manager', 'take_clone', {
+                mother_plant_id: plantId,
+                num_clones: num_clones,
+                // The service will automatically find an available position in the clone growspace
+            }).then(() => {
+                console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
+            }).catch((error) => {
+                console.error(`Failed to take clone: ${error.message}`);
+            });
+        };
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        document.addEventListener('click', this._handleDocumentClick);
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        document.removeEventListener('click', this._handleDocumentClick);
+    }
+    firstUpdated() {
+        this.dataService = new DataService(this.hass);
+        this.initializeSelectedDevice();
+        this._fetchHistory();
+        this._fetchStrainLibrary();
+    }
+    updated(changedProps) {
+        super.updated(changedProps);
+        if (changedProps.has('selectedDevice')) {
+            const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
+            this._fetchHistory(range);
+        }
+    }
+    async _fetchHistory(range = '24h') {
+        if (!this.hass || !this.selectedDevice)
+            return;
+        const devices = this.dataService.getGrowspaceDevices();
+        const device = devices.find(d => d.device_id === this.selectedDevice);
+        if (!device)
+            return;
+        let slug = device.name.toLowerCase().replace(/\s+/g, '_');
+        if (device.overview_entity_id) {
+            slug = device.overview_entity_id.replace('sensor.', '');
+        }
+        let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+        // Specific logic for 'cure' and 'dry' growspaces
+        if (slug === 'cure') {
+            envEntityId = `binary_sensor.cure_optimal_curing`;
+        }
+        else if (slug === 'dry') {
+            envEntityId = `binary_sensor.dry_optimal_drying`;
+        }
+        // Get history based on range
+        const now = new Date();
+        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        switch (range) {
+            case '1h':
+                startTime = new Date(now.getTime() - 60 * 60 * 1000);
+                break;
+            case '6h':
+                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+                break;
+            case '7d':
+                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+        }
+        try {
+            const history = await this.dataService.getHistory(envEntityId, startTime, now);
+            this._historyData = history;
+        }
+        catch (e) {
+            console.error("Failed to fetch history", e);
+        }
+    }
+    async _fetchStrainLibrary() {
+        if (!this.hass)
+            return;
+        // 1. Try to load from cache first for instant render
+        const cachedLibrary = localStorage.getItem('growspace_strain_library');
+        if (cachedLibrary) {
+            try {
+                this._strainLibrary = JSON.parse(cachedLibrary);
+                this.requestUpdate();
+            }
+            catch (e) {
+                console.warn('Failed to parse cached strain library', e);
+            }
+        }
+        try {
+            const serviceResponse = await this.hass.connection.sendMessagePromise({
+                type: 'call_service',
+                domain: 'growspace_manager',
+                service: 'get_strain_library',
+                service_data: {},
+                return_response: true,
+            });
+            const rawStrains = serviceResponse?.response || {};
+            const currentStrains = [];
+            Object.entries(rawStrains).forEach(([strainName, data]) => {
+                const meta = data.meta || {};
+                const phenotypes = data.phenotypes || {};
+                Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
+                    currentStrains.push({
+                        strain: strainName,
+                        phenotype: phenoName,
+                        key: `${strainName}|${phenoName}`,
+                        breeder: meta.breeder,
+                        type: meta.type,
+                        lineage: meta.lineage,
+                        sex: meta.sex,
+                        sativa_percentage: meta.sativa_percentage,
+                        indica_percentage: meta.indica_percentage,
+                        description: phenoData.description,
+                        image: phenoData.image_path,
+                        image_crop_meta: phenoData.image_crop_meta,
+                        flowering_days_min: phenoData.flower_days_min,
+                        flowering_days_max: phenoData.flower_days_max
+                    });
+                });
+            });
+            this._strainLibrary = currentStrains;
+            // Update cache
+            localStorage.setItem('growspace_strain_library', JSON.stringify(currentStrains));
+        }
+        catch (e) {
+            console.error('Failed to fetch strain library for grid:', e);
+        }
+    }
+    initializeSelectedDevice() {
+        const devices = this.dataService.getGrowspaceDevices();
+        if (!devices.length || this.selectedDevice)
+            return;
+        // Try to apply default from config
+        if (this._config?.default_growspace) {
+            const defaultDevice = devices.find(d => d.device_id === this._config.default_growspace ||
+                d.name === this._config.default_growspace);
+            if (defaultDevice) {
+                this.selectedDevice = defaultDevice.device_id;
+                return;
+            }
+        }
+        // Fallback to first device
+        this.selectedDevice = devices[0].device_id;
+    }
+    static async getConfigElement() {
+        // path must match where the editor JS is served relative to the card script
+        await Promise.resolve().then(function () { return growspaceManagerCardEditor; });
+        const el = document.createElement("growspace-manager-card-editor");
+        return el;
+    }
+    static getStubConfig() {
+        return {
+            default_growspace: "4x4",
+            compact: true
+        };
+    }
+    setConfig(config) {
+        if (!config)
+            throw new Error("Invalid configuration");
+        this._config = config;
+        if (this._config.compact !== undefined) {
+            this._isCompactView = this._config.compact;
+        }
+    }
+    getCardSize() { return 4; }
+    // Event handlers
+    _handleDeviceChange(e) {
+        const target = e.target;
+        this.selectedDevice = target.value;
+    }
+    _togglePlantSelection(plant) {
+        const plantId = plant.attributes.plant_id;
+        if (!plantId)
+            return;
+        const newSet = new Set(this._selectedPlants);
+        if (newSet.has(plantId)) {
+            newSet.delete(plantId);
+        }
+        else {
+            newSet.add(plantId);
+        }
+        this._selectedPlants = newSet;
+        this.requestUpdate();
+    }
+    // Bulk Edit Helper Methods
+    _selectAllPlants() {
+        const devices = this.dataService.getGrowspaceDevices();
+        const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
+        if (!selectedDeviceData)
+            return;
+        const allPlantIds = new Set();
+        selectedDeviceData.plants?.forEach(plant => {
+            const plantId = plant.attributes.plant_id;
+            if (plantId && !this._optimisticDeletedPlantIds.has(plantId)) {
+                allPlantIds.add(plantId);
+            }
+        });
+        this._selectedPlants = allPlantIds;
+        this.requestUpdate();
+    }
+    _deselectAllPlants() {
+        this._selectedPlants = new Set();
+        this.requestUpdate();
+    }
+    _exitEditMode() {
+        this._isEditMode = false;
+        this._selectedPlants = new Set();
+        this.requestUpdate();
+    }
+    _toggleEditMode() {
+        this._isEditMode = !this._isEditMode;
+        if (!this._isEditMode) {
+            this._selectedPlants = new Set();
+        }
+        this._menuOpen = false;
+        this.requestUpdate();
+    }
+    _handleKeyboardNav(e) {
+        if (!this.selectedDevice)
+            return;
+        const devices = this.dataService.getGrowspaceDevices();
+        const device = devices.find(d => d.device_id === this.selectedDevice);
+        if (!device)
+            return;
+        const plants = device.plants.filter(p => !this._optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
+        if (plants.length === 0)
+            return;
+        if (e.key === 'ArrowRight') {
+            this._focusedPlantIndex = (this._focusedPlantIndex + 1) % plants.length;
+            this._focusPlantByIndex(this._focusedPlantIndex);
+        }
+        else if (e.key === 'ArrowLeft') {
+            this._focusedPlantIndex = (this._focusedPlantIndex - 1 + plants.length) % plants.length;
+            this._focusPlantByIndex(this._focusedPlantIndex);
+        }
+        else if (e.key === 'Enter' || e.key === ' ') {
+            if (this._focusedPlantIndex >= 0 && this._focusedPlantIndex < plants.length) {
+                this._handlePlantClick(plants[this._focusedPlantIndex]);
+            }
+        }
+    }
+    _focusPlantByIndex(index) {
+        const grid = this.shadowRoot?.querySelector('.growspace-grid');
+        if (grid) {
+            const plantCards = grid.querySelectorAll('.plant-card-rich');
+            if (plantCards[index]) {
+                plantCards[index].focus();
+            }
+        }
+    }
+    _announceToScreenReader(message) {
+        const announcer = this.shadowRoot?.querySelector('.sr-only-announcer');
+        if (announcer) {
+            announcer.textContent = message;
+        }
+    }
+    _handlePlantClick(plant) {
+        // If in edit mode and we have selections, open dialog for ALL selected plants
+        if (this._isEditMode && this._selectedPlants.size > 0) {
+            const plantId = plant.attributes.plant_id;
+            // If clicked plant is NOT selected, add it to selection then open.
+            if (plantId && !this._selectedPlants.has(plantId)) {
+                this._togglePlantSelection(plant);
+            }
+            // Pass the set of IDs to the dialog
+            this._openPlantOverviewDialog(plant, Array.from(this._selectedPlants));
+        }
+        else {
+            // Normal behavior
+            this._openPlantOverviewDialog(plant);
+        }
+    }
+    _openPlantOverviewDialog(plant, selectedIds) {
+        this._plantOverviewDialog = {
+            open: true,
+            plant,
+            editedAttributes: { ...plant.attributes },
+            activeTab: 'dashboard',
+            selectedPlantIds: selectedIds
+        };
+    }
+    getHaDateTimeString() {
+        // hass.config.time_zone is your Home Assistant timezone
+        const tz = this.hass.config.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+        return DateTime.now()
+            .setZone(tz) // Use HA timezone
+            .toFormat("yyyy-LL-dd'T'HH:mm"); // Format for datetime-local input
+    }
+    _openAddPlantDialog(row, col) {
+        const strainLibrary = this.dataService.getStrainLibrary();
+        // If library has entries, default to the first one
+        const defaultStrain = strainLibrary.length > 0 ? strainLibrary[0].strain : '';
+        const defaultPhenotype = strainLibrary.length > 0 ? strainLibrary[0].phenotype : '';
+        this._addPlantDialog = {
+            open: true,
+            row,
+            col,
+            strain: defaultStrain,
+            phenotype: defaultPhenotype,
+            veg_start: '',
+            flower_start: '',
+            seedling_start: '',
+            mother_start: '',
+            clone_start: '',
+            dry_start: '',
+            cure_start: '',
+        };
+    }
+    async _confirmAddPlant() {
+        if (!this._addPlantDialog || !this.selectedDevice)
+            return;
+        if (!this._addPlantDialog.strain) {
+            alert('Please enter a strain!');
+            return;
+        }
+        const { row, col, strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start } = this._addPlantDialog;
+        try {
+            const payload = {
+                growspace_id: this.selectedDevice,
+                row: row + 1,
+                col: col + 1,
+                strain,
+                phenotype,
+            };
+            const dateFields = ['veg_start', 'flower_start', 'seedling_start', 'mother_start', 'clone_start', 'dry_start', 'cure_start'];
+            dateFields.forEach(field => {
+                const value = this._addPlantDialog[field];
+                if (value) {
+                    // If value is just a date (YYYY-MM-DD), append current time
+                    if (value.length === 10 && !value.includes('T')) {
+                        const now = new Date();
+                        const timePart = now.toTimeString().split(' ')[0]; // HH:MM:SS
+                        payload[field] = `${value}T${timePart}`;
+                    }
+                    else {
+                        // If it already has time or is in another format, use it as is (or format if needed)
+                        // Previously we stripped time, but now we want to keep it if present
+                        payload[field] = value;
+                    }
+                }
+            });
+            console.log("Adding plant to growspace:", this.selectedDevice, payload);
+            console.log("Adding plant:", payload);
+            await this.dataService.addPlant(payload);
+            this._addPlantDialog = null;
+        }
+        catch (err) {
+            console.error('Error adding plant:', err);
+        }
+    }
+    async _updatePlant() {
+        if (!this._plantOverviewDialog)
+            return;
+        const { plant, editedAttributes, selectedPlantIds } = this._plantOverviewDialog;
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        // Determine target IDs: either the single plant or the bulk selection
+        const targetIds = (selectedPlantIds && selectedPlantIds.length > 0) ? selectedPlantIds : [plantId];
+        const isBulkEdit = targetIds.length > 1;
+        const payloadTemplate = {};
+        const dateFields = ['seedling_start', 'mother_start', 'clone_start', 'veg_start', 'flower_start', 'dry_start', 'cure_start'];
+        // SAFEGUARD: For bulk edits, ONLY process date fields
+        // For single edits, process all fields as before
+        const fieldsToProcess = isBulkEdit
+            ? dateFields
+            : ['strain', 'phenotype', 'row', 'col', ...dateFields];
+        fieldsToProcess.forEach(field => {
+            if (editedAttributes[field] !== undefined) {
+                if (dateFields.includes(field)) {
+                    const val = String(editedAttributes[field] || '');
+                    if (!val || val === 'null' || val === 'undefined') {
+                        // Explicitly clear the date if it's empty
+                        payloadTemplate[field] = null;
+                    }
+                    else {
+                        const formattedDate = PlantUtils.formatDateForBackend(val);
+                        if (formattedDate) {
+                            payloadTemplate[field] = formattedDate;
+                        }
+                    }
+                }
+                else {
+                    // Non-date fields (strain, phenotype, row, col) - only for single edits
+                    if (editedAttributes[field] !== null) {
+                        payloadTemplate[field] = editedAttributes[field];
+                    }
+                }
+            }
+        });
+        try {
+            // Execute updates for all target plants
+            const updatePromises = targetIds.map(id => {
+                const payload = { ...payloadTemplate, plant_id: id };
+                // Don't update row/col for bulk edits as it would stack them
+                if (isBulkEdit) {
+                    delete payload.row;
+                    delete payload.col;
+                }
+                return this.dataService.updatePlant(payload);
+            });
+            await Promise.all(updatePromises);
+            this._plantOverviewDialog = null;
+            // Clear selection after successful bulk update
+            if (this._isEditMode) {
+                this._selectedPlants = new Set();
+                this._isEditMode = false; // Optional: exit edit mode
+            }
+        }
+        catch (err) {
+            console.error("Error updating plant(s):", err);
+        }
+    }
+    async _handleDeletePlant(plantId) {
+        if (!confirm("Are you sure you want to delete this plant?"))
+            return;
+        // Optimistic Update: Immediately track as deleted
+        this._optimisticDeletedPlantIds.add(plantId);
+        this.requestUpdate();
+        // Close dialog immediately
+        this._plantOverviewDialog = null;
+        try {
+            await this.dataService.removePlant(plantId);
+        }
+        catch (err) {
+            console.error("Error deleting plant:", err);
+            // Ideally revert the optimistic update here, but for now just alert
+            alert("Failed to delete plant. It may reappear on refresh.");
+            this.updateGrid(); // Force refresh to sync with backend
+        }
+    }
+    async _movePlantToNextStage(_) {
+        if (!this._plantOverviewDialog?.plant) {
+            console.error("No plant found in overview dialog");
+            return;
+        }
+        const plant = this._plantOverviewDialog.plant;
+        const stage = plant.attributes?.stage;
+        let targetGrowspace = "";
+        const movableStages = new Set(["mother", "flower", "dry", "cure"]);
+        if (!stage || !movableStages.has(stage)) {
+            alert("Plant must be in mother or flower or dry or cure stage to move. stage is " + stage);
+            return;
+        }
+        // Decide the target growspace
+        if (stage === "flower") {
+            targetGrowspace = "dry"; // move to curing
+        }
+        else if (stage === "dry") {
+            targetGrowspace = "cure"; // final harvested
+        }
+        else if (stage === "mother") {
+            targetGrowspace = "clone"; // move to curing
+        }
+        else {
+            console.error("Unknown stage, cannot move plant", targetGrowspace);
+            targetGrowspace = "error"; // fallback to dry
+        }
+        try {
+            const plantId = plant.attributes?.plant_id || plant.entity_id.replace("sensor.", "");
+            // Call your coordinator/service
+            await this.dataService.harvestPlant(plantId, targetGrowspace);
+            // Close dialog
+            this._plantOverviewDialog = null;
+        }
+        catch (err) {
+            console.error("Error moving plant to next stage:", err);
+        }
+    }
+    async _harvestPlant(plantEntity) {
+        await this._movePlantToNextStage(plantEntity);
+    }
+    async _finishDryingPlant(plantEntity) {
+        await this._movePlantToNextStage(plantEntity);
+    }
+    // Strain library methods
+    async _openStrainLibraryDialog() {
+        // Update the type hint to reflect the object structure you expect
+        let serviceResponse;
+        try {
+            serviceResponse = await this.hass.connection.sendMessagePromise({
+                type: 'call_service',
+                domain: 'growspace_manager',
+                service: 'get_strain_library',
+                service_data: {},
+                return_response: true,
+            });
+        }
+        catch (e) {
+            console.error('Failed to fetch strain library:', e);
+        }
+        const rawStrains = serviceResponse?.response || {};
+        const currentStrains = [];
+        Object.entries(rawStrains).forEach(([strainName, data]) => {
+            const meta = data.meta || {};
+            const phenotypes = data.phenotypes || {};
+            Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
+                currentStrains.push({
+                    strain: strainName,
+                    phenotype: phenoName,
+                    key: `${strainName}|${phenoName}`, // Unique key for list rendering
+                    breeder: meta.breeder,
+                    type: meta.type,
+                    lineage: meta.lineage,
+                    sex: meta.sex,
+                    sativa_percentage: meta.sativa_percentage,
+                    indica_percentage: meta.indica_percentage,
+                    description: phenoData.description,
+                    image: phenoData.image_path, // Note: backend sends image_path
+                    image_crop_meta: phenoData.image_crop_meta,
+                    flowering_days_min: phenoData.flower_days_min,
+                    flowering_days_max: phenoData.flower_days_max
+                });
+            });
+        });
+        this._strainLibraryDialog = {
+            open: true,
+            view: 'browse',
+            strains: currentStrains,
+            searchQuery: '',
+            editorState: this._createEmptyEditorState()
+        };
+    }
+    _createEmptyEditorState() {
+        return {
+            strain: '',
+            phenotype: '',
+            breeder: '',
+            type: '',
+            flowering_min: '',
+            flowering_max: '',
+            lineage: '',
+            sex: '',
+            description: '',
+            image: '',
+            image_crop_meta: undefined
+        };
+    }
+    _switchStrainView(view, strainToEdit) {
+        if (!this._strainLibraryDialog)
+            return;
+        this._strainLibraryDialog.view = view;
+        this._strainLibraryDialog.isCropping = false; // Reset cropping state
+        if (view === 'editor') {
+            if (strainToEdit) {
+                // Populate editor
+                this._strainLibraryDialog.editorState = {
+                    strain: strainToEdit.strain,
+                    phenotype: strainToEdit.phenotype || '',
+                    breeder: strainToEdit.breeder || '',
+                    type: strainToEdit.type || '',
+                    flowering_min: strainToEdit.flowering_days_min?.toString() || '',
+                    flowering_max: strainToEdit.flowering_days_max?.toString() || '',
+                    lineage: strainToEdit.lineage || '',
+                    sex: strainToEdit.sex || '',
+                    description: strainToEdit.description || '',
+                    image: strainToEdit.image || '',
+                    image_crop_meta: strainToEdit.image_crop_meta,
+                    sativa_percentage: strainToEdit.sativa_percentage,
+                    indica_percentage: strainToEdit.indica_percentage
+                };
+            }
+            else {
+                // Reset editor
+                this._strainLibraryDialog.editorState = this._createEmptyEditorState();
+            }
+        }
+        this.requestUpdate();
+    }
+    //Irrigation dialog methods
+    _openIrrigationDialog() {
+        const devices = this.dataService.getGrowspaceDevices();
+        const device = devices.find(d => d.device_id === this.selectedDevice);
+        // 1. Check if device and its overview sensor entity exist
+        if (!device || !device.overview_entity_id)
+            return;
+        const overviewSensor = this.hass.states[device.overview_entity_id];
+        const attrs = overviewSensor?.attributes || {};
+        // 2. Retrieve all necessary attributes (including the list and other settings)
+        // These attributes are passed to DialogRenderer.parseScheduleString, which handles 
+        // the conversion from a stringified list (if needed) to an IrrigationTime[] array.
+        const irrigationTimes = attrs.irrigation_times || [];
+        const drainTimes = attrs.drain_times || [];
+        // Also retrieve pump entities and durations (with defaults)
+        const irrigationPump = attrs.irrigation_pump_entity || '';
+        const drainPump = attrs.drain_pump_entity || '';
+        const iDuration = attrs.irrigation_duration || 3;
+        const dDuration = attrs.drain_duration || 3;
+        // 3. Initialize the dialog state with the retrieved sensor data
+        this._irrigationDialog = {
+            open: true,
+            growspace_id: device.device_id,
+            growspace_name: device.name,
+            irrigation_pump_entity: irrigationPump,
+            drain_pump_entity: drainPump,
+            irrigation_duration: iDuration,
+            drain_duration: dDuration,
+            irrigation_times: irrigationTimes, // <--- FIX: Now reads sensor attribute
+            drain_times: drainTimes // <--- FIX: Now reads sensor attribute
+        };
+    }
+    async _saveIrrigationPumpSettings() {
+        if (!this._irrigationDialog)
+            return;
+        try {
+            await this.hass.callService('growspace_manager', 'set_irrigation_settings', {
+                growspace_id: this._irrigationDialog.growspace_id,
+                irrigation_pump_entity: this._irrigationDialog.irrigation_pump_entity,
+                drain_pump_entity: this._irrigationDialog.drain_pump_entity,
+                irrigation_duration: this._irrigationDialog.irrigation_duration,
+                drain_duration: this._irrigationDialog.drain_duration
+            });
+            console.log('Irrigation pump settings saved');
+        }
+        catch (err) {
+            console.error('Error saving irrigation pump settings:', err);
+        }
+    }
+    async _addIrrigationTime(time, duration) {
+        if (!this._irrigationDialog)
+            return;
+        try {
+            await this.hass.callService('growspace_manager', 'add_irrigation_time', {
+                growspace_id: this._irrigationDialog.growspace_id,
+                time: time,
+                ...(duration !== undefined && { duration })
+            });
+            // Add to local state
+            this._irrigationDialog.irrigation_times.push({ time, duration });
+            this._irrigationDialog.adding_irrigation_time = undefined;
+            this.requestUpdate();
+            console.log('Irrigation time added:', time);
+        }
+        catch (err) {
+            console.error('Error adding irrigation time:', err);
+        }
+    }
+    async _removeIrrigationTime(time) {
+        if (!this._irrigationDialog)
+            return;
+        try {
+            await this.hass.callService('growspace_manager', 'remove_irrigation_time', {
+                growspace_id: this._irrigationDialog.growspace_id,
+                time: time
+            });
+            // Remove from local state
+            this._irrigationDialog.irrigation_times = this._irrigationDialog.irrigation_times.filter(t => t.time !== time);
+            this.requestUpdate();
+            console.log('Irrigation time removed:', time);
+        }
+        catch (err) {
+            console.error('Error removing irrigation time:', err);
+        }
+    }
+    async _addDrainTime(time, duration) {
+        if (!this._irrigationDialog)
+            return;
+        try {
+            await this.hass.callService('growspace_manager', 'add_drain_time', {
+                growspace_id: this._irrigationDialog.growspace_id,
+                time: time,
+                ...(duration !== undefined && { duration })
+            });
+            // Add to local state
+            this._irrigationDialog.drain_times.push({ time, duration });
+            this._irrigationDialog.adding_drain_time = undefined;
+            this.requestUpdate();
+            console.log('Drain time added:', time);
+        }
+        catch (err) {
+            console.error('Error adding drain time:', err);
+        }
+    }
+    async _removeDrainTime(time) {
+        if (!this._irrigationDialog)
+            return;
+        try {
+            await this.hass.callService('growspace_manager', 'remove_drain_time', {
+                growspace_id: this._irrigationDialog.growspace_id,
+                time: time
+            });
+            // Remove from local state
+            this._irrigationDialog.drain_times = this._irrigationDialog.drain_times.filter(t => t.time !== time);
+            this.requestUpdate();
+            console.log('Drain time removed:', time);
+        }
+        catch (err) {
+            console.error('Error removing drain time:', err);
+        }
+    }
+    _startAddingIrrigationTime(x, containerWidth) {
+        if (!this._irrigationDialog)
+            return;
+        // Calculate time from position (0-24 hours)
+        const hours = Math.floor((x / containerWidth) * 24);
+        const minutes = Math.floor(((x / containerWidth) * 24 - hours) * 60);
+        const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        this._irrigationDialog.adding_irrigation_time = {
+            time,
+            duration: this._irrigationDialog.irrigation_duration
+        };
+        this.requestUpdate();
+    }
+    _startAddingDrainTime(x, containerWidth) {
+        if (!this._irrigationDialog)
+            return;
+        // Calculate time from position (0-24 hours)
+        const hours = Math.floor((x / containerWidth) * 24);
+        const minutes = Math.floor(((x / containerWidth) * 24 - hours) * 60);
+        const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        this._irrigationDialog.adding_drain_time = {
+            time,
+            duration: this._irrigationDialog.drain_duration
+        };
+        this.requestUpdate();
+    }
+    _handleStrainEditorChange(field, value) {
+        if (this._strainLibraryDialog && this._strainLibraryDialog.editorState) {
+            this._strainLibraryDialog.editorState[field] = value;
+            this.requestUpdate();
+        }
+    }
+    _toggleCropMode(active) {
+        if (this._strainLibraryDialog) {
+            this._strainLibraryDialog.isCropping = active;
+            this.requestUpdate();
+        }
+    }
+    _toggleImageSelector(isOpen) {
+        if (this._strainLibraryDialog) {
+            this._strainLibraryDialog.isImageSelectorOpen = isOpen;
+            this.requestUpdate();
+        }
+    }
+    _handleSelectLibraryImage(imageUrl) {
+        if (this._strainLibraryDialog && this._strainLibraryDialog.editorState) {
+            this._strainLibraryDialog.editorState.image = imageUrl;
+            // Close selector
+            // Find existing crop meta for this image
+            const existing = this._strainLibraryDialog.strains.find(s => s.image === imageUrl && !!s.image_crop_meta);
+            if (existing && existing.image_crop_meta) {
+                this._strainLibraryDialog.editorState.image_crop_meta = { ...existing.image_crop_meta };
+            }
+            else {
+                this._strainLibraryDialog.editorState.image_crop_meta = undefined;
+            }
+            this._strainLibraryDialog.isImageSelectorOpen = false;
+            this.requestUpdate();
+        }
+    }
+    _toggleEnvGraph(metric) {
+        const newSet = new Set(this._activeEnvGraphs);
+        if (newSet.has(metric)) {
+            newSet.delete(metric);
+        }
+        else {
+            newSet.add(metric);
+        }
+        this._activeEnvGraphs = newSet;
+        this.requestUpdate();
+    }
+    _handleGraphHover(e, metricKey, dataPoints, rect, unit) {
+        const x = e.clientX - rect.left;
+        const width = rect.width;
+        // Determine range
+        const rangeKey = this._graphRanges[metricKey] || '24h';
+        const durationMillis = rangeKey === '1h' ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+        const now = new Date();
+        const startTime = now.getTime() - durationMillis;
+        // Calculate time from x position
+        const time = startTime + (x / width) * durationMillis;
+        // Find closest data point
+        let closest = dataPoints[0];
+        let minDiff = Math.abs(dataPoints[0].time - time);
+        for (let i = 1; i < dataPoints.length; i++) {
+            const diff = Math.abs(dataPoints[i].time - time);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closest = dataPoints[i];
+            }
+        }
+        const date = new Date(closest.time);
+        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        let valStr = `${closest.value} ${unit}`;
+        if (unit === 'state') {
+            if (metricKey === 'irrigation' || metricKey === 'drain') {
+                if (closest.value === 1) {
+                    valStr = `ON (${closest.meta?.duration || 'Unknown'})`;
+                }
+                else {
+                    valStr = 'OFF';
+                }
+            }
+            else if (closest.value === 1) {
+                valStr = 'Optimal Conditions';
+            }
+            else {
+                valStr = closest.meta || 'Not Optimal';
+            }
+        }
+        this._tooltip = {
+            id: metricKey,
+            x: x,
+            time: timeStr,
+            value: valStr
+        };
+    }
+    renderEnvGraph(metricKey, color, title, unit, type = 'line', icon = mdiMagnify) {
+        const devices = this.dataService.getGrowspaceDevices();
+        const device = devices.find(d => d.device_id === this.selectedDevice);
+        if (!device)
+            return x ``;
+        // Determine Env Entity ID (replicated logic)
+        let slug = device.name.toLowerCase().replace(/\s+/g, '_');
+        if (device.overview_entity_id) {
+            slug = device.overview_entity_id.replace('sensor.', '');
+        }
+        let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+        if (slug === 'cure')
+            envEntityId = `binary_sensor.cure_optimal_curing`;
+        else if (slug === 'dry')
+            envEntityId = `binary_sensor.dry_optimal_drying`;
+        const envEntity = this.hass.states[envEntityId];
+        const overviewEntity = device.overview_entity_id ? this.hass.states[device.overview_entity_id] : undefined;
+        // Determine Time Range
+        const rangeKey = this._graphRanges[this.selectedDevice || ''] || '24h';
+        let durationMillis = 24 * 60 * 60 * 1000;
+        if (rangeKey === '1h')
+            durationMillis = 60 * 60 * 1000;
+        else if (rangeKey === '6h')
+            durationMillis = 6 * 60 * 60 * 1000;
+        else if (rangeKey === '7d')
+            durationMillis = 7 * 24 * 60 * 60 * 1000;
+        const now = new Date();
+        const startTime = new Date(now.getTime() - durationMillis);
+        // Data Generation
+        let dataPoints = [];
+        if (metricKey === 'irrigation' || metricKey === 'drain') {
+            // Generate from Schedule
+            const times = metricKey === 'irrigation'
+                ? overviewEntity?.attributes?.irrigation_times
+                : overviewEntity?.attributes?.drain_times;
+            if (times && Array.isArray(times)) {
+                // Create a timeline for the selected range
+                const events = [];
+                // Check today and yesterday to cover the window
+                // For 1h, we might need to check just today, but checking both is safe
+                const referenceDays = [new Date(now), new Date(startTime)];
+                times.forEach((t) => {
+                    const [h, m] = t.time.split(':').map(Number);
+                    const duration = (t.duration || 60) * 1000; // default 60s if missing
+                    referenceDays.forEach(refDay => {
+                        const start = new Date(refDay);
+                        start.setHours(h, m, 0, 0);
+                        const end = new Date(start.getTime() + duration);
+                        // Check overlap with window [startTime, now]
+                        if (end.getTime() > startTime.getTime() && start.getTime() < now.getTime()) {
+                            events.push({
+                                start: Math.max(start.getTime(), startTime.getTime()),
+                                end: Math.min(end.getTime(), now.getTime())
+                            });
+                        }
+                    });
+                });
+                // Sort events
+                events.sort((a, b) => a.start - b.start);
+                // Convert to points
+                // Start with 0
+                dataPoints.push({ time: startTime.getTime(), value: 0 });
+                events.forEach(ev => {
+                    const durationSeconds = (ev.end - ev.start) / 1000;
+                    let durationStr = `${durationSeconds}s`;
+                    if (durationSeconds >= 60) {
+                        durationStr = `${Math.round(durationSeconds / 60)}m`;
+                    }
+                    // Add point before start (0)
+                    dataPoints.push({ time: ev.start - 1, value: 0 });
+                    // Add start point (1)
+                    dataPoints.push({ time: ev.start, value: 1, meta: { duration: durationStr } });
+                    // Add end point (1)
+                    dataPoints.push({ time: ev.end, value: 1, meta: { duration: durationStr } });
+                    // Add point after end (0)
+                    dataPoints.push({ time: ev.end + 1, value: 0 });
+                });
+                // End with 0 at 'now'
+                dataPoints.push({ time: now.getTime(), value: 0 });
+                // Force step type
+                type = 'step';
+            }
+        }
+        else {
+            const getValue = (ent, key) => {
+                if (!ent || !ent.attributes)
+                    return undefined;
+                // Special case for 'state' unit (optimal conditions)
+                if (unit === 'state' && key === 'optimal') {
+                    return ent.state === 'on' ? 1 : 0;
+                }
+                // Special case for light cycle
+                if (key === 'light') {
+                    const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
+                    return isLightsOn === true ? 1 : 0;
+                }
+                if (ent.attributes[key] !== undefined)
+                    return ent.attributes[key];
+                if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
+                    return ent.attributes.observations[key];
+                }
+                return undefined;
+            };
+            const getMeta = (ent, key) => {
+                if (unit === 'state' && key === 'optimal') {
+                    return ent.attributes.reasons;
+                }
+                if (key === 'light') {
+                    const isLightsOn = ent.attributes.is_lights_on ?? ent.attributes.observations?.is_lights_on;
+                    return { state: isLightsOn ? 'ON' : 'OFF' };
+                }
+                return undefined;
+            };
+            // Use History Data
+            if (!this._historyData || this._historyData.length === 0)
+                return x ``;
+            const sortedHistory = [...this._historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+            sortedHistory.forEach(h => {
+                const t = new Date(h.last_changed).getTime();
+                if (t < startTime.getTime())
+                    return;
+                const val = getValue(h, metricKey);
+                const meta = getMeta(h, metricKey);
+                if (val !== undefined && !isNaN(parseFloat(val))) {
+                    dataPoints.push({ time: t, value: parseFloat(val), meta });
+                }
+            });
+            // Add current point to extend graph to 'now'
+            if (envEntity) {
+                const currentVal = getValue(envEntity, metricKey);
+                const currentMeta = getMeta(envEntity, metricKey);
+                if (currentVal !== undefined && !isNaN(parseFloat(currentVal))) {
+                    dataPoints.push({ time: now.getTime(), value: parseFloat(currentVal), meta: currentMeta });
+                }
+            }
+        }
+        // If we have only 1 point (current state), synthesize a start point to draw a flat line
+        if (dataPoints.length === 1) {
+            dataPoints.unshift({
+                time: startTime.getTime(),
+                value: dataPoints[0].value,
+                meta: dataPoints[0].meta
+            });
+        }
+        if (dataPoints.length < 2 && type !== 'step')
+            return x ``;
+        const width = 1000;
+        const height = type === 'step' ? 100 : 180; // Taller for line graphs
+        let minVal = 0;
+        let maxVal = 1;
+        if (unit !== 'state' && metricKey !== 'irrigation' && metricKey !== 'drain') {
+            minVal = Math.min(...dataPoints.map(d => d.value));
+            maxVal = Math.max(...dataPoints.map(d => d.value));
+        }
+        const range = maxVal - minVal || 1;
+        const paddedMin = minVal - (range * 0.1);
+        const paddedMax = maxVal + (range * 0.1);
+        const paddedRange = paddedMax - paddedMin;
+        // Calculate average for target line
+        const avgValue = dataPoints.length > 0
+            ? dataPoints.reduce((sum, d) => sum + d.value, 0) / dataPoints.length
+            : (minVal + maxVal) / 2;
+        let svgPath = "";
+        if (type === 'step') {
+            const points = [];
+            let currentState = dataPoints.length > 0 ? dataPoints[0].value : 0;
+            points.push([0, height - ((currentState - paddedMin) / paddedRange) * height]);
+            dataPoints.forEach(d => {
+                const x = ((d.time - startTime.getTime()) / durationMillis) * width;
+                const y = height - ((d.value - paddedMin) / paddedRange) * height;
+                points.push([x, points[points.length - 1][1]]);
+                points.push([x, y]);
+                currentState = d.value;
+            });
+            points.push([width, height - ((currentState - paddedMin) / paddedRange) * height]);
+            svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+        }
+        else {
+            const points = dataPoints.map(d => {
+                const x = ((d.time - startTime.getTime()) / durationMillis) * width;
+                const y = height - ((d.value - paddedMin) / paddedRange) * height;
+                return [x, y];
+            });
+            svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+        }
+        // For step graphs, use compact design
+        if (type === 'step') {
+            return x `
+        <div class="gs-light-cycle-card" style="margin-top: 12px; border: 1px solid ${color}40;">
            <div class="gs-light-header-row">
-               <div class="gs-light-title" style="font-size: 1.2rem; flex: 1; cursor: pointer;" @click=${()=>this._toggleEnvGraph(t)}>
-                   <div class="gs-icon-box" style="color: ${e}; background: ${e}10; border-color: ${e}30; width: 36px; height: 36px;">
-                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${s}"></path></svg>
+               <div class="gs-light-title" style="font-size: 1.2rem; flex: 1; cursor: pointer;" @click=${() => this._toggleEnvGraph(metricKey)}>
+                   <div class="gs-icon-box" style="color: ${color}; background: ${color}10; border-color: ${color}30; width: 36px; height: 36px;">
+                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${icon}"></path></svg>
                    </div>
                    <div>
-                      <div>${i}</div>
-                      <div class="gs-light-subtitle">${p.toUpperCase()} HISTORY • ${(()=>{if("light"===t){const t=this.dataService.getGrowspaceDevices().find(t=>t.device_id===this.selectedDevice);if(t){const e=`binary_sensor.${t.device_id}_light_schedule_correct`,i=this.hass.states[e];if(i?.attributes["Expected schedule"])return i.attributes["Expected schedule"]}return 1===m[m.length-1]?.value?"ON":"OFF"}return"state"===r?1===m[m.length-1]?.value?"OPTIMAL":"NOT OPTIMAL":"irrigation"===t||"drain"===t?1===m[m.length-1]?.value?"ACTIVE":"INACTIVE":`${y.toFixed(1)} - ${b.toFixed(1)} ${r}`})()}</div>
+                      <div>${title}</div>
+                      <div class="gs-light-subtitle">${rangeKey.toUpperCase()} HISTORY • ${(() => {
+                if (metricKey === 'light') {
+                    // Get the light schedule sensor for this device
+                    const devices = this.dataService.getGrowspaceDevices();
+                    const device = devices.find(d => d.device_id === this.selectedDevice);
+                    if (device) {
+                        const lightScheduleSensorId = `binary_sensor.${device.device_id}_light_schedule_correct`;
+                        const lightScheduleSensor = this.hass.states[lightScheduleSensorId];
+                        if (lightScheduleSensor?.attributes['Expected schedule']) {
+                            return lightScheduleSensor.attributes['Expected schedule'];
+                        }
+                    }
+                    return dataPoints[dataPoints.length - 1]?.value === 1 ? 'ON' : 'OFF';
+                }
+                else if (unit === 'state') {
+                    return dataPoints[dataPoints.length - 1]?.value === 1 ? 'OPTIMAL' : 'NOT OPTIMAL';
+                }
+                else if (metricKey === 'irrigation' || metricKey === 'drain') {
+                    return dataPoints[dataPoints.length - 1]?.value === 1 ? 'ACTIVE' : 'INACTIVE';
+                }
+                else {
+                    return `${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}`;
+                }
+            })()}</div>
                    </div>
                </div>
                
 
 
-               <div style="opacity: 0.7; cursor: pointer;" @click=${()=>this._toggleEnvGraph(t)}>
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${"M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"}"></path></svg>
+               <div style="opacity: 0.7; cursor: pointer;" @click=${() => this._toggleEnvGraph(metricKey)}>
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronDown}"></path></svg>
                </div>
            </div>
 
            <div class="gs-chart-container" style="height: 100px;"
-                @mousemove=${e=>{const i=e.currentTarget.getBoundingClientRect();this._handleGraphHover(e,t,m,i,r)}}
-                @mouseleave=${()=>this._tooltip=null}>
+                @mousemove=${(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
+            }}
+                @mouseleave=${() => this._tooltip = null}>
 
-               ${this._tooltip&&this._tooltip.id===t?j`
+               ${this._tooltip && this._tooltip.id === metricKey ? x `
                    <div class="gs-cursor-line" style="left: ${this._tooltip.x}px;"></div>
                    <div class="gs-tooltip" style="left: ${this._tooltip.x}px;">
                       <div class="time">${this._tooltip.time}</div>
                       <div>${this._tooltip.value}</div>
                    </div>
-               `:""}
+               ` : ''}
 
                <svg class="gs-chart-svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
                    <defs>
-                       <linearGradient id="grad-${t}" x1="0%" y1="0%" x2="0%" y2="100%">
-                           <stop offset="0%" style="stop-color:${e};stop-opacity:0.5" />
-                           <stop offset="100%" style="stop-color:${e};stop-opacity:0" />
+                       <linearGradient id="grad-${metricKey}" x1="0%" y1="0%" x2="0%" y2="100%">
+                           <stop offset="0%" style="stop-color:${color};stop-opacity:0.5" />
+                           <stop offset="100%" style="stop-color:${color};stop-opacity:0" />
                        </linearGradient>
                    </defs>
-                   <path class="chart-line" d="${S}" style="stroke: ${e};" />
-                   <path class="chart-gradient-fill" d="${S} V 100 H 0 Z" style="fill: url(#grad-${t});" />
+                   <path class="chart-line" d="${svgPath}" style="stroke: ${color};" />
+                   <path class="chart-gradient-fill" d="${svgPath} V 100 H 0 Z" style="fill: url(#grad-${metricKey});" />
                </svg>
                <div class="chart-markers">
-                ${"1h"===p?j`<span>-60m</span><span>NOW</span>`:"6h"===p?j`<span>-6h</span><span>NOW</span>`:"7d"===p?j`<span>-7d</span><span>NOW</span>`:j`<span>-24H</span><span>NOW</span>`}
+                ${(() => {
+                if (rangeKey === '1h')
+                    return x `<span>-60m</span><span>NOW</span>`;
+                if (rangeKey === '6h')
+                    return x `<span>-6h</span><span>NOW</span>`;
+                if (rangeKey === '7d')
+                    return x `<span>-7d</span><span>NOW</span>`;
+                return x `<span>-24H</span><span>NOW</span>`;
+            })()}
                </div>
            </div>
         </div>
-      `;const C=[_,_-.25*$,_-.5*$,_-.75*$,x];return j`
+      `;
+        }
+        // For line graphs, use new rectangular design
+        const yLabels = [
+            paddedMax,
+            paddedMax - paddedRange * 0.25,
+            paddedMax - paddedRange * 0.5,
+            paddedMax - paddedRange * 0.75,
+            paddedMin
+        ];
+        return x `
       <div class="gs-env-graph-card" style="margin-top: 12px; background: #1a1a1a; border-radius: 12px; padding: 16px;">
-         <div class="gs-env-graph-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer;" @click=${()=>this._toggleEnvGraph(t)}>
+         <div class="gs-env-graph-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer;" @click=${() => this._toggleEnvGraph(metricKey)}>
              <div style="display: flex; align-items: center; gap: 12px;">
-                 <svg style="width:24px;height:24px;fill:${e};" viewBox="0 0 24 24"><path d="${s}"></path></svg>
+                 <svg style="width:24px;height:24px;fill:${color};" viewBox="0 0 24 24"><path d="${icon}"></path></svg>
                  <div>
-                    <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${i}</div>
+                    <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${title}</div>
                  </div>
              </div>
          </div>
 
          <div class="gs-env-chart-container" style="position: relative; height: 180px; background: #0d0d0d; border-radius: 8px; padding: 20px 40px 30px 50px;"
-              @mousemove=${e=>{const i=e.currentTarget.getBoundingClientRect();this._handleGraphHover(e,t,m,i,r)}}
-              @mouseleave=${()=>this._tooltip=null}>
+              @mousemove=${(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
+        }}
+              @mouseleave=${() => this._tooltip = null}>
 
-             ${this._tooltip&&this._tooltip.id===t?j`
-                 <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: ${e}80; pointer-events: none;"></div>
-                 <div style="position: absolute; left: ${this._tooltip.x+10}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid ${e}; pointer-events: none; z-index: 1000;">
-                    <div style="color: ${e}; font-weight: 600;">${this._tooltip.time}</div>
+             ${this._tooltip && this._tooltip.id === metricKey ? x `
+                 <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: ${color}80; pointer-events: none;"></div>
+                 <div style="position: absolute; left: ${this._tooltip.x + 10}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid ${color}; pointer-events: none; z-index: 1000;">
+                    <div style="color: ${color}; font-weight: 600;">${this._tooltip.time}</div>
                     <div style="margin-top: 4px;">${this._tooltip.value}</div>
                  </div>
-             `:""}
+             ` : ''}
 
              <!-- Y-axis labels -->
              <div style="position: absolute; left: 0; top: 20px; bottom: 30px; width: 45px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; color: #666; text-align: right; padding-right: 8px;">
-                ${C.map(t=>j`<div>${t.toFixed(1)} ${r}</div>`)}
+                ${yLabels.map(val => x `<div>${val.toFixed(1)} ${unit}</div>`)}
              </div>
 
-             <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px);" viewBox="0 0 1000 ${v}" preserveAspectRatio="none">
+             <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px);" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
                  <defs>
-                     <linearGradient id="grad-${t}" x1="0%" y1="0%" x2="0%" y2="100%">
-                         <stop offset="0%" style="stop-color:${e};stop-opacity:0.3" />
-                         <stop offset="100%" style="stop-color:${e};stop-opacity:0" />
+                     <linearGradient id="grad-${metricKey}" x1="0%" y1="0%" x2="0%" y2="100%">
+                         <stop offset="0%" style="stop-color:${color};stop-opacity:0.3" />
+                         <stop offset="100%" style="stop-color:${color};stop-opacity:0" />
                      </linearGradient>
                  </defs>
                  
                  <!-- Vertical grid lines -->
-                 <line x1="0" y1="0" x2="0" y2="${v}" stroke="#333" stroke-width="1" />
-                 <line x1="${250}" y1="0" x2="${250}" y2="${v}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
-                 <line x1="${500}" y1="0" x2="${500}" y2="${v}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
-                 <line x1="${750}" y1="0" x2="${750}" y2="${v}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
-                 <line x1="${f}" y1="0" x2="${f}" y2="${v}" stroke="#333" stroke-width="1" />
+                 <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
+                 <line x1="${width * 0.25}" y1="0" x2="${width * 0.25}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
+                 <line x1="${width * 0.5}" y1="0" x2="${width * 0.5}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
+                 <line x1="${width * 0.75}" y1="0" x2="${width * 0.75}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
+                 <line x1="${width}" y1="0" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
                  
                  <!-- Target/average line -->
-                 ${D?j`
-                   <line x1="0" y1="${v-(D-x)/$*v}" 
-                         x2="${f}" y2="${v-(D-x)/$*v}" 
-                         stroke="${e}" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.5" />
-                 `:""}
+                 ${avgValue ? x `
+                   <line x1="0" y1="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
+                         x2="${width}" y2="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
+                         stroke="${color}" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.5" />
+                 ` : ''}
                  
                  <!-- Data line and fill -->
-                 <path d="${S} V ${v} H 0 Z" fill="url(#grad-${t})" />
-                 <path d="${S}" fill="none" stroke="${e}" stroke-width="2.5" />
+                 <path d="${svgPath} V ${height} H 0 Z" fill="url(#grad-${metricKey})" />
+                 <path d="${svgPath}" fill="none" stroke="${color}" stroke-width="2.5" />
              </svg>
              
              <!-- X-axis markers -->
              <div class="chart-markers" style="position: absolute; left: 50px; right: 40px; bottom: 5px; display: flex; justify-content: space-between; font-size: 0.65rem; color: #666;">
-                ${"1h"===p?j`<span>60m</span><span>45m</span><span>30m</span><span>15m</span>`:"6h"===p?j`<span>6h</span><span>4.5h</span><span>3h</span><span>1.5h</span>`:"7d"===p?j`<span>7d</span><span>5d</span><span>3d</span><span>1d</span>`:j`<span>24h</span><span>18h</span><span>12h</span><span>6h</span>`}
-                <span style="color: ${e};">NOW</span>
+                ${(() => {
+            if (rangeKey === '1h')
+                return x `<span>60m</span><span>45m</span><span>30m</span><span>15m</span>`;
+            if (rangeKey === '6h')
+                return x `<span>6h</span><span>4.5h</span><span>3h</span><span>1.5h</span>`;
+            if (rangeKey === '7d')
+                return x `<span>7d</span><span>5d</span><span>3d</span><span>1d</span>`;
+            return x `<span>24h</span><span>18h</span><span>12h</span><span>6h</span>`;
+        })()}
+                <span style="color: ${color};">NOW</span>
              </div>
          </div>
       </div>
-    `}_setStrainSearchQuery(t){this._strainLibraryDialog&&(this._strainLibraryDialog.searchQuery=t,this.requestUpdate())}_toggleAddStrainForm(){}_promptClearAll(){}_cancelClearAll(){}async _addStrain(){if(!this._strainLibraryDialog?.editorState?.strain)return;const t=this._strainLibraryDialog.editorState,e={strain:t.strain,phenotype:t.phenotype,breeder:t.breeder,type:t.type,flowering_days_min:t.flowering_min?parseInt(t.flowering_min):void 0,flowering_days_max:t.flowering_max?parseInt(t.flowering_max):void 0,lineage:t.lineage,sex:t.sex,description:t.description,image:t.image,image_crop_meta:t.image_crop_meta,sativa_percentage:t.sativa_percentage,indica_percentage:t.indica_percentage};try{await this.dataService.addStrain(e);const i=`${t.strain}|${t.phenotype||"default"}`,r={key:i,strain:t.strain,phenotype:t.phenotype,breeder:t.breeder,type:t.type,flowering_days_min:e.flowering_days_min,flowering_days_max:e.flowering_days_max,lineage:t.lineage,sex:t.sex,description:t.description,image:t.image,image_crop_meta:t.image_crop_meta,sativa_percentage:t.sativa_percentage,indica_percentage:t.indica_percentage};this._strainLibraryDialog.strains=this._strainLibraryDialog.strains.filter(t=>t.key!==i),this._strainLibraryDialog.strains.push(r),this._switchStrainView("browse"),this._fetchStrainLibrary()}catch(t){console.error("Error adding strain:",t)}}async _removeStrain(t){if(this._strainLibraryDialog)try{const e=t.split("|"),i=e[0],r=e.length>1&&"default"!==e[1]?e[1]:void 0;await this.dataService.removeStrain(i,r),this._strainLibraryDialog.strains=this._strainLibraryDialog.strains.filter(e=>e.key!==t),this.requestUpdate(),this._fetchStrainLibrary()}catch(t){console.error("Error removing strain:",t)}}async _clearStrains(){await this.dataService.clearStrainLibrary(),this._strainLibraryDialog&&(this._strainLibraryDialog.strains=[],this._strainLibraryDialog.confirmClearAll=!1,this.requestUpdate(),this._fetchStrainLibrary())}async _handleExportLibrary(){const t=await this.hass.connection.subscribeEvents(e=>{e.data&&e.data.url&&(this._downloadFile(e.data.url),t())},"growspace_manager_strain_library_exported");try{await this.hass.callService("growspace_manager","export_strain_library")}catch(e){console.error("Failed to call export service",e),t()}}_downloadFile(t){const e=document.createElement("a");e.style.display="none",e.href=t,e.download=t.split("/").pop()||"export.zip",document.body.appendChild(e),e.click(),document.body.removeChild(e)}_openImportDialog(){this._strainLibraryDialog&&(this._strainLibraryDialog.importDialog={open:!0,replace:!1},this.requestUpdate())}_handleImportDialogChange(t){this._strainLibraryDialog&&this._strainLibraryDialog.importDialog&&(void 0!==t.open&&(this._strainLibraryDialog.importDialog.open=t.open),void 0!==t.replace&&(this._strainLibraryDialog.importDialog.replace=t.replace),this.requestUpdate())}async _performImport(){if(!this._strainLibraryDialog?.importDialog)return;const t=this._strainLibraryDialog.importDialog.replace,e=document.createElement("input");e.type="file",e.accept=".zip",e.onchange=async e=>{const i=e.target.files?.[0];if(i)try{const e=await this.dataService.importStrainLibrary(i,t);alert(`Import successful! ${e.imported_count||""} strains imported.`),this._strainLibraryDialog&&this._strainLibraryDialog.importDialog&&(this._strainLibraryDialog.importDialog.open=!1),this.requestUpdate()}catch(t){console.error("Import failed:",t),alert(`Import failed: ${t.message}`)}},e.click()}updateGrid(){this.dataService=new cs(this.hass),this.requestUpdate()}_handleDragStart(t,e){this._draggedPlant=e,t.dataTransfer?.setData("text/plain",JSON.stringify({id:e.entity_id}));t.target.classList.add("dragging")}_handleDragEnd(t){t.target.classList.remove("dragging")}_handleDragOver(t){t.preventDefault()}async _handleDrop(t,e,i,r){if(t.preventDefault(),!this._draggedPlant||!this.selectedDevice)return;const a=this._draggedPlant;this._draggedPlant=null;try{if(r){const t=a.attributes.plant_id||a.entity_id.replace("sensor.",""),e=r.attributes.plant_id||r.entity_id.replace("sensor.","");await this.hass.callService("growspace_manager","switch_plants",{plant1_id:t,plant2_id:e}),this.updateGrid()}else await this._movePlant(a,e,i)}catch(t){console.error("Error during drag-and-drop:",t)}}async _movePlant(t,e,i){try{const r=t.attributes?.plant_id||t.entity_id.replace("sensor.","");await this.dataService.updatePlant({plant_id:r,row:e,col:i})}catch(t){console.error("Error moving plant:",t)}}_moveClonePlant(t,e){this.hass.callService("growspace_manager","move_clone",{plant_id:t.attributes.plant_id,target_growspace_id:e}).then(()=>{console.log(`Moved clone ${t.attributes.friendly_name} to ${e}`),this._plantOverviewDialog=null}).catch(t=>{console.error("Error moving clone:",t)})}_openConfigDialog(){this._configDialog={open:!0,currentTab:"add_growspace",addGrowspaceData:{name:"",rows:3,plants_per_row:3,notification_service:""},environmentData:{selectedGrowspaceId:"",temp_sensor:"",humidity_sensor:"",vpd_sensor:"",co2_sensor:"",light_sensor:"",fan_switch:""},globalData:{weather_entity:"",lung_room_temp:"",lung_room_humidity:""}}}_handleAddGrowspaceSubmit(){if(!this._configDialog)return;const t=this._configDialog.addGrowspaceData;t.name?this.dataService.addGrowspace(t).then(()=>{this._configDialog=null,this.requestUpdate()}).catch(t=>alert(`Error: ${t.message}`)):alert("Name is required")}_handleEnvSubmit(){if(!this._configDialog)return;const t=this._configDialog.environmentData;t.selectedGrowspaceId&&t.temp_sensor&&t.humidity_sensor&&t.vpd_sensor?this.dataService.configureGrowspaceSensors({growspace_id:t.selectedGrowspaceId,temperature_sensor:t.temp_sensor,humidity_sensor:t.humidity_sensor,vpd_sensor:t.vpd_sensor,co2_sensor:t.co2_sensor||void 0,light_sensor:t.light_sensor||void 0,fan_switch:t.fan_switch||void 0}).then(()=>{this._configDialog=null,this.requestUpdate()}).catch(t=>alert(`Error: ${t.message}`)):alert("Growspace and required sensors (Temp, Hum, VPD) are mandatory")}_handleGlobalSubmit(){if(!this._configDialog)return;const t=this._configDialog.globalData;this.dataService.configureGlobalSettings(t).then(()=>{this._configDialog=null,this.requestUpdate()}).catch(t=>alert(`Error: ${t.message}`))}_openGrowMasterDialog(){this.selectedDevice&&(this._growMasterDialog={open:!0,growspaceId:this.selectedDevice,userQuery:"",isLoading:!1,response:null,mode:"single"})}async _handleAskAdvice(){if(this._growMasterDialog&&this._growMasterDialog.userQuery){this._growMasterDialog.isLoading=!0,this._growMasterDialog.response=null,this.requestUpdate();try{const t=await this.dataService.askGrowAdvice(this._growMasterDialog.growspaceId,this._growMasterDialog.userQuery);this._growMasterDialog&&(t&&t.response?"string"==typeof t.response?this._growMasterDialog.response=t.response:"object"==typeof t.response&&"response"in t.response&&"string"==typeof t.response.response?this._growMasterDialog.response=t.response.response:this._growMasterDialog.response=JSON.stringify(t,null,2):this._growMasterDialog.response=JSON.stringify(t,null,2))}catch(t){this._growMasterDialog&&(this._growMasterDialog.response=`Error: ${t.message||"Failed to get advice."}`)}finally{this._growMasterDialog&&(this._growMasterDialog.isLoading=!1,this.requestUpdate())}}}async _handleAnalyzeAll(){if(this._growMasterDialog){this._growMasterDialog.isLoading=!0,this._growMasterDialog.response=null,this._growMasterDialog.mode="all",this.requestUpdate();try{const t=await this.dataService.analyzeAllGrowspaces();this._growMasterDialog&&(t&&t.response?"string"==typeof t.response?this._growMasterDialog.response=t.response:"object"==typeof t.response&&"response"in t.response&&"string"==typeof t.response.response?this._growMasterDialog.response=t.response.response:this._growMasterDialog.response=JSON.stringify(t,null,2):this._growMasterDialog.response=JSON.stringify(t,null,2))}catch(t){this._growMasterDialog&&(this._growMasterDialog.response=`Error: ${t.message||"Failed to get advice."}`)}finally{this._growMasterDialog&&(this._growMasterDialog.isLoading=!1,this.requestUpdate())}}}async _handleGetStrainRecommendation(){if(this._strainRecommendationDialog&&this._strainRecommendationDialog.userQuery){this._strainRecommendationDialog.isLoading=!0,this._strainRecommendationDialog.response=null,this.requestUpdate();try{const t=await this.dataService.getStrainRecommendation(this._strainRecommendationDialog.userQuery);this._strainRecommendationDialog&&(t&&"string"==typeof t.response?this._strainRecommendationDialog.response=t.response:this._strainRecommendationDialog.response=JSON.stringify(t,null,2))}catch(t){this._strainRecommendationDialog&&(this._strainRecommendationDialog.response=`Error: ${t.message||"Failed to get recommendation."}`)}finally{this._strainRecommendationDialog&&(this._strainRecommendationDialog.isLoading=!1,this.requestUpdate())}}}_openStrainRecommendationDialog(){this._strainRecommendationDialog={open:!0,userQuery:"",isLoading:!1,response:null}}render(){if(!this.hass)return j`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;this.dataService=new cs(this.hass);const t=this.dataService.getGrowspaceDevices();if(t.forEach(t=>{t.plants=t.plants.filter(t=>{const e=t.attributes.plant_id||t.entity_id.replace("sensor.","");return!this._optimisticDeletedPlantIds.has(e)})}),!t.length)return j`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;if(!this._defaultApplied&&this._config?.default_growspace){const e=t.find(t=>t.device_id===this._config.default_growspace||t.name===this._config.default_growspace);e&&(this.selectedDevice=e.device_id),this._defaultApplied=!0}this.selectedDevice&&t.find(t=>t.device_id===this.selectedDevice)||(this.selectedDevice=t[0].device_id);const e=t.find(t=>t.device_id===this.selectedDevice);if(!e)return j`<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;const i=this.hass.states["sensor.growspaces_list"]?.attributes?.growspaces;i&&Object.entries(i).forEach(([t,e])=>{});const r=ls.calculateEffectiveRows(e),{grid:a}=ls.createGridLayout(e.plants,r,e.plants_per_row),s=e.plants_per_row>6,n=this._strainLibrary;return j`
-      <ha-card class=${s?"wide-growspace":""}>
+    `;
+    }
+    _setStrainSearchQuery(query) {
+        if (this._strainLibraryDialog) {
+            this._strainLibraryDialog.searchQuery = query;
+            this.requestUpdate();
+        }
+    }
+    _toggleAddStrainForm() {
+        // Legacy method removed or kept empty
+    }
+    _promptClearAll() {
+        // Removed logic
+    }
+    _cancelClearAll() {
+        // Removed logic
+    }
+    async _addStrain() {
+        if (!this._strainLibraryDialog?.editorState?.strain)
+            return;
+        const s = this._strainLibraryDialog.editorState;
+        const payload = {
+            strain: s.strain,
+            phenotype: s.phenotype,
+            breeder: s.breeder,
+            type: s.type,
+            flowering_days_min: s.flowering_min ? parseInt(s.flowering_min) : undefined,
+            flowering_days_max: s.flowering_max ? parseInt(s.flowering_max) : undefined,
+            lineage: s.lineage,
+            sex: s.sex,
+            description: s.description,
+            image: s.image,
+            image_crop_meta: s.image_crop_meta,
+            sativa_percentage: s.sativa_percentage,
+            indica_percentage: s.indica_percentage
+        };
+        try {
+            await this.dataService.addStrain(payload);
+            // Refetch library to update list or optimistic update
+            const key = `${s.strain}|${s.phenotype || 'default'}`;
+            const newEntry = {
+                key: key,
+                strain: s.strain,
+                phenotype: s.phenotype,
+                breeder: s.breeder,
+                type: s.type,
+                flowering_days_min: payload.flowering_days_min,
+                flowering_days_max: payload.flowering_days_max,
+                lineage: s.lineage,
+                sex: s.sex,
+                description: s.description,
+                image: s.image,
+                image_crop_meta: s.image_crop_meta,
+                sativa_percentage: s.sativa_percentage,
+                indica_percentage: s.indica_percentage
+            };
+            // Remove existing if update (naive check by key)
+            this._strainLibraryDialog.strains = this._strainLibraryDialog.strains.filter(ex => ex.key !== key);
+            this._strainLibraryDialog.strains.push(newEntry);
+            // Switch back to browse
+            this._switchStrainView('browse');
+            // Refresh full library for grid
+            this._fetchStrainLibrary();
+        }
+        catch (err) {
+            console.error("Error adding strain:", err);
+        }
+    }
+    async _removeStrain(strainKey) {
+        if (!this._strainLibraryDialog)
+            return;
+        try {
+            // The key is constructed as "Strain|Phenotype" or "Strain|default" in data-service
+            const parts = strainKey.split('|');
+            const strain = parts[0];
+            const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
+            await this.dataService.removeStrain(strain, phenotype);
+            this._strainLibraryDialog.strains = this._strainLibraryDialog.strains.filter(s => s.key !== strainKey);
+            this.requestUpdate();
+            // Refresh full library for grid
+            this._fetchStrainLibrary();
+        }
+        catch (err) {
+            console.error("Error removing strain:", err);
+        }
+    }
+    async _clearStrains() {
+        await this.dataService.clearStrainLibrary();
+        if (this._strainLibraryDialog) {
+            this._strainLibraryDialog.strains = [];
+            this._strainLibraryDialog.confirmClearAll = false;
+            this.requestUpdate();
+            // Refresh full library for grid
+            this._fetchStrainLibrary();
+        }
+    }
+    async _handleExportLibrary() {
+        // 1. Subscribe to the completion event
+        const unsubscribe = await this.hass.connection.subscribeEvents((event) => {
+            // Check if the URL exists in the event data
+            if (event.data && event.data.url) {
+                // 2. Trigger the download in the browser
+                this._downloadFile(event.data.url);
+                // 3. Clean up the listener
+                unsubscribe();
+            }
+        }, 'growspace_manager_strain_library_exported');
+        // 4. Call the backend service to start the export
+        try {
+            await this.hass.callService('growspace_manager', 'export_strain_library');
+            // Optional: Show a "Exporting..." toast or spinner here
+        }
+        catch (err) {
+            console.error("Failed to call export service", err);
+            unsubscribe(); // Cleanup if call fails
+        }
+    }
+    _downloadFile(url) {
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = url.split('/').pop() || 'export.zip'; // Sets filename from URL
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+    _openImportDialog() {
+        if (this._strainLibraryDialog) {
+            this._strainLibraryDialog.importDialog = { open: true, replace: false };
+            this.requestUpdate();
+        }
+    }
+    _handleImportDialogChange(changes) {
+        if (this._strainLibraryDialog && this._strainLibraryDialog.importDialog) {
+            if (changes.open !== undefined)
+                this._strainLibraryDialog.importDialog.open = changes.open;
+            if (changes.replace !== undefined)
+                this._strainLibraryDialog.importDialog.replace = changes.replace;
+            this.requestUpdate();
+        }
+    }
+    async _performImport() {
+        if (!this._strainLibraryDialog?.importDialog)
+            return;
+        const replace = this._strainLibraryDialog.importDialog.replace;
+        // Create file input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.zip';
+        input.onchange = async (e) => {
+            const file = e.target.files?.[0];
+            if (!file)
+                return;
+            try {
+                const result = await this.dataService.importStrainLibrary(file, replace);
+                alert(`Import successful! ${result.imported_count || ''} strains imported.`);
+                // Close dialogs
+                if (this._strainLibraryDialog && this._strainLibraryDialog.importDialog) {
+                    this._strainLibraryDialog.importDialog.open = false;
+                }
+                this.requestUpdate();
+            }
+            catch (err) {
+                console.error("Import failed:", err);
+                alert(`Import failed: ${err.message}`);
+            }
+        };
+        input.click();
+    }
+    updateGrid() {
+        // Refresh data from Home Assistant
+        this.dataService = new DataService(this.hass);
+        // Force Lit to re-render
+        this.requestUpdate();
+    }
+    // Drag and drop handlers
+    _handleDragStart(e, plant) {
+        this._draggedPlant = plant;
+        e.dataTransfer?.setData("text/plain", JSON.stringify({ id: plant.entity_id }));
+        const target = e.target;
+        target.classList.add('dragging');
+    }
+    _handleDragEnd(e) {
+        const target = e.target;
+        target.classList.remove('dragging');
+    }
+    _handleDragOver(e) {
+        e.preventDefault();
+    }
+    async _handleDrop(e, targetRow, targetCol, targetPlant) {
+        e.preventDefault();
+        if (!this._draggedPlant || !this.selectedDevice)
+            return;
+        const sourcePlant = this._draggedPlant;
+        this._draggedPlant = null;
+        try {
+            if (targetPlant) {
+                const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace("sensor.", "");
+                const targetId = targetPlant.attributes.plant_id || targetPlant.entity_id.replace("sensor.", "");
+                // Call backend swap function (atomic, correct)
+                await this.hass.callService("growspace_manager", "switch_plants", {
+                    plant1_id: sourceId,
+                    plant2_id: targetId,
+                });
+                // Ask HA for updated state
+                this.updateGrid();
+            }
+            else {
+                // Move plant to empty slot
+                await this._movePlant(sourcePlant, targetRow, targetCol);
+            }
+        }
+        catch (err) {
+            console.error("Error during drag-and-drop:", err);
+        }
+    }
+    async _movePlant(plant, newRow, newCol) {
+        try {
+            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+            await this.dataService.updatePlant({
+                plant_id: plantId,
+                row: newRow,
+                col: newCol,
+            });
+        }
+        catch (err) {
+            console.error("Error moving plant:", err);
+        }
+    }
+    _moveClonePlant(plant, targetGrowspace) {
+        this.hass.callService('growspace_manager', 'move_clone', {
+            plant_id: plant.attributes.plant_id,
+            target_growspace_id: targetGrowspace
+        }).then(() => {
+            console.log(`Moved clone ${plant.attributes.friendly_name} to ${targetGrowspace}`);
+            // Optionally refresh local state
+            this._plantOverviewDialog = null;
+        }).catch((err) => {
+            console.error('Error moving clone:', err);
+        });
+    }
+    // Configuration Dialog Methods
+    _openConfigDialog() {
+        this._configDialog = {
+            open: true,
+            currentTab: 'add_growspace',
+            addGrowspaceData: { name: '', rows: 3, plants_per_row: 3, notification_service: '' },
+            environmentData: { selectedGrowspaceId: '', temp_sensor: '', humidity_sensor: '', vpd_sensor: '', co2_sensor: '', light_sensor: '', fan_switch: '' },
+            globalData: { weather_entity: '', lung_room_temp: '', lung_room_humidity: '' }
+        };
+    }
+    _handleAddGrowspaceSubmit() {
+        if (!this._configDialog)
+            return;
+        const d = this._configDialog.addGrowspaceData;
+        if (!d.name) {
+            alert('Name is required');
+            return;
+        }
+        this.dataService.addGrowspace(d)
+            .then(() => { this._configDialog = null; this.requestUpdate(); })
+            .catch(e => alert(`Error: ${e.message}`));
+    }
+    _handleEnvSubmit() {
+        if (!this._configDialog)
+            return;
+        const d = this._configDialog.environmentData;
+        if (!d.selectedGrowspaceId || !d.temp_sensor || !d.humidity_sensor || !d.vpd_sensor) {
+            alert('Growspace and required sensors (Temp, Hum, VPD) are mandatory');
+            return;
+        }
+        this.dataService.configureGrowspaceSensors({
+            growspace_id: d.selectedGrowspaceId,
+            temperature_sensor: d.temp_sensor,
+            humidity_sensor: d.humidity_sensor,
+            vpd_sensor: d.vpd_sensor,
+            co2_sensor: d.co2_sensor || undefined,
+            light_sensor: d.light_sensor || undefined,
+            fan_switch: d.fan_switch || undefined
+        })
+            .then(() => { this._configDialog = null; this.requestUpdate(); })
+            .catch(e => alert(`Error: ${e.message}`));
+    }
+    _handleGlobalSubmit() {
+        if (!this._configDialog)
+            return;
+        const d = this._configDialog.globalData;
+        this.dataService.configureGlobalSettings(d)
+            .then(() => { this._configDialog = null; this.requestUpdate(); })
+            .catch(e => alert(`Error: ${e.message}`));
+    }
+    // Grow Master Methods
+    _openGrowMasterDialog() {
+        if (!this.selectedDevice)
+            return;
+        this._growMasterDialog = {
+            open: true,
+            growspaceId: this.selectedDevice,
+            userQuery: '',
+            isLoading: false,
+            response: null,
+            mode: 'single'
+        };
+    }
+    async _handleAskAdvice() {
+        if (!this._growMasterDialog || !this._growMasterDialog.userQuery)
+            return;
+        this._growMasterDialog.isLoading = true;
+        this._growMasterDialog.response = null;
+        this.requestUpdate();
+        try {
+            const result = await this.dataService.askGrowAdvice(this._growMasterDialog.growspaceId, this._growMasterDialog.userQuery);
+            if (this._growMasterDialog) {
+                // EXTRACT RESPONSE SAFELY
+                // Backend returns { response: { response: "text" } } or { response: "text" }
+                if (result && result.response) {
+                    if (typeof result.response === 'string') {
+                        this._growMasterDialog.response = result.response;
+                    }
+                    else if (typeof result.response === 'object' && 'response' in result.response && typeof result.response.response === 'string') {
+                        // Nested response structure
+                        this._growMasterDialog.response = result.response.response;
+                    }
+                    else {
+                        // Fallback
+                        this._growMasterDialog.response = JSON.stringify(result, null, 2);
+                    }
+                }
+                else {
+                    this._growMasterDialog.response = JSON.stringify(result, null, 2);
+                }
+            }
+        }
+        catch (e) {
+            if (this._growMasterDialog) {
+                this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'}`;
+            }
+        }
+        finally {
+            if (this._growMasterDialog) {
+                this._growMasterDialog.isLoading = false;
+                this.requestUpdate();
+            }
+        }
+    }
+    async _handleAnalyzeAll() {
+        if (!this._growMasterDialog)
+            return;
+        this._growMasterDialog.isLoading = true;
+        this._growMasterDialog.response = null;
+        this._growMasterDialog.mode = 'all';
+        this.requestUpdate();
+        try {
+            const result = await this.dataService.analyzeAllGrowspaces();
+            if (this._growMasterDialog) {
+                // EXTRACT RESPONSE SAFELY
+                if (result && result.response) {
+                    if (typeof result.response === 'string') {
+                        this._growMasterDialog.response = result.response;
+                    }
+                    else if (typeof result.response === 'object' && 'response' in result.response && typeof result.response.response === 'string') {
+                        // Nested response structure
+                        this._growMasterDialog.response = result.response.response;
+                    }
+                    else {
+                        this._growMasterDialog.response = JSON.stringify(result, null, 2);
+                    }
+                }
+                else {
+                    this._growMasterDialog.response = JSON.stringify(result, null, 2);
+                }
+            }
+        }
+        catch (e) {
+            if (this._growMasterDialog) {
+                this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'}`;
+            }
+        }
+        finally {
+            if (this._growMasterDialog) {
+                this._growMasterDialog.isLoading = false;
+                this.requestUpdate();
+            }
+        }
+    }
+    async _handleGetStrainRecommendation() {
+        if (!this._strainRecommendationDialog || !this._strainRecommendationDialog.userQuery)
+            return;
+        this._strainRecommendationDialog.isLoading = true;
+        this._strainRecommendationDialog.response = null;
+        this.requestUpdate();
+        try {
+            const result = await this.dataService.getStrainRecommendation(this._strainRecommendationDialog.userQuery);
+            if (this._strainRecommendationDialog) {
+                // EXTRACT RESPONSE SAFELY
+                if (result && typeof result.response === 'string') {
+                    this._strainRecommendationDialog.response = result.response;
+                }
+                else {
+                    this._strainRecommendationDialog.response = JSON.stringify(result, null, 2);
+                }
+            }
+        }
+        catch (e) {
+            if (this._strainRecommendationDialog) {
+                this._strainRecommendationDialog.response = `Error: ${e.message || 'Failed to get recommendation.'}`;
+            }
+        }
+        finally {
+            if (this._strainRecommendationDialog) {
+                this._strainRecommendationDialog.isLoading = false;
+                this.requestUpdate();
+            }
+        }
+    }
+    _openStrainRecommendationDialog() {
+        this._strainRecommendationDialog = {
+            open: true,
+            userQuery: '',
+            isLoading: false,
+            response: null
+        };
+    }
+    render() {
+        if (!this.hass) {
+            return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
+        }
+        this.dataService = new DataService(this.hass);
+        const devices = this.dataService.getGrowspaceDevices();
+        // Filter out optimistically deleted plants
+        devices.forEach(d => {
+            d.plants = d.plants.filter(p => {
+                const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+                return !this._optimisticDeletedPlantIds.has(pId);
+            });
+        });
+        if (!devices.length) {
+            return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
+        }
+        // Apply default growspace logic
+        if (!this._defaultApplied && this._config?.default_growspace) {
+            const match = devices.find(d => d.device_id === this._config.default_growspace || d.name === this._config.default_growspace);
+            if (match)
+                this.selectedDevice = match.device_id;
+            this._defaultApplied = true;
+        }
+        if (!this.selectedDevice || !devices.find(d => d.device_id === this.selectedDevice)) {
+            this.selectedDevice = devices[0].device_id;
+        }
+        const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
+        if (!selectedDeviceData) {
+            return x `<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
+        }
+        const growspaces = this.hass.states['sensor.growspaces_list']?.attributes?.growspaces;
+        if (growspaces) {
+            Object.entries(growspaces).forEach(([id, name]) => {
+            });
+        }
+        // Calculate grid layout
+        const effectiveRows = PlantUtils.calculateEffectiveRows(selectedDeviceData);
+        const { grid } = PlantUtils.createGridLayout(selectedDeviceData.plants, effectiveRows, selectedDeviceData.plants_per_row);
+        const isWide = selectedDeviceData.plants_per_row > 6;
+        const strainLibrary = this._strainLibrary;
+        return x `
+      <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="sr-only-announcer" aria-live="polite"></div>
         <div class="unified-growspace-card" tabindex="0" @keydown=${this._handleKeyboardNav}>
-          ${this.renderHeader(t)}
-          ${this._isCompactView?"":this.renderGrowspaceHeader(e)}
+          ${this.renderHeader(devices)}
+          ${!this._isCompactView ? this.renderGrowspaceHeader(selectedDeviceData) : ''}
           ${this.renderEditModeBanner()}
-          ${this.renderGrid(a,r,e.plants_per_row,n)}
+          ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
         </div>
       </ha-card>
       
       ${this.renderDialogs()}
-    `}renderGrowspaceHeader(t){const e=ls.getDominantStage(t.plants),i=this.dataService.getGrowspaceDevices();let r=t.name.toLowerCase().replace(/\s+/g,"_");t.overview_entity_id&&(r=t.overview_entity_id.replace("sensor.",""));let a=`binary_sensor.${r}_optimal_conditions`;const s="cure"===r,n="dry"===r;s?a="binary_sensor.cure_optimal_curing":n&&(a="binary_sensor.dry_optimal_drying");const o=this.hass.states[a],l=t.overview_entity_id?this.hass.states[t.overview_entity_id]:void 0,c=(t,e)=>{if(t&&t.attributes)return void 0!==t.attributes[e]?t.attributes[e]:t.attributes.observations&&"object"==typeof t.attributes.observations?t.attributes.observations[e]:void 0},d=c(o,"temperature"),p=c(o,"humidity"),h=c(o,"vpd"),u=s||n,g=c(o,"co2"),m=u||null==g?void 0:g,f=c(o,"is_lights_on"),v=!u&&null!=f,y=!0===f;t.plants.some(t=>"flower"===t.attributes.stage);let b=[];if(this._historyData&&this._historyData.length>0){const t=[...this._historyData].sort((t,e)=>new Date(t.last_changed).getTime()-new Date(e.last_changed).getTime()),e=new Date,i=new Date(e.getTime()-864e5),r=1e3,a=100,s=[];let n=t.length>0?!0!==c(t[0],"is_lights_on"):y;t.forEach(t=>{const e=new Date(t.last_changed).getTime(),r=!0===c(t,"is_lights_on");e>=i.getTime()&&b.push({time:e,state:r})}),n=b.length>0?!b[0].state:y,s.push([0,n?0:a]),b.forEach(t=>{const e=(t.time-i.getTime())/864e5*r;s.push([e,n?0:a]),n=t.state,s.push([e,n?0:a])}),s.push([r,n?0:a]),s.map(t=>`${t[0]},${t[1]}`).join(" L ");const o=[...t].reverse(),l=o.find(t=>!0===c(t,"is_lights_on"));if(l){const t=new Date(l.last_changed);t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:!0}).replace(/ [AP]M/,""),t.toLocaleTimeString([],{hour12:!0}).slice(-2)}const d=o.find(t=>!1===c(t,"is_lights_on"));if(d){const t=new Date(d.last_changed);t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:!0}).replace(/ [AP]M/,""),t.toLocaleTimeString([],{hour12:!0}).slice(-2)}}const w=t=>{if(!t||0===t.length)return null;const e=new Date,i=60*e.getHours()+e.getMinutes(),r=[...t].sort((t,e)=>{const[i,r]=t.time.split(":").map(Number),[a,s]=e.time.split(":").map(Number);return 60*i+r-(60*a+s)}),a=r.find(t=>{const[e,r]=t.time.split(":").map(Number);return 60*e+r>i});return a?a.time.slice(0,5):r[0].time.slice(0,5)},x=w(l?.attributes?.irrigation_times),_=w(l?.attributes?.drain_times);return j`
+    `;
+    }
+    renderGrowspaceHeader(device) {
+        const dominant = PlantUtils.getDominantStage(device.plants);
+        const devices = this.dataService.getGrowspaceDevices();
+        // Fetch Environmental Data
+        let slug = device.name.toLowerCase().replace(/\s+/g, '_');
+        if (device.overview_entity_id) {
+            slug = device.overview_entity_id.replace('sensor.', '');
+        }
+        let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+        // Specific logic for 'cure' and 'dry' growspaces
+        const isCure = slug === 'cure';
+        const isDry = slug === 'dry';
+        if (isCure) {
+            envEntityId = `binary_sensor.cure_optimal_curing`;
+        }
+        else if (isDry) {
+            envEntityId = `binary_sensor.dry_optimal_drying`;
+        }
+        const envEntity = this.hass.states[envEntityId];
+        const overviewEntity = device.overview_entity_id ? this.hass.states[device.overview_entity_id] : undefined;
+        // Helper to get attribute from either top-level or nested 'observations'
+        const getValue = (ent, key) => {
+            if (!ent || !ent.attributes)
+                return undefined;
+            // 1. Check top level
+            if (ent.attributes[key] !== undefined)
+                return ent.attributes[key];
+            // 2. Check nested 'observations' (if it exists and is an object)
+            if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
+                return ent.attributes.observations[key];
+            }
+            return undefined;
+        };
+        const temp = getValue(envEntity, 'temperature');
+        const hum = getValue(envEntity, 'humidity');
+        const vpd = getValue(envEntity, 'vpd');
+        // For cure/dry, we never need co2 or light
+        const isSpecialGrowspace = isCure || isDry;
+        // Check for CO2 value directly
+        const co2Value = getValue(envEntity, 'co2');
+        const co2 = (isSpecialGrowspace || co2Value === undefined || co2Value === null) ? undefined : co2Value;
+        // Light Status Logic with History
+        const isLightsOnValue = getValue(envEntity, 'is_lights_on');
+        const hasLightSensor = !isSpecialGrowspace && (isLightsOnValue !== undefined && isLightsOnValue !== null);
+        const isLightsOn = isLightsOnValue === true;
+        // Target Cycle Logic
+        device.plants.some(p => p.attributes.stage === 'flower');
+        let transitions = [];
+        if (this._historyData && this._historyData.length > 0) {
+            // Sort history Oldest -> Newest for graph building
+            const sortedHistory = [...this._historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+            // Filter for light state changes
+            const now = new Date();
+            const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            // Build path
+            const width = 1000;
+            const height = 100;
+            const points = [];
+            // Initial state (before history window) - infer from first entry or assume off?
+            // Ideally look at the state just before the window, but here we take the first point in window
+            // If first point is ON, it means it turned ON at that time? No, it means state changed.
+            // DataService uses history/period, so it returns state changes.
+            // We need the state at T-24h.
+            // For simplicity, we'll assume the state at T-24h is the inverse of the first change found,
+            // or if no changes, the current state (constant).
+            let currentState = sortedHistory.length > 0 ? (getValue(sortedHistory[0], 'is_lights_on') === true ? false : true) : isLightsOn;
+            // Actually, a better heuristic: if the first history entry says "ON", it means it turned ON then. So before that it was OFF.
+            // If history is sparse, we might need to be careful.
+            // Let's scan through and record transitions.
+            sortedHistory.forEach(h => {
+                const t = new Date(h.last_changed).getTime();
+                const s = getValue(h, 'is_lights_on') === true;
+                if (t >= twentyFourHoursAgo.getTime()) {
+                    transitions.push({ time: t, state: s });
+                }
+            });
+            // Determine initial state at -24h
+            if (transitions.length > 0) {
+                // If the first transition in the window is TO 'true', then before that it was 'false'
+                currentState = !transitions[0].state;
+            }
+            else {
+                currentState = isLightsOn; // No changes in 24h
+            }
+            // Start point
+            points.push([0, currentState ? 0 : height]);
+            transitions.forEach(tr => {
+                const x = ((tr.time - twentyFourHoursAgo.getTime()) / (24 * 60 * 60 * 1000)) * width;
+                // Draw horizontal line from previous x to current x
+                points.push([x, currentState ? 0 : height]);
+                // Update state
+                currentState = tr.state;
+                // Vertical line is implicit in the next horizontal segment starting at same x but new y
+                points.push([x, currentState ? 0 : height]);
+            });
+            // Final point at 'now'
+            points.push([width, currentState ? 0 : height]);
+            `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+            // Calculate Last ON / OFF Times
+            // We need the *latest* transition to ON and the *latest* transition to OFF
+            // Scan history (Newest -> Oldest)
+            const reversedHistory = [...sortedHistory].reverse();
+            const lastOn = reversedHistory.find(h => getValue(h, 'is_lights_on') === true);
+            if (lastOn) {
+                const d = new Date(lastOn.last_changed);
+                d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace(/ [AP]M/, '');
+                d.toLocaleTimeString([], { hour12: true }).slice(-2);
+            }
+            const lastOff = reversedHistory.find(h => getValue(h, 'is_lights_on') === false);
+            if (lastOff) {
+                const d = new Date(lastOff.last_changed);
+                d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace(/ [AP]M/, '');
+                d.toLocaleTimeString([], { hour12: true }).slice(-2);
+            }
+        }
+        // Helper to get next event time
+        const getNextEvent = (times) => {
+            if (!times || times.length === 0)
+                return null;
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            // Sort times
+            const sorted = [...times].sort((a, b) => {
+                const [h1, m1] = a.time.split(':').map(Number);
+                const [h2, m2] = b.time.split(':').map(Number);
+                return (h1 * 60 + m1) - (h2 * 60 + m2);
+            });
+            // Find next event today
+            const nextToday = sorted.find(t => {
+                const [h, m] = t.time.split(':').map(Number);
+                return (h * 60 + m) > currentMinutes;
+            });
+            if (nextToday)
+                return nextToday.time.slice(0, 5); // HH:MM
+            // If no event today, return first event (tomorrow)
+            return sorted[0].time.slice(0, 5);
+        };
+        const nextIrrigation = getNextEvent(overviewEntity?.attributes?.irrigation_times);
+        const nextDrain = getNextEvent(overviewEntity?.attributes?.drain_times);
+        return x `
       <div class="gs-stats-container">
          <div class="gs-header-top">
             <div class="gs-title-group">
                <!-- Title as Dropdown if no default is set -->
-               ${this._config?.default_growspace?j`
-                 <h3 class="gs-title">${t.name}</h3>
-               `:j`
-                 <select class="growspace-select-header" .value=${this.selectedDevice||""} @change=${this._handleDeviceChange}>
-                    ${i.map(t=>j`<option value="${t.device_id}">${t.name}</option>`)}
+               ${!this._config?.default_growspace ? x `
+                 <select class="growspace-select-header" .value=${this.selectedDevice || ''} @change=${this._handleDeviceChange}>
+                    ${devices.map(d => x `<option value="${d.device_id}">${d.name}</option>`)}
                  </select>
+               ` : x `
+                 <h3 class="gs-title">${device.name}</h3>
                `}
 
 
-               ${e?j`
+               ${dominant ? x `
                <div style="display: flex; gap: 8px;">
                 <div class="gs-stage-chip">
-                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${ls.getPlantStageIcon(e.stage)}"></path></svg>
-                  ${e.stage.charAt(0).toUpperCase()+e.stage.slice(1)} • Day ${e.days}
+                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
+                  ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Day ${dominant.days}
                 </div>
                 <div class="gs-stage-chip">
-                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${ls.getPlantStageIcon(e.stage)}"></path></svg>
-                  ${e.stage.charAt(0).toUpperCase()+e.stage.slice(1)} • Week ${Math.ceil(e.days/7)}
+                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
+                  ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Week ${Math.ceil(dominant.days / 7)}
                 </div>
                </div>
-               `:""}
+               ` : ''}
             </div>
 
             <div class="gs-stats-chips">
-                ${void 0!==d?j`
-                   <div class="stat-chip ${this._activeEnvGraphs.has("temperature")?"active":""}"
-                        @click=${()=>this._toggleEnvGraph("temperature")}>
-                     <svg viewBox="0 0 24 24"><path d="${Pt}"></path></svg>${d}°C
-                   </div>`:""}
-                ${void 0!==p?j`
-                   <div class="stat-chip ${this._activeEnvGraphs.has("humidity")?"active":""}"
-                        @click=${()=>this._toggleEnvGraph("humidity")}>
-                     <svg viewBox="0 0 24 24"><path d="${Rt}"></path></svg>${p}%
-                   </div>`:""}
-                ${void 0!==h?j`
-                   <div class="stat-chip ${this._activeEnvGraphs.has("vpd")?"active":""}"
-                        @click=${()=>this._toggleEnvGraph("vpd")}>
-                     <svg viewBox="0 0 24 24"><path d="${wt}"></path></svg>${h} kPa
-                   </div>`:""}
-                ${l?.attributes?.dehumidifier_entity?j`
-                   <div class="stat-chip ${this._activeEnvGraphs.has("dehumidifier")?"active":""}"
-                        @click=${()=>this._toggleEnvGraph("dehumidifier")}>
-                     <svg viewBox="0 0 24 24"><path d="${gt}"></path></svg>${"on"===l.attributes.dehumidifier_state?"On":"Off"}
-                   </div>`:""}
-                 ${void 0!==m?j`
-                   <div class="stat-chip ${this._activeEnvGraphs.has("co2")?"active":""}"
-                        @click=${()=>this._toggleEnvGraph("co2")}>
-                     <svg viewBox="0 0 24 24"><path d="${Ft}"></path></svg>${m} ppm
-                   </div>`:""}
+                ${temp !== undefined ? x `
+                   <div class="stat-chip ${this._activeEnvGraphs.has('temperature') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('temperature')}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>${temp}°C
+                   </div>` : ''}
+                ${hum !== undefined ? x `
+                   <div class="stat-chip ${this._activeEnvGraphs.has('humidity') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('humidity')}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>${hum}%
+                   </div>` : ''}
+                ${vpd !== undefined ? x `
+                   <div class="stat-chip ${this._activeEnvGraphs.has('vpd') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('vpd')}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>${vpd} kPa
+                   </div>` : ''}
+                ${overviewEntity?.attributes?.dehumidifier_entity ? x `
+                   <div class="stat-chip ${this._activeEnvGraphs.has('dehumidifier') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('dehumidifier')}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg>${overviewEntity.attributes.dehumidifier_state === 'on' ? 'On' : 'Off'}
+                   </div>` : ''}
+                 ${co2 !== undefined ? x `
+                   <div class="stat-chip ${this._activeEnvGraphs.has('co2') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('co2')}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm
+                   </div>` : ''}
 
-                ${v?j`
-                   <div class="stat-chip ${this._activeEnvGraphs.has("light")?"active":""}"
-                        @click=${()=>this._toggleEnvGraph("light")}>
-                     <svg viewBox="0 0 24 24"><path d="${y?Mt:"M12,2C9.76,2 7.78,3.05 6.5,4.68L16.31,14.5C17.94,13.21 19,11.24 19,9A7,7 0 0,0 12,2M3.28,4L2,5.27L5.04,8.3C5,8.53 5,8.76 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H14.73L18.73,22L20,20.72L3.28,4M9,20V21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9Z"}"></path></svg>
-                     ${y?"On":"Off"}
-                   </div>`:""}
+                ${hasLightSensor ? x `
+                   <div class="stat-chip ${this._activeEnvGraphs.has('light') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('light')}>
+                     <svg viewBox="0 0 24 24"><path d="${isLightsOn ? mdiLightbulbOn : mdiLightbulbOff}"></path></svg>
+                     ${isLightsOn ? 'On' : 'Off'}
+                   </div>` : ''}
 
-                 ${x?j`
-                   <div class="stat-chip ${this._activeEnvGraphs.has("irrigation")?"active":""}"
-                        @click=${()=>this._toggleEnvGraph("irrigation")}>
-                     <svg viewBox="0 0 24 24"><path d="${Ht}"></path></svg>
-                     Next: ${x}
-                   </div>`:""}
+                 ${nextIrrigation ? x `
+                   <div class="stat-chip ${this._activeEnvGraphs.has('irrigation') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('irrigation')}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                     Next: ${nextIrrigation}
+                   </div>` : ''}
 
-                 ${_?j`
-                   <div class="stat-chip ${this._activeEnvGraphs.has("drain")?"active":""}"
-                        @click=${()=>this._toggleEnvGraph("drain")}>
-                     <svg viewBox="0 0 24 24"><path d="${Ht}"></path></svg>
-                     Next: ${_}
-                   </div>`:""}
+                 ${nextDrain ? x `
+                   <div class="stat-chip ${this._activeEnvGraphs.has('drain') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('drain')}>
+                     <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                     Next: ${nextDrain}
+                   </div>` : ''}
 
-                 ${o?j`
-                   <div class="stat-chip ${this._activeEnvGraphs.has("optimal")?"active":""}"
-                        @click=${()=>this._toggleEnvGraph("optimal")}>
-                     <svg viewBox="0 0 24 24"><path d="${"on"===o.state?It:"M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"}"></path></svg>
-                     ${"on"===o.state?"Optimal Conditions":o.attributes.reasons||"Not Optimal"}
-                   </div>`:""}
+                 ${envEntity ? x `
+                   <div class="stat-chip ${this._activeEnvGraphs.has('optimal') ? 'active' : ''}"
+                        @click=${() => this._toggleEnvGraph('optimal')}>
+                     <svg viewBox="0 0 24 24"><path d="${envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank}"></path></svg>
+                     ${envEntity.state === 'on' ? 'Optimal Conditions' : (envEntity.attributes.reasons || 'Not Optimal')}
+                   </div>` : ''}
 
-                ${this._isCompactView?"":j`
+                ${!this._isCompactView ? x `
                   <div class="menu-container">
-                    <div class="menu-button" @click=${()=>this._menuOpen=!this._menuOpen}>
-                      <svg viewBox="0 0 24 24"><path d="${"M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z"}"></path></svg>
+                    <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
                     </div>
                     
-                    ${this._menuOpen?j`
-                      <div class="menu-dropdown" @click=${t=>t.stopPropagation()}>
-                        <div class="menu-item" @click=${()=>{this._openConfigDialog(),this._menuOpen=!1}}>
-                          <svg viewBox="0 0 24 24"><path d="${_t}"></path></svg>
+                    ${this._menuOpen ? x `
+                      <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
+                        <div class="menu-item" @click=${() => { this._openConfigDialog(); this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
                           <span class="menu-item-label">Config</span>
                         </div>
 
-                        <div class="menu-item" @click=${()=>{this._isEditMode=!this._isEditMode,this._menuOpen=!1}}>
-                          <svg viewBox="0 0 24 24"><path d="${Lt}"></path></svg>
+                        <div class="menu-item" @click=${() => { this._isEditMode = !this._isEditMode; this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
                           <span class="menu-item-label">Edit</span>
-                          <div class="menu-toggle-switch ${this._isEditMode?"active":""}"></div>
+                          <div class="menu-toggle-switch ${this._isEditMode ? 'active' : ''}"></div>
                         </div>
                         
-                        <div class="menu-item" @click=${()=>{this._isCompactView=!0,this._menuOpen=!1}}>
-                          <svg viewBox="0 0 24 24"><path d="${Et}"></path></svg>
+                        <div class="menu-item" @click=${() => { this._isCompactView = true; this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
                           <span class="menu-item-label">Compact View</span>
-                          <div class="menu-toggle-switch ${this._isCompactView?"active":""}"></div>
+                          <div class="menu-toggle-switch ${this._isCompactView ? 'active' : ''}"></div>
                         </div>
                         
                         
-                        <div class="menu-item" @click=${()=>{this._openStrainLibraryDialog(),this._menuOpen=!1}}>
-                          <svg viewBox="0 0 24 24"><path d="${St}"></path></svg>
+                        <div class="menu-item" @click=${() => { this._openStrainLibraryDialog(); this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
                           <span class="menu-item-label">Strains</span>
                         </div>
                         
-                        <div class="menu-item" @click=${()=>{this._openIrrigationDialog(),this._menuOpen=!1}}>
-                          <svg viewBox="0 0 24 24"><path d="${Ht}"></path></svg>
+                        <div class="menu-item" @click=${() => { this._openIrrigationDialog(); this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
                           <span class="menu-item-label">Irrigation</span>
                         </div>
                         
-                        <div class="menu-item" @click=${()=>{this._openGrowMasterDialog(),this._menuOpen=!1}}>
-                          <svg viewBox="0 0 24 24"><path d="${mt}"></path></svg>
+                        <div class="menu-item" @click=${() => { this._openGrowMasterDialog(); this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
                           <span class="menu-item-label">Ask AI</span>
                         </div>
                       </div>
-                    `:""}
+                    ` : ''}
                   </div>
-                `}
+                ` : ''}
 </div>
   </div>
   
-  ${this._activeEnvGraphs.size>0?this.renderTimeRangeSelector():""}
+  ${this._activeEnvGraphs.size > 0 ? this.renderTimeRangeSelector() : ''}
 
 <!-- Active Environmental Graphs -->
-  ${this._activeEnvGraphs.has("temperature")?this.renderEnvGraph("temperature","#FF5722","Temperature","°C","line",Pt):""}
-         ${this._activeEnvGraphs.has("humidity")?this.renderEnvGraph("humidity","#2196F3","Humidity","%","line",Rt):""}
-         ${this._activeEnvGraphs.has("vpd")?this.renderEnvGraph("vpd","#9C27B0","VPD","kPa","line",wt):""}
-         ${this._activeEnvGraphs.has("dehumidifier")?this.renderEnvGraph("dehumidifier","#00BCD4","Dehumidifier","state","step",gt):""}
-         ${this._activeEnvGraphs.has("co2")?this.renderEnvGraph("co2","#90A4AE","CO2","ppm","line",Ft):""}
-         ${this._activeEnvGraphs.has("light")?this.renderEnvGraph("light","#FFEB3B","Light Cycle","state","step",Mt):""}
-         ${this._activeEnvGraphs.has("optimal")?this.renderEnvGraph("optimal","#4CAF50","Optimal Conditions","state","step",It):""}
-         ${this._activeEnvGraphs.has("irrigation")?this.renderEnvGraph("irrigation","#2196F3","Irrigation Schedule","state","step",Ht):""}
-         ${this._activeEnvGraphs.has("drain")?this.renderEnvGraph("drain","#FF9800","Drain Schedule","state","step",Ht):""}
+  ${this._activeEnvGraphs.has('temperature') ? this.renderEnvGraph('temperature', '#FF5722', 'Temperature', '°C', 'line', mdiThermometer) : ''}
+         ${this._activeEnvGraphs.has('humidity') ? this.renderEnvGraph('humidity', '#2196F3', 'Humidity', '%', 'line', mdiWaterPercent) : ''}
+         ${this._activeEnvGraphs.has('vpd') ? this.renderEnvGraph('vpd', '#9C27B0', 'VPD', 'kPa', 'line', mdiCloudOutline) : ''}
+         ${this._activeEnvGraphs.has('dehumidifier') ? this.renderEnvGraph('dehumidifier', '#00BCD4', 'Dehumidifier', 'state', 'step', mdiAirHumidifier) : ''}
+         ${this._activeEnvGraphs.has('co2') ? this.renderEnvGraph('co2', '#90A4AE', 'CO2', 'ppm', 'line', mdiWeatherCloudy) : ''}
+         ${this._activeEnvGraphs.has('light') ? this.renderEnvGraph('light', '#FFEB3B', 'Light Cycle', 'state', 'step', mdiLightbulbOn) : ''}
+         ${this._activeEnvGraphs.has('optimal') ? this.renderEnvGraph('optimal', '#4CAF50', 'Optimal Conditions', 'state', 'step', mdiRadioboxMarked) : ''}
+         ${this._activeEnvGraphs.has('irrigation') ? this.renderEnvGraph('irrigation', '#2196F3', 'Irrigation Schedule', 'state', 'step', mdiWater) : ''}
+         ${this._activeEnvGraphs.has('drain') ? this.renderEnvGraph('drain', '#FF9800', 'Drain Schedule', 'state', 'step', mdiWater) : ''}
 
 </div>
-  `}renderHeader(t){return this._isCompactView||this._config?.title?(t.find(t=>t.device_id===this.selectedDevice),j`
+  `;
+    }
+    renderHeader(devices) {
+        if (!this._isCompactView && !this._config?.title) {
+            return x ``;
+        }
+        devices.find(d => d.device_id === this.selectedDevice);
+        return x `
       <div class="header">
-        ${this._config?.title?j`<h2 class="header-title">${this._config.title}</h2>`:""}
+        ${this._config?.title ? x `<h2 class="header-title">${this._config.title}</h2>` : ''}
         
-        ${this._isCompactView?j`
+        ${this._isCompactView ? x `
           <div class="selector-container">
-            ${this._config?.default_growspace?j`
+            ${!this._config?.default_growspace ? x `
+              <label for="device-select">Growspace:</label>
+              <select 
+                id="device-select" 
+                class="growspace-select"
+                .value=${this.selectedDevice || ''} 
+                @change=${this._handleDeviceChange}
+              >
+                ${devices.map(d => x `<option value="${d.device_id}">${d.name}</option>`)}
+              </select>
+            ` : x `
               <label for="device-select">Growspace:</label>
               <!-- Even if default is set, user wants dropdown in compact mode -->
               <select
                 id="device-select"
                 class="growspace-select"
-                .value=${this.selectedDevice||""}
+                .value=${this.selectedDevice || ''}
                 @change=${this._handleDeviceChange}
               >
-                ${t.map(t=>j`<option value="${t.device_id}">${t.name}</option>`)}
-              </select>
-            `:j`
-              <label for="device-select">Growspace:</label>
-              <select 
-                id="device-select" 
-                class="growspace-select"
-                .value=${this.selectedDevice||""} 
-                @change=${this._handleDeviceChange}
-              >
-                ${t.map(t=>j`<option value="${t.device_id}">${t.name}</option>`)}
+                ${devices.map(d => x `<option value="${d.device_id}">${d.name}</option>`)}
               </select>
             `}
           </div>
@@ -2259,25 +13286,30 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                 type="checkbox" 
                 id="compact-view" 
                 .checked=${this._isCompactView}
-                @change=${t=>this._isCompactView=t.target.checked}
+                @change=${(e) => this._isCompactView = e.target.checked}
               >
               <label for="compact-view">Compact</label>
             </div>
             
             <button class="action-button" @click=${this._openStrainLibraryDialog}>
               <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${St}"></path>
+                <path d="${mdiDna}"></path>
               </svg>
               Strains
             </button>
           </div>
-        `:""}
+        ` : ''}
       </div>
-    `):j``}renderEditModeBanner(){return this._isEditMode?j`
+    `;
+    }
+    renderEditModeBanner() {
+        if (!this._isEditMode)
+            return x ``;
+        return x `
       <div class="edit-mode-banner">
         <div class="banner-content">
           <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${yt}"></path>
+            <path d="${mdiCheckboxMarked}"></path>
           </svg>
           <span>${this._selectedPlants.size} plant(s) selected</span>
         </div>
@@ -2287,156 +13319,491 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
           <button class="md3-button text" @click=${this._exitEditMode}>Exit</button>
         </div>
       </div>
-    `:j``}renderGrid(t,e,i,r){const a=i>5,s=a?"":`grid-template-columns: repeat(${i}, minmax(0, 1fr)); grid-template-rows: repeat(${e}, 1fr);`;return j`
-      <div class="grid ${this._isCompactView?"compact":""} ${a?"force-list-view":""}"
-           style="${s}">
-        ${t.flat().map((t,e)=>{const a=Math.floor(e/i)+1,s=e%i+1;return t?this.renderPlantSlot(t,a,s,r):this.renderEmptySlot(a,s)})}
+    `;
+    }
+    renderGrid(grid, rows, cols, strainLibrary) {
+        const isListView = cols > 5;
+        // Use minmax(0, 1fr) to allow items to shrink below their content size, fixing overflow issues in 5-col grids.
+        const gridStyle = isListView
+            ? ''
+            : `grid-template-columns: repeat(${cols}, minmax(0, 1fr)); grid-template-rows: repeat(${rows}, 1fr);`;
+        return x `
+      <div class="grid ${this._isCompactView ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
+           style="${gridStyle}">
+        ${grid.flat().map((plant, index) => {
+            const row = Math.floor(index / cols) + 1;
+            const col = (index % cols) + 1;
+            if (!plant) {
+                return this.renderEmptySlot(row, col);
+            }
+            return this.renderPlantSlot(plant, row, col, strainLibrary);
+        })}
       </div>
-    `}renderEmptySlot(t,e){return j`
+    `;
+    }
+    renderEmptySlot(row, col) {
+        return x `
       <div
         class="plant-card-empty"
-        style="grid-row: ${t}; grid-column: ${e}"
-        @click=${()=>this._openAddPlantDialog(t-1,e-1)}
+        style="grid-row: ${row}; grid-column: ${col}"
+        @click=${() => this._openAddPlantDialog(row - 1, col - 1)}
         @dragover=${this._handleDragOver}
-        @drop=${i=>this._handleDrop(i,t,e,null)}
+        @drop=${(e) => this._handleDrop(e, row, col, null)}
       >
         <div class="plant-header">
           <svg style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;" viewBox="0 0 24 24">
-            <path d="${Ot}"></path>
+            <path d="${mdiPlus}"></path>
           </svg>
         </div>
         <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
       </div>
-    `}renderPlantSlot(t,e,i,r){const a=ls.getPlantStageColor(t.state),s=t.attributes?.strain,n=t.attributes?.phenotype;let o,l;if(s){const t=r.find(t=>t.strain===s&&t.phenotype===n);if(t&&t.image)o=t.image,l=t.image_crop_meta;else{const t=r.find(t=>t.strain===s&&(!t.phenotype||"default"===t.phenotype));if(t&&t.image)o=t.image,l=t.image_crop_meta;else if(!o){const t=r.find(t=>t.strain===s&&t.image);t&&(o=t.image,l=t.image_crop_meta)}}}const c=this._selectedPlants.has(t.attributes.plant_id||"");return j`
+    `;
+    }
+    renderPlantSlot(plant, row, col, strainLibrary) {
+        const stageColor = PlantUtils.getPlantStageColor(plant.state);
+        // Resolve Image
+        const strainName = plant.attributes?.strain;
+        const pheno = plant.attributes?.phenotype;
+        let imageUrl;
+        let imageCropMeta;
+        if (strainName) {
+            // Look for specific pheno match first
+            const phenoMatch = strainLibrary.find(s => s.strain === strainName && s.phenotype === pheno);
+            if (phenoMatch && phenoMatch.image) {
+                imageUrl = phenoMatch.image;
+                imageCropMeta = phenoMatch.image_crop_meta;
+            }
+            else {
+                // Fallback to strain default
+                const strainMatch = strainLibrary.find(s => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
+                if (strainMatch && strainMatch.image) {
+                    imageUrl = strainMatch.image;
+                    imageCropMeta = strainMatch.image_crop_meta;
+                }
+                else if (!imageUrl) {
+                    // Any match?
+                    const anyMatch = strainLibrary.find(s => s.strain === strainName && s.image);
+                    if (anyMatch) {
+                        imageUrl = anyMatch.image;
+                        imageCropMeta = anyMatch.image_crop_meta;
+                    }
+                }
+            }
+        }
+        const isSelected = this._selectedPlants.has(plant.attributes.plant_id || '');
+        return x `
       <div
         class="plant-card-rich"
-        style="grid-row: ${e}; grid-column: ${i}; --stage-color: ${a}"
+        style="grid-row: ${row}; grid-column: ${col}; --stage-color: ${stageColor}"
         draggable="true"
-        @dragstart=${e=>this._handleDragStart(e,t)}
+        @dragstart=${(e) => this._handleDragStart(e, plant)}
         @dragend=${this._handleDragEnd}
         @dragover=${this._handleDragOver}
-        @drop=${r=>this._handleDrop(r,e,i,t)}
-        @click=${()=>this._handlePlantClick(t)}
+        @drop=${(e) => this._handleDrop(e, row, col, plant)}
+        @click=${() => this._handlePlantClick(plant)}
       >
-        ${o?j`
+        ${imageUrl ? x `
           <img 
             class="plant-card-bg" 
-            src="${o}" 
+            src="${imageUrl}" 
             loading="lazy" 
-            alt="${s||"Plant"}"
-            style="${ds.getImgStyle(l)}"
+            alt="${strainName || 'Plant'}"
+            style="${DialogRenderer.getImgStyle(imageCropMeta)}"
           />
           <div class="plant-card-overlay"></div>
-        `:""}
+        ` : ''}
 
-        ${this._isEditMode?j`
-          <div class="plant-card-checkbox" @click=${e=>{e.stopPropagation(),this._togglePlantSelection(t)}}>
-             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: ${c?"var(--primary-color)":"rgba(255,255,255,0.7)"};">
-               <path d="${c?yt:"M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z"}"></path>
+        ${this._isEditMode ? x `
+          <div class="plant-card-checkbox" @click=${(e) => { e.stopPropagation(); this._togglePlantSelection(plant); }}>
+             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: ${isSelected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)'};">
+               <path d="${isSelected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
              </svg>
           </div>
-        `:""}
+        ` : ''}
 
         <div class="plant-card-content">
           <div class="pc-info">
-            <div class="pc-strain-name" title="${t.attributes?.strain||""}">
-              ${t.attributes?.strain||"Unknown Strain"}
+            <div class="pc-strain-name" title="${plant.attributes?.strain || ''}">
+              ${plant.attributes?.strain || 'Unknown Strain'}
             </div>
-            ${t.attributes?.phenotype?j`<div class="pc-pheno">${t.attributes.phenotype}</div>`:""}
+            ${plant.attributes?.phenotype ? x `<div class="pc-pheno">${plant.attributes.phenotype}</div>` : ''}
             <div class="pc-stage">
-              ${t.state||"Unknown"}
+              ${plant.state || 'Unknown'}
             </div>
           </div>
 
           <div class="pc-stats">
-            ${this.renderPlantDaysRich(t)}
+            ${this.renderPlantDaysRich(plant)}
           </div>
         </div>
       </div>
-    `}renderPlantDaysRich(t){const e=[{days:t.attributes?.seedling_days,icon:Nt,title:"Seedling",stage:"seedling"},{days:t.attributes?.mother_days,icon:Nt,title:"Mother",stage:"mother"},{days:t.attributes?.clone_days,icon:Nt,title:"Clone",stage:"clone"},{days:t.attributes?.veg_days,icon:Nt,title:"Veg",stage:"vegetative"},{days:t.attributes?.flower_days,icon:Ct,title:"Flower",stage:"flower"},{days:t.attributes?.dry_days,icon:kt,title:"Dry",stage:"dry"},{days:t.attributes?.cure_days,icon:ft,title:"Cure",stage:"cure"}].filter(t=>void 0!==t.days&&null!==t.days),i=e.filter(t=>t.days),r=(t.state||"").toLowerCase(),a="veg"===r?"vegetative":r;return j`
-        ${i.map(t=>{const e=ls.getPlantStageColor(t.stage),i=t.stage===a;return j`
-                <div class="pc-stat-item ${i?"current-stage":""}">
-                    <svg style="color: ${e};" viewBox="0 0 24 24"><path d="${t.icon}"></path></svg>
-                    <div class="pc-stat-text">${t.days}d</div>
+    `;
+    }
+    renderPlantDaysRich(plant) {
+        // We need to show relevant days.
+        // Mockup shows two icons at bottom.
+        // Likely Veg Days and Flower Days if available, or current stage days?
+        // User said "continue to show relevant days like we already do".
+        // Existing logic filters and shows all relevant days.
+        // I will use that logic but style it for the new card (Icon Top, Text Bottom or similar).
+        const days = [
+            { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Seedling", stage: "seedling" },
+            { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Mother", stage: "mother" },
+            { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Clone", stage: "clone" },
+            { days: plant.attributes?.veg_days, icon: mdiSprout, title: "Veg", stage: "vegetative" },
+            { days: plant.attributes?.flower_days, icon: mdiFlower, title: "Flower", stage: "flower" },
+            { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Dry", stage: "dry" },
+            { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Cure", stage: "cure" }
+        ].filter(d => d.days !== undefined && d.days !== null); // Filter nulls, let 0 show if relevant? Logic above used d.days which is truthy, so 0 was hidden. I'll stick to truthy.
+        const visibleDays = days.filter(d => d.days);
+        // Identify current stage to highlight
+        const currentStage = (plant.state || '').toLowerCase();
+        // Normalize if necessary, e.g. "veg" -> "vegetative"
+        // The days array uses standard stage keys (vegetative, flower, etc)
+        const normalizedCurrent = currentStage === 'veg' ? 'vegetative' : currentStage;
+        return x `
+        ${visibleDays.map(d => {
+            const color = PlantUtils.getPlantStageColor(d.stage);
+            const isCurrent = d.stage === normalizedCurrent;
+            return x `
+                <div class="pc-stat-item ${isCurrent ? 'current-stage' : ''}">
+                    <svg style="color: ${color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
+                    <div class="pc-stat-text">${d.days}d</div>
                 </div>
-            `})}
-    `}_setGraphRange(t){this.selectedDevice&&(this._graphRanges={...this._graphRanges,[this.selectedDevice]:t},this._fetchHistory(t))}renderTimeRangeSelector(){const t=this.selectedDevice&&this._graphRanges[this.selectedDevice]||"24h";return j`
+            `;
+        })}
+    `;
+    }
+    _setGraphRange(range) {
+        if (!this.selectedDevice)
+            return;
+        this._graphRanges = {
+            ...this._graphRanges,
+            [this.selectedDevice]: range
+        };
+        this._fetchHistory(range);
+    }
+    renderTimeRangeSelector() {
+        const currentRange = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
+        const ranges = ['1h', '6h', '24h', '7d'];
+        return x `
       <div class="time-range-selector">
-        ${["1h","6h","24h","7d"].map(e=>j`
+        ${ranges.map(range => x `
           <button 
-            class="range-btn ${t===e?"active":""}"
-            @click=${()=>this._setGraphRange(e)}
+            class="range-btn ${currentRange === range ? 'active' : ''}"
+            @click=${() => this._setGraphRange(range)}
           >
-            ${e}
+            ${range}
           </button>
         `)}
       </div>
-    `}_searchStrains(t){if(!t)return this._strainLibrary;const e=t.toLowerCase();return this._strainLibrary.filter(t=>t.strain&&t.strain.toLowerCase().includes(e)||t.phenotype&&t.phenotype.toLowerCase().includes(e)||t.breeder&&t.breeder.toLowerCase().includes(e)||t.lineage&&t.lineage.toLowerCase().includes(e))}renderDialogs(){const t=this.dataService?.getStrainLibrary()||[],e={},i=this.hass.states["sensor.growspaces_list"]?.attributes?.growspaces;i&&Object.entries(i).forEach(([t,i])=>{e[t]=i});const r=this.dataService.getGrowspaceDevices().find(t=>t.device_id===this.selectedDevice);return j`
-      ${ds.renderAddPlantDialog(this._addPlantDialog,t,r?.name??"",{onClose:()=>this._addPlantDialog=null,onConfirm:()=>this._confirmAddPlant(),onStrainChange:e=>{if(this._addPlantDialog){this._addPlantDialog.strain=e;const i=t.find(t=>t.strain===e);i&&i.phenotype?this._addPlantDialog.phenotype=i.phenotype:this._addPlantDialog.phenotype="",this.requestUpdate()}},onPhenotypeChange:t=>{this._addPlantDialog&&(this._addPlantDialog.phenotype=t)},onVegStartChange:t=>{this._addPlantDialog&&(this._addPlantDialog.veg_start=t)},onFlowerStartChange:t=>{this._addPlantDialog&&(this._addPlantDialog.flower_start=t)},onSeedlingStartChange:t=>{this._addPlantDialog&&(this._addPlantDialog.seedling_start=t)},onMotherStartChange:t=>{this._addPlantDialog&&(this._addPlantDialog.mother_start=t)},onCloneStartChange:t=>{this._addPlantDialog&&(this._addPlantDialog.clone_start=t)},onDryStartChange:t=>{this._addPlantDialog&&(this._addPlantDialog.dry_start=t)},onCureStartChange:t=>{this._addPlantDialog&&(this._addPlantDialog.cure_start=t)},onRowChange:t=>{if(this._addPlantDialog){const e=parseInt(t);!isNaN(e)&&e>0&&(this._addPlantDialog.row=e-1,this.requestUpdate())}},onColChange:t=>{if(this._addPlantDialog){const e=parseInt(t);!isNaN(e)&&e>0&&(this._addPlantDialog.col=e-1,this.requestUpdate())}}})}
+    `;
+    }
+    _searchStrains(query) {
+        if (!query)
+            return this._strainLibrary;
+        const lowerQuery = query.toLowerCase();
+        return this._strainLibrary.filter(strain => {
+            return ((strain.strain && strain.strain.toLowerCase().includes(lowerQuery)) ||
+                (strain.phenotype && strain.phenotype.toLowerCase().includes(lowerQuery)) ||
+                (strain.breeder && strain.breeder.toLowerCase().includes(lowerQuery)) ||
+                (strain.lineage && strain.lineage.toLowerCase().includes(lowerQuery)));
+        });
+    }
+    renderDialogs() {
+        const strainLibrary = this.dataService?.getStrainLibrary() || [];
+        const growspaceOptions = {};
+        const growspaces = this.hass.states['sensor.growspaces_list']?.attributes?.growspaces;
+        if (growspaces) {
+            Object.entries(growspaces).forEach(([id, name]) => {
+                growspaceOptions[id] = name;
+            });
+        }
+        const devices = this.dataService.getGrowspaceDevices();
+        const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
+        return x `
+      ${DialogRenderer.renderAddPlantDialog(this._addPlantDialog, strainLibrary, selectedDeviceData?.name ?? '', {
+            onClose: () => this._addPlantDialog = null,
+            onConfirm: () => this._confirmAddPlant(),
+            onStrainChange: (value) => {
+                if (this._addPlantDialog) {
+                    // When using the dropdown, we now get the unique strain name (string)
+                    this._addPlantDialog.strain = value;
+                    // Attempt to pre-fill phenotype from library (first match)
+                    const entry = strainLibrary.find(s => s.strain === value);
+                    if (entry && entry.phenotype) {
+                        this._addPlantDialog.phenotype = entry.phenotype;
+                    }
+                    else {
+                        // No default phenotype or not found, keep current or clear?
+                        // Let's clear it if they switched strains, unless they are typing (but this is a select change)
+                        this._addPlantDialog.phenotype = '';
+                    }
+                    this.requestUpdate();
+                }
+            },
+            onPhenotypeChange: (value) => { if (this._addPlantDialog)
+                this._addPlantDialog.phenotype = value; },
+            onVegStartChange: (value) => { if (this._addPlantDialog)
+                this._addPlantDialog.veg_start = value; },
+            onFlowerStartChange: (value) => { if (this._addPlantDialog)
+                this._addPlantDialog.flower_start = value; },
+            onSeedlingStartChange: (value) => { if (this._addPlantDialog)
+                this._addPlantDialog.seedling_start = value; },
+            onMotherStartChange: (value) => { if (this._addPlantDialog)
+                this._addPlantDialog.mother_start = value; },
+            onCloneStartChange: (value) => { if (this._addPlantDialog)
+                this._addPlantDialog.clone_start = value; },
+            onDryStartChange: (value) => { if (this._addPlantDialog)
+                this._addPlantDialog.dry_start = value; },
+            onCureStartChange: (value) => { if (this._addPlantDialog)
+                this._addPlantDialog.cure_start = value; },
+            onRowChange: (value) => {
+                if (this._addPlantDialog) {
+                    const val = parseInt(value);
+                    if (!isNaN(val) && val > 0) {
+                        this._addPlantDialog.row = val - 1;
+                        this.requestUpdate();
+                    }
+                }
+            },
+            onColChange: (value) => {
+                if (this._addPlantDialog) {
+                    const val = parseInt(value);
+                    if (!isNaN(val) && val > 0) {
+                        this._addPlantDialog.col = val - 1;
+                        this.requestUpdate();
+                    }
+                }
+            },
+        })}
 
-      ${ds.renderPlantOverviewDialog(this._plantOverviewDialog,e,{onClose:()=>this._plantOverviewDialog=null,onUpdate:()=>{this._updatePlant()},onDelete:t=>{this._handleDeletePlant(t)},onHarvest:t=>{this._harvestPlant(t)},onClone:(t,e)=>{this.clonePlant(t,e)},onTakeClone:(t,e)=>{this.clonePlant(t,e),this._plantOverviewDialog=null},onMoveClone:(t,e)=>{this.hass.callService("growspace_manager","move_clone",{plant_id:t.attributes.plant_id,target_growspace_id:e}).then(()=>{console.log(`Clone ${t.attributes.friendly_name} moved to ${e}`),this._plantOverviewDialog=null}).catch(t=>{console.error("Error moving clone:",t)})},onFinishDrying:t=>{this._finishDryingPlant(t)},_harvestPlant:this._harvestPlant.bind(this),_finishDryingPlant:this._finishDryingPlant.bind(this),onAttributeChange:(t,e)=>{this._plantOverviewDialog&&(this._plantOverviewDialog.editedAttributes[t]=e)},onToggleShowAllDates:()=>{this._plantOverviewDialog&&(this._plantOverviewDialog.showAllDates=!this._plantOverviewDialog.showAllDates,this.requestUpdate())}})}
+      ${DialogRenderer.renderPlantOverviewDialog(this._plantOverviewDialog, growspaceOptions, {
+            onClose: () => this._plantOverviewDialog = null,
+            onUpdate: () => { this._updatePlant(); },
+            onDelete: (plantId) => { this._handleDeletePlant(plantId); },
+            onHarvest: (plantEntity) => { this._harvestPlant(plantEntity); },
+            onClone: (plantEntity, numClones) => { this.clonePlant(plantEntity, numClones); },
+            onTakeClone: (plantEntity, numClones) => {
+                this.clonePlant(plantEntity, numClones);
+                this._plantOverviewDialog = null;
+            },
+            onMoveClone: (plant, targetGrowspace) => {
+                this.hass.callService('growspace_manager', 'move_clone', {
+                    plant_id: plant.attributes.plant_id,
+                    target_growspace_id: targetGrowspace
+                }).then(() => {
+                    console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
+                    this._plantOverviewDialog = null; // close dialog or refresh state
+                }).catch((err) => {
+                    console.error('Error moving clone:', err);
+                });
+            },
+            onFinishDrying: (plantEntity) => { this._finishDryingPlant(plantEntity); },
+            _harvestPlant: this._harvestPlant.bind(this),
+            _finishDryingPlant: this._finishDryingPlant.bind(this),
+            onAttributeChange: (key, value) => {
+                if (this._plantOverviewDialog) {
+                    this._plantOverviewDialog.editedAttributes[key] = value;
+                }
+            },
+            onToggleShowAllDates: () => {
+                if (this._plantOverviewDialog) {
+                    this._plantOverviewDialog.showAllDates = !this._plantOverviewDialog.showAllDates;
+                    this.requestUpdate();
+                }
+            },
+        })}
 
-      ${ds.renderStrainLibraryDialog(this._strainLibraryDialog?{...this._strainLibraryDialog,strains:this._searchStrains(this._strainLibraryDialog.searchQuery||"")}:null,{onClose:()=>this._strainLibraryDialog=null,onAddStrain:()=>this._addStrain(),onRemoveStrain:t=>this._removeStrain(t),onClearAll:()=>this._clearStrains(),onEditorChange:(t,e)=>this._handleStrainEditorChange(t,e),onSwitchView:(t,e)=>this._switchStrainView(t,e),onSearch:t=>this._setStrainSearchQuery(t),onToggleCropMode:t=>this._toggleCropMode(t),onToggleImageSelector:t=>this._toggleImageSelector(t),onSelectLibraryImage:t=>this._handleSelectLibraryImage(t),onExportStrains:()=>this._handleExportLibrary(),onOpenImportDialog:()=>this._openImportDialog(),onImportDialogChange:t=>this._handleImportDialogChange(t),onConfirmImport:()=>this._performImport(),onGetRecommendation:()=>this._openStrainRecommendationDialog()})}
+      ${DialogRenderer.renderStrainLibraryDialog(this._strainLibraryDialog ? { ...this._strainLibraryDialog, strains: this._searchStrains(this._strainLibraryDialog.searchQuery || '') } : null, {
+            onClose: () => this._strainLibraryDialog = null,
+            onAddStrain: () => this._addStrain(),
+            onRemoveStrain: (strainKey) => this._removeStrain(strainKey),
+            onClearAll: () => this._clearStrains(),
+            onEditorChange: (field, value) => this._handleStrainEditorChange(field, value),
+            onSwitchView: (view, strain) => this._switchStrainView(view, strain),
+            onSearch: (query) => this._setStrainSearchQuery(query),
+            onToggleCropMode: (active) => this._toggleCropMode(active),
+            onToggleImageSelector: (isOpen) => this._toggleImageSelector(isOpen),
+            onSelectLibraryImage: (img) => this._handleSelectLibraryImage(img),
+            onExportStrains: () => this._handleExportLibrary(),
+            onOpenImportDialog: () => this._openImportDialog(),
+            onImportDialogChange: (c) => this._handleImportDialogChange(c),
+            onConfirmImport: () => this._performImport(),
+            onGetRecommendation: () => this._openStrainRecommendationDialog(),
+        })}
 
-      ${ds.renderConfigDialog(this._configDialog,e,{onClose:()=>this._configDialog=null,onSwitchTab:t=>{this._configDialog&&(this._configDialog.currentTab=t,this.requestUpdate())},onAddGrowspaceChange:(t,e)=>{this._configDialog&&(this._configDialog.addGrowspaceData[t]=e,this.requestUpdate())},onAddGrowspaceSubmit:()=>this._handleAddGrowspaceSubmit(),onEnvChange:(t,e)=>{this._configDialog&&(this._configDialog.environmentData[t]=e,this.requestUpdate())},onEnvSubmit:()=>this._handleEnvSubmit(),onGlobalChange:(t,e)=>{this._configDialog&&(this._configDialog.globalData[t]=e,this.requestUpdate())},onGlobalSubmit:()=>this._handleGlobalSubmit()})}
+      ${DialogRenderer.renderConfigDialog(this._configDialog, growspaceOptions, {
+            onClose: () => this._configDialog = null,
+            onSwitchTab: (tab) => { if (this._configDialog) {
+                this._configDialog.currentTab = tab;
+                this.requestUpdate();
+            } },
+            onAddGrowspaceChange: (f, v) => { if (this._configDialog) {
+                this._configDialog.addGrowspaceData[f] = v;
+                this.requestUpdate();
+            } },
+            onAddGrowspaceSubmit: () => this._handleAddGrowspaceSubmit(),
+            onEnvChange: (f, v) => { if (this._configDialog) {
+                this._configDialog.environmentData[f] = v;
+                this.requestUpdate();
+            } },
+            onEnvSubmit: () => this._handleEnvSubmit(),
+            onGlobalChange: (f, v) => { if (this._configDialog) {
+                this._configDialog.globalData[f] = v;
+                this.requestUpdate();
+            } },
+            onGlobalSubmit: () => this._handleGlobalSubmit(),
+        })}
 
-    ${this._growMasterDialog?(()=>{let t,e=!1;if(this.selectedDevice&&this.hass){const t=this.selectedDevice,i=[`binary_sensor.${t}_plants_under_stress`,`binary_sensor.${t}_stress`,`binary_sensor.growspace_manager_${t}_stress`];for(const t of i){const i=this.hass.states[t];if(i&&"on"===i.state){e=!0;break}}}if(this.hass){const e=this.hass.states["sensor.growspace_manager"];e&&e.attributes&&e.attributes.ai_settings&&(t=e.attributes.personality||e.attributes.ai_settings.personality)}return ds.renderGrowMasterDialog(this._growMasterDialog,e,t,{onClose:()=>this._growMasterDialog=null,onQueryChange:t=>{this._growMasterDialog&&(this._growMasterDialog.userQuery=t,this.requestUpdate())},onAnalyze:()=>this._handleAskAdvice(),onAnalyzeAll:()=>this._handleAnalyzeAll()})})():""}
+    ${this._growMasterDialog ? (() => {
+            // Determine stress state for the dialog
+            let isStressed = false;
+            let personality = undefined;
+            // Attempt to find stress sensor
+            if (this.selectedDevice && this.hass) {
+                // Pattern checking for stress sensor
+                const id = this.selectedDevice;
+                const stressEntityIds = [
+                    `binary_sensor.${id}_plants_under_stress`,
+                    `binary_sensor.${id}_stress`,
+                    `binary_sensor.growspace_manager_${id}_stress`
+                ];
+                for (const eid of stressEntityIds) {
+                    const ent = this.hass.states[eid];
+                    if (ent && ent.state === 'on') {
+                        isStressed = true;
+                        break;
+                    }
+                }
+            }
+            // Personality check
+            if (this.hass) {
+                const manager = this.hass.states['sensor.growspace_manager'];
+                if (manager && manager.attributes && manager.attributes.ai_settings) {
+                    personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
+                }
+            }
+            return DialogRenderer.renderGrowMasterDialog(this._growMasterDialog, isStressed, personality, {
+                onClose: () => this._growMasterDialog = null,
+                onQueryChange: (q) => { if (this._growMasterDialog) {
+                    this._growMasterDialog.userQuery = q;
+                    this.requestUpdate();
+                } },
+                onAnalyze: () => this._handleAskAdvice(),
+                onAnalyzeAll: () => this._handleAnalyzeAll()
+            });
+        })() : ''}
 
-      ${ds.renderStrainRecommendationDialog(this._strainRecommendationDialog,{onClose:()=>this._strainRecommendationDialog=null,onQueryChange:t=>{this._strainRecommendationDialog&&(this._strainRecommendationDialog.userQuery=t,this.requestUpdate())},onGetRecommendation:()=>this._handleGetStrainRecommendation()})}
+      ${DialogRenderer.renderStrainRecommendationDialog(this._strainRecommendationDialog, {
+            onClose: () => this._strainRecommendationDialog = null,
+            onQueryChange: (q) => { if (this._strainRecommendationDialog) {
+                this._strainRecommendationDialog.userQuery = q;
+                this.requestUpdate();
+            } },
+            onGetRecommendation: () => this._handleGetStrainRecommendation()
+        })}
 
-      ${ds.renderIrrigationDialog(this._irrigationDialog,{onClose:()=>this._irrigationDialog=null,onIrrigationPumpChange:t=>{this._irrigationDialog&&(this._irrigationDialog.irrigation_pump_entity=t,this.requestUpdate())},onIrrigationDurationChange:t=>{this._irrigationDialog&&(this._irrigationDialog.irrigation_duration=t,this.requestUpdate())},onDrainPumpChange:t=>{this._irrigationDialog&&(this._irrigationDialog.drain_pump_entity=t,this.requestUpdate())},onDrainDurationChange:t=>{this._irrigationDialog&&(this._irrigationDialog.drain_duration=t,this.requestUpdate())},onSavePumpSettings:()=>this._saveIrrigationPumpSettings(),onAddIrrigationTime:t=>{const e=t.target.closest(".dialog-body")?.querySelector(".irrigation-time-bar");if(e){const t=e.getBoundingClientRect();this._startAddingIrrigationTime(t.width/2,t.width)}},onStartAddingIrrigationTime:(t,e)=>this._startAddingIrrigationTime(t,e),onRemoveIrrigationTime:t=>this._removeIrrigationTime(t),onAddDrainTime:t=>{const e=t.target.closest(".dialog-body")?.querySelector(".drain-time-bar");if(e){const t=e.getBoundingClientRect();this._startAddingDrainTime(t.width/2,t.width)}},onStartAddingDrainTime:(t,e)=>this._startAddingDrainTime(t,e),onRemoveDrainTime:t=>this._removeDrainTime(t),onCancelAddingIrrigationTime:()=>{this._irrigationDialog&&(this._irrigationDialog.adding_irrigation_time=void 0,this.requestUpdate())},onCancelAddingDrainTime:()=>{this._irrigationDialog&&(this._irrigationDialog.adding_drain_time=void 0,this.requestUpdate())},onConfirmAddIrrigationTime:(t,e)=>{this._addIrrigationTime(t,e)},onConfirmAddDrainTime:(t,e)=>{this._addDrainTime(t,e)},onIrrigationTimeInputChange:(t,e)=>{this._irrigationDialog?.adding_irrigation_time&&("time"===t?this._irrigationDialog.adding_irrigation_time.time=e:this._irrigationDialog.adding_irrigation_time.duration=e,this.requestUpdate())},onDrainTimeInputChange:(t,e)=>{this._irrigationDialog?.adding_drain_time&&("time"===t?this._irrigationDialog.adding_drain_time.time=e:this._irrigationDialog.adding_drain_time.duration=e,this.requestUpdate())}})}
-    `}};ps.styles=[os,o`
+      ${DialogRenderer.renderIrrigationDialog(this._irrigationDialog, {
+            onClose: () => this._irrigationDialog = null,
+            onIrrigationPumpChange: (value) => {
+                if (this._irrigationDialog) {
+                    this._irrigationDialog.irrigation_pump_entity = value;
+                    this.requestUpdate();
+                }
+            },
+            onIrrigationDurationChange: (value) => {
+                if (this._irrigationDialog) {
+                    this._irrigationDialog.irrigation_duration = value;
+                    this.requestUpdate();
+                }
+            },
+            onDrainPumpChange: (value) => {
+                if (this._irrigationDialog) {
+                    this._irrigationDialog.drain_pump_entity = value;
+                    this.requestUpdate();
+                }
+            },
+            onDrainDurationChange: (value) => {
+                if (this._irrigationDialog) {
+                    this._irrigationDialog.drain_duration = value;
+                    this.requestUpdate();
+                }
+            },
+            onSavePumpSettings: () => this._saveIrrigationPumpSettings(),
+            onAddIrrigationTime: (e) => {
+                const container = e.target.closest('.dialog-body')?.querySelector('.irrigation-time-bar');
+                if (container) {
+                    const rect = container.getBoundingClientRect();
+                    this._startAddingIrrigationTime(rect.width / 2, rect.width);
+                }
+            },
+            onStartAddingIrrigationTime: (x, width) => this._startAddingIrrigationTime(x, width),
+            onRemoveIrrigationTime: (time) => this._removeIrrigationTime(time),
+            onAddDrainTime: (e) => {
+                const container = e.target.closest('.dialog-body')?.querySelector('.drain-time-bar');
+                if (container) {
+                    const rect = container.getBoundingClientRect();
+                    this._startAddingDrainTime(rect.width / 2, rect.width);
+                }
+            },
+            onStartAddingDrainTime: (x, width) => this._startAddingDrainTime(x, width),
+            onRemoveDrainTime: (time) => this._removeDrainTime(time),
+            onCancelAddingIrrigationTime: () => {
+                if (this._irrigationDialog) {
+                    this._irrigationDialog.adding_irrigation_time = undefined;
+                    this.requestUpdate();
+                }
+            },
+            onCancelAddingDrainTime: () => {
+                if (this._irrigationDialog) {
+                    this._irrigationDialog.adding_drain_time = undefined;
+                    this.requestUpdate();
+                }
+            },
+            onConfirmAddIrrigationTime: (time, duration) => {
+                this._addIrrigationTime(time, duration);
+            },
+            onConfirmAddDrainTime: (time, duration) => {
+                this._addDrainTime(time, duration);
+            },
+            onIrrigationTimeInputChange: (field, value) => {
+                if (this._irrigationDialog?.adding_irrigation_time) {
+                    if (field === 'time') {
+                        this._irrigationDialog.adding_irrigation_time.time = value;
+                    }
+                    else {
+                        this._irrigationDialog.adding_irrigation_time.duration = value;
+                    }
+                    this.requestUpdate();
+                }
+            },
+            onDrainTimeInputChange: (field, value) => {
+                if (this._irrigationDialog?.adding_drain_time) {
+                    if (field === 'time') {
+                        this._irrigationDialog.adding_drain_time.time = value;
+                    }
+                    else {
+                        this._irrigationDialog.adding_drain_time.duration = value;
+                    }
+                    this.requestUpdate();
+                }
+            },
+        })}
+    `;
+    }
+};
+GrowspaceManagerCard.styles = [
+    variables,
+    i$3 `
       :host {
         display: block;
         font-family: 'Roboto', sans-serif;
         color: var(--growspace-card-text);
       }
 
-      /* Rich Card Style */
+      /* Rich Card Style - Glassmorphism 2.0 */
       .plant-card-rich {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        border-radius: 16px;
-        overflow: hidden;
-        /* Default background if no image */
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        cursor: pointer;
-        aspect-ratio: 1;
-      }
-
-      .plant-card-rich:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-        border-color: rgba(255, 255, 255, 0.2);
-      }
-
-      .plant-card-bg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-size: cover;
-        z-index: 0;
-      }
-
-      .plant-card-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.3) 100%);
-        z-index: 1;
-      }
 
       .plant-card-checkbox {
         position: absolute;
@@ -2532,7 +13899,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         color: #fff;
       }
 
-      /* Empty Slot Redesign */
+      /* Empty Slot Redesign - Glassmorphism */
       .plant-card-empty {
         width: 100%;
         height: 100%;
@@ -2540,21 +13907,25 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: rgba(255, 255, 255, 0.02);
-        border: 2px dashed rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.01);
+        border: 1px dashed rgba(255, 255, 255, 0.15);
+        border-radius: 20px;
         color: rgba(255,255,255,0.3);
-        transition: all 0.2s;
+        transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
         cursor: pointer;
         min-height: 100px;
         aspect-ratio: 1;
         gap: 12px;
+        backdrop-filter: blur(4px);
       }
 
       .plant-card-empty:hover {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.3);
-        color: rgba(255,255,255,0.8);
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.4);
+        border-style: solid;
+        color: rgba(255,255,255,0.9);
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+        transform: scale(1.02);
       }
 
       ha-card {
@@ -2569,25 +13940,26 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         box-shadow: var(--card-shadow-hover);
       }
 
-      /* Unified Card Container - Glassmorphism & Gradient */
+      /* Unified Card Container - Glassmorphism 2.0 */
       .unified-growspace-card {
-        /* Fallback */
-        background: rgba(30, 30, 35, 0.6);
-        /* Gradient approximating the screenshot */
-        background-image: linear-gradient(135deg, rgba(50, 50, 60, 0.8) 0%, rgba(40, 30, 60, 0.8) 100%);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        /* Deep glass effect */
+        background: rgba(20, 20, 24, 0.6);
+        background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
 
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 28px; /* MD3 Large rounding */
         padding: 24px;
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 24px;
         color: #fff;
         position: relative;
         overflow: hidden;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        box-shadow: 
+          0 4px 24px -1px rgba(0, 0, 0, 0.2),
+          0 0 0 1px rgba(255, 255, 255, 0.02) inset;
       }
 
       .gs-stats-container {
@@ -2611,24 +13983,32 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       }
 
       .gs-title {
-        font-size: 2rem;
-        font-weight: 500;
+        font-family: 'Roboto', sans-serif;
+        font-size: 2.25rem; /* MD3 Headline Large */
+        font-weight: 400;
         margin: 0;
-        letter-spacing: -0.5px;
+        letter-spacing: 0;
+        line-height: 2.75rem;
         text-transform: capitalize;
+        background: linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.1);
       }
 
       .gs-stage-chip {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        background: rgba(255, 255, 255, 0.15);
-        padding: 4px 12px;
-        border-radius: 16px;
-        font-size: 0.9rem;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 6px 16px;
+        border-radius: 24px; /* Pill shape */
+        font-size: 0.875rem;
         font-weight: 500;
         color: #fff;
         width: fit-content;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(4px);
       }
 
       /* Chips Container */
@@ -2642,33 +14022,38 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       .stat-chip {
         display: flex;
         align-items: center;
-        gap: 6px;
-        background: rgba(255, 255, 255, 0.1);
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 20px;
-        padding: 6px 14px;
-        font-size: 0.9rem;
-        color: #eee;
-        backdrop-filter: blur(4px);
+        border-radius: 12px; /* MD3 Small shape */
+        padding: 8px 16px;
+        font-size: 0.875rem; /* MD3 Label Large */
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(8px);
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        user-select: none;
       }
 
       .stat-chip:hover {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
       }
 
       .stat-chip.active {
-        background: rgba(255, 255, 255, 0.25);
-        border-color: rgba(255, 255, 255, 0.5);
-        box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        color: #fff;
       }
 
       .stat-chip svg {
         width: 18px;
         height: 18px;
         fill: currentColor;
-        opacity: 0.9;
+        opacity: 0.8;
       }
 
       .light-status-chip {
@@ -2888,7 +14273,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         opacity: 0.2;
       }
 
-      /* Time Range Selector */
+      /* Time Range Selector - MD3 Tonal Chips */
       .time-range-selector {
         display: flex;
         gap: 8px;
@@ -2897,22 +14282,24 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       }
       .range-btn {
         background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #aaa;
-        border-radius: 6px;
-        padding: 4px 12px;
-        font-size: 0.8rem;
+        border: 1px solid transparent;
+        color: rgba(255, 255, 255, 0.7);
+        border-radius: 8px; /* Small rounding for compact look */
+        padding: 6px 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        letter-spacing: 0.5px;
       }
       .range-btn:hover {
         background: rgba(255, 255, 255, 0.1);
         color: #fff;
       }
       .range-btn.active {
-        background: var(--primary-color, #22c55e);
-        border-color: var(--primary-color, #22c55e);
-        color: #fff;
+        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.15);
+        color: var(--primary-color, #4caf50);
+        border-color: rgba(var(--rgb-primary-color, 76, 175, 80), 0.3);
         font-weight: 600;
       }
 
@@ -2950,19 +14337,19 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       .gs-tooltip {
         position: absolute;
         top: 10px;
-        background: rgba(0, 0, 0, 0.85);
+        background: rgba(30, 30, 35, 0.9);
         color: #fff;
-        padding: 4px 8px;
-        border-radius: 6px;
+        padding: 8px 12px;
+        border-radius: 8px;
         font-size: 0.75rem;
         pointer-events: none;
         transform: translate(-50%, 0);
         z-index: 10;
         white-space: nowrap;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(4px);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-        line-height: 1.2;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        line-height: 1.4;
         text-align: center;
       }
       .gs-tooltip .time {
@@ -3919,27 +15306,6 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         --mdc-dialog-max-width: 90vw;
       }
 
-      /* Override internal dialog surface if possible, or we style the content wrapper */
-      /* Note: Home Assistant dialogs use mwc-dialog which uses mdc-dialog.
-         Directly styling shadow roots is hard, but we can try to influence it via variables
-         or style our own container inside. */
-
-      .glass-dialog-container {
-        background: var(--growspace-card-bg);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        border-radius: 28px; /* MD3 extra large rounding */
-        padding: var(--spacing-lg);
-        color: #ffffff; /* Force white text for contrast against dark glass */
-        margin: -24px; /* Counteract default dialog padding if necessary */
-        min-width: 320px;
-      }
-
-      /* MD3 Dialog Layout */
-      .dialog-header {
-        display: flex;
         align-items: center;
         gap: var(--spacing-md);
         margin-bottom: var(--spacing-lg);
@@ -3998,20 +15364,20 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       /* MD3 Input Styles - Enhanced for Material Design 3 */
       .md3-input-group {
         position: relative;
-        margin-bottom: var(--spacing-md);
-        background: rgba(255, 255, 255, 0.04);
+        margin-bottom: 20px;
+        background: rgba(255, 255, 255, 0.03);
         border-radius: 4px 4px 0 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.38);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.4);
         transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
       }
 
       .md3-input-group:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-bottom-color: rgba(255, 255, 255, 0.87);
+        background: rgba(255, 255, 255, 0.06);
+        border-bottom-color: rgba(255, 255, 255, 0.9);
       }
 
       .md3-input-group:focus-within {
-        background: rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.08);
         border-bottom: 2px solid var(--primary-color, #4caf50);
       }
 
@@ -4246,18 +15612,186 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
             justify-content: center;
         }
       }
-    `],t([ut(),e("design:type",Object)],ps.prototype,"_addPlantDialog",void 0),t([ut(),e("design:type",Object)],ps.prototype,"_defaultApplied",void 0),t([ut(),e("design:type",Object)],ps.prototype,"_plantOverviewDialog",void 0),t([ut(),e("design:type",Set)],ps.prototype,"_optimisticDeletedPlantIds",void 0),t([ut(),e("design:type",Object)],ps.prototype,"_strainLibraryDialog",void 0),t([ut(),e("design:type",Object)],ps.prototype,"_configDialog",void 0),t([ut(),e("design:type",Object)],ps.prototype,"_growMasterDialog",void 0),t([ut(),e("design:type",Object)],ps.prototype,"_strainRecommendationDialog",void 0),t([ut(),e("design:type",Object)],ps.prototype,"_irrigationDialog",void 0),t([ut(),e("design:type",Object)],ps.prototype,"selectedDevice",void 0),t([ut(),e("design:type",Object)],ps.prototype,"_draggedPlant",void 0),t([ut(),e("design:type",Boolean)],ps.prototype,"_isCompactView",void 0),t([ut(),e("design:type",Array)],ps.prototype,"_strainLibrary",void 0),t([ut(),e("design:type",Object)],ps.prototype,"_historyData",void 0),t([ut(),e("design:type",Set)],ps.prototype,"_activeEnvGraphs",void 0),t([ut(),e("design:type",Object)],ps.prototype,"_graphRanges",void 0),t([ut(),e("design:type",Object)],ps.prototype,"_tooltip",void 0),t([ut(),e("design:type",Boolean)],ps.prototype,"_menuOpen",void 0),t([ut(),e("design:type",Boolean)],ps.prototype,"_isEditMode",void 0),t([ut(),e("design:type",Set)],ps.prototype,"_selectedPlants",void 0),t([ut(),e("design:type",Number)],ps.prototype,"_focusedPlantIndex",void 0),t([ht({attribute:!1}),e("design:type",Object)],ps.prototype,"hass",void 0),t([ht({attribute:!1}),e("design:type",Object)],ps.prototype,"_config",void 0),ps=t([ct("growspace-manager-card")],ps);let hs=class extends ot{constructor(){super(...arguments),this._growspaceOptions=[]}setConfig(t){this._config=t,this._loadGrowspaces()}updated(t){t.has("hass")&&this.hass&&(this._loadGrowspaces(),this._subscribeToSensorUpdates())}disconnectedCallback(){super.disconnectedCallback(),this._unsubStateChanged&&(this._unsubStateChanged(),this._unsubStateChanged=void 0)}_subscribeToSensorUpdates(){this.hass&&!this._unsubStateChanged&&(this._unsubStateChanged=this.hass.connection.subscribeEvents(t=>{const e=t.data.new_state;"sensor.growspaces_list"===e?.entity_id&&(Array.isArray(e.attributes?.growspaces)?this._growspaceOptions=e.attributes.growspaces:this._growspaceOptions=[])},"state_changed"))}_loadGrowspaces(){if(!this.hass)return;const t=this.hass.states["sensor.growspaces_list"];if(t&&t.attributes?.growspaces){const e=t.attributes.growspaces;this._growspaceOptions=Object.values(e)}else this._growspaceOptions=[]}render(){return this._config?j`
+    `
+];
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_addPlantDialog", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_defaultApplied", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_plantOverviewDialog", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Set)
+], GrowspaceManagerCard.prototype, "_optimisticDeletedPlantIds", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_strainLibraryDialog", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_configDialog", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_growMasterDialog", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_strainRecommendationDialog", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_irrigationDialog", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "selectedDevice", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_draggedPlant", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Boolean)
+], GrowspaceManagerCard.prototype, "_isCompactView", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Array)
+], GrowspaceManagerCard.prototype, "_strainLibrary", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_historyData", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Set)
+], GrowspaceManagerCard.prototype, "_activeEnvGraphs", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_graphRanges", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_tooltip", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Boolean)
+], GrowspaceManagerCard.prototype, "_menuOpen", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Boolean)
+], GrowspaceManagerCard.prototype, "_isEditMode", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Set)
+], GrowspaceManagerCard.prototype, "_selectedPlants", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Number)
+], GrowspaceManagerCard.prototype, "_focusedPlantIndex", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "hass", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_config", void 0);
+GrowspaceManagerCard = __decorate([
+    t('growspace-manager-card')
+], GrowspaceManagerCard);
+
+let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i {
+    constructor() {
+        super(...arguments);
+        this._growspaceOptions = [];
+    }
+    setConfig(config) {
+        this._config = config;
+        this._loadGrowspaces();
+    }
+    updated(changedProps) {
+        if (changedProps.has("hass") && this.hass) {
+            this._loadGrowspaces();
+            this._subscribeToSensorUpdates();
+        }
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this._unsubStateChanged) {
+            this._unsubStateChanged();
+            this._unsubStateChanged = undefined;
+        }
+    }
+    _subscribeToSensorUpdates() {
+        if (!this.hass || this._unsubStateChanged)
+            return;
+        this._unsubStateChanged = this.hass.connection.subscribeEvents((event) => {
+            const newState = event.data.new_state;
+            if (newState?.entity_id === "sensor.growspaces_list") {
+                if (Array.isArray(newState.attributes?.growspaces)) {
+                    this._growspaceOptions = newState.attributes.growspaces;
+                }
+                else {
+                    this._growspaceOptions = [];
+                }
+            }
+        }, "state_changed");
+    }
+    _loadGrowspaces() {
+        if (!this.hass)
+            return;
+        const entity = this.hass.states["sensor.growspaces_list"];
+        if (entity && entity.attributes?.growspaces) {
+            const gsObj = entity.attributes.growspaces;
+            // Option 1: just values (friendly names)
+            this._growspaceOptions = Object.values(gsObj);
+            // Option 2: key/value pairs if you want IDs as the value
+            // this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({ id, name }));
+        }
+        else {
+            this._growspaceOptions = [];
+        }
+    }
+    render() {
+        if (!this._config)
+            return x ``;
+        return x `
       <div class="form-group">
         <label>Default Growspace</label>
         <select
-          .value=${this._config.default_growspace??""}
-          @change=${t=>this._valueChanged("default_growspace",t.target.value)}
+          .value=${this._config.default_growspace ?? ""}
+          @change=${(e) => this._valueChanged("default_growspace", e.target.value)}
         >
           <option value="">Select a growspace</option>
-          ${0===this._growspaceOptions.length?j`<option disabled>No growspaces found</option>`:this._growspaceOptions.map(t=>j`<option value="${t}">${t}</option>`)}
+          ${this._growspaceOptions.length === 0
+            ? x `<option disabled>No growspaces found</option>`
+            : this._growspaceOptions.map((gs) => x `<option value="${gs}">${gs}</option>`)}
         </select>
       </div>
-    `:j``}_valueChanged(t,e){if(!this._config)return;const i={...this._config,[t]:e};this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:i},bubbles:!0,composed:!0}))}};hs.styles=o`
+    `;
+    }
+    _valueChanged(key, value) {
+        if (!this._config)
+            return;
+        const newConfig = { ...this._config, [key]: value };
+        this.dispatchEvent(new CustomEvent("config-changed", {
+            detail: { config: newConfig },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+};
+GrowspaceManagerCardEditor.styles = i$3 `
     .form-group {
       margin-bottom: 12px;
     }
@@ -4271,4 +15805,27 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       padding: 4px;
       box-sizing: border-box;
     }
-  `,t([ht({attribute:!1}),e("design:type",Object)],hs.prototype,"hass",void 0),t([ht({attribute:!1}),e("design:type",Object)],hs.prototype,"_config",void 0),t([ut(),e("design:type",Array)],hs.prototype,"_growspaceOptions",void 0),hs=t([ct("growspace-manager-card-editor")],hs);var us=Object.freeze({__proto__:null,get GrowspaceManagerCardEditor(){return hs}});export{ps as GrowspaceManagerCard};
+  `;
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspaceManagerCardEditor.prototype, "hass", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspaceManagerCardEditor.prototype, "_config", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Array)
+], GrowspaceManagerCardEditor.prototype, "_growspaceOptions", void 0);
+GrowspaceManagerCardEditor = __decorate([
+    t("growspace-manager-card-editor")
+], GrowspaceManagerCardEditor);
+
+var growspaceManagerCardEditor = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    get GrowspaceManagerCardEditor () { return GrowspaceManagerCardEditor; }
+});
+
+export { DataService, DialogRenderer, GrowspaceManagerCard, PlantUtils, createGrowspaceDevice, stageInputs };
+//# sourceMappingURL=growspace-manager-card.js.map

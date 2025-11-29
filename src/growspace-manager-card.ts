@@ -64,7 +64,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         color: var(--growspace-card-text);
       }
 
-      /* Rich Card Style */
+      /* Rich Card Style - Glassmorphism 2.0 */
       .plant-card-rich {
         position: relative;
         width: 100%;
@@ -204,7 +204,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         color: #fff;
       }
 
-      /* Empty Slot Redesign */
+      /* Empty Slot Redesign - Glassmorphism */
       .plant-card-empty {
         width: 100%;
         height: 100%;
@@ -212,21 +212,25 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: rgba(255, 255, 255, 0.02);
-        border: 2px dashed rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.01);
+        border: 1px dashed rgba(255, 255, 255, 0.15);
+        border-radius: 20px;
         color: rgba(255,255,255,0.3);
-        transition: all 0.2s;
+        transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
         cursor: pointer;
         min-height: 100px;
         aspect-ratio: 1;
         gap: 12px;
+        backdrop-filter: blur(4px);
       }
 
       .plant-card-empty:hover {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.3);
-        color: rgba(255,255,255,0.8);
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.4);
+        border-style: solid;
+        color: rgba(255,255,255,0.9);
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+        transform: scale(1.02);
       }
 
       ha-card {
@@ -241,25 +245,26 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         box-shadow: var(--card-shadow-hover);
       }
 
-      /* Unified Card Container - Glassmorphism & Gradient */
+      /* Unified Card Container - Glassmorphism 2.0 */
       .unified-growspace-card {
-        /* Fallback */
-        background: rgba(30, 30, 35, 0.6);
-        /* Gradient approximating the screenshot */
-        background-image: linear-gradient(135deg, rgba(50, 50, 60, 0.8) 0%, rgba(40, 30, 60, 0.8) 100%);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        /* Deep glass effect */
+        background: rgba(20, 20, 24, 0.6);
+        background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
 
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 28px; /* MD3 Large rounding */
         padding: 24px;
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 24px;
         color: #fff;
         position: relative;
         overflow: hidden;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        box-shadow: 
+          0 4px 24px -1px rgba(0, 0, 0, 0.2),
+          0 0 0 1px rgba(255, 255, 255, 0.02) inset;
       }
 
       .gs-stats-container {
@@ -283,24 +288,32 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
 
       .gs-title {
-        font-size: 2rem;
-        font-weight: 500;
+        font-family: 'Roboto', sans-serif;
+        font-size: 2.25rem; /* MD3 Headline Large */
+        font-weight: 400;
         margin: 0;
-        letter-spacing: -0.5px;
+        letter-spacing: 0;
+        line-height: 2.75rem;
         text-transform: capitalize;
+        background: linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.1);
       }
 
       .gs-stage-chip {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        background: rgba(255, 255, 255, 0.15);
-        padding: 4px 12px;
-        border-radius: 16px;
-        font-size: 0.9rem;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 6px 16px;
+        border-radius: 24px; /* Pill shape */
+        font-size: 0.875rem;
         font-weight: 500;
         color: #fff;
         width: fit-content;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(4px);
       }
 
       /* Chips Container */
@@ -314,33 +327,38 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       .stat-chip {
         display: flex;
         align-items: center;
-        gap: 6px;
-        background: rgba(255, 255, 255, 0.1);
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 20px;
-        padding: 6px 14px;
-        font-size: 0.9rem;
-        color: #eee;
-        backdrop-filter: blur(4px);
+        border-radius: 12px; /* MD3 Small shape */
+        padding: 8px 16px;
+        font-size: 0.875rem; /* MD3 Label Large */
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(8px);
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        user-select: none;
       }
 
       .stat-chip:hover {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
       }
 
       .stat-chip.active {
-        background: rgba(255, 255, 255, 0.25);
-        border-color: rgba(255, 255, 255, 0.5);
-        box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        color: #fff;
       }
 
       .stat-chip svg {
         width: 18px;
         height: 18px;
         fill: currentColor;
-        opacity: 0.9;
+        opacity: 0.8;
       }
 
       .light-status-chip {
@@ -560,7 +578,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         opacity: 0.2;
       }
 
-      /* Time Range Selector */
+      /* Time Range Selector - MD3 Tonal Chips */
       .time-range-selector {
         display: flex;
         gap: 8px;
@@ -569,22 +587,24 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       }
       .range-btn {
         background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #aaa;
-        border-radius: 6px;
-        padding: 4px 12px;
-        font-size: 0.8rem;
+        border: 1px solid transparent;
+        color: rgba(255, 255, 255, 0.7);
+        border-radius: 8px; /* Small rounding for compact look */
+        padding: 6px 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        letter-spacing: 0.5px;
       }
       .range-btn:hover {
         background: rgba(255, 255, 255, 0.1);
         color: #fff;
       }
       .range-btn.active {
-        background: var(--primary-color, #22c55e);
-        border-color: var(--primary-color, #22c55e);
-        color: #fff;
+        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.15);
+        color: var(--primary-color, #4caf50);
+        border-color: rgba(var(--rgb-primary-color, 76, 175, 80), 0.3);
         font-weight: 600;
       }
 
@@ -622,19 +642,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       .gs-tooltip {
         position: absolute;
         top: 10px;
-        background: rgba(0, 0, 0, 0.85);
+        background: rgba(30, 30, 35, 0.9);
         color: #fff;
-        padding: 4px 8px;
-        border-radius: 6px;
+        padding: 8px 12px;
+        border-radius: 8px;
         font-size: 0.75rem;
         pointer-events: none;
         transform: translate(-50%, 0);
         z-index: 10;
         white-space: nowrap;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(4px);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-        line-height: 1.2;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        line-height: 1.4;
         text-align: center;
       }
       .gs-tooltip .time {
@@ -1590,12 +1610,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         --mdc-dialog-min-width: 400px;
         --mdc-dialog-max-width: 90vw;
       }
-
-      /* Override internal dialog surface if possible, or we style the content wrapper */
-      /* Note: Home Assistant dialogs use mwc-dialog which uses mdc-dialog.
-         Directly styling shadow roots is hard, but we can try to influence it via variables
-         or style our own container inside. */
-
       .glass-dialog-container {
         background: var(--growspace-card-bg);
         backdrop-filter: blur(16px);
@@ -1670,20 +1684,20 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       /* MD3 Input Styles - Enhanced for Material Design 3 */
       .md3-input-group {
         position: relative;
-        margin-bottom: var(--spacing-md);
-        background: rgba(255, 255, 255, 0.04);
+        margin-bottom: 20px;
+        background: rgba(255, 255, 255, 0.03);
         border-radius: 4px 4px 0 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.38);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.4);
         transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
       }
 
       .md3-input-group:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-bottom-color: rgba(255, 255, 255, 0.87);
+        background: rgba(255, 255, 255, 0.06);
+        border-bottom-color: rgba(255, 255, 255, 0.9);
       }
 
       .md3-input-group:focus-within {
-        background: rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.08);
         border-bottom: 2px solid var(--primary-color, #4caf50);
       }
 

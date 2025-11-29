@@ -28,6 +28,7 @@ export default {
     file: isCoverage ? 'dist/growspace-manager-card.instrumented.js' : 'dist/growspace-manager-card.js',
     format: 'es',
     sourcemap: !isProduction || isCoverage,
+    inlineDynamicImports: true,
   },
   plugins,
 };
