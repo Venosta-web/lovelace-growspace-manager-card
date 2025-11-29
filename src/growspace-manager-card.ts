@@ -49,6 +49,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _isEditMode: boolean = false;
   @state() private _selectedPlants: Set<string> = new Set();
   @state() private _focusedPlantIndex: number = -1;
+  @state() private _mobileEnvExpanded: boolean = false;
 
 
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -323,6 +324,41 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
          flex-wrap: wrap;
          gap: 8px;
          justify-content: flex-end;
+      }
+
+      /* Mobile Environment Trigger - Hidden by default on desktop */
+      .mobile-env-trigger {
+        display: none !important;
+      }
+
+      @media (max-width: 600px) {
+        .gs-stats-chips {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 4px;
+        }
+
+        /* Show the trigger on mobile */
+        .mobile-env-trigger {
+          display: flex !important;
+          justify-content: space-between;
+          width: 100%;
+          box-sizing: border-box;
+          background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* Hide other chips by default on mobile */
+        .gs-stats-chips:not(.expanded) .stat-chip:not(.mobile-env-trigger) {
+          display: none !important;
+        }
+
+        /* When expanded, show them as a list or grid */
+        .gs-stats-chips.expanded .stat-chip {
+          display: flex;
+          width: 100%;
+          box-sizing: border-box;
+          justify-content: flex-start;
+        }
       }
 
       .stat-chip {
@@ -4068,7 +4104,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                ` : ''}
             </div>
 
-            <div class="gs-stats-chips">
+            <div class="gs-stats-chips ${this._mobileEnvExpanded ? 'expanded' : ''}">
+                <!-- Mobile Toggle Chip -->
+                <div class="stat-chip mobile-env-trigger ${this._mobileEnvExpanded ? 'active' : ''}"
+                     @click=${() => this._mobileEnvExpanded = !this._mobileEnvExpanded}>
+                  <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>
+                  Environment
+                  <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-left: 4px; opacity: 0.7;">
+                    <path d="${this._mobileEnvExpanded ? mdiChevronDown : mdiChevronRight}"></path>
+                  </svg>
+                </div>
+
                 ${temp !== undefined ? html`
                    <div class="stat-chip ${this._activeEnvGraphs.has('temperature') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('temperature')}>

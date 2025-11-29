@@ -8,6 +8,7 @@ var mdiCheck = "M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z";
 var mdiCheckboxBlankOutline = "M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z";
 var mdiCheckboxMarked = "M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z";
 var mdiChevronDown = "M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z";
+var mdiChevronRight = "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z";
 var mdiClose = "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z";
 var mdiCloudOutline = "M6.5 20Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20M6.5 18H18.5Q19.55 18 20.27 17.27 21 16.55 21 15.5 21 14.45 20.27 13.73 19.55 13 18.5 13H17V11Q17 8.93 15.54 7.46 14.08 6 12 6 9.93 6 8.46 7.46 7 8.93 7 11H6.5Q5.05 11 4.03 12.03 3 13.05 3 14.5 3 15.95 4.03 17 5.05 18 6.5 18M12 12Z";
 var mdiCloudUpload = "M11 20H6.5Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20H13V12.85L14.6 14.4L16 13L12 9L8 13L9.4 14.4L11 12.85Z";
@@ -11304,6 +11305,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         this._isEditMode = false;
         this._selectedPlants = new Set();
         this._focusedPlantIndex = -1;
+        this._mobileEnvExpanded = false;
         this._handleDocumentClick = (e) => {
             if (this._menuOpen) {
                 const path = e.composedPath();
@@ -13224,7 +13226,17 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                ` : ''}
             </div>
 
-            <div class="gs-stats-chips">
+            <div class="gs-stats-chips ${this._mobileEnvExpanded ? 'expanded' : ''}">
+                <!-- Mobile Toggle Chip -->
+                <div class="stat-chip mobile-env-trigger ${this._mobileEnvExpanded ? 'active' : ''}"
+                     @click=${() => this._mobileEnvExpanded = !this._mobileEnvExpanded}>
+                  <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>
+                  Environment
+                  <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-left: 4px; opacity: 0.7;">
+                    <path d="${this._mobileEnvExpanded ? mdiChevronDown : mdiChevronRight}"></path>
+                  </svg>
+                </div>
+
                 ${temp !== undefined ? x `
                    <div class="stat-chip ${this._activeEnvGraphs.has('temperature') ? 'active' : ''}"
                         @click=${() => this._toggleEnvGraph('temperature')}>
@@ -14160,6 +14172,41 @@ GrowspaceManagerCard.styles = [
          flex-wrap: wrap;
          gap: 8px;
          justify-content: flex-end;
+      }
+
+      /* Mobile Environment Trigger - Hidden by default on desktop */
+      .mobile-env-trigger {
+        display: none !important;
+      }
+
+      @media (max-width: 600px) {
+        .gs-stats-chips {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 4px;
+        }
+
+        /* Show the trigger on mobile */
+        .mobile-env-trigger {
+          display: flex !important;
+          justify-content: space-between;
+          width: 100%;
+          box-sizing: border-box;
+          background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* Hide other chips by default on mobile */
+        .gs-stats-chips:not(.expanded) .stat-chip:not(.mobile-env-trigger) {
+          display: none !important;
+        }
+
+        /* When expanded, show them as a list or grid */
+        .gs-stats-chips.expanded .stat-chip {
+          display: flex;
+          width: 100%;
+          box-sizing: border-box;
+          justify-content: flex-start;
+        }
       }
 
       .stat-chip {
@@ -15874,6 +15921,10 @@ __decorate([
     r(),
     __metadata("design:type", Number)
 ], GrowspaceManagerCard.prototype, "_focusedPlantIndex", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Boolean)
+], GrowspaceManagerCard.prototype, "_mobileEnvExpanded", void 0);
 __decorate([
     n$1({ attribute: false }),
     __metadata("design:type", Object)
