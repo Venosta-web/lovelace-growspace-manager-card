@@ -39,8 +39,8 @@ export class StrainLibraryDialog extends LitElement {
         display: flex;
         flex-direction: column;
         height: 85vh;
-        width: 90vw;
-        max-width: 1200px;
+        width: 80vw;
+        max-width: 95vw;
         border-radius: 16px;
         overflow: hidden;
     }

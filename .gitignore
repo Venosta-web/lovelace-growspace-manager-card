@@ -26,4 +26,20 @@ server.log
 
 # Ignore test output
 test_*.txt
+test-*.txt
+
+# Build artifacts
+dist/
+growspace-manager-card.js
+
+# Playwright
+playwright-report/
+
+# Logs and Debug output
+*_log.txt
+debug_output.txt
+
+# Debug images
+debug_*.png
+verification_*.png
 
