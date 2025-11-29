@@ -26,6 +26,7 @@ var mdiImage = "M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A
 var mdiLeaf = "M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z";
 var mdiLightbulbOff = "M12,2C9.76,2 7.78,3.05 6.5,4.68L16.31,14.5C17.94,13.21 19,11.24 19,9A7,7 0 0,0 12,2M3.28,4L2,5.27L5.04,8.3C5,8.53 5,8.76 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H14.73L18.73,22L20,20.72L3.28,4M9,20V21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9Z";
 var mdiLightbulbOn = "M12,6A6,6 0 0,1 18,12C18,14.22 16.79,16.16 15,17.2V19A1,1 0 0,1 14,20H10A1,1 0 0,1 9,19V17.2C7.21,16.16 6,14.22 6,12A6,6 0 0,1 12,6M14,21V22A1,1 0 0,1 13,23H11A1,1 0 0,1 10,22V21H14M20,11H23V13H20V11M1,11H4V13H1V11M13,1V4H11V1H13M4.92,3.5L7.05,5.64L5.63,7.05L3.5,4.93L4.92,3.5M16.95,5.63L19.07,3.5L20.5,4.93L18.37,7.05L16.95,5.63Z";
+var mdiLink = "M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z";
 var mdiLoading = "M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z";
 var mdiMagnify = "M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z";
 var mdiPencil = "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z";
@@ -11314,6 +11315,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         this._historyData = null;
         this._dehumidifierHistory = null;
         this._activeEnvGraphs = new Set();
+        this._linkedGraphGroups = [];
         this._graphRanges = {};
         this._tooltip = null;
         this._menuOpen = false;
@@ -12599,6 +12601,211 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
       </div>
     `;
     }
+    renderCombinedEnvGraph(metrics) {
+        const devices = this.dataService.getGrowspaceDevices();
+        const device = devices.find(d => d.device_id === this.selectedDevice);
+        if (!device)
+            return x ``;
+        // Determine Time Range (use range of first metric or default)
+        const rangeKey = this._graphRanges[this.selectedDevice || ''] || '24h';
+        let durationMillis = 24 * 60 * 60 * 1000;
+        if (rangeKey === '1h')
+            durationMillis = 60 * 60 * 1000;
+        else if (rangeKey === '6h')
+            durationMillis = 6 * 60 * 60 * 1000;
+        else if (rangeKey === '7d')
+            durationMillis = 7 * 24 * 60 * 60 * 1000;
+        const now = new Date();
+        const startTime = new Date(now.getTime() - durationMillis);
+        // Prepare data for all metrics
+        const graphData = [];
+        const metricConfig = {
+            'temperature': { color: '#FF5722', title: 'Temperature', unit: '°C' },
+            'humidity': { color: '#2196F3', title: 'Humidity', unit: '%' },
+            'vpd': { color: '#9C27B0', title: 'VPD', unit: 'kPa' },
+            'co2': { color: '#90A4AE', title: 'CO2', unit: 'ppm' },
+            'dehumidifier': { color: '#00BCD4', title: 'Dehumidifier', unit: 'state' },
+            'light': { color: '#FFEB3B', title: 'Light', unit: 'state' },
+            'irrigation': { color: '#2196F3', title: 'Irrigation', unit: 'state' },
+            'drain': { color: '#FF9800', title: 'Drain', unit: 'state' },
+            'optimal': { color: '#4CAF50', title: 'Optimal', unit: 'state' }
+        };
+        metrics.forEach(metricKey => {
+            const config = metricConfig[metricKey] || { color: '#fff', title: metricKey, unit: '' };
+            let dataPoints = [];
+            let historySource = this._historyData;
+            if (metricKey === 'dehumidifier')
+                historySource = this._dehumidifierHistory;
+            if (historySource && historySource.length > 0) {
+                const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+                sortedHistory.forEach(h => {
+                    const t = new Date(h.last_changed).getTime();
+                    if (t < startTime.getTime())
+                        return;
+                    const getValue = (ent, key) => {
+                        if (!ent)
+                            return undefined;
+                        if (config.unit === 'state' && key === 'optimal')
+                            return ent.state === 'on' ? 1 : 0;
+                        if (key === 'light') {
+                            const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
+                            return isLightsOn === true ? 1 : 0;
+                        }
+                        if (key === 'dehumidifier') {
+                            if (ent.entity_id && ent.state)
+                                return (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 1 : 0;
+                            const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
+                            return (val === true || val === 'on' || val === 1) ? 1 : 0;
+                        }
+                        if (ent.attributes && ent.attributes[key] !== undefined)
+                            return ent.attributes[key];
+                        if (ent.attributes && ent.attributes.observations && typeof ent.attributes.observations === 'object')
+                            return ent.attributes.observations[key];
+                        return undefined;
+                    };
+                    const val = getValue(h, metricKey);
+                    if (val !== undefined && !isNaN(parseFloat(val))) {
+                        dataPoints.push({ time: t, value: parseFloat(val) });
+                    }
+                });
+                if (dataPoints.length > 0) {
+                    const last = dataPoints[dataPoints.length - 1];
+                    dataPoints.push({ time: now.getTime(), value: last.value });
+                }
+            }
+            if (dataPoints.length > 0) {
+                const first = dataPoints[0];
+                if (first.time > startTime.getTime()) {
+                    dataPoints.unshift({ time: startTime.getTime(), value: first.value });
+                }
+            }
+            if (dataPoints.length > 0) {
+                const min = Math.min(...dataPoints.map(d => d.value));
+                const max = Math.max(...dataPoints.map(d => d.value));
+                graphData.push({
+                    key: metricKey,
+                    ...config,
+                    points: dataPoints,
+                    min,
+                    max
+                });
+            }
+        });
+        if (graphData.length === 0)
+            return x ``;
+        const width = 1000;
+        const height = 180;
+        return x `
+      <div class="gs-env-graph-card" style="margin-top: 12px; background: #1a1a1a; border-radius: 12px; padding: 16px;">
+         <div class="gs-env-graph-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+             <div style="display: flex; align-items: center; gap: 12px;">
+                 ${graphData.map((g, i) => x `
+                    ${i > 0 ? x `
+                        <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
+                             @click=${() => {
+            const { groupIndex } = this._isMetricLinked(g.key);
+            this._unlinkGraphs(groupIndex);
+        }}
+                             title="Unlink Graph">
+                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: #fff;"><path d="${mdiLink}"></path></svg>
+                        </div>
+                    ` : ''}
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="width: 12px; height: 12px; border-radius: 50%; background: ${g.color};"></div>
+                        <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${g.title}</div>
+                    </div>
+                 `)}
+             </div>
+         </div>
+
+         <div class="gs-env-chart-container" style="position: relative; height: 180px; background: #0d0d0d; border-radius: 8px; padding: 20px 40px 30px 50px;"
+              @mousemove=${(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const time = startTime.getTime() + (x / rect.width) * durationMillis;
+            const timeStr = new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const values = graphData.map(g => {
+                let closest = g.points[0];
+                let minDiff = Math.abs(g.points[0].time - time);
+                for (let i = 1; i < g.points.length; i++) {
+                    const diff = Math.abs(g.points[i].time - time);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = g.points[i];
+                    }
+                }
+                return { ...g, value: closest.value };
+            });
+            this._tooltip = {
+                id: 'combined-' + metrics.join('-'),
+                x: x,
+                time: timeStr,
+                value: JSON.stringify(values)
+            };
+        }}
+              @mouseleave=${() => this._tooltip = null}>
+
+             ${this._tooltip && this._tooltip.id === 'combined-' + metrics.join('-') ? x `
+                 <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.2); pointer-events: none;"></div>
+                 <div style="position: absolute; left: ${Math.min(this._tooltip.x + 10, width - 150)}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid rgba(255,255,255,0.1); pointer-events: none; z-index: 1000;">
+                    <div style="font-weight: 600; margin-bottom: 4px;">${this._tooltip.time}</div>
+                    ${(() => {
+            try {
+                const values = JSON.parse(this._tooltip.value);
+                return values.map((v) => x `
+                                <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                                    <div style="width: 8px; height: 8px; border-radius: 50%; background: ${v.color};"></div>
+                                    <span style="color: rgba(255,255,255,0.7);">${v.title}:</span>
+                                    <span style="font-weight: 500;">${v.value} ${v.unit}</span>
+                                </div>
+                            `);
+            }
+            catch {
+                return x ``;
+            }
+        })()}
+                 </div>
+             ` : ''}
+
+             <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px);" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
+                 <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
+                 <line x1="${width}" y1="0" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
+                 <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
+
+                 ${graphData.map(g => {
+            const range = g.max - g.min || 1;
+            const paddedMin = g.min - (range * 0.1);
+            const paddedMax = g.max + (range * 0.1);
+            const paddedRange = paddedMax - paddedMin;
+            const points = g.points.map(p => {
+                const x = ((p.time - startTime.getTime()) / durationMillis) * width;
+                const y = height - ((p.value - paddedMin) / paddedRange) * height;
+                return [x, y];
+            });
+            const path = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+            return x `
+                         <path d="${path}" fill="none" stroke="${g.color}" stroke-width="2" />
+                         <path d="${path} V ${height} H ${points[0][0]} Z" fill="${g.color}" fill-opacity="0.1" stroke="none" />
+                     `;
+        })}
+             </svg>
+             
+              <div class="chart-markers" style="position: absolute; left: 50px; right: 40px; bottom: 5px; display: flex; justify-content: space-between; font-size: 0.65rem; color: #666;">
+                 ${(() => {
+            if (rangeKey === '1h')
+                return x `<span>60m</span><span>45m</span><span>30m</span><span>15m</span>`;
+            if (rangeKey === '6h')
+                return x `<span>6h</span><span>4.5h</span><span>3h</span><span>1.5h</span>`;
+            if (rangeKey === '7d')
+                return x `<span>7d</span><span>5d</span><span>3d</span><span>1d</span>`;
+            return x `<span>24h</span><span>18h</span><span>12h</span><span>6h</span>`;
+        })()}
+                 <span style="color: #fff;">NOW</span>
+              </div>
+         </div>
+      </div>
+    `;
+    }
     _setStrainSearchQuery(query) {
         if (this._strainLibraryDialog) {
             this._strainLibraryDialog.searchQuery = query;
@@ -12837,6 +13044,67 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         }).catch((err) => {
             console.error('Error moving clone:', err);
         });
+    }
+    // --- Graph Linking Logic ---
+    _handleChipDragStart(e, metric) {
+        e.dataTransfer?.setData("text/plain", JSON.stringify({ type: 'env-metric', metric }));
+        e.dataTransfer.effectAllowed = "link";
+    }
+    _handleChipDrop(e, targetMetric) {
+        e.preventDefault();
+        const data = e.dataTransfer?.getData("text/plain");
+        if (!data)
+            return;
+        try {
+            const payload = JSON.parse(data);
+            if (payload.type !== 'env-metric')
+                return;
+            const sourceMetric = payload.metric;
+            if (sourceMetric === targetMetric)
+                return;
+            // Check if already linked
+            const existingGroupIndex = this._linkedGraphGroups.findIndex(group => group.includes(sourceMetric) || group.includes(targetMetric));
+            if (existingGroupIndex !== -1) {
+                // Add to existing group if not present
+                const group = [...this._linkedGraphGroups[existingGroupIndex]];
+                if (!group.includes(sourceMetric))
+                    group.push(sourceMetric);
+                if (!group.includes(targetMetric))
+                    group.push(targetMetric);
+                const newGroups = [...this._linkedGraphGroups];
+                newGroups[existingGroupIndex] = group;
+                this._linkedGraphGroups = newGroups;
+            }
+            else {
+                // Create new group
+                this._linkedGraphGroups = [...this._linkedGraphGroups, [sourceMetric, targetMetric]];
+            }
+            // Ensure combined graph is active
+            this._activeEnvGraphs.add(sourceMetric); // We use the first one as key or just ensure both are active? 
+            // Actually, we should probably ensure the group is represented. 
+            // Let's just ensure the target is active, and the renderer will handle grouping.
+            this._activeEnvGraphs.add(targetMetric);
+            this.requestUpdate();
+        }
+        catch (err) {
+            console.error("Error parsing drop data", err);
+        }
+    }
+    _unlinkGraphs(groupIndex) {
+        if (groupIndex >= 0 && groupIndex < this._linkedGraphGroups.length) {
+            const newGroups = [...this._linkedGraphGroups];
+            newGroups.splice(groupIndex, 1);
+            this._linkedGraphGroups = newGroups;
+            this.requestUpdate();
+        }
+    }
+    _isMetricLinked(metric) {
+        const index = this._linkedGraphGroups.findIndex(g => g.includes(metric));
+        return {
+            linked: index !== -1,
+            groupIndex: index,
+            group: index !== -1 ? this._linkedGraphGroups[index] : []
+        };
     }
     // Configuration Dialog Methods
     _openConfigDialog() {
@@ -13254,56 +13522,254 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
 
                 ${temp !== undefined ? x `
                    <div class="stat-chip ${this._activeEnvGraphs.has('temperature') ? 'active' : ''}"
-                        @click=${() => this._toggleEnvGraph('temperature')}>
+                        draggable="true"
+                        @dragstart=${(e) => this._handleChipDragStart(e, 'temperature')}
+                        @drop=${(e) => this._handleChipDrop(e, 'temperature')}
+                        @dragover=${(e) => e.preventDefault()}
+                        @click=${(e) => {
+            const target = e.target;
+            if (target.closest('.link-icon'))
+                return; // Ignore clicks on link icon
+            this._toggleEnvGraph('temperature');
+        }}>
                      <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>${temp}°C
+                     ${(() => {
+            const { linked, groupIndex } = this._isMetricLinked('temperature');
+            if (linked) {
+                return x `
+                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                title="Unlink Graph">
+                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                           </div>
+                         `;
+            }
+            return '';
+        })()}
                    </div>` : ''}
                 ${hum !== undefined ? x `
                    <div class="stat-chip ${this._activeEnvGraphs.has('humidity') ? 'active' : ''}"
-                        @click=${() => this._toggleEnvGraph('humidity')}>
+                        draggable="true"
+                        @dragstart=${(e) => this._handleChipDragStart(e, 'humidity')}
+                        @drop=${(e) => this._handleChipDrop(e, 'humidity')}
+                        @dragover=${(e) => e.preventDefault()}
+                        @click=${(e) => {
+            const target = e.target;
+            if (target.closest('.link-icon'))
+                return;
+            this._toggleEnvGraph('humidity');
+        }}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>${hum}%
+                     ${(() => {
+            const { linked, groupIndex } = this._isMetricLinked('humidity');
+            if (linked) {
+                return x `
+                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                title="Unlink Graph">
+                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                           </div>
+                         `;
+            }
+            return '';
+        })()}
                    </div>` : ''}
                 ${vpd !== undefined ? x `
                    <div class="stat-chip ${this._activeEnvGraphs.has('vpd') ? 'active' : ''}"
-                        @click=${() => this._toggleEnvGraph('vpd')}>
+                        draggable="true"
+                        @dragstart=${(e) => this._handleChipDragStart(e, 'vpd')}
+                        @drop=${(e) => this._handleChipDrop(e, 'vpd')}
+                        @dragover=${(e) => e.preventDefault()}
+                        @click=${(e) => {
+            const target = e.target;
+            if (target.closest('.link-icon'))
+                return;
+            this._toggleEnvGraph('vpd');
+        }}>
                      <svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>${vpd} kPa
+                     ${(() => {
+            const { linked, groupIndex } = this._isMetricLinked('vpd');
+            if (linked) {
+                return x `
+                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                title="Unlink Graph">
+                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                           </div>
+                         `;
+            }
+            return '';
+        })()}
                    </div>` : ''}
                 ${overviewEntity?.attributes?.dehumidifier_entity ? x `
                    <div class="stat-chip ${this._activeEnvGraphs.has('dehumidifier') ? 'active' : ''}"
-                        @click=${() => this._toggleEnvGraph('dehumidifier')}>
+                        draggable="true"
+                        @dragstart=${(e) => this._handleChipDragStart(e, 'dehumidifier')}
+                        @drop=${(e) => this._handleChipDrop(e, 'dehumidifier')}
+                        @dragover=${(e) => e.preventDefault()}
+                        @click=${(e) => {
+            const target = e.target;
+            if (target.closest('.link-icon'))
+                return;
+            this._toggleEnvGraph('dehumidifier');
+        }}>
                      <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg>${overviewEntity.attributes.dehumidifier_state === 'on' ? 'On' : 'Off'}
+                     ${(() => {
+            const { linked, groupIndex } = this._isMetricLinked('dehumidifier');
+            if (linked) {
+                return x `
+                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                title="Unlink Graph">
+                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                           </div>
+                         `;
+            }
+            return '';
+        })()}
                    </div>` : ''}
                  ${co2 !== undefined ? x `
                    <div class="stat-chip ${this._activeEnvGraphs.has('co2') ? 'active' : ''}"
-                        @click=${() => this._toggleEnvGraph('co2')}>
+                        draggable="true"
+                        @dragstart=${(e) => this._handleChipDragStart(e, 'co2')}
+                        @drop=${(e) => this._handleChipDrop(e, 'co2')}
+                        @dragover=${(e) => e.preventDefault()}
+                        @click=${(e) => {
+            const target = e.target;
+            if (target.closest('.link-icon'))
+                return;
+            this._toggleEnvGraph('co2');
+        }}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm
+                     ${(() => {
+            const { linked, groupIndex } = this._isMetricLinked('co2');
+            if (linked) {
+                return x `
+                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                title="Unlink Graph">
+                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                           </div>
+                         `;
+            }
+            return '';
+        })()}
                    </div>` : ''}
 
                 ${hasLightSensor ? x `
                    <div class="stat-chip ${this._activeEnvGraphs.has('light') ? 'active' : ''}"
-                        @click=${() => this._toggleEnvGraph('light')}>
+                        draggable="true"
+                        @dragstart=${(e) => this._handleChipDragStart(e, 'light')}
+                        @drop=${(e) => this._handleChipDrop(e, 'light')}
+                        @dragover=${(e) => e.preventDefault()}
+                        @click=${(e) => {
+            const target = e.target;
+            if (target.closest('.link-icon'))
+                return;
+            this._toggleEnvGraph('light');
+        }}>
                      <svg viewBox="0 0 24 24"><path d="${isLightsOn ? mdiLightbulbOn : mdiLightbulbOff}"></path></svg>
                      ${isLightsOn ? 'On' : 'Off'}
+                     ${(() => {
+            const { linked, groupIndex } = this._isMetricLinked('light');
+            if (linked) {
+                return x `
+                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                title="Unlink Graph">
+                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                           </div>
+                         `;
+            }
+            return '';
+        })()}
                    </div>` : ''}
 
                  ${nextIrrigation ? x `
                    <div class="stat-chip ${this._activeEnvGraphs.has('irrigation') ? 'active' : ''}"
-                        @click=${() => this._toggleEnvGraph('irrigation')}>
+                        draggable="true"
+                        @dragstart=${(e) => this._handleChipDragStart(e, 'irrigation')}
+                        @drop=${(e) => this._handleChipDrop(e, 'irrigation')}
+                        @dragover=${(e) => e.preventDefault()}
+                        @click=${(e) => {
+            const target = e.target;
+            if (target.closest('.link-icon'))
+                return;
+            this._toggleEnvGraph('irrigation');
+        }}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
                      Next: ${nextIrrigation}
+                     ${(() => {
+            const { linked, groupIndex } = this._isMetricLinked('irrigation');
+            if (linked) {
+                return x `
+                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                title="Unlink Graph">
+                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                           </div>
+                         `;
+            }
+            return '';
+        })()}
                    </div>` : ''}
 
                  ${nextDrain ? x `
                    <div class="stat-chip ${this._activeEnvGraphs.has('drain') ? 'active' : ''}"
-                        @click=${() => this._toggleEnvGraph('drain')}>
+                        draggable="true"
+                        @dragstart=${(e) => this._handleChipDragStart(e, 'drain')}
+                        @drop=${(e) => this._handleChipDrop(e, 'drain')}
+                        @dragover=${(e) => e.preventDefault()}
+                        @click=${(e) => {
+            const target = e.target;
+            if (target.closest('.link-icon'))
+                return;
+            this._toggleEnvGraph('drain');
+        }}>
                      <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
                      Next: ${nextDrain}
+                     ${(() => {
+            const { linked, groupIndex } = this._isMetricLinked('drain');
+            if (linked) {
+                return x `
+                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                title="Unlink Graph">
+                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                           </div>
+                         `;
+            }
+            return '';
+        })()}
                    </div>` : ''}
 
                  ${envEntity ? x `
                    <div class="stat-chip ${this._activeEnvGraphs.has('optimal') ? 'active' : ''}"
-                        @click=${() => this._toggleEnvGraph('optimal')}>
+                        draggable="true"
+                        @dragstart=${(e) => this._handleChipDragStart(e, 'optimal')}
+                        @drop=${(e) => this._handleChipDrop(e, 'optimal')}
+                        @dragover=${(e) => e.preventDefault()}
+                        @click=${(e) => {
+            const target = e.target;
+            if (target.closest('.link-icon'))
+                return;
+            this._toggleEnvGraph('optimal');
+        }}>
                      <svg viewBox="0 0 24 24"><path d="${envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank}"></path></svg>
                      ${envEntity.state === 'on' ? 'Optimal Conditions' : (envEntity.attributes.reasons || 'Not Optimal')}
+                     ${(() => {
+            const { linked, groupIndex } = this._isMetricLinked('optimal');
+            if (linked) {
+                return x `
+                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                title="Unlink Graph">
+                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                           </div>
+                         `;
+            }
+            return '';
+        })()}
                    </div>` : ''}
 
                 ${!this._isCompactView ? x `
@@ -13355,16 +13821,36 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
   
   ${this._activeEnvGraphs.size > 0 ? this.renderTimeRangeSelector() : ''}
 
-<!-- Active Environmental Graphs -->
-  ${this._activeEnvGraphs.has('temperature') ? this.renderEnvGraph('temperature', '#FF5722', 'Temperature', '°C', 'line', mdiThermometer) : ''}
-         ${this._activeEnvGraphs.has('humidity') ? this.renderEnvGraph('humidity', '#2196F3', 'Humidity', '%', 'line', mdiWaterPercent) : ''}
-         ${this._activeEnvGraphs.has('vpd') ? this.renderEnvGraph('vpd', '#9C27B0', 'VPD', 'kPa', 'line', mdiCloudOutline) : ''}
-         ${this._activeEnvGraphs.has('dehumidifier') ? this.renderEnvGraph('dehumidifier', '#00BCD4', 'Dehumidifier', 'state', 'step', mdiAirHumidifier) : ''}
-         ${this._activeEnvGraphs.has('co2') ? this.renderEnvGraph('co2', '#90A4AE', 'CO2', 'ppm', 'line', mdiWeatherCloudy) : ''}
-         ${this._activeEnvGraphs.has('light') ? this.renderEnvGraph('light', '#FFEB3B', 'Light Cycle', 'state', 'step', mdiLightbulbOn) : ''}
-         ${this._activeEnvGraphs.has('optimal') ? this.renderEnvGraph('optimal', '#4CAF50', 'Optimal Conditions', 'state', 'step', mdiRadioboxMarked) : ''}
-         ${this._activeEnvGraphs.has('irrigation') ? this.renderEnvGraph('irrigation', '#2196F3', 'Irrigation Schedule', 'state', 'step', mdiWater) : ''}
-         ${this._activeEnvGraphs.has('drain') ? this.renderEnvGraph('drain', '#FF9800', 'Drain Schedule', 'state', 'step', mdiWater) : ''}
+  ${(() => {
+            const renderedMetrics = new Set();
+            const templates = [];
+            // Render Linked Groups
+            this._linkedGraphGroups.forEach(group => {
+                const isGroupActive = group.some(m => this._activeEnvGraphs.has(m));
+                if (isGroupActive) {
+                    templates.push(this.renderCombinedEnvGraph(group));
+                    group.forEach(m => renderedMetrics.add(m));
+                }
+            });
+            // Render Individual Graphs
+            const individualMetrics = [
+                { key: 'temperature', color: '#FF5722', title: 'Temperature', unit: '°C', type: 'line', icon: mdiThermometer },
+                { key: 'humidity', color: '#2196F3', title: 'Humidity', unit: '%', type: 'line', icon: mdiWaterPercent },
+                { key: 'vpd', color: '#9C27B0', title: 'VPD', unit: 'kPa', type: 'line', icon: mdiCloudOutline },
+                { key: 'dehumidifier', color: '#00BCD4', title: 'Dehumidifier', unit: 'state', type: 'step', icon: mdiAirHumidifier },
+                { key: 'co2', color: '#90A4AE', title: 'CO2', unit: 'ppm', type: 'line', icon: mdiWeatherCloudy },
+                { key: 'light', color: '#FFEB3B', title: 'Light Cycle', unit: 'state', type: 'step', icon: mdiLightbulbOn },
+                { key: 'optimal', color: '#4CAF50', title: 'Optimal Conditions', unit: 'state', type: 'step', icon: mdiRadioboxMarked },
+                { key: 'irrigation', color: '#2196F3', title: 'Irrigation Schedule', unit: 'state', type: 'step', icon: mdiWater },
+                { key: 'drain', color: '#FF9800', title: 'Drain Schedule', unit: 'state', type: 'step', icon: mdiWater }
+            ];
+            individualMetrics.forEach(m => {
+                if (this._activeEnvGraphs.has(m.key) && !renderedMetrics.has(m.key)) {
+                    templates.push(this.renderEnvGraph(m.key, m.color, m.title, m.unit, m.type, m.icon));
+                }
+            });
+            return x `${templates}`;
+        })()}
 
 </div>
   `;
@@ -15920,6 +16406,10 @@ __decorate([
     r(),
     __metadata("design:type", Set)
 ], GrowspaceManagerCard.prototype, "_activeEnvGraphs", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Array)
+], GrowspaceManagerCard.prototype, "_linkedGraphGroups", void 0);
 __decorate([
     r(),
     __metadata("design:type", Object)
