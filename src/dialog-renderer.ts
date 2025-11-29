@@ -4,7 +4,8 @@ import {
    mdiCannabis, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiCheck,
    mdiContentCopy, mdiArrowRight, mdiWeatherNight, mdiWeatherSunny, mdiTuneVariant,
    mdiLeaf, mdiUpload, mdiArrowLeft, mdiFilterVariant, mdiCloudUpload, mdiPencil,
-   mdiCog, mdiThermometer, mdiEarth, mdiViewDashboard, mdiFan, mdiWeatherPartlyCloudy, mdiBrain, mdiLoading, mdiDownload, mdiWater
+   mdiCog, mdiThermometer, mdiEarth, mdiViewDashboard, mdiFan, mdiWeatherPartlyCloudy, mdiBrain, mdiLoading, mdiDownload, mdiWater,
+   mdiCamera, mdiImage
 } from '@mdi/js';
 import { AddPlantDialogState, PlantEntity, PlantOverviewDialogState, StrainLibraryDialogState, ConfigDialogState, GrowMasterDialogState, PlantStage, stageInputs, PlantAttributeValue, PlantOverviewEditedAttributes, StrainEntry, CropMeta, StrainRecommendationDialogState, IrrigationDialogState, IrrigationTime } from './types';
 import { PlantUtils } from "./utils";
@@ -1334,6 +1335,15 @@ export class DialogRenderer {
       const uniqueStrains = [...new Set(dialog.strains.map(st => st.strain).filter(Boolean))].sort();
       const uniqueBreeders = [...new Set(dialog.strains.map(st => st.breeder).filter(Boolean))].sort();
 
+      const handleFileChange = (e: Event) => {
+         const file = (e.target as HTMLInputElement).files?.[0];
+         if (file) {
+            PlantUtils.compressImage(file)
+               .then(base64 => update('image', base64))
+               .catch(err => console.error("Error compressing image:", err));
+         }
+      };
+
       return html`
       <datalist id="strain-suggestions">
          ${uniqueStrains.map(name => html`<option value="${name}"></option>`)}
@@ -1363,7 +1373,7 @@ export class DialogRenderer {
                     @click=${(e: Event) => {
             // Only click input if not clicking the crop button or select lib button
             const target = e.target as HTMLElement;
-            if (!target.closest('.crop-btn') && !target.closest('.select-library-btn')) {
+            if (!target.closest('.crop-btn') && !target.closest('.select-library-btn') && !target.closest('.sd-btn')) {
                (e.currentTarget as HTMLElement).querySelector('input')?.click();
             }
          }}
@@ -1389,8 +1399,7 @@ export class DialogRenderer {
                   ${s.image ? html`
                      ${s.image_crop_meta
                ? html`<div style="width:100%; height:100%; border-radius:10px; ${DialogRenderer.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"></div>`
-               : html`<img src="${s.image}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" />`
-            }
+               : html`<img src="${s.image}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" />`}
 
                      <div style="position:absolute; bottom:8px; right:8px; display:flex; gap:8px;">
                          <button class="crop-btn"
@@ -1404,19 +1413,25 @@ export class DialogRenderer {
                          </div>
                      </div>
                   ` : html`
-                     <svg style="width:48px;height:48px;fill:currentColor;margin-bottom:16px;" viewBox="0 0 24 24"><path d="${mdiUpload}"></path></svg>
-                     <span style="font-weight:600;">PHOTO UPLOAD AREA</span>
-                     <span style="font-size:0.8rem; margin-top:4px;">(Drag & Drop or Click)</span>
+                     <div style="display: flex; gap: 16px; align-items: center;">
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                           <button class="sd-btn secondary" @click=${(e: Event) => (e.currentTarget as HTMLElement).nextElementSibling?.dispatchEvent(new MouseEvent('click'))}>
+                              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
+                              Camera
+                           </button>
+                           <input type="file" accept="image/*" capture="environment" style="display:none" @change=${handleFileChange} />
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                           <button class="sd-btn secondary" @click=${(e: Event) => (e.currentTarget as HTMLElement).nextElementSibling?.dispatchEvent(new MouseEvent('click'))}>
+                              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
+                              Gallery
+                           </button>
+                           <input type="file" accept="image/*" style="display:none" @change=${handleFileChange} />
+                        </div>
+                     </div>
+                     <span style="font-size:0.8rem; margin-top:12px; opacity: 0.7;">(Or Drag & Drop)</span>
                   `}
-                  <input type="file" id="strain-image-upload" style="display:none" accept="image/*"
-                         @change=${(e: Event) => {
-            const file = (e.target as HTMLInputElement).files?.[0];
-            if (file) {
-               PlantUtils.compressImage(file)
-                  .then(base64 => update('image', base64))
-                  .catch(err => console.error("Error compressing image:", err));
-            }
-         }} />
                </div>
 
                <div class="sd-form-group">
@@ -1441,20 +1456,20 @@ export class DialogRenderer {
                   <label class="sd-label">Type *</label>
                   <div class="type-selector-grid">
                      ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map(t => {
-            let icon = mdiLeaf;
-            if (t === 'Indica') icon = mdiWeatherNight;
-            if (t === 'Sativa') icon = mdiWeatherSunny;
-            if (t === 'Hybrid') icon = mdiTuneVariant;
+                  let icon = mdiLeaf;
+                  if (t === 'Indica') icon = mdiWeatherNight;
+                  if (t === 'Sativa') icon = mdiWeatherSunny;
+                  if (t === 'Hybrid') icon = mdiTuneVariant;
 
-            const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
-            return html`
+                  const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
+                  return html`
                            <div class="type-option ${isActive ? 'active' : ''}"
                                 @click=${() => update('type', t)}>
                               <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
                               <span class="type-label">${t}</span>
                            </div>
                         `;
-         })}
+               })}
                   </div>
                </div>
 
