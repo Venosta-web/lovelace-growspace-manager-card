@@ -39,7 +39,7 @@ export class GrowspaceHeader extends LitElement {
 
   @state() private _menuOpen = false;
   @state() private _mobileEnvExpanded = false;
-  @state() private _linkedGraphGroups: string[][] = [];
+  @property({ attribute: false }) public linkedGraphGroups: string[][] = [];
   @state() private _draggedMetric: string | null = null;
 
   static styles = css`
@@ -371,11 +371,11 @@ export class GrowspaceHeader extends LitElement {
   }
 
   private _isMetricLinked(metric: string): { linked: boolean, groupIndex: number, group: string[] } {
-    const index = this._linkedGraphGroups.findIndex(g => g.includes(metric));
+    const index = this.linkedGraphGroups.findIndex(g => g.includes(metric));
     return {
       linked: index !== -1,
       groupIndex: index,
-      group: index !== -1 ? this._linkedGraphGroups[index] : []
+      group: index !== -1 ? this.linkedGraphGroups[index] : []
     };
   }
 

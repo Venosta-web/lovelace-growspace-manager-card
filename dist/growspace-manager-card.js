@@ -12741,7 +12741,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
         this.historyData = null;
         this._menuOpen = false;
         this._mobileEnvExpanded = false;
-        this._linkedGraphGroups = [];
+        this.linkedGraphGroups = [];
         this._draggedMetric = null;
     }
     _handleDeviceChange(e) {
@@ -12780,11 +12780,11 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
         this._draggedMetric = null;
     }
     _isMetricLinked(metric) {
-        const index = this._linkedGraphGroups.findIndex(g => g.includes(metric));
+        const index = this.linkedGraphGroups.findIndex(g => g.includes(metric));
         return {
             linked: index !== -1,
             groupIndex: index,
-            group: index !== -1 ? this._linkedGraphGroups[index] : []
+            group: index !== -1 ? this.linkedGraphGroups[index] : []
         };
     }
     _unlinkGraphs(groupIndex) {
@@ -13562,9 +13562,9 @@ __decorate([
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_mobileEnvExpanded", void 0);
 __decorate([
-    r(),
+    n$1({ attribute: false }),
     __metadata("design:type", Array)
-], GrowspaceHeader.prototype, "_linkedGraphGroups", void 0);
+], GrowspaceHeader.prototype, "linkedGraphGroups", void 0);
 __decorate([
     r(),
     __metadata("design:type", Object)
@@ -14884,11 +14884,11 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             .compact=${this._isCompactView}
             .selectedDevice=${this.selectedDevice}
             .growspaceOptions=${growspaceOptions}
+            .linkedGraphGroups=${this._linkedGraphGroups}
             @growspace-changed=${this._handleDeviceChange}
             @toggle-env-graph=${this._handleToggleEnvGraph}
             @link-graphs=${this._handleLinkGraphs}
             @unlink-graphs=${this._handleUnlinkGraphs}
-            @trigger-action=${this._handleHeaderAction}
             @trigger-action=${this._handleHeaderAction}
           ></growspace-header>
           ${this.renderGraphs()}

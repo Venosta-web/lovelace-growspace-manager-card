@@ -3426,6 +3426,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             .compact=${this._isCompactView}
             .selectedDevice=${this.selectedDevice}
             .growspaceOptions=${growspaceOptions}
+            .linkedGraphGroups=${this._linkedGraphGroups}
             @growspace-changed=${this._handleDeviceChange}
             @toggle-env-graph=${this._handleToggleEnvGraph}
             @link-graphs=${this._handleLinkGraphs}
