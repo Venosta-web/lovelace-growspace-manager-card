@@ -13189,7 +13189,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                       </div>
                     ` : ''}
     </div>
-
+    </div>
     <div class="gs-device-chips">
                 ${overviewEntity?.attributes?.exhaust_entity ? x `
                                <div class="stat-chip ${this.activeEnvGraphs.has('exhaust') ? 'active' : ''}"
@@ -13275,7 +13275,6 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
         })()}
                                </div>` : ''}
     </div>
-      </div>
       </div>
       </div>
         `;
