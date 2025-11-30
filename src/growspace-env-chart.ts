@@ -491,6 +491,9 @@ export class GrowspaceEnvChart extends LitElement {
             if (metricKey === 'exhaust' || metricKey === 'humidifier') {
                 minVal = 0;
                 maxVal = 10;
+            } else if (metricKey === 'dehumidifier') {
+                minVal = 0;
+                maxVal = 1;
             } else {
                 minVal = Math.min(...dataPoints.map(d => d.value));
                 maxVal = Math.max(...dataPoints.map(d => d.value));
@@ -804,6 +807,9 @@ export class GrowspaceEnvChart extends LitElement {
                 if (metricKey === 'exhaust' || metricKey === 'humidifier') {
                     min = 0;
                     max = 10;
+                } else if (metricKey === 'dehumidifier') {
+                    min = 0;
+                    max = 1;
                 }
 
                 graphData.push({
