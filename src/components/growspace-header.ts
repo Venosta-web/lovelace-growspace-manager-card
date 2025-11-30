@@ -188,6 +188,7 @@ export class GrowspaceHeader extends LitElement {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     .menu-container {

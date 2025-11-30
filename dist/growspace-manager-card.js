@@ -13381,6 +13381,7 @@ GrowspaceHeader.styles = i$3 `
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     .menu-container {
@@ -15052,33 +15053,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         </div>
     `;
     }
-    renderHeader(devices, growspaceOptions) {
-        if (!this._isCompactView && !this._config?.title) {
-            return x ``;
-        }
-        const selectedDevice = devices.find(d => d.device_id === this.selectedDevice);
-        const device = selectedDevice; // Alias for clarity with component prop
-        return x `
-      <growspace-header
-        .hass=${this.hass}
-        .device=${device}
-        .config=${this._config}
-        .devices=${devices}
-        .compact=${this._isCompactView}
-        .activeEnvGraphs=${this._activeEnvGraphs}
-        .growspaceOptions=${growspaceOptions}
-        .historyData=${this._historyData}
-        @growspace-changed=${(e) => {
-            this.selectedDevice = e.detail.deviceId;
-            this.initializeSelectedDevice();
-        }}
-        @toggle-env-graph=${(e) => this._toggleEnvGraph(e.detail.metric)}
-        @link-graphs=${this._handleLinkGraphs}
-        @unlink-graphs=${(e) => this._unlinkGraphs(e.detail.groupIndex)}
-        @trigger-action=${this._handleHeaderAction}
-      ></growspace-header>
-    `;
-    }
     renderEditModeBanner() {
         if (!this._isEditMode)
             return x ``;
@@ -15666,301 +15640,19 @@ GrowspaceManagerCard.styles = [
           0 0 0 1px rgba(255, 255, 255, 0.02) inset;
       }
 
-      .gs-stats-container {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
 
-      .gs-header-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: var(--spacing-md);
-      }
 
-      .gs-title-group {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        flex-shrink: 0;
-      }
 
-      .gs-title {
-        font-family: 'Roboto', sans-serif;
-        font-size: 2.25rem; /* MD3 Headline Large */
-        font-weight: 400;
-        margin: 0;
-        letter-spacing: 0;
-        line-height: 2.75rem;
-        text-transform: capitalize;
-        background: linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      }
 
-      .gs-stage-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 6px 16px;
-        border-radius: 24px; /* Pill shape */
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: #fff;
-        width: fit-content;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(4px);
-      }
 
-      /* Chips Container */
-      .gs-stats-chips,
-      .gs-device-chips {
-         display: flex;
-         flex-wrap: nowrap;
-         gap: 8px;
-         justify-content: flex-end;
-         align-items: center;
-         overflow-x: auto;
-         overflow-y: hidden;
-         flex: 1;
-         min-width: 0;
-         scrollbar-width: none;
-         -ms-overflow-style: none;
-         mask-image: linear-gradient(to right, black 85%, transparent 100%);
-         -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
-         padding: 4px 2px;
-      }
-      .gs-stats-chips::-webkit-scrollbar,
-      .gs-device-chips::-webkit-scrollbar {
-        display: none;
-      }
 
-      /* Mobile Environment Trigger - Hidden by default on desktop */
-      .mobile-env-trigger {
-        display: none !important;
-      }
 
-      @media (max-width: 600px) {
-        .gs-stats-chips {
-          flex-direction: column;
-          align-items: stretch;
-          gap: 4px;
-        }
 
-        /* Show the trigger on mobile */
-        .mobile-env-trigger {
-          display: flex !important;
-          justify-content: space-between;
-          width: 100%;
-          box-sizing: border-box;
-          background: rgba(255, 255, 255, 0.1) !important;
-        }
 
-        /* Hide other chips by default on mobile */
-        .gs-stats-chips:not(.expanded) .stat-chip:not(.mobile-env-trigger) {
-          display: none !important;
-        }
 
-        /* When expanded, show them as a list or grid */
-        .gs-stats-chips.expanded .stat-chip,
-        .gs-device-chips.expanded .stat-chip {
-          display: flex;
-          width: 100%;
-          box-sizing: border-box;
-          justify-content: flex-end;
-        }
 
-        /* Align menu container to right on mobile */
-        .menu-container {
-          width: 100%;
-          display: flex;
-          justify-content: flex-end;
-          margin-top: 8px;
-        }
-      }
 
-      .stat-chip {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 12px; /* MD3 Small shape */
-        padding: 8px 16px;
-        font-size: 0.875rem; /* MD3 Label Large */
-        font-weight: 500;
-        color: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(8px);
-        cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-        user-select: none;
-        flex-shrink: 0;
-        white-space: nowrap;
-      }
 
-      .stat-chip:hover {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: rgba(255, 255, 255, 0.2);
-        transform: translateY(-1px);
-      }
-
-      .stat-chip.active {
-        background: rgba(255, 255, 255, 0.15);
-        border-color: rgba(255, 255, 255, 0.4);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        color: #fff;
-      }
-
-      .stat-chip svg {
-        width: 18px;
-        height: 18px;
-        fill: currentColor;
-        opacity: 0.8;
-      }
-
-      .light-status-chip {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 6px 16px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 500;
-        color: #fff;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .light-status-chip.on {
-        color: var(--primary-light-color);
-      }
-
-      .light-status-chip.off {
-         color: rgba(255, 255, 255, 0.7);
-      }
-
-      /* Menu Button and Dropdown */
-      .menu-container {
-        position: relative;
-        display: inline-block;
-      }
-
-      .menu-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-        color: #fff;
-      }
-
-      .menu-button:hover {
-        background: rgba(255, 255, 255, 0.2);
-        border-color: rgba(255, 255, 255, 0.3);
-      }
-
-      .menu-button svg {
-        width: 24px;
-        height: 24px;
-        fill: currentColor;
-      }
-
-      .menu-dropdown {
-        position: absolute;
-        top: calc(100% + 8px);
-        right: 0;
-        min-width: 200px;
-        background: rgba(30, 30, 35, 0.95);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
-        z-index: 1000;
-        overflow: hidden;
-        animation: menuFadeIn 0.2s cubic-bezier(0.2, 0, 0, 1);
-      }
-
-      @keyframes menuFadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(-8px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .menu-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 16px;
-        cursor: pointer;
-        transition: background 0.2s;
-        color: #fff;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      }
-
-      .menu-item:last-child {
-        border-bottom: none;
-      }
-
-      .menu-item:hover {
-        background: rgba(255, 255, 255, 0.1);
-      }
-
-      .menu-item svg {
-        width: 20px;
-        height: 20px;
-        fill: currentColor;
-        opacity: 0.9;
-      }
-
-      .menu-item-label {
-        flex: 1;
-        font-size: 0.9rem;
-        font-weight: 500;
-      }
-
-      /* Toggle switch in menu */
-      .menu-toggle-switch {
-        width: 40px;
-        height: 20px;
-        background: rgba(255, 255, 255, 0.3);
-        border-radius: 10px;
-        position: relative;
-        transition: background 0.2s;
-      }
-
-      .menu-toggle-switch.active {
-        background: var(--primary-color, #4caf50);
-      }
-
-      .menu-toggle-switch::after {
-        content: '';
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 16px;
-        height: 16px;
-        background: #fff;
-        border-radius: 50%;
-        transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
-      }
-
-      .menu-toggle-switch.active::after {
-        transform: translateX(20px);
-      }
 
       /* Edit Mode Banner */
       .edit-mode-banner {
