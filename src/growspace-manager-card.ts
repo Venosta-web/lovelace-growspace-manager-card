@@ -2698,7 +2698,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       selectedDeviceData.plants_per_row
     );
 
-    const isWide = selectedDeviceData.plants_per_row > 6;
+    const isWide = selectedDeviceData.plants_per_row > 7;
     const strainLibrary = this._strainLibrary;
 
     return html`

@@ -14967,7 +14967,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         // Calculate grid layout
         const effectiveRows = PlantUtils.calculateEffectiveRows(selectedDeviceData);
         const { grid } = PlantUtils.createGridLayout(selectedDeviceData.plants, effectiveRows, selectedDeviceData.plants_per_row);
-        const isWide = selectedDeviceData.plants_per_row > 6;
+        const isWide = selectedDeviceData.plants_per_row > 7;
         const strainLibrary = this._strainLibrary;
         return x `
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
