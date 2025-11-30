@@ -35,6 +35,7 @@ export class GrowspaceHeader extends LitElement {
   @property({ attribute: false }) public config!: GrowspaceManagerCardConfig;
   @property({ attribute: false }) public devices: GrowspaceDevice[] = [];
   @property({ type: Boolean }) public compact = false;
+  @property({ type: Boolean }) public isEditMode = false;
   @property({ attribute: false }) public activeEnvGraphs = new Set<string>();
   @property({ attribute: false }) public growspaceOptions: Record<string, string> = {};
   @property({ attribute: false }) public historyData: any[] | null = null;
@@ -738,12 +739,12 @@ export class GrowspaceHeader extends LitElement {
                     <div class="menu-item" @click=${() => this._triggerAction('edit')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
                       <span class="menu-item-label">Edit</span>
-                      <div class="menu-toggle-switch"></div>
+                      <div class="menu-toggle-switch ${this.isEditMode ? 'active' : ''}"></div>
                     </div>
                     <div class="menu-item" @click=${() => this._triggerAction('compact')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
                       <span class="menu-item-label">Compact View</span>
-                      <div class="menu-toggle-switch"></div>
+                      <div class="menu-toggle-switch ${this.compact ? 'active' : ''}"></div>
                     </div>
                     <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
