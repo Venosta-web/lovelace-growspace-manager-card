@@ -721,7 +721,6 @@ export class GrowspaceHeader extends LitElement {
                    </div>` : ''}
 
               </div>
-              ${!this.compact ? html`
                   <div class="menu-container">
                     <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
                       <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
@@ -763,7 +762,6 @@ export class GrowspaceHeader extends LitElement {
                       </div>
                     ` : ''}
                   </div>
-                ` : ''}
             </div>
 
               <div class="gs-device-chips">

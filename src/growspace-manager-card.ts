@@ -2851,6 +2851,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
 
 
+  private _handleToggleEnvGraph(e: CustomEvent) {
+    const metric = e.detail.metric;
+    this._toggleEnvGraph(metric);
+  }
+
   private _toggleEnvGraph(metric: string) {
     const newSet = new Set(this._activeEnvGraphs);
     if (newSet.has(metric)) {
@@ -3140,6 +3145,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
   }
 
+  private _handleUnlinkGraphs(e: CustomEvent) {
+    const groupIndex = e.detail.groupIndex;
+    this._unlinkGraphs(groupIndex);
+  }
+
   private _unlinkGraphs(groupIndex: number) {
     if (groupIndex >= 0 && groupIndex < this._linkedGraphGroups.length) {
       const newGroups = [...this._linkedGraphGroups];
@@ -3406,31 +3416,124 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="sr-only-announcer" aria-live="polite"></div>
         <div class="unified-growspace-card" tabindex="0" @keydown=${this._handleKeyboardNav}>
-          ${this.renderHeader(devices, growspaceOptions)}
-          ${!this._isCompactView ? html`
-            <growspace-header
-              .hass=${this.hass}
-              .config=${this._config}
-              .device=${selectedDeviceData}
-              .devices=${devices}
-              .activeEnvGraphs=${this._activeEnvGraphs}
-              .historyData=${this._historyData}
-              .isCompactView=${this._isCompactView}
-              .selectedDevice=${this.selectedDevice}
-              .menuOpen=${this._menuOpen}
-              @growspace-changed=${this._handleDeviceChange}
-              @toggle-env-graph=${this._toggleEnvGraph}
-              @link-graphs=${this._linkGraphs}
-              @unlink-graphs=${this._unlinkGraphs}
-              @trigger-action=${this._handleHeaderAction}
-            ></growspace-header>
-          ` : ''}
+          <growspace-header
+            .hass=${this.hass}
+            .config=${this._config}
+            .device=${selectedDeviceData}
+            .devices=${devices}
+            .activeEnvGraphs=${this._activeEnvGraphs}
+            .historyData=${this._historyData}
+            .compact=${this._isCompactView}
+            .selectedDevice=${this.selectedDevice}
+            .growspaceOptions=${growspaceOptions}
+            @growspace-changed=${this._handleDeviceChange}
+            @toggle-env-graph=${this._handleToggleEnvGraph}
+            @link-graphs=${this._handleLinkGraphs}
+            @unlink-graphs=${this._handleUnlinkGraphs}
+            @trigger-action=${this._handleHeaderAction}
+          ></growspace-header>
+          ${this.renderGraphs()}
           ${this.renderEditModeBanner()}
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
         </div>
       </ha-card>
       
       ${this.renderDialogs(growspaceOptions)}
+    `;
+  }
+
+  private renderGraphs(): TemplateResult {
+    if (this._activeEnvGraphs.size === 0) return html``;
+
+    const renderedMetrics = new Set<string>();
+    const graphs: TemplateResult[] = [];
+    const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
+    const selectedDeviceData = this.dataService.getGrowspaceDevices().find(d => d.device_id === this.selectedDevice);
+
+    if (!selectedDeviceData) return html``;
+
+    // Render Linked Graphs
+    this._linkedGraphGroups.forEach(group => {
+      if (group.some(m => this._activeEnvGraphs.has(m))) {
+        const activeMetrics = group.filter(m => this._activeEnvGraphs.has(m));
+        if (activeMetrics.length > 0) {
+          const metricConfig: Record<string, any> = {
+            temperature: { color: '#ff5252', title: 'Temperature', unit: '°C' },
+            humidity: { color: '#2196f3', title: 'Humidity', unit: '%' },
+            vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa' },
+            co2: { color: '#4caf50', title: 'CO2', unit: 'ppm' },
+            light: { color: '#ffc107', title: 'Light', unit: 'state' },
+            irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state' },
+            drain: { color: '#ff9800', title: 'Drain', unit: 'state' },
+            exhaust: { color: '#795548', title: 'Exhaust', unit: '%' },
+            humidifier: { color: '#607d8b', title: 'Humidifier', unit: '%' },
+            optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state' }
+          };
+
+          graphs.push(html`
+                <growspace-env-chart
+                    .hass=${this.hass}
+                    .device=${selectedDeviceData}
+                    .history=${this._historyData || []}
+                    .metrics=${activeMetrics}
+                    .isCombined=${true}
+                    .metricConfig=${metricConfig}
+                    .range=${range}
+                    @toggle-graph=${this._handleToggleEnvGraph}
+                    @unlink-graphs=${this._handleUnlinkGraphs}
+                ></growspace-env-chart>
+            `);
+          group.forEach(m => renderedMetrics.add(m));
+        }
+      }
+    });
+
+    // Render Individual Graphs
+    this._activeEnvGraphs.forEach(metric => {
+      if (renderedMetrics.has(metric)) return;
+
+      let color = '#fff';
+      let title = metric;
+      let unit = '';
+      let icon = mdiMagnify;
+      let type: 'line' | 'step' = 'line';
+      let history = this._historyData || [];
+
+      switch (metric) {
+        case 'temperature': color = '#ff5252'; title = 'Temperature'; unit = '°C'; icon = mdiThermometer; break;
+        case 'humidity': color = '#2196f3'; title = 'Humidity'; unit = '%'; icon = mdiWaterPercent; break;
+        case 'vpd': color = '#9c27b0'; title = 'VPD'; unit = 'kPa'; icon = mdiCloudOutline; break;
+        case 'co2': color = '#4caf50'; title = 'CO2'; unit = 'ppm'; icon = mdiWeatherCloudy; break;
+        case 'light': color = '#ffc107'; title = 'Light'; unit = 'state'; icon = mdiLightbulbOn; type = 'step'; break;
+        case 'irrigation': color = '#03a9f4'; title = 'Irrigation'; unit = 'state'; icon = mdiWater; type = 'step'; break;
+        case 'drain': color = '#ff9800'; title = 'Drain'; unit = 'state'; icon = mdiWater; type = 'step'; break;
+        case 'exhaust': color = '#795548'; title = 'Exhaust'; unit = '%'; icon = mdiFan; history = this._exhaustHistory || []; break;
+        case 'humidifier': color = '#607d8b'; title = 'Humidifier'; unit = '%'; icon = mdiAirHumidifier; history = this._humidifierHistory || []; break;
+        case 'optimal': color = '#4caf50'; title = 'Optimal Conditions'; unit = 'state'; icon = mdiRadioboxMarked; type = 'step'; break;
+      }
+
+      graphs.push(html`
+        <growspace-env-chart
+            .hass=${this.hass}
+            .device=${selectedDeviceData}
+            .history=${history}
+            .metricKey=${metric}
+            .unit=${unit}
+            .color=${color}
+            .title=${title}
+            .icon=${icon}
+            .range=${range}
+            .type=${type}
+            @toggle-graph=${this._handleToggleEnvGraph}
+        ></growspace-env-chart>
+      `);
+    });
+
+    return html`
+        <div class="graphs-container">
+            ${graphs}
+            ${this.renderTimeRangeSelector()}
+        </div>
     `;
   }
 
