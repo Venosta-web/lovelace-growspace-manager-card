@@ -7,14 +7,14 @@ import { DialogRenderer } from '../dialog-renderer';
 
 @customElement('growspace-plant-card')
 export class GrowspacePlantCard extends LitElement {
-    @property({ attribute: false }) public plant!: PlantEntity;
-    @property({ type: Number }) public row!: number;
-    @property({ type: Number }) public col!: number;
-    @property({ attribute: false }) public strainLibrary: StrainEntry[] = [];
-    @property({ type: Boolean }) public isEditMode = false;
-    @property({ type: Boolean }) public selected = false;
+  @property({ attribute: false }) public plant!: PlantEntity;
+  @property({ type: Number }) public row!: number;
+  @property({ type: Number }) public col!: number;
+  @property({ attribute: false }) public strainLibrary: StrainEntry[] = [];
+  @property({ type: Boolean }) public isEditMode = false;
+  @property({ type: Boolean }) public selected = false;
 
-    static styles = css`
+  static styles = css`
     :host {
       display: block;
       width: 100%;
@@ -46,6 +46,10 @@ export class GrowspacePlantCard extends LitElement {
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
       border-color: rgba(255, 255, 255, 0.2);
     }
+    .plant-card-rich:focus {
+        outline: 2px solid var(--primary-color, #22c55e);
+        outline-offset: 2px;
+    }  
 
     .plant-card-bg {
       position: absolute;
@@ -165,127 +169,146 @@ export class GrowspacePlantCard extends LitElement {
         /* Add any specific styles for current stage if needed, 
            though logic was mainly setting color in SVG which is handled in render */
     }
+
+    .plant-card-rich.dragging {
+      opacity: 0.5;
+      transform: rotate(5deg);
+    }
   `;
 
-    private _handleDragStart(e: DragEvent) {
-        if (this.isEditMode) return;
-
-        // Dispatch event to parent
-        this.dispatchEvent(new CustomEvent('plant-drag-start', {
-            detail: {
-                originalEvent: e,
-                plant: this.plant
-            },
-            bubbles: true,
-            composed: true
-        }));
+  private _handleDragStart(e: DragEvent) {
+    if (this.isEditMode) {
+      e.preventDefault();
+      return;
     }
 
-    private _handleDrop(e: DragEvent) {
-        e.preventDefault();
-        if (this.isEditMode) return;
+    const target = e.target as HTMLElement;
+    target.classList.add('dragging');
 
-        this.dispatchEvent(new CustomEvent('plant-drop', {
-            detail: {
-                originalEvent: e,
-                row: this.row,
-                col: this.col,
-                plant: this.plant
-            },
-            bubbles: true,
-            composed: true
-        }));
+    if (e.dataTransfer) {
+      e.dataTransfer.setData("text/plain", JSON.stringify({ id: this.plant.entity_id }));
+      e.dataTransfer.effectAllowed = 'move';
     }
 
-    private _handleDragOver(e: DragEvent) {
-        e.preventDefault();
-        // Optional: Add visual feedback
-    }
+    // Dispatch event to parent to track dragged plant state
+    this.dispatchEvent(new CustomEvent('plant-drag-start', {
+      detail: { plant: this.plant },
+      bubbles: true,
+      composed: true
+    }));
+  }
 
-    private _handleClick() {
-        this.dispatchEvent(new CustomEvent('plant-click', {
-            detail: { plant: this.plant },
-            bubbles: true,
-            composed: true
-        }));
-    }
+  private _handleDragEnd(e: DragEvent) {
+    const target = e.target as HTMLElement;
+    target.classList.remove('dragging');
+  }
 
-    private _toggleSelection(e: Event) {
-        e.stopPropagation();
-        this.dispatchEvent(new CustomEvent('plant-toggle-selection', {
-            detail: { plant: this.plant },
-            bubbles: true,
-            composed: true
-        }));
-    }
+  private _handleDrop(e: DragEvent) {
+    e.preventDefault();
+    if (this.isEditMode) return;
 
-    private renderPlantDaysRich(plant: PlantEntity): TemplateResult {
-        const days = [
-            { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Seedling", stage: "seedling" },
-            { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Mother", stage: "mother" },
-            { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Clone", stage: "clone" },
-            { days: plant.attributes?.veg_days, icon: mdiSprout, title: "Veg", stage: "vegetative" },
-            { days: plant.attributes?.flower_days, icon: mdiFlower, title: "Flower", stage: "flower" },
-            { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Dry", stage: "dry" },
-            { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Cure", stage: "cure" }
-        ].filter(d => d.days !== undefined && d.days !== null);
+    this.dispatchEvent(new CustomEvent('plant-drop', {
+      detail: {
+        originalEvent: e,
+        row: this.row,
+        col: this.col,
+        plant: this.plant
+      },
+      bubbles: true,
+      composed: true
+    }));
+  }
 
-        const visibleDays = days.filter(d => d.days);
+  private _handleDragOver(e: DragEvent) {
+    e.preventDefault();
+    // Optional: Add visual feedback
+  }
 
-        const currentStage = (plant.state || '').toLowerCase();
-        const normalizedCurrent = currentStage === 'veg' ? 'vegetative' : currentStage;
+  private _handleClick() {
+    this.dispatchEvent(new CustomEvent('plant-click', {
+      detail: { plant: this.plant },
+      bubbles: true,
+      composed: true
+    }));
+  }
 
-        return html`
+  private _toggleSelection(e: Event) {
+    e.stopPropagation();
+    this.dispatchEvent(new CustomEvent('plant-toggle-selection', {
+      detail: { plant: this.plant },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
+  private renderPlantDaysRich(plant: PlantEntity): TemplateResult {
+    const days = [
+      { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Seedling", stage: "seedling" },
+      { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Mother", stage: "mother" },
+      { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Clone", stage: "clone" },
+      { days: plant.attributes?.veg_days, icon: mdiSprout, title: "Veg", stage: "vegetative" },
+      { days: plant.attributes?.flower_days, icon: mdiFlower, title: "Flower", stage: "flower" },
+      { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Dry", stage: "dry" },
+      { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Cure", stage: "cure" }
+    ].filter(d => d.days !== undefined && d.days !== null);
+
+    const visibleDays = days.filter(d => d.days);
+
+    const currentStage = (plant.state || '').toLowerCase();
+    const normalizedCurrent = currentStage === 'veg' ? 'vegetative' : currentStage;
+
+    return html`
       ${visibleDays.map(d => {
-            const color = PlantUtils.getPlantStageColor(d.stage);
-            const isCurrent = d.stage === normalizedCurrent;
+      const color = PlantUtils.getPlantStageColor(d.stage);
+      const isCurrent = d.stage === normalizedCurrent;
 
-            return html`
+      return html`
           <div class="pc-stat-item ${isCurrent ? 'current-stage' : ''}">
             <svg style="color: ${color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
             <div class="pc-stat-text">${d.days}d</div>
           </div>
         `;
-        })}
+    })}
     `;
+  }
+
+  render() {
+    if (!this.plant) return html``;
+
+    const stageColor = PlantUtils.getPlantStageColor(this.plant.state);
+    const strainName = this.plant.attributes?.strain;
+    const pheno = this.plant.attributes?.phenotype;
+
+    let imageUrl: string | undefined;
+    let imageCropMeta: any | undefined;
+
+    if (strainName) {
+      const phenoMatch = this.strainLibrary.find(s => s.strain === strainName && s.phenotype === pheno);
+      if (phenoMatch && phenoMatch.image) {
+        imageUrl = phenoMatch.image;
+        imageCropMeta = phenoMatch.image_crop_meta;
+      } else {
+        const strainMatch = this.strainLibrary.find(s => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
+        if (strainMatch && strainMatch.image) {
+          imageUrl = strainMatch.image;
+          imageCropMeta = strainMatch.image_crop_meta;
+        } else if (!imageUrl) {
+          const anyMatch = this.strainLibrary.find(s => s.strain === strainName && s.image);
+          if (anyMatch) {
+            imageUrl = anyMatch.image;
+            imageCropMeta = anyMatch.image_crop_meta;
+          }
+        }
+      }
     }
 
-    render() {
-        if (!this.plant) return html``;
-
-        const stageColor = PlantUtils.getPlantStageColor(this.plant.state);
-        const strainName = this.plant.attributes?.strain;
-        const pheno = this.plant.attributes?.phenotype;
-
-        let imageUrl: string | undefined;
-        let imageCropMeta: any | undefined;
-
-        if (strainName) {
-            const phenoMatch = this.strainLibrary.find(s => s.strain === strainName && s.phenotype === pheno);
-            if (phenoMatch && phenoMatch.image) {
-                imageUrl = phenoMatch.image;
-                imageCropMeta = phenoMatch.image_crop_meta;
-            } else {
-                const strainMatch = this.strainLibrary.find(s => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
-                if (strainMatch && strainMatch.image) {
-                    imageUrl = strainMatch.image;
-                    imageCropMeta = strainMatch.image_crop_meta;
-                } else if (!imageUrl) {
-                    const anyMatch = this.strainLibrary.find(s => s.strain === strainName && s.image);
-                    if (anyMatch) {
-                        imageUrl = anyMatch.image;
-                        imageCropMeta = anyMatch.image_crop_meta;
-                    }
-                }
-            }
-        }
-
-        return html`
+    return html`
       <div
         class="plant-card-rich"
         style="--stage-color: ${stageColor}"
         draggable="true"
         @dragstart=${this._handleDragStart}
+        @dragend=${this._handleDragEnd}
         @dragover=${this._handleDragOver}
         @drop=${this._handleDrop}
         @click=${this._handleClick}
@@ -326,5 +349,5 @@ export class GrowspacePlantCard extends LitElement {
         </div>
       </div>
     `;
-    }
+  }
 }
