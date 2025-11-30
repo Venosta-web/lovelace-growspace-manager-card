@@ -511,6 +511,36 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         box-shadow: 0 0 0 3px rgba(var(--rgb-primary-color), 0.1);
       }
 
+      /* Empty Plant Card Styles */
+      .plant-card-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        aspect-ratio: 1;
+        border: 2px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .plant-card-empty:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        background: rgba(255, 255, 255, 0.05);
+        transform: translateY(-2px);
+      }
+
+      .plant-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 8px;
+      }
+
       /* Strain Library Styles - Glassmorphism & Table */
       .strain-search-container {
         position: relative;
