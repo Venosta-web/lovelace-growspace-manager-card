@@ -10145,6 +10145,11 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i {
                     const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
                     return (val === true || val === 'on' || val === 1) ? 1 : 0;
                 }
+                if (key === 'exhaust' || key === 'humidifier') {
+                    if (ent.state && !isNaN(parseFloat(ent.state))) {
+                        return ent.state;
+                    }
+                }
                 if (ent.attributes && ent.attributes[key] !== undefined)
                     return ent.attributes[key];
                 if (ent.attributes && ent.attributes.observations && typeof ent.attributes.observations === 'object') {
@@ -10169,9 +10174,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i {
             };
             // Use History Data
             let historySource = this.history;
-            if (!historySource || historySource.length === 0)
-                return x ``;
-            const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+            // if (!historySource || historySource.length === 0) return html``; // REMOVED
+            const sortedHistory = historySource ? [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()) : [];
             sortedHistory.forEach(h => {
                 const t = new Date(h.last_changed).getTime();
                 if (t < startTime.getTime())
@@ -10188,6 +10192,26 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i {
                     const state = overviewEntity.attributes.dehumidifier_state;
                     const val = (state === 'on' || state === 'true' || state === '1') ? 1 : 0;
                     dataPoints.push({ time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } });
+                }
+                else if (dataPoints.length > 0) {
+                    const last = dataPoints[dataPoints.length - 1];
+                    dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
+                }
+            }
+            else if (metricKey === 'exhaust') {
+                if (overviewEntity && overviewEntity.attributes.exhaust_value !== undefined) {
+                    const val = overviewEntity.attributes.exhaust_value;
+                    dataPoints.push({ time: now.getTime(), value: parseFloat(val) });
+                }
+                else if (dataPoints.length > 0) {
+                    const last = dataPoints[dataPoints.length - 1];
+                    dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
+                }
+            }
+            else if (metricKey === 'humidifier') {
+                if (overviewEntity && overviewEntity.attributes.humidifier_value !== undefined) {
+                    const val = overviewEntity.attributes.humidifier_value;
+                    dataPoints.push({ time: now.getTime(), value: parseFloat(val) });
                 }
                 else if (dataPoints.length > 0) {
                     const last = dataPoints[dataPoints.length - 1];
