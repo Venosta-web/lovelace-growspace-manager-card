@@ -22,8 +22,8 @@ import {
   mdiLightbulbOn,
   mdiLightbulbOff,
   mdiMagnify,
-  mdiWaterOff,
-  mdiAirHumidifierOff
+  mdiAirHumidifierOff,
+
 } from '@mdi/js';
 import { GrowspaceDevice, GrowspaceManagerCardConfig } from '../types';
 import { PlantUtils } from '../utils';
@@ -835,7 +835,7 @@ export class GrowspaceHeader extends LitElement {
           if (target.closest('.link-icon')) return;
           this._toggleEnvGraph('dehumidifier');
         }}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiWaterOff}"></path></svg> Dehumidifier: ${overviewEntity.attributes.dehumidifier_value}
+                  <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg> Dehumidifier: ${overviewEntity.attributes.dehumidifier_value}
                   ${(() => {
           const { linked, groupIndex } = this._isMetricLinked('dehumidifier');
           if (linked) {
