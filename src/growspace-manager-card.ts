@@ -3065,40 +3065,78 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (!data) return;
 
     try {
-      const payload = JSON.parse(data);
-      if (payload.type !== 'env-metric') return;
-
-      const sourceMetric = payload.metric;
-      if (sourceMetric === targetMetric) return;
-
-      // Check if already linked
-      const existingGroupIndex = this._linkedGraphGroups.findIndex(group =>
-        group.includes(sourceMetric) || group.includes(targetMetric)
-      );
-
-      if (existingGroupIndex !== -1) {
-        // Add to existing group if not present
-        const group = [...this._linkedGraphGroups[existingGroupIndex]];
-        if (!group.includes(sourceMetric)) group.push(sourceMetric);
-        if (!group.includes(targetMetric)) group.push(targetMetric);
-
-        const newGroups = [...this._linkedGraphGroups];
-        newGroups[existingGroupIndex] = group;
-        this._linkedGraphGroups = newGroups;
-      } else {
-        // Create new group
-        this._linkedGraphGroups = [...this._linkedGraphGroups, [sourceMetric, targetMetric]];
+      // Handle simple string metric (from component) or JSON payload (legacy/internal)
+      let sourceMetric = data;
+      try {
+        const payload = JSON.parse(data);
+        if (payload.type === 'env-metric') {
+          sourceMetric = payload.metric;
+        }
+      } catch (e) {
+        // Not JSON, assume raw metric string
       }
 
-      // Ensure combined graph is active
-      this._activeEnvGraphs.add(sourceMetric); // We use the first one as key or just ensure both are active? 
-      // Actually, we should probably ensure the group is represented. 
-      // Let's just ensure the target is active, and the renderer will handle grouping.
-      this._activeEnvGraphs.add(targetMetric);
-      this.requestUpdate();
+      if (sourceMetric === targetMetric) return;
+
+      this._linkGraphs(sourceMetric, targetMetric);
 
     } catch (err) {
       console.error("Error parsing drop data", err);
+    }
+  }
+
+  private _handleLinkGraphs(e: CustomEvent) {
+    const { metric1, metric2 } = e.detail;
+    this._linkGraphs(metric1, metric2);
+  }
+
+  private _linkGraphs(metric1: string, metric2: string) {
+    // Check if already linked
+    const existingGroupIndex = this._linkedGraphGroups.findIndex(group =>
+      group.includes(metric1) || group.includes(metric2)
+    );
+
+    if (existingGroupIndex !== -1) {
+      // Add to existing group if not present
+      const group = [...this._linkedGraphGroups[existingGroupIndex]];
+      if (!group.includes(metric1)) group.push(metric1);
+      if (!group.includes(metric2)) group.push(metric2);
+
+      const newGroups = [...this._linkedGraphGroups];
+      newGroups[existingGroupIndex] = group;
+      this._linkedGraphGroups = newGroups;
+    } else {
+      // Create new group
+      this._linkedGraphGroups = [...this._linkedGraphGroups, [metric1, metric2]];
+    }
+
+    // Ensure combined graph is active
+    this._activeEnvGraphs.add(metric1);
+    this._activeEnvGraphs.add(metric2);
+    this.requestUpdate();
+  }
+
+  private _handleHeaderAction(e: CustomEvent) {
+    const action = e.detail.action;
+    switch (action) {
+      case 'config':
+        this._openConfigDialog();
+        break;
+      case 'edit':
+        this._isEditMode = !this._isEditMode;
+        break;
+      case 'compact':
+        this._isCompactView = !this._isCompactView;
+        break;
+      case 'strains':
+        this._openStrainLibraryDialog();
+        break;
+      case 'irrigation':
+        this._openIrrigationDialog();
+        break;
+      case 'ai':
+        this._openGrowMasterDialog();
+        break;
     }
   }
 
@@ -3294,11 +3332,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     };
   }
 
+
+
+
   protected render(): TemplateResult {
     if (!this.hass) {
       return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
     }
-
 
     this.dataService = new DataService(this.hass);
     const devices = this.dataService.getGrowspaceDevices();
@@ -3344,7 +3384,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       `;
     }
 
-
     const growspaceOptions: Record<string, string> = {};
     const growspaces = this.hass.states['sensor.growspaces_list']?.attributes?.growspaces;
     if (growspaces) {
@@ -3367,7 +3406,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="sr-only-announcer" aria-live="polite"></div>
         <div class="unified-growspace-card" tabindex="0" @keydown=${this._handleKeyboardNav}>
-          ${this.renderHeader(devices)}
+          ${this.renderHeader(devices, growspaceOptions)}
           ${!this._isCompactView ? html`
             <growspace-header
               .hass=${this.hass}
@@ -3379,6 +3418,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
               .isCompactView=${this._isCompactView}
               .selectedDevice=${this.selectedDevice}
               .menuOpen=${this._menuOpen}
+              @growspace-changed=${this._handleDeviceChange}
+              @toggle-env-graph=${this._toggleEnvGraph}
+              @link-graphs=${this._linkGraphs}
+              @unlink-graphs=${this._unlinkGraphs}
+              @trigger-action=${this._handleHeaderAction}
             ></growspace-header>
           ` : ''}
           ${this.renderEditModeBanner()}
@@ -3386,67 +3430,37 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         </div>
       </ha-card>
       
-      ${this.renderDialogs()}
+      ${this.renderDialogs(growspaceOptions)}
     `;
   }
 
-  private renderHeader(devices: GrowspaceDevice[]): TemplateResult {
+  private renderHeader(devices: GrowspaceDevice[], growspaceOptions: Record<string, string>): TemplateResult {
     if (!this._isCompactView && !this._config?.title) {
       return html``;
     }
 
     const selectedDevice = devices.find(d => d.device_id === this.selectedDevice);
+    const device = selectedDevice; // Alias for clarity with component prop
 
     return html`
-      <div class="header">
-        ${this._config?.title ? html`<h2 class="header-title">${this._config.title}</h2>` : ''}
-        
-        ${this._isCompactView ? html`
-          <div class="selector-container">
-            ${!this._config?.default_growspace ? html`
-              <label for="device-select">Growspace:</label>
-              <select 
-                id="device-select" 
-                class="growspace-select"
-                .value=${this.selectedDevice || ''} 
-                @change=${this._handleDeviceChange}
-              >
-                ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
-              </select>
-            ` : html`
-              <label for="device-select">Growspace:</label>
-              <!-- Even if default is set, user wants dropdown in compact mode -->
-              <select
-                id="device-select"
-                class="growspace-select"
-                .value=${this.selectedDevice || ''}
-                @change=${this._handleDeviceChange}
-              >
-                ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
-              </select>
-            `}
-          </div>
-
-          <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
-            <div class="view-toggle">
-              <input 
-                type="checkbox" 
-                id="compact-view" 
-                .checked=${this._isCompactView}
-                @change=${(e: Event) => this._isCompactView = (e.target as HTMLInputElement).checked}
-              >
-              <label for="compact-view">Compact</label>
-            </div>
-            
-            <button class="action-button" @click=${this._openStrainLibraryDialog}>
-              <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiDna}"></path>
-              </svg>
-              Strains
-            </button>
-          </div>
-        ` : ''}
-      </div>
+      <growspace-header
+        .hass=${this.hass}
+        .device=${device}
+        .config=${this._config}
+        .devices=${devices}
+        .compact=${this._isCompactView}
+        .activeEnvGraphs=${this._activeEnvGraphs}
+        .growspaceOptions=${growspaceOptions}
+        .historyData=${this._historyData}
+        @growspace-changed=${(e: CustomEvent) => {
+        this.selectedDevice = e.detail.deviceId;
+        this.initializeSelectedDevice();
+      }}
+        @toggle-env-graph=${(e: CustomEvent) => this._toggleEnvGraph(e.detail.metric)}
+        @link-graphs=${this._handleLinkGraphs}
+        @unlink-graphs=${(e: CustomEvent) => this._unlinkGraphs(e.detail.groupIndex)}
+        @trigger-action=${this._handleHeaderAction}
+      ></growspace-header>
     `;
   }
 
@@ -3565,18 +3579,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     `;
   }
 
-
-
-  private renderDialogs(): TemplateResult {
+  private renderDialogs(growspaceOptions: Record<string, string>): TemplateResult {
     const strainLibrary = this.dataService?.getStrainLibrary() || [];
-    const growspaceOptions: Record<string, string> = {};
-    const growspaces = this.hass.states['sensor.growspaces_list']?.attributes?.growspaces;
-    if (growspaces) {
-      Object.entries(growspaces).forEach(([id, name]) => {
-        growspaceOptions[id] = name as string;
-      });
-    }
-
     const devices = this.dataService.getGrowspaceDevices();
     const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
     return html`
@@ -3631,22 +3635,21 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           }
         },
       }
-    )
-      }
+    )}
 
-      <plant-overview-dialog
-        .dialog=${this._plantOverviewDialog}
-        .growspaceOptions=${growspaceOptions}
-        @close=${() => this._plantOverviewDialog = null}
-        @update=${() => this._updatePlant()}
-        @delete=${(e: CustomEvent) => this._handleDeletePlant(e.detail.plantId)}
-        @harvest=${(e: CustomEvent) => this._harvestPlant(e.detail.plant)}
-        @finish-drying=${(e: CustomEvent) => this._finishDryingPlant(e.detail.plant)}
-        @take-clone=${(e: CustomEvent) => {
+    <plant-overview-dialog
+      .dialog=${this._plantOverviewDialog}
+      .growspaceOptions=${growspaceOptions}
+      @close=${() => this._plantOverviewDialog = null}
+      @update=${() => this._updatePlant()}
+      @delete=${(e: CustomEvent) => this._handleDeletePlant(e.detail.plantId)}
+      @harvest=${(e: CustomEvent) => this._harvestPlant(e.detail.plant)}
+      @finish-drying=${(e: CustomEvent) => this._finishDryingPlant(e.detail.plant)}
+      @take-clone=${(e: CustomEvent) => {
         this.clonePlant(e.detail.plant, e.detail.numClones);
         this._plantOverviewDialog = null;
       }}
-        @move-clone=${(e: CustomEvent) => {
+      @move-clone=${(e: CustomEvent) => {
         const { plant, targetGrowspace } = e.detail;
         this.hass.callService('growspace_manager', 'move_clone', {
           plant_id: plant.attributes.plant_id,
@@ -3658,19 +3661,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           console.error('Error moving clone:', err);
         });
       }}
-        @attribute-change=${(e: CustomEvent) => {
+      @attribute-change=${(e: CustomEvent) => {
         if (this._plantOverviewDialog) {
           this._plantOverviewDialog.editedAttributes[e.detail.key] = e.detail.value;
         }
       }}
-        @toggle-show-all-dates=${() => {
+      @toggle-show-all-dates=${() => {
         if (this._plantOverviewDialog) {
           this._plantOverviewDialog.showAllDates = !this._plantOverviewDialog.showAllDates;
           this.requestUpdate();
         }
       }}
-      ></plant-overview-dialog>
-      }
+    ></plant-overview-dialog>
 
       <strain-library-dialog
         .open=${!!this._strainLibraryDialog?.open}
@@ -3696,8 +3698,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           onGlobalChange: (f, v) => { if (this._configDialog) { (this._configDialog.globalData as any)[f] = v; this.requestUpdate(); } },
           onGlobalSubmit: () => this._handleGlobalSubmit(),
         }
-      )
-      }
+      )}
 
     ${this._growMasterDialog ? (() => {
         // Determine stress state for the dialog
@@ -3742,8 +3743,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             onAnalyzeAll: () => this._handleAnalyzeAll()
           }
         );
-      })() : ''
-      }
+      })() : ''}
 
       ${DialogRenderer.renderStrainRecommendationDialog(
         this._strainRecommendationDialog,
@@ -3752,8 +3752,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           onQueryChange: (q) => { if (this._strainRecommendationDialog) { this._strainRecommendationDialog.userQuery = q; this.requestUpdate(); } },
           onGetRecommendation: () => this._handleGetStrainRecommendation()
         }
-      )
-      }
+      )}
 
       ${DialogRenderer.renderIrrigationDialog(
         this._irrigationDialog,
@@ -3841,8 +3840,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             }
           },
         }
-      )
-      }
+      )}
     `;
   }
 }
+
