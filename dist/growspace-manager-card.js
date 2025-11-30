@@ -13817,7 +13817,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                ` : ''}
             </div>
 
-            <div class="gs-stats-chips ${this._mobileEnvExpanded ? 'expanded' : ''}">
+            <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
+              <div class="gs-stats-chips ${this._mobileEnvExpanded ? 'expanded' : ''}">
                 <!-- Mobile Toggle Chip -->
                 <div class="stat-chip mobile-env-trigger ${this._mobileEnvExpanded ? 'active' : ''}"
                      @click=${() => this._mobileEnvExpanded = !this._mobileEnvExpanded}>
@@ -14053,138 +14054,140 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             return '';
         })()}
                    </div>` : ''}
+              </div>
 
-                ${!this._isCompactView ? x `
-                  <div class="menu-container">
-                    <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
-                    </div>
-                    
-                    ${this._menuOpen ? x `
-                      <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
-                        <div class="menu-item" @click=${() => { this._openConfigDialog(); this._menuOpen = false; }}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                          <span class="menu-item-label">Config</span>
-                        </div>
-
-                        <div class="menu-item" @click=${() => { this._isEditMode = !this._isEditMode; this._menuOpen = false; }}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-                          <span class="menu-item-label">Edit</span>
-                          <div class="menu-toggle-switch ${this._isEditMode ? 'active' : ''}"></div>
-                        </div>
-                        
-                        <div class="menu-item" @click=${() => { this._isCompactView = true; this._menuOpen = false; }}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-                          <span class="menu-item-label">Compact View</span>
-                          <div class="menu-toggle-switch ${this._isCompactView ? 'active' : ''}"></div>
-                        </div>
-                        
-                        
-                        <div class="menu-item" @click=${() => { this._openStrainLibraryDialog(); this._menuOpen = false; }}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-                          <span class="menu-item-label">Strains</span>
-                        </div>
-                        
-                        <div class="menu-item" @click=${() => { this._openIrrigationDialog(); this._menuOpen = false; }}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                          <span class="menu-item-label">Irrigation</span>
-                        </div>
-                        
-                        <div class="menu-item" @click=${() => { this._openGrowMasterDialog(); this._menuOpen = false; }}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-                          <span class="menu-item-label">Ask AI</span>
-                        </div>
-                      </div>
-                    ` : ''}
-                  </div>
-                ` : ''}
-</div>
-  <div class="gs-device-chips">
-    ${overviewEntity?.attributes?.exhaust_entity ? x `
-                   <div class="stat-chip ${this._activeEnvGraphs.has('exhaust') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'exhaust')}
-                        @drop=${(e) => this._handleChipDrop(e, 'exhaust')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
+              <div class="gs-device-chips">
+                ${overviewEntity?.attributes?.exhaust_entity ? x `
+                               <div class="stat-chip ${this._activeEnvGraphs.has('exhaust') ? 'active' : ''}"
+                                    draggable="true"
+                                    @dragstart=${(e) => this._handleChipDragStart(e, 'exhaust')}
+                                    @drop=${(e) => this._handleChipDrop(e, 'exhaust')}
+                                    @dragover=${(e) => e.preventDefault()}
+                                    @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
                 return;
             this._toggleEnvGraph('exhaust');
         }}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg>${overviewEntity.attributes.exhaust_value}
-                     ${(() => {
+                                 <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg>${overviewEntity.attributes.exhaust_value}
+                                 ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('exhaust');
             if (linked) {
                 return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
+                                       <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                            @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                            title="Unlink Graph">
+                                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                                       </div>
+                                     `;
             }
             return '';
         })()}
-                   </div>` : ''}
+                               </div>` : ''}
 
-    ${overviewEntity?.attributes?.humidifier_entity ? x `
-                   <div class="stat-chip ${this._activeEnvGraphs.has('humidifier') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'humidifier')}
-                        @drop=${(e) => this._handleChipDrop(e, 'humidifier')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
+                ${overviewEntity?.attributes?.humidifier_entity ? x `
+                               <div class="stat-chip ${this._activeEnvGraphs.has('humidifier') ? 'active' : ''}"
+                                    draggable="true"
+                                    @dragstart=${(e) => this._handleChipDragStart(e, 'humidifier')}
+                                    @drop=${(e) => this._handleChipDrop(e, 'humidifier')}
+                                    @dragover=${(e) => e.preventDefault()}
+                                    @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
                 return;
             this._toggleEnvGraph('humidifier');
         }}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg>${overviewEntity.attributes.humidifier_value}
-                     ${(() => {
+                                 <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg>${overviewEntity.attributes.humidifier_value}
+                                 ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('humidifier');
             if (linked) {
                 return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
+                                       <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                            @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                            title="Unlink Graph">
+                                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                                       </div>
+                                     `;
             }
             return '';
         })()}
-                   </div>` : ''}
+                               </div>` : ''}
 
-    ${overviewEntity?.attributes?.dehumidifier_entity ? x `
-                   <div class="stat-chip ${this._activeEnvGraphs.has('dehumidifier') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'dehumidifier')}
-                        @drop=${(e) => this._handleChipDrop(e, 'dehumidifier')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
+                ${overviewEntity?.attributes?.dehumidifier_entity ? x `
+                               <div class="stat-chip ${this._activeEnvGraphs.has('dehumidifier') ? 'active' : ''}"
+                                    draggable="true"
+                                    @dragstart=${(e) => this._handleChipDragStart(e, 'dehumidifier')}
+                                    @drop=${(e) => this._handleChipDrop(e, 'dehumidifier')}
+                                    @dragover=${(e) => e.preventDefault()}
+                                    @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
                 return;
             this._toggleEnvGraph('dehumidifier');
         }}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg>${overviewEntity.attributes.dehumidifier_state === 'on' ? 'On' : 'Off'}
-                     ${(() => {
+                                 <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg>${overviewEntity.attributes.dehumidifier_state === 'on' ? 'On' : 'Off'}
+                                 ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('dehumidifier');
             if (linked) {
                 return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
+                                       <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                            @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                            title="Unlink Graph">
+                                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                                       </div>
+                                     `;
             }
             return '';
         })()}
-                   </div>` : ''}
-  </div>
-  </div>
+                               </div>` : ''}
+              </div>
+            </div>
+
+            ${!this._isCompactView ? x `
+              <div class="menu-container">
+                <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
+                  <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
+                </div>
+                
+                ${this._menuOpen ? x `
+                  <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
+                    <div class="menu-item" @click=${() => { this._openConfigDialog(); this._menuOpen = false; }}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                      <span class="menu-item-label">Config</span>
+                    </div>
+
+                    <div class="menu-item" @click=${() => { this._isEditMode = !this._isEditMode; this._menuOpen = false; }}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                      <span class="menu-item-label">Edit</span>
+                      <div class="menu-toggle-switch ${this._isEditMode ? 'active' : ''}"></div>
+                    </div>
+                    
+                    <div class="menu-item" @click=${() => { this._isCompactView = true; this._menuOpen = false; }}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+                      <span class="menu-item-label">Compact View</span>
+                      <div class="menu-toggle-switch ${this._isCompactView ? 'active' : ''}"></div>
+                    </div>
+                    
+                    
+                    <div class="menu-item" @click=${() => { this._openStrainLibraryDialog(); this._menuOpen = false; }}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+                      <span class="menu-item-label">Strains</span>
+                    </div>
+                    
+                    <div class="menu-item" @click=${() => { this._openIrrigationDialog(); this._menuOpen = false; }}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                      <span class="menu-item-label">Irrigation</span>
+                    </div>
+                    
+                    <div class="menu-item" @click=${() => { this._openGrowMasterDialog(); this._menuOpen = false; }}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+                      <span class="menu-item-label">Ask AI</span>
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+            ` : ''}
+</div>
   
   ${this._activeEnvGraphs.size > 0 ? this.renderTimeRangeSelector() : ''}
 
