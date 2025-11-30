@@ -21,7 +21,8 @@ export const test = base.extend<{ coveragePage: Page }>({
 
         if (appCoverage.length > 0) {
             // Ensure coverage directory exists
-            const coverageDir = path.join(process.cwd(), '.nyc_output');
+            // Ensure coverage directory exists
+            const coverageDir = path.join(process.cwd(), 'coverage', 'tmp');
             if (!fs.existsSync(coverageDir)) {
                 fs.mkdirSync(coverageDir, { recursive: true });
             }
@@ -30,8 +31,8 @@ export const test = base.extend<{ coveragePage: Page }>({
             const timestamp = Date.now();
             const coverageFile = path.join(coverageDir, `coverage-${timestamp}.json`);
 
-            // NYC expects V8 coverage format
-            const nycCoverage = {
+            // Save V8 coverage data directly for c8
+            const v8Coverage = {
                 result: appCoverage.map(entry => ({
                     scriptId: entry.scriptId,
                     url: entry.url,
@@ -40,7 +41,7 @@ export const test = base.extend<{ coveragePage: Page }>({
                 }))
             };
 
-            fs.writeFileSync(coverageFile, JSON.stringify(nycCoverage, null, 2));
+            fs.writeFileSync(coverageFile, JSON.stringify(v8Coverage, null, 2));
             console.log(`✓ Coverage data saved to ${path.relative(process.cwd(), coverageFile)}`);
         }
     },

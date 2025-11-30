@@ -15,9 +15,9 @@ async function collectCoverage() {
     }
 
     // Check if coverage data was collected
-    const nycOutputDir = path.join(process.cwd(), '.nyc_output');
+    const coverageOutputDir = path.join(process.cwd(), 'coverage', 'tmp');
 
-    if (!fs.existsSync(nycOutputDir) || fs.readdirSync(nycOutputDir).length === 0) {
+    if (!fs.existsSync(coverageOutputDir) || fs.readdirSync(coverageOutputDir).length === 0) {
         console.log('\n⚠️  No coverage data found.');
         console.log('Coverage collection requires using the coverage-helper in tests.');
         console.log('\nShowing test results summary instead.\n');
@@ -26,9 +26,9 @@ async function collectCoverage() {
 
     console.log('\n📊 Generating coverage report...\n');
 
-    // Generate NYC reports
+    // Generate c8 reports
     try {
-        execSync('npx nyc report --reporter=text --reporter=html --reporter=lcov', { stdio: 'inherit' });
+        execSync('npx c8 report --reporter=text --reporter=html --reporter=lcov --src=src', { stdio: 'inherit' });
         console.log('\n✅ Coverage report generated!');
         console.log(`📁 HTML Report: ${path.join(process.cwd(), 'coverage', 'index.html')}`);
     } catch (error) {
