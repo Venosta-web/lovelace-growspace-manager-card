@@ -2756,9 +2756,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             light: { color: '#ffc107', title: 'Light', unit: 'state' },
             irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state' },
             drain: { color: '#ff9800', title: 'Drain', unit: 'state' },
-            exhaust: { color: '#795548', title: 'Exhaust', unit: '%' },
-            humidifier: { color: '#607d8b', title: 'Humidifier', unit: '%' },
-            dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: '%' },
+            exhaust: { color: '#795548', title: 'Exhaust', unit: '' },
+            humidifier: { color: '#607d8b', title: 'Humidifier', unit: '' },
+            dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: '' },
             optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state' }
           };
 
@@ -2800,9 +2800,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         case 'light': color = '#ffc107'; title = 'Light'; unit = 'state'; icon = mdiLightbulbOn; type = 'step'; break;
         case 'irrigation': color = '#03a9f4'; title = 'Irrigation'; unit = 'state'; icon = mdiWater; type = 'step'; break;
         case 'drain': color = '#ff9800'; title = 'Drain'; unit = 'state'; icon = mdiWater; type = 'step'; break;
-        case 'exhaust': color = '#795548'; title = 'Exhaust'; unit = '%'; icon = mdiFan; history = this._exhaustHistory || []; break;
-        case 'humidifier': color = '#607d8b'; title = 'Humidifier'; unit = '%'; icon = mdiAirHumidifier; history = this._humidifierHistory || []; break;
-        case 'dehumidifier': color = '#546e7a'; title = 'Dehumidifier'; unit = '%'; icon = mdiWaterOff; history = this._dehumidifierHistory || []; break;
+        case 'exhaust': color = '#795548'; title = 'Exhaust'; unit = ''; icon = mdiFan; history = this._exhaustHistory || []; break;
+        case 'humidifier': color = '#607d8b'; title = 'Humidifier'; unit = ''; icon = mdiAirHumidifier; history = this._humidifierHistory || []; break;
+        case 'dehumidifier': color = '#546e7a'; title = 'Dehumidifier'; unit = ''; icon = mdiWaterOff; history = this._dehumidifierHistory || []; break;
         case 'optimal': color = '#4caf50'; title = 'Optimal Conditions'; unit = 'state'; icon = mdiRadioboxMarked; type = 'step'; break;
       }
 

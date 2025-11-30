@@ -488,8 +488,13 @@ export class GrowspaceEnvChart extends LitElement {
         let maxVal = 1;
 
         if (unit !== 'state' && metricKey !== 'irrigation' && metricKey !== 'drain') {
-            minVal = Math.min(...dataPoints.map(d => d.value));
-            maxVal = Math.max(...dataPoints.map(d => d.value));
+            if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+                minVal = 0;
+                maxVal = 10;
+            } else {
+                minVal = Math.min(...dataPoints.map(d => d.value));
+                maxVal = Math.max(...dataPoints.map(d => d.value));
+            }
         }
 
         const rangeVal = maxVal - minVal || 1;
@@ -793,8 +798,14 @@ export class GrowspaceEnvChart extends LitElement {
             }
 
             if (dataPoints.length > 0) {
-                const min = Math.min(...dataPoints.map(d => d.value));
-                const max = Math.max(...dataPoints.map(d => d.value));
+                let min = Math.min(...dataPoints.map(d => d.value));
+                let max = Math.max(...dataPoints.map(d => d.value));
+
+                if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+                    min = 0;
+                    max = 10;
+                }
+
                 graphData.push({
                     key: metricKey,
                     ...config,

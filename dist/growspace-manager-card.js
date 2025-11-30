@@ -10255,8 +10255,14 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i {
         let minVal = 0;
         let maxVal = 1;
         if (unit !== 'state' && metricKey !== 'irrigation' && metricKey !== 'drain') {
-            minVal = Math.min(...dataPoints.map(d => d.value));
-            maxVal = Math.max(...dataPoints.map(d => d.value));
+            if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+                minVal = 0;
+                maxVal = 10;
+            }
+            else {
+                minVal = Math.min(...dataPoints.map(d => d.value));
+                maxVal = Math.max(...dataPoints.map(d => d.value));
+            }
         }
         const rangeVal = maxVal - minVal || 1;
         const paddedMin = minVal - (rangeVal * 0.1);
@@ -10544,8 +10550,12 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i {
                 }
             }
             if (dataPoints.length > 0) {
-                const min = Math.min(...dataPoints.map(d => d.value));
-                const max = Math.max(...dataPoints.map(d => d.value));
+                let min = Math.min(...dataPoints.map(d => d.value));
+                let max = Math.max(...dataPoints.map(d => d.value));
+                if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+                    min = 0;
+                    max = 10;
+                }
                 graphData.push({
                     key: metricKey,
                     ...config,
@@ -12757,6 +12767,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
         super(...arguments);
         this.devices = [];
         this.compact = false;
+        this.isEditMode = false;
         this.activeEnvGraphs = new Set();
         this.growspaceOptions = {};
         this.historyData = null;
@@ -13164,17 +13175,17 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                     <div class="menu-item" @click=${() => this._triggerAction('edit')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
                       <span class="menu-item-label">Edit</span>
-                      <div class="menu-toggle-switch"></div>
+                      <div class="menu-toggle-switch ${this.isEditMode ? 'active' : ''}"></div>
                     </div>
                     <div class="menu-item" @click=${() => this._triggerAction('compact')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
                       <span class="menu-item-label">Compact View</span>
-                      <div class="menu-toggle-switch"></div>
+                      <div class="menu-toggle-switch ${this.compact ? 'active' : ''}"></div>
                     </div>
                     <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
                       <span class="menu-item-label">Control Dehumidifier</span>
-                      <div class="menu-toggle-switch"></div>
+                      <div class="menu-toggle-switch ${overviewEntity?.attributes?.dehumidifier_control_enabled ? 'active' : ''}"></div>
                     </div>
                     <div class="menu-item" @click=${() => this._triggerAction('strains')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
@@ -13591,6 +13602,10 @@ __decorate([
     n$1({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "compact", void 0);
+__decorate([
+    n$1({ type: Boolean }),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "isEditMode", void 0);
 __decorate([
     n$1({ attribute: false }),
     __metadata("design:type", Object)
@@ -14944,6 +14959,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             .activeEnvGraphs=${this._activeEnvGraphs}
             .historyData=${this._historyData}
             .compact=${this._isCompactView}
+            .isEditMode=${this._isEditMode}
             .selectedDevice=${this.selectedDevice}
             .growspaceOptions=${growspaceOptions}
             .linkedGraphGroups=${this._linkedGraphGroups}
@@ -14984,9 +15000,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                         light: { color: '#ffc107', title: 'Light', unit: 'state' },
                         irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state' },
                         drain: { color: '#ff9800', title: 'Drain', unit: 'state' },
-                        exhaust: { color: '#795548', title: 'Exhaust', unit: '%' },
-                        humidifier: { color: '#607d8b', title: 'Humidifier', unit: '%' },
-                        dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: '%' },
+                        exhaust: { color: '#795548', title: 'Exhaust', unit: '' },
+                        humidifier: { color: '#607d8b', title: 'Humidifier', unit: '' },
+                        dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: '' },
                         optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state' }
                     };
                     graphs.push(x `
@@ -15066,21 +15082,21 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                 case 'exhaust':
                     color = '#795548';
                     title = 'Exhaust';
-                    unit = '%';
+                    unit = '';
                     icon = mdiFan;
                     history = this._exhaustHistory || [];
                     break;
                 case 'humidifier':
                     color = '#607d8b';
                     title = 'Humidifier';
-                    unit = '%';
+                    unit = '';
                     icon = mdiAirHumidifier;
                     history = this._humidifierHistory || [];
                     break;
                 case 'dehumidifier':
                     color = '#546e7a';
                     title = 'Dehumidifier';
-                    unit = '%';
+                    unit = '';
                     icon = mdiWaterOff;
                     history = this._dehumidifierHistory || [];
                     break;
