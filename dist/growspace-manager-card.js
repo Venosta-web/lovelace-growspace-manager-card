@@ -1,5 +1,4 @@
 // Material Design Icons v7.4.47
-var mdiAirHumidifier = "M11 9C8.79 9 7 10.79 7 13S8.79 17 11 17 15 15.21 15 13 13.21 9 11 9M11 15C9.9 15 9 14.11 9 13S9.9 11 11 11 13 11.9 13 13 12.11 15 11 15M7 4H14C16.21 4 18 5.79 18 8V9H16V8C16 6.9 15.11 6 14 6H7C5.9 6 5 6.9 5 8V20H16V18H18V22H3V8C3 5.79 4.79 4 7 4M19 10.5C19 10.5 21 12.67 21 14C21 15.1 20.1 16 19 16S17 15.1 17 14C17 12.67 19 10.5 19 10.5";
 var mdiArrowLeft = "M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z";
 var mdiArrowRight = "M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z";
 var mdiBrain = "M21.33,12.91C21.42,14.46 20.71,15.95 19.44,16.86L20.21,18.35C20.44,18.8 20.47,19.33 20.27,19.8C20.08,20.27 19.69,20.64 19.21,20.8L18.42,21.05C18.25,21.11 18.06,21.14 17.88,21.14C17.37,21.14 16.89,20.91 16.56,20.5L14.44,18C13.55,17.85 12.71,17.47 12,16.9C11.5,17.05 11,17.13 10.5,17.13C9.62,17.13 8.74,16.86 8,16.34C7.47,16.5 6.93,16.57 6.38,16.56C5.59,16.57 4.81,16.41 4.08,16.11C2.65,15.47 1.7,14.07 1.65,12.5C1.57,11.78 1.69,11.05 2,10.39C1.71,9.64 1.68,8.82 1.93,8.06C2.3,7.11 3,6.32 3.87,5.82C4.45,4.13 6.08,3 7.87,3.12C9.47,1.62 11.92,1.46 13.7,2.75C14.12,2.64 14.56,2.58 15,2.58C16.36,2.55 17.65,3.15 18.5,4.22C20.54,4.75 22,6.57 22.08,8.69C22.13,9.8 21.83,10.89 21.22,11.82C21.29,12.18 21.33,12.54 21.33,12.91M16.33,11.5C16.9,11.57 17.35,12 17.35,12.57A1,1 0 0,1 16.35,13.57H15.72C15.4,14.47 14.84,15.26 14.1,15.86C14.35,15.95 14.61,16 14.87,16.07C20,16 19.4,12.87 19.4,12.82C19.34,11.39 18.14,10.27 16.71,10.33A1,1 0 0,1 15.71,9.33A1,1 0 0,1 16.71,8.33C17.94,8.36 19.12,8.82 20.04,9.63C20.09,9.34 20.12,9.04 20.12,8.74C20.06,7.5 19.5,6.42 17.25,6.21C16,3.25 12.85,4.89 12.85,5.81V5.81C12.82,6.04 13.06,6.53 13.1,6.56A1,1 0 0,1 14.1,7.56C14.1,8.11 13.65,8.56 13.1,8.56V8.56C12.57,8.54 12.07,8.34 11.67,8C11.19,8.31 10.64,8.5 10.07,8.56V8.56C9.5,8.61 9.03,8.21 9,7.66C8.92,7.1 9.33,6.61 9.88,6.56C10.04,6.54 10.82,6.42 10.82,5.79V5.79C10.82,5.13 11.07,4.5 11.5,4C10.58,3.75 9.59,4.08 8.59,5.29C6.75,5 6,5.25 5.45,7.2C4.5,7.67 4,8 3.78,9C4.86,8.78 5.97,8.87 7,9.25C7.5,9.44 7.78,10 7.59,10.54C7.4,11.06 6.82,11.32 6.3,11.13C5.57,10.81 4.75,10.79 4,11.07C3.68,11.34 3.68,11.9 3.68,12.34C3.68,13.08 4.05,13.77 4.68,14.17C5.21,14.44 5.8,14.58 6.39,14.57C6.24,14.31 6.11,14.04 6,13.76C5.81,13.22 6.1,12.63 6.64,12.44C7.18,12.25 7.77,12.54 7.96,13.08C8.36,14.22 9.38,15 10.58,15.13C11.95,15.06 13.17,14.25 13.77,13C14,11.62 15.11,11.5 16.33,11.5M18.33,18.97L17.71,17.67L17,17.83L18,19.08L18.33,18.97M13.68,10.36C13.7,9.83 13.3,9.38 12.77,9.33C12.06,9.29 11.37,9.53 10.84,10C10.27,10.58 9.97,11.38 10,12.19A1,1 0 0,0 11,13.19C11.57,13.19 12,12.74 12,12.19C12,11.92 12.07,11.65 12.23,11.43C12.35,11.33 12.5,11.28 12.66,11.28C13.21,11.31 13.68,10.9 13.68,10.36Z";
@@ -9,7 +8,6 @@ var mdiCheck = "M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z";
 var mdiCheckboxBlankOutline = "M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z";
 var mdiCheckboxMarked = "M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z";
 var mdiChevronDown = "M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z";
-var mdiChevronRight = "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z";
 var mdiClose = "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z";
 var mdiCloudOutline = "M6.5 20Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20M6.5 18H18.5Q19.55 18 20.27 17.27 21 16.55 21 15.5 21 14.45 20.27 13.73 19.55 13 18.5 13H17V11Q17 8.93 15.54 7.46 14.08 6 12 6 9.93 6 8.46 7.46 7 8.93 7 11H6.5Q5.05 11 4.03 12.03 3 13.05 3 14.5 3 15.95 4.03 17 5.05 18 6.5 18M12 12Z";
 var mdiCloudUpload = "M11 20H6.5Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20H13V12.85L14.6 14.4L16 13L12 9L8 13L9.4 14.4L11 12.85Z";
@@ -20,13 +18,10 @@ var mdiDna = "M4,2H6V4C6,5.44 6.68,6.61 7.88,7.78C8.74,8.61 9.89,9.41 11.09,10.2
 var mdiDotsVertical = "M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z";
 var mdiDownload = "M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z";
 var mdiEarth = "M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
-var mdiFan = "M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z";
 var mdiFlower = "M3,13A9,9 0 0,0 12,22C12,17 7.97,13 3,13M12,5.5A2.5,2.5 0 0,1 14.5,8A2.5,2.5 0 0,1 12,10.5A2.5,2.5 0 0,1 9.5,8A2.5,2.5 0 0,1 12,5.5M5.6,10.25A2.5,2.5 0 0,0 8.1,12.75C8.63,12.75 9.12,12.58 9.5,12.31C9.5,12.37 9.5,12.43 9.5,12.5A2.5,2.5 0 0,0 12,15A2.5,2.5 0 0,0 14.5,12.5C14.5,12.43 14.5,12.37 14.5,12.31C14.88,12.58 15.37,12.75 15.9,12.75C17.28,12.75 18.4,11.63 18.4,10.25C18.4,9.25 17.81,8.4 16.97,8C17.81,7.6 18.4,6.74 18.4,5.75C18.4,4.37 17.28,3.25 15.9,3.25C15.37,3.25 14.88,3.41 14.5,3.69C14.5,3.63 14.5,3.56 14.5,3.5A2.5,2.5 0 0,0 12,1A2.5,2.5 0 0,0 9.5,3.5C9.5,3.56 9.5,3.63 9.5,3.69C9.12,3.41 8.63,3.25 8.1,3.25A2.5,2.5 0 0,0 5.6,5.75C5.6,6.74 6.19,7.6 7.03,8C6.19,8.4 5.6,9.25 5.6,10.25M12,22A9,9 0 0,0 21,13C16,13 12,17 12,22Z";
 var mdiHairDryer = "M22 9A4.32 4.32 0 0 1 19.78 8.45A3.4 3.4 0 0 0 18 8V7A4.32 4.32 0 0 1 20.22 7.55A3.4 3.4 0 0 0 22 8M22 6A3.4 3.4 0 0 1 20.22 5.55A4.32 4.32 0 0 0 18 5V6A3.4 3.4 0 0 1 19.78 6.45A4.32 4.32 0 0 0 22 7M22 10A3.4 3.4 0 0 1 20.22 9.55A4.32 4.32 0 0 0 18 9V10A3.4 3.4 0 0 1 19.78 10.45A4.32 4.32 0 0 0 22 11M10 12.73A70.39 70.39 0 0 0 17 11V4S10.5 2 7.5 2A5.5 5.5 0 0 0 6.12 12.82L7 19H8A3 3 0 0 0 9.46 21.33A3.15 3.15 0 0 1 11 24H12A4.12 4.12 0 0 0 10.09 20.55C9.39 20 9 19.63 9 19H10M7.5 10A2.5 2.5 0 1 1 10 7.5A2.5 2.5 0 0 1 7.5 10Z";
 var mdiImage = "M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z";
 var mdiLeaf = "M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z";
-var mdiLightbulbOff = "M12,2C9.76,2 7.78,3.05 6.5,4.68L16.31,14.5C17.94,13.21 19,11.24 19,9A7,7 0 0,0 12,2M3.28,4L2,5.27L5.04,8.3C5,8.53 5,8.76 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H14.73L18.73,22L20,20.72L3.28,4M9,20V21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9Z";
-var mdiLightbulbOn = "M12,6A6,6 0 0,1 18,12C18,14.22 16.79,16.16 15,17.2V19A1,1 0 0,1 14,20H10A1,1 0 0,1 9,19V17.2C7.21,16.16 6,14.22 6,12A6,6 0 0,1 12,6M14,21V22A1,1 0 0,1 13,23H11A1,1 0 0,1 10,22V21H14M20,11H23V13H20V11M1,11H4V13H1V11M13,1V4H11V1H13M4.92,3.5L7.05,5.64L5.63,7.05L3.5,4.93L4.92,3.5M16.95,5.63L19.07,3.5L20.5,4.93L18.37,7.05L16.95,5.63Z";
 var mdiLink = "M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z";
 var mdiLoading = "M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z";
 var mdiMagnify = "M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z";
@@ -12394,6 +12389,887 @@ StrainLibraryDialog = __decorate([
     t('strain-library-dialog')
 ], StrainLibraryDialog);
 
+let GrowspacePlantCard = class GrowspacePlantCard extends i {
+    constructor() {
+        super(...arguments);
+        this.strainLibrary = [];
+        this.isEditMode = false;
+        this.selected = false;
+    }
+    _handleDragStart(e) {
+        if (this.isEditMode)
+            return;
+        // Dispatch event to parent
+        this.dispatchEvent(new CustomEvent('plant-drag-start', {
+            detail: {
+                originalEvent: e,
+                plant: this.plant
+            },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _handleDrop(e) {
+        e.preventDefault();
+        if (this.isEditMode)
+            return;
+        this.dispatchEvent(new CustomEvent('plant-drop', {
+            detail: {
+                originalEvent: e,
+                row: this.row,
+                col: this.col,
+                plant: this.plant
+            },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _handleDragOver(e) {
+        e.preventDefault();
+        // Optional: Add visual feedback
+    }
+    _handleClick() {
+        this.dispatchEvent(new CustomEvent('plant-click', {
+            detail: { plant: this.plant },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _toggleSelection(e) {
+        e.stopPropagation();
+        this.dispatchEvent(new CustomEvent('plant-toggle-selection', {
+            detail: { plant: this.plant },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    renderPlantDaysRich(plant) {
+        const days = [
+            { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Seedling", stage: "seedling" },
+            { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Mother", stage: "mother" },
+            { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Clone", stage: "clone" },
+            { days: plant.attributes?.veg_days, icon: mdiSprout, title: "Veg", stage: "vegetative" },
+            { days: plant.attributes?.flower_days, icon: mdiFlower, title: "Flower", stage: "flower" },
+            { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Dry", stage: "dry" },
+            { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Cure", stage: "cure" }
+        ].filter(d => d.days !== undefined && d.days !== null);
+        const visibleDays = days.filter(d => d.days);
+        const currentStage = (plant.state || '').toLowerCase();
+        const normalizedCurrent = currentStage === 'veg' ? 'vegetative' : currentStage;
+        return x `
+      ${visibleDays.map(d => {
+            const color = PlantUtils.getPlantStageColor(d.stage);
+            const isCurrent = d.stage === normalizedCurrent;
+            return x `
+          <div class="pc-stat-item ${isCurrent ? 'current-stage' : ''}">
+            <svg style="color: ${color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
+            <div class="pc-stat-text">${d.days}d</div>
+          </div>
+        `;
+        })}
+    `;
+    }
+    render() {
+        if (!this.plant)
+            return x ``;
+        const stageColor = PlantUtils.getPlantStageColor(this.plant.state);
+        const strainName = this.plant.attributes?.strain;
+        const pheno = this.plant.attributes?.phenotype;
+        let imageUrl;
+        let imageCropMeta;
+        if (strainName) {
+            const phenoMatch = this.strainLibrary.find(s => s.strain === strainName && s.phenotype === pheno);
+            if (phenoMatch && phenoMatch.image) {
+                imageUrl = phenoMatch.image;
+                imageCropMeta = phenoMatch.image_crop_meta;
+            }
+            else {
+                const strainMatch = this.strainLibrary.find(s => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
+                if (strainMatch && strainMatch.image) {
+                    imageUrl = strainMatch.image;
+                    imageCropMeta = strainMatch.image_crop_meta;
+                }
+                else if (!imageUrl) {
+                    const anyMatch = this.strainLibrary.find(s => s.strain === strainName && s.image);
+                    if (anyMatch) {
+                        imageUrl = anyMatch.image;
+                        imageCropMeta = anyMatch.image_crop_meta;
+                    }
+                }
+            }
+        }
+        return x `
+      <div
+        class="plant-card-rich"
+        style="--stage-color: ${stageColor}"
+        draggable="true"
+        @dragstart=${this._handleDragStart}
+        @dragover=${this._handleDragOver}
+        @drop=${this._handleDrop}
+        @click=${this._handleClick}
+      >
+        ${imageUrl ? x `
+          <img 
+            class="plant-card-bg" 
+            src="${imageUrl}" 
+            loading="lazy" 
+            alt="${strainName || 'Plant'}"
+            style="${DialogRenderer.getImgStyle(imageCropMeta)}"
+          />
+          <div class="plant-card-overlay"></div>
+        ` : ''}
+
+        ${this.isEditMode ? x `
+          <div class="plant-card-checkbox ${this.selected ? 'selected' : ''}" @click=${this._toggleSelection}>
+             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: ${this.selected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)'};">
+               <path d="${this.selected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
+             </svg>
+          </div>
+        ` : ''}
+
+        <div class="plant-card-content">
+          <div class="pc-info">
+            <div class="pc-strain-name" title="${this.plant.attributes?.strain || ''}">
+              ${this.plant.attributes?.strain || 'Unknown Strain'}
+            </div>
+            ${this.plant.attributes?.phenotype ? x `<div class="pc-pheno">${this.plant.attributes.phenotype}</div>` : ''}
+            <div class="pc-stage">
+              ${this.plant.state || 'Unknown'}
+            </div>
+          </div>
+
+          <div class="pc-stats">
+            ${this.renderPlantDaysRich(this.plant)}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+};
+GrowspacePlantCard.styles = i$3 `
+    :host {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .plant-card-rich {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      border-radius: 16px;
+      overflow: hidden;
+      /* Default background if no image */
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      aspect-ratio: 1;
+      box-sizing: border-box;
+    }
+
+    .plant-card-rich:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .plant-card-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      z-index: 0;
+    }
+
+    .plant-card-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.3) 100%);
+      z-index: 1;
+    }
+
+    .plant-card-checkbox {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 50%;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .plant-card-checkbox:hover {
+      background: rgba(0, 0, 0, 0.8);
+      transform: scale(1.1);
+    }
+
+    .plant-card-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 16px;
+      height: 100%;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    .pc-info {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .pc-strain-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    .pc-pheno {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.7);
+      font-weight: 500;
+    }
+
+    .pc-stage {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 8px;
+      color: var(--stage-color);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      text-transform: capitalize;
+    }
+
+    .pc-stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0 12px;
+      box-sizing: border-box;
+    }
+
+    .pc-stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pc-stat-item svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .pc-stat-text {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #fff;
+    }
+    
+    .current-stage {
+        /* Add any specific styles for current stage if needed, 
+           though logic was mainly setting color in SVG which is handled in render */
+    }
+  `;
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspacePlantCard.prototype, "plant", void 0);
+__decorate([
+    n$1({ type: Number }),
+    __metadata("design:type", Number)
+], GrowspacePlantCard.prototype, "row", void 0);
+__decorate([
+    n$1({ type: Number }),
+    __metadata("design:type", Number)
+], GrowspacePlantCard.prototype, "col", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Array)
+], GrowspacePlantCard.prototype, "strainLibrary", void 0);
+__decorate([
+    n$1({ type: Boolean }),
+    __metadata("design:type", Object)
+], GrowspacePlantCard.prototype, "isEditMode", void 0);
+__decorate([
+    n$1({ type: Boolean }),
+    __metadata("design:type", Object)
+], GrowspacePlantCard.prototype, "selected", void 0);
+GrowspacePlantCard = __decorate([
+    t('growspace-plant-card')
+], GrowspacePlantCard);
+
+let GrowspaceHeader = class GrowspaceHeader extends i {
+    constructor() {
+        super(...arguments);
+        this.devices = [];
+        this.activeEnvGraphs = new Set();
+        this.historyData = null;
+        this.isCompactView = false;
+        this.selectedDevice = null;
+        this.menuOpen = false;
+    }
+    _handleDeviceChange(e) {
+        const target = e.target;
+        this.dispatchEvent(new CustomEvent('device-changed', {
+            detail: { deviceId: target.value },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _toggleCompactView(e) {
+        const checked = e.target.checked;
+        this.dispatchEvent(new CustomEvent('toggle-compact-view', {
+            detail: { compact: checked },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _openStrainLibraryDialog() {
+        this.dispatchEvent(new CustomEvent('open-strain-library', {
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _toggleEnvGraph(sensorType) {
+        this.dispatchEvent(new CustomEvent('toggle-env-graph', {
+            detail: { sensorType },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _toggleMenu() {
+        this.dispatchEvent(new CustomEvent('toggle-menu', {
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _handleMenuItemClick(action) {
+        this.dispatchEvent(new CustomEvent('menu-action', {
+            detail: { action },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    render() {
+        if (this.isCompactView) {
+            return this.renderCompactHeader();
+        }
+        return this.renderRichHeader();
+    }
+    renderCompactHeader() {
+        if (!this.config?.title && this.isCompactView) {
+            return x ``;
+        }
+        return x `
+      <div class="header">
+        ${this.config?.title ? x `<h2 class="header-title">${this.config.title}</h2>` : ''}
+        
+        <div class="selector-container">
+          ${!this.config?.default_growspace ? x `
+            <label for="device-select">Growspace:</label>
+            <select 
+              id="device-select" 
+              class="growspace-select"
+              .value=${this.selectedDevice || ''} 
+              @change=${this._handleDeviceChange}
+            >
+              ${this.devices.map(d => x `<option value="${d.device_id}">${d.name}</option>`)}
+            </select>
+          ` : x `
+            <label for="device-select">Growspace:</label>
+            <select
+              id="device-select"
+              class="growspace-select"
+              .value=${this.selectedDevice || ''}
+              @change=${this._handleDeviceChange}
+            >
+              ${this.devices.map(d => x `<option value="${d.device_id}">${d.name}</option>`)}
+            </select>
+          `}
+        </div>
+
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <div class="view-toggle">
+            <input 
+              type="checkbox" 
+              id="compact-view" 
+              .checked=${this.isCompactView}
+              @change=${this._toggleCompactView}
+            >
+            <label for="compact-view">Compact</label>
+          </div>
+          
+          <button class="action-button" @click=${this._openStrainLibraryDialog}>
+            <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiDna}"></path>
+            </svg>
+            Strains
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    renderRichHeader() {
+        const dominantObj = PlantUtils.getDominantStage(this.device.plants);
+        const dominantStage = dominantObj ? dominantObj.stage : 'Unknown';
+        // Fetch Environmental Data
+        let slug = this.device.name.toLowerCase().replace(/\s+/g, '_');
+        if (this.device.overview_entity_id) {
+            slug = this.device.overview_entity_id.replace('sensor.', '');
+        }
+        let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+        const isCure = slug === 'cure';
+        const isDry = slug === 'dry';
+        if (isCure) {
+            envEntityId = `binary_sensor.cure_optimal_curing`;
+        }
+        else if (isDry) {
+            envEntityId = `binary_sensor.dry_optimal_drying`;
+        }
+        const envEntity = this.hass.states[envEntityId];
+        const getValue = (ent, key) => {
+            if (!ent || !ent.attributes)
+                return undefined;
+            if (ent.attributes[key] !== undefined)
+                return ent.attributes[key];
+            if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
+                return ent.attributes.observations[key];
+            }
+            return undefined;
+        };
+        const temp = getValue(envEntity, 'temperature');
+        const hum = getValue(envEntity, 'humidity');
+        const vpd = getValue(envEntity, 'vpd');
+        const isSpecialGrowspace = isCure || isDry;
+        const co2Value = getValue(envEntity, 'co2');
+        const co2 = (isSpecialGrowspace || co2Value === undefined || co2Value === null) ? undefined : co2Value;
+        const isLightsOnValue = getValue(envEntity, 'is_lights_on');
+        const isLightsOn = isLightsOnValue === true;
+        return x `
+      <div class="gs-stats-container">
+        <div class="gs-header-top">
+          <div class="gs-title-group">
+            <h1 class="gs-title">${this.device.name}</h1>
+            ${dominantObj ? x `
+            <div class="gs-stage-chip">
+              <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${PlantUtils.getPlantStageIcon(dominantStage)}"></path>
+              </svg>
+              ${dominantStage} Stage
+            </div>
+            ` : ''}
+          </div>
+
+          <div class="gs-stats-chips">
+            ${temp !== undefined ? x `
+              <div class="stat-chip ${this.activeEnvGraphs.has('temp') ? 'active' : ''}" 
+                   @click=${() => this._toggleEnvGraph('temp')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
+                ${temp}°C
+              </div>
+            ` : ''}
+            
+            ${hum !== undefined ? x `
+              <div class="stat-chip ${this.activeEnvGraphs.has('humidity') ? 'active' : ''}"
+                   @click=${() => this._toggleEnvGraph('humidity')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>
+                ${hum}%
+              </div>
+            ` : ''}
+
+            ${vpd !== undefined ? x `
+              <div class="stat-chip ${this.activeEnvGraphs.has('vpd') ? 'active' : ''}"
+                   @click=${() => this._toggleEnvGraph('vpd')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>
+                ${vpd} kPa
+              </div>
+            ` : ''}
+
+            ${co2 !== undefined ? x `
+              <div class="stat-chip ${this.activeEnvGraphs.has('co2') ? 'active' : ''}"
+                   @click=${() => this._toggleEnvGraph('co2')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>
+                ${co2} ppm
+              </div>
+            ` : ''}
+
+            ${!isSpecialGrowspace ? x `
+              <div class="light-status-chip ${isLightsOn ? 'on' : 'off'}">
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${isLightsOn ? mdiWeatherSunny : mdiWeatherNight}"></path>
+                </svg>
+                ${isLightsOn ? 'Lights On' : 'Lights Off'}
+              </div>
+            ` : ''}
+
+            <div class="menu-container">
+              <button class="menu-button" @click=${this._toggleMenu}>
+                <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
+              </button>
+              
+              ${this.menuOpen ? x `
+                <div class="menu-dropdown">
+                  <div class="menu-item" @click=${() => this._handleMenuItemClick('config')}>
+                    <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                    <span class="menu-item-label">Configuration</span>
+                  </div>
+                  <div class="menu-item" @click=${() => this._handleMenuItemClick('strain_library')}>
+                    <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+                    <span class="menu-item-label">Strain Library</span>
+                  </div>
+                  <div class="menu-item" @click=${() => this._handleMenuItemClick('grow_master')}>
+                    <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+                    <span class="menu-item-label">Grow Master AI</span>
+                  </div>
+                  <div class="menu-item" @click=${() => this._handleMenuItemClick('toggle_compact')}>
+                     <svg viewBox="0 0 24 24"><path d="${this.isCompactView ? mdiRadioboxMarked : mdiRadioboxBlank}"></path></svg>
+                     <span class="menu-item-label">Compact View</span>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+};
+GrowspaceHeader.styles = i$3 `
+    :host {
+      display: block;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .header-title {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 500;
+    }
+
+    .selector-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .growspace-select {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .view-toggle {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .action-button {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .gs-stats-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .gs-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .gs-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .gs-title {
+      font-family: 'Roboto', sans-serif;
+      font-size: 2.25rem;
+      font-weight: 400;
+      margin: 0;
+      letter-spacing: 0;
+      line-height: 2.75rem;
+      text-transform: capitalize;
+      background: linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .gs-stage-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 6px 16px;
+      border-radius: 24px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #fff;
+      width: fit-content;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(4px);
+    }
+
+    .gs-stats-chips {
+       display: flex;
+       flex-wrap: nowrap;
+       gap: 8px;
+       justify-content: flex-end;
+       align-items: center;
+       overflow-x: auto;
+       overflow-y: hidden;
+       flex: 1;
+       min-width: 0;
+       scrollbar-width: none;
+       -ms-overflow-style: none;
+       mask-image: linear-gradient(to right, black 85%, transparent 100%);
+       -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+       padding: 4px 2px;
+    }
+    .gs-stats-chips::-webkit-scrollbar {
+      display: none;
+    }
+
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 8px 16px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+      user-select: none;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .stat-chip:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .stat-chip.active {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      color: #fff;
+    }
+
+    .stat-chip svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      opacity: 0.8;
+    }
+
+    .light-status-chip {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 6px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .light-status-chip.on {
+      color: var(--primary-light-color);
+    }
+
+    .light-status-chip.off {
+       color: rgba(255, 255, 255, 0.7);
+    }
+
+    .menu-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .menu-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+      color: #fff;
+    }
+
+    .menu-button:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .menu-button svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .menu-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      min-width: 200px;
+      background: rgba(30, 30, 35, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+      z-index: 1000;
+      overflow: hidden;
+      animation: menuFadeIn 0.2s cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    @keyframes menuFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+      color: #fff;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .menu-item:last-child {
+      border-bottom: none;
+    }
+
+    .menu-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .menu-item svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+      opacity: 0.9;
+    }
+
+    .menu-item-label {
+      flex: 1;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+  `;
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "hass", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "config", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "device", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Array)
+], GrowspaceHeader.prototype, "devices", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Set)
+], GrowspaceHeader.prototype, "activeEnvGraphs", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "historyData", void 0);
+__decorate([
+    n$1({ type: Boolean }),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "isCompactView", void 0);
+__decorate([
+    n$1({ type: String }),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "selectedDevice", void 0);
+__decorate([
+    n$1({ type: Boolean }),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "menuOpen", void 0);
+GrowspaceHeader = __decorate([
+    t('growspace-header')
+], GrowspaceHeader);
+
 let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
     constructor() {
         super(...arguments);
@@ -13626,6 +14502,16 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         if (!selectedDeviceData) {
             return x `<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
         }
+        // Check if growspace is empty
+        if (selectedDeviceData.plants.length === 0) {
+            return x `
+        <ha-card>
+          <div class="no-data" style="text-align:center; padding: 1.5rem;">
+            Growspace <strong>${selectedDeviceData.name}</strong> is currently empty.
+          </div>
+        </ha-card>
+      `;
+        }
         const growspaces = this.hass.states['sensor.growspaces_list']?.attributes?.growspaces;
         if (growspaces) {
             Object.entries(growspaces).forEach(([id, name]) => {
@@ -13641,7 +14527,19 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         <div class="sr-only-announcer" aria-live="polite"></div>
         <div class="unified-growspace-card" tabindex="0" @keydown=${this._handleKeyboardNav}>
           ${this.renderHeader(devices)}
-          ${!this._isCompactView ? this.renderGrowspaceHeader(selectedDeviceData) : ''}
+          ${!this._isCompactView ? x `
+            <growspace-header
+              .hass=${this.hass}
+              .config=${this._config}
+              .device=${selectedDeviceData}
+              .devices=${devices}
+              .activeEnvGraphs=${this._activeEnvGraphs}
+              .historyData=${this._historyData}
+              .isCompactView=${this._isCompactView}
+              .selectedDevice=${this.selectedDevice}
+              .menuOpen=${this._menuOpen}
+            ></growspace-header>
+          ` : ''}
           ${this.renderEditModeBanner()}
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
         </div>
@@ -13649,627 +14547,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
       
       ${this.renderDialogs()}
     `;
-    }
-    renderGrowspaceHeader(device) {
-        const dominant = PlantUtils.getDominantStage(device.plants);
-        const devices = this.dataService.getGrowspaceDevices();
-        // Fetch Environmental Data
-        let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-        if (device.overview_entity_id) {
-            slug = device.overview_entity_id.replace('sensor.', '');
-        }
-        let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
-        // Specific logic for 'cure' and 'dry' growspaces
-        const isCure = slug === 'cure';
-        const isDry = slug === 'dry';
-        if (isCure) {
-            envEntityId = `binary_sensor.cure_optimal_curing`;
-        }
-        else if (isDry) {
-            envEntityId = `binary_sensor.dry_optimal_drying`;
-        }
-        const envEntity = this.hass.states[envEntityId];
-        const overviewEntity = device.overview_entity_id ? this.hass.states[device.overview_entity_id] : undefined;
-        // Helper to get attribute from either top-level or nested 'observations'
-        const getValue = (ent, key) => {
-            if (!ent || !ent.attributes)
-                return undefined;
-            // 1. Check top level
-            if (ent.attributes[key] !== undefined)
-                return ent.attributes[key];
-            // 2. Check nested 'observations' (if it exists and is an object)
-            if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
-                return ent.attributes.observations[key];
-            }
-            return undefined;
-        };
-        const temp = getValue(envEntity, 'temperature');
-        const hum = getValue(envEntity, 'humidity');
-        const vpd = getValue(envEntity, 'vpd');
-        // For cure/dry, we never need co2 or light
-        const isSpecialGrowspace = isCure || isDry;
-        // Check for CO2 value directly
-        const co2Value = getValue(envEntity, 'co2');
-        const co2 = (isSpecialGrowspace || co2Value === undefined || co2Value === null) ? undefined : co2Value;
-        // Light Status Logic with History
-        const isLightsOnValue = getValue(envEntity, 'is_lights_on');
-        const hasLightSensor = !isSpecialGrowspace && (isLightsOnValue !== undefined && isLightsOnValue !== null);
-        const isLightsOn = isLightsOnValue === true;
-        // Target Cycle Logic
-        device.plants.some(p => p.attributes.stage === 'flower');
-        let transitions = [];
-        if (this._historyData && this._historyData.length > 0) {
-            // Sort history Oldest -> Newest for graph building
-            const sortedHistory = [...this._historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
-            // Filter for light state changes
-            const now = new Date();
-            const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-            // Build path
-            const width = 1000;
-            const height = 100;
-            const points = [];
-            // Initial state (before history window) - infer from first entry or assume off?
-            // Ideally look at the state just before the window, but here we take the first point in window
-            // If first point is ON, it means it turned ON at that time? No, it means state changed.
-            // DataService uses history/period, so it returns state changes.
-            // We need the state at T-24h.
-            // For simplicity, we'll assume the state at T-24h is the inverse of the first change found,
-            // or if no changes, the current state (constant).
-            let currentState = sortedHistory.length > 0 ? (getValue(sortedHistory[0], 'is_lights_on') === true ? false : true) : isLightsOn;
-            // Actually, a better heuristic: if the first history entry says "ON", it means it turned ON then. So before that it was OFF.
-            // If history is sparse, we might need to be careful.
-            // Let's scan through and record transitions.
-            sortedHistory.forEach(h => {
-                const t = new Date(h.last_changed).getTime();
-                const s = getValue(h, 'is_lights_on') === true;
-                if (t >= twentyFourHoursAgo.getTime()) {
-                    transitions.push({ time: t, state: s });
-                }
-            });
-            // Determine initial state at -24h
-            if (transitions.length > 0) {
-                // If the first transition in the window is TO 'true', then before that it was 'false'
-                currentState = !transitions[0].state;
-            }
-            else {
-                currentState = isLightsOn; // No changes in 24h
-            }
-            // Start point
-            points.push([0, currentState ? 0 : height]);
-            transitions.forEach(tr => {
-                const x = ((tr.time - twentyFourHoursAgo.getTime()) / (24 * 60 * 60 * 1000)) * width;
-                // Draw horizontal line from previous x to current x
-                points.push([x, currentState ? 0 : height]);
-                // Update state
-                currentState = tr.state;
-                // Vertical line is implicit in the next horizontal segment starting at same x but new y
-                points.push([x, currentState ? 0 : height]);
-            });
-            // Final point at 'now'
-            points.push([width, currentState ? 0 : height]);
-            `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
-            // Calculate Last ON / OFF Times
-            // We need the *latest* transition to ON and the *latest* transition to OFF
-            // Scan history (Newest -> Oldest)
-            const reversedHistory = [...sortedHistory].reverse();
-            const lastOn = reversedHistory.find(h => getValue(h, 'is_lights_on') === true);
-            if (lastOn) {
-                const d = new Date(lastOn.last_changed);
-                d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace(/ [AP]M/, '');
-                d.toLocaleTimeString([], { hour12: true }).slice(-2);
-            }
-            const lastOff = reversedHistory.find(h => getValue(h, 'is_lights_on') === false);
-            if (lastOff) {
-                const d = new Date(lastOff.last_changed);
-                d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).replace(/ [AP]M/, '');
-                d.toLocaleTimeString([], { hour12: true }).slice(-2);
-            }
-        }
-        // Helper to get next event time
-        const getNextEvent = (times) => {
-            if (!times || times.length === 0)
-                return null;
-            const now = new Date();
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
-            // Sort times
-            const sorted = [...times].sort((a, b) => {
-                const [h1, m1] = a.time.split(':').map(Number);
-                const [h2, m2] = b.time.split(':').map(Number);
-                return (h1 * 60 + m1) - (h2 * 60 + m2);
-            });
-            // Find next event today
-            const nextToday = sorted.find(t => {
-                const [h, m] = t.time.split(':').map(Number);
-                return (h * 60 + m) > currentMinutes;
-            });
-            if (nextToday)
-                return nextToday.time.slice(0, 5); // HH:MM
-            // If no event today, return first event (tomorrow)
-            return sorted[0].time.slice(0, 5);
-        };
-        const nextIrrigation = getNextEvent(overviewEntity?.attributes?.irrigation_times);
-        const nextDrain = getNextEvent(overviewEntity?.attributes?.drain_times);
-        return x `
-      <div class="gs-stats-container">
-         <div class="gs-header-top">
-            <div class="gs-title-group">
-               <!-- Title as Dropdown if no default is set -->
-               ${!this._config?.default_growspace ? x `
-                 <select class="growspace-select-header" .value=${this.selectedDevice || ''} @change=${this._handleDeviceChange}>
-                    ${devices.map(d => x `<option value="${d.device_id}">${d.name}</option>`)}
-                 </select>
-               ` : x `
-                 <h3 class="gs-title">${device.name}</h3>
-               `}
-
-
-               ${dominant ? x `
-               <div style="display: flex; gap: 8px;">
-                <div class="gs-stage-chip">
-                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
-                  ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Day ${dominant.days}
-                </div>
-                <div class="gs-stage-chip">
-                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
-                  ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Week ${Math.ceil(dominant.days / 7)}
-                </div>
-               </div>
-               ` : ''}
-            </div>
-
-            <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
-              <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
-              <div class="gs-stats-chips ${this._mobileEnvExpanded ? 'expanded' : ''}">
-                <!-- Mobile Toggle Chip -->
-                <div class="stat-chip mobile-env-trigger ${this._mobileEnvExpanded ? 'active' : ''}"
-                     @click=${() => this._mobileEnvExpanded = !this._mobileEnvExpanded}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>
-                  Environment
-                  <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-left: 4px; opacity: 0.7;">
-                    <path d="${this._mobileEnvExpanded ? mdiChevronDown : mdiChevronRight}"></path>
-                  </svg>
-                </div>
-
-                ${temp !== undefined ? x `
-                   <div class="stat-chip ${this._activeEnvGraphs.has('temperature') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'temperature')}
-                        @drop=${(e) => this._handleChipDrop(e, 'temperature')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
-            const target = e.target;
-            if (target.closest('.link-icon'))
-                return; // Ignore clicks on link icon
-            this._toggleEnvGraph('temperature');
-        }}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>${temp}°C
-                     ${(() => {
-            const { linked, groupIndex } = this._isMetricLinked('temperature');
-            if (linked) {
-                return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
-            }
-            return '';
-        })()}
-                   </div>` : ''}
-                ${hum !== undefined ? x `
-                   <div class="stat-chip ${this._activeEnvGraphs.has('humidity') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'humidity')}
-                        @drop=${(e) => this._handleChipDrop(e, 'humidity')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
-            const target = e.target;
-            if (target.closest('.link-icon'))
-                return;
-            this._toggleEnvGraph('humidity');
-        }}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>${hum}%
-                     ${(() => {
-            const { linked, groupIndex } = this._isMetricLinked('humidity');
-            if (linked) {
-                return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
-            }
-            return '';
-        })()}
-                   </div>` : ''}
-                ${vpd !== undefined ? x `
-                   <div class="stat-chip ${this._activeEnvGraphs.has('vpd') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'vpd')}
-                        @drop=${(e) => this._handleChipDrop(e, 'vpd')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
-            const target = e.target;
-            if (target.closest('.link-icon'))
-                return;
-            this._toggleEnvGraph('vpd');
-        }}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>${vpd} kPa
-                     ${(() => {
-            const { linked, groupIndex } = this._isMetricLinked('vpd');
-            if (linked) {
-                return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
-            }
-            return '';
-        })()}
-                   </div>` : ''}
-
-                 ${co2 !== undefined ? x `
-                   <div class="stat-chip ${this._activeEnvGraphs.has('co2') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'co2')}
-                        @drop=${(e) => this._handleChipDrop(e, 'co2')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
-            const target = e.target;
-            if (target.closest('.link-icon'))
-                return;
-            this._toggleEnvGraph('co2');
-        }}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm
-                     ${(() => {
-            const { linked, groupIndex } = this._isMetricLinked('co2');
-            if (linked) {
-                return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
-            }
-            return '';
-        })()}
-                   </div>` : ''}
-
-                ${hasLightSensor ? x `
-                   <div class="stat-chip ${this._activeEnvGraphs.has('light') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'light')}
-                        @drop=${(e) => this._handleChipDrop(e, 'light')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
-            const target = e.target;
-            if (target.closest('.link-icon'))
-                return;
-            this._toggleEnvGraph('light');
-        }}>
-                     <svg viewBox="0 0 24 24"><path d="${isLightsOn ? mdiLightbulbOn : mdiLightbulbOff}"></path></svg>
-                     ${isLightsOn ? 'On' : 'Off'}
-                     ${(() => {
-            const { linked, groupIndex } = this._isMetricLinked('light');
-            if (linked) {
-                return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
-            }
-            return '';
-        })()}
-                   </div>` : ''}
-
-                 ${nextIrrigation ? x `
-                   <div class="stat-chip ${this._activeEnvGraphs.has('irrigation') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'irrigation')}
-                        @drop=${(e) => this._handleChipDrop(e, 'irrigation')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
-            const target = e.target;
-            if (target.closest('.link-icon'))
-                return;
-            this._toggleEnvGraph('irrigation');
-        }}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                     Next: ${nextIrrigation}
-                     ${(() => {
-            const { linked, groupIndex } = this._isMetricLinked('irrigation');
-            if (linked) {
-                return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
-            }
-            return '';
-        })()}
-                   </div>` : ''}
-
-                 ${nextDrain ? x `
-                   <div class="stat-chip ${this._activeEnvGraphs.has('drain') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'drain')}
-                        @drop=${(e) => this._handleChipDrop(e, 'drain')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
-            const target = e.target;
-            if (target.closest('.link-icon'))
-                return;
-            this._toggleEnvGraph('drain');
-        }}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                     Next: ${nextDrain}
-                     ${(() => {
-            const { linked, groupIndex } = this._isMetricLinked('drain');
-            if (linked) {
-                return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
-            }
-            return '';
-        })()}
-                   </div>` : ''}
-
-                 ${envEntity ? x `
-                   <div class="stat-chip ${this._activeEnvGraphs.has('optimal') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'optimal')}
-                        @drop=${(e) => this._handleChipDrop(e, 'optimal')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
-            const target = e.target;
-            if (target.closest('.link-icon'))
-                return;
-            this._toggleEnvGraph('optimal');
-        }}>
-                     <svg viewBox="0 0 24 24"><path d="${envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank}"></path></svg>
-                     ${envEntity.state === 'on' ? 'Optimal Conditions' : (envEntity.attributes.reasons || 'Not Optimal')}
-                     ${(() => {
-            const { linked, groupIndex } = this._isMetricLinked('optimal');
-            if (linked) {
-                return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
-            }
-            return '';
-        })()}
-                   </div>` : ''}
-
-
-              </div>
-              ${!this._isCompactView ? x `
-                  <div class="menu-container">
-                    <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
-                    </div>
-                    
-                    ${this._menuOpen ? x `
-                      <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
-                        <div class="menu-item" @click=${() => { this._openConfigDialog(); this._menuOpen = false; }}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                          <span class="menu-item-label">Config</span>
-                        </div>
-
-                        <div class="menu-item" @click=${() => { this._isEditMode = !this._isEditMode; this._menuOpen = false; }}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-                          <span class="menu-item-label">Edit</span>
-                          <div class="menu-toggle-switch ${this._isEditMode ? 'active' : ''}"></div>
-                        </div>
-                        
-                        <div class="menu-item" @click=${() => { this._isCompactView = true; this._menuOpen = false; }}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-                          <span class="menu-item-label">Compact View</span>
-                          <div class="menu-toggle-switch ${this._isCompactView ? 'active' : ''}"></div>
-                        </div>
-                        
-                        
-                        <div class="menu-item" @click=${() => { this._openStrainLibraryDialog(); this._menuOpen = false; }}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-                          <span class="menu-item-label">Strains</span>
-                        </div>
-                        
-                        <div class="menu-item" @click=${() => { this._openIrrigationDialog(); this._menuOpen = false; }}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                          <span class="menu-item-label">Irrigation</span>
-                        </div>
-                        
-                        <div class="menu-item" @click=${() => { this._openGrowMasterDialog(); this._menuOpen = false; }}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-                          <span class="menu-item-label">Ask AI</span>
-                        </div>
-                      </div>
-                    ` : ''}
-                  </div>
-                ` : ''}
-            </div>
-
-              <div class="gs-device-chips">
-                ${overviewEntity?.attributes?.exhaust_entity ? x `
-                               <div class="stat-chip ${this._activeEnvGraphs.has('exhaust') ? 'active' : ''}"
-                                    draggable="true"
-                                    @dragstart=${(e) => this._handleChipDragStart(e, 'exhaust')}
-                                    @drop=${(e) => this._handleChipDrop(e, 'exhaust')}
-                                    @dragover=${(e) => e.preventDefault()}
-                                    @click=${(e) => {
-            const target = e.target;
-            if (target.closest('.link-icon'))
-                return;
-            this._toggleEnvGraph('exhaust');
-        }}>
-                                 <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg>${overviewEntity.attributes.exhaust_value}
-                                 ${(() => {
-            const { linked, groupIndex } = this._isMetricLinked('exhaust');
-            if (linked) {
-                return x `
-                                       <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                            @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                            title="Unlink Graph">
-                                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                                       </div>
-                                     `;
-            }
-            return '';
-        })()}
-                               </div>` : ''}
-
-                ${overviewEntity?.attributes?.humidifier_entity ? x `
-                               <div class="stat-chip ${this._activeEnvGraphs.has('humidifier') ? 'active' : ''}"
-                                    draggable="true"
-                                    @dragstart=${(e) => this._handleChipDragStart(e, 'humidifier')}
-                                    @drop=${(e) => this._handleChipDrop(e, 'humidifier')}
-                                    @dragover=${(e) => e.preventDefault()}
-                                    @click=${(e) => {
-            const target = e.target;
-            if (target.closest('.link-icon'))
-                return;
-            this._toggleEnvGraph('humidifier');
-        }}>
-                                 <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg>${overviewEntity.attributes.humidifier_value}
-                                 ${(() => {
-            const { linked, groupIndex } = this._isMetricLinked('humidifier');
-            if (linked) {
-                return x `
-                                       <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                            @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                            title="Unlink Graph">
-                                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                                       </div>
-                                     `;
-            }
-            return '';
-        })()}
-                               </div>` : ''}
-
-                ${overviewEntity?.attributes?.dehumidifier_entity ? x `
-                               <div class="stat-chip ${this._activeEnvGraphs.has('dehumidifier') ? 'active' : ''}"
-                                    draggable="true"
-                                    @dragstart=${(e) => this._handleChipDragStart(e, 'dehumidifier')}
-                                    @drop=${(e) => this._handleChipDrop(e, 'dehumidifier')}
-                                    @dragover=${(e) => e.preventDefault()}
-                                    @click=${(e) => {
-            const target = e.target;
-            if (target.closest('.link-icon'))
-                return;
-            this._toggleEnvGraph('dehumidifier');
-        }}>
-                                 <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg>${overviewEntity.attributes.dehumidifier_state === 'on' ? 'On' : 'Off'}
-                                 ${(() => {
-            const { linked, groupIndex } = this._isMetricLinked('dehumidifier');
-            if (linked) {
-                return x `
-                                       <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                            @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                            title="Unlink Graph">
-                                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                                       </div>
-                                     `;
-            }
-            return '';
-        })()}
-                               </div>` : ''}
-              </div>
-            </div>
-         </div>
-
-  ${this._activeEnvGraphs.size > 0 ? this.renderTimeRangeSelector() : ''}
-
-  ${(() => {
-            const renderedMetrics = new Set();
-            const templates = [];
-            const currentDevice = devices.find(d => d.device_id === this.selectedDevice);
-            // Render Linked Groups
-            this._linkedGraphGroups.forEach(group => {
-                const isGroupActive = group.some(m => this._activeEnvGraphs.has(m));
-                if (isGroupActive) {
-                    templates.push(x `
-              <growspace-env-chart
-                .hass=${this.hass}
-                .device=${currentDevice}
-                .history=${this._historyData}
-                .metrics=${group}
-                .isCombined=${true}
-                .range=${this._graphRanges[this.selectedDevice || ''] || '24h'}
-                .metricConfig=${{
-                        'temperature': { color: '#FF5722', title: 'Temperature', unit: '°C' },
-                        'humidity': { color: '#2196F3', title: 'Humidity', unit: '%' },
-                        'vpd': { color: '#9C27B0', title: 'VPD', unit: 'kPa' },
-                        'co2': { color: '#90A4AE', title: 'CO2', unit: 'ppm' },
-                        'dehumidifier': { color: '#00BCD4', title: 'Dehumidifier', unit: 'state' },
-                        'exhaust': { color: '#795548', title: 'Exhaust', unit: '' },
-                        'humidifier': { color: '#4CAF50', title: 'Humidifier', unit: '' },
-                        'light': { color: '#FFEB3B', title: 'Light', unit: 'state' },
-                        'irrigation': { color: '#2196F3', title: 'Irrigation', unit: 'state' },
-                        'drain': { color: '#FF9800', title: 'Drain', unit: 'state' },
-                        'optimal': { color: '#4CAF50', title: 'Optimal', unit: 'state' }
-                    }}
-                @unlink-graph=${(e) => {
-                        const { groupIndex } = this._isMetricLinked(e.detail.metric);
-                        this._unlinkGraphs(groupIndex);
-                    }}
-              ></growspace-env-chart>
-            `);
-                    group.forEach(m => renderedMetrics.add(m));
-                }
-            });
-            // Render Individual Graphs
-            const individualMetrics = [
-                { key: 'temperature', color: '#FF5722', title: 'Temperature', unit: '°C', type: 'line', icon: mdiThermometer },
-                { key: 'humidity', color: '#2196F3', title: 'Humidity', unit: '%', type: 'line', icon: mdiWaterPercent },
-                { key: 'vpd', color: '#9C27B0', title: 'VPD', unit: 'kPa', type: 'line', icon: mdiCloudOutline },
-                { key: 'exhaust', color: '#795548', title: 'Exhaust', unit: '', type: 'line', icon: mdiFan },
-                { key: 'humidifier', color: '#4CAF50', title: 'Humidifier', unit: '', type: 'line', icon: mdiAirHumidifier },
-                { key: 'dehumidifier', color: '#00BCD4', title: 'Dehumidifier', unit: 'state', type: 'step', icon: mdiAirHumidifier },
-                { key: 'co2', color: '#90A4AE', title: 'CO2', unit: 'ppm', type: 'line', icon: mdiWeatherCloudy },
-                { key: 'light', color: '#FFEB3B', title: 'Light Cycle', unit: 'state', type: 'step', icon: mdiLightbulbOn },
-                { key: 'optimal', color: '#4CAF50', title: 'Optimal Conditions', unit: 'state', type: 'step', icon: mdiRadioboxMarked },
-                { key: 'irrigation', color: '#2196F3', title: 'Irrigation Schedule', unit: 'state', type: 'step', icon: mdiWater },
-                { key: 'drain', color: '#FF9800', title: 'Drain Schedule', unit: 'state', type: 'step', icon: mdiWater }
-            ];
-            individualMetrics.forEach(m => {
-                if (this._activeEnvGraphs.has(m.key) && !renderedMetrics.has(m.key)) {
-                    templates.push(x `
-              <growspace-env-chart
-                .hass=${this.hass}
-                .device=${currentDevice}
-                .history=${m.key === 'dehumidifier' ? this._dehumidifierHistory : m.key === 'exhaust' ? this._exhaustHistory : m.key === 'humidifier' ? this._humidifierHistory : this._historyData}
-                .metricKey=${m.key}
-                .color=${m.color}
-                .title=${m.title}
-                .unit=${m.unit}
-                .type=${m.type}
-                .icon=${m.icon}
-                .range=${this._graphRanges[this.selectedDevice || ''] || '24h'}
-                @toggle-graph=${(e) => this._toggleEnvGraph(e.detail.metric)}
-              ></growspace-env-chart>
-            `);
-                }
-            });
-            return x `${templates}`;
-        })()}
-
-</div>
-  `;
     }
     renderHeader(devices) {
         if (!this._isCompactView && !this._config?.title) {
@@ -14362,7 +14639,22 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             if (!plant) {
                 return this.renderEmptySlot(row, col);
             }
-            return this.renderPlantSlot(plant, row, col, strainLibrary);
+            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+            const isSelected = this._selectedPlants.has(plantId);
+            return x `
+        <growspace-plant-card
+          .plant=${plant}
+          .row=${row}
+          .col=${col}
+          .strainLibrary=${strainLibrary}
+          .isEditMode=${this._isEditMode}
+          .selected=${isSelected}
+          @plant-click=${() => this._handlePlantClick(plant)}
+          @plant-drag-start=${(e) => this._handleDragStart(e.detail.originalEvent, plant)}
+          @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, row, col, plant)}
+          @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
+        ></growspace-plant-card>
+      `;
         })}
       </div>
     `;
@@ -14383,121 +14675,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         </div>
         <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
       </div>
-    `;
-    }
-    renderPlantSlot(plant, row, col, strainLibrary) {
-        const stageColor = PlantUtils.getPlantStageColor(plant.state);
-        // Resolve Image
-        const strainName = plant.attributes?.strain;
-        const pheno = plant.attributes?.phenotype;
-        let imageUrl;
-        let imageCropMeta;
-        if (strainName) {
-            // Look for specific pheno match first
-            const phenoMatch = strainLibrary.find(s => s.strain === strainName && s.phenotype === pheno);
-            if (phenoMatch && phenoMatch.image) {
-                imageUrl = phenoMatch.image;
-                imageCropMeta = phenoMatch.image_crop_meta;
-            }
-            else {
-                // Fallback to strain default
-                const strainMatch = strainLibrary.find(s => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
-                if (strainMatch && strainMatch.image) {
-                    imageUrl = strainMatch.image;
-                    imageCropMeta = strainMatch.image_crop_meta;
-                }
-                else if (!imageUrl) {
-                    // Any match?
-                    const anyMatch = strainLibrary.find(s => s.strain === strainName && s.image);
-                    if (anyMatch) {
-                        imageUrl = anyMatch.image;
-                        imageCropMeta = anyMatch.image_crop_meta;
-                    }
-                }
-            }
-        }
-        const isSelected = this._selectedPlants.has(plant.attributes.plant_id || '');
-        return x `
-      <div
-        class="plant-card-rich"
-        style="grid-row: ${row}; grid-column: ${col}; --stage-color: ${stageColor}"
-        draggable="true"
-        @dragstart=${(e) => this._handleDragStart(e, plant)}
-        @dragend=${this._handleDragEnd}
-        @dragover=${this._handleDragOver}
-        @drop=${(e) => this._handleDrop(e, row, col, plant)}
-        @click=${() => this._handlePlantClick(plant)}
-      >
-        ${imageUrl ? x `
-          <img 
-            class="plant-card-bg" 
-            src="${imageUrl}" 
-            loading="lazy" 
-            alt="${strainName || 'Plant'}"
-            style="${DialogRenderer.getImgStyle(imageCropMeta)}"
-          />
-          <div class="plant-card-overlay"></div>
-        ` : ''}
-
-        ${this._isEditMode ? x `
-          <div class="plant-card-checkbox" @click=${(e) => { e.stopPropagation(); this._togglePlantSelection(plant); }}>
-             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: ${isSelected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)'};">
-               <path d="${isSelected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
-             </svg>
-          </div>
-        ` : ''}
-
-        <div class="plant-card-content">
-          <div class="pc-info">
-            <div class="pc-strain-name" title="${plant.attributes?.strain || ''}">
-              ${plant.attributes?.strain || 'Unknown Strain'}
-            </div>
-            ${plant.attributes?.phenotype ? x `<div class="pc-pheno">${plant.attributes.phenotype}</div>` : ''}
-            <div class="pc-stage">
-              ${plant.state || 'Unknown'}
-            </div>
-          </div>
-
-          <div class="pc-stats">
-            ${this.renderPlantDaysRich(plant)}
-          </div>
-        </div>
-      </div>
-    `;
-    }
-    renderPlantDaysRich(plant) {
-        // We need to show relevant days.
-        // Mockup shows two icons at bottom.
-        // Likely Veg Days and Flower Days if available, or current stage days?
-        // User said "continue to show relevant days like we already do".
-        // Existing logic filters and shows all relevant days.
-        // I will use that logic but style it for the new card (Icon Top, Text Bottom or similar).
-        const days = [
-            { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Seedling", stage: "seedling" },
-            { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Mother", stage: "mother" },
-            { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Clone", stage: "clone" },
-            { days: plant.attributes?.veg_days, icon: mdiSprout, title: "Veg", stage: "vegetative" },
-            { days: plant.attributes?.flower_days, icon: mdiFlower, title: "Flower", stage: "flower" },
-            { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Dry", stage: "dry" },
-            { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Cure", stage: "cure" }
-        ].filter(d => d.days !== undefined && d.days !== null); // Filter nulls, let 0 show if relevant? Logic above used d.days which is truthy, so 0 was hidden. I'll stick to truthy.
-        const visibleDays = days.filter(d => d.days);
-        // Identify current stage to highlight
-        const currentStage = (plant.state || '').toLowerCase();
-        // Normalize if necessary, e.g. "veg" -> "vegetative"
-        // The days array uses standard stage keys (vegetative, flower, etc)
-        const normalizedCurrent = currentStage === 'veg' ? 'vegetative' : currentStage;
-        return x `
-        ${visibleDays.map(d => {
-            const color = PlantUtils.getPlantStageColor(d.stage);
-            const isCurrent = d.stage === normalizedCurrent;
-            return x `
-                <div class="pc-stat-item ${isCurrent ? 'current-stage' : ''}">
-                    <svg style="color: ${color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
-                    <div class="pc-stat-text">${d.days}d</div>
-                </div>
-            `;
-        })}
     `;
     }
     _setGraphRange(range) {
