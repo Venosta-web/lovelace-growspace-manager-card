@@ -1,5 +1,6 @@
 // Material Design Icons v7.4.47
 var mdiAirHumidifier = "M11 9C8.79 9 7 10.79 7 13S8.79 17 11 17 15 15.21 15 13 13.21 9 11 9M11 15C9.9 15 9 14.11 9 13S9.9 11 11 11 13 11.9 13 13 12.11 15 11 15M7 4H14C16.21 4 18 5.79 18 8V9H16V8C16 6.9 15.11 6 14 6H7C5.9 6 5 6.9 5 8V20H16V18H18V22H3V8C3 5.79 4.79 4 7 4M19 10.5C19 10.5 21 12.67 21 14C21 15.1 20.1 16 19 16S17 15.1 17 14C17 12.67 19 10.5 19 10.5";
+var mdiAirHumidifierOff = "M22.1 21.5L2.4 1.7L1.1 3L3.8 5.7C3.3 6.3 3 7.1 3 8V22H18V19.9L20.8 22.7L22.1 21.5M9.6 11.5L12.4 14.3C12.1 14.7 11.6 15 11 15C9.9 15 9 14.1 9 13C9 12.4 9.3 11.9 9.6 11.5M16 17.9V20H5V8C5 7.7 5.1 7.4 5.2 7.1L8.2 10.1C7.5 10.8 7 11.9 7 13C7 15.2 8.8 17 11 17C12.1 17 13.2 16.5 13.9 15.8L16 17.9M17 13.8C17.1 12.5 19 10.5 19 10.5S21 12.7 21 14C21 15 20.2 15.9 19.2 16L17 13.8M9.2 6L7.2 4H14C16.2 4 18 5.8 18 8V9H16V8C16 6.9 15.1 6 14 6H9.2Z";
 var mdiArrowLeft = "M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z";
 var mdiArrowRight = "M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z";
 var mdiBrain = "M21.33,12.91C21.42,14.46 20.71,15.95 19.44,16.86L20.21,18.35C20.44,18.8 20.47,19.33 20.27,19.8C20.08,20.27 19.69,20.64 19.21,20.8L18.42,21.05C18.25,21.11 18.06,21.14 17.88,21.14C17.37,21.14 16.89,20.91 16.56,20.5L14.44,18C13.55,17.85 12.71,17.47 12,16.9C11.5,17.05 11,17.13 10.5,17.13C9.62,17.13 8.74,16.86 8,16.34C7.47,16.5 6.93,16.57 6.38,16.56C5.59,16.57 4.81,16.41 4.08,16.11C2.65,15.47 1.7,14.07 1.65,12.5C1.57,11.78 1.69,11.05 2,10.39C1.71,9.64 1.68,8.82 1.93,8.06C2.3,7.11 3,6.32 3.87,5.82C4.45,4.13 6.08,3 7.87,3.12C9.47,1.62 11.92,1.46 13.7,2.75C14.12,2.64 14.56,2.58 15,2.58C16.36,2.55 17.65,3.15 18.5,4.22C20.54,4.75 22,6.57 22.08,8.69C22.13,9.8 21.83,10.89 21.22,11.82C21.29,12.18 21.33,12.54 21.33,12.91M16.33,11.5C16.9,11.57 17.35,12 17.35,12.57A1,1 0 0,1 16.35,13.57H15.72C15.4,14.47 14.84,15.26 14.1,15.86C14.35,15.95 14.61,16 14.87,16.07C20,16 19.4,12.87 19.4,12.82C19.34,11.39 18.14,10.27 16.71,10.33A1,1 0 0,1 15.71,9.33A1,1 0 0,1 16.71,8.33C17.94,8.36 19.12,8.82 20.04,9.63C20.09,9.34 20.12,9.04 20.12,8.74C20.06,7.5 19.5,6.42 17.25,6.21C16,3.25 12.85,4.89 12.85,5.81V5.81C12.82,6.04 13.06,6.53 13.1,6.56A1,1 0 0,1 14.1,7.56C14.1,8.11 13.65,8.56 13.1,8.56V8.56C12.57,8.54 12.07,8.34 11.67,8C11.19,8.31 10.64,8.5 10.07,8.56V8.56C9.5,8.61 9.03,8.21 9,7.66C8.92,7.1 9.33,6.61 9.88,6.56C10.04,6.54 10.82,6.42 10.82,5.79V5.79C10.82,5.13 11.07,4.5 11.5,4C10.58,3.75 9.59,4.08 8.59,5.29C6.75,5 6,5.25 5.45,7.2C4.5,7.67 4,8 3.78,9C4.86,8.78 5.97,8.87 7,9.25C7.5,9.44 7.78,10 7.59,10.54C7.4,11.06 6.82,11.32 6.3,11.13C5.57,10.81 4.75,10.79 4,11.07C3.68,11.34 3.68,11.9 3.68,12.34C3.68,13.08 4.05,13.77 4.68,14.17C5.21,14.44 5.8,14.58 6.39,14.57C6.24,14.31 6.11,14.04 6,13.76C5.81,13.22 6.1,12.63 6.64,12.44C7.18,12.25 7.77,12.54 7.96,13.08C8.36,14.22 9.38,15 10.58,15.13C11.95,15.06 13.17,14.25 13.77,13C14,11.62 15.11,11.5 16.33,11.5M18.33,18.97L17.71,17.67L17,17.83L18,19.08L18.33,18.97M13.68,10.36C13.7,9.83 13.3,9.38 12.77,9.33C12.06,9.29 11.37,9.53 10.84,10C10.27,10.58 9.97,11.38 10,12.19A1,1 0 0,0 11,13.19C11.57,13.19 12,12.74 12,12.19C12,11.92 12.07,11.65 12.23,11.43C12.35,11.33 12.5,11.28 12.66,11.28C13.21,11.31 13.68,10.9 13.68,10.36Z";
@@ -12884,32 +12885,33 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
         const nextDrain = getNextEvent(overviewEntity?.attributes?.drain_times);
         return x `
       <div class="gs-stats-container">
-         <div class="gs-header-top">
-            <div class="gs-title-group">
-               ${!this.config?.default_growspace ? x `
-                 <select class="growspace-select-header" .value=${this.device.device_id} @change=${this._handleDeviceChange}>
-                    ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
-                 </select>
-               ` : x `
-                 <h3 class="gs-title">${this.device.name}</h3>
-               `}
+        <div class="gs-header-top">
+          <div class="gs-title-group">
+            ${!this.config?.default_growspace ? x `
+              <select class="growspace-select-header" .value=${this.device.device_id} @change=${this._handleDeviceChange}>
+                ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
+              </select>
+            ` : x `
+              <h3 class="gs-title">${this.device.name}</h3>
+            `}
 
-               ${dominant ? x `
-                <div style="display: flex; gap: 8px;">
-                 <div class="gs-stage-chip">
-                   <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
-                   ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Day ${dominant.days}
-                 </div>
-                 <div class="gs-stage-chip">
-                   <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
-                   ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Week ${Math.ceil(dominant.days / 7)}
-                 </div>
+            ${dominant ? x `
+              <div style="display: flex; gap: 8px;">
+                <div class="gs-stage-chip">
+                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
+                  ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Day ${dominant.days}
                 </div>
-               ` : ''}
-            </div>
+                <div class="gs-stage-chip">
+                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
+                  ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Week ${Math.ceil(dominant.days / 7)}
+                </div>
+              </div>
+            ` : ''}
+          </div>
 
-            <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
-              <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+          <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+              
               <div class="gs-stats-chips ${this._mobileEnvExpanded ? 'expanded' : ''}">
                 <div class="stat-chip mobile-env-trigger ${this._mobileEnvExpanded ? 'active' : ''}"
                      @click=${() => this._mobileEnvExpanded = !this._mobileEnvExpanded}>
@@ -12921,363 +12923,365 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                 </div>
 
                 ${temp !== undefined ? x `
-                   <div class="stat-chip ${this.activeEnvGraphs.has('temperature') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'temperature')}
-                        @drop=${(e) => this._handleChipDrop(e, 'temperature')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
+                  <div class="stat-chip ${this.activeEnvGraphs.has('temperature') ? 'active' : ''}"
+                       draggable="true"
+                       @dragstart=${(e) => this._handleChipDragStart(e, 'temperature')}
+                       @drop=${(e) => this._handleChipDrop(e, 'temperature')}
+                       @dragover=${(e) => e.preventDefault()}
+                       @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
                 return;
             this._toggleEnvGraph('temperature');
         }}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>${temp}°C
-                     ${(() => {
+                    <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>${temp}°C
+                    ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('temperature');
             if (linked) {
                 return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
+                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                               @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                               title="Unlink Graph">
+                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                          </div>
+                        `;
             }
             return '';
         })()}
-                   </div>` : ''}
+                  </div>` : ''}
 
                 ${hum !== undefined ? x `
-                   <div class="stat-chip ${this.activeEnvGraphs.has('humidity') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'humidity')}
-                        @drop=${(e) => this._handleChipDrop(e, 'humidity')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
+                  <div class="stat-chip ${this.activeEnvGraphs.has('humidity') ? 'active' : ''}"
+                       draggable="true"
+                       @dragstart=${(e) => this._handleChipDragStart(e, 'humidity')}
+                       @drop=${(e) => this._handleChipDrop(e, 'humidity')}
+                       @dragover=${(e) => e.preventDefault()}
+                       @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
                 return;
             this._toggleEnvGraph('humidity');
         }}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>${hum}%
-                     ${(() => {
+                    <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>${hum}%
+                    ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('humidity');
             if (linked) {
                 return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
+                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                               @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                               title="Unlink Graph">
+                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                          </div>
+                        `;
             }
             return '';
         })()}
-                   </div>` : ''}
+                  </div>` : ''}
 
                 ${vpd !== undefined ? x `
-                   <div class="stat-chip ${this.activeEnvGraphs.has('vpd') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'vpd')}
-                        @drop=${(e) => this._handleChipDrop(e, 'vpd')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
+                  <div class="stat-chip ${this.activeEnvGraphs.has('vpd') ? 'active' : ''}"
+                       draggable="true"
+                       @dragstart=${(e) => this._handleChipDragStart(e, 'vpd')}
+                       @drop=${(e) => this._handleChipDrop(e, 'vpd')}
+                       @dragover=${(e) => e.preventDefault()}
+                       @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
                 return;
             this._toggleEnvGraph('vpd');
         }}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>${vpd} kPa
-                     ${(() => {
+                    <svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>${vpd} kPa
+                    ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('vpd');
             if (linked) {
                 return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
+                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                               @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                               title="Unlink Graph">
+                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                          </div>
+                        `;
             }
             return '';
         })()}
-                   </div>` : ''}
+                  </div>` : ''}
 
-                 ${co2 !== undefined ? x `
-                   <div class="stat-chip ${this.activeEnvGraphs.has('co2') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'co2')}
-                        @drop=${(e) => this._handleChipDrop(e, 'co2')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
+                ${co2 !== undefined ? x `
+                  <div class="stat-chip ${this.activeEnvGraphs.has('co2') ? 'active' : ''}"
+                       draggable="true"
+                       @dragstart=${(e) => this._handleChipDragStart(e, 'co2')}
+                       @drop=${(e) => this._handleChipDrop(e, 'co2')}
+                       @dragover=${(e) => e.preventDefault()}
+                       @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
                 return;
             this._toggleEnvGraph('co2');
         }}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm
-                     ${(() => {
+                    <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm
+                    ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('co2');
             if (linked) {
                 return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
+                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                               @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                               title="Unlink Graph">
+                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                          </div>
+                        `;
             }
             return '';
         })()}
-                   </div>` : ''}
+                  </div>` : ''}
 
                 ${hasLightSensor ? x `
-                   <div class="stat-chip ${this.activeEnvGraphs.has('light') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'light')}
-                        @drop=${(e) => this._handleChipDrop(e, 'light')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
+                  <div class="stat-chip ${this.activeEnvGraphs.has('light') ? 'active' : ''}"
+                       draggable="true"
+                       @dragstart=${(e) => this._handleChipDragStart(e, 'light')}
+                       @drop=${(e) => this._handleChipDrop(e, 'light')}
+                       @dragover=${(e) => e.preventDefault()}
+                       @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
                 return;
             this._toggleEnvGraph('light');
         }}>
-                     <svg viewBox="0 0 24 24"><path d="${isLightsOn ? mdiLightbulbOn : mdiLightbulbOff}"></path></svg>
-                     ${isLightsOn ? 'On' : 'Off'}
-                     ${(() => {
+                    <svg viewBox="0 0 24 24"><path d="${isLightsOn ? mdiLightbulbOn : mdiLightbulbOff}"></path></svg>
+                    ${isLightsOn ? 'On' : 'Off'}
+                    ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('light');
             if (linked) {
                 return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
+                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                               @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                               title="Unlink Graph">
+                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                          </div>
+                        `;
             }
             return '';
         })()}
-                   </div>` : ''}
+                  </div>` : ''}
 
-                 ${nextIrrigation ? x `
-                   <div class="stat-chip ${this.activeEnvGraphs.has('irrigation') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'irrigation')}
-                        @drop=${(e) => this._handleChipDrop(e, 'irrigation')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
+                ${nextIrrigation ? x `
+                  <div class="stat-chip ${this.activeEnvGraphs.has('irrigation') ? 'active' : ''}"
+                       draggable="true"
+                       @dragstart=${(e) => this._handleChipDragStart(e, 'irrigation')}
+                       @drop=${(e) => this._handleChipDrop(e, 'irrigation')}
+                       @dragover=${(e) => e.preventDefault()}
+                       @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
                 return;
             this._toggleEnvGraph('irrigation');
         }}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                     Next: ${nextIrrigation}
-                     ${(() => {
+                    <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                    Next: ${nextIrrigation}
+                    ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('irrigation');
             if (linked) {
                 return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
+                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                               @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                               title="Unlink Graph">
+                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                          </div>
+                        `;
             }
             return '';
         })()}
-                   </div>` : ''}
+                  </div>` : ''}
 
-                 ${nextDrain ? x `
-                   <div class="stat-chip ${this.activeEnvGraphs.has('drain') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'drain')}
-                        @drop=${(e) => this._handleChipDrop(e, 'drain')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
+                ${nextDrain ? x `
+                  <div class="stat-chip ${this.activeEnvGraphs.has('drain') ? 'active' : ''}"
+                       draggable="true"
+                       @dragstart=${(e) => this._handleChipDragStart(e, 'drain')}
+                       @drop=${(e) => this._handleChipDrop(e, 'drain')}
+                       @dragover=${(e) => e.preventDefault()}
+                       @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
                 return;
             this._toggleEnvGraph('drain');
         }}>
-                     <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                     Next: ${nextDrain}
-                     ${(() => {
+                    <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                    Next: ${nextDrain}
+                    ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('drain');
             if (linked) {
                 return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
+                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                               @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                               title="Unlink Graph">
+                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                          </div>
+                        `;
             }
             return '';
         })()}
-                   </div>` : ''}
+                  </div>` : ''}
 
-                 ${envEntity ? x `
-                   <div class="stat-chip ${this.activeEnvGraphs.has('optimal') ? 'active' : ''}"
-                        draggable="true"
-                        @dragstart=${(e) => this._handleChipDragStart(e, 'optimal')}
-                        @drop=${(e) => this._handleChipDrop(e, 'optimal')}
-                        @dragover=${(e) => e.preventDefault()}
-                        @click=${(e) => {
+                ${envEntity ? x `
+                  <div class="stat-chip ${this.activeEnvGraphs.has('optimal') ? 'active' : ''}"
+                       draggable="true"
+                       @dragstart=${(e) => this._handleChipDragStart(e, 'optimal')}
+                       @drop=${(e) => this._handleChipDrop(e, 'optimal')}
+                       @dragover=${(e) => e.preventDefault()}
+                       @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
                 return;
             this._toggleEnvGraph('optimal');
         }}>
-                     <svg viewBox="0 0 24 24"><path d="${envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank}"></path></svg>
-                     ${envEntity.state === 'on' ? 'Optimal Conditions' : (envEntity.attributes.reasons || 'Not Optimal')}
-                     ${(() => {
+                    <svg viewBox="0 0 24 24"><path d="${envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank}"></path></svg>
+                    ${envEntity.state === 'on' ? 'Optimal Conditions' : (envEntity.attributes.reasons || 'Not Optimal')}
+                    ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('optimal');
             if (linked) {
                 return x `
-                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                           </div>
-                         `;
+                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                               @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                               title="Unlink Graph">
+                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                          </div>
+                        `;
             }
             return '';
         })()}
-                   </div>` : ''}
+                  </div>` : ''}
+              </div>
 
-    </div>
-    <div class="menu-container" >
-      <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
-        <svg viewBox="0 0 24 24" > <path d="${mdiDotsVertical}" > </path></svg >
-      </div>
-      ${this._menuOpen ? x `
-                      <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
-                        <div class="menu-item" @click=${() => this._triggerAction('config')}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                          <span class="menu-item-label">Config</span>
-                        </div> 
+              <div class="menu-container">
+                <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
+                  <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
+                </div>
+                ${this._menuOpen ? x `
+                  <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
+                    <div class="menu-item" @click=${() => this._triggerAction('config')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                      <span class="menu-item-label">Config</span>
+                    </div>
+                    <div class="menu-item" @click=${() => this._triggerAction('edit')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                      <span class="menu-item-label">Edit</span>
+                      <div class="menu-toggle-switch"></div>
+                    </div>
+                    <div class="menu-item" @click=${() => this._triggerAction('compact')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+                      <span class="menu-item-label">Compact View</span>
+                      <div class="menu-toggle-switch"></div>
+                    </div>
+                    <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
+                      <span class="menu-item-label">Control Dehumidifier</span>
+                      <div class="menu-toggle-switch"></div>
+                    </div>
+                    <div class="menu-item" @click=${() => this._triggerAction('strains')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+                      <span class="menu-item-label">Strains</span>
+                    </div>
+                    <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                      <span class="menu-item-label">Irrigation</span>
+                    </div>
+                    <div class="menu-item" @click=${() => this._triggerAction('ai')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+                      <span class="menu-item-label">Ask AI</span>
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
 
-                        <div class="menu-item" @click=${() => this._triggerAction('edit')}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-                          <span class="menu-item-label">Edit</span>
-                          <div class="menu-toggle-switch"></div>
-                        </div>
-                        
-                        <div class="menu-item" @click=${() => this._triggerAction('compact')}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-                          <span class="menu-item-label">Compact View</span>
-                          <div class="menu-toggle-switch"></div>
-                        </div>
-                        
-                        <div class="menu-item" @click=${() => this._triggerAction('strains')}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-                          <span class="menu-item-label">Strains</span>
-                        </div>
-                        
-                        <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                          <span class="menu-item-label">Irrigation</span>
-                        </div>
-                        
-                        <div class="menu-item" @click=${() => this._triggerAction('ai')}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-                          <span class="menu-item-label">Ask AI</span>
-                        </div>
-                      </div>
-                    ` : ''}
-    </div>
-    </div>
-    <div class="gs-device-chips">
-                ${overviewEntity?.attributes?.exhaust_entity ? x `
-                               <div class="stat-chip ${this.activeEnvGraphs.has('exhaust') ? 'active' : ''}"
-                                    draggable="true"
-                                    @dragstart=${(e) => this._handleChipDragStart(e, 'exhaust')}
-                                    @drop=${(e) => this._handleChipDrop(e, 'exhaust')}
-                                    @dragover=${(e) => e.preventDefault()}
-                                    @click=${(e) => {
+            <div class="gs-device-chips">
+              ${overviewEntity?.attributes?.exhaust_entity ? x `
+                <div class="stat-chip ${this.activeEnvGraphs.has('exhaust') ? 'active' : ''}"
+                     draggable="true"
+                     @dragstart=${(e) => this._handleChipDragStart(e, 'exhaust')}
+                     @drop=${(e) => this._handleChipDrop(e, 'exhaust')}
+                     @dragover=${(e) => e.preventDefault()}
+                     @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
                 return;
             this._toggleEnvGraph('exhaust');
         }}>
-                                 <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg> Exhaust: ${overviewEntity.attributes.exhaust_value}
-                                 ${(() => {
+                  <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg> Exhaust: ${overviewEntity.attributes.exhaust_value}
+                  ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('exhaust');
             if (linked) {
                 return x `
-                                       <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                            @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                            title="Unlink Graph">
-                                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                                       </div>
-                                     `;
+                        <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                             @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                             title="Unlink Graph">
+                          <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                        </div>
+                      `;
             }
             return '';
         })()}
-                               </div>` : ''}
+                </div>` : ''}
 
-                ${overviewEntity?.attributes?.humidifier_entity ? x `
-                               <div class="stat-chip ${this.activeEnvGraphs.has('humidifier') ? 'active' : ''}"
-                                    draggable="true"
-                                    @dragstart=${(e) => this._handleChipDragStart(e, 'humidifier')}
-                                    @drop=${(e) => this._handleChipDrop(e, 'humidifier')}
-                                    @dragover=${(e) => e.preventDefault()}
-                                    @click=${(e) => {
+              ${overviewEntity?.attributes?.humidifier_entity ? x `
+                <div class="stat-chip ${this.activeEnvGraphs.has('humidifier') ? 'active' : ''}"
+                     draggable="true"
+                     @dragstart=${(e) => this._handleChipDragStart(e, 'humidifier')}
+                     @drop=${(e) => this._handleChipDrop(e, 'humidifier')}
+                     @dragover=${(e) => e.preventDefault()}
+                     @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
                 return;
             this._toggleEnvGraph('humidifier');
         }}>
-                                 <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg> Humidifier: ${overviewEntity.attributes.humidifier_value}
-                                 ${(() => {
+                  <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg> Humidifier: ${overviewEntity.attributes.humidifier_value}
+                  ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('humidifier');
             if (linked) {
                 return x `
-                                       <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                                            @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                                            title="Unlink Graph">
-                                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                                       </div>
-                                     `;
+                        <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                             @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                             title="Unlink Graph">
+                          <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                        </div>
+                      `;
             }
             return '';
         })()}
-                               </div>` : ''}
-                
-                ${overviewEntity?.attributes?.dehumidifier_entity ? x `
-                               <div class="stat-chip ${this.activeEnvGraphs.has('dehumidifier') ? 'active' : ''}"
-                                    draggable="true"
-                                    @dragstart=${(e) => this._handleChipDragStart(e, 'dehumidifier')}
-                                    @drop=${(e) => this._handleChipDrop(e, 'dehumidifier')}
-                                    @dragover=${(e) => e.preventDefault()}
-                                    @click=${(e) => {
+                </div>` : ''}
+
+              ${overviewEntity?.attributes?.dehumidifier_entity ? x `
+                <div class="stat-chip ${this.activeEnvGraphs.has('dehumidifier') ? 'active' : ''}"
+                     draggable="true"
+                     @dragstart=${(e) => this._handleChipDragStart(e, 'dehumidifier')}
+                     @drop=${(e) => this._handleChipDrop(e, 'dehumidifier')}
+                     @dragover=${(e) => e.preventDefault()}
+                     @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
                 return;
             this._toggleEnvGraph('dehumidifier');
         }}>
-                                 <svg viewBox="0 0 24 24"><path d="${mdiWaterOff}"></path></svg> Dehumidifier: ${overviewEntity.attributes.dehumidifier_value}
-                                 ${(() => {
+                  <svg viewBox="0 0 24 24"><path d="${mdiWaterOff}"></path></svg> Dehumidifier: ${overviewEntity.attributes.dehumidifier_value}
+                  ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('dehumidifier');
             if (linked) {
                 return x `
-            <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                title="Unlink Graph">
-              <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-            </div>
-          `;
+                        <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                             @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                             title="Unlink Graph">
+                          <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                        </div>
+                      `;
             }
             return '';
         })()}
-                               </div>` : ''}
-    </div>
+                </div>` : ''}
+            </div>
+          </div>
+        </div>
       </div>
-      </div>
-        `;
+    `;
     }
 };
 GrowspaceHeader.styles = i$3 `
@@ -13634,6 +13638,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         this.selectedDevice = null;
         this._draggedPlant = null;
         this._isCompactView = false;
+        this._isControlDehumidifier = false;
         this._strainLibrary = [];
         this._historyData = null;
         this._dehumidifierHistory = null;
@@ -14633,6 +14638,27 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                 break;
             case 'compact':
                 this._isCompactView = !this._isCompactView;
+                break;
+            case 'control_dehumidifier':
+                if (this.selectedDevice) {
+                    const device = this.dataService.getGrowspaceDevices().find(d => d.device_id === this.selectedDevice);
+                    if (device && device.overview_entity_id) {
+                        const stateObj = this.hass.states[device.overview_entity_id];
+                        const attrs = stateObj?.attributes || {};
+                        // 1. Get current state (Default to false if attribute missing)
+                        // Ensure your backend GrowspaceOverviewSensor exposes this attribute!
+                        const currentStatus = attrs.dehumidifier_control_enabled === true;
+                        // 2. Call service with opposite state
+                        this.hass.callService('growspace_manager', 'set_dehumidifier_control', {
+                            growspace_id: this.selectedDevice,
+                            enabled: !currentStatus
+                        }).then(() => {
+                            console.log(`Toggled dehumidifier control to ${!currentStatus} for`, this.selectedDevice);
+                        }).catch(err => {
+                            console.error('Failed to toggle dehumidifier control:', err);
+                        });
+                    }
+                }
                 break;
             case 'strains':
                 this._openStrainLibraryDialog();
@@ -16742,6 +16768,10 @@ __decorate([
     r(),
     __metadata("design:type", Boolean)
 ], GrowspaceManagerCard.prototype, "_isCompactView", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Boolean)
+], GrowspaceManagerCard.prototype, "_isControlDehumidifier", void 0);
 __decorate([
     r(),
     __metadata("design:type", Array)

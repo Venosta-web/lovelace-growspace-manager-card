@@ -22,7 +22,8 @@ import {
   mdiLightbulbOn,
   mdiLightbulbOff,
   mdiMagnify,
-  mdiWaterOff
+  mdiWaterOff,
+  mdiAirHumidifierOff
 } from '@mdi/js';
 import { GrowspaceDevice, GrowspaceManagerCardConfig } from '../types';
 import { PlantUtils } from '../utils';
@@ -744,6 +745,11 @@ export class GrowspaceHeader extends LitElement {
                       <span class="menu-item-label">Compact View</span>
                       <div class="menu-toggle-switch"></div>
                     </div>
+                    <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
+                      <span class="menu-item-label">Control Dehumidifier</span>
+                      <div class="menu-toggle-switch"></div>
+                    </div>
                     <div class="menu-item" @click=${() => this._triggerAction('strains')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
                       <span class="menu-item-label">Strains</span>
@@ -787,7 +793,8 @@ export class GrowspaceHeader extends LitElement {
           }
           return '';
         })()}
-                </div>` : ''}
+                </div>` : ''
+      }
 
               ${overviewEntity?.attributes?.humidifier_entity ? html`
                 <div class="stat-chip ${this.activeEnvGraphs.has('humidifier') ? 'active' : ''}"

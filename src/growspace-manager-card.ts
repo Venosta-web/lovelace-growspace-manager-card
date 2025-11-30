@@ -43,6 +43,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private selectedDevice: string | null = null;
   @state() private _draggedPlant: PlantEntity | null = null;
   @state() private _isCompactView: boolean = false;
+  @state() private _isControlDehumidifier: boolean = false;
   @state() private _strainLibrary: StrainEntry[] = [];
   @state() private _historyData: any[] | null = null;
   @state() private _dehumidifierHistory: any[] | null = null;
@@ -2388,6 +2389,30 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         break;
       case 'compact':
         this._isCompactView = !this._isCompactView;
+        break;
+      case 'control_dehumidifier':
+        if (this.selectedDevice) {
+          const device = this.dataService.getGrowspaceDevices().find(d => d.device_id === this.selectedDevice);
+
+          if (device && device.overview_entity_id) {
+            const stateObj = this.hass.states[device.overview_entity_id];
+            const attrs = stateObj?.attributes || {};
+
+            // 1. Get current state (Default to false if attribute missing)
+            // Ensure your backend GrowspaceOverviewSensor exposes this attribute!
+            const currentStatus = attrs.dehumidifier_control_enabled === true;
+
+            // 2. Call service with opposite state
+            this.hass.callService('growspace_manager', 'set_dehumidifier_control', {
+              growspace_id: this.selectedDevice,
+              enabled: !currentStatus
+            }).then(() => {
+              console.log(`Toggled dehumidifier control to ${!currentStatus} for`, this.selectedDevice);
+            }).catch(err => {
+              console.error('Failed to toggle dehumidifier control:', err);
+            });
+          }
+        }
         break;
       case 'strains':
         this._openStrainLibraryDialog();
