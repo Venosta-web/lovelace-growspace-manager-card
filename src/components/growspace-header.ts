@@ -21,7 +21,8 @@ import {
   mdiChevronRight,
   mdiLightbulbOn,
   mdiLightbulbOff,
-  mdiMagnify
+  mdiMagnify,
+  mdiWaterOff
 } from '@mdi/js';
 import { GrowspaceDevice, GrowspaceManagerCardConfig } from '../types';
 import { PlantUtils } from '../utils';
@@ -807,6 +808,33 @@ export class GrowspaceHeader extends LitElement {
                                  <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg>${overviewEntity.attributes.humidifier_value}
                                  ${(() => {
           const { linked, groupIndex } = this._isMetricLinked('humidifier');
+          if (linked) {
+            return html`
+                                       <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                                            @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                                            title="Unlink Graph">
+                                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                                       </div>
+                                     `;
+          }
+          return '';
+        })()}
+                               </div>` : ''}
+                
+                ${overviewEntity?.attributes?.dehumidifier_entity ? html`
+                               <div class="stat-chip ${this.activeEnvGraphs.has('dehumidifier') ? 'active' : ''}"
+                                    draggable="true"
+                                    @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'dehumidifier')}
+                                    @drop=${(e: DragEvent) => this._handleChipDrop(e, 'dehumidifier')}
+                                    @dragover=${(e: DragEvent) => e.preventDefault()}
+                                    @click=${(e: Event) => {
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('dehumidifier');
+        }}>
+                                 <svg viewBox="0 0 24 24"><path d="${mdiWaterOff}"></path></svg>${overviewEntity.attributes.dehumidifier_value}
+                                 ${(() => {
+          const { linked, groupIndex } = this._isMetricLinked('dehumidifier');
           if (linked) {
             return html`
                                        <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
