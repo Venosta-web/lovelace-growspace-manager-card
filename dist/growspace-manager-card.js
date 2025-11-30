@@ -1024,6 +1024,7 @@ class DialogRenderer {
       </div>
     `;
     }
+    // Public helper for plant stats
     static renderPlantStatsMD3(plant) {
         const hasStats = plant.attributes?.veg_days || plant.attributes?.flower_days ||
             plant.attributes?.dry_days || plant.attributes?.cure_days;
@@ -13191,15 +13192,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         this._activeEnvGraphs = newSet;
         this.requestUpdate();
     }
-    _toggleAddStrainForm() {
-        // Legacy method removed or kept empty
-    }
-    _promptClearAll() {
-        // Removed logic
-    }
-    _cancelClearAll() {
-        // Removed logic
-    }
     async _addStrain(strainData) {
         if (!strainData.strain)
             return;
@@ -13245,13 +13237,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         catch (err) {
             console.error("Error removing strain:", err);
         }
-    }
-    async _clearStrains() {
-        await this.dataService.clearStrainLibrary();
-        this._strainLibrary = [];
-        this.requestUpdate();
-        // Refresh full library for grid
-        await this._fetchStrainLibrary();
     }
     async _handleExportLibrary() {
         // 1. Subscribe to the completion event
@@ -15038,15 +15023,17 @@ GrowspaceManagerCard.styles = [
       .gs-header-top {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-        flex-wrap: wrap;
+        align-items: center;
+        flex-wrap: nowrap;
         gap: var(--spacing-md);
+        overflow: hidden;
       }
 
       .gs-title-group {
         display: flex;
         flex-direction: column;
         gap: 4px;
+        flex-shrink: 0;
       }
 
       .gs-title {
@@ -15080,10 +15067,25 @@ GrowspaceManagerCard.styles = [
 
       /* Chips Container */
       .gs-stats-chips {
-         display: flex;
-         flex-wrap: wrap;
-         gap: 8px;
-         justify-content: flex-end;
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 8px;
+        justify-content: flex-start;
+        align-items: center;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex: 1;
+        min-width: 0;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE/Edge */
+        mask-image: linear-gradient(to right, black 85%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+        padding: 4px 2px;
+      }
+
+      /* Hide scrollbar for Chrome/Safari/Webkit */
+      .gs-stats-chips::-webkit-scrollbar {
+        display: none;
       }
 
       /* Mobile Environment Trigger - Hidden by default on desktop */
@@ -15130,6 +15132,8 @@ GrowspaceManagerCard.styles = [
       }
 
       .stat-chip {
+        flex-shrink: 0;
+        white-space: nowrap;
         display: flex;
         align-items: center;
         gap: 8px;
