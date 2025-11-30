@@ -12925,7 +12925,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
           ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
         </select>
           ` : x `
-          < h3 class="gs-title" > ${this.device.name} </h3>
+          <h3 class="gs-title"> ${this.device.name} </h3>
             `}
 
             ${dominant ? x `

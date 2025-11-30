@@ -481,11 +481,11 @@ export class GrowspaceHeader extends LitElement {
         <div class="gs-header-top">
           <div class="gs-title-group">
             ${!this.config?.default_growspace ? html`
-        <select class="growspace-select-header".value = ${ this.device.device_id } @change=${ this._handleDeviceChange }>
-          ${ Object.entries(this.growspaceOptions).map(([id, name]) => html`<option value="${id}">${name}</option>`) }
+        <select class="growspace-select-header".value = ${this.device.device_id} @change=${this._handleDeviceChange}>
+          ${Object.entries(this.growspaceOptions).map(([id, name]) => html`<option value="${id}">${name}</option>`)}
         </select>
           ` : html`
-          < h3 class="gs-title" > ${ this.device.name } </h3>
+          <h3 class="gs-title"> ${this.device.name} </h3>
             `}
 
             ${dominant ? html`
@@ -522,24 +522,24 @@ export class GrowspaceHeader extends LitElement {
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'temperature')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
                        @click=${(e: Event) => {
-                const target = e.target as HTMLElement;
-                if (target.closest('.link-icon')) return;
-                this._toggleEnvGraph('temperature');
-              }}>
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('temperature');
+        }}>
                     <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>${temp}°C
                     ${(() => {
-                const { linked, groupIndex } = this._isMetricLinked('temperature');
-                if (linked) {
-                  return html`
+          const { linked, groupIndex } = this._isMetricLinked('temperature');
+          if (linked) {
+            return html`
                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
                           </div>
                         `;
-                }
-                return '';
-              })()}
+          }
+          return '';
+        })()}
                   </div>` : ''}
 
                 ${hum !== undefined ? html`
@@ -549,24 +549,24 @@ export class GrowspaceHeader extends LitElement {
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'humidity')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
                        @click=${(e: Event) => {
-                const target = e.target as HTMLElement;
-                if (target.closest('.link-icon')) return;
-                this._toggleEnvGraph('humidity');
-              }}>
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('humidity');
+        }}>
                     <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>${hum}%
                     ${(() => {
-                const { linked, groupIndex } = this._isMetricLinked('humidity');
-                if (linked) {
-                  return html`
+          const { linked, groupIndex } = this._isMetricLinked('humidity');
+          if (linked) {
+            return html`
                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
                           </div>
                         `;
-                }
-                return '';
-              })()}
+          }
+          return '';
+        })()}
                   </div>` : ''}
 
                 ${vpd !== undefined ? html`
@@ -576,24 +576,24 @@ export class GrowspaceHeader extends LitElement {
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'vpd')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
                        @click=${(e: Event) => {
-                const target = e.target as HTMLElement;
-                if (target.closest('.link-icon')) return;
-                this._toggleEnvGraph('vpd');
-              }}>
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('vpd');
+        }}>
                     <svg viewBox="0 0 24 24"><path d="${mdiCloudOutline}"></path></svg>${vpd} kPa
                     ${(() => {
-                const { linked, groupIndex } = this._isMetricLinked('vpd');
-                if (linked) {
-                  return html`
+          const { linked, groupIndex } = this._isMetricLinked('vpd');
+          if (linked) {
+            return html`
                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
                           </div>
                         `;
-                }
-                return '';
-              })()}
+          }
+          return '';
+        })()}
                   </div>` : ''}
 
                 ${co2 !== undefined ? html`
@@ -603,24 +603,24 @@ export class GrowspaceHeader extends LitElement {
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'co2')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
                        @click=${(e: Event) => {
-                const target = e.target as HTMLElement;
-                if (target.closest('.link-icon')) return;
-                this._toggleEnvGraph('co2');
-              }}>
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('co2');
+        }}>
                     <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>${co2} ppm
                     ${(() => {
-                const { linked, groupIndex } = this._isMetricLinked('co2');
-                if (linked) {
-                  return html`
+          const { linked, groupIndex } = this._isMetricLinked('co2');
+          if (linked) {
+            return html`
                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
                           </div>
                         `;
-                }
-                return '';
-              })()}
+          }
+          return '';
+        })()}
                   </div>` : ''}
 
                 ${hasLightSensor ? html`
@@ -630,25 +630,25 @@ export class GrowspaceHeader extends LitElement {
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'light')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
                        @click=${(e: Event) => {
-                const target = e.target as HTMLElement;
-                if (target.closest('.link-icon')) return;
-                this._toggleEnvGraph('light');
-              }}>
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('light');
+        }}>
                     <svg viewBox="0 0 24 24"><path d="${isLightsOn ? mdiLightbulbOn : mdiLightbulbOff}"></path></svg>
                     ${isLightsOn ? 'On' : 'Off'}
                     ${(() => {
-                const { linked, groupIndex } = this._isMetricLinked('light');
-                if (linked) {
-                  return html`
+          const { linked, groupIndex } = this._isMetricLinked('light');
+          if (linked) {
+            return html`
                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
                           </div>
                         `;
-                }
-                return '';
-              })()}
+          }
+          return '';
+        })()}
                   </div>` : ''}
 
                 ${nextIrrigation ? html`
@@ -658,25 +658,25 @@ export class GrowspaceHeader extends LitElement {
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'irrigation')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
                        @click=${(e: Event) => {
-                const target = e.target as HTMLElement;
-                if (target.closest('.link-icon')) return;
-                this._toggleEnvGraph('irrigation');
-              }}>
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('irrigation');
+        }}>
                     <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
                     Next: ${nextIrrigation}
                     ${(() => {
-                const { linked, groupIndex } = this._isMetricLinked('irrigation');
-                if (linked) {
-                  return html`
+          const { linked, groupIndex } = this._isMetricLinked('irrigation');
+          if (linked) {
+            return html`
                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
                           </div>
                         `;
-                }
-                return '';
-              })()}
+          }
+          return '';
+        })()}
                   </div>` : ''}
 
                 ${nextDrain ? html`
@@ -686,25 +686,25 @@ export class GrowspaceHeader extends LitElement {
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'drain')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
                        @click=${(e: Event) => {
-                const target = e.target as HTMLElement;
-                if (target.closest('.link-icon')) return;
-                this._toggleEnvGraph('drain');
-              }}>
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('drain');
+        }}>
                     <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
                     Next: ${nextDrain}
                     ${(() => {
-                const { linked, groupIndex } = this._isMetricLinked('drain');
-                if (linked) {
-                  return html`
+          const { linked, groupIndex } = this._isMetricLinked('drain');
+          if (linked) {
+            return html`
                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
                           </div>
                         `;
-                }
-                return '';
-              })()}
+          }
+          return '';
+        })()}
                   </div>` : ''}
 
                 ${envEntity ? html`
@@ -714,25 +714,25 @@ export class GrowspaceHeader extends LitElement {
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'optimal')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
                        @click=${(e: Event) => {
-                const target = e.target as HTMLElement;
-                if (target.closest('.link-icon')) return;
-                this._toggleEnvGraph('optimal');
-              }}>
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('optimal');
+        }}>
                     <svg viewBox="0 0 24 24"><path d="${envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank}"></path></svg>
                     ${envEntity.state === 'on' ? 'Optimal Conditions' : (envEntity.attributes.reasons || 'Not Optimal')}
                     ${(() => {
-                const { linked, groupIndex } = this._isMetricLinked('optimal');
-                if (linked) {
-                  return html`
+          const { linked, groupIndex } = this._isMetricLinked('optimal');
+          if (linked) {
+            return html`
                           <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
                           </div>
                         `;
-                }
-                return '';
-              })()}
+          }
+          return '';
+        })()}
                   </div>` : ''}
               </div>
 
@@ -786,26 +786,26 @@ export class GrowspaceHeader extends LitElement {
                      @drop=${(e: DragEvent) => this._handleChipDrop(e, 'exhaust')}
                      @dragover=${(e: DragEvent) => e.preventDefault()}
                      @click=${(e: Event) => {
-                const target = e.target as HTMLElement;
-                if (target.closest('.link-icon')) return;
-                this._toggleEnvGraph('exhaust');
-              }}>
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('exhaust');
+        }}>
                   <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg> Exhaust: ${exhaustState ?? '-'}
                   ${(() => {
-                const { linked, groupIndex } = this._isMetricLinked('exhaust');
-                if (linked) {
-                  return html`
+          const { linked, groupIndex } = this._isMetricLinked('exhaust');
+          if (linked) {
+            return html`
                         <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
                              @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                              title="Unlink Graph">
                           <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
                         </div>
                       `;
-                }
-                return '';
-              })()}
+          }
+          return '';
+        })()}
                 </div>` : ''
-            }
+      }
 
               ${overviewEntity?.attributes?.humidifier_entity ? html`
                 <div class="stat-chip ${this.activeEnvGraphs.has('humidifier') ? 'active' : ''}"
@@ -814,24 +814,24 @@ export class GrowspaceHeader extends LitElement {
                      @drop=${(e: DragEvent) => this._handleChipDrop(e, 'humidifier')}
                      @dragover=${(e: DragEvent) => e.preventDefault()}
                      @click=${(e: Event) => {
-                const target = e.target as HTMLElement;
-                if (target.closest('.link-icon')) return;
-                this._toggleEnvGraph('humidifier');
-              }}>
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('humidifier');
+        }}>
                   <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg> Humidifier: ${humidifierState ?? '-'}
                   ${(() => {
-                const { linked, groupIndex } = this._isMetricLinked('humidifier');
-                if (linked) {
-                  return html`
+          const { linked, groupIndex } = this._isMetricLinked('humidifier');
+          if (linked) {
+            return html`
                         <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
                              @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                              title="Unlink Graph">
                           <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
                         </div>
                       `;
-                }
-                return '';
-              })()}
+          }
+          return '';
+        })()}
                 </div>` : ''}
 
               ${overviewEntity?.attributes?.dehumidifier_entity ? html`
@@ -841,29 +841,29 @@ export class GrowspaceHeader extends LitElement {
                      @drop=${(e: DragEvent) => this._handleChipDrop(e, 'dehumidifier')}
                      @dragover=${(e: DragEvent) => e.preventDefault()}
                      @click=${(e: Event) => {
-                const target = e.target as HTMLElement;
-                if (target.closest('.link-icon')) return;
-                this._toggleEnvGraph('dehumidifier');
-              }}>
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('dehumidifier');
+        }}>
                   <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg> Dehumidifier: ${dehumidifierState ?? '-'}
                   ${(() => {
-                const { linked, groupIndex } = this._isMetricLinked('dehumidifier');
-                if (linked) {
-                  return html`
+          const { linked, groupIndex } = this._isMetricLinked('dehumidifier');
+          if (linked) {
+            return html`
                         <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
                              @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                              title="Unlink Graph">
                           <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
                         </div>
                       `;
-                }
-                return '';
-              })()}
+          }
+          return '';
+        })()}
                 </div>` : ''}
             </div>
           </div>
         </div>
       </div>
     `;
-      }
+  }
 }
