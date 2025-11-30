@@ -3580,6 +3580,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             </div>
 
             <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
+              <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
               <div class="gs-stats-chips ${this._mobileEnvExpanded ? 'expanded' : ''}">
                 <!-- Mobile Toggle Chip -->
                 <div class="stat-chip mobile-env-trigger ${this._mobileEnvExpanded ? 'active' : ''}"
@@ -3809,7 +3810,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         })()}
                    </div>` : ''}
 
-                ${!this._isCompactView ? html`
+
+              </div>
+              ${!this._isCompactView ? html`
                   <div class="menu-container">
                     <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
                       <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
@@ -3853,7 +3856,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                     ` : ''}
                   </div>
                 ` : ''}
-              </div>
+            </div>
 
               <div class="gs-device-chips">
                 ${overviewEntity?.attributes?.exhaust_entity ? html`

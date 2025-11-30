@@ -13818,6 +13818,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             </div>
 
             <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
+              <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
               <div class="gs-stats-chips ${this._mobileEnvExpanded ? 'expanded' : ''}">
                 <!-- Mobile Toggle Chip -->
                 <div class="stat-chip mobile-env-trigger ${this._mobileEnvExpanded ? 'active' : ''}"
@@ -14054,7 +14055,54 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             return '';
         })()}
                    </div>` : ''}
+
+
               </div>
+              ${!this._isCompactView ? x `
+                  <div class="menu-container">
+                    <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
+                    </div>
+                    
+                    ${this._menuOpen ? x `
+                      <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
+                        <div class="menu-item" @click=${() => { this._openConfigDialog(); this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                          <span class="menu-item-label">Config</span>
+                        </div>
+
+                        <div class="menu-item" @click=${() => { this._isEditMode = !this._isEditMode; this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                          <span class="menu-item-label">Edit</span>
+                          <div class="menu-toggle-switch ${this._isEditMode ? 'active' : ''}"></div>
+                        </div>
+                        
+                        <div class="menu-item" @click=${() => { this._isCompactView = true; this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+                          <span class="menu-item-label">Compact View</span>
+                          <div class="menu-toggle-switch ${this._isCompactView ? 'active' : ''}"></div>
+                        </div>
+                        
+                        
+                        <div class="menu-item" @click=${() => { this._openStrainLibraryDialog(); this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+                          <span class="menu-item-label">Strains</span>
+                        </div>
+                        
+                        <div class="menu-item" @click=${() => { this._openIrrigationDialog(); this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                          <span class="menu-item-label">Irrigation</span>
+                        </div>
+                        
+                        <div class="menu-item" @click=${() => { this._openGrowMasterDialog(); this._menuOpen = false; }}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+                          <span class="menu-item-label">Ask AI</span>
+                        </div>
+                      </div>
+                    ` : ''}
+                  </div>
+                ` : ''}
+            </div>
 
               <div class="gs-device-chips">
                 ${overviewEntity?.attributes?.exhaust_entity ? x `
@@ -14142,53 +14190,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                                </div>` : ''}
               </div>
             </div>
+         </div>
 
-            ${!this._isCompactView ? x `
-              <div class="menu-container">
-                <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
-                </div>
-                
-                ${this._menuOpen ? x `
-                  <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
-                    <div class="menu-item" @click=${() => { this._openConfigDialog(); this._menuOpen = false; }}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                      <span class="menu-item-label">Config</span>
-                    </div>
-
-                    <div class="menu-item" @click=${() => { this._isEditMode = !this._isEditMode; this._menuOpen = false; }}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-                      <span class="menu-item-label">Edit</span>
-                      <div class="menu-toggle-switch ${this._isEditMode ? 'active' : ''}"></div>
-                    </div>
-                    
-                    <div class="menu-item" @click=${() => { this._isCompactView = true; this._menuOpen = false; }}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-                      <span class="menu-item-label">Compact View</span>
-                      <div class="menu-toggle-switch ${this._isCompactView ? 'active' : ''}"></div>
-                    </div>
-                    
-                    
-                    <div class="menu-item" @click=${() => { this._openStrainLibraryDialog(); this._menuOpen = false; }}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-                      <span class="menu-item-label">Strains</span>
-                    </div>
-                    
-                    <div class="menu-item" @click=${() => { this._openIrrigationDialog(); this._menuOpen = false; }}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                      <span class="menu-item-label">Irrigation</span>
-                    </div>
-                    
-                    <div class="menu-item" @click=${() => { this._openGrowMasterDialog(); this._menuOpen = false; }}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-                      <span class="menu-item-label">Ask AI</span>
-                    </div>
-                  </div>
-                ` : ''}
-              </div>
-            ` : ''}
-</div>
-  
   ${this._activeEnvGraphs.size > 0 ? this.renderTimeRangeSelector() : ''}
 
   ${(() => {
@@ -15076,7 +15079,7 @@ GrowspaceManagerCard.styles = [
          display: flex;
          flex-wrap: nowrap;
          gap: 8px;
-         justify-content: flex-start;
+         justify-content: flex-end;
          align-items: center;
          overflow-x: auto;
          overflow-y: hidden;
@@ -15125,7 +15128,7 @@ GrowspaceManagerCard.styles = [
           display: flex;
           width: 100%;
           box-sizing: border-box;
-          justify-content: flex-start;
+          justify-content: flex-end;
         }
 
         /* Align menu container to right on mobile */
