@@ -12909,16 +12909,23 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
         };
         const nextIrrigation = getNextEvent(overviewEntity?.attributes?.irrigation_times);
         const nextDrain = getNextEvent(overviewEntity?.attributes?.drain_times);
+        // Fetch live states for equipment directly from their entities
+        const exhaustId = overviewEntity?.attributes?.exhaust_entity;
+        const exhaustState = exhaustId && this.hass.states[exhaustId] ? this.hass.states[exhaustId].state : undefined;
+        const humidifierId = overviewEntity?.attributes?.humidifier_entity;
+        const humidifierState = humidifierId && this.hass.states[humidifierId] ? this.hass.states[humidifierId].state : undefined;
+        const dehumidifierId = overviewEntity?.attributes?.dehumidifier_entity;
+        const dehumidifierState = dehumidifierId && this.hass.states[dehumidifierId] ? this.hass.states[dehumidifierId].state : undefined;
         return x `
       <div class="gs-stats-container">
         <div class="gs-header-top">
           <div class="gs-title-group">
             ${!this.config?.default_growspace ? x `
-              <select class="growspace-select-header" .value=${this.device.device_id} @change=${this._handleDeviceChange}>
-                ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
-              </select>
-            ` : x `
-              <h3 class="gs-title">${this.device.name}</h3>
+        <select class="growspace-select-header".value = ${this.device.device_id} @change=${this._handleDeviceChange}>
+          ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
+        </select>
+          ` : x `
+          < h3 class="gs-title" > ${this.device.name} </h3>
             `}
 
             ${dominant ? x `
@@ -13232,7 +13239,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                 return;
             this._toggleEnvGraph('exhaust');
         }}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg> Exhaust: ${overviewEntity.attributes.exhaust_value}
+                  <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg> Exhaust: ${exhaustState ?? '-'}
                   ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('exhaust');
             if (linked) {
@@ -13260,7 +13267,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                 return;
             this._toggleEnvGraph('humidifier');
         }}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg> Humidifier: ${overviewEntity.attributes.humidifier_value}
+                  <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg> Humidifier: ${humidifierState ?? '-'}
                   ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('humidifier');
             if (linked) {
@@ -13288,7 +13295,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                 return;
             this._toggleEnvGraph('dehumidifier');
         }}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg> Dehumidifier: ${overviewEntity.attributes.dehumidifier_value}
+                  <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg> Dehumidifier: ${dehumidifierState ?? '-'}
                   ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('dehumidifier');
             if (linked) {
