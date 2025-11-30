@@ -502,8 +502,14 @@ export class GrowspaceEnvChart extends LitElement {
 
         const rangeVal = maxVal - minVal || 1;
 
-        const paddedMin = minVal - (rangeVal * 0.1);
-        const paddedMax = maxVal + (rangeVal * 0.1);
+        let paddedMin = minVal - (rangeVal * 0.1);
+        let paddedMax = maxVal + (rangeVal * 0.1);
+
+        if (metricKey === 'exhaust' || metricKey === 'humidifier' || metricKey === 'dehumidifier') {
+            paddedMin = minVal;
+            paddedMax = maxVal;
+        }
+
         const paddedRange = paddedMax - paddedMin;
 
         // Calculate average for target line
@@ -881,8 +887,14 @@ export class GrowspaceEnvChart extends LitElement {
 
                  ${graphData.map(g => {
                     const range = g.max - g.min || 1;
-                    const paddedMin = g.min - (range * 0.1);
-                    const paddedMax = g.max + (range * 0.1);
+                    let paddedMin = g.min - (range * 0.1);
+                    let paddedMax = g.max + (range * 0.1);
+
+                    if (g.key === 'exhaust' || g.key === 'humidifier' || g.key === 'dehumidifier') {
+                        paddedMin = g.min;
+                        paddedMax = g.max;
+                    }
+
                     const paddedRange = paddedMax - paddedMin;
 
                     const points = g.points.map(p => {
