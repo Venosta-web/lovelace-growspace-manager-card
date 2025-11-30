@@ -171,7 +171,7 @@ export class DialogRenderer {
    }
 
 
-   private static renderMD3TextInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
+   public static renderMD3TextInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
       return html`
       <div class="md3-input-group">
         <label class="md3-label">${label}</label>
@@ -185,7 +185,7 @@ export class DialogRenderer {
     `;
    }
 
-   private static renderMD3SelectInput(label: string, value: string, options: string[], onChange: (value: string) => void): TemplateResult {
+   public static renderMD3SelectInput(label: string, value: string, options: string[], onChange: (value: string) => void): TemplateResult {
       return html`
       <div class="md3-input-group">
         <label class="md3-label">${label}</label>
@@ -201,7 +201,7 @@ export class DialogRenderer {
     `;
    }
 
-   private static renderMD3NumberInput(label: string, value: number, onChange: (value: string) => void): TemplateResult {
+   public static renderMD3NumberInput(label: string, value: number, onChange: (value: string) => void): TemplateResult {
       return html`
       <div class="md3-input-group">
         <label class="md3-label">${label}</label>
@@ -216,7 +216,7 @@ export class DialogRenderer {
     `;
    }
 
-   private static renderMD3DateTimeInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
+   public static renderMD3DateTimeInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
       const formattedValue = PlantUtils.toDateTimeLocal(value);
       return html`
       <div class="md3-input-group">
@@ -232,7 +232,7 @@ export class DialogRenderer {
     `;
    }
 
-   private static renderMD3DateInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
+   public static renderMD3DateInput(label: string, value: string, onChange: (value: string) => void): TemplateResult {
       // For date input, we need YYYY-MM-DD
       const formattedValue = value ? value.split('T')[0] : '';
       return html`
@@ -298,7 +298,8 @@ export class DialogRenderer {
     `;
    }
 
-   private static renderPlantStatsMD3(plant: any): TemplateResult {
+   // Public helper for plant stats
+   public static renderPlantStatsMD3(plant: any): TemplateResult {
       const hasStats = plant.attributes?.veg_days || plant.attributes?.flower_days ||
          plant.attributes?.dry_days || plant.attributes?.cure_days;
 

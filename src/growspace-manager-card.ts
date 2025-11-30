@@ -2849,24 +2849,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.requestUpdate();
   }
 
-
-
-
-
-
-
-  private _toggleAddStrainForm() {
-    // Legacy method removed or kept empty
-  }
-
-  private _promptClearAll() {
-    // Removed logic
-  }
-
-  private _cancelClearAll() {
-    // Removed logic
-  }
-
   private async _addStrain(strainData: Partial<StrainEntry>) {
     if (!strainData.strain) return;
 
@@ -2915,15 +2897,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     } catch (err) {
       console.error("Error removing strain:", err);
     }
-  }
-
-  private async _clearStrains() {
-    await this.dataService.clearStrainLibrary();
-    this._strainLibrary = [];
-    this.requestUpdate();
-
-    // Refresh full library for grid
-    await this._fetchStrainLibrary();
   }
 
   private async _handleExportLibrary() {
