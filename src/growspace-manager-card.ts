@@ -3145,6 +3145,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
   }
 
+  private _handleUnlinkGraphMetric(e: CustomEvent) {
+    const metric = e.detail.metric;
+    const groupIndex = this._linkedGraphGroups.findIndex(g => g.includes(metric));
+    if (groupIndex !== -1) {
+      this._unlinkGraphs(groupIndex);
+    }
+  }
+
   private _handleUnlinkGraphs(e: CustomEvent) {
     const groupIndex = e.detail.groupIndex;
     this._unlinkGraphs(groupIndex);
@@ -3482,6 +3490,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                     .range=${range}
                     @toggle-graph=${this._handleToggleEnvGraph}
                     @unlink-graphs=${this._handleUnlinkGraphs}
+                    @unlink-graph=${this._handleUnlinkGraphMetric}
                 ></growspace-env-chart>
             `);
           group.forEach(m => renderedMetrics.add(m));

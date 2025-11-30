@@ -14616,6 +14616,13 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                 break;
         }
     }
+    _handleUnlinkGraphMetric(e) {
+        const metric = e.detail.metric;
+        const groupIndex = this._linkedGraphGroups.findIndex(g => g.includes(metric));
+        if (groupIndex !== -1) {
+            this._unlinkGraphs(groupIndex);
+        }
+    }
     _handleUnlinkGraphs(e) {
         const groupIndex = e.detail.groupIndex;
         this._unlinkGraphs(groupIndex);
@@ -14937,6 +14944,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                     .range=${range}
                     @toggle-graph=${this._handleToggleEnvGraph}
                     @unlink-graphs=${this._handleUnlinkGraphs}
+                    @unlink-graph=${this._handleUnlinkGraphMetric}
                 ></growspace-env-chart>
             `);
                     group.forEach(m => renderedMetrics.add(m));
