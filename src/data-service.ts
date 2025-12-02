@@ -129,6 +129,51 @@ export class DataService {
     return [];
   }
 
+  async fetchStrainLibrary(): Promise<StrainEntry[]> {
+    console.log("[DataService:fetchStrainLibrary] Fetching strain library via API");
+    try {
+      const serviceResponse: any = await this.hass.connection.sendMessagePromise({
+        type: 'call_service',
+        domain: 'growspace_manager',
+        service: 'get_strain_library',
+        service_data: {},
+        return_response: true,
+      });
+
+      const rawStrains = serviceResponse?.response || {};
+      const currentStrains: StrainEntry[] = [];
+
+      Object.entries(rawStrains).forEach(([strainName, data]: [string, any]) => {
+        const meta = data.meta || {};
+        const phenotypes = data.phenotypes || {};
+
+        Object.entries(phenotypes).forEach(([phenoName, phenoData]: [string, any]) => {
+          currentStrains.push({
+            strain: strainName,
+            phenotype: phenoName,
+            key: `${strainName}|${phenoName}`,
+            breeder: meta.breeder,
+            type: meta.type,
+            lineage: meta.lineage,
+            sex: meta.sex,
+            sativa_percentage: meta.sativa_percentage,
+            indica_percentage: meta.indica_percentage,
+            description: phenoData.description,
+            image: phenoData.image_path,
+            image_crop_meta: phenoData.image_crop_meta,
+            flowering_days_min: phenoData.flower_days_min,
+            flowering_days_max: phenoData.flower_days_max
+          });
+        });
+      });
+
+      return currentStrains;
+    } catch (e) {
+      console.error('Failed to fetch strain library for grid:', e);
+      return [];
+    }
+  }
+
   async getHistory(entityId: string, startTime: Date, endTime?: Date): Promise<any[]> {
     if (!this.hass) return [];
 
@@ -139,11 +184,6 @@ export class DataService {
     }
 
     try {
-      // TODO: The mockup test for environmental graphs fails when relying on this function,
-      // but passes when history data is injected directly into the component.
-      // This suggests an issue with how the data is fetched or processed here.
-      // The component expects a flat array of states, but the raw API response is a nested array.
-      // Ensure that `res[0]` is the correct way to access the data.
       const res = await this.hass.callApi<any[][]>('GET', url);
       return res && res.length > 0 ? res[0] : [];
     } catch (err) {
@@ -233,33 +273,17 @@ export class DataService {
       throw err;
     }
   }
-  async takeClone(plantId: string, target: string = "clone") {
-    console.log("[DataService:takeClone] Cloning plant:", plantId, "→ target:", target);
-    try {
-      const hint = (target || "").toLowerCase();
-      const payload: any = { plant_id: plantId };
-      // Prefer passing a concrete growspace_id when hint is clear
-      if (hint.includes("dry")) {
-        payload.target_growspace_id = "dry_overview";
-      } else if (hint.includes("cure")) {
-        payload.target_growspace_id = "cure_overview";
-      } else if (hint.includes("mother")) {
-        payload.target_growspace_id = "mother_overview";
-      } else if (hint.includes("clone")) {
-        payload.target_growspace_id = "clone_overview";
-      }
-      else if (hint) {
-        // Fallback to name hint for any custom names
-        payload.target_growspace_name = target;
-      }
 
-      const res = await this.hass.callService("growspace_manager", "takeClone", payload);
-      console.log("[DataService:takeClone] Response:", res);
-      return res;
-    } catch (error) {
-      console.error("[DataService:takeClone] Error:", error);
-      throw error;
-    }
+  async takeClone(params: { mother_plant_id: string; num_clones?: number; target_growspace_id?: string }) {
+     console.log("[DataService:takeClone] Cloning plant:", params);
+     try {
+       const res = await this.hass.callService("growspace_manager", "take_clone", params);
+       console.log("[DataService:takeClone] Response:", res);
+       return res;
+     } catch (error) {
+       console.error("[DataService:takeClone] Error:", error);
+       throw error;
+     }
   }
 
   async swapPlants(plant1Id: string, plant2Id: string) {
@@ -273,6 +297,114 @@ export class DataService {
       return res;
     } catch (err) {
       console.error("[DataService:swapPlants] Error:", err);
+      throw err;
+    }
+  }
+
+  async moveClone(plantId: string, targetGrowspaceId: string) {
+    console.log(`[DataService:moveClone] Moving clone: ${plantId} to ${targetGrowspaceId}`);
+    try {
+      const res = await this.hass.callService('growspace_manager', 'move_clone', {
+        plant_id: plantId,
+        target_growspace_id: targetGrowspaceId
+      });
+      console.log("[DataService:moveClone] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:moveClone] Error:", err);
+      throw err;
+    }
+  }
+
+  async setDehumidifierControl(growspaceId: string, enabled: boolean) {
+    console.log(`[DataService:setDehumidifierControl] Setting dehumidifier control for ${growspaceId} to ${enabled}`);
+    try {
+      const res = await this.hass.callService('growspace_manager', 'set_dehumidifier_control', {
+        growspace_id: growspaceId,
+        enabled: enabled
+      });
+      console.log("[DataService:setDehumidifierControl] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:setDehumidifierControl] Error:", err);
+      throw err;
+    }
+  }
+
+  async setIrrigationSettings(params: {
+    growspace_id: string;
+    irrigation_pump_entity: string;
+    drain_pump_entity: string;
+    irrigation_duration: number;
+    drain_duration: number;
+  }) {
+    console.log("[DataService:setIrrigationSettings] Setting irrigation settings:", params);
+    try {
+      const res = await this.hass.callService('growspace_manager', 'set_irrigation_settings', params);
+      console.log("[DataService:setIrrigationSettings] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:setIrrigationSettings] Error:", err);
+      throw err;
+    }
+  }
+
+  async addIrrigationTime(params: { growspace_id: string; time: string; duration?: number }) {
+    console.log("[DataService:addIrrigationTime] Adding irrigation time:", params);
+    try {
+      const res = await this.hass.callService('growspace_manager', 'add_irrigation_time', params);
+      console.log("[DataService:addIrrigationTime] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:addIrrigationTime] Error:", err);
+      throw err;
+    }
+  }
+
+  async removeIrrigationTime(params: { growspace_id: string; time: string }) {
+    console.log("[DataService:removeIrrigationTime] Removing irrigation time:", params);
+    try {
+      const res = await this.hass.callService('growspace_manager', 'remove_irrigation_time', params);
+      console.log("[DataService:removeIrrigationTime] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:removeIrrigationTime] Error:", err);
+      throw err;
+    }
+  }
+
+  async addDrainTime(params: { growspace_id: string; time: string; duration?: number }) {
+    console.log("[DataService:addDrainTime] Adding drain time:", params);
+    try {
+      const res = await this.hass.callService('growspace_manager', 'add_drain_time', params);
+      console.log("[DataService:addDrainTime] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:addDrainTime] Error:", err);
+      throw err;
+    }
+  }
+
+  async removeDrainTime(params: { growspace_id: string; time: string }) {
+    console.log("[DataService:removeDrainTime] Removing drain time:", params);
+    try {
+      const res = await this.hass.callService('growspace_manager', 'remove_drain_time', params);
+      console.log("[DataService:removeDrainTime] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:removeDrainTime] Error:", err);
+      throw err;
+    }
+  }
+
+  async exportStrainLibrary() {
+    console.log("[DataService:exportStrainLibrary] Exporting strain library");
+    try {
+      const res = await this.hass.callService('growspace_manager', 'export_strain_library');
+      console.log("[DataService:exportStrainLibrary] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:exportStrainLibrary] Error:", err);
       throw err;
     }
   }
