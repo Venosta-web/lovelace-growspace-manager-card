@@ -22,23 +22,14 @@ export class DataService {
     );
 
     // Initialize device groups with overview sensors (includes empty growspaces)
-    const deviceGroups = new Map<string, PlantEntity[]>();
+    const deviceGroups = new Map<string, any>();
     overviewSensors.forEach((ov: any) => {
       const gid = ov.attributes.growspace_id;
       deviceGroups.set(gid, []);
     });
 
-    // Collect plants and group by growspace
-    allStates.forEach((entity: any) => {
-      if (entity.attributes?.row !== undefined && entity.attributes?.col !== undefined) {
-        const growspaceId = this.getGrowspaceId(entity);
-        if (!deviceGroups.has(growspaceId)) deviceGroups.set(growspaceId, []);
-        deviceGroups.get(growspaceId)!.push(entity as PlantEntity);
-      }
-    });
-
     // Build devices array
-    return Array.from(deviceGroups.entries()).map(([growspaceId, plants]) => {
+    return Array.from(deviceGroups.entries()).map(([growspaceId, _]) => {
       const overview = overviewSensors.find(ov =>
         ov.attributes?.growspace_id === growspaceId
       );
@@ -51,6 +42,27 @@ export class DataService {
         (overview?.attributes?.type as GrowspaceType) ??
         (name.toLowerCase().includes('dry') ? 'dry' :
           name.toLowerCase().includes('cure') ? 'cure' : 'normal');
+
+      // Reconstruct plant entities from grid
+      const plants: PlantEntity[] = [];
+      const grid = overview?.attributes?.grid || {};
+
+      Object.values(grid).forEach((slot: any) => {
+        if (slot) {
+          // Create a synthetic entity ID since individual plant entities are gone
+          const entityId = `sensor.${slot.strain.toLowerCase().replace(/ /g, '_')}_${slot.phenotype.replace(/#/g, '').toLowerCase()}`;
+
+          plants.push({
+            entity_id: entityId,
+            state: slot.stage || 'unknown',
+            attributes: {
+              ...slot,
+              growspace_id: growspaceId,
+              friendly_name: `${slot.strain} ${slot.phenotype}`
+            }
+          });
+        }
+      });
 
       return createGrowspaceDevice({
         device_id: growspaceId,
@@ -260,10 +272,9 @@ export class DataService {
       } else if (hint.includes("clone")) {
         payload.target_growspace_id = "clone_overview";
       }
-      else if (hint) {
-        // Fallback to name hint for any custom names
-        payload.target_growspace_name = target;
-      }
+      // Note: Backend only accepts target_growspace_id. 
+      // If target is a custom name, we can't send it unless we resolve it to an ID first.
+      // For now, we'll assume the UI passes IDs or we map known ones.
 
       const res = await this.hass.callService("growspace_manager", "harvest_plant", payload);
       console.log("[DataService:harvestPlant] Response:", res);
@@ -275,15 +286,15 @@ export class DataService {
   }
 
   async takeClone(params: { mother_plant_id: string; num_clones?: number; target_growspace_id?: string }) {
-     console.log("[DataService:takeClone] Cloning plant:", params);
-     try {
-       const res = await this.hass.callService("growspace_manager", "take_clone", params);
-       console.log("[DataService:takeClone] Response:", res);
-       return res;
-     } catch (error) {
-       console.error("[DataService:takeClone] Error:", error);
-       throw error;
-     }
+    console.log("[DataService:takeClone] Cloning plant:", params);
+    try {
+      const res = await this.hass.callService("growspace_manager", "take_clone", params);
+      console.log("[DataService:takeClone] Response:", res);
+      return res;
+    } catch (error) {
+      console.error("[DataService:takeClone] Error:", error);
+      throw error;
+    }
   }
 
   async swapPlants(plant1Id: string, plant2Id: string) {
@@ -441,8 +452,12 @@ export class DataService {
           payload.image_base64 = data.image;
           delete payload.image; // Backend expects image_base64
         } else {
-          // It's a path (existing image)
-          payload.image_path = data.image;
+          // It's a path (existing image) - Backend schema doesn't explicitly list image_path, 
+          // but we'll try to send it if the backend supports it dynamically, 
+          // or we might need to omit it if it's just for local display.
+          // Checking services.yaml, only image_base64 is listed. 
+          // We will assume image_path is not supported for add_strain and omit it to avoid schema errors.
+          // payload.image_path = data.image; 
           delete payload.image;
         }
       }
@@ -528,7 +543,13 @@ export class DataService {
   }) {
     console.log("[DataService:addGrowspace] Adding growspace:", data);
     try {
-      const res = await this.hass.callService("growspace_manager", "add_growspace", data);
+      const payload = {
+        name: data.name,
+        rows: data.rows,
+        plants_per_row: data.plants_per_row,
+        notification_target: data.notification_service // Map to backend field
+      };
+      const res = await this.hass.callService("growspace_manager", "add_growspace", payload);
       console.log("[DataService:addGrowspace] Response:", res);
       return res;
     } catch (err) {
@@ -537,38 +558,23 @@ export class DataService {
     }
   }
 
-  async configureGrowspaceSensors(data: {
+  async configureEnvironment(data: {
     growspace_id: string;
     temperature_sensor: string;
     humidity_sensor: string;
     vpd_sensor: string;
     co2_sensor?: string;
-    light_sensor?: string;
-    fan_switch?: string;
+    circulation_fan?: string;
+    stress_threshold?: number;
+    mold_threshold?: number;
   }) {
-    console.log("[DataService:configureGrowspaceSensors] Configuring sensors:", data);
+    console.log("[DataService:configureEnvironment] Configuring sensors:", data);
     try {
-      const res = await this.hass.callService("growspace_manager", "configure_growspace", data);
-      console.log("[DataService:configureGrowspaceSensors] Response:", res);
+      const res = await this.hass.callService("growspace_manager", "configure_environment", data);
+      console.log("[DataService:configureEnvironment] Response:", res);
       return res;
     } catch (err) {
-      console.error("[DataService:configureGrowspaceSensors] Error:", err);
-      throw err;
-    }
-  }
-
-  async configureGlobalSettings(data: {
-    weather_entity: string;
-    lung_room_temp: string;
-    lung_room_humidity: string;
-  }) {
-    console.log("[DataService:configureGlobalSettings] Configuring global settings:", data);
-    try {
-      const res = await this.hass.callService("growspace_manager", "configure_global", data);
-      console.log("[DataService:configureGlobalSettings] Response:", res);
-      return res;
-    } catch (err) {
-      console.error("[DataService:configureGlobalSettings] Error:", err);
+      console.error("[DataService:configureEnvironment] Error:", err);
       throw err;
     }
   }

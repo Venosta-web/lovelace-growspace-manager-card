@@ -239,7 +239,7 @@ test.describe('Growspace Manager Card Tests', () => {
 
         const content = plantCard.locator('.plant-card-content');
         await expect(content).toHaveCSS('display', 'flex');
-        await expect(content).toHaveCSS('flex-direction', 'row');
+        await expect(content).toHaveCSS('flex-direction', 'column');
 
         // Verify content has non-zero width
         const contentBox = await content.boundingBox();

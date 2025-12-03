@@ -59,11 +59,14 @@ test.describe('Strain Library', () => {
         });
 
         // 1. Open Strain Library
-        // The current UI has a direct "Strains" button in the header (in compact mode)
-        // It is not in a menu yet.
-        const strainsBtn = card.locator('button.action-button', { hasText: 'Strains' });
-        await expect(strainsBtn).toBeVisible();
-        await strainsBtn.click();
+        // The "Strains" button is in the menu dropdown.
+        const menuBtn = card.locator('.menu-button');
+        await expect(menuBtn).toBeVisible();
+        await menuBtn.click();
+
+        const strainsMenuItem = card.locator('.menu-item', { hasText: 'Strains' });
+        await expect(strainsMenuItem).toBeVisible();
+        await strainsMenuItem.click();
 
         const dialog = page.locator('ha-dialog[open]');
         await expect(dialog).toBeVisible();
@@ -117,6 +120,10 @@ test.describe('Strain Library', () => {
 
         // Playwright can click hidden elements if we force it, or we can hover first.
         await existingStrainCard.hover();
+
+        // Handle the confirmation dialog
+        page.once('dialog', dialog => dialog.accept());
+
         await deleteBtn.click();
 
         // 6. Verify Service Call for Remove

@@ -348,16 +348,13 @@ export class DialogRenderer {
       growspaceOptions: Record<string, string>,
       callbacks: {
          onClose: () => void;
-         onSwitchTab: (tab: 'add_growspace' | 'environment' | 'global') => void;
+         onSwitchTab: (tab: 'add_growspace' | 'environment') => void;
          // Add Growspace
          onAddGrowspaceChange: (field: string, value: any) => void;
          onAddGrowspaceSubmit: () => void;
          // Environment
          onEnvChange: (field: string, value: any) => void;
          onEnvSubmit: () => void;
-         // Global
-         onGlobalChange: (field: string, value: any) => void;
-         onGlobalSubmit: () => void;
       }
    ): TemplateResult {
       if (!dialog?.open) return html``;
@@ -469,24 +466,18 @@ export class DialogRenderer {
                  <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
                  Add Growspace
               </div>
-              <div class="config-tab ${activeTab === 'environment' ? 'active' : ''}"
-                   @click=${() => callbacks.onSwitchTab('environment')}>
-                 <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
-                 Environment
-              </div>
-              <div class="config-tab ${activeTab === 'global' ? 'active' : ''}"
-                   @click=${() => callbacks.onSwitchTab('global')}>
-                 <svg viewBox="0 0 24 24"><path d="${mdiEarth}"></path></svg>
-                 Global
-              </div>
-           </div>
+               <div class="config-tab ${activeTab === 'environment' ? 'active' : ''}"
+                    @click=${() => callbacks.onSwitchTab('environment')}>
+                  <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
+                  Environment
+               </div>
+            </div>
 
            <!-- Content -->
-           <div class="config-content">
-              ${activeTab === 'add_growspace' ? this.renderAddGrowspaceTab(dialog, callbacks) : nothing}
-              ${activeTab === 'environment' ? this.renderEnvironmentTab(dialog, growspaceOptions, callbacks) : nothing}
-              ${activeTab === 'global' ? this.renderGlobalTab(dialog, callbacks) : nothing}
-           </div>
+            <div class="config-content">
+               ${activeTab === 'add_growspace' ? this.renderAddGrowspaceTab(dialog, callbacks) : nothing}
+               ${activeTab === 'environment' ? this.renderEnvironmentTab(dialog, growspaceOptions, callbacks) : nothing}
+            </div>
 
            <!-- Actions -->
            <div class="config-actions">
@@ -494,13 +485,10 @@ export class DialogRenderer {
               ${activeTab === 'add_growspace' ? html`
                  <button class="md3-button primary" @click=${callbacks.onAddGrowspaceSubmit}>Add Growspace</button>
               ` : nothing}
-              ${activeTab === 'environment' ? html`
-                 <button class="md3-button primary" @click=${callbacks.onEnvSubmit}>Save Sensors</button>
-              ` : nothing}
-              ${activeTab === 'global' ? html`
-                 <button class="md3-button primary" @click=${callbacks.onGlobalSubmit}>Save Global</button>
-              ` : nothing}
-           </div>
+               ${activeTab === 'environment' ? html`
+                  <button class="md3-button primary" @click=${callbacks.onEnvSubmit}>Save Sensors</button>
+               ` : nothing}
+            </div>
         </div>
       </ha-dialog>
     `;
@@ -551,25 +539,13 @@ export class DialogRenderer {
           <div class="detail-card">
              <h3>Optional</h3>
              ${this.renderMD3TextInput('CO2 Sensor ID', d.co2_sensor, (v) => callbacks.onEnvChange('co2_sensor', v))}
-             ${this.renderMD3TextInput('Light Sensor/State ID', d.light_sensor, (v) => callbacks.onEnvChange('light_sensor', v))}
-             ${this.renderMD3TextInput('Fan Switch ID', d.fan_switch, (v) => callbacks.onEnvChange('fan_switch', v))}
+             ${this.renderMD3TextInput('Circulation Fan ID', d.circulation_fan, (v) => callbacks.onEnvChange('circulation_fan', v))}
           </div>
-       </div>
-    `;
-   }
 
-   private static renderGlobalTab(dialog: ConfigDialogState, callbacks: any): TemplateResult {
-      const d = dialog.globalData;
-      return html`
-       <div style="display:flex; flex-direction:column; gap:20px;">
           <div class="detail-card">
-             <h3>Global Environment</h3>
-             ${this.renderMD3TextInput('Weather Entity ID', d.weather_entity, (v) => callbacks.onGlobalChange('weather_entity', v))}
-          </div>
-          <div class="detail-card">
-             <h3>Lung Room</h3>
-             ${this.renderMD3TextInput('Lung Room Temp Sensor', d.lung_room_temp, (v) => callbacks.onGlobalChange('lung_room_temp', v))}
-             ${this.renderMD3TextInput('Lung Room Humidity Sensor', d.lung_room_humidity, (v) => callbacks.onGlobalChange('lung_room_humidity', v))}
+             <h3>Thresholds</h3>
+             ${this.renderMD3NumberInput('Stress Threshold (0.0-1.0)', d.stress_threshold, (v) => callbacks.onEnvChange('stress_threshold', parseFloat(v)))}
+             ${this.renderMD3NumberInput('Mold Threshold (0.0-1.0)', d.mold_threshold, (v) => callbacks.onEnvChange('mold_threshold', parseFloat(v)))}
           </div>
        </div>
     `;

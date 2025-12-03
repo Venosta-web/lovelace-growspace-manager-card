@@ -164,7 +164,7 @@ export interface StrainLibraryDialogState {
 
 export interface ConfigDialogState {
   open: boolean;
-  currentTab: 'add_growspace' | 'environment' | 'global';
+  currentTab: 'add_growspace' | 'environment';
   addGrowspaceData: {
     name: string;
     rows: number;
@@ -177,13 +177,9 @@ export interface ConfigDialogState {
     humidity_sensor: string;
     vpd_sensor: string;
     co2_sensor: string;
-    light_sensor: string;
-    fan_switch: string;
-  };
-  globalData: {
-    weather_entity: string;
-    lung_room_temp: string;
-    lung_room_humidity: string;
+    circulation_fan: string;
+    stress_threshold: number;
+    mold_threshold: number;
   };
 }
 

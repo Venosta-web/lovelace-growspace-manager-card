@@ -20,7 +20,6 @@ var mdiDelete = "M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0
 var mdiDna = "M4,2H6V4C6,5.44 6.68,6.61 7.88,7.78C8.74,8.61 9.89,9.41 11.09,10.2L9.26,11.39C8.27,10.72 7.31,10 6.5,9.21C5.07,7.82 4,6.1 4,4V2M18,2H20V4C20,6.1 18.93,7.82 17.5,9.21C16.09,10.59 14.29,11.73 12.54,12.84C10.79,13.96 9.09,15.05 7.88,16.22C6.68,17.39 6,18.56 6,20V22H4V20C4,17.9 5.07,16.18 6.5,14.79C7.91,13.41 9.71,12.27 11.46,11.16C13.21,10.04 14.91,8.95 16.12,7.78C17.32,6.61 18,5.44 18,4V2M14.74,12.61C15.73,13.28 16.69,14 17.5,14.79C18.93,16.18 20,17.9 20,20V22H18V20C18,18.56 17.32,17.39 16.12,16.22C15.26,15.39 14.11,14.59 12.91,13.8L14.74,12.61M7,3H17V4L16.94,4.5H7.06L7,4V3M7.68,6H16.32C16.08,6.34 15.8,6.69 15.42,7.06L14.91,7.5H9.07L8.58,7.06C8.2,6.69 7.92,6.34 7.68,6M9.09,16.5H14.93L15.42,16.94C15.8,17.31 16.08,17.66 16.32,18H7.68C7.92,17.66 8.2,17.31 8.58,16.94L9.09,16.5M7.06,19.5H16.94L17,20V21H7V20L7.06,19.5Z";
 var mdiDotsVertical = "M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z";
 var mdiDownload = "M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z";
-var mdiEarth = "M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiFan = "M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z";
 var mdiFlower = "M3,13A9,9 0 0,0 12,22C12,17 7.97,13 3,13M12,5.5A2.5,2.5 0 0,1 14.5,8A2.5,2.5 0 0,1 12,10.5A2.5,2.5 0 0,1 9.5,8A2.5,2.5 0 0,1 12,5.5M5.6,10.25A2.5,2.5 0 0,0 8.1,12.75C8.63,12.75 9.12,12.58 9.5,12.31C9.5,12.37 9.5,12.43 9.5,12.5A2.5,2.5 0 0,0 12,15A2.5,2.5 0 0,0 14.5,12.5C14.5,12.43 14.5,12.37 14.5,12.31C14.88,12.58 15.37,12.75 15.9,12.75C17.28,12.75 18.4,11.63 18.4,10.25C18.4,9.25 17.81,8.4 16.97,8C17.81,7.6 18.4,6.74 18.4,5.75C18.4,4.37 17.28,3.25 15.9,3.25C15.37,3.25 14.88,3.41 14.5,3.69C14.5,3.63 14.5,3.56 14.5,3.5A2.5,2.5 0 0,0 12,1A2.5,2.5 0 0,0 9.5,3.5C9.5,3.56 9.5,3.63 9.5,3.69C9.12,3.41 8.63,3.25 8.1,3.25A2.5,2.5 0 0,0 5.6,5.75C5.6,6.74 6.19,7.6 7.03,8C6.19,8.4 5.6,9.25 5.6,10.25M12,22A9,9 0 0,0 21,13C16,13 12,17 12,22Z";
 var mdiHairDryer = "M22 9A4.32 4.32 0 0 1 19.78 8.45A3.4 3.4 0 0 0 18 8V7A4.32 4.32 0 0 1 20.22 7.55A3.4 3.4 0 0 0 22 8M22 6A3.4 3.4 0 0 1 20.22 5.55A4.32 4.32 0 0 0 18 5V6A3.4 3.4 0 0 1 19.78 6.45A4.32 4.32 0 0 0 22 7M22 10A3.4 3.4 0 0 1 20.22 9.55A4.32 4.32 0 0 0 18 9V10A3.4 3.4 0 0 1 19.78 10.45A4.32 4.32 0 0 0 22 11M10 12.73A70.39 70.39 0 0 0 17 11V4S10.5 2 7.5 2A5.5 5.5 0 0 0 6.12 12.82L7 19H8A3 3 0 0 0 9.46 21.33A3.15 3.15 0 0 1 11 24H12A4.12 4.12 0 0 0 10.09 20.55C9.39 20 9 19.63 9 19H10M7.5 10A2.5 2.5 0 1 1 10 7.5A2.5 2.5 0 0 1 7.5 10Z";
@@ -557,10 +556,9 @@ class DataService {
             else if (hint.includes("clone")) {
                 payload.target_growspace_id = "clone_overview";
             }
-            else if (hint) {
-                // Fallback to name hint for any custom names
-                payload.target_growspace_name = target;
-            }
+            // Note: Backend only accepts target_growspace_id. 
+            // If target is a custom name, we can't send it unless we resolve it to an ID first.
+            // For now, we'll assume the UI passes IDs or we map known ones.
             const res = await this.hass.callService("growspace_manager", "harvest_plant", payload);
             console.log("[DataService:harvestPlant] Response:", res);
             return res;
@@ -716,8 +714,12 @@ class DataService {
                     delete payload.image; // Backend expects image_base64
                 }
                 else {
-                    // It's a path (existing image)
-                    payload.image_path = data.image;
+                    // It's a path (existing image) - Backend schema doesn't explicitly list image_path, 
+                    // but we'll try to send it if the backend supports it dynamically, 
+                    // or we might need to omit it if it's just for local display.
+                    // Checking services.yaml, only image_base64 is listed. 
+                    // We will assume image_path is not supported for add_strain and omit it to avoid schema errors.
+                    // payload.image_path = data.image; 
                     delete payload.image;
                 }
             }
@@ -792,7 +794,13 @@ class DataService {
     async addGrowspace(data) {
         console.log("[DataService:addGrowspace] Adding growspace:", data);
         try {
-            const res = await this.hass.callService("growspace_manager", "add_growspace", data);
+            const payload = {
+                name: data.name,
+                rows: data.rows,
+                plants_per_row: data.plants_per_row,
+                notification_target: data.notification_service // Map to backend field
+            };
+            const res = await this.hass.callService("growspace_manager", "add_growspace", payload);
             console.log("[DataService:addGrowspace] Response:", res);
             return res;
         }
@@ -801,27 +809,15 @@ class DataService {
             throw err;
         }
     }
-    async configureGrowspaceSensors(data) {
-        console.log("[DataService:configureGrowspaceSensors] Configuring sensors:", data);
+    async configureEnvironment(data) {
+        console.log("[DataService:configureEnvironment] Configuring sensors:", data);
         try {
-            const res = await this.hass.callService("growspace_manager", "configure_growspace", data);
-            console.log("[DataService:configureGrowspaceSensors] Response:", res);
+            const res = await this.hass.callService("growspace_manager", "configure_environment", data);
+            console.log("[DataService:configureEnvironment] Response:", res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:configureGrowspaceSensors] Error:", err);
-            throw err;
-        }
-    }
-    async configureGlobalSettings(data) {
-        console.log("[DataService:configureGlobalSettings] Configuring global settings:", data);
-        try {
-            const res = await this.hass.callService("growspace_manager", "configure_global", data);
-            console.log("[DataService:configureGlobalSettings] Response:", res);
-            return res;
-        }
-        catch (err) {
-            console.error("[DataService:configureGlobalSettings] Error:", err);
+            console.error("[DataService:configureEnvironment] Error:", err);
             throw err;
         }
     }
@@ -1295,24 +1291,18 @@ class DialogRenderer {
                  <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
                  Add Growspace
               </div>
-              <div class="config-tab ${activeTab === 'environment' ? 'active' : ''}"
-                   @click=${() => callbacks.onSwitchTab('environment')}>
-                 <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
-                 Environment
-              </div>
-              <div class="config-tab ${activeTab === 'global' ? 'active' : ''}"
-                   @click=${() => callbacks.onSwitchTab('global')}>
-                 <svg viewBox="0 0 24 24"><path d="${mdiEarth}"></path></svg>
-                 Global
-              </div>
-           </div>
+               <div class="config-tab ${activeTab === 'environment' ? 'active' : ''}"
+                    @click=${() => callbacks.onSwitchTab('environment')}>
+                  <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
+                  Environment
+               </div>
+            </div>
 
            <!-- Content -->
-           <div class="config-content">
-              ${activeTab === 'add_growspace' ? this.renderAddGrowspaceTab(dialog, callbacks) : E}
-              ${activeTab === 'environment' ? this.renderEnvironmentTab(dialog, growspaceOptions, callbacks) : E}
-              ${activeTab === 'global' ? this.renderGlobalTab(dialog, callbacks) : E}
-           </div>
+            <div class="config-content">
+               ${activeTab === 'add_growspace' ? this.renderAddGrowspaceTab(dialog, callbacks) : E}
+               ${activeTab === 'environment' ? this.renderEnvironmentTab(dialog, growspaceOptions, callbacks) : E}
+            </div>
 
            <!-- Actions -->
            <div class="config-actions">
@@ -1320,13 +1310,10 @@ class DialogRenderer {
               ${activeTab === 'add_growspace' ? x `
                  <button class="md3-button primary" @click=${callbacks.onAddGrowspaceSubmit}>Add Growspace</button>
               ` : E}
-              ${activeTab === 'environment' ? x `
-                 <button class="md3-button primary" @click=${callbacks.onEnvSubmit}>Save Sensors</button>
-              ` : E}
-              ${activeTab === 'global' ? x `
-                 <button class="md3-button primary" @click=${callbacks.onGlobalSubmit}>Save Global</button>
-              ` : E}
-           </div>
+               ${activeTab === 'environment' ? x `
+                  <button class="md3-button primary" @click=${callbacks.onEnvSubmit}>Save Sensors</button>
+               ` : E}
+            </div>
         </div>
       </ha-dialog>
     `;
@@ -1374,24 +1361,13 @@ class DialogRenderer {
           <div class="detail-card">
              <h3>Optional</h3>
              ${this.renderMD3TextInput('CO2 Sensor ID', d.co2_sensor, (v) => callbacks.onEnvChange('co2_sensor', v))}
-             ${this.renderMD3TextInput('Light Sensor/State ID', d.light_sensor, (v) => callbacks.onEnvChange('light_sensor', v))}
-             ${this.renderMD3TextInput('Fan Switch ID', d.fan_switch, (v) => callbacks.onEnvChange('fan_switch', v))}
+             ${this.renderMD3TextInput('Circulation Fan ID', d.circulation_fan, (v) => callbacks.onEnvChange('circulation_fan', v))}
           </div>
-       </div>
-    `;
-    }
-    static renderGlobalTab(dialog, callbacks) {
-        const d = dialog.globalData;
-        return x `
-       <div style="display:flex; flex-direction:column; gap:20px;">
+
           <div class="detail-card">
-             <h3>Global Environment</h3>
-             ${this.renderMD3TextInput('Weather Entity ID', d.weather_entity, (v) => callbacks.onGlobalChange('weather_entity', v))}
-          </div>
-          <div class="detail-card">
-             <h3>Lung Room</h3>
-             ${this.renderMD3TextInput('Lung Room Temp Sensor', d.lung_room_temp, (v) => callbacks.onGlobalChange('lung_room_temp', v))}
-             ${this.renderMD3TextInput('Lung Room Humidity Sensor', d.lung_room_humidity, (v) => callbacks.onGlobalChange('lung_room_humidity', v))}
+             <h3>Thresholds</h3>
+             ${this.renderMD3NumberInput('Stress Threshold (0.0-1.0)', d.stress_threshold, (v) => callbacks.onEnvChange('stress_threshold', parseFloat(v)))}
+             ${this.renderMD3NumberInput('Mold Threshold (0.0-1.0)', d.mold_threshold, (v) => callbacks.onEnvChange('mold_threshold', parseFloat(v)))}
           </div>
        </div>
     `;
@@ -13040,7 +13016,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
         <div class="gs-header-top">
           <div class="gs-title-group">
             ${!this.config?.default_growspace ? x `
-        <select class="growspace-select-header".value = ${this.device.device_id} @change=${this._handleDeviceChange}>
+        <select class="growspace-select-header" value=${this.device.device_id} @change=${this._handleDeviceChange}>
           ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
         </select>
           ` : x `
@@ -14171,7 +14147,7 @@ const growspaceCardStyles = i$3 `
         font-family: 'Roboto', sans-serif;
         color: var(--growspace-card-text);
       }
-
+        
       ha-card {
         padding: var(--spacing-lg);
         border-radius: var(--border-radius-lg);
@@ -14201,7 +14177,7 @@ const growspaceCardStyles = i$3 `
         color: #fff;
         position: relative;
         overflow: hidden;
-        box-shadow:
+        box-shadow: 
           0 4px 24px -1px rgba(0, 0, 0, 0.2),
           0 0 0 1px rgba(255, 255, 255, 0.02) inset;
       }
@@ -14552,13 +14528,13 @@ const growspaceCardStyles = i$3 `
         --mdc-dialog-border-radius: var(--border-radius);
         --mdc-dialog-box-shadow: var(--surface-elevation-hover);
       }
-
+      
       ha-dialog .mdc-dialog--open .mdc-dialog__container,
       ha-dialog .mdc-dialog--open {
         align-items: start;
         margin-top: 5vh;
       }
-
+      
       ha-dialog.strain-dialog .mdc-dialog--open .mdc-dialog__container .mdc-dialog__surface {
         width: 800px;
         max-width: 90vw;
@@ -16425,8 +16401,16 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             open: true,
             currentTab: 'add_growspace',
             addGrowspaceData: { name: '', rows: 3, plants_per_row: 3, notification_service: '' },
-            environmentData: { selectedGrowspaceId: '', temp_sensor: '', humidity_sensor: '', vpd_sensor: '', co2_sensor: '', light_sensor: '', fan_switch: '' },
-            globalData: { weather_entity: '', lung_room_temp: '', lung_room_humidity: '' }
+            environmentData: {
+                selectedGrowspaceId: '',
+                temp_sensor: '',
+                humidity_sensor: '',
+                vpd_sensor: '',
+                co2_sensor: '',
+                circulation_fan: '',
+                stress_threshold: 0.8,
+                mold_threshold: 0.8
+            }
         };
     }
     _handleAddGrowspaceSubmit() {
@@ -16449,23 +16433,16 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             alert('Growspace and required sensors (Temp, Hum, VPD) are mandatory');
             return;
         }
-        this.dataService.configureGrowspaceSensors({
+        this.dataService.configureEnvironment({
             growspace_id: d.selectedGrowspaceId,
             temperature_sensor: d.temp_sensor,
             humidity_sensor: d.humidity_sensor,
             vpd_sensor: d.vpd_sensor,
             co2_sensor: d.co2_sensor || undefined,
-            light_sensor: d.light_sensor || undefined,
-            fan_switch: d.fan_switch || undefined
+            circulation_fan: d.circulation_fan || undefined,
+            stress_threshold: d.stress_threshold,
+            mold_threshold: d.mold_threshold
         })
-            .then(() => { this._configDialog = null; this.requestUpdate(); })
-            .catch(e => alert(`Error: ${e.message}`));
-    }
-    _handleGlobalSubmit() {
-        if (!this._configDialog)
-            return;
-        const d = this._configDialog.globalData;
-        this.dataService.configureGlobalSettings(d)
             .then(() => { this._configDialog = null; this.requestUpdate(); })
             .catch(e => alert(`Error: ${e.message}`));
     }
@@ -17033,11 +17010,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                 this.requestUpdate();
             } },
             onEnvSubmit: () => this._handleEnvSubmit(),
-            onGlobalChange: (f, v) => { if (this._configDialog) {
-                this._configDialog.globalData[f] = v;
-                this.requestUpdate();
-            } },
-            onGlobalSubmit: () => this._handleGlobalSubmit(),
         })}
 
     ${this._growMasterDialog ? (() => {

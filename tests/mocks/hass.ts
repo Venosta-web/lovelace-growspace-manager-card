@@ -61,7 +61,18 @@ export const createMockHass = (options: MockHassOptions = {}) => {
             },
 
             // Plant Entities
-            ...plantEntities
+            ...plantEntities,
+
+            // Growspaces List Sensor (Required for dropdown population)
+            'sensor.growspaces_list': {
+                entity_id: 'sensor.growspaces_list',
+                state: '1',
+                attributes: {
+                    growspaces: {
+                        [growspaceId]: growspaceName
+                    }
+                }
+            }
         },
         // Mock service calls to verify card actions (e.g. add_plant)
         callService: async (domain: string, service: string, data: any) => {

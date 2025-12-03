@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 
 // Load .env
@@ -6,6 +6,11 @@ dotenv.config({ path: '.env' });
 
 export default defineConfig({
     testDir: './tests',
+    outputDir: './test-results', // Explicitly set output directory to avoid Windows path issues
+    fullyParallel: true,
+    forbidOnly: !!process.env.CI,
+    retries: process.env.CI ? 2 : 0,
+    workers: process.env.CI ? 1 : undefined,
 
     // Run your local dev server before starting the tests
     webServer: {
@@ -13,6 +18,8 @@ export default defineConfig({
         url: 'http://localhost:8080',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
+        stdout: 'ignore',
+        stderr: 'pipe',
     },
 
     use: {
@@ -25,7 +32,8 @@ export default defineConfig({
 
     projects: [
         {
-            name: 'mock',
+            name: 'chromium',
+            use: { ...devices['Desktop Chrome'] },
             testMatch: /.*\.spec\.ts/,
         },
     ],

@@ -442,7 +442,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
 
     this.dataService.takeClone({
-        mother_plant_id: plantId
+      mother_plant_id: plantId
     }).then(() => {
       console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
     }).catch((error) => {
@@ -1029,13 +1029,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   _moveClonePlant(plant: PlantEntity, targetGrowspace: string) {
     const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
     this.dataService.moveClone(plantId, targetGrowspace)
-    .then(() => {
-      console.log(`Moved clone ${plant.attributes.friendly_name} to ${targetGrowspace}`);
-      // Optionally refresh local state
-      this._plantOverviewDialog = null;
-    }).catch((err) => {
-      console.error('Error moving clone:', err);
-    });
+      .then(() => {
+        console.log(`Moved clone ${plant.attributes.friendly_name} to ${targetGrowspace}`);
+        // Optionally refresh local state
+        this._plantOverviewDialog = null;
+      }).catch((err) => {
+        console.error('Error moving clone:', err);
+      });
   }
 
   // --- Graph Linking Logic ---
@@ -1128,11 +1128,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
             // 2. Call service with opposite state
             this.dataService.setDehumidifierControl(this.selectedDevice, !currentStatus)
-            .then(() => {
-              console.log(`Toggled dehumidifier control to ${!currentStatus} for`, this.selectedDevice);
-            }).catch(err => {
-              console.error('Failed to toggle dehumidifier control:', err);
-            });
+              .then(() => {
+                console.log(`Toggled dehumidifier control to ${!currentStatus} for`, this.selectedDevice);
+              }).catch(err => {
+                console.error('Failed to toggle dehumidifier control:', err);
+              });
           }
         }
         break;
@@ -1185,8 +1185,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       open: true,
       currentTab: 'add_growspace',
       addGrowspaceData: { name: '', rows: 3, plants_per_row: 3, notification_service: '' },
-      environmentData: { selectedGrowspaceId: '', temp_sensor: '', humidity_sensor: '', vpd_sensor: '', co2_sensor: '', light_sensor: '', fan_switch: '' },
-      globalData: { weather_entity: '', lung_room_temp: '', lung_room_humidity: '' }
+      environmentData: {
+        selectedGrowspaceId: '',
+        temp_sensor: '',
+        humidity_sensor: '',
+        vpd_sensor: '',
+        co2_sensor: '',
+        circulation_fan: '',
+        stress_threshold: 0.8,
+        mold_threshold: 0.8
+      }
     };
   }
 
@@ -1206,23 +1214,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       alert('Growspace and required sensors (Temp, Hum, VPD) are mandatory');
       return;
     }
-    this.dataService.configureGrowspaceSensors({
+    this.dataService.configureEnvironment({
       growspace_id: d.selectedGrowspaceId,
       temperature_sensor: d.temp_sensor,
       humidity_sensor: d.humidity_sensor,
       vpd_sensor: d.vpd_sensor,
       co2_sensor: d.co2_sensor || undefined,
-      light_sensor: d.light_sensor || undefined,
-      fan_switch: d.fan_switch || undefined
+      circulation_fan: d.circulation_fan || undefined,
+      stress_threshold: d.stress_threshold,
+      mold_threshold: d.mold_threshold
     })
-      .then(() => { this._configDialog = null; this.requestUpdate(); })
-      .catch(e => alert(`Error: ${e.message}`));
-  }
-
-  private _handleGlobalSubmit() {
-    if (!this._configDialog) return;
-    const d = this._configDialog.globalData;
-    this.dataService.configureGlobalSettings(d)
       .then(() => { this._configDialog = null; this.requestUpdate(); })
       .catch(e => alert(`Error: ${e.message}`));
   }
@@ -1586,18 +1587,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         @plant-click=${(e: CustomEvent) => this._handlePlantClick(e.detail.plant)}
         @add-plant-click=${(e: CustomEvent) => this._openAddPlantDialog(e.detail.row, e.detail.col)}
         @plant-drop=${(e: CustomEvent) =>
-          this._handleDrop(
-            e.detail.originalEvent,
-            e.detail.targetRow,
-            e.detail.targetCol,
-            e.detail.targetPlant,
-            e.detail.sourcePlant
-          )
-        }
+        this._handleDrop(
+          e.detail.originalEvent,
+          e.detail.targetRow,
+          e.detail.targetCol,
+          e.detail.targetPlant,
+          e.detail.sourcePlant
+        )
+      }
         @selection-changed=${(e: CustomEvent) => {
-          this._selectedPlants = e.detail.selectedPlants;
-          this.requestUpdate();
-        }}
+        this._selectedPlants = e.detail.selectedPlants;
+        this.requestUpdate();
+      }}
       ></growspace-grid>
     `;
   }
@@ -1665,7 +1666,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
               // Let's clear it if they switched strains, unless they are typing (but this is a select change)
               this._addPlantDialog.phenotype = '';
             }
-            this.requestUpdate();
+            (this as any).requestUpdate();
           }
         },
         onPhenotypeChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.phenotype = value; },
@@ -1681,7 +1682,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             const val = parseInt(value);
             if (!isNaN(val) && val > 0) {
               this._addPlantDialog.row = val - 1;
-              this.requestUpdate();
+              (this as any).requestUpdate();
             }
           }
         },
@@ -1690,7 +1691,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             const val = parseInt(value);
             if (!isNaN(val) && val > 0) {
               this._addPlantDialog.col = val - 1;
-              this.requestUpdate();
+              (this as any).requestUpdate();
             }
           }
         },
@@ -1712,12 +1713,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       @move-clone=${(e: CustomEvent) => {
         const { plant, targetGrowspace } = e.detail;
         this.dataService.moveClone(plant.attributes.plant_id, targetGrowspace)
-        .then(() => {
-          console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
-          this._plantOverviewDialog = null;
-        }).catch((err) => {
-          console.error('Error moving clone:', err);
-        });
+          .then(() => {
+            console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
+            this._plantOverviewDialog = null;
+          }).catch((err) => {
+            console.error('Error moving clone:', err);
+          });
       }}
       @attribute-change=${(e: CustomEvent) => {
         if (this._plantOverviewDialog) {
@@ -1753,8 +1754,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           onAddGrowspaceSubmit: () => this._handleAddGrowspaceSubmit(),
           onEnvChange: (f, v) => { if (this._configDialog) { (this._configDialog.environmentData as any)[f] = v; this.requestUpdate(); } },
           onEnvSubmit: () => this._handleEnvSubmit(),
-          onGlobalChange: (f, v) => { if (this._configDialog) { (this._configDialog.globalData as any)[f] = v; this.requestUpdate(); } },
-          onGlobalSubmit: () => this._handleGlobalSubmit(),
         }
       )}
 

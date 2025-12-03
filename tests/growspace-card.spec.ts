@@ -9,6 +9,7 @@ test.describe('Growspace Manager Card', () => {
     });
 
     test('renders grid layout and plant details correctly', async ({ page }) => {
+        page.on('console', msg => console.log(`[Browser] ${msg.text()}`));
         const card = page.locator('growspace-manager-card');
         const mockHass = createMockHass({ growspaceName: '4x4 Tent', rows: 4, cols: 4 });
         const entityId = 'sensor.4x4_tent';
@@ -24,7 +25,11 @@ test.describe('Growspace Manager Card', () => {
             };
         }, { config: { type: 'custom:growspace-manager-card', entity: entityId }, hassData });
 
-        await expect(card).toContainText('4x4 Tent');
+        // Check for growspace name in the select dropdown
+        const select = card.locator('select.growspace-select-header');
+        await expect(select).toBeVisible();
+
+        await expect(select).toHaveValue('4x4_tent'); // ID is lowercased and underscored in mock
         await expect(card).toContainText('Gorilla Glue');
         await expect(card).toContainText('#4');
         await expect(card).toContainText('Blue Dream');

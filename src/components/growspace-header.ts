@@ -481,7 +481,7 @@ export class GrowspaceHeader extends LitElement {
         <div class="gs-header-top">
           <div class="gs-title-group">
             ${!this.config?.default_growspace ? html`
-        <select class="growspace-select-header".value = ${this.device.device_id} @change=${this._handleDeviceChange}>
+        <select class="growspace-select-header" value=${this.device.device_id} @change=${this._handleDeviceChange}>
           ${Object.entries(this.growspaceOptions).map(([id, name]) => html`<option value="${id}">${name}</option>`)}
         </select>
           ` : html`
