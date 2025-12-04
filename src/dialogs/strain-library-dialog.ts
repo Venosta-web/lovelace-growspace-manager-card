@@ -26,7 +26,7 @@ export class StrainLibraryDialog extends LitElement {
 
   // Pagination State
   @state() private _currentPage = 1;
-  private readonly ITEMS_PER_PAGE = 12;
+  private readonly ITEMS_PER_PAGE = 15;
 
   static styles = css`
     :host {
