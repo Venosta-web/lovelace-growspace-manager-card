@@ -50,6 +50,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _dehumidifierHistory: any[] | null = null;
   @state() private _exhaustHistory: any[] | null = null;
   @state() private _humidifierHistory: any[] | null = null;
+  @state() private _soilMoistureHistory: any[] | null = null;
 
   @state() private _activeEnvGraphs: Set<string> = new Set();
   @state() private _linkedGraphGroups: string[][] = [];
@@ -107,6 +108,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       this._fetchHistory(range);
       if (this._activeEnvGraphs.has('dehumidifier')) {
         this._fetchDehumidifierHistory(range);
+      }
+      if (this._activeEnvGraphs.has('soil_moisture')) {
+        this._fetchSoilMoistureHistory(range);
       }
     }
   }
@@ -253,6 +257,40 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       this._humidifierHistory = history;
     } catch (e) {
       console.error("Failed to fetch humidifier history", e);
+    }
+  }
+
+  private async _fetchSoilMoistureHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
+    if (!this.hass || !this.selectedDevice) return;
+    const devices = this.dataService.getGrowspaceDevices();
+    const device = devices.find(d => d.device_id === this.selectedDevice);
+    if (!device || !device.overview_entity_id) return;
+
+    const overviewEntity = this.hass.states[device.overview_entity_id];
+    const soilMoistureEntityId = overviewEntity?.attributes?.soil_moisture_sensor;
+
+    if (!soilMoistureEntityId) return;
+
+    const now = new Date();
+    let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    switch (range) {
+      case '1h':
+        startTime = new Date(now.getTime() - 60 * 60 * 1000);
+        break;
+      case '6h':
+        startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+        break;
+      case '7d':
+        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+    }
+
+    try {
+      const history = await this.dataService.getHistory(soilMoistureEntityId, startTime, now);
+      this._soilMoistureHistory = history;
+    } catch (e) {
+      console.error("Failed to fetch soil moisture history", e);
     }
   }
 
@@ -1471,6 +1509,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       'vpd',
       'co2',
       'light',
+      'soil_moisture',
       'irrigation',
       'drain',
       'optimal',
@@ -1538,6 +1577,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           humidity: { color: '#2196f3', title: 'Humidity', unit: '%' },
           vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa' },
           co2: { color: '#4caf50', title: 'CO2', unit: 'ppm' },
+          soil_moisture: { color: '#03a9f4', title: 'Soil Moisture', unit: '%' },
           light: { color: '#ffc107', title: 'Light', unit: 'state' },
           irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state' },
           drain: { color: '#ff9800', title: 'Drain', unit: 'state' },
@@ -1576,6 +1616,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           case 'humidity': color = '#2196f3'; title = 'Humidity'; unit = '%'; icon = mdiWaterPercent; break;
           case 'vpd': color = '#9c27b0'; title = 'VPD'; unit = 'kPa'; icon = mdiCloudOutline; break;
           case 'co2': color = '#4caf50'; title = 'CO2'; unit = 'ppm'; icon = mdiWeatherCloudy; break;
+          case 'soil_moisture': color = '#03a9f4'; title = 'Soil Moisture'; unit = '%'; icon = mdiWaterPercent; history = this._soilMoistureHistory || []; break;
           case 'light': color = '#ffc107', title = 'Light', unit = 'state'; icon = mdiLightbulbOn; type = 'step'; break;
           case 'irrigation': color = '#03a9f4'; title = 'Irrigation'; unit = 'state'; icon = mdiWater; type = 'step'; break;
           case 'drain': color = '#ff9800'; title = 'Drain'; unit = 'state'; icon = mdiWater; type = 'step'; break;

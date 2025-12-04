@@ -13199,6 +13199,34 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
             return '';
         })()}
                   </div>` : ''}
+                
+                ${getValue(overviewEntity, 'soil_moisture_value') !== undefined ? x `
+                  <div class="stat-chip ${this.activeEnvGraphs.has('soil_moisture') ? 'active' : ''}"
+                       draggable="true"
+                       @dragstart=${(e) => this._handleChipDragStart(e, 'soil_moisture')}
+                       @drop=${(e) => this._handleChipDrop(e, 'soil_moisture')}
+                       @dragover=${(e) => e.preventDefault()}
+                       @click=${(e) => {
+            const target = e.target;
+            if (target.closest('.link-icon'))
+                return;
+            this._toggleEnvGraph('soil_moisture');
+        }}>
+                    <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>Moisture: ${getValue(overviewEntity, 'soil_moisture_value')}%
+                    ${(() => {
+            const { linked, groupIndex } = this._isMetricLinked('soil_moisture');
+            if (linked) {
+                return x `
+                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                               @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                               title="Unlink Graph">
+                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                          </div>
+                        `;
+            }
+            return '';
+        })()}
+                  </div>` : ''}
 
                 ${nextIrrigation ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('irrigation') ? 'active' : ''}"
@@ -15398,6 +15426,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         this._dehumidifierHistory = null;
         this._exhaustHistory = null;
         this._humidifierHistory = null;
+        this._soilMoistureHistory = null;
         this._activeEnvGraphs = new Set();
         this._linkedGraphGroups = [];
         this._graphRanges = {};
@@ -15459,6 +15488,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             this._fetchHistory(range);
             if (this._activeEnvGraphs.has('dehumidifier')) {
                 this._fetchDehumidifierHistory(range);
+            }
+            if (this._activeEnvGraphs.has('soil_moisture')) {
+                this._fetchSoilMoistureHistory(range);
             }
         }
     }
@@ -15597,6 +15629,38 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         }
         catch (e) {
             console.error("Failed to fetch humidifier history", e);
+        }
+    }
+    async _fetchSoilMoistureHistory(range = '24h') {
+        if (!this.hass || !this.selectedDevice)
+            return;
+        const devices = this.dataService.getGrowspaceDevices();
+        const device = devices.find(d => d.device_id === this.selectedDevice);
+        if (!device || !device.overview_entity_id)
+            return;
+        const overviewEntity = this.hass.states[device.overview_entity_id];
+        const soilMoistureEntityId = overviewEntity?.attributes?.soil_moisture_sensor;
+        if (!soilMoistureEntityId)
+            return;
+        const now = new Date();
+        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        switch (range) {
+            case '1h':
+                startTime = new Date(now.getTime() - 60 * 60 * 1000);
+                break;
+            case '6h':
+                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+                break;
+            case '7d':
+                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+        }
+        try {
+            const history = await this.dataService.getHistory(soilMoistureEntityId, startTime, now);
+            this._soilMoistureHistory = history;
+        }
+        catch (e) {
+            console.error("Failed to fetch soil moisture history", e);
         }
     }
     async _fetchStrainLibrary() {
@@ -16684,6 +16748,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             'vpd',
             'co2',
             'light',
+            'soil_moisture',
             'irrigation',
             'drain',
             'optimal',
@@ -16737,6 +16802,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                     humidity: { color: '#2196f3', title: 'Humidity', unit: '%' },
                     vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa' },
                     co2: { color: '#4caf50', title: 'CO2', unit: 'ppm' },
+                    soil_moisture: { color: '#03a9f4', title: 'Soil Moisture', unit: '%' },
                     light: { color: '#ffc107', title: 'Light', unit: 'state' },
                     irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state' },
                     drain: { color: '#ff9800', title: 'Drain', unit: 'state' },
@@ -16793,6 +16859,13 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                         title = 'CO2';
                         unit = 'ppm';
                         icon = mdiWeatherCloudy;
+                        break;
+                    case 'soil_moisture':
+                        color = '#03a9f4';
+                        title = 'Soil Moisture';
+                        unit = '%';
+                        icon = mdiWaterPercent;
+                        history = this._soilMoistureHistory || [];
                         break;
                     case 'light':
                         color = '#ffc107', title = 'Light', unit = 'state';
@@ -17273,6 +17346,10 @@ __decorate([
     r(),
     __metadata("design:type", Object)
 ], GrowspaceManagerCard.prototype, "_humidifierHistory", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_soilMoistureHistory", void 0);
 __decorate([
     r(),
     __metadata("design:type", Set)

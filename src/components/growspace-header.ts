@@ -650,6 +650,33 @@ export class GrowspaceHeader extends LitElement {
           return '';
         })()}
                   </div>` : ''}
+                
+                ${getValue(overviewEntity, 'soil_moisture_value') !== undefined ? html`
+                  <div class="stat-chip ${this.activeEnvGraphs.has('soil_moisture') ? 'active' : ''}"
+                       draggable="true"
+                       @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'soil_moisture')}
+                       @drop=${(e: DragEvent) => this._handleChipDrop(e, 'soil_moisture')}
+                       @dragover=${(e: DragEvent) => e.preventDefault()}
+                       @click=${(e: Event) => {
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('soil_moisture');
+        }}>
+                    <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>Moisture: ${getValue(overviewEntity, 'soil_moisture_value')}%
+                    ${(() => {
+          const { linked, groupIndex } = this._isMetricLinked('soil_moisture');
+          if (linked) {
+            return html`
+                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                               @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                               title="Unlink Graph">
+                            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                          </div>
+                        `;
+          }
+          return '';
+        })()}
+                  </div>` : ''}
 
                 ${nextIrrigation ? html`
                   <div class="stat-chip ${this.activeEnvGraphs.has('irrigation') ? 'active' : ''}"
