@@ -1,28 +1,34 @@
 import { LitElement, html, css, PropertyValues, TemplateResult, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import {
-    mdiPlus, mdiClose, mdiMagnify, mdiDelete, mdiCheck,
-    mdiContentCopy, mdiWeatherNight, mdiWeatherSunny, mdiTuneVariant,
-    mdiLeaf, mdiArrowLeft, mdiCloudUpload, mdiPencil,
-    mdiDownload, mdiBrain, mdiCamera, mdiImage, mdiViewDashboard
+  mdiPlus, mdiClose, mdiMagnify, mdiDelete, mdiCheck,
+  mdiContentCopy, mdiWeatherNight, mdiWeatherSunny, mdiTuneVariant,
+  mdiLeaf, mdiArrowLeft, mdiCloudUpload, mdiPencil,
+  mdiDownload, mdiBrain, mdiCamera, mdiImage, mdiViewDashboard,
+  mdiChevronLeft, mdiChevronRight
 } from '@mdi/js';
 import { StrainEntry, CropMeta } from '../types';
 import { PlantUtils } from '../utils';
 
 @customElement('strain-library-dialog')
 export class StrainLibraryDialog extends LitElement {
-    @property({ type: Boolean }) open = false;
-    @property({ type: Array }) strains: StrainEntry[] = [];
+  @property({ type: Boolean }) open = false;
+  @property({ type: Array }) strains: StrainEntry[] = [];
 
-    @state() private _view: 'browse' | 'editor' = 'browse';
-    @state() private _searchQuery = '';
-    @state() private _editorState: Partial<StrainEntry> = {};
-    @state() private _isCropping = false;
-    @state() private _isImageSelectorOpen = false;
-    @state() private _importDialogOpen = false;
-    @state() private _importReplace = false;
+  @state() private _view: 'browse' | 'editor' = 'browse';
+  @state() private _searchQuery = '';
+  @state() private _editorState: Partial<StrainEntry> = {};
+  @state() private _isCropping = false;
+  @state() private _isImageSelectorOpen = false;
+  @state() private _importDialogOpen = false;
 
-    static styles = css`
+  @state() private _importReplace = false;
+
+  // Pagination State
+  @state() private _currentPage = 1;
+  private readonly ITEMS_PER_PAGE = 12;
+
+  static styles = css`
     :host {
       --accent-green: #22c55e;
       --card-bg: #2d2d2d;
@@ -527,106 +533,143 @@ export class StrainLibraryDialog extends LitElement {
         font-weight: 700;
         padding: 0;
     }
-    .hg-num-input:focus {
+        .hg-num-input:focus {
         outline: none;
         border-bottom-color: var(--accent-green);
     }
+
+    /* PAGINATION */
+    .pagination-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 24px;
+        padding-bottom: 8px;
+    }
+    .pagination-text {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+    .pagination-btn {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        color: #fff;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .pagination-btn:hover:not(:disabled) {
+        border-color: var(--accent-green);
+        color: var(--accent-green);
+    }
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        border-color: transparent;
+    }
   `;
 
-    private _startEdit(strain?: StrainEntry) {
-        if (strain) {
-            this._editorState = { ...strain };
-        } else {
-            this._editorState = {
-                strain: '',
-                phenotype: '',
-                breeder: '',
-                type: 'Hybrid',
-                flowering_days_min: 60,
-                flowering_days_max: 70,
-                lineage: '',
-                sex: 'Feminized',
-                description: '',
-                image: '',
-                sativa_percentage: 50,
-                indica_percentage: 50
-            };
-        }
-        this._view = 'editor';
+  private _startEdit(strain?: StrainEntry) {
+    if (strain) {
+      this._editorState = { ...strain };
+    } else {
+      this._editorState = {
+        strain: '',
+        phenotype: '',
+        breeder: '',
+        type: 'Hybrid',
+        flowering_days_min: 60,
+        flowering_days_max: 70,
+        lineage: '',
+        sex: 'Feminized',
+        description: '',
+        image: '',
+        sativa_percentage: 50,
+        indica_percentage: 50
+      };
+    }
+    this._view = 'editor';
+  }
+
+  private _handleSave() {
+    if (!this._editorState.strain) return;
+    this.dispatchEvent(new CustomEvent('save-strain', { detail: this._editorState }));
+    this._view = 'browse';
+  }
+
+  private _handleDelete(key: string) {
+    if (confirm('Are you sure you want to delete this strain?')) {
+      this.dispatchEvent(new CustomEvent('delete-strain', { detail: { key } }));
+    }
+  }
+
+  private _handleEditorChange(field: string, value: any) {
+    this._editorState = { ...this._editorState, [field]: value };
+  }
+
+  private _toggleCropMode(active: boolean) {
+    this._isCropping = active;
+  }
+
+  private _toggleImageSelector(isOpen: boolean) {
+    this._isImageSelectorOpen = isOpen;
+  }
+
+  private _handleSelectLibraryImage(imageUrl: string) {
+    this._editorState = { ...this._editorState, image: imageUrl };
+
+    // Find existing crop meta
+    const existing = this.strains.find(s => s.image === imageUrl && !!s.image_crop_meta);
+    if (existing && existing.image_crop_meta) {
+      this._editorState.image_crop_meta = { ...existing.image_crop_meta };
+    } else {
+      delete this._editorState.image_crop_meta;
     }
 
-    private _handleSave() {
-        if (!this._editorState.strain) return;
-        this.dispatchEvent(new CustomEvent('save-strain', { detail: this._editorState }));
-        this._view = 'browse';
-    }
+    this._isImageSelectorOpen = false;
+  }
 
-    private _handleDelete(key: string) {
-        if (confirm('Are you sure you want to delete this strain?')) {
-            this.dispatchEvent(new CustomEvent('delete-strain', { detail: { key } }));
-        }
-    }
+  private _handleImportFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.zip';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        this.dispatchEvent(new CustomEvent('import-library', {
+          detail: { file, replace: this._importReplace }
+        }));
+        this._importDialogOpen = false;
+      }
+    };
+    input.click();
+  }
 
-    private _handleEditorChange(field: string, value: any) {
-        this._editorState = { ...this._editorState, [field]: value };
-    }
-
-    private _toggleCropMode(active: boolean) {
-        this._isCropping = active;
-    }
-
-    private _toggleImageSelector(isOpen: boolean) {
-        this._isImageSelectorOpen = isOpen;
-    }
-
-    private _handleSelectLibraryImage(imageUrl: string) {
-        this._editorState = { ...this._editorState, image: imageUrl };
-
-        // Find existing crop meta
-        const existing = this.strains.find(s => s.image === imageUrl && !!s.image_crop_meta);
-        if (existing && existing.image_crop_meta) {
-            this._editorState.image_crop_meta = { ...existing.image_crop_meta };
-        } else {
-            delete this._editorState.image_crop_meta;
-        }
-
-        this._isImageSelectorOpen = false;
-    }
-
-    private _handleImportFile() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.zip';
-        input.onchange = (e) => {
-            const file = (e.target as HTMLInputElement).files?.[0];
-            if (file) {
-                this.dispatchEvent(new CustomEvent('import-library', {
-                    detail: { file, replace: this._importReplace }
-                }));
-                this._importDialogOpen = false;
-            }
-        };
-        input.click();
-    }
-
-    private getCropStyle(image: string, meta?: CropMeta) {
-        if (!meta) return `background-image: url('${image}')`;
-        return `
+  private getCropStyle(image: string, meta?: CropMeta) {
+    if (!meta) return `background-image: url('${image}')`;
+    return `
       background-image: url('${image}');
       background-size: ${meta.scale * 100}%;
       background-position: ${meta.x}% ${meta.y}%;
     `;
-    }
+  }
 
-    private getImgStyle(meta?: CropMeta): string {
-        if (!meta) return 'width: 100%; height: 100%; object-fit: cover;';
-        return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
-    }
+  private getImgStyle(meta?: CropMeta): string {
+    if (!meta) return 'width: 100%; height: 100%; object-fit: cover;';
+    return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
+  }
 
-    protected render(): TemplateResult {
-        if (!this.open) return html``;
+  protected render(): TemplateResult {
+    if (!this.open) return html``;
 
-        return html`
+    return html`
       <ha-dialog
         open
         @closed=${() => this.dispatchEvent(new CustomEvent('close'))}
@@ -643,17 +686,29 @@ export class StrainLibraryDialog extends LitElement {
         ${this._importDialogOpen ? this.renderImportDialog() : nothing}
       </ha-dialog>
     `;
+  }
+
+  private renderBrowseView(): TemplateResult {
+    const query = this._searchQuery.toLowerCase();
+    const filteredStrains = this.strains.filter(s =>
+      s.strain.toLowerCase().includes(query) ||
+      (s.breeder && s.breeder.toLowerCase().includes(query)) ||
+      (s.phenotype && s.phenotype.toLowerCase().includes(query))
+    );
+
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredStrains.length / this.ITEMS_PER_PAGE);
+
+    // Ensure current page is valid (e.g. if filtering reduced pages)
+    if (this._currentPage > totalPages && totalPages > 0) {
+      this._currentPage = totalPages;
     }
+    if (this._currentPage < 1) this._currentPage = 1;
 
-    private renderBrowseView(): TemplateResult {
-        const query = this._searchQuery.toLowerCase();
-        const filteredStrains = this.strains.filter(s =>
-            s.strain.toLowerCase().includes(query) ||
-            (s.breeder && s.breeder.toLowerCase().includes(query)) ||
-            (s.phenotype && s.phenotype.toLowerCase().includes(query))
-        );
+    const startIndex = (this._currentPage - 1) * this.ITEMS_PER_PAGE;
+    const paginatedStrains = filteredStrains.slice(startIndex, startIndex + this.ITEMS_PER_PAGE);
 
-        return html`
+    return html`
       <div class="sd-header">
         <h2 class="sd-title">Strain Library</h2>
         <button class="sd-close-btn" @click=${() => this.dispatchEvent(new CustomEvent('close'))}>
@@ -670,13 +725,16 @@ export class StrainLibraryDialog extends LitElement {
               class="search-bar-input"
               placeholder="Search Strains by Name, Breeder..."
               .value=${this._searchQuery}
-              @input=${(e: Event) => this._searchQuery = (e.target as HTMLInputElement).value}
+              @input=${(e: Event) => {
+        this._searchQuery = (e.target as HTMLInputElement).value;
+        this._currentPage = 1; // Reset to page 1 on search
+      }}
             />
           </div>
         </div>
 
         <div class="sd-grid">
-          ${filteredStrains.map(strain => this.renderStrainCard(strain))}
+          ${paginatedStrains.map(strain => this.renderStrainCard(strain))}
         </div>
 
         ${filteredStrains.length === 0 ? html`
@@ -684,6 +742,26 @@ export class StrainLibraryDialog extends LitElement {
             <svg style="width:48px;height:48px;fill:currentColor; opacity:0.5;" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
             <p>No strains found matching "${query}"</p>
           </div>
+        ` : nothing}
+
+        ${totalPages > 1 ? html`
+            <div class="pagination-container">
+                <button 
+                    class="pagination-btn" 
+                    ?disabled=${this._currentPage === 1}
+                    @click=${() => this._currentPage--}
+                >
+                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+                </button>
+                <span class="pagination-text">Page ${this._currentPage} of ${totalPages}</span>
+                <button 
+                    class="pagination-btn" 
+                    ?disabled=${this._currentPage === totalPages}
+                    @click=${() => this._currentPage++}
+                >
+                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                </button>
+            </div>
         ` : nothing}
       </div>
 
@@ -706,24 +784,24 @@ export class StrainLibraryDialog extends LitElement {
         </button>
       </div>
     `;
-    }
+  }
 
-    private renderStrainCard(strain: StrainEntry): TemplateResult {
-        let typeIcon = mdiLeaf;
-        let typeLabel = strain.type || 'Unknown';
-        const lowerType = (strain.type || '').toLowerCase();
+  private renderStrainCard(strain: StrainEntry): TemplateResult {
+    let typeIcon = mdiLeaf;
+    let typeLabel = strain.type || 'Unknown';
+    const lowerType = (strain.type || '').toLowerCase();
 
-        if (lowerType.includes('indica')) typeIcon = mdiWeatherNight;
-        else if (lowerType.includes('sativa')) typeIcon = mdiWeatherSunny;
-        else if (lowerType.includes('hybrid')) typeIcon = mdiTuneVariant;
+    if (lowerType.includes('indica')) typeIcon = mdiWeatherNight;
+    else if (lowerType.includes('sativa')) typeIcon = mdiWeatherSunny;
+    else if (lowerType.includes('hybrid')) typeIcon = mdiTuneVariant;
 
-        return html`
+    return html`
       <div class="strain-card" @click=${() => this._startEdit(strain)}>
         <div class="sc-thumb">
           ${strain.image
-                ? html`<img src="${strain.image}" loading="lazy" alt="${strain.strain}" style="${this.getImgStyle(strain.image_crop_meta)}" />`
-                : html`<svg style="width:48px;height:48px;opacity:0.2;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiLeaf}"></path></svg>`
-            }
+        ? html`<img src="${strain.image}" loading="lazy" alt="${strain.strain}" style="${this.getImgStyle(strain.image_crop_meta)}" />`
+        : html`<svg style="width:48px;height:48px;opacity:0.2;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiLeaf}"></path></svg>`
+      }
           <div class="sc-actions">
             <button class="sc-action-btn" @click=${(e: Event) => { e.stopPropagation(); this._handleDelete(strain.key); }}>
               <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
@@ -743,24 +821,24 @@ export class StrainLibraryDialog extends LitElement {
         </div>
       </div>
     `;
-    }
+  }
 
-    private renderEditorView(): TemplateResult {
-        const s = this._editorState;
-        const isEdit = !!s.strain && this.strains.some(ex => ex.strain === s.strain && ex.phenotype === s.phenotype);
-        const uniqueStrains = [...new Set(this.strains.map(st => st.strain).filter(Boolean))].sort();
-        const uniqueBreeders = [...new Set(this.strains.map(st => st.breeder).filter(Boolean))].sort();
+  private renderEditorView(): TemplateResult {
+    const s = this._editorState;
+    const isEdit = !!s.strain && this.strains.some(ex => ex.strain === s.strain && ex.phenotype === s.phenotype);
+    const uniqueStrains = [...new Set(this.strains.map(st => st.strain).filter(Boolean))].sort();
+    const uniqueBreeders = [...new Set(this.strains.map(st => st.breeder).filter(Boolean))].sort();
 
-        const handleFileChange = (e: Event) => {
-            const file = (e.target as HTMLInputElement).files?.[0];
-            if (file) {
-                PlantUtils.compressImage(file)
-                    .then(base64 => this._handleEditorChange('image', base64))
-                    .catch(err => console.error("Error compressing image:", err));
-            }
-        };
+    const handleFileChange = (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        PlantUtils.compressImage(file)
+          .then(base64 => this._handleEditorChange('image', base64))
+          .catch(err => console.error("Error compressing image:", err));
+      }
+    };
 
-        return html`
+    return html`
       <datalist id="strain-suggestions">
         ${uniqueStrains.map(name => html`<option value="${name}"></option>`)}
       </datalist>
@@ -787,34 +865,34 @@ export class StrainLibraryDialog extends LitElement {
           <div class="editor-col">
             <div class="photo-upload-area"
                 @click=${(e: Event) => {
-                const target = e.target as HTMLElement;
-                if (!target.closest('.crop-btn') && !target.closest('.select-library-btn') && !target.closest('.sd-btn')) {
-                    (e.currentTarget as HTMLElement).querySelector('input')?.click();
-                }
-            }}
+        const target = e.target as HTMLElement;
+        if (!target.closest('.crop-btn') && !target.closest('.select-library-btn') && !target.closest('.sd-btn')) {
+          (e.currentTarget as HTMLElement).querySelector('input')?.click();
+        }
+      }}
                 @dragover=${(e: DragEvent) => { e.preventDefault(); e.dataTransfer!.dropEffect = 'copy'; }}
                 @drop=${(e: DragEvent) => {
-                e.preventDefault();
-                const file = e.dataTransfer?.files[0];
-                if (file) {
-                    PlantUtils.compressImage(file)
-                        .then(base64 => this._handleEditorChange('image', base64))
-                        .catch(err => console.error("Error compressing image:", err));
-                }
-            }}>
+        e.preventDefault();
+        const file = e.dataTransfer?.files[0];
+        if (file) {
+          PlantUtils.compressImage(file)
+            .then(base64 => this._handleEditorChange('image', base64))
+            .catch(err => console.error("Error compressing image:", err));
+        }
+      }}>
 
               <button class="select-library-btn" @click=${(e: Event) => {
-                e.stopPropagation();
-                this._toggleImageSelector(true);
-            }}>
+        e.stopPropagation();
+        this._toggleImageSelector(true);
+      }}>
                   <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
                   Select from Library
               </button>
 
               ${s.image ? html`
                 ${s.image_crop_meta
-                    ? html`<div style="width:100%; height:100%; border-radius:10px; ${this.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"></div>`
-                    : html`<img src="${s.image}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" />`}
+          ? html`<div style="width:100%; height:100%; border-radius:10px; ${this.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"></div>`
+          : html`<img src="${s.image}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" />`}
 
                 <div style="position:absolute; bottom:8px; right:8px; display:flex; gap:8px;">
                     <button class="crop-btn"
@@ -871,20 +949,20 @@ export class StrainLibraryDialog extends LitElement {
               <label class="sd-label">Type *</label>
               <div class="type-selector-grid">
                 ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map(t => {
-                        let icon = mdiLeaf;
-                        if (t === 'Indica') icon = mdiWeatherNight;
-                        if (t === 'Sativa') icon = mdiWeatherSunny;
-                        if (t === 'Hybrid') icon = mdiTuneVariant;
+            let icon = mdiLeaf;
+            if (t === 'Indica') icon = mdiWeatherNight;
+            if (t === 'Sativa') icon = mdiWeatherSunny;
+            if (t === 'Hybrid') icon = mdiTuneVariant;
 
-                        const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
-                        return html`
+            const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
+            return html`
                     <div class="type-option ${isActive ? 'active' : ''}"
                         @click=${() => this._handleEditorChange('type', t)}>
                       <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
                       <span class="type-label">${t}</span>
                     </div>
                   `;
-                    })}
+          })}
               </div>
             </div>
 
@@ -898,11 +976,11 @@ export class StrainLibraryDialog extends LitElement {
                       <input class="hg-num-input" type="number" min="0" max="100"
                         .value=${s.indica_percentage || 0}
                         @input=${(e: any) => {
-                    let val = Math.floor(parseFloat(e.target.value)) || 0;
-                    if (val < 0) val = 0; if (val > 100) val = 100;
-                    this._handleEditorChange('indica_percentage', val);
-                    this._handleEditorChange('sativa_percentage', 100 - val);
-                }} />
+          let val = Math.floor(parseFloat(e.target.value)) || 0;
+          if (val < 0) val = 0; if (val > 100) val = 100;
+          this._handleEditorChange('indica_percentage', val);
+          this._handleEditorChange('sativa_percentage', 100 - val);
+        }} />
                       <span>%</span>
                     </div>
                     <div class="hg-input-label">
@@ -910,24 +988,24 @@ export class StrainLibraryDialog extends LitElement {
                       <input class="hg-num-input" type="number" min="0" max="100"
                         .value=${s.sativa_percentage || 0}
                         @input=${(e: any) => {
-                    let val = Math.floor(parseFloat(e.target.value)) || 0;
-                    if (val < 0) val = 0; if (val > 100) val = 100;
-                    this._handleEditorChange('sativa_percentage', val);
-                    this._handleEditorChange('indica_percentage', 100 - val);
-                }} />
+          let val = Math.floor(parseFloat(e.target.value)) || 0;
+          if (val < 0) val = 0; if (val > 100) val = 100;
+          this._handleEditorChange('sativa_percentage', val);
+          this._handleEditorChange('indica_percentage', 100 - val);
+        }} />
                       <span>%</span>
                     </div>
                   </div>
 
                   <div class="hg-bar-track"
                         @click=${(e: MouseEvent) => {
-                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    let percent = Math.round((x / rect.width) * 100);
-                    if (percent < 0) percent = 0; if (percent > 100) percent = 100;
-                    this._handleEditorChange('indica_percentage', percent);
-                    this._handleEditorChange('sativa_percentage', 100 - percent);
-                }}>
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          let percent = Math.round((x / rect.width) * 100);
+          if (percent < 0) percent = 0; if (percent > 100) percent = 100;
+          this._handleEditorChange('indica_percentage', percent);
+          this._handleEditorChange('sativa_percentage', 100 - percent);
+        }}>
                     <div class="hg-bar-indica" style="width: ${s.indica_percentage || 0}%"></div>
                     <div class="hg-bar-sativa"></div>
                     <div class="hg-tick" style="left: 25%"></div>
@@ -982,45 +1060,45 @@ export class StrainLibraryDialog extends LitElement {
         </button>
       </div>
     `;
-    }
+  }
 
-    private renderCropOverlay(): TemplateResult | typeof nothing {
-        const s = this._editorState;
-        if (!s.image) return nothing;
+  private renderCropOverlay(): TemplateResult | typeof nothing {
+    const s = this._editorState;
+    if (!s.image) return nothing;
 
-        const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
+    const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
 
-        const handleWheel = (e: WheelEvent) => {
-            e.preventDefault();
-            const delta = e.deltaY * -0.001;
-            const newScale = Math.min(Math.max(meta.scale + delta, 1), 5);
-            this._handleEditorChange('image_crop_meta', { ...meta, scale: newScale });
-        };
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY * -0.001;
+      const newScale = Math.min(Math.max(meta.scale + delta, 1), 5);
+      this._handleEditorChange('image_crop_meta', { ...meta, scale: newScale });
+    };
 
-        const handleMouseDown = (e: MouseEvent) => {
-            const startX = e.clientX;
-            const startY = e.clientY;
-            const startMetaX = meta.x;
-            const startMetaY = meta.y;
+    const handleMouseDown = (e: MouseEvent) => {
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startMetaX = meta.x;
+      const startMetaY = meta.y;
 
-            const onMouseMove = (ev: MouseEvent) => {
-                const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
-                const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
-                let newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
-                let newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
-                this._handleEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
-            };
+      const onMouseMove = (ev: MouseEvent) => {
+        const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
+        const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
+        let newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
+        let newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
+        this._handleEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
+      };
 
-            const onMouseUp = () => {
-                window.removeEventListener('mousemove', onMouseMove);
-                window.removeEventListener('mouseup', onMouseUp);
-            };
+      const onMouseUp = () => {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      };
 
-            window.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('mouseup', onMouseUp);
-        };
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    };
 
-        return html`
+    return html`
       <div class="crop-overlay">
         <h3 style="color:white; margin-bottom:20px;">Adjust Image</h3>
         <div class="crop-viewport"
@@ -1053,20 +1131,20 @@ export class StrainLibraryDialog extends LitElement {
         </div>
       </div>
     `;
-    }
+  }
 
-    private renderImageSelector(): TemplateResult {
-        const imageMap = new Map<string, { strain: string, phenotype: string }[]>();
-        this.strains.forEach(s => {
-            if (s.image) {
-                if (!imageMap.has(s.image)) {
-                    imageMap.set(s.image, []);
-                }
-                imageMap.get(s.image)!.push({ strain: s.strain, phenotype: s.phenotype || '' });
-            }
-        });
+  private renderImageSelector(): TemplateResult {
+    const imageMap = new Map<string, { strain: string, phenotype: string }[]>();
+    this.strains.forEach(s => {
+      if (s.image) {
+        if (!imageMap.has(s.image)) {
+          imageMap.set(s.image, []);
+        }
+        imageMap.get(s.image)!.push({ strain: s.strain, phenotype: s.phenotype || '' });
+      }
+    });
 
-        return html`
+    return html`
       <div class="crop-overlay">
         <div style="background: #1a1a1a; width: 80%; max-width: 800px; height: 80%; max-height: 600px; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color);">
           <div class="sd-header">
@@ -1097,10 +1175,10 @@ export class StrainLibraryDialog extends LitElement {
         </div>
       </div>
     `;
-    }
+  }
 
-    private renderImportDialog(): TemplateResult {
-        return html`
+  private renderImportDialog(): TemplateResult {
+    return html`
       <div class="crop-overlay">
         <div style="background: #1a1a1a; width: 400px; max-width: 90vw; border-radius: 16px; padding: 24px; border: 1px solid var(--border-color); color: #fff; display: flex; flex-direction: column; gap: 20px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1152,5 +1230,5 @@ export class StrainLibraryDialog extends LitElement {
         </div>
       </div>
     `;
-    }
+  }
 }

@@ -10,6 +10,7 @@ var mdiCheck = "M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z";
 var mdiCheckboxBlankOutline = "M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z";
 var mdiCheckboxMarked = "M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z";
 var mdiChevronDown = "M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z";
+var mdiChevronLeft = "M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z";
 var mdiChevronRight = "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z";
 var mdiClose = "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z";
 var mdiCloudOutline = "M6.5 20Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20M6.5 18H18.5Q19.55 18 20.27 17.27 21 16.55 21 15.5 21 14.45 20.27 13.73 19.55 13 18.5 13H17V11Q17 8.93 15.54 7.46 14.08 6 12 6 9.93 6 8.46 7.46 7 8.93 7 11H6.5Q5.05 11 4.03 12.03 3 13.05 3 14.5 3 15.95 4.03 17 5.05 18 6.5 18M12 12Z";
@@ -11390,6 +11391,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i {
         this._isImageSelectorOpen = false;
         this._importDialogOpen = false;
         this._importReplace = false;
+        // Pagination State
+        this._currentPage = 1;
+        this.ITEMS_PER_PAGE = 12;
     }
     _startEdit(strain) {
         if (strain) {
@@ -11500,6 +11504,16 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i {
         const filteredStrains = this.strains.filter(s => s.strain.toLowerCase().includes(query) ||
             (s.breeder && s.breeder.toLowerCase().includes(query)) ||
             (s.phenotype && s.phenotype.toLowerCase().includes(query)));
+        // Pagination Logic
+        const totalPages = Math.ceil(filteredStrains.length / this.ITEMS_PER_PAGE);
+        // Ensure current page is valid (e.g. if filtering reduced pages)
+        if (this._currentPage > totalPages && totalPages > 0) {
+            this._currentPage = totalPages;
+        }
+        if (this._currentPage < 1)
+            this._currentPage = 1;
+        const startIndex = (this._currentPage - 1) * this.ITEMS_PER_PAGE;
+        const paginatedStrains = filteredStrains.slice(startIndex, startIndex + this.ITEMS_PER_PAGE);
         return x `
       <div class="sd-header">
         <h2 class="sd-title">Strain Library</h2>
@@ -11517,13 +11531,16 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i {
               class="search-bar-input"
               placeholder="Search Strains by Name, Breeder..."
               .value=${this._searchQuery}
-              @input=${(e) => this._searchQuery = e.target.value}
+              @input=${(e) => {
+            this._searchQuery = e.target.value;
+            this._currentPage = 1; // Reset to page 1 on search
+        }}
             />
           </div>
         </div>
 
         <div class="sd-grid">
-          ${filteredStrains.map(strain => this.renderStrainCard(strain))}
+          ${paginatedStrains.map(strain => this.renderStrainCard(strain))}
         </div>
 
         ${filteredStrains.length === 0 ? x `
@@ -11531,6 +11548,26 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i {
             <svg style="width:48px;height:48px;fill:currentColor; opacity:0.5;" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
             <p>No strains found matching "${query}"</p>
           </div>
+        ` : E}
+
+        ${totalPages > 1 ? x `
+            <div class="pagination-container">
+                <button 
+                    class="pagination-btn" 
+                    ?disabled=${this._currentPage === 1}
+                    @click=${() => this._currentPage--}
+                >
+                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+                </button>
+                <span class="pagination-text">Page ${this._currentPage} of ${totalPages}</span>
+                <button 
+                    class="pagination-btn" 
+                    ?disabled=${this._currentPage === totalPages}
+                    @click=${() => this._currentPage++}
+                >
+                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                </button>
+            </div>
         ` : E}
       </div>
 
@@ -12503,9 +12540,46 @@ StrainLibraryDialog.styles = i$3 `
         font-weight: 700;
         padding: 0;
     }
-    .hg-num-input:focus {
+        .hg-num-input:focus {
         outline: none;
         border-bottom-color: var(--accent-green);
+    }
+
+    /* PAGINATION */
+    .pagination-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 24px;
+        padding-bottom: 8px;
+    }
+    .pagination-text {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+    .pagination-btn {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        color: #fff;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .pagination-btn:hover:not(:disabled) {
+        border-color: var(--accent-green);
+        color: var(--accent-green);
+    }
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        border-color: transparent;
     }
   `;
 __decorate([
@@ -12544,6 +12618,10 @@ __decorate([
     r(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_importReplace", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], StrainLibraryDialog.prototype, "_currentPage", void 0);
 StrainLibraryDialog = __decorate([
     t('strain-library-dialog')
 ], StrainLibraryDialog);
