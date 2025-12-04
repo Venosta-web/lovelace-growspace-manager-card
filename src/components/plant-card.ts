@@ -252,9 +252,16 @@ export class GrowspacePlantCard extends LitElement {
       { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Cure", stage: "cure" }
     ].filter(d => d.days !== undefined && d.days !== null);
 
-    const visibleDays = days.filter(d => d.days);
-
     const currentStage = (plant.state || '').toLowerCase();
+
+    let visibleDays = days.filter(d => d.days);
+
+    if (currentStage === 'dry') {
+      visibleDays = visibleDays.filter(d => d.stage === 'dry');
+    } else if (currentStage === 'cure') {
+      visibleDays = visibleDays.filter(d => d.stage === 'cure');
+    }
+
     const normalizedCurrent = currentStage === 'veg' ? 'vegetative' : currentStage;
 
     return html`

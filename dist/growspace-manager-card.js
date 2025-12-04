@@ -11393,7 +11393,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i {
         this._importReplace = false;
         // Pagination State
         this._currentPage = 1;
-        this.ITEMS_PER_PAGE = 12;
+        this.ITEMS_PER_PAGE = 15;
     }
     _startEdit(strain) {
         if (strain) {
@@ -12699,8 +12699,14 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i {
             { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Dry", stage: "dry" },
             { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Cure", stage: "cure" }
         ].filter(d => d.days !== undefined && d.days !== null);
-        const visibleDays = days.filter(d => d.days);
         const currentStage = (plant.state || '').toLowerCase();
+        let visibleDays = days.filter(d => d.days);
+        if (currentStage === 'dry') {
+            visibleDays = visibleDays.filter(d => d.stage === 'dry');
+        }
+        else if (currentStage === 'cure') {
+            visibleDays = visibleDays.filter(d => d.stage === 'cure');
+        }
         const normalizedCurrent = currentStage === 'veg' ? 'vegetative' : currentStage;
         return x `
       ${visibleDays.map(d => {
