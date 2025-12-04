@@ -1137,6 +1137,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     // Ensure combined graph is active
     this._activeEnvGraphs.add(metric1);
     this._activeEnvGraphs.add(metric2);
+
+    // Fetch history for new metrics if needed
+    const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
+    [metric1, metric2].forEach(m => {
+      if (m === 'dehumidifier') this._fetchDehumidifierHistory(range);
+      if (m === 'exhaust') this._fetchExhaustHistory(range);
+      if (m === 'humidifier') this._fetchHumidifierHistory(range);
+      if (m === 'soil_moisture') this._fetchSoilMoistureHistory(range);
+    });
+
     this.requestUpdate();
   }
 
@@ -1592,6 +1602,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
                   .hass=${this.hass}
                   .device=${selectedDeviceData}
                   .history=${this._historyData || []}
+                  .dehumidifierHistory=${this._dehumidifierHistory || []}
+                  .exhaustHistory=${this._exhaustHistory || []}
+                  .humidifierHistory=${this._humidifierHistory || []}
+                  .soilMoistureHistory=${this._soilMoistureHistory || []}
                   .metrics=${activeMetrics}
                   .isCombined=${true}
                   .metricConfig=${metricConfig}

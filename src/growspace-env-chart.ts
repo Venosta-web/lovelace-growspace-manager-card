@@ -9,6 +9,10 @@ export class GrowspaceEnvChart extends LitElement {
     @property({ attribute: false }) hass!: HomeAssistant;
     @property({ attribute: false }) device?: GrowspaceDevice;
     @property({ type: Array }) history: any[] = [];
+    @property({ type: Array }) dehumidifierHistory: any[] = [];
+    @property({ type: Array }) exhaustHistory: any[] = [];
+    @property({ type: Array }) humidifierHistory: any[] = [];
+    @property({ type: Array }) soilMoistureHistory: any[] = [];
     @property({ type: String }) metricKey = '';
     @property({ type: String }) unit = '';
     @property({ type: String }) color = '#ffffff';
@@ -751,17 +755,10 @@ export class GrowspaceEnvChart extends LitElement {
             let dataPoints: { time: number, value: number, meta?: any }[] = [];
 
             let historySource = this.history;
-            // Note: Dehumidifier history handling might need adjustment if passed separately, 
-            // but for now assuming it's in the same history or handled by parent.
-            // If dehumidifier history is separate, we might need another property.
-            // For now, let's assume the parent passes the correct history array if it's a single graph,
-            // but for combined, it's trickier.
-            // However, looking at the original code:
-            // if (metricKey === 'dehumidifier') historySource = this._dehumidifierHistory;
-            // This suggests we might need `dehumidifierHistory` prop too.
-            // For simplicity, let's assume `history` contains what we need or we add `dehumidifierHistory`.
-
-            // Actually, let's add `dehumidifierHistory` prop to be safe.
+            if (metricKey === 'dehumidifier') historySource = this.dehumidifierHistory;
+            else if (metricKey === 'exhaust') historySource = this.exhaustHistory;
+            else if (metricKey === 'humidifier') historySource = this.humidifierHistory;
+            else if (metricKey === 'soil_moisture') historySource = this.soilMoistureHistory;
 
             if (historySource && historySource.length > 0) {
                 const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());

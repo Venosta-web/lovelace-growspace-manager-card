@@ -10042,6 +10042,10 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i {
     constructor() {
         super(...arguments);
         this.history = [];
+        this.dehumidifierHistory = [];
+        this.exhaustHistory = [];
+        this.humidifierHistory = [];
+        this.soilMoistureHistory = [];
         this.metricKey = '';
         this.unit = '';
         this.color = '#ffffff';
@@ -10607,16 +10611,14 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i {
             const config = metricConfig[metricKey] || { color: '#fff', title: metricKey, unit: '' };
             let dataPoints = [];
             let historySource = this.history;
-            // Note: Dehumidifier history handling might need adjustment if passed separately, 
-            // but for now assuming it's in the same history or handled by parent.
-            // If dehumidifier history is separate, we might need another property.
-            // For now, let's assume the parent passes the correct history array if it's a single graph,
-            // but for combined, it's trickier.
-            // However, looking at the original code:
-            // if (metricKey === 'dehumidifier') historySource = this._dehumidifierHistory;
-            // This suggests we might need `dehumidifierHistory` prop too.
-            // For simplicity, let's assume `history` contains what we need or we add `dehumidifierHistory`.
-            // Actually, let's add `dehumidifierHistory` prop to be safe.
+            if (metricKey === 'dehumidifier')
+                historySource = this.dehumidifierHistory;
+            else if (metricKey === 'exhaust')
+                historySource = this.exhaustHistory;
+            else if (metricKey === 'humidifier')
+                historySource = this.humidifierHistory;
+            else if (metricKey === 'soil_moisture')
+                historySource = this.soilMoistureHistory;
             if (historySource && historySource.length > 0) {
                 const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
                 sortedHistory.forEach(h => {
@@ -10930,6 +10932,22 @@ __decorate([
     n$1({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceEnvChart.prototype, "history", void 0);
+__decorate([
+    n$1({ type: Array }),
+    __metadata("design:type", Array)
+], GrowspaceEnvChart.prototype, "dehumidifierHistory", void 0);
+__decorate([
+    n$1({ type: Array }),
+    __metadata("design:type", Array)
+], GrowspaceEnvChart.prototype, "exhaustHistory", void 0);
+__decorate([
+    n$1({ type: Array }),
+    __metadata("design:type", Array)
+], GrowspaceEnvChart.prototype, "humidifierHistory", void 0);
+__decorate([
+    n$1({ type: Array }),
+    __metadata("design:type", Array)
+], GrowspaceEnvChart.prototype, "soilMoistureHistory", void 0);
 __decorate([
     n$1({ type: String }),
     __metadata("design:type", Object)
@@ -16397,6 +16415,18 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         // Ensure combined graph is active
         this._activeEnvGraphs.add(metric1);
         this._activeEnvGraphs.add(metric2);
+        // Fetch history for new metrics if needed
+        const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
+        [metric1, metric2].forEach(m => {
+            if (m === 'dehumidifier')
+                this._fetchDehumidifierHistory(range);
+            if (m === 'exhaust')
+                this._fetchExhaustHistory(range);
+            if (m === 'humidifier')
+                this._fetchHumidifierHistory(range);
+            if (m === 'soil_moisture')
+                this._fetchSoilMoistureHistory(range);
+        });
         this.requestUpdate();
     }
     _handleHeaderAction(e) {
@@ -16816,6 +16846,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                   .hass=${this.hass}
                   .device=${selectedDeviceData}
                   .history=${this._historyData || []}
+                  .dehumidifierHistory=${this._dehumidifierHistory || []}
+                  .exhaustHistory=${this._exhaustHistory || []}
+                  .humidifierHistory=${this._humidifierHistory || []}
+                  .soilMoistureHistory=${this._soilMoistureHistory || []}
                   .metrics=${activeMetrics}
                   .isCombined=${true}
                   .metricConfig=${metricConfig}
