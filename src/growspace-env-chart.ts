@@ -775,9 +775,14 @@ export class GrowspaceEnvChart extends LitElement {
                             return isLightsOn === true ? 1 : 0;
                         }
                         if (key === 'dehumidifier') {
-                            if (ent.entity_id && ent.state) return (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 1 : 0;
+                            if (ent.state) return (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 1 : 0;
                             const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
                             return (val === true || val === 'on' || val === 1) ? 1 : 0;
+                        }
+                        if (key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture') {
+                            if (ent.state && !isNaN(parseFloat(ent.state))) {
+                                return ent.state;
+                            }
                         }
                         if (ent.attributes && ent.attributes[key] !== undefined) return ent.attributes[key];
                         if (ent.attributes && ent.attributes.observations && typeof ent.attributes.observations === 'object') return ent.attributes.observations[key];

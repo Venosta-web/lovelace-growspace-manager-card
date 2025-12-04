@@ -10635,10 +10635,15 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i {
                             return isLightsOn === true ? 1 : 0;
                         }
                         if (key === 'dehumidifier') {
-                            if (ent.entity_id && ent.state)
+                            if (ent.state)
                                 return (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 1 : 0;
                             const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
                             return (val === true || val === 'on' || val === 1) ? 1 : 0;
+                        }
+                        if (key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture') {
+                            if (ent.state && !isNaN(parseFloat(ent.state))) {
+                                return ent.state;
+                            }
                         }
                         if (ent.attributes && ent.attributes[key] !== undefined)
                             return ent.attributes[key];
