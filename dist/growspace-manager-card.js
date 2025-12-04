@@ -355,23 +355,32 @@ class DataService {
             const gid = ov.attributes.growspace_id;
             deviceGroups.set(gid, []);
         });
-        // Collect plants and group by growspace
-        allStates.forEach((entity) => {
-            if (entity.attributes?.row !== undefined && entity.attributes?.col !== undefined) {
-                const growspaceId = this.getGrowspaceId(entity);
-                if (!deviceGroups.has(growspaceId))
-                    deviceGroups.set(growspaceId, []);
-                deviceGroups.get(growspaceId).push(entity);
-            }
-        });
         // Build devices array
-        return Array.from(deviceGroups.entries()).map(([growspaceId, plants]) => {
+        return Array.from(deviceGroups.entries()).map(([growspaceId, _]) => {
             const overview = overviewSensors.find(ov => ov.attributes?.growspace_id === growspaceId);
             const name = overview?.attributes?.friendly_name ||
                 `Growspace ${growspaceId}`;
             const type = overview?.attributes?.type ??
                 (name.toLowerCase().includes('dry') ? 'dry' :
                     name.toLowerCase().includes('cure') ? 'cure' : 'normal');
+            // Reconstruct plant entities from grid
+            const plants = [];
+            const grid = overview?.attributes?.grid || {};
+            Object.values(grid).forEach((slot) => {
+                if (slot) {
+                    // Create a synthetic entity ID since individual plant entities are gone
+                    const entityId = `sensor.${slot.strain.toLowerCase().replace(/ /g, '_')}_${slot.phenotype.replace(/#/g, '').toLowerCase()}`;
+                    plants.push({
+                        entity_id: entityId,
+                        state: slot.stage || 'unknown',
+                        attributes: {
+                            ...slot,
+                            growspace_id: growspaceId,
+                            friendly_name: `${slot.strain} ${slot.phenotype}`
+                        }
+                    });
+                }
+            });
             return createGrowspaceDevice({
                 device_id: growspaceId,
                 overview_entity_id: overview?.entity_id,
@@ -16664,148 +16673,191 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
     renderGraphs() {
         if (this._activeEnvGraphs.size === 0)
             return x ``;
-        const renderedMetrics = new Set();
-        const graphs = [];
         const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
         const selectedDeviceData = this.dataService.getGrowspaceDevices().find(d => d.device_id === this.selectedDevice);
         if (!selectedDeviceData)
             return x ``;
-        // Render Linked Graphs
+        // Define the desired sort order (Environment chips first, then Device chips)
+        const METRIC_SORT_ORDER = [
+            'temperature',
+            'humidity',
+            'vpd',
+            'co2',
+            'light',
+            'irrigation',
+            'drain',
+            'optimal',
+            'exhaust',
+            'humidifier',
+            'dehumidifier'
+        ];
+        // Helper to get sort index for a metric
+        const getSortIndex = (metric) => {
+            const index = METRIC_SORT_ORDER.indexOf(metric);
+            return index !== -1 ? index : 999; // Put unknown metrics at the end
+        };
+        // 1. Collect all items to render (Linked Groups + Individual Metrics)
+        const itemsToRender = [];
+        const processedMetrics = new Set();
+        // Process Linked Groups
         this._linkedGraphGroups.forEach(group => {
-            if (group.some(m => this._activeEnvGraphs.has(m))) {
-                const activeMetrics = group.filter(m => this._activeEnvGraphs.has(m));
-                if (activeMetrics.length > 0) {
-                    const metricConfig = {
-                        temperature: { color: '#ff5252', title: 'Temperature', unit: '°C' },
-                        humidity: { color: '#2196f3', title: 'Humidity', unit: '%' },
-                        vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa' },
-                        co2: { color: '#4caf50', title: 'CO2', unit: 'ppm' },
-                        light: { color: '#ffc107', title: 'Light', unit: 'state' },
-                        irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state' },
-                        drain: { color: '#ff9800', title: 'Drain', unit: 'state' },
-                        exhaust: { color: '#795548', title: 'Exhaust', unit: '' },
-                        humidifier: { color: '#607d8b', title: 'Humidifier', unit: '' },
-                        dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: '' },
-                        optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state' }
-                    };
-                    graphs.push(x `
-                <growspace-env-chart
-                    .hass=${this.hass}
-                    .device=${selectedDeviceData}
-                    .history=${this._historyData || []}
-                    .metrics=${activeMetrics}
-                    .isCombined=${true}
-                    .metricConfig=${metricConfig}
-                    .range=${range}
-                    @toggle-graph=${this._handleToggleEnvGraph}
-                    @unlink-graphs=${this._handleUnlinkGraphs}
-                    @unlink-graph=${this._handleUnlinkGraphMetric}
-                ></growspace-env-chart>
-            `);
-                    group.forEach(m => renderedMetrics.add(m));
-                }
+            const activeMetricsInGroup = group.filter(m => this._activeEnvGraphs.has(m));
+            if (activeMetricsInGroup.length > 0) {
+                // Calculate sort index based on the highest priority (lowest index) metric in the group
+                const minIndex = Math.min(...activeMetricsInGroup.map(getSortIndex));
+                itemsToRender.push({
+                    type: 'group',
+                    metrics: activeMetricsInGroup,
+                    sortIndex: minIndex
+                });
+                // Mark these metrics as processed so we don't render them individually
+                activeMetricsInGroup.forEach(m => processedMetrics.add(m));
             }
         });
-        // Render Individual Graphs
+        // Process Individual Metrics (that are not part of a rendered group)
         this._activeEnvGraphs.forEach(metric => {
-            if (renderedMetrics.has(metric))
-                return;
-            let color = '#fff';
-            let title = metric;
-            let unit = '';
-            let icon = mdiMagnify;
-            let type = 'line';
-            let history = this._historyData || [];
-            switch (metric) {
-                case 'temperature':
-                    color = '#ff5252';
-                    title = 'Temperature';
-                    unit = '°C';
-                    icon = mdiThermometer;
-                    break;
-                case 'humidity':
-                    color = '#2196f3';
-                    title = 'Humidity';
-                    unit = '%';
-                    icon = mdiWaterPercent;
-                    break;
-                case 'vpd':
-                    color = '#9c27b0';
-                    title = 'VPD';
-                    unit = 'kPa';
-                    icon = mdiCloudOutline;
-                    break;
-                case 'co2':
-                    color = '#4caf50';
-                    title = 'CO2';
-                    unit = 'ppm';
-                    icon = mdiWeatherCloudy;
-                    break;
-                case 'light':
-                    color = '#ffc107';
-                    title = 'Light';
-                    unit = 'state';
-                    icon = mdiLightbulbOn;
-                    type = 'step';
-                    break;
-                case 'irrigation':
-                    color = '#03a9f4';
-                    title = 'Irrigation';
-                    unit = 'state';
-                    icon = mdiWater;
-                    type = 'step';
-                    break;
-                case 'drain':
-                    color = '#ff9800';
-                    title = 'Drain';
-                    unit = 'state';
-                    icon = mdiWater;
-                    type = 'step';
-                    break;
-                case 'exhaust':
-                    color = '#795548';
-                    title = 'Exhaust';
-                    unit = '';
-                    icon = mdiFan;
-                    history = this._exhaustHistory || [];
-                    break;
-                case 'humidifier':
-                    color = '#607d8b';
-                    title = 'Humidifier';
-                    unit = '';
-                    icon = mdiAirHumidifier;
-                    history = this._humidifierHistory || [];
-                    break;
-                case 'dehumidifier':
-                    color = '#546e7a';
-                    title = 'Dehumidifier';
-                    unit = '';
-                    icon = mdiAirHumidifierOff;
-                    history = this._dehumidifierHistory || [];
-                    break;
-                case 'optimal':
-                    color = '#4caf50';
-                    title = 'Optimal Conditions';
-                    unit = 'state';
-                    icon = mdiRadioboxMarked;
-                    type = 'step';
-                    break;
+            if (!processedMetrics.has(metric)) {
+                itemsToRender.push({
+                    type: 'single',
+                    metrics: [metric],
+                    sortIndex: getSortIndex(metric)
+                });
             }
-            graphs.push(x `
-        <growspace-env-chart
-            .hass=${this.hass}
-            .device=${selectedDeviceData}
-            .history=${history}
-            .metricKey=${metric}
-            .unit=${unit}
-            .color=${color}
-            .title=${title}
-            .icon=${icon}
-            .range=${range}
-            .type=${type}
-            @toggle-graph=${this._handleToggleEnvGraph}
-        ></growspace-env-chart>
-      `);
+        });
+        // 2. Sort the items
+        itemsToRender.sort((a, b) => a.sortIndex - b.sortIndex);
+        console.log('Rendering Graphs. Active:', Array.from(this._activeEnvGraphs));
+        console.log('Sorted Items:', itemsToRender.map(i => `${i.metrics.join('+')} (${i.sortIndex})`));
+        // 3. Render the sorted items
+        const graphs = itemsToRender.map(item => {
+            if (item.type === 'group') {
+                const activeMetrics = item.metrics;
+                const metricConfig = {
+                    temperature: { color: '#ff5252', title: 'Temperature', unit: '°C' },
+                    humidity: { color: '#2196f3', title: 'Humidity', unit: '%' },
+                    vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa' },
+                    co2: { color: '#4caf50', title: 'CO2', unit: 'ppm' },
+                    light: { color: '#ffc107', title: 'Light', unit: 'state' },
+                    irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state' },
+                    drain: { color: '#ff9800', title: 'Drain', unit: 'state' },
+                    exhaust: { color: '#795548', title: 'Exhaust', unit: '' },
+                    humidifier: { color: '#607d8b', title: 'Humidifier', unit: '' },
+                    dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: '' },
+                    optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state' }
+                };
+                return x `
+              <growspace-env-chart
+                  .hass=${this.hass}
+                  .device=${selectedDeviceData}
+                  .history=${this._historyData || []}
+                  .metrics=${activeMetrics}
+                  .isCombined=${true}
+                  .metricConfig=${metricConfig}
+                  .range=${range}
+                  @toggle-graph=${this._handleToggleEnvGraph}
+                  @unlink-graphs=${this._handleUnlinkGraphs}
+                  @unlink-graph=${this._handleUnlinkGraphMetric}
+              ></growspace-env-chart>
+          `;
+            }
+            else {
+                // Single Metric
+                const metric = item.metrics[0];
+                let color = '#fff';
+                let title = metric;
+                let unit = '';
+                let icon = mdiMagnify;
+                let type = 'line';
+                let history = this._historyData || [];
+                switch (metric) {
+                    case 'temperature':
+                        color = '#ff5252';
+                        title = 'Temperature';
+                        unit = '°C';
+                        icon = mdiThermometer;
+                        break;
+                    case 'humidity':
+                        color = '#2196f3';
+                        title = 'Humidity';
+                        unit = '%';
+                        icon = mdiWaterPercent;
+                        break;
+                    case 'vpd':
+                        color = '#9c27b0';
+                        title = 'VPD';
+                        unit = 'kPa';
+                        icon = mdiCloudOutline;
+                        break;
+                    case 'co2':
+                        color = '#4caf50';
+                        title = 'CO2';
+                        unit = 'ppm';
+                        icon = mdiWeatherCloudy;
+                        break;
+                    case 'light':
+                        color = '#ffc107', title = 'Light', unit = 'state';
+                        icon = mdiLightbulbOn;
+                        type = 'step';
+                        break;
+                    case 'irrigation':
+                        color = '#03a9f4';
+                        title = 'Irrigation';
+                        unit = 'state';
+                        icon = mdiWater;
+                        type = 'step';
+                        break;
+                    case 'drain':
+                        color = '#ff9800';
+                        title = 'Drain';
+                        unit = 'state';
+                        icon = mdiWater;
+                        type = 'step';
+                        break;
+                    case 'exhaust':
+                        color = '#795548';
+                        title = 'Exhaust';
+                        unit = '';
+                        icon = mdiFan;
+                        history = this._exhaustHistory || [];
+                        break;
+                    case 'humidifier':
+                        color = '#607d8b';
+                        title = 'Humidifier';
+                        unit = '';
+                        icon = mdiAirHumidifier;
+                        history = this._humidifierHistory || [];
+                        break;
+                    case 'dehumidifier':
+                        color = '#546e7a';
+                        title = 'Dehumidifier';
+                        unit = '';
+                        icon = mdiAirHumidifierOff;
+                        history = this._dehumidifierHistory || [];
+                        break;
+                    case 'optimal':
+                        color = '#4caf50';
+                        title = 'Optimal Conditions';
+                        unit = 'state';
+                        icon = mdiRadioboxMarked;
+                        type = 'step';
+                        break;
+                }
+                return x `
+          <growspace-env-chart
+              .hass=${this.hass}
+              .device=${selectedDeviceData}
+              .history=${history}
+              .metricKey=${metric}
+              .unit=${unit}
+              .color=${color}
+              .title=${title}
+              .icon=${icon}
+              .range=${range}
+              .type=${type}
+              @toggle-graph=${this._handleToggleEnvGraph}
+          ></growspace-env-chart>
+        `;
+            }
         });
         return x `
         <div class="graphs-container">
