@@ -12543,7 +12543,6 @@ StrainLibraryDialog.styles = i$3 `
           flex-direction: column;
         }
         
-        /* ... rest of mobile styles ... */
       }
       
       .mobile-menu-item {
@@ -13519,7 +13518,6 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
         this.growspaceOptions = {};
         this.historyData = null;
         this._menuOpen = false;
-        this._mobileEnvExpanded = false;
         this.linkedGraphGroups = [];
         this._draggedMetric = null;
     }
@@ -13677,16 +13675,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
           <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
             <div class="header-controls">
               
-              <div class="stat-chip mobile-env-trigger ${this._mobileEnvExpanded ? 'active' : ''}"
-                   @click=${() => this._mobileEnvExpanded = !this._mobileEnvExpanded}>
-                <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>
-                Environment
-                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-left: 4px; opacity: 0.7;">
-                  <path d="${this._mobileEnvExpanded ? mdiChevronDown : mdiChevronRight}"></path>
-                </svg>
-              </div>
-
-              <div class="gs-stats-chips ${this._mobileEnvExpanded ? 'expanded' : ''}">
+              <div class="gs-stats-chips">
 
                 ${temp !== undefined ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('temperature') ? 'active' : ''}"
@@ -14224,9 +14213,7 @@ GrowspaceHeader.styles = i$3 `
       opacity: 0.8;
     }
 
-    .stat-chip.mobile-env-trigger {
-      display: none;
-    }
+
 
     .gs-device-chips {
       display: flex;
@@ -14348,27 +14335,11 @@ GrowspaceHeader.styles = i$3 `
 
     @media (max-width: 768px) {
       .gs-stats-chips {
-        max-height: 0;
-        opacity: 0;
-        overflow: hidden;
-        transition: max-height 0.3s ease, opacity 0.3s ease;
-        flex-wrap: wrap;
-        mask-image: none;
-        -webkit-mask-image: none;
-        padding: 0; /* Ensure no padding when collapsed */
-        margin: 0;
-      }
-
-      .gs-stats-chips.expanded {
-        max-height: 500px;
-        opacity: 1;
-        overflow: visible;
-        padding: 4px 2px; /* Restore padding */
-        margin-top: 8px;
-      }
-
-      .stat-chip.mobile-env-trigger {
-        display: flex;
+        /* Ensure horizontal scroll on mobile */
+        justify-content: flex-start; /* Start from left on mobile */
+        mask-image: linear-gradient(to right, black 90%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+        padding-right: 16px; /* Add some padding for the fade effect */
       }
 
       .gs-header-top {
@@ -14377,22 +14348,13 @@ GrowspaceHeader.styles = i$3 `
       }
 
       .header-controls {
-        flex-wrap: wrap;
-        justify-content: space-between;
-      }
-
-      .stat-chip.mobile-env-trigger {
-        order: 1;
+        flex-wrap: nowrap; /* Prevent wrapping of controls */
+        overflow: hidden; /* Contain the chips */
       }
 
       .menu-container {
-        order: 2;
-      }
-
-      .gs-stats-chips {
-        order: 3;
-        width: 100%;
-        flex-basis: 100%;
+        /* Keep menu button accessible */
+        flex-shrink: 0;
       }
     }
   `;
@@ -14436,10 +14398,6 @@ __decorate([
     r(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_menuOpen", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "_mobileEnvExpanded", void 0);
 __decorate([
     n$1({ attribute: false }),
     __metadata("design:type", Array)

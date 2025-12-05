@@ -41,7 +41,7 @@ export class GrowspaceHeader extends LitElement {
   @property({ attribute: false }) public historyData: any[] | null = null;
 
   @state() private _menuOpen = false;
-  @state() private _mobileEnvExpanded = false;
+
   @property({ attribute: false }) public linkedGraphGroups: string[][] = [];
   @state() private _draggedMetric: string | null = null;
 
@@ -191,9 +191,7 @@ export class GrowspaceHeader extends LitElement {
       opacity: 0.8;
     }
 
-    .stat-chip.mobile-env-trigger {
-      display: none;
-    }
+
 
     .gs-device-chips {
       display: flex;
@@ -315,27 +313,11 @@ export class GrowspaceHeader extends LitElement {
 
     @media (max-width: 768px) {
       .gs-stats-chips {
-        max-height: 0;
-        opacity: 0;
-        overflow: hidden;
-        transition: max-height 0.3s ease, opacity 0.3s ease;
-        flex-wrap: wrap;
-        mask-image: none;
-        -webkit-mask-image: none;
-        padding: 0; /* Ensure no padding when collapsed */
-        margin: 0;
-      }
-
-      .gs-stats-chips.expanded {
-        max-height: 500px;
-        opacity: 1;
-        overflow: visible;
-        padding: 4px 2px; /* Restore padding */
-        margin-top: 8px;
-      }
-
-      .stat-chip.mobile-env-trigger {
-        display: flex;
+        /* Ensure horizontal scroll on mobile */
+        justify-content: flex-start; /* Start from left on mobile */
+        mask-image: linear-gradient(to right, black 90%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+        padding-right: 16px; /* Add some padding for the fade effect */
       }
 
       .gs-header-top {
@@ -344,22 +326,13 @@ export class GrowspaceHeader extends LitElement {
       }
 
       .header-controls {
-        flex-wrap: wrap;
-        justify-content: space-between;
-      }
-
-      .stat-chip.mobile-env-trigger {
-        order: 1;
+        flex-wrap: nowrap; /* Prevent wrapping of controls */
+        overflow: hidden; /* Contain the chips */
       }
 
       .menu-container {
-        order: 2;
-      }
-
-      .gs-stats-chips {
-        order: 3;
-        width: 100%;
-        flex-basis: 100%;
+        /* Keep menu button accessible */
+        flex-shrink: 0;
       }
     }
   `;
@@ -536,16 +509,7 @@ export class GrowspaceHeader extends LitElement {
           <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
             <div class="header-controls">
               
-              <div class="stat-chip mobile-env-trigger ${this._mobileEnvExpanded ? 'active' : ''}"
-                   @click=${() => this._mobileEnvExpanded = !this._mobileEnvExpanded}>
-                <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>
-                Environment
-                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-left: 4px; opacity: 0.7;">
-                  <path d="${this._mobileEnvExpanded ? mdiChevronDown : mdiChevronRight}"></path>
-                </svg>
-              </div>
-
-              <div class="gs-stats-chips ${this._mobileEnvExpanded ? 'expanded' : ''}">
+              <div class="gs-stats-chips">
 
                 ${temp !== undefined ? html`
                   <div class="stat-chip ${this.activeEnvGraphs.has('temperature') ? 'active' : ''}"
