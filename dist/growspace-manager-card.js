@@ -12487,7 +12487,6 @@ StrainLibraryDialog.styles = i$3 `
         color: #fff;
         border: none;
         box-shadow: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3);
-        display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
@@ -13670,6 +13669,47 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                 </div>
               </div>
             ` : ''}
+          <div class="menu-container">
+                <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
+                  <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
+                </div>
+                ${this._menuOpen ? x `
+                  <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
+                    <div class="menu-item" @click=${() => this._triggerAction('config')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                      <span class="menu-item-label">Config</span>
+                    </div>
+                    <div class="menu-item" @click=${() => this._triggerAction('edit')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                      <span class="menu-item-label">Edit</span>
+                      <div class="menu-toggle-switch ${this.isEditMode ? 'active' : ''}"></div>
+                    </div>
+                    <div class="menu-item" @click=${() => this._triggerAction('compact')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+                      <span class="menu-item-label">Compact View</span>
+                      <div class="menu-toggle-switch ${this.compact ? 'active' : ''}"></div>
+                    </div>
+                    <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
+                      <span class="menu-item-label">Control Dehumidifier</span>
+                      <div class="menu-toggle-switch ${overviewEntity?.attributes?.dehumidifier_control_enabled ? 'active' : ''}"></div>
+                    </div>
+                    <div class="menu-item" @click=${() => this._triggerAction('strains')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+                      <span class="menu-item-label">Strains</span>
+                    </div>
+                    <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                      <span class="menu-item-label">Irrigation</span>
+                    </div>
+                    <div class="menu-item" @click=${() => this._triggerAction('ai')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+                      <span class="menu-item-label">Ask AI</span>
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+            </div>  
           </div>
 
           <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
@@ -13934,47 +13974,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                   </div>` : ''}
               </div>
 
-              <div class="menu-container">
-                <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
-                </div>
-                ${this._menuOpen ? x `
-                  <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
-                    <div class="menu-item" @click=${() => this._triggerAction('config')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                      <span class="menu-item-label">Config</span>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('edit')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-                      <span class="menu-item-label">Edit</span>
-                      <div class="menu-toggle-switch ${this.isEditMode ? 'active' : ''}"></div>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('compact')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-                      <span class="menu-item-label">Compact View</span>
-                      <div class="menu-toggle-switch ${this.compact ? 'active' : ''}"></div>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
-                      <span class="menu-item-label">Control Dehumidifier</span>
-                      <div class="menu-toggle-switch ${overviewEntity?.attributes?.dehumidifier_control_enabled ? 'active' : ''}"></div>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('strains')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-                      <span class="menu-item-label">Strains</span>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                      <span class="menu-item-label">Irrigation</span>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('ai')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-                      <span class="menu-item-label">Ask AI</span>
-                    </div>
-                  </div>
-                ` : ''}
-              </div>
-            </div>
+              
 
             <div class="gs-device-chips">
               ${overviewEntity?.attributes?.exhaust_entity ? x `
@@ -14357,9 +14357,6 @@ GrowspaceHeader.styles = i$3 `
       }
 
       .menu-container {
-        position: absolute;
-        top: 0;
-        right: 0;
         z-index: 10;
         margin: 0;
       }
