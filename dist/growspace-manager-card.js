@@ -14213,8 +14213,6 @@ GrowspaceHeader.styles = i$3 `
       opacity: 0.8;
     }
 
-
-
     .gs-device-chips {
       display: flex;
       gap: 8px;

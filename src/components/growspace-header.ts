@@ -17,8 +17,6 @@ import {
   mdiAirHumidifier,
   mdiLink,
   mdiFan,
-  mdiChevronDown,
-  mdiChevronRight,
   mdiLightbulbOn,
   mdiLightbulbOff,
   mdiMagnify,
@@ -190,8 +188,6 @@ export class GrowspaceHeader extends LitElement {
       fill: currentColor;
       opacity: 0.8;
     }
-
-
 
     .gs-device-chips {
       display: flex;
