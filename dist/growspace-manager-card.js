@@ -14360,6 +14360,23 @@ GrowspaceHeader.styles = i$3 `
         margin-bottom: -8px; /* Pull chips up slightly */
         z-index: 5;
       }
+
+      .gs-device-chips {
+        justify-content: flex-start;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        mask-image: linear-gradient(to right, black 90%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+        padding: 4px 2px;
+        padding-right: 16px;
+        width: 100%;
+      }
+      .gs-device-chips::-webkit-scrollbar {
+        display: none;
+      }
     }
   `;
 __decorate([
