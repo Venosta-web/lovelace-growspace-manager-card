@@ -1,8 +1,8 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import {
-    mdiClose, mdiPencil, mdiDelete, mdiCheck, mdiContentCopy, mdiFlower,
-    mdiCannabis, mdiArrowRight, mdiSprout, mdiHairDryer
+  mdiClose, mdiPencil, mdiDelete, mdiCheck, mdiContentCopy, mdiFlower,
+  mdiCannabis, mdiArrowRight, mdiSprout, mdiHairDryer
 } from '@mdi/js';
 import { PlantEntity, PlantOverviewDialogState, PlantAttributeValue } from '../types';
 import { PlantUtils } from '../utils';
@@ -10,10 +10,10 @@ import { DialogRenderer } from '../dialog-renderer'; // We might need to keep us
 
 @customElement('plant-overview-dialog')
 export class PlantOverviewDialog extends LitElement {
-    @property({ attribute: false }) dialog: PlantOverviewDialogState | null = null;
-    @property({ attribute: false }) growspaceOptions: Record<string, string> = {};
+  @property({ attribute: false }) dialog: PlantOverviewDialogState | null = null;
+  @property({ attribute: false }) growspaceOptions: Record<string, string> = {};
 
-    static styles = css`
+  static styles = css`
     :host {
       display: block;
     }
@@ -147,52 +147,52 @@ export class PlantOverviewDialog extends LitElement {
     /* Add other styles from dialog-renderer as needed */
   `;
 
-    private _close() {
-        this.dispatchEvent(new CustomEvent('close'));
-    }
+  private _close() {
+    this.dispatchEvent(new CustomEvent('close'));
+  }
 
-    private _update() {
-        this.dispatchEvent(new CustomEvent('update'));
-    }
+  private _update() {
+    this.dispatchEvent(new CustomEvent('update'));
+  }
 
-    private _delete(plantId: string) {
-        this.dispatchEvent(new CustomEvent('delete', { detail: { plantId } }));
-    }
+  private _delete(plantId: string) {
+    this.dispatchEvent(new CustomEvent('delete', { detail: { plantId } }));
+  }
 
-    private _harvest(plant: PlantEntity) {
-        this.dispatchEvent(new CustomEvent('harvest', { detail: { plant } }));
-    }
+  private _harvest(plant: PlantEntity) {
+    this.dispatchEvent(new CustomEvent('harvest', { detail: { plant } }));
+  }
 
-    private _finishDrying(plant: PlantEntity) {
-        this.dispatchEvent(new CustomEvent('finish-drying', { detail: { plant } }));
-    }
+  private _finishDrying(plant: PlantEntity) {
+    this.dispatchEvent(new CustomEvent('finish-drying', { detail: { plant } }));
+  }
 
-    private _takeClone(plant: PlantEntity, numClones: number) {
-        this.dispatchEvent(new CustomEvent('take-clone', { detail: { plant, numClones } }));
-    }
+  private _takeClone(plant: PlantEntity, numClones: number) {
+    this.dispatchEvent(new CustomEvent('take-clone', { detail: { plant, numClones } }));
+  }
 
-    private _moveClone(plant: PlantEntity, targetGrowspace: string) {
-        this.dispatchEvent(new CustomEvent('move-clone', { detail: { plant, targetGrowspace } }));
-    }
+  private _moveClone(plant: PlantEntity, targetGrowspace: string) {
+    this.dispatchEvent(new CustomEvent('move-clone', { detail: { plant, targetGrowspace } }));
+  }
 
-    private _attributeChange(key: string, value: any) {
-        this.dispatchEvent(new CustomEvent('attribute-change', { detail: { key, value } }));
-    }
+  private _attributeChange(key: string, value: any) {
+    this.dispatchEvent(new CustomEvent('attribute-change', { detail: { key, value } }));
+  }
 
-    private _toggleShowAllDates() {
-        this.dispatchEvent(new CustomEvent('toggle-show-all-dates'));
-    }
+  private _toggleShowAllDates() {
+    this.dispatchEvent(new CustomEvent('toggle-show-all-dates'));
+  }
 
-    render() {
-        if (!this.dialog?.open) return html``;
+  render() {
+    if (!this.dialog) return html``;
 
-        const { plant, editedAttributes, selectedPlantIds } = this.dialog;
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        const stageColor = PlantUtils.getPlantStageColor(plant.state);
-        const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
-        const isBulkEdit = selectedPlantIds && selectedPlantIds.length > 1;
+    const { plant, editedAttributes, selectedPlantIds } = this.dialog;
+    const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+    const stageColor = PlantUtils.getPlantStageColor(plant.state);
+    const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
+    const isBulkEdit = selectedPlantIds && selectedPlantIds.length > 1;
 
-        return html`
+    return html`
       <ha-dialog
         open
         @closed=${this._close}
@@ -276,23 +276,23 @@ export class PlantOverviewDialog extends LitElement {
                   ${DialogRenderer.renderMD3DateTimeInput('Cure Start', editedAttributes.cure_start ?? '', (v) => this._attributeChange('cure_start', v))}
                ` : html`
                   ${editedAttributes.stage === 'mother'
-                    ? DialogRenderer.renderMD3DateTimeInput('Mother Start', editedAttributes.mother_start ?? '', (v) => this._attributeChange('mother_start', v))
-                    : nothing}
+          ? DialogRenderer.renderMD3DateTimeInput('Mother Start', editedAttributes.mother_start ?? '', (v) => this._attributeChange('mother_start', v))
+          : nothing}
                   ${editedAttributes.stage === 'clone'
-                    ? DialogRenderer.renderMD3DateTimeInput('Clone Start', editedAttributes.clone_start ?? '', (v) => this._attributeChange('clone_start', v))
-                    : nothing}
+          ? DialogRenderer.renderMD3DateTimeInput('Clone Start', editedAttributes.clone_start ?? '', (v) => this._attributeChange('clone_start', v))
+          : nothing}
                   ${editedAttributes.stage === 'veg' || editedAttributes.stage === 'flower'
-                    ? DialogRenderer.renderMD3DateTimeInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => this._attributeChange('veg_start', v))
-                    : nothing}
+          ? DialogRenderer.renderMD3DateTimeInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => this._attributeChange('veg_start', v))
+          : nothing}
                   ${editedAttributes.stage === 'flower'
-                    ? DialogRenderer.renderMD3DateTimeInput('Flower Start', editedAttributes.flower_start ?? '', (v) => this._attributeChange('flower_start', v))
-                    : nothing}
+          ? DialogRenderer.renderMD3DateTimeInput('Flower Start', editedAttributes.flower_start ?? '', (v) => this._attributeChange('flower_start', v))
+          : nothing}
                   ${editedAttributes.stage === 'dry' || editedAttributes.stage === 'cure'
-                    ? DialogRenderer.renderMD3DateTimeInput('Dry Start', editedAttributes.dry_start ?? '', (v) => this._attributeChange('dry_start', v))
-                    : nothing}
+          ? DialogRenderer.renderMD3DateTimeInput('Dry Start', editedAttributes.dry_start ?? '', (v) => this._attributeChange('dry_start', v))
+          : nothing}
                   ${editedAttributes.stage === 'cure'
-                    ? DialogRenderer.renderMD3DateTimeInput('Cure Start', editedAttributes.cure_start ?? '', (v) => this._attributeChange('cure_start', v))
-                    : nothing}
+          ? DialogRenderer.renderMD3DateTimeInput('Cure Start', editedAttributes.cure_start ?? '', (v) => this._attributeChange('cure_start', v))
+          : nothing}
                `}
              </div>
 
@@ -327,12 +327,12 @@ export class PlantOverviewDialog extends LitElement {
                   >
                   <button class="md3-button primary"
                     @click=${(e: MouseEvent) => {
-                    const btn = e.currentTarget as HTMLElement;
-                    // Find the input sibling (since we used display:contents, they are siblings in the flex container)
-                    const input = btn.previousElementSibling as HTMLInputElement;
-                    const numClones = input ? parseInt(input.value, 10) : 1;
-                    this._takeClone(plant, numClones);
-                }}
+          const btn = e.currentTarget as HTMLElement;
+          // Find the input sibling (since we used display:contents, they are siblings in the flex container)
+          const input = btn.previousElementSibling as HTMLInputElement;
+          const numClones = input ? parseInt(input.value, 10) : 1;
+          this._takeClone(plant, numClones);
+        }}
                   >
                     <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
                     Take Clone
@@ -362,11 +362,11 @@ export class PlantOverviewDialog extends LitElement {
                   </select>
                   <button class="md3-button primary"
                     @click=${(e: MouseEvent) => {
-                    const btn = e.currentTarget as HTMLElement;
-                    const select = btn.previousElementSibling as HTMLSelectElement;
-                    if (!select.value) { alert('Select a growspace'); return; }
-                    this._moveClone(plant, select.value);
-                }}
+          const btn = e.currentTarget as HTMLElement;
+          const select = btn.previousElementSibling as HTMLSelectElement;
+          if (!select.value) { alert('Select a growspace'); return; }
+          this._moveClone(plant, select.value);
+        }}
                   >
                     <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
                     Move
@@ -378,5 +378,5 @@ export class PlantOverviewDialog extends LitElement {
         </div>
       </ha-dialog>
     `;
-    }
+  }
 }

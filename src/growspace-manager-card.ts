@@ -21,6 +21,7 @@ import {
   StrainEntry,
   StrainRecommendationDialogState
 } from './types';
+import { ActiveDialogState } from './ui-state';
 import { PlantUtils } from "./utils";
 import { DataService } from './data-service';
 import { DialogRenderer } from './dialog-renderer';
@@ -36,15 +37,9 @@ import { growspaceCardStyles } from './styles/growspace-card.styles';
 
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
-  @state() private _addPlantDialog: AddPlantDialogState | null = null;
+  @state() private _activeDialog: ActiveDialogState = { type: 'NONE' };
   @state() private _defaultApplied = false;
-  @state() private _plantOverviewDialog: PlantOverviewDialogState | null = null;
   @state() private _optimisticDeletedPlantIds: Set<string> = new Set();
-  @state() private _strainLibraryDialog: StrainLibraryDialogState | null = null;
-  @state() private _configDialog: ConfigDialogState | null = null;
-  @state() private _growMasterDialog: GrowMasterDialogState | null = null;
-  @state() private _strainRecommendationDialog: StrainRecommendationDialogState | null = null;
-  @state() private _irrigationDialogOpen = false;
   @state() private selectedDevice: string | null = null;
   @state() private _isCompactView: boolean = false;
   @state() private _isControlDehumidifier: boolean = false;
@@ -482,12 +477,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _openPlantOverviewDialog(plant: PlantEntity, selectedIds?: string[]) {
-    this._plantOverviewDialog = {
-      open: true,
-      plant,
-      editedAttributes: { ...plant.attributes },
-      activeTab: 'dashboard',
-      selectedPlantIds: selectedIds
+    this._activeDialog = {
+      type: 'PLANT_OVERVIEW',
+      payload: {
+        plant,
+        editedAttributes: { ...plant.attributes },
+        activeTab: 'dashboard',
+        selectedPlantIds: selectedIds
+      }
     };
   }
   private _handleTakeClone = (motherPlant: PlantEntity) => {
@@ -518,30 +515,34 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const defaultStrain = strainLibrary.length > 0 ? strainLibrary[0].strain : '';
     const defaultPhenotype = strainLibrary.length > 0 ? strainLibrary[0].phenotype : '';
 
-    this._addPlantDialog = {
-      open: true,
-      row,
-      col,
-      strain: defaultStrain,
-      phenotype: defaultPhenotype,
-      veg_start: '',
-      flower_start: '',
-      seedling_start: '',
-      mother_start: '',
-      clone_start: '',
-      dry_start: '',
-      cure_start: '',
+    this._activeDialog = {
+      type: 'ADD_PLANT',
+      payload: {
+        row,
+        col,
+        strain: defaultStrain,
+        phenotype: defaultPhenotype,
+        veg_start: '',
+        flower_start: '',
+        seedling_start: '',
+        mother_start: '',
+        clone_start: '',
+        dry_start: '',
+        cure_start: '',
+      }
     };
   }
 
   private async _confirmAddPlant() {
-    if (!this._addPlantDialog || !this.selectedDevice) return;
-    if (!this._addPlantDialog.strain) {
+    if (this._activeDialog.type !== 'ADD_PLANT' || !this.selectedDevice) return;
+    const dialogState = this._activeDialog.payload;
+
+    if (!dialogState.strain) {
       this._showToast('Please enter a strain!', 'error');
       return;
     }
 
-    const { row, col, strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start } = this._addPlantDialog;
+    const { row, col, strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start } = dialogState;
 
     try {
       const payload: any = {
@@ -554,7 +555,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
       const dateFields: (keyof AddPlantDialogState)[] = ['veg_start', 'flower_start', 'seedling_start', 'mother_start', 'clone_start', 'dry_start', 'cure_start'];
       dateFields.forEach(field => {
-        const value = this._addPlantDialog![field] as string | undefined;
+        const value = dialogState[field] as string | undefined;
         if (value) {
           // If value is just a date (YYYY-MM-DD), append current time
           if (value.length === 10 && !value.includes('T')) {
@@ -574,7 +575,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       console.log("Adding plant:", payload);
       await this.dataService.addPlant(payload);
 
-      this._addPlantDialog = null;
+      this._activeDialog = { type: 'NONE' };
     } catch (err) {
       console.error('Error adding plant:', err);
     }
@@ -582,9 +583,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
 
   private async _updatePlant() {
-    if (!this._plantOverviewDialog) return;
+    if (this._activeDialog.type !== 'PLANT_OVERVIEW') return;
+    const dialogState = this._activeDialog.payload;
 
-    const { plant, editedAttributes, selectedPlantIds } = this._plantOverviewDialog;
+    // Use dialogState instead of accessing via this._plantOverviewDialog
+    const { plant, editedAttributes, selectedPlantIds } = dialogState;
     const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
 
     // Determine target IDs: either the single plant or the bulk selection
@@ -636,7 +639,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
       await Promise.all(updatePromises);
 
-      this._plantOverviewDialog = null;
+      this._activeDialog = { type: 'NONE' };
 
       // Clear selection after successful bulk update
       if (this._isEditMode) {
@@ -656,7 +659,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.requestUpdate();
 
     // Close dialog immediately
-    this._plantOverviewDialog = null;
+    this._activeDialog = { type: 'NONE' };
 
     try {
       await this.dataService.removePlant(plantId);
@@ -668,12 +671,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
   }
   private async _movePlantToNextStage(_: PlantEntity) {
-    if (!this._plantOverviewDialog?.plant) {
+    if (this._activeDialog.type !== 'PLANT_OVERVIEW') {
       console.error("No plant found in overview dialog");
       return;
     }
 
-    const plant = this._plantOverviewDialog.plant;
+    const plant = this._activeDialog.payload.plant;
     const stage = plant.attributes?.stage;
     let targetGrowspace = "";
 
@@ -705,7 +708,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       await this.dataService.harvestPlant(plantId, targetGrowspace);
 
       // Close dialog
-      this._plantOverviewDialog = null;
+      this._activeDialog = { type: 'NONE' };
     } catch (err) {
       console.error("Error moving plant to next stage:", err);
     }
@@ -735,7 +738,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   // Strain library methods
   private async _openStrainLibraryDialog() {
     await this._fetchStrainLibrary();
-    this._strainLibraryDialog = { open: true };
+    this._activeDialog = {
+      type: 'STRAIN_LIBRARY',
+      payload: {}
+    };
     this.requestUpdate();
   }
 
@@ -744,7 +750,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   //Irrigation dialog methods
   private _openIrrigationDialog() {
     if (!this.selectedDevice) return;
-    this._irrigationDialogOpen = true;
+    this._activeDialog = {
+      type: 'IRRIGATION',
+      payload: true
+    };
   }
 
 
@@ -927,7 +936,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       .then(() => {
         console.log(`Moved clone ${plant.attributes.friendly_name} to ${targetGrowspace}`);
         // Optionally refresh local state
-        this._plantOverviewDialog = null;
+        this._activeDialog = { type: 'NONE' };
       }).catch((err) => {
         console.error('Error moving clone:', err);
       });
@@ -1086,180 +1095,217 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   // Configuration Dialog Methods
   private _openConfigDialog() {
-    this._configDialog = {
-      open: true,
-      currentTab: 'add_growspace',
-      addGrowspaceData: { name: '', rows: 3, plants_per_row: 3, notification_service: '' },
-      environmentData: {
-        selectedGrowspaceId: '',
-        temp_sensor: '',
-        humidity_sensor: '',
-        vpd_sensor: '',
-        co2_sensor: '',
-        circulation_fan: '',
-        stress_threshold: 0.8,
-        mold_threshold: 0.8
+    this._activeDialog = {
+      type: 'CONFIG',
+      payload: {
+        currentTab: 'environment', // Default to environment tab as requested or logically appropriate
+        addGrowspaceData: {
+          name: '',
+          rows: 4,
+          plants_per_row: 4,
+          notification_service: 'mobile_app_notify'
+        },
+        environmentData: {
+          selectedGrowspaceId: this.selectedDevice || '',
+          temp_sensor: '',
+          humidity_sensor: '',
+          vpd_sensor: '',
+          co2_sensor: '',
+          circulation_fan: '',
+          stress_threshold: 0.8,
+          mold_threshold: 0.8
+        }
       }
     };
   }
 
-  private _handleAddGrowspaceSubmit() {
-    if (!this._configDialog) return;
-    const d = this._configDialog.addGrowspaceData;
-    if (!d.name) { this._showToast('Name is required', 'error'); return; }
-    this.dataService.addGrowspace(d)
-      .then(() => { this._configDialog = null; this.requestUpdate(); })
-      .catch(e => this._showToast(`Error: ${e.message}`, 'error'));
-  }
+  private async _handleConfigSubmits(type: 'env' | 'add') {
+    if (this._activeDialog?.type !== 'CONFIG') return;
+    const dialogState = this._activeDialog.payload;
 
-  private _handleEnvSubmit() {
-    if (!this._configDialog) return;
-    const d = this._configDialog.environmentData;
-    if (!d.selectedGrowspaceId || !d.temp_sensor || !d.humidity_sensor || !d.vpd_sensor) {
-      this._showToast('Growspace and required sensors (Temp, Hum, VPD) are mandatory', 'error');
-      return;
+    try {
+      if (type === 'add') {
+        const d = dialogState.addGrowspaceData;
+        if (!d.name) { this._showToast('Name is required', 'error'); return; }
+        await this.dataService.addGrowspace(d);
+        this._showToast('Growspace added successfully!', 'success');
+      } else if (type === 'env') {
+        const d = dialogState.environmentData;
+        if (!d.selectedGrowspaceId || !d.temp_sensor || !d.humidity_sensor || !d.vpd_sensor) {
+          this._showToast('Growspace and required sensors (Temp, Hum, VPD) are mandatory', 'error');
+          return;
+        }
+        await this.dataService.configureEnvironment({
+          growspace_id: d.selectedGrowspaceId,
+          temperature_sensor: d.temp_sensor,
+          humidity_sensor: d.humidity_sensor,
+          vpd_sensor: d.vpd_sensor,
+          co2_sensor: d.co2_sensor || undefined,
+          circulation_fan: d.circulation_fan || undefined,
+          stress_threshold: d.stress_threshold,
+          mold_threshold: d.mold_threshold
+        });
+        this._showToast('Environment configured successfully!', 'success');
+      }
+      this._activeDialog = { type: 'NONE' }; // Close dialog on success
+      this.requestUpdate();
+    } catch (e: any) {
+      this._showToast(`Error: ${e.message}`, 'error');
     }
-    this.dataService.configureEnvironment({
-      growspace_id: d.selectedGrowspaceId,
-      temperature_sensor: d.temp_sensor,
-      humidity_sensor: d.humidity_sensor,
-      vpd_sensor: d.vpd_sensor,
-      co2_sensor: d.co2_sensor || undefined,
-      circulation_fan: d.circulation_fan || undefined,
-      stress_threshold: d.stress_threshold,
-      mold_threshold: d.mold_threshold
-    })
-      .then(() => { this._configDialog = null; this.requestUpdate(); })
-      .catch(e => this._showToast(`Error: ${e.message}`, 'error'));
   }
 
   // Grow Master Methods
-  private _openGrowMasterDialog() {
-    if (!this.selectedDevice) return;
-    this._growMasterDialog = {
-      open: true,
-      growspaceId: this.selectedDevice,
-      userQuery: '',
-      isLoading: false,
-      response: null,
-      mode: 'single'
+  private async _openGrowMasterDialog(isStressed = false, personality?: string) {
+    this._activeDialog = {
+      type: 'GROW_MASTER',
+      payload: {
+        growspaceId: this.selectedDevice || '',
+        userQuery: '',
+        isLoading: false,
+        response: null,
+        mode: isStressed ? 'all' : 'single'
+      }
     };
+    if (isStressed) {
+      this._analyzeGrowspace(true);
+    }
   }
 
   private async _handleAskAdvice() {
-    if (!this._growMasterDialog || !this._growMasterDialog.userQuery) return;
+    if (this._activeDialog?.type !== 'GROW_MASTER') return;
+    const dialogState = this._activeDialog.payload;
+    if (!dialogState.userQuery) return;
 
-    this._growMasterDialog.isLoading = true;
-    this._growMasterDialog.response = null;
+    this._activeDialog = {
+      type: 'GROW_MASTER',
+      payload: { ...dialogState, isLoading: true, response: null }
+    };
     this.requestUpdate();
 
     try {
-      const result = await this.dataService.askGrowAdvice(this._growMasterDialog.growspaceId, this._growMasterDialog.userQuery);
-      if (this._growMasterDialog) {
-        // EXTRACT RESPONSE SAFELY
-        // Backend returns { response: { response: "text" } } or { response: "text" }
+      const result = await this.dataService.askGrowAdvice(dialogState.growspaceId, dialogState.userQuery);
+      if (this._activeDialog?.type === 'GROW_MASTER') {
+        let responseText: string | null = null;
         if (result && result.response) {
           if (typeof result.response === 'string') {
-            this._growMasterDialog.response = result.response;
+            responseText = result.response;
           } else if (typeof result.response === 'object' && 'response' in result.response && typeof result.response.response === 'string') {
-            // Nested response structure
-            this._growMasterDialog.response = result.response.response;
+            responseText = result.response.response;
           } else {
-            // Fallback
-            this._growMasterDialog.response = JSON.stringify(result, null, 2);
+            responseText = JSON.stringify(result, null, 2);
           }
         } else {
-          this._growMasterDialog.response = JSON.stringify(result, null, 2);
+          responseText = JSON.stringify(result, null, 2);
         }
+        this._activeDialog = {
+          type: 'GROW_MASTER',
+          payload: { ...this._activeDialog.payload, isLoading: false, response: responseText }
+        };
       }
     } catch (e: any) {
-      if (this._growMasterDialog) {
-        this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'}`;
+      if (this._activeDialog?.type === 'GROW_MASTER') {
+        this._activeDialog = {
+          type: 'GROW_MASTER',
+          payload: { ...this._activeDialog.payload, isLoading: false, response: `Error: ${e.message || 'Failed to get advice.'}` }
+        };
       }
     } finally {
-      if (this._growMasterDialog) {
-        this._growMasterDialog.isLoading = false;
-        this.requestUpdate();
-      }
+      this.requestUpdate();
     }
   }
 
-  private async _handleAnalyzeAll() {
-    if (!this._growMasterDialog) return;
+  private async _analyzeGrowspace(all = false) {
+    if (this._activeDialog?.type !== 'GROW_MASTER') return;
+    const dialogState = this._activeDialog.payload;
 
-    this._growMasterDialog.isLoading = true;
-    this._growMasterDialog.response = null;
-    this._growMasterDialog.mode = 'all';
+    this._activeDialog = {
+      type: 'GROW_MASTER',
+      payload: { ...dialogState, isLoading: true, response: null, mode: all ? 'all' : 'single' }
+    };
     this.requestUpdate();
 
     try {
-      const result = await this.dataService.analyzeAllGrowspaces();
-      if (this._growMasterDialog) {
-        // EXTRACT RESPONSE SAFELY
+      const result = all
+        ? await this.dataService.analyzeAllGrowspaces()
+        : await this.dataService.askGrowAdvice(dialogState.growspaceId, dialogState.userQuery); // Re-use for single analysis if needed
+
+      if (this._activeDialog?.type === 'GROW_MASTER') {
+        let responseText: string | null = null;
         if (result && result.response) {
           if (typeof result.response === 'string') {
-            this._growMasterDialog.response = result.response;
+            responseText = result.response;
           } else if (typeof result.response === 'object' && 'response' in result.response && typeof result.response.response === 'string') {
-            // Nested response structure
-            this._growMasterDialog.response = result.response.response;
+            responseText = result.response.response;
           } else {
-            this._growMasterDialog.response = JSON.stringify(result, null, 2);
+            responseText = JSON.stringify(result, null, 2);
           }
         } else {
-          this._growMasterDialog.response = JSON.stringify(result, null, 2);
+          responseText = JSON.stringify(result, null, 2);
         }
+        this._activeDialog = {
+          type: 'GROW_MASTER',
+          payload: { ...this._activeDialog.payload, isLoading: false, response: responseText }
+        };
       }
     } catch (e: any) {
-      if (this._growMasterDialog) {
-        this._growMasterDialog.response = `Error: ${e.message || 'Failed to get advice.'}`;
+      if (this._activeDialog?.type === 'GROW_MASTER') {
+        this._activeDialog = {
+          type: 'GROW_MASTER',
+          payload: { ...this._activeDialog.payload, isLoading: false, response: `Error: ${e.message || 'Failed to get analysis.'}` }
+        };
       }
     } finally {
-      if (this._growMasterDialog) {
-        this._growMasterDialog.isLoading = false;
-        this.requestUpdate();
-      }
-    }
-  }
-
-  private async _handleGetStrainRecommendation() {
-    if (!this._strainRecommendationDialog || !this._strainRecommendationDialog.userQuery) return;
-
-    this._strainRecommendationDialog.isLoading = true;
-    this._strainRecommendationDialog.response = null;
-    this.requestUpdate();
-
-    try {
-      const result = await this.dataService.getStrainRecommendation(this._strainRecommendationDialog.userQuery);
-      if (this._strainRecommendationDialog) {
-        // EXTRACT RESPONSE SAFELY
-        if (result && typeof result.response === 'string') {
-          this._strainRecommendationDialog.response = result.response;
-        } else {
-          this._strainRecommendationDialog.response = JSON.stringify(result, null, 2);
-        }
-      }
-    } catch (e: any) {
-      if (this._strainRecommendationDialog) {
-        this._strainRecommendationDialog.response = `Error: ${e.message || 'Failed to get recommendation.'}`;
-      }
-    } finally {
-      if (this._strainRecommendationDialog) {
-        this._strainRecommendationDialog.isLoading = false;
-        this.requestUpdate();
-      }
+      this.requestUpdate();
     }
   }
 
   private _openStrainRecommendationDialog() {
-    this._strainRecommendationDialog = {
-      open: true,
-      userQuery: '',
-      isLoading: false,
-      response: null
+    this._activeDialog = {
+      type: 'STRAIN_RECOMMENDATION',
+      payload: {
+        userQuery: '',
+        isLoading: false,
+        response: null
+      }
     };
   }
 
+  private async _getStrainRecommendation() {
+    if (this._activeDialog?.type !== 'STRAIN_RECOMMENDATION') return;
+    const dialogState = this._activeDialog.payload;
+    if (!dialogState.userQuery) return;
 
+    this._activeDialog = {
+      type: 'STRAIN_RECOMMENDATION',
+      payload: { ...dialogState, isLoading: true, response: null }
+    };
+    this.requestUpdate();
+
+    try {
+      const response = await this.dataService.getStrainRecommendation(dialogState.userQuery);
+      if (this._activeDialog?.type === 'STRAIN_RECOMMENDATION') {
+        let responseText: string | null = null;
+        if (response && typeof response.response === 'string') {
+          responseText = response.response;
+        } else {
+          responseText = JSON.stringify(response, null, 2);
+        }
+        this._activeDialog = {
+          type: 'STRAIN_RECOMMENDATION',
+          payload: { ...this._activeDialog.payload, isLoading: false, response: responseText }
+        };
+      }
+    } catch (e: any) {
+      if (this._activeDialog?.type === 'STRAIN_RECOMMENDATION') {
+        this._activeDialog = {
+          type: 'STRAIN_RECOMMENDATION',
+          payload: { ...this._activeDialog.payload, isLoading: false, response: `Error: ${e.message || 'Failed to get recommendation.'}` }
+        };
+      }
+    } finally {
+      this.requestUpdate();
+    }
+  }
 
 
   private get _activeDevices(): GrowspaceDevice[] {
@@ -1374,8 +1420,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         </div>
       </ha-card>
       
-      ${this.renderDialogs(growspaceOptions)}
-    `;
+
+          ${this._notification ? html`
+            <div class="toast-notification ${this._notification.type}">
+              ${this._notification.message}
+            </div>
+          ` : ''}
+          ${this.renderDialogs(growspaceOptions)}
+        `;
   }
 
 
@@ -1451,190 +1503,221 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
 
   private renderDialogs(growspaceOptions: Record<string, string>): TemplateResult {
+    const active = this._activeDialog;
+    if (active.type === 'NONE') return html``;
+
     const strainLibrary = this.dataService?.getStrainLibrary() || [];
     const devices = this.dataService.getGrowspaceDevices();
     const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
-    return html`
-      ${DialogRenderer.renderAddPlantDialog(
-      this._addPlantDialog,
-      strainLibrary,
-      selectedDeviceData?.name ?? '',
-      {
-        onClose: () => this._addPlantDialog = null,
-        onConfirm: () => this._confirmAddPlant(),
-        onStrainChange: (value) => {
-          if (this._addPlantDialog) {
+
+    // ADD PLANT DIALOG
+    if (active.type === 'ADD_PLANT') {
+      const dialogState = active.payload;
+      return DialogRenderer.renderAddPlantDialog(
+        dialogState,
+        strainLibrary,
+        selectedDeviceData?.name ?? '',
+        {
+          onClose: () => this._activeDialog = { type: 'NONE' },
+          onConfirm: () => this._confirmAddPlant(),
+          onStrainChange: (value) => {
             // When using the dropdown, we now get the unique strain name (string)
-            this._addPlantDialog.strain = value;
+            const payload = { ...active.payload, strain: value };
 
             // Attempt to pre-fill phenotype from library (first match)
             const entry = strainLibrary.find(s => s.strain === value);
             if (entry && entry.phenotype) {
-              this._addPlantDialog.phenotype = entry.phenotype;
+              payload.phenotype = entry.phenotype;
             } else {
-              // No default phenotype or not found, keep current or clear?
-              // Let's clear it if they switched strains, unless they are typing (but this is a select change)
-              this._addPlantDialog.phenotype = '';
+              payload.phenotype = '';
             }
-            (this as any).requestUpdate();
-          }
-        },
-        onPhenotypeChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.phenotype = value; },
-        onVegStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.veg_start = value; },
-        onFlowerStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.flower_start = value; },
-        onSeedlingStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.seedling_start = value; },
-        onMotherStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.mother_start = value; },
-        onCloneStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.clone_start = value; },
-        onDryStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.dry_start = value; },
-        onCureStartChange: (value) => { if (this._addPlantDialog) this._addPlantDialog.cure_start = value; },
-        onRowChange: (value) => {
-          if (this._addPlantDialog) {
+            this._activeDialog = { type: 'ADD_PLANT', payload };
+          },
+          onPhenotypeChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, phenotype: value } },
+          onVegStartChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, veg_start: value } },
+          onFlowerStartChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, flower_start: value } },
+          onSeedlingStartChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, seedling_start: value } },
+          onMotherStartChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, mother_start: value } },
+          onCloneStartChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, clone_start: value } },
+          onDryStartChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, dry_start: value } },
+          onCureStartChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, cure_start: value } },
+          onRowChange: (value) => {
             const val = parseInt(value);
             if (!isNaN(val) && val > 0) {
-              this._addPlantDialog.row = val - 1;
-              (this as any).requestUpdate();
+              this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, row: val - 1 } };
             }
-          }
-        },
-        onColChange: (value) => {
-          if (this._addPlantDialog) {
+          },
+          onColChange: (value) => {
             const val = parseInt(value);
             if (!isNaN(val) && val > 0) {
-              this._addPlantDialog.col = val - 1;
-              (this as any).requestUpdate();
+              this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, col: val - 1 } };
             }
-          }
-        },
-      }
-    )}
-
-    <plant-overview-dialog
-      .dialog=${this._plantOverviewDialog}
-      .growspaceOptions=${growspaceOptions}
-      @close=${() => this._plantOverviewDialog = null}
-      @update=${() => this._updatePlant()}
-      @delete=${(e: CustomEvent) => this._handleDeletePlant(e.detail.plantId)}
-      @harvest=${(e: CustomEvent) => this._harvestPlant(e.detail.plant)}
-      @finish-drying=${(e: CustomEvent) => this._finishDryingPlant(e.detail.plant)}
-      @take-clone=${(e: CustomEvent) => {
-        this.clonePlant(e.detail.plant, e.detail.numClones);
-        this._plantOverviewDialog = null;
-      }}
-      @move-clone=${(e: CustomEvent) => {
-        const { plant, targetGrowspace } = e.detail;
-        this.dataService.moveClone(plant.attributes.plant_id, targetGrowspace)
-          .then(() => {
-            console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
-            this._plantOverviewDialog = null;
-          }).catch((err) => {
-            console.error('Error moving clone:', err);
-          });
-      }}
-      @attribute-change=${(e: CustomEvent) => {
-        if (this._plantOverviewDialog) {
-          this._plantOverviewDialog.editedAttributes[e.detail.key] = e.detail.value;
+          },
         }
-      }}
-      @toggle-show-all-dates=${() => {
-        if (this._plantOverviewDialog) {
-          this._plantOverviewDialog.showAllDates = !this._plantOverviewDialog.showAllDates;
+      );
+    }
+
+    // PLANT OVERVIEW DIALOG
+    if (active.type === 'PLANT_OVERVIEW') {
+      return html`
+        <plant-overview-dialog
+          .dialog=${active.payload}
+          .growspaceOptions=${growspaceOptions}
+          @close=${() => this._activeDialog = { type: 'NONE' }}
+          @update=${() => this._updatePlant()}
+          @delete=${(e: CustomEvent) => this._handleDeletePlant(e.detail.plantId)}
+          @harvest=${(e: CustomEvent) => this._harvestPlant(e.detail.plant)}
+          @finish-drying=${(e: CustomEvent) => this._finishDryingPlant(e.detail.plant)}
+          @take-clone=${(e: CustomEvent) => {
+          this.clonePlant(e.detail.plant, e.detail.numClones);
+          this._activeDialog = { type: 'NONE' };
+        }}
+          @move-clone=${(e: CustomEvent) => {
+          const { plant, targetGrowspace } = e.detail;
+          this.dataService.moveClone(plant.attributes.plant_id, targetGrowspace)
+            .then(() => {
+              console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
+              this._activeDialog = { type: 'NONE' };
+            }).catch((err) => {
+              console.error('Error moving clone:', err);
+            });
+        }}
+          @attribute-change=${(e: CustomEvent) => {
+          const payload = active.payload;
+          payload.editedAttributes[e.detail.key] = e.detail.value;
           this.requestUpdate();
-        }
-      }}
-    ></plant-overview-dialog>
+        }}
+          @toggle-show-all-dates=${() => {
+          const payload = active.payload;
+          payload.showAllDates = !payload.showAllDates;
+          this.requestUpdate();
+        }}
+        ></plant-overview-dialog>
+      `;
+    }
 
-      <strain-library-dialog
-        .open=${!!this._strainLibraryDialog?.open}
-        .strains=${this._strainLibrary || []}
-        @close=${() => this._strainLibraryDialog = null}
-        @save-strain=${(e: CustomEvent) => this._addStrain(e.detail)}
-        @delete-strain=${(e: CustomEvent) => this._removeStrain(e.detail.key)}
-        @import-library=${(e: CustomEvent) => this._performImport(e.detail.file, e.detail.replace)}
-        @export-library=${() => this._handleExportLibrary()}
-        @get-recommendation=${() => this._openStrainRecommendationDialog()}
-      ></strain-library-dialog>
+    // STRAIN LIBRARY DIALOG
+    if (active.type === 'STRAIN_LIBRARY') {
+      return html`
+        <strain-library-dialog
+          .open=${true}
+          .strains=${this._strainLibrary || []}
+          @close=${() => this._activeDialog = { type: 'NONE' }}
+          @save-strain=${(e: CustomEvent) => this._addStrain(e.detail)}
+          @delete-strain=${(e: CustomEvent) => this._removeStrain(e.detail.key)}
+          @import-library=${(e: CustomEvent) => this._performImport(e.detail.file, e.detail.replace)}
+          @export-library=${() => this._handleExportLibrary()}
+          @get-recommendation=${() => this._openStrainRecommendationDialog()}
+        ></strain-library-dialog>
+      `;
+    }
 
-      ${DialogRenderer.renderConfigDialog(
-        this._configDialog,
+    // CONFIG DIALOG
+    if (active.type === 'CONFIG') {
+      const dialogState = active.payload;
+      return DialogRenderer.renderConfigDialog(
+        dialogState,
         growspaceOptions,
         {
-          onClose: () => this._configDialog = null,
-          onSwitchTab: (tab) => { if (this._configDialog) { this._configDialog.currentTab = tab; this.requestUpdate(); } },
-          onAddGrowspaceChange: (f, v) => { if (this._configDialog) { (this._configDialog.addGrowspaceData as any)[f] = v; this.requestUpdate(); } },
-          onAddGrowspaceSubmit: () => this._handleAddGrowspaceSubmit(),
-          onEnvChange: (f, v) => { if (this._configDialog) { (this._configDialog.environmentData as any)[f] = v; this.requestUpdate(); } },
-          onEnvSubmit: () => this._handleEnvSubmit(),
+          onClose: () => this._activeDialog = { type: 'NONE' },
+          onSwitchTab: (tab) => {
+            this._activeDialog = { type: 'CONFIG', payload: { ...dialogState, currentTab: tab } };
+          },
+          onAddGrowspaceChange: (f, v) => {
+            const newData = { ...dialogState.addGrowspaceData, [f]: v };
+            this._activeDialog = { type: 'CONFIG', payload: { ...dialogState, addGrowspaceData: newData } };
+          },
+          onAddGrowspaceSubmit: () => this._handleConfigSubmits('add'),
+          onEnvChange: (f, v) => {
+            const newData = { ...dialogState.environmentData, [f]: v };
+            this._activeDialog = { type: 'CONFIG', payload: { ...dialogState, environmentData: newData } };
+          },
+          onEnvSubmit: () => this._handleConfigSubmits('env'),
         }
-      )}
+      );
+    }
 
-    ${this._growMasterDialog ? (() => {
-        // Determine stress state for the dialog
-        let isStressed = false;
-        let personality = undefined;
+    // GROW MASTER DIALOG
+    if (active.type === 'GROW_MASTER') {
+      const dialogState = active.payload;
+      // Determine stress state for the dialog
+      let isStressed = false;
+      let personality = undefined;
 
-        // Attempt to find stress sensor
-        if (this.selectedDevice && this.hass) {
-          // Pattern checking for stress sensor
-          const id = this.selectedDevice;
-          const stressEntityIds = [
-            `binary_sensor.${id}_plants_under_stress`,
-            `binary_sensor.${id}_stress`,
-            `binary_sensor.growspace_manager_${id}_stress`
-          ];
+      // Attempt to find stress sensor
+      if (this.selectedDevice && this.hass) {
+        // Pattern checking for stress sensor
+        const id = this.selectedDevice;
+        const stressEntityIds = [
+          `binary_sensor.${id}_plants_under_stress`,
+          `binary_sensor.${id}_stress`,
+          `binary_sensor.growspace_manager_${id}_stress`
+        ];
 
-          for (const eid of stressEntityIds) {
-            const ent = this.hass.states[eid];
-            if (ent && ent.state === 'on') {
-              isStressed = true;
-              break;
-            }
+        for (const eid of stressEntityIds) {
+          const ent = this.hass.states[eid];
+          if (ent && ent.state === 'on') {
+            isStressed = true;
+            break;
           }
         }
+      }
 
-        // Personality check
-        if (this.hass) {
-          const manager = this.hass.states['sensor.growspace_manager'];
-          if (manager && manager.attributes && manager.attributes.ai_settings) {
-            personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
-          }
+      // Personality check
+      if (this.hass) {
+        const manager = this.hass.states['sensor.growspace_manager'];
+        if (manager && manager.attributes && manager.attributes.ai_settings) {
+          personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
         }
+      }
 
-        return DialogRenderer.renderGrowMasterDialog(
-          this._growMasterDialog,
-          isStressed,
-          personality,
-          {
-            onClose: () => this._growMasterDialog = null,
-            onQueryChange: (q) => { if (this._growMasterDialog) { this._growMasterDialog.userQuery = q; this.requestUpdate(); } },
-            onAnalyze: () => this._handleAskAdvice(),
-            onAnalyzeAll: () => this._handleAnalyzeAll()
-          }
-        );
-      })() : ''}
-
-      ${DialogRenderer.renderStrainRecommendationDialog(
-        this._strainRecommendationDialog,
+      return DialogRenderer.renderGrowMasterDialog(
+        dialogState,
+        isStressed,
+        personality,
         {
-          onClose: () => this._strainRecommendationDialog = null,
-          onQueryChange: (q) => { if (this._strainRecommendationDialog) { this._strainRecommendationDialog.userQuery = q; this.requestUpdate(); } },
-          onGetRecommendation: () => this._handleGetStrainRecommendation()
+          onClose: () => this._activeDialog = { type: 'NONE' },
+          onQueryChange: (q) => {
+            this._activeDialog = { type: 'GROW_MASTER', payload: { ...dialogState, userQuery: q } };
+          },
+          onAnalyze: () => this._analyzeGrowspace(false),
+          onAnalyzeAll: () => this._analyzeGrowspace(true)
         }
-      )}
+      );
+    }
 
-      <irrigation-dialog
-        .hass=${this.hass}
-        .open=${this._irrigationDialogOpen}
-        .growspaceId=${this.selectedDevice}
-        .growspaceName=${selectedDeviceData?.name || ''}
-        .growspaceEntityId=${selectedDeviceData?.overview_entity_id || ''}
-        @close=${() => this._irrigationDialogOpen = false}
-      ></irrigation-dialog>
+    // STRAIN RECOMMENDATION DIALOG
+    if (active.type === 'STRAIN_RECOMMENDATION') {
+      const dialogState = active.payload;
+      return DialogRenderer.renderStrainRecommendationDialog(
+        dialogState,
+        {
+          onClose: () => this._activeDialog = { type: 'NONE' },
+          onQueryChange: (q) => {
+            this._activeDialog = { type: 'STRAIN_RECOMMENDATION', payload: { ...dialogState, userQuery: q } };
+          },
+          onGetRecommendation: () => this._getStrainRecommendation() // Corrected method name
+        }
+      );
+    }
 
-      ${this._notification ? html`
-        <div class="toast-notification ${this._notification.type}">
-          ${this._notification.message}
-        </div>
-      ` : ''}
-    `;
+    // IRRIGATION DIALOG
+    if (active.type === 'IRRIGATION') {
+      return html`
+        <irrigation-dialog
+          .hass=${this.hass}
+          .open=${true}
+          .growspaceId=${this.selectedDevice}
+          .growspaceName=${selectedDeviceData?.name || ''}
+          .growspaceEntityId=${selectedDeviceData?.overview_entity_id || ''}
+          @close=${() => this._activeDialog = { type: 'NONE' }}
+        ></irrigation-dialog>
+       `;
+    }
+
+    return html``;
   }
+
+
+
 }

@@ -32,7 +32,8 @@ export class DialogRenderer {
          onColChange: (value: string) => void;
       }
    ): TemplateResult {
-      if (!dialog?.open) return html``;
+      if (!dialog) return html``;
+
 
       // Extract unique strain names from the library
       const uniqueStrains = [...new Set(strainLibrary.map(s => s.strain))].sort();
@@ -357,7 +358,8 @@ export class DialogRenderer {
          onEnvSubmit: () => void;
       }
    ): TemplateResult {
-      if (!dialog?.open) return html``;
+      if (!dialog) return html``;
+
 
       const activeTab = dialog.currentTab;
 
@@ -562,7 +564,8 @@ export class DialogRenderer {
          onAnalyzeAll: () => void;
       }
    ): TemplateResult {
-      if (!dialog?.open) return html``;
+      if (!dialog) return html``;
+
 
       // Border color based on stress
       // Light Green: #4CAF50, Warning Orange: #FF9800
@@ -708,7 +711,8 @@ export class DialogRenderer {
          onGetRecommendation: () => void;
       }
    ): TemplateResult {
-      if (!dialog?.open) return html``;
+      if (!dialog) return html``;
+
 
       return html`
       <ha-dialog

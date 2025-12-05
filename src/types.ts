@@ -134,7 +134,7 @@ export function createGrowspaceDevice(
 }
 
 export interface AddPlantDialogState {
-  open: boolean;
+
   row: number;
   col: number;
   strain?: string;
@@ -150,7 +150,7 @@ export interface AddPlantDialogState {
 }
 
 export interface PlantOverviewDialogState {
-  open: boolean;
+
   plant: PlantEntity;
   editedAttributes: { [key: string]: any };
   activeTab: 'dashboard' | 'timeline' | 'genetics';
@@ -159,11 +159,11 @@ export interface PlantOverviewDialogState {
 }
 
 export interface StrainLibraryDialogState {
-  open: boolean;
+
 }
 
 export interface ConfigDialogState {
-  open: boolean;
+
   currentTab: 'add_growspace' | 'environment';
   addGrowspaceData: {
     name: string;
@@ -184,7 +184,7 @@ export interface ConfigDialogState {
 }
 
 export interface GrowMasterDialogState {
-  open: boolean;
+
   growspaceId: string;
   userQuery: string;
   isLoading: boolean;
@@ -193,7 +193,7 @@ export interface GrowMasterDialogState {
 }
 
 export interface StrainRecommendationDialogState {
-  open: boolean;
+
   userQuery: string;
   isLoading: boolean;
   response: string | null;
