@@ -13632,8 +13632,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
         this.linkedGraphGroups = [];
         this._draggedMetric = null;
         this._mobileLink = false;
-        this._isCompact = false; // Using _isCompact or similar for mobile check, but code uses media queries.
-        // I will use a direct checks or a dedicated state for reactivity.
+        this._isCompact = false;
         this._isMobileCheck = false;
         this._hasTouch = false;
         this._checkMobileBound = () => this._checkMobile();
@@ -14318,7 +14317,10 @@ GrowspaceHeader.styles = i$3 `
        mask-image: linear-gradient(to right, black 85%, transparent 100%);
        -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
        padding: 4px 2px;
+
        touch-action: pan-x;
+       max-width: 100%;
+       -webkit-overflow-scrolling: touch;
     }
     .gs-stats-chips::-webkit-scrollbar {
       display: none;
@@ -14340,7 +14342,8 @@ GrowspaceHeader.styles = i$3 `
       transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
       user-select: none;
       flex-shrink: 0;
-      white-space: nowrap;
+       white-space: nowrap;
+       touch-action: pan-x;
     }
 
     .stat-chip:hover {
@@ -14368,6 +14371,9 @@ GrowspaceHeader.styles = i$3 `
       gap: 8px;
       flex-wrap: wrap;
       justify-content: flex-end;
+      touch-action: pan-x;
+      max-width: 100%;
+      -webkit-overflow-scrolling: touch;
     }
 
     .menu-container {
