@@ -4,7 +4,7 @@
   "description": "",
   "main": "rollup.config.js",
   "scripts": {
-    "build": "rollup -c",
+    "build": "rollup -c && cp dist/growspace-manager-card.js growspace-manager-card.js",
     "build:coverage": "COVERAGE=true rollup -c",
     "test": "playwright test",
     "test:coverage": "playwright test --reporter=html,line && node scripts/coverage-report.js",
