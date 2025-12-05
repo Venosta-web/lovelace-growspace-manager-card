@@ -17098,16 +17098,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         if (!selectedDeviceData) {
             return x `<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
         }
-        // Check if growspace is empty
-        if (selectedDeviceData.plants.length === 0) {
-            return x `
-        <ha-card>
-          <div class="no-data" style="text-align:center; padding: 1.5rem;">
-            Growspace <strong>${selectedDeviceData.name}</strong> is currently empty.
-          </div>
-        </ha-card>
-      `;
-        }
         const growspaceOptions = {};
         const growspaces = this.hass.states['sensor.growspaces_list']?.attributes?.growspaces;
         if (growspaces) {
