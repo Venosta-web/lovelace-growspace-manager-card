@@ -172,6 +172,7 @@ export class GrowspaceHeader extends LitElement {
       user-select: none;
       flex-shrink: 0;
        white-space: nowrap;
+       touch-action: pan-x;
     }
 
     .stat-chip:hover {

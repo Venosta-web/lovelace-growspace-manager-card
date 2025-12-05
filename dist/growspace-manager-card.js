@@ -14343,6 +14343,7 @@ GrowspaceHeader.styles = i$3 `
       user-select: none;
       flex-shrink: 0;
        white-space: nowrap;
+       touch-action: pan-x;
     }
 
     .stat-chip:hover {
