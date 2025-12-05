@@ -305,10 +305,17 @@ export class GrowspaceHeader extends LitElement {
     .link-icon {
       display: inline-flex;
       align-items: center;
-      margin-left: 4px;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      margin-left: -8px;
+      margin-right: -8px;
     }
 
     @media (max-width: 768px) {
+      .gs-title-group {
+        gap: 8px;
+      }
       .gs-stats-chips {
         /* Ensure horizontal scroll on mobile */
         justify-content: flex-start; /* Start from left on mobile */
@@ -548,7 +555,7 @@ export class GrowspaceHeader extends LitElement {
           const { linked, groupIndex } = this._isMetricLinked('temperature');
           if (linked) {
             return html`
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -575,7 +582,7 @@ export class GrowspaceHeader extends LitElement {
           const { linked, groupIndex } = this._isMetricLinked('humidity');
           if (linked) {
             return html`
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -602,7 +609,7 @@ export class GrowspaceHeader extends LitElement {
           const { linked, groupIndex } = this._isMetricLinked('vpd');
           if (linked) {
             return html`
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -629,7 +636,7 @@ export class GrowspaceHeader extends LitElement {
           const { linked, groupIndex } = this._isMetricLinked('co2');
           if (linked) {
             return html`
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -657,7 +664,7 @@ export class GrowspaceHeader extends LitElement {
           const { linked, groupIndex } = this._isMetricLinked('light');
           if (linked) {
             return html`
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -684,7 +691,7 @@ export class GrowspaceHeader extends LitElement {
           const { linked, groupIndex } = this._isMetricLinked('soil_moisture');
           if (linked) {
             return html`
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -712,7 +719,7 @@ export class GrowspaceHeader extends LitElement {
           const { linked, groupIndex } = this._isMetricLinked('irrigation');
           if (linked) {
             return html`
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -740,7 +747,7 @@ export class GrowspaceHeader extends LitElement {
           const { linked, groupIndex } = this._isMetricLinked('drain');
           if (linked) {
             return html`
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -768,7 +775,7 @@ export class GrowspaceHeader extends LitElement {
           const { linked, groupIndex } = this._isMetricLinked('optimal');
           if (linked) {
             return html`
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>

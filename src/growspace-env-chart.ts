@@ -169,8 +169,14 @@ export class GrowspaceEnvChart extends LitElement {
     }
   `;
 
-    private _handleGraphHover(e: MouseEvent, metricKey: string, dataPoints: any[], rect: DOMRect, unit: string) {
-        const x = e.clientX - rect.left;
+    private _handleGraphHover(e: MouseEvent | TouchEvent, metricKey: string, dataPoints: any[], rect: DOMRect, unit: string) {
+        let clientX: number;
+        if (window.TouchEvent && e instanceof TouchEvent) {
+            clientX = e.touches[0].clientX;
+        } else {
+            clientX = (e as MouseEvent).clientX;
+        }
+        const x = clientX - rect.left;
         const width = rect.width;
 
         // Determine range
@@ -611,6 +617,16 @@ export class GrowspaceEnvChart extends LitElement {
                     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                     this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
                 }}
+                @touchmove=${(e: TouchEvent) => {
+                    if (e.cancelable) e.preventDefault();
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
+                }}
+                @touchstart=${(e: TouchEvent) => {
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
+                }}
+                @touchend=${() => this._tooltip = null}
                 @mouseleave=${() => this._tooltip = null}>
 
                ${this._tooltip && this._tooltip.id === metricKey ? html`
@@ -669,6 +685,16 @@ export class GrowspaceEnvChart extends LitElement {
                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                 this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
             }}
+              @touchmove=${(e: TouchEvent) => {
+                if (e.cancelable) e.preventDefault();
+                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
+            }}
+              @touchstart=${(e: TouchEvent) => {
+                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
+            }}
+              @touchend=${() => this._tooltip = null}
               @mouseleave=${() => this._tooltip = null}>
 
              ${this._tooltip && this._tooltip.id === metricKey ? html`

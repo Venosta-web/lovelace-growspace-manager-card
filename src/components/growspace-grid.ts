@@ -307,10 +307,56 @@ export class GrowspaceGrid extends LitElement {
     }
 
     this.dispatchEvent(new CustomEvent('selection-changed', {
-        detail: { selectedPlants: newSet },
+      detail: { selectedPlants: newSet },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
+  private _handleMobileDrop(e: CustomEvent) {
+    const { x, y, plant } = e.detail;
+
+    // Check all slots (cards and empty slots)
+    const slots = this.shadowRoot?.querySelectorAll('growspace-plant-card, .plant-card-empty');
+    if (!slots) return;
+
+    let targetRow: number | null = null;
+    let targetCol: number | null = null;
+    let targetPlant: PlantEntity | null = null;
+
+    for (const slot of Array.from(slots)) {
+      const rect = slot.getBoundingClientRect();
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        if (slot.tagName.toLowerCase() === 'growspace-plant-card') {
+          targetRow = (slot as any).row;
+          targetCol = (slot as any).col;
+          targetPlant = (slot as any).plant;
+        } else {
+          const rowStr = slot.getAttribute('data-row');
+          const colStr = slot.getAttribute('data-col');
+          if (rowStr && colStr) {
+            targetRow = parseInt(rowStr);
+            targetCol = parseInt(colStr);
+            targetPlant = null;
+          }
+        }
+        break;
+      }
+    }
+
+    if (targetRow !== null && targetCol !== null) {
+      this.dispatchEvent(new CustomEvent('plant-drop', {
+        detail: {
+          originalEvent: null,
+          sourcePlant: plant,
+          targetRow,
+          targetCol,
+          targetPlant
+        },
         bubbles: true,
         composed: true
-    }));
+      }));
+    }
   }
 
   render() {
@@ -325,20 +371,21 @@ export class GrowspaceGrid extends LitElement {
 
     return html`
       <div class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
-           style="${gridStyle}">
+           style="${gridStyle}"
+           @mobile-drop=${this._handleMobileDrop}>
         ${flatGrid.map((plant, index) => {
-          // Recalculate row/col based on grid index
-          const row = Math.floor(index / this.cols) + 1;
-          const col = (index % this.cols) + 1;
+      // Recalculate row/col based on grid index
+      const row = Math.floor(index / this.cols) + 1;
+      const col = (index % this.cols) + 1;
 
-          if (!plant) {
-            return this.renderEmptySlot(row, col);
-          }
+      if (!plant) {
+        return this.renderEmptySlot(row, col);
+      }
 
-          const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-          const isSelected = this.selectedPlants.has(plantId);
+      const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+      const isSelected = this.selectedPlants.has(plantId);
 
-          return html`
+      return html`
             <growspace-plant-card
               .plant=${plant}
               .row=${row}
@@ -352,7 +399,7 @@ export class GrowspaceGrid extends LitElement {
               @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
             ></growspace-plant-card>
           `;
-        })}
+    })}
       </div>
     `;
   }
@@ -361,6 +408,8 @@ export class GrowspaceGrid extends LitElement {
     return html`
       <div
         class="plant-card-empty"
+        data-row="${row}"
+        data-col="${col}"
         style="grid-row: ${row}; grid-column: ${col}"
         @click=${() => this.dispatchEvent(new CustomEvent('add-plant-click', { detail: { row: row - 1, col: col - 1 } }))}
         @dragover=${this._handleDragOver}

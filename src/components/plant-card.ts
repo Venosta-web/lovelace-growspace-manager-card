@@ -174,7 +174,99 @@ export class GrowspacePlantCard extends LitElement {
       opacity: 0.5;
       transform: rotate(5deg);
     }
+    
+    .plant-card-rich.dragging-mobile {
+      opacity: 0.8;
+      transform: scale(1.05);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+      z-index: 1000;
+      pointer-events: none; /* Let events pass through to grid for elementFromPoint */
+    }
   `;
+
+  private _longPressTimer: number | undefined;
+  private _isDraggingMobile = false;
+  private _startX = 0;
+  private _startY = 0;
+  private _initialLeft = 0;
+  private _initialTop = 0;
+
+  private _handleTouchStart(e: TouchEvent) {
+    if (this.isEditMode) return;
+
+    // Only single touch
+    if (e.touches.length !== 1) return;
+
+    this._startX = e.touches[0].clientX;
+    this._startY = e.touches[0].clientY;
+
+    const card = this.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
+    const rect = card.getBoundingClientRect();
+    this._initialLeft = rect.left;
+    this._initialTop = rect.top;
+
+    this._longPressTimer = window.setTimeout(() => {
+      this._startMobileDrag(e);
+    }, 500);
+  }
+
+  private _handleTouchMove(e: TouchEvent) {
+    if (this._isDraggingMobile) {
+      e.preventDefault(); // Stop scrolling
+      const touch = e.touches[0];
+      const card = this.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
+
+      const deltaX = touch.clientX - this._startX;
+      const deltaY = touch.clientY - this._startY;
+
+      card.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.05)`;
+    } else {
+      // If moved significantly before timer fires, cancel timer
+      const touch = e.touches[0];
+      if (Math.abs(touch.clientX - this._startX) > 10 || Math.abs(touch.clientY - this._startY) > 10) {
+        clearTimeout(this._longPressTimer);
+      }
+    }
+  }
+
+  private _handleTouchEnd(e: TouchEvent) {
+    clearTimeout(this._longPressTimer);
+    if (this._isDraggingMobile) {
+      this._endMobileDrag(e);
+    }
+  }
+
+  private _startMobileDrag(e: TouchEvent) {
+    this._isDraggingMobile = true;
+    const card = this.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
+    card.classList.add('dragging-mobile');
+
+    // Dispatch event to notify grid/parent
+    this.dispatchEvent(new CustomEvent('mobile-drag-start', {
+      detail: { plant: this.plant },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
+  private _endMobileDrag(e: TouchEvent) {
+    this._isDraggingMobile = false;
+    const card = this.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
+    card.classList.remove('dragging-mobile');
+    card.style.transform = '';
+
+    const touch = e.changedTouches[0];
+
+    this.dispatchEvent(new CustomEvent('mobile-drop', {
+      detail: {
+        x: touch.clientX,
+        y: touch.clientY,
+        plant: this.plant
+      },
+      bubbles: true,
+      composed: true
+    }));
+  }
 
   private _handleDragStart(e: DragEvent) {
     if (this.isEditMode) {
@@ -318,6 +410,9 @@ export class GrowspacePlantCard extends LitElement {
         @dragend=${this._handleDragEnd}
         @dragover=${this._handleDragOver}
         @drop=${this._handleDrop}
+        @touchstart=${this._handleTouchStart}
+        @touchmove=${this._handleTouchMove}
+        @touchend=${this._handleTouchEnd}
         @click=${this._handleClick}
       >
         ${imageUrl ? html`

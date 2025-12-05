@@ -9894,7 +9894,14 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i {
         this._tooltip = null;
     }
     _handleGraphHover(e, metricKey, dataPoints, rect, unit) {
-        const x = e.clientX - rect.left;
+        let clientX;
+        if (window.TouchEvent && e instanceof TouchEvent) {
+            clientX = e.touches[0].clientX;
+        }
+        else {
+            clientX = e.clientX;
+        }
+        const x = clientX - rect.left;
         const width = rect.width;
         // Determine range
         const rangeKey = this.range;
@@ -10307,6 +10314,17 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i {
                 const rect = e.currentTarget.getBoundingClientRect();
                 this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
             }}
+                @touchmove=${(e) => {
+                if (e.cancelable)
+                    e.preventDefault();
+                const rect = e.currentTarget.getBoundingClientRect();
+                this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
+            }}
+                @touchstart=${(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
+            }}
+                @touchend=${() => this._tooltip = null}
                 @mouseleave=${() => this._tooltip = null}>
 
                ${this._tooltip && this._tooltip.id === metricKey ? x `
@@ -10366,6 +10384,17 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i {
             const rect = e.currentTarget.getBoundingClientRect();
             this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
         }}
+              @touchmove=${(e) => {
+            if (e.cancelable)
+                e.preventDefault();
+            const rect = e.currentTarget.getBoundingClientRect();
+            this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
+        }}
+              @touchstart=${(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
+        }}
+              @touchend=${() => this._tooltip = null}
               @mouseleave=${() => this._tooltip = null}>
 
              ${this._tooltip && this._tooltip.id === metricKey ? x `
@@ -13152,6 +13181,77 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i {
         this.strainLibrary = [];
         this.isEditMode = false;
         this.selected = false;
+        this._isDraggingMobile = false;
+        this._startX = 0;
+        this._startY = 0;
+        this._initialLeft = 0;
+        this._initialTop = 0;
+    }
+    _handleTouchStart(e) {
+        if (this.isEditMode)
+            return;
+        // Only single touch
+        if (e.touches.length !== 1)
+            return;
+        this._startX = e.touches[0].clientX;
+        this._startY = e.touches[0].clientY;
+        const card = this.shadowRoot?.querySelector('.plant-card-rich');
+        const rect = card.getBoundingClientRect();
+        this._initialLeft = rect.left;
+        this._initialTop = rect.top;
+        this._longPressTimer = window.setTimeout(() => {
+            this._startMobileDrag(e);
+        }, 500);
+    }
+    _handleTouchMove(e) {
+        if (this._isDraggingMobile) {
+            e.preventDefault(); // Stop scrolling
+            const touch = e.touches[0];
+            const card = this.shadowRoot?.querySelector('.plant-card-rich');
+            const deltaX = touch.clientX - this._startX;
+            const deltaY = touch.clientY - this._startY;
+            card.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.05)`;
+        }
+        else {
+            // If moved significantly before timer fires, cancel timer
+            const touch = e.touches[0];
+            if (Math.abs(touch.clientX - this._startX) > 10 || Math.abs(touch.clientY - this._startY) > 10) {
+                clearTimeout(this._longPressTimer);
+            }
+        }
+    }
+    _handleTouchEnd(e) {
+        clearTimeout(this._longPressTimer);
+        if (this._isDraggingMobile) {
+            this._endMobileDrag(e);
+        }
+    }
+    _startMobileDrag(e) {
+        this._isDraggingMobile = true;
+        const card = this.shadowRoot?.querySelector('.plant-card-rich');
+        card.classList.add('dragging-mobile');
+        // Dispatch event to notify grid/parent
+        this.dispatchEvent(new CustomEvent('mobile-drag-start', {
+            detail: { plant: this.plant },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _endMobileDrag(e) {
+        this._isDraggingMobile = false;
+        const card = this.shadowRoot?.querySelector('.plant-card-rich');
+        card.classList.remove('dragging-mobile');
+        card.style.transform = '';
+        const touch = e.changedTouches[0];
+        this.dispatchEvent(new CustomEvent('mobile-drop', {
+            detail: {
+                x: touch.clientX,
+                y: touch.clientY,
+                plant: this.plant
+            },
+            bubbles: true,
+            composed: true
+        }));
     }
     _handleDragStart(e) {
         if (this.isEditMode) {
@@ -13279,6 +13379,9 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i {
         @dragend=${this._handleDragEnd}
         @dragover=${this._handleDragOver}
         @drop=${this._handleDrop}
+        @touchstart=${this._handleTouchStart}
+        @touchmove=${this._handleTouchMove}
+        @touchend=${this._handleTouchEnd}
         @click=${this._handleClick}
       >
         ${imageUrl ? x `
@@ -13478,6 +13581,14 @@ GrowspacePlantCard.styles = i$3 `
     .plant-card-rich.dragging {
       opacity: 0.5;
       transform: rotate(5deg);
+    }
+    
+    .plant-card-rich.dragging-mobile {
+      opacity: 0.8;
+      transform: scale(1.05);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+      z-index: 1000;
+      pointer-events: none; /* Let events pass through to grid for elementFromPoint */
     }
   `;
 __decorate([
@@ -13694,7 +13805,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
             const { linked, groupIndex } = this._isMetricLinked('temperature');
             if (linked) {
                 return x `
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -13722,7 +13833,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
             const { linked, groupIndex } = this._isMetricLinked('humidity');
             if (linked) {
                 return x `
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -13750,7 +13861,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
             const { linked, groupIndex } = this._isMetricLinked('vpd');
             if (linked) {
                 return x `
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -13778,7 +13889,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
             const { linked, groupIndex } = this._isMetricLinked('co2');
             if (linked) {
                 return x `
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -13807,7 +13918,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
             const { linked, groupIndex } = this._isMetricLinked('light');
             if (linked) {
                 return x `
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -13835,7 +13946,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
             const { linked, groupIndex } = this._isMetricLinked('soil_moisture');
             if (linked) {
                 return x `
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -13864,7 +13975,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
             const { linked, groupIndex } = this._isMetricLinked('irrigation');
             if (linked) {
                 return x `
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -13893,7 +14004,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
             const { linked, groupIndex } = this._isMetricLinked('drain');
             if (linked) {
                 return x `
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -13922,7 +14033,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
             const { linked, groupIndex } = this._isMetricLinked('optimal');
             if (linked) {
                 return x `
-                          <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                          <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                                @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
                                title="Unlink Graph">
                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
@@ -14328,10 +14439,17 @@ GrowspaceHeader.styles = i$3 `
     .link-icon {
       display: inline-flex;
       align-items: center;
-      margin-left: 4px;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      margin-left: -8px;
+      margin-right: -8px;
     }
 
     @media (max-width: 768px) {
+      .gs-title-group {
+        gap: 8px;
+      }
       .gs-stats-chips {
         /* Ensure horizontal scroll on mobile */
         justify-content: flex-start; /* Start from left on mobile */
@@ -14491,6 +14609,49 @@ let GrowspaceGrid = class GrowspaceGrid extends i {
             composed: true
         }));
     }
+    _handleMobileDrop(e) {
+        const { x, y, plant } = e.detail;
+        // Check all slots (cards and empty slots)
+        const slots = this.shadowRoot?.querySelectorAll('growspace-plant-card, .plant-card-empty');
+        if (!slots)
+            return;
+        let targetRow = null;
+        let targetCol = null;
+        let targetPlant = null;
+        for (const slot of Array.from(slots)) {
+            const rect = slot.getBoundingClientRect();
+            if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                if (slot.tagName.toLowerCase() === 'growspace-plant-card') {
+                    targetRow = slot.row;
+                    targetCol = slot.col;
+                    targetPlant = slot.plant;
+                }
+                else {
+                    const rowStr = slot.getAttribute('data-row');
+                    const colStr = slot.getAttribute('data-col');
+                    if (rowStr && colStr) {
+                        targetRow = parseInt(rowStr);
+                        targetCol = parseInt(colStr);
+                        targetPlant = null;
+                    }
+                }
+                break;
+            }
+        }
+        if (targetRow !== null && targetCol !== null) {
+            this.dispatchEvent(new CustomEvent('plant-drop', {
+                detail: {
+                    originalEvent: null,
+                    sourcePlant: plant,
+                    targetRow,
+                    targetCol,
+                    targetPlant
+                },
+                bubbles: true,
+                composed: true
+            }));
+        }
+    }
     render() {
         const isListView = this.cols > 5;
         const gridStyle = isListView
@@ -14501,7 +14662,8 @@ let GrowspaceGrid = class GrowspaceGrid extends i {
         const flatGrid = this.plants.flat();
         return x `
       <div class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
-           style="${gridStyle}">
+           style="${gridStyle}"
+           @mobile-drop=${this._handleMobileDrop}>
         ${flatGrid.map((plant, index) => {
             // Recalculate row/col based on grid index
             const row = Math.floor(index / this.cols) + 1;
@@ -14533,6 +14695,8 @@ let GrowspaceGrid = class GrowspaceGrid extends i {
         return x `
       <div
         class="plant-card-empty"
+        data-row="${row}"
+        data-col="${col}"
         style="grid-row: ${row}; grid-column: ${col}"
         @click=${() => this.dispatchEvent(new CustomEvent('add-plant-click', { detail: { row: row - 1, col: col - 1 } }))}
         @dragover=${this._handleDragOver}
