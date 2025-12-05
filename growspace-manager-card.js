@@ -13635,6 +13635,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
         this._isCompact = false; // Using _isCompact or similar for mobile check, but code uses media queries.
         // I will use a direct checks or a dedicated state for reactivity.
         this._isMobileCheck = false;
+        this._hasTouch = false;
         this._checkMobileBound = () => this._checkMobile();
     }
     _handleDeviceChange(e) {
@@ -13698,9 +13699,21 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
     }
     _checkMobile() {
         const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        const hasTouch = window.matchMedia('(pointer: coarse)').matches;
         if (this._isMobileCheck !== isMobile) {
             this._isMobileCheck = isMobile;
         }
+        if (this._hasTouch !== hasTouch) {
+            this._hasTouch = hasTouch;
+        }
+    }
+    get _chipDraggable() {
+        // If user has touch, drag is ONLY allowed if explicitly in link mode.
+        // On desktop (no touch), drag is always allowed (unless logic changes).
+        if (this._hasTouch) {
+            return this._mobileLink.toString();
+        }
+        return 'true';
     }
     _triggerAction(action) {
         this.dispatchEvent(new CustomEvent('trigger-action', {
@@ -13815,7 +13828,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
                 ${temp !== undefined ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('temperature') ? 'active' : ''}"
-                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
+                       draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'temperature')}
                        @drop=${(e) => this._handleChipDrop(e, 'temperature')}
                        @dragover=${(e) => e.preventDefault()}
@@ -13843,7 +13856,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
                 ${hum !== undefined ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('humidity') ? 'active' : ''}"
-                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
+                       draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'humidity')}
                        @drop=${(e) => this._handleChipDrop(e, 'humidity')}
                        @dragover=${(e) => e.preventDefault()}
@@ -13871,7 +13884,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
                 ${vpd !== undefined ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('vpd') ? 'active' : ''}"
-                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
+                       draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'vpd')}
                        @drop=${(e) => this._handleChipDrop(e, 'vpd')}
                        @dragover=${(e) => e.preventDefault()}
@@ -13899,7 +13912,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
                 ${co2 !== undefined ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('co2') ? 'active' : ''}"
-                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
+                       draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'co2')}
                        @drop=${(e) => this._handleChipDrop(e, 'co2')}
                        @dragover=${(e) => e.preventDefault()}
@@ -13927,7 +13940,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
                 ${hasLightSensor ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('light') ? 'active' : ''}"
-                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
+                       draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'light')}
                        @drop=${(e) => this._handleChipDrop(e, 'light')}
                        @dragover=${(e) => e.preventDefault()}
@@ -13956,7 +13969,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                 
                 ${getValue(overviewEntity, 'soil_moisture_value') !== undefined ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('soil_moisture') ? 'active' : ''}"
-                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
+                       draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'soil_moisture')}
                        @drop=${(e) => this._handleChipDrop(e, 'soil_moisture')}
                        @dragover=${(e) => e.preventDefault()}
@@ -13984,7 +13997,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
                 ${nextIrrigation ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('irrigation') ? 'active' : ''}"
-                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
+                       draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'irrigation')}
                        @drop=${(e) => this._handleChipDrop(e, 'irrigation')}
                        @dragover=${(e) => e.preventDefault()}
@@ -14013,7 +14026,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
                 ${nextDrain ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('drain') ? 'active' : ''}"
-                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
+                       draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'drain')}
                        @drop=${(e) => this._handleChipDrop(e, 'drain')}
                        @dragover=${(e) => e.preventDefault()}
@@ -14042,7 +14055,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
                 ${envEntity ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('optimal') ? 'active' : ''}"
-                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
+                       draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'optimal')}
                        @drop=${(e) => this._handleChipDrop(e, 'optimal')}
                        @dragover=${(e) => e.preventDefault()}
@@ -14115,7 +14128,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
             <div class="gs-device-chips ${this._mobileLink ? 'mobile-link-active' : ''}">
               ${overviewEntity?.attributes?.exhaust_entity ? x `
                 <div class="stat-chip ${this.activeEnvGraphs.has('exhaust') ? 'active' : ''}"
-                     draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
+                     draggable="${this._chipDraggable}"
                      @dragstart=${(e) => this._handleChipDragStart(e, 'exhaust')}
                      @drop=${(e) => this._handleChipDrop(e, 'exhaust')}
                      @dragover=${(e) => e.preventDefault()}
@@ -14143,7 +14156,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
               ${overviewEntity?.attributes?.humidifier_entity ? x `
                 <div class="stat-chip ${this.activeEnvGraphs.has('humidifier') ? 'active' : ''}"
-                     draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
+                     draggable="${this._chipDraggable}"
                      @dragstart=${(e) => this._handleChipDragStart(e, 'humidifier')}
                      @drop=${(e) => this._handleChipDrop(e, 'humidifier')}
                      @dragover=${(e) => e.preventDefault()}
@@ -14171,7 +14184,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
               ${overviewEntity?.attributes?.dehumidifier_entity ? x `
                 <div class="stat-chip ${this.activeEnvGraphs.has('dehumidifier') ? 'active' : ''}"
-                     draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
+                     draggable="${this._chipDraggable}"
                      @dragstart=${(e) => this._handleChipDragStart(e, 'dehumidifier')}
                      @drop=${(e) => this._handleChipDrop(e, 'dehumidifier')}
                      @dragover=${(e) => e.preventDefault()}
@@ -14305,6 +14318,7 @@ GrowspaceHeader.styles = i$3 `
        mask-image: linear-gradient(to right, black 85%, transparent 100%);
        -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
        padding: 4px 2px;
+       touch-action: pan-x;
     }
     .gs-stats-chips::-webkit-scrollbar {
       display: none;
@@ -14517,6 +14531,7 @@ GrowspaceHeader.styles = i$3 `
         padding: 4px 2px;
         padding-right: 16px;
         width: 100%;
+        touch-action: pan-x;
       }
       .gs-device-chips::-webkit-scrollbar {
         display: none;
@@ -14625,6 +14640,10 @@ __decorate([
     r(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_isMobileCheck", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "_hasTouch", void 0);
 GrowspaceHeader = __decorate([
     t('growspace-header')
 ], GrowspaceHeader);
