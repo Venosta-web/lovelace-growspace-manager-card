@@ -171,10 +171,8 @@ export class GrowspaceHeader extends LitElement {
       transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
       user-select: none;
       flex-shrink: 0;
-      user-select: none;
-      flex-shrink: 0;
-       white-space: nowrap;
-       touch-action: pan-x;
+      white-space: nowrap;
+      touch-action: auto;
     }
 
     .stat-chip:hover {
@@ -338,8 +336,7 @@ export class GrowspaceHeader extends LitElement {
         flex-wrap: nowrap;
         overflow-x: auto;
         width: 100%;
-        min-width: 0;
-        touch-action: pan-x;
+        touch-action: manipulation;
         -webkit-overflow-scrolling: touch;
       }
 
@@ -348,7 +345,7 @@ export class GrowspaceHeader extends LitElement {
         align-items: stretch;
         position: relative;
         padding-right: 48px;
-        min-width: 0; /* Prevent overflow blowout */
+        min-width: 0;
       }
 
       .header-controls {
@@ -379,7 +376,7 @@ export class GrowspaceHeader extends LitElement {
         padding: 4px 2px;
         padding-right: 16px;
         width: 100%;
-        touch-action: pan-x; /* Explicit pan-x for scrolling */
+        touch-action: manipulation; /* Allow X scrolling and Y page scrolling */
         min-width: 0;
         display: flex;
       }

@@ -14349,8 +14349,10 @@ GrowspaceHeader.styles = i$3 `
       flex-shrink: 0;
       user-select: none;
       flex-shrink: 0;
+       user-select: none;
+       flex-shrink: 0;
        white-space: nowrap;
-       touch-action: pan-x;
+       touch-action: auto;
     }
 
     .stat-chip:hover {
@@ -14514,8 +14516,8 @@ GrowspaceHeader.styles = i$3 `
         flex-wrap: nowrap;
         overflow-x: auto;
         width: 100%;
-        min-width: 0;
-        touch-action: pan-x;
+        width: 100%;
+        touch-action: manipulation;
         -webkit-overflow-scrolling: touch;
       }
 
@@ -14524,7 +14526,7 @@ GrowspaceHeader.styles = i$3 `
         align-items: stretch;
         position: relative;
         padding-right: 48px;
-        min-width: 0; /* Prevent overflow blowout */
+        min-width: 0;
       }
 
       .header-controls {
@@ -14555,7 +14557,7 @@ GrowspaceHeader.styles = i$3 `
         padding: 4px 2px;
         padding-right: 16px;
         width: 100%;
-        touch-action: pan-x; /* Explicit pan-x for scrolling */
+        touch-action: manipulation; /* Allow X scrolling and Y page scrolling */
         min-width: 0;
         display: flex;
       }
