@@ -17,8 +17,7 @@ import {
   GrowMasterDialogState,
   GrowspaceDevice,
   StrainEntry,
-  StrainRecommendationDialogState,
-  IrrigationDialogState
+  StrainRecommendationDialogState
 } from './types';
 import { PlantUtils } from "./utils";
 import { DataService } from './data-service';
@@ -26,6 +25,7 @@ import { DialogRenderer } from './dialog-renderer';
 import './growspace-env-chart';
 import './dialogs/plant-overview-dialog';
 import './dialogs/strain-library-dialog';
+import './dialogs/irrigation-dialog';
 import './components/plant-card';
 import './components/growspace-header';
 import './components/growspace-grid';
@@ -41,7 +41,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _configDialog: ConfigDialogState | null = null;
   @state() private _growMasterDialog: GrowMasterDialogState | null = null;
   @state() private _strainRecommendationDialog: StrainRecommendationDialogState | null = null;
-  @state() private _irrigationDialog: IrrigationDialogState | null = null;
+  @state() private _irrigationDialogOpen = false;
   @state() private selectedDevice: string | null = null;
   @state() private _isCompactView: boolean = false;
   @state() private _isControlDehumidifier: boolean = false;
@@ -729,165 +729,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   //Irrigation dialog methods
   private _openIrrigationDialog() {
-    const devices = this.dataService.getGrowspaceDevices();
-    const device = devices.find(d => d.device_id === this.selectedDevice);
-
-    // 1. Check if device and its overview sensor entity exist
-    if (!device || !device.overview_entity_id) return;
-
-    const overviewSensor = this.hass.states[device.overview_entity_id];
-    const attrs = overviewSensor?.attributes || {};
-
-    // 2. Retrieve all necessary attributes (including the list and other settings)
-    // These attributes are passed to DialogRenderer.parseScheduleString, which handles 
-    // the conversion from a stringified list (if needed) to an IrrigationTime[] array.
-    const irrigationTimes = attrs.irrigation_times || [];
-    const drainTimes = attrs.drain_times || [];
-
-    // Also retrieve pump entities and durations (with defaults)
-    const irrigationPump = attrs.irrigation_pump_entity || '';
-    const drainPump = attrs.drain_pump_entity || '';
-    const iDuration = attrs.irrigation_duration || 3;
-    const dDuration = attrs.drain_duration || 3;
-
-
-    // 3. Initialize the dialog state with the retrieved sensor data
-    this._irrigationDialog = {
-      open: true,
-      growspace_id: device.device_id,
-      growspace_name: device.name,
-
-      irrigation_pump_entity: irrigationPump,
-      drain_pump_entity: drainPump,
-      irrigation_duration: iDuration,
-      drain_duration: dDuration,
-
-      irrigation_times: irrigationTimes, // <--- FIX: Now reads sensor attribute
-      drain_times: drainTimes // <--- FIX: Now reads sensor attribute
-    };
-  }
-
-  private async _saveIrrigationPumpSettings() {
-    if (!this._irrigationDialog) return;
-
-    try {
-      await this.dataService.setIrrigationSettings({
-        growspace_id: this._irrigationDialog.growspace_id,
-        irrigation_pump_entity: this._irrigationDialog.irrigation_pump_entity,
-        drain_pump_entity: this._irrigationDialog.drain_pump_entity,
-        irrigation_duration: this._irrigationDialog.irrigation_duration,
-        drain_duration: this._irrigationDialog.drain_duration
-      });
-      console.log('Irrigation pump settings saved');
-    } catch (err) {
-      console.error('Error saving irrigation pump settings:', err);
-    }
-  }
-
-  private async _addIrrigationTime(time: string, duration?: number) {
-    if (!this._irrigationDialog) return;
-
-    try {
-      await this.dataService.addIrrigationTime({
-        growspace_id: this._irrigationDialog.growspace_id,
-        time: time,
-        ...(duration !== undefined && { duration })
-      });
-
-      // Add to local state
-      this._irrigationDialog.irrigation_times.push({ time, duration });
-      this._irrigationDialog.adding_irrigation_time = undefined;
-      this.requestUpdate();
-      console.log('Irrigation time added:', time);
-    } catch (err) {
-      console.error('Error adding irrigation time:', err);
-    }
-  }
-
-  private async _removeIrrigationTime(time: string) {
-    if (!this._irrigationDialog) return;
-
-    try {
-      await this.dataService.removeIrrigationTime({
-        growspace_id: this._irrigationDialog.growspace_id,
-        time: time
-      });
-
-      // Remove from local state
-      this._irrigationDialog.irrigation_times = this._irrigationDialog.irrigation_times.filter(t => t.time !== time);
-      this.requestUpdate();
-      console.log('Irrigation time removed:', time);
-    } catch (err) {
-      console.error('Error removing irrigation time:', err);
-    }
-  }
-
-  private async _addDrainTime(time: string, duration?: number) {
-    if (!this._irrigationDialog) return;
-
-    try {
-      await this.dataService.addDrainTime({
-        growspace_id: this._irrigationDialog.growspace_id,
-        time: time,
-        ...(duration !== undefined && { duration })
-      });
-
-      // Add to local state
-      this._irrigationDialog.drain_times.push({ time, duration });
-      this._irrigationDialog.adding_drain_time = undefined;
-      this.requestUpdate();
-      console.log('Drain time added:', time);
-    } catch (err) {
-      console.error('Error adding drain time:', err);
-    }
-  }
-
-  private async _removeDrainTime(time: string) {
-    if (!this._irrigationDialog) return;
-
-    try {
-      await this.dataService.removeDrainTime({
-        growspace_id: this._irrigationDialog.growspace_id,
-        time: time
-      });
-
-      // Remove from local state
-      this._irrigationDialog.drain_times = this._irrigationDialog.drain_times.filter(t => t.time !== time);
-      this.requestUpdate();
-      console.log('Drain time removed:', time);
-    } catch (err) {
-      console.error('Error removing drain time:', err);
-    }
-  }
-
-  private _startAddingIrrigationTime(x: number, containerWidth: number) {
-    if (!this._irrigationDialog) return;
-
-    // Calculate time from position (0-24 hours)
-    const hours = Math.floor((x / containerWidth) * 24);
-    const minutes = Math.floor(((x / containerWidth) * 24 - hours) * 60);
-    const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-
-    this._irrigationDialog.adding_irrigation_time = {
-      time,
-      duration: this._irrigationDialog.irrigation_duration
-    };
-    this.requestUpdate();
-  }
-
-  private _startAddingDrainTime(x: number, containerWidth: number) {
-    if (!this._irrigationDialog) return;
-
-    // Calculate time from position (0-24 hours)
-    const hours = Math.floor((x / containerWidth) * 24);
-    const minutes = Math.floor(((x / containerWidth) * 24 - hours) * 60);
-    const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-
-    this._irrigationDialog.adding_drain_time = {
-      time,
-      duration: this._irrigationDialog.drain_duration
-    };
-    this.requestUpdate();
+    if (!this.selectedDevice) return;
+    this._irrigationDialogOpen = true;
   }
 
 
@@ -1923,93 +1766,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         }
       )}
 
-      ${DialogRenderer.renderIrrigationDialog(
-        this._irrigationDialog,
-        {
-          onClose: () => this._irrigationDialog = null,
-          onIrrigationPumpChange: (value) => {
-            if (this._irrigationDialog) {
-              this._irrigationDialog.irrigation_pump_entity = value;
-              this.requestUpdate();
-            }
-          },
-          onIrrigationDurationChange: (value) => {
-            if (this._irrigationDialog) {
-              this._irrigationDialog.irrigation_duration = value;
-              this.requestUpdate();
-            }
-          },
-          onDrainPumpChange: (value) => {
-            if (this._irrigationDialog) {
-              this._irrigationDialog.drain_pump_entity = value;
-              this.requestUpdate();
-            }
-          },
-          onDrainDurationChange: (value) => {
-            if (this._irrigationDialog) {
-              this._irrigationDialog.drain_duration = value;
-              this.requestUpdate();
-            }
-          },
-          onSavePumpSettings: () => this._saveIrrigationPumpSettings(),
-          onAddIrrigationTime: (e: Event) => {
-            const container = (e.target as HTMLElement).closest('.dialog-body')?.querySelector('.irrigation-time-bar') as HTMLElement;
-            if (container) {
-              const rect = container.getBoundingClientRect();
-              this._startAddingIrrigationTime(rect.width / 2, rect.width);
-            }
-          },
-          onStartAddingIrrigationTime: (x, width) => this._startAddingIrrigationTime(x, width),
-          onRemoveIrrigationTime: (time) => this._removeIrrigationTime(time),
-          onAddDrainTime: (e: Event) => {
-            const container = (e.target as HTMLElement).closest('.dialog-body')?.querySelector('.drain-time-bar') as HTMLElement;
-            if (container) {
-              const rect = container.getBoundingClientRect();
-              this._startAddingDrainTime(rect.width / 2, rect.width);
-            }
-          },
-          onStartAddingDrainTime: (x, width) => this._startAddingDrainTime(x, width),
-          onRemoveDrainTime: (time) => this._removeDrainTime(time),
-          onCancelAddingIrrigationTime: () => {
-            if (this._irrigationDialog) {
-              this._irrigationDialog.adding_irrigation_time = undefined;
-              this.requestUpdate();
-            }
-          },
-          onCancelAddingDrainTime: () => {
-            if (this._irrigationDialog) {
-              this._irrigationDialog.adding_drain_time = undefined;
-              this.requestUpdate();
-            }
-          },
-          onConfirmAddIrrigationTime: (time, duration) => {
-            this._addIrrigationTime(time, duration);
-          },
-          onConfirmAddDrainTime: (time, duration) => {
-            this._addDrainTime(time, duration);
-          },
-          onIrrigationTimeInputChange: (field, value) => {
-            if (this._irrigationDialog?.adding_irrigation_time) {
-              if (field === 'time') {
-                this._irrigationDialog.adding_irrigation_time.time = value as string;
-              } else {
-                this._irrigationDialog.adding_irrigation_time.duration = value as number;
-              }
-              this.requestUpdate();
-            }
-          },
-          onDrainTimeInputChange: (field, value) => {
-            if (this._irrigationDialog?.adding_drain_time) {
-              if (field === 'time') {
-                this._irrigationDialog.adding_drain_time.time = value as string;
-              } else {
-                this._irrigationDialog.adding_drain_time.duration = value as number;
-              }
-              this.requestUpdate();
-            }
-          },
-        }
-      )}
+      <irrigation-dialog
+        .hass=${this.hass}
+        .open=${this._irrigationDialogOpen}
+        .growspaceId=${this.selectedDevice}
+        .growspaceName=${selectedDeviceData?.name || ''}
+        .growspaceEntityId=${selectedDeviceData?.overview_entity_id || ''}
+        @close=${() => this._irrigationDialogOpen = false}
+      ></irrigation-dialog>
     `;
   }
 }

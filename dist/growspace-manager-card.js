@@ -1591,173 +1591,6 @@ class DialogRenderer {
       </ha-dialog>
     `;
     }
-    static renderScheduleSection(title, times, defaultDuration, dialog, callbacks, type, color) {
-        const addHandler = type === 'irrigation' ? callbacks.onAddIrrigationTime : callbacks.onAddDrainTime;
-        const removeHandler = type === 'irrigation' ? callbacks.onRemoveIrrigationTime : callbacks.onRemoveDrainTime;
-        const startAddingHandler = type === 'irrigation' ? callbacks.onStartAddingIrrigationTime : callbacks.onStartAddingDrainTime;
-        const cancelHandler = type === 'irrigation' ? callbacks.onCancelAddingIrrigationTime : callbacks.onCancelAddingDrainTime;
-        const confirmHandler = type === 'irrigation' ? callbacks.onConfirmAddIrrigationTime : callbacks.onConfirmAddDrainTime;
-        const inputChangeHandler = type === 'irrigation' ? callbacks.onIrrigationTimeInputChange : callbacks.onDrainTimeInputChange;
-        const addingTime = type === 'irrigation' ? dialog.adding_irrigation_time : dialog.adding_drain_time;
-        return x `
-         <div class="detail-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-               <h3 style="margin: 0;">${title}</h3>
-               <button
-                  @click=${addHandler}
-                  class="md3-button primary"
-                  style="background: ${color};"
-               >
-                  <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
-                  ADD TIME
-               </button>
-            </div>
-
-            <div
-               class="${type}-time-bar"
-               @click=${(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            startAddingHandler(x, rect.width);
-        }}
-               style="position: relative; height: 80px; background: rgba(0,0,0,0.3); border-radius: 8px; cursor: crosshair; border: 2px solid ${color}40;"
-            >
-               ${Array.from({ length: 25 }, (_, i) => i).map(hour => x `
-                  <div style="position: absolute; left: ${(hour / 24) * 100}%; top: 0; bottom: 0; border-left: 1px solid ${hour % 6 === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)'}; pointer-events: none;">
-                     ${hour % 3 === 0 ? x `
-                        <span style="position: absolute; bottom: -22px; left: -12px; font-size: 0.7rem; color: var(--secondary-text-color);">${hour.toString().padStart(2, '0')}:00</span>
-                     ` : ''}
-                  </div>
-               `)}
-
-               ${times.map((t) => {
-            const [hours, minutes] = t.time.split(':').map(Number);
-            const position = ((hours + minutes / 60) / 24) * 100;
-            return x `
-                     <div
-                        @click=${(e) => {
-                e.stopPropagation();
-                if (confirm(`Remove ${type} time ${t.time}?`)) {
-                    removeHandler(t.time);
-                }
-            }}
-                        style="position: absolute; left: ${position}%; top: 10%; bottom: 10%; width: 4px; background: ${color}; cursor: pointer; box-shadow: 0 0 8px ${color}; border-radius: 2px;"
-                        title="${t.time} | Duration: ${t.duration || defaultDuration}seconds"
-                     >
-                        <div style="position: absolute; left: 8px; top: -24px; background: ${color}; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-                           ${t.time} | ${t.duration || defaultDuration}seconds
-                        </div>
-                     </div>
-                  `;
-        })}
-            </div>
-
-            <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--secondary-text-color);">
-               <span>00:00</span>
-               <span>06:00</span>
-               <span>12:00</span>
-               <span>18:00</span>
-               <span>24:00</span>
-            </div>
-
-            ${addingTime ? x `
-               <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;" @click=${cancelHandler}>
-                  <div class="detail-card" style="max-width: 400px; margin: 0;" @click=${(e) => e.stopPropagation()}>
-                     <h3>Add ${title} Time</h3>
-
-                     <div class="md3-input-group">
-                        <label class="md3-label">Time</label>
-                        <input
-                           type="time"
-                           class="md3-input"
-                           .value=${addingTime.time}
-                           @input=${(e) => inputChangeHandler('time', e.target.value)}
-                        />
-                     </div>
-
-                     <div class="md3-input-group">
-                        <label class="md3-label">Duration (minutes)</label>
-                        <input
-                           type="number"
-                           class="md3-input"
-                           .value=${addingTime.duration.toString()}
-                           @input=${(e) => {
-            const val = parseInt(e.target.value);
-            if (!isNaN(val))
-                inputChangeHandler('duration', val);
-        }}
-                           min="1"
-                        />
-                     </div>
-
-                     <div class="button-group">
-                        <button class="md3-button tonal" @click=${cancelHandler}>
-                           Cancel
-                        </button>
-                        <button
-                           class="md3-button primary"
-                           @click=${() => confirmHandler(addingTime.time, addingTime.duration)}
-                           style="background: ${color};"
-                        >
-                           Add Schedule
-                        </button>
-                     </div>
-                  </div>
-               </div>
-            ` : ''}
-         </div>
-      `;
-    }
-    static renderIrrigationDialog(dialog, callbacks) {
-        if (!dialog?.open)
-            return E;
-        const dialogColor = '#2196F3'; // Irrigation Blue
-        const parsedIrrigationTimes = DialogRenderer.parseScheduleString(dialog.irrigation_times);
-        const parsedDrainTimes = DialogRenderer.parseScheduleString(dialog.drain_times);
-        return x `
-         <ha-dialog
-            open
-            @closed=${callbacks.onClose}
-            hideActions
-            .scrimClickAction=${''}
-            .escapeKeyAction=${''}
-         >
-            <div class="glass-dialog-container" style="--stage-color: ${dialogColor}; max-width: 1000px; max-height: 90vh; overflow-y: auto;">
-
-               <div class="dialog-header">
-                  <div class="dialog-icon" style="background: ${dialogColor}30; color: ${dialogColor};">
-                     <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                        <path d="${mdiWater}"></path>
-                     </svg>
-                  </div>
-                  <div class="dialog-title-group">
-                     <h2 class="dialog-title">Irrigation Management</h2>
-                     <div class="dialog-subtitle">${dialog.growspace_name}</div>
-                  </div>
-                  <button class="md3-button text" @click=${callbacks.onClose} style="min-width: auto; padding: 8px;">
-                     <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                        <path d="${mdiClose}"></path>
-                     </svg>
-                  </button>
-               </div>
-
-               <div class="dialog-body" style="padding: 0; background: transparent;">
-                  ${this.renderScheduleSection('Irrigation Schedule', parsedIrrigationTimes, dialog.irrigation_duration, dialog, callbacks, 'irrigation', dialogColor)}
-
-                           ${this.renderScheduleSection('Drain Schedule', parsedDrainTimes, dialog.drain_duration, dialog, callbacks, 'drain', '#FF9800')}
-
-               </div>
-
-               <div class="button-group">
-                  <button class="md3-button tonal" @click=${callbacks.onClose}>
-                     Close
-                  </button>
-               </div>
-
-            </div>
-         </ha-dialog>
-      `;
-    }
 }
 
 /******************************************************************************
@@ -12626,6 +12459,482 @@ StrainLibraryDialog = __decorate([
     t('strain-library-dialog')
 ], StrainLibraryDialog);
 
+let IrrigationDialog = class IrrigationDialog extends i {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceId = '';
+        this.growspaceName = '';
+        this.growspaceEntityId = '';
+        this._irrigation_pump_entity = '';
+        this._drain_pump_entity = '';
+        this._irrigation_duration = 60;
+        this._drain_duration = 60;
+        this._irrigation_times = [];
+        this._drain_times = [];
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('open') && this.open) {
+            this._initializeState();
+        }
+        if (changedProps.has('hass')) {
+            this._dataService = new DataService(this.hass);
+        }
+    }
+    _initializeState() {
+        if (!this.hass || !this.growspaceEntityId)
+            return;
+        const stateObj = this.hass.states[this.growspaceEntityId];
+        if (!stateObj)
+            return;
+        const attrs = stateObj.attributes;
+        this._irrigation_pump_entity = attrs.irrigation_pump || '';
+        this._drain_pump_entity = attrs.drain_pump || '';
+        this._irrigation_duration = attrs.irrigation_duration || 60;
+        this._drain_duration = attrs.drain_duration || 60;
+        this._irrigation_times = this._parseScheduleString(attrs.irrigation_times || []);
+        this._drain_times = this._parseScheduleString(attrs.drain_times || []);
+    }
+    _parseScheduleString(scheduleString) {
+        if (Array.isArray(scheduleString))
+            return scheduleString;
+        if (!scheduleString)
+            return [];
+        return scheduleString.split(',').map(t => {
+            const parts = t.trim().split('|');
+            return {
+                time: parts[0],
+                duration: parts[1] ? parseInt(parts[1]) : undefined
+            };
+        });
+    }
+    _saveIrrigationPumpSettings() {
+        if (!this.growspaceId)
+            return;
+        this.hass.callService('growspace_manager', 'configure_irrigation', {
+            growspace_id: this.growspaceId,
+            irrigation_pump: this._irrigation_pump_entity,
+            drain_pump: this._drain_pump_entity,
+            irrigation_duration: this._irrigation_duration,
+            drain_duration: this._drain_duration,
+            irrigation_times: this._irrigation_times.map(t => `${t.time}|${t.duration || this._irrigation_duration}`),
+            drain_times: this._drain_times.map(t => `${t.time}|${t.duration || this._drain_duration}`)
+        });
+    }
+    _addIrrigationTime(time, duration) {
+        const newTime = { time, duration: duration || this._irrigation_duration };
+        this._irrigation_times = [...this._irrigation_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
+        this._adding_irrigation_time = undefined;
+        this._saveIrrigationPumpSettings();
+    }
+    _removeIrrigationTime(time) {
+        this._irrigation_times = this._irrigation_times.filter(t => t.time !== time);
+        this._saveIrrigationPumpSettings();
+    }
+    _addDrainTime(time, duration) {
+        const newTime = { time, duration: duration || this._drain_duration };
+        this._drain_times = [...this._drain_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
+        this._adding_drain_time = undefined;
+        this._saveIrrigationPumpSettings();
+    }
+    _removeDrainTime(time) {
+        this._drain_times = this._drain_times.filter(t => t.time !== time);
+        this._saveIrrigationPumpSettings();
+    }
+    _startAddingIrrigationTime(x, width) {
+        const percentage = x / width;
+        const totalMinutes = Math.round(percentage * 24 * 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        this._adding_irrigation_time = {
+            time: timeStr,
+            duration: this._irrigation_duration
+        };
+    }
+    _startAddingDrainTime(x, width) {
+        const percentage = x / width;
+        const totalMinutes = Math.round(percentage * 24 * 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        this._adding_drain_time = {
+            time: timeStr,
+            duration: this._drain_duration
+        };
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    render() {
+        if (!this.open)
+            return E;
+        const dialogColor = '#2196F3'; // Irrigation Blue
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
+          <div class="dialog-header">
+            <div class="dialog-icon" style="background: ${dialogColor}30; color: ${dialogColor};">
+              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiWater}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Irrigation Management</h2>
+              <div class="dialog-subtitle">${this.growspaceName}</div>
+            </div>
+            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="dialog-body">
+            ${this._renderScheduleSection('Irrigation Schedule', this._irrigation_times, this._irrigation_duration, 'irrigation', dialogColor)}
+
+            ${this._renderScheduleSection('Drain Schedule', this._drain_times, this._drain_duration, 'drain', '#FF9800')}
+          </div>
+
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close}>
+              Close
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    _renderScheduleSection(title, times, defaultDuration, type, color) {
+        const addingTime = type === 'irrigation' ? this._adding_irrigation_time : this._adding_drain_time;
+        return x `
+      <div class="detail-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="margin: 0;">${title}</h3>
+          <button
+            @click=${(e) => {
+            const container = e.target.closest('.detail-card')?.querySelector(`.${type}-time-bar`);
+            if (container) {
+                const rect = container.getBoundingClientRect();
+                type === 'irrigation'
+                    ? this._startAddingIrrigationTime(rect.width / 2, rect.width)
+                    : this._startAddingDrainTime(rect.width / 2, rect.width);
+            }
+        }}
+            class="md3-button primary"
+            style="background: ${color};"
+          >
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+            ADD TIME
+          </button>
+        </div>
+
+        <div
+          class="${type}-time-bar"
+          @click=${(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            type === 'irrigation'
+                ? this._startAddingIrrigationTime(x, rect.width)
+                : this._startAddingDrainTime(x, rect.width);
+        }}
+          style="position: relative; height: 80px; background: rgba(0,0,0,0.3); border-radius: 8px; cursor: crosshair; border: 2px solid ${color}40;"
+        >
+          ${Array.from({ length: 25 }, (_, i) => i).map(hour => x `
+            <div style="position: absolute; left: ${(hour / 24) * 100}%; top: 0; bottom: 0; border-left: 1px solid ${hour % 6 === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)'}; pointer-events: none;">
+              ${hour % 3 === 0 ? x `
+                <span style="position: absolute; bottom: -22px; left: -12px; font-size: 0.7rem; color: var(--secondary-text-color);">${hour.toString().padStart(2, '0')}:00</span>
+              ` : ''}
+            </div>
+          `)}
+
+          ${times.map((t) => {
+            const [hours, minutes] = t.time.split(':').map(Number);
+            const position = ((hours + minutes / 60) / 24) * 100;
+            return x `
+              <div
+                @click=${(e) => {
+                e.stopPropagation();
+                if (confirm(`Remove ${type} time ${t.time}?`)) {
+                    type === 'irrigation'
+                        ? this._removeIrrigationTime(t.time)
+                        : this._removeDrainTime(t.time);
+                }
+            }}
+                style="position: absolute; left: ${position}%; top: 10%; bottom: 10%; width: 4px; background: ${color}; cursor: pointer; box-shadow: 0 0 8px ${color}; border-radius: 2px;"
+                title="${t.time} | Duration: ${t.duration || defaultDuration}seconds"
+              >
+                <div style="position: absolute; left: 8px; top: -24px; background: ${color}; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                  ${t.time} | ${t.duration || defaultDuration}seconds
+                </div>
+              </div>
+            `;
+        })}
+        </div>
+
+        <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--secondary-text-color);">
+          <span>00:00</span>
+          <span>06:00</span>
+          <span>12:00</span>
+          <span>18:00</span>
+          <span>24:00</span>
+        </div>
+
+        ${addingTime ? x `
+          <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;" 
+               @click=${() => type === 'irrigation' ? this._adding_irrigation_time = undefined : this._adding_drain_time = undefined}>
+            <div class="detail-card" style="max-width: 400px; margin: 0;" @click=${(e) => e.stopPropagation()}>
+              <h3>Add ${title} Time</h3>
+
+              <div class="md3-input-group">
+                <label class="md3-label">Time</label>
+                <input
+                  type="time"
+                  class="md3-input"
+                  .value=${addingTime.time}
+                  @input=${(e) => {
+            const val = e.target.value;
+            if (type === 'irrigation' && this._adding_irrigation_time)
+                this._adding_irrigation_time = { ...this._adding_irrigation_time, time: val };
+            if (type === 'drain' && this._adding_drain_time)
+                this._adding_drain_time = { ...this._adding_drain_time, time: val };
+        }}
+                />
+              </div>
+
+              <div class="md3-input-group">
+                <label class="md3-label">Duration (seconds)</label>
+                <input
+                  type="number"
+                  class="md3-input"
+                  .value=${addingTime.duration.toString()}
+                  @input=${(e) => {
+            const val = parseInt(e.target.value);
+            if (!isNaN(val)) {
+                if (type === 'irrigation' && this._adding_irrigation_time)
+                    this._adding_irrigation_time = { ...this._adding_irrigation_time, duration: val };
+                if (type === 'drain' && this._adding_drain_time)
+                    this._adding_drain_time = { ...this._adding_drain_time, duration: val };
+            }
+        }}
+                  min="1"
+                />
+              </div>
+
+              <div class="button-group">
+                <button class="md3-button tonal" @click=${() => type === 'irrigation' ? this._adding_irrigation_time = undefined : this._adding_drain_time = undefined}>
+                  Cancel
+                </button>
+                <button
+                  class="md3-button primary"
+                  @click=${() => {
+            type === 'irrigation'
+                ? this._addIrrigationTime(addingTime.time, addingTime.duration)
+                : this._addDrainTime(addingTime.time, addingTime.duration);
+        }}
+                  style="background: ${color};"
+                >
+                  Add Schedule
+                </button>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    }
+};
+IrrigationDialog.styles = i$3 `
+    :host {
+      --mdc-dialog-min-width: 400px;
+      --mdc-dialog-max-width: 1000px;
+    }
+    .glass-dialog-container {
+      background: rgba(30, 30, 30, 0.95);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      color: #fff;
+    }
+    .dialog-header {
+      padding: 20px 24px;
+      background: #2d2d2d;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .dialog-icon {
+      padding: 10px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dialog-title-group {
+      flex: 1;
+    }
+    .dialog-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .dialog-subtitle {
+      font-size: 0.9rem;
+      color: var(--secondary-text-color);
+      margin-top: 4px;
+    }
+    .dialog-body {
+      padding: 24px;
+      overflow-y: auto;
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .detail-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .md3-button {
+      border: none;
+      border-radius: 20px;
+      padding: 0 24px;
+      height: 40px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .md3-button.text {
+      background: transparent;
+      color: var(--primary-text-color);
+    }
+    .md3-button.text:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .md3-button.tonal {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--primary-text-color);
+    }
+    .md3-button.tonal:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .md3-button.primary {
+      background: var(--primary-color, #2196F3);
+      color: #fff;
+    }
+    .md3-button.primary:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    }
+    .md3-input-group {
+      margin-bottom: 16px;
+    }
+    .md3-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      color: var(--secondary-text-color);
+      font-weight: 500;
+    }
+    .md3-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      box-sizing: border-box;
+    }
+    .md3-input:focus {
+      outline: none;
+      border-color: var(--primary-color, #2196F3);
+      background: rgba(0, 0, 0, 0.3);
+    }
+    .button-group {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 16px 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      background: #2d2d2d;
+    }
+  `;
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "hass", void 0);
+__decorate([
+    n$1({ type: Boolean }),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "open", void 0);
+__decorate([
+    n$1({ type: String }),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "growspaceId", void 0);
+__decorate([
+    n$1({ type: String }),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "growspaceName", void 0);
+__decorate([
+    n$1({ type: String }),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "growspaceEntityId", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_irrigation_pump_entity", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_drain_pump_entity", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_irrigation_duration", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_drain_duration", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Array)
+], IrrigationDialog.prototype, "_irrigation_times", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Array)
+], IrrigationDialog.prototype, "_drain_times", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_adding_irrigation_time", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_adding_drain_time", void 0);
+IrrigationDialog = __decorate([
+    t('irrigation-dialog')
+], IrrigationDialog);
+
 let GrowspacePlantCard = class GrowspacePlantCard extends i {
     constructor() {
         super(...arguments);
@@ -15524,7 +15833,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         this._configDialog = null;
         this._growMasterDialog = null;
         this._strainRecommendationDialog = null;
-        this._irrigationDialog = null;
+        this._irrigationDialogOpen = false;
         this.selectedDevice = null;
         this._isCompactView = false;
         this._isControlDehumidifier = false;
@@ -16138,150 +16447,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
     }
     //Irrigation dialog methods
     _openIrrigationDialog() {
-        const devices = this.dataService.getGrowspaceDevices();
-        const device = devices.find(d => d.device_id === this.selectedDevice);
-        // 1. Check if device and its overview sensor entity exist
-        if (!device || !device.overview_entity_id)
+        if (!this.selectedDevice)
             return;
-        const overviewSensor = this.hass.states[device.overview_entity_id];
-        const attrs = overviewSensor?.attributes || {};
-        // 2. Retrieve all necessary attributes (including the list and other settings)
-        // These attributes are passed to DialogRenderer.parseScheduleString, which handles 
-        // the conversion from a stringified list (if needed) to an IrrigationTime[] array.
-        const irrigationTimes = attrs.irrigation_times || [];
-        const drainTimes = attrs.drain_times || [];
-        // Also retrieve pump entities and durations (with defaults)
-        const irrigationPump = attrs.irrigation_pump_entity || '';
-        const drainPump = attrs.drain_pump_entity || '';
-        const iDuration = attrs.irrigation_duration || 3;
-        const dDuration = attrs.drain_duration || 3;
-        // 3. Initialize the dialog state with the retrieved sensor data
-        this._irrigationDialog = {
-            open: true,
-            growspace_id: device.device_id,
-            growspace_name: device.name,
-            irrigation_pump_entity: irrigationPump,
-            drain_pump_entity: drainPump,
-            irrigation_duration: iDuration,
-            drain_duration: dDuration,
-            irrigation_times: irrigationTimes, // <--- FIX: Now reads sensor attribute
-            drain_times: drainTimes // <--- FIX: Now reads sensor attribute
-        };
-    }
-    async _saveIrrigationPumpSettings() {
-        if (!this._irrigationDialog)
-            return;
-        try {
-            await this.dataService.setIrrigationSettings({
-                growspace_id: this._irrigationDialog.growspace_id,
-                irrigation_pump_entity: this._irrigationDialog.irrigation_pump_entity,
-                drain_pump_entity: this._irrigationDialog.drain_pump_entity,
-                irrigation_duration: this._irrigationDialog.irrigation_duration,
-                drain_duration: this._irrigationDialog.drain_duration
-            });
-            console.log('Irrigation pump settings saved');
-        }
-        catch (err) {
-            console.error('Error saving irrigation pump settings:', err);
-        }
-    }
-    async _addIrrigationTime(time, duration) {
-        if (!this._irrigationDialog)
-            return;
-        try {
-            await this.dataService.addIrrigationTime({
-                growspace_id: this._irrigationDialog.growspace_id,
-                time: time,
-                ...(duration !== undefined && { duration })
-            });
-            // Add to local state
-            this._irrigationDialog.irrigation_times.push({ time, duration });
-            this._irrigationDialog.adding_irrigation_time = undefined;
-            this.requestUpdate();
-            console.log('Irrigation time added:', time);
-        }
-        catch (err) {
-            console.error('Error adding irrigation time:', err);
-        }
-    }
-    async _removeIrrigationTime(time) {
-        if (!this._irrigationDialog)
-            return;
-        try {
-            await this.dataService.removeIrrigationTime({
-                growspace_id: this._irrigationDialog.growspace_id,
-                time: time
-            });
-            // Remove from local state
-            this._irrigationDialog.irrigation_times = this._irrigationDialog.irrigation_times.filter(t => t.time !== time);
-            this.requestUpdate();
-            console.log('Irrigation time removed:', time);
-        }
-        catch (err) {
-            console.error('Error removing irrigation time:', err);
-        }
-    }
-    async _addDrainTime(time, duration) {
-        if (!this._irrigationDialog)
-            return;
-        try {
-            await this.dataService.addDrainTime({
-                growspace_id: this._irrigationDialog.growspace_id,
-                time: time,
-                ...(duration !== undefined && { duration })
-            });
-            // Add to local state
-            this._irrigationDialog.drain_times.push({ time, duration });
-            this._irrigationDialog.adding_drain_time = undefined;
-            this.requestUpdate();
-            console.log('Drain time added:', time);
-        }
-        catch (err) {
-            console.error('Error adding drain time:', err);
-        }
-    }
-    async _removeDrainTime(time) {
-        if (!this._irrigationDialog)
-            return;
-        try {
-            await this.dataService.removeDrainTime({
-                growspace_id: this._irrigationDialog.growspace_id,
-                time: time
-            });
-            // Remove from local state
-            this._irrigationDialog.drain_times = this._irrigationDialog.drain_times.filter(t => t.time !== time);
-            this.requestUpdate();
-            console.log('Drain time removed:', time);
-        }
-        catch (err) {
-            console.error('Error removing drain time:', err);
-        }
-    }
-    _startAddingIrrigationTime(x, containerWidth) {
-        if (!this._irrigationDialog)
-            return;
-        // Calculate time from position (0-24 hours)
-        const hours = Math.floor((x / containerWidth) * 24);
-        const minutes = Math.floor(((x / containerWidth) * 24 - hours) * 60);
-        const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        this._irrigationDialog.adding_irrigation_time = {
-            time,
-            duration: this._irrigationDialog.irrigation_duration
-        };
-        this.requestUpdate();
-    }
-    _startAddingDrainTime(x, containerWidth) {
-        if (!this._irrigationDialog)
-            return;
-        // Calculate time from position (0-24 hours)
-        const hours = Math.floor((x / containerWidth) * 24);
-        const minutes = Math.floor(((x / containerWidth) * 24 - hours) * 60);
-        const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        this._irrigationDialog.adding_drain_time = {
-            time,
-            duration: this._irrigationDialog.drain_duration
-        };
-        this.requestUpdate();
+        this._irrigationDialogOpen = true;
     }
     _handleToggleEnvGraph(e) {
         const metric = e.detail.metric;
@@ -17308,92 +17476,14 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             onGetRecommendation: () => this._handleGetStrainRecommendation()
         })}
 
-      ${DialogRenderer.renderIrrigationDialog(this._irrigationDialog, {
-            onClose: () => this._irrigationDialog = null,
-            onIrrigationPumpChange: (value) => {
-                if (this._irrigationDialog) {
-                    this._irrigationDialog.irrigation_pump_entity = value;
-                    this.requestUpdate();
-                }
-            },
-            onIrrigationDurationChange: (value) => {
-                if (this._irrigationDialog) {
-                    this._irrigationDialog.irrigation_duration = value;
-                    this.requestUpdate();
-                }
-            },
-            onDrainPumpChange: (value) => {
-                if (this._irrigationDialog) {
-                    this._irrigationDialog.drain_pump_entity = value;
-                    this.requestUpdate();
-                }
-            },
-            onDrainDurationChange: (value) => {
-                if (this._irrigationDialog) {
-                    this._irrigationDialog.drain_duration = value;
-                    this.requestUpdate();
-                }
-            },
-            onSavePumpSettings: () => this._saveIrrigationPumpSettings(),
-            onAddIrrigationTime: (e) => {
-                const container = e.target.closest('.dialog-body')?.querySelector('.irrigation-time-bar');
-                if (container) {
-                    const rect = container.getBoundingClientRect();
-                    this._startAddingIrrigationTime(rect.width / 2, rect.width);
-                }
-            },
-            onStartAddingIrrigationTime: (x, width) => this._startAddingIrrigationTime(x, width),
-            onRemoveIrrigationTime: (time) => this._removeIrrigationTime(time),
-            onAddDrainTime: (e) => {
-                const container = e.target.closest('.dialog-body')?.querySelector('.drain-time-bar');
-                if (container) {
-                    const rect = container.getBoundingClientRect();
-                    this._startAddingDrainTime(rect.width / 2, rect.width);
-                }
-            },
-            onStartAddingDrainTime: (x, width) => this._startAddingDrainTime(x, width),
-            onRemoveDrainTime: (time) => this._removeDrainTime(time),
-            onCancelAddingIrrigationTime: () => {
-                if (this._irrigationDialog) {
-                    this._irrigationDialog.adding_irrigation_time = undefined;
-                    this.requestUpdate();
-                }
-            },
-            onCancelAddingDrainTime: () => {
-                if (this._irrigationDialog) {
-                    this._irrigationDialog.adding_drain_time = undefined;
-                    this.requestUpdate();
-                }
-            },
-            onConfirmAddIrrigationTime: (time, duration) => {
-                this._addIrrigationTime(time, duration);
-            },
-            onConfirmAddDrainTime: (time, duration) => {
-                this._addDrainTime(time, duration);
-            },
-            onIrrigationTimeInputChange: (field, value) => {
-                if (this._irrigationDialog?.adding_irrigation_time) {
-                    if (field === 'time') {
-                        this._irrigationDialog.adding_irrigation_time.time = value;
-                    }
-                    else {
-                        this._irrigationDialog.adding_irrigation_time.duration = value;
-                    }
-                    this.requestUpdate();
-                }
-            },
-            onDrainTimeInputChange: (field, value) => {
-                if (this._irrigationDialog?.adding_drain_time) {
-                    if (field === 'time') {
-                        this._irrigationDialog.adding_drain_time.time = value;
-                    }
-                    else {
-                        this._irrigationDialog.adding_drain_time.duration = value;
-                    }
-                    this.requestUpdate();
-                }
-            },
-        })}
+      <irrigation-dialog
+        .hass=${this.hass}
+        .open=${this._irrigationDialogOpen}
+        .growspaceId=${this.selectedDevice}
+        .growspaceName=${selectedDeviceData?.name || ''}
+        .growspaceEntityId=${selectedDeviceData?.overview_entity_id || ''}
+        @close=${() => this._irrigationDialogOpen = false}
+      ></irrigation-dialog>
     `;
     }
 };
@@ -17436,7 +17526,7 @@ __decorate([
 __decorate([
     r(),
     __metadata("design:type", Object)
-], GrowspaceManagerCard.prototype, "_irrigationDialog", void 0);
+], GrowspaceManagerCard.prototype, "_irrigationDialogOpen", void 0);
 __decorate([
     r(),
     __metadata("design:type", Object)
