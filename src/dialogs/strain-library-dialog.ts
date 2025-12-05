@@ -605,9 +605,34 @@ export class StrainLibraryDialog extends LitElement {
       }
 
       .sd-grid {
-        grid-template-columns: 1fr; /* Single column on mobile */
+        grid-template-columns: 1fr;
+      }
+      .sd-footer {
+        display: none;
+      }
+      
+      .fab-btn {
+        display: flex;
+      }
+      
+      .menu-btn {
+        display: flex;
       }
 
+      /* Mobile Menu Dropdown Position */
+      .mobile-menu {
+        position: absolute;
+        top: 60px;
+        right: 16px;
+        background: #2d2d2d;
+        border-radius: 4px;
+        padding: 8px 0;
+        min-width: 200px;
+        box-shadow: 0 2px 6px 2px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.3);
+        z-index: 30;
+        display: flex;
+        flex-direction: column;
+      }
       /* FAB Styles */
       .fab-btn {
         position: absolute;
@@ -646,38 +671,6 @@ export class StrainLibraryDialog extends LitElement {
         gap: 8px;
       }
 
-      @media (max-width: 600px) {
-        /* ... existing mobile styles ... */
-        
-        .sd-footer {
-          display: none; /* Hide footer completely on mobile */
-        }
-        
-        .fab-btn {
-          display: flex; /* Show FAB on mobile */
-        }
-        
-        .menu-btn {
-          display: flex; /* Show Menu button on mobile */
-        }
-
-        /* Mobile Menu Dropdown Position */
-        .mobile-menu {
-          position: absolute;
-          top: 60px; /* Below header */
-          right: 16px;
-          background: #2d2d2d;
-          border-radius: 4px;
-          padding: 8px 0;
-          min-width: 200px;
-          box-shadow: 0 2px 6px 2px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.3);
-          z-index: 30;
-          display: flex;
-          flex-direction: column;
-        }
-        
-      }
-      
       .mobile-menu-item {
         padding: 12px 16px; /* M3 List Item padding */
         display: flex;
@@ -843,7 +836,7 @@ export class StrainLibraryDialog extends LitElement {
       <div class="sd-header">
         <h2 class="sd-title">Strain Library</h2>
         <div class="header-actions">
-            <button class="menu-btn" @click=${() => this._mobileMenuOpen = !this._mobileMenuOpen}>
+            <button class="menu-btn mobile-only" @click=${() => this._mobileMenuOpen = !this._mobileMenuOpen}>
                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
             </button>
             <button class="sd-close-btn" @click=${() => this.dispatchEvent(new CustomEvent('close'))}>
@@ -919,7 +912,7 @@ export class StrainLibraryDialog extends LitElement {
       ` : nothing}
 
       <!-- Mobile FAB -->
-      <button class="fab-btn" @click=${() => this._startEdit()}>
+      <button class="fab-btn mobile-only" @click=${() => this._startEdit()}>
         <svg style="fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
       </button>
 
