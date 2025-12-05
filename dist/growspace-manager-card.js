@@ -14520,7 +14520,6 @@ GrowspaceHeader.styles = i$3 `
         flex-direction: column;
         align-items: stretch;
         position: relative;
-        padding-right: 48px;
         min-width: 0;
       }
       .header-controls-container {
@@ -14599,7 +14598,11 @@ GrowspaceHeader.styles = i$3 `
         flex-wrap: wrap;
         mask-image: none;
         -webkit-mask-image: none;
-        justify-content: flex-end;
+        justify-content: space-between;
+      }
+      .gs-stats-chips.mobile-link-active .stat-chip,
+      .gs-device-chips.mobile-link-active .stat-chip {
+        width: 90%;
       }
     }
   `;
