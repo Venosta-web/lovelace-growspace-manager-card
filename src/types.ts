@@ -167,15 +167,12 @@ export interface ConfigDialogState {
 
 export interface GrowMasterDialogState {
   growspaceId: string;
-  userQuery: string;
   isLoading: boolean;
   response: string | null;
   mode: 'single' | 'all';
 }
 
 export interface StrainRecommendationDialogState {
-
-  userQuery: string;
   isLoading: boolean;
   response: string | null;
 }

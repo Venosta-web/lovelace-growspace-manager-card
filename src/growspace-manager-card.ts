@@ -32,6 +32,7 @@ import './dialogs/irrigation-dialog';
 import './dialogs/add-plant-dialog';
 import './dialogs/config-dialog';
 import './dialogs/grow-master-dialog';
+import './dialogs/strain-recommendation-dialog';
 import './components/plant-card';
 import './components/growspace-header';
 import './components/growspace-grid';
@@ -1112,7 +1113,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       type: 'GROW_MASTER',
       payload: {
         growspaceId: this.selectedDevice || '',
-        userQuery: '',
         isLoading: false,
         response: null,
         mode: isStressed ? 'all' : 'single'
@@ -1123,18 +1123,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
   }
 
-  private async _handleAskAdvice() {
-    if (this._activeDialog?.type !== 'GROW_MASTER') return;
-    const dialogState = this._activeDialog.payload;
-    if (!dialogState.userQuery) return;
 
-    this._activeDialog = {
-      type: 'GROW_MASTER',
-      payload: { ...dialogState, isLoading: true, response: null }
-    };
-    this.requestUpdate();
-    this._analyzeGrowspace(dialogState.userQuery, false);
-  }
 
 
   private async _analyzeGrowspace(query: string, all: boolean) {
@@ -1188,26 +1177,24 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this._activeDialog = {
       type: 'STRAIN_RECOMMENDATION',
       payload: {
-        userQuery: '',
         isLoading: false,
         response: null
       }
     };
   }
 
-  private async _getStrainRecommendation() {
+  private async _getStrainRecommendation(query?: string) {
     if (this._activeDialog?.type !== 'STRAIN_RECOMMENDATION') return;
-    const dialogState = this._activeDialog.payload;
-    if (!dialogState.userQuery) return;
+    // We actually need the query from the event or state.
 
-    this._activeDialog = {
-      type: 'STRAIN_RECOMMENDATION',
-      payload: { ...dialogState, isLoading: true, response: null }
-    };
+    // We actually need the query from the event or state.
+    // Since component holds state, we expect event to pass it.
+    // Refactoring: _getStrainRecommendation(query: string)
+
     this.requestUpdate();
 
     try {
-      const response = await this.dataService.getStrainRecommendation(dialogState.userQuery);
+      const response = await this.dataService.getStrainRecommendation(query || '');
       if (this._activeDialog?.type === 'STRAIN_RECOMMENDATION') {
         let responseText: string | null = null;
         if (response && typeof response.response === 'string') {
@@ -1612,30 +1599,30 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     // STRAIN RECOMMENDATION DIALOG
     if (active.type === 'STRAIN_RECOMMENDATION') {
       const dialogState = active.payload;
-      return DialogRenderer.renderStrainRecommendationDialog(
-        dialogState,
-        {
-          onClose: () => this._activeDialog = { type: 'NONE' },
-          onQueryChange: (q) => {
-            this._activeDialog = { type: 'STRAIN_RECOMMENDATION', payload: { ...dialogState, userQuery: q } };
-          },
-          onGetRecommendation: () => this._getStrainRecommendation() // Corrected method name
-        }
-      );
+      return html`
+        <strain-recommendation-dialog
+          .open=${true}
+          .hass=${this.hass}
+          .isLoading=${dialogState.isLoading}
+          .response=${dialogState.response}
+          @close=${() => this._activeDialog = { type: 'NONE' }}
+          @get-recommendation=${(e: CustomEvent) => this._getStrainRecommendation(e.detail.query)}
+        ></strain-recommendation-dialog>
+      `;
     }
 
     // IRRIGATION DIALOG
     if (active.type === 'IRRIGATION') {
       return html`
-        <irrigation-dialog
-          .hass=${this.hass}
-          .open=${true}
-          .growspaceId=${this.selectedDevice}
-          .growspaceName=${selectedDeviceData?.name || ''}
-          .growspaceEntityId=${selectedDeviceData?.overview_entity_id || ''}
-          @close=${() => this._activeDialog = { type: 'NONE' }}
-        ></irrigation-dialog>
-       `;
+         <irrigation-dialog
+           .hass=${this.hass}
+           .open=${true}
+           .growspaceId=${this.selectedDevice}
+           .growspaceName=${selectedDeviceData?.name || ''}
+           .growspaceEntityId=${selectedDeviceData?.overview_entity_id || ''}
+           @close=${() => this._activeDialog = { type: 'NONE' }}
+         ></irrigation-dialog>
+        `;
     }
 
     return html``;
