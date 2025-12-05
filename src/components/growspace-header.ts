@@ -24,13 +24,19 @@ import {
   mdiIdCard,
 
 } from '@mdi/js';
+import { consume } from '@lit/context';
+import { hassContext, configContext } from '../context';
 import { GrowspaceDevice, GrowspaceManagerCardConfig } from '../types';
 import { PlantUtils } from '../utils';
 
 @customElement('growspace-header')
 export class GrowspaceHeader extends LitElement {
+  @consume({ context: hassContext, subscribe: true })
   @property({ attribute: false }) public hass!: HomeAssistant;
+
   @property({ attribute: false }) public device!: GrowspaceDevice;
+
+  @consume({ context: configContext, subscribe: true })
   @property({ attribute: false }) public config!: GrowspaceManagerCardConfig;
   @property({ attribute: false }) public devices: GrowspaceDevice[] = [];
   @property({ type: Boolean }) public compact = false;

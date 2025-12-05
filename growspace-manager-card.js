@@ -898,26 +898,26 @@ class DataService {
  * Copyright 2019 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t$2=globalThis,e$2=t$2.ShadowRoot&&(void 0===t$2.ShadyCSS||t$2.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$3=Symbol(),o$4=new WeakMap;class n$4{constructor(t,e,o){if(this._$cssResult$=!0,o!==s$3)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$2&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$4.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$4.set(s,t));}return t}toString(){return this.cssText}}const r$4=t=>new n$4("string"==typeof t?t:t+"",void 0,s$3),i$3=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$4(o,t,s$3)},S$1=(s,o)=>{if(e$2)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$2.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$2=e$2?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$4(e)})(t):t;
+const t$2=globalThis,e$4=t$2.ShadowRoot&&(void 0===t$2.ShadyCSS||t$2.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$6=Symbol(),o$4=new WeakMap;class n$5{constructor(t,e,o){if(this._$cssResult$=!0,o!==s$6)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$4&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$4.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$4.set(s,t));}return t}toString(){return this.cssText}}const r$4=t=>new n$5("string"==typeof t?t:t+"",void 0,s$6),i$4=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$5(o,t,s$6)},S$1=(s,o)=>{if(e$4)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$2.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$3=e$4?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$4(e)})(t):t;
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const{is:i$2,defineProperty:e$1,getOwnPropertyDescriptor:h$1,getOwnPropertyNames:r$3,getOwnPropertySymbols:o$3,getPrototypeOf:n$3}=Object,a$1=globalThis,c$1=a$1.trustedTypes,l$2=c$1?c$1.emptyScript:"",p$1=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$1={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$1=(t,s)=>!i$2(t,s),b$1={attribute:!0,type:String,converter:u$1,reflect:!1,useDefault:!1,hasChanged:f$1};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;class y$1 extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=!0),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$1(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$1(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$3(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$3(t),...o$3(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$2(s));}else void 0!==s&&i.push(c$2(s));return i}static _$Eu(t,s){const i=s.attribute;return !1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&!0===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$1).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$1;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$1)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);}!1===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),!0!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),!0===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=!0;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];!0!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=!1;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=!1,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return !0}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}}y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$1?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
+ */const{is:i$3,defineProperty:e$3,getOwnPropertyDescriptor:h$1,getOwnPropertyNames:r$3,getOwnPropertySymbols:o$3,getPrototypeOf:n$4}=Object,a$1=globalThis,c$2=a$1.trustedTypes,l$2=c$2?c$2.emptyScript:"",p$1=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$1={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$1=(t,s)=>!i$3(t,s),b$1={attribute:!0,type:String,converter:u$1,reflect:!1,useDefault:!1,hasChanged:f$1};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;class y$1 extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=!0),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$3(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$1(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$4(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$3(t),...o$3(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$3(s));}else void 0!==s&&i.push(c$3(s));return i}static _$Eu(t,s){const i=s.attribute;return !1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&!0===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$1).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$1;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$1)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);}!1===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),!0!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),!0===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=!0;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];!0!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=!1;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=!1,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return !0}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}}y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$1?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t$1=globalThis,i$1=t$1.trustedTypes,s$2=i$1?i$1.createPolicy("lit-html",{createHTML:t=>t}):void 0,e="$lit$",h=`lit$${Math.random().toFixed(9).slice(2)}$`,o$2="?"+h,n$2=`<${o$2}>`,r$2=document,l$1=()=>r$2.createComment(""),c=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v=/-->/g,_=/>/g,m=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$2.createTreeWalker(r$2,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$2?s$2.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f?"!--"===u[1]?c=v:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m):void 0!==u[3]&&(c=m):c===m?">"===u[0]?(c=r??f,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m:'"'===u[3]?g:p):c===g||c===p?c=m:c===v||c===_?c=f:(c=m,r=void 0);const x=c===m&&t[i+1].startsWith("/>")?" ":"";l+=c===f?s+n$2:d>=0?(o.push(a),s.slice(0,d)+e+s.slice(d)+h+x):s+h+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e)){const i=v[a++],s=r.getAttribute(t).split(h),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h),s=t.length-1;if(s>0){r.textContent=i$1?i$1.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$2)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h,t+1));)d.push({type:7,index:c}),t+=h.length-1;}c++;}}static createElement(t,i){const s=r$2.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(!1),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}class M{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$2).importNode(i,!0);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$2,e}p(t){let i=0;for(const s of this._$AV)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??!0;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$2.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(!1,!0,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=!1;if(void 0===h)t=S(this,t,i,0),o=!c(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const j=t$1.litHtmlPolyfillSupport;j?.(N,R),(t$1.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
+const t$1=globalThis,i$2=t$1.trustedTypes,s$5=i$2?i$2.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$2="$lit$",h=`lit$${Math.random().toFixed(9).slice(2)}$`,o$2="?"+h,n$3=`<${o$2}>`,r$2=document,l$1=()=>r$2.createComment(""),c$1=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v=/-->/g,_=/>/g,m=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$2.createTreeWalker(r$2,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$5?s$5.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f?"!--"===u[1]?c=v:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m):void 0!==u[3]&&(c=m):c===m?">"===u[0]?(c=r??f,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m:'"'===u[3]?g:p):c===g||c===p?c=m:c===v||c===_?c=f:(c=m,r=void 0);const x=c===m&&t[i+1].startsWith("/>")?" ":"";l+=c===f?s+n$3:d>=0?(o.push(a),s.slice(0,d)+e$2+s.slice(d)+h+x):s+h+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e$2)){const i=v[a++],s=r.getAttribute(t).split(h),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h),s=t.length-1;if(s>0){r.textContent=i$2?i$2.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$2)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h,t+1));)d.push({type:7,index:c}),t+=h.length-1;}c++;}}static createElement(t,i){const s=r$2.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c$1(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(!1),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}class M{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$2).importNode(i,!0);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$2,e}p(t){let i=0;for(const s of this._$AV)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??!0;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c$1(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c$1(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$2.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(!1,!0,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=!1;if(void 0===h)t=S(this,t,i,0),o=!c$1(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c$1(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const j=t$1.litHtmlPolyfillSupport;j?.(N,R),(t$1.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const s$1=globalThis;class i extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=B(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1);}render(){return T}}i._$litElement$=!0,i["finalized"]=!0,s$1.litElementHydrateSupport?.({LitElement:i});const o$1=s$1.litElementPolyfillSupport;o$1?.({LitElement:i});(s$1.litElementVersions??=[]).push("4.2.1");
+ */const s$4=globalThis;class i$1 extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=B(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1);}render(){return T}}i$1._$litElement$=!0,i$1["finalized"]=!0,s$4.litElementHydrateSupport?.({LitElement:i$1});const o$1=s$4.litElementPolyfillSupport;o$1?.({LitElement:i$1});(s$4.litElementVersions??=[]).push("4.2.1");
 
 class DialogRenderer {
     static renderAddPlantDialog(dialog, strainLibrary, growspaceName, callbacks) {
@@ -1641,13 +1641,61 @@ const t=t=>(e,o)=>{void 0!==o?o.addInitializer((()=>{customElements.define(t,e);
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const o={attribute:!0,type:String,converter:u$1,reflect:!1,hasChanged:f$1},r$1=(t=o,e,r)=>{const{kind:n,metadata:i}=r;let s=globalThis.litPropertyMetadata.get(i);if(void 0===s&&globalThis.litPropertyMetadata.set(i,s=new Map),"setter"===n&&((t=Object.create(t)).wrapped=!0),s.set(r.name,t),"accessor"===n){const{name:o}=r;return {set(r){const n=e.get.call(this);e.set.call(this,r),this.requestUpdate(o,n,t);},init(e){return void 0!==e&&this.C(o,void 0,t,e),e}}}if("setter"===n){const{name:o}=r;return function(r){const n=this[o];e.call(this,r),this.requestUpdate(o,n,t);}}throw Error("Unsupported decorator location: "+n)};function n$1(t){return (e,o)=>"object"==typeof o?r$1(t,e,o):((t,e,o)=>{const r=e.hasOwnProperty(o);return e.constructor.createProperty(o,t),r?Object.getOwnPropertyDescriptor(e,o):void 0})(t,e,o)}
+ */const o={attribute:!0,type:String,converter:u$1,reflect:!1,hasChanged:f$1},r$1=(t=o,e,r)=>{const{kind:n,metadata:i}=r;let s=globalThis.litPropertyMetadata.get(i);if(void 0===s&&globalThis.litPropertyMetadata.set(i,s=new Map),"setter"===n&&((t=Object.create(t)).wrapped=!0),s.set(r.name,t),"accessor"===n){const{name:o}=r;return {set(r){const n=e.get.call(this);e.set.call(this,r),this.requestUpdate(o,n,t);},init(e){return void 0!==e&&this.C(o,void 0,t,e),e}}}if("setter"===n){const{name:o}=r;return function(r){const n=this[o];e.call(this,r),this.requestUpdate(o,n,t);}}throw Error("Unsupported decorator location: "+n)};function n$2(t){return (e,o)=>"object"==typeof o?r$1(t,e,o):((t,e,o)=>{const r=e.hasOwnProperty(o);return e.constructor.createProperty(o,t),r?Object.getOwnPropertyDescriptor(e,o):void 0})(t,e,o)}
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */function r(r){return n$1({...r,state:!0,attribute:!1})}
+ */function r(r){return n$2({...r,state:!0,attribute:!1})}
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+class s$3 extends Event{constructor(s,t,e,o){super("context-request",{bubbles:!0,composed:!0}),this.context=s,this.contextTarget=t,this.callback=e,this.subscribe=o??!1;}}
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+function n$1(n){return n}
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */class s$2{constructor(t,s,i,h){if(this.subscribe=!1,this.provided=!1,this.value=void 0,this.t=(t,s)=>{this.unsubscribe&&(this.unsubscribe!==s&&(this.provided=!1,this.unsubscribe()),this.subscribe||this.unsubscribe()),this.value=t,this.host.requestUpdate(),this.provided&&!this.subscribe||(this.provided=!0,this.callback&&this.callback(t,s)),this.unsubscribe=s;},this.host=t,void 0!==s.context){const t=s;this.context=t.context,this.callback=t.callback,this.subscribe=t.subscribe??!1;}else this.context=s,this.callback=i,this.subscribe=h??!1;this.host.addController(this);}hostConnected(){this.dispatchRequest();}hostDisconnected(){this.unsubscribe&&(this.unsubscribe(),this.unsubscribe=void 0);}dispatchRequest(){this.host.dispatchEvent(new s$3(this.context,this.host,this.t,this.subscribe));}}
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+class s$1{get value(){return this.o}set value(s){this.setValue(s);}setValue(s,t=!1){const i=t||!Object.is(s,this.o);this.o=s,i&&this.updateObservers();}constructor(s){this.subscriptions=new Map,this.updateObservers=()=>{for(const[s,{disposer:t}]of this.subscriptions)s(this.o,t);},void 0!==s&&(this.value=s);}addCallback(s,t,i){if(!i)return void s(this.value);this.subscriptions.has(s)||this.subscriptions.set(s,{disposer:()=>{this.subscriptions.delete(s);},consumerHost:t});const{disposer:h}=this.subscriptions.get(s);s(this.value,h);}clearCallbacks(){this.subscriptions.clear();}}
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */class e$1 extends Event{constructor(t,s){super("context-provider",{bubbles:!0,composed:!0}),this.context=t,this.contextTarget=s;}}class i extends s$1{constructor(s,e,i){super(void 0!==e.context?e.initialValue:i),this.onContextRequest=t=>{if(t.context!==this.context)return;const s=t.contextTarget??t.composedPath()[0];s!==this.host&&(t.stopPropagation(),this.addCallback(t.callback,s,t.subscribe));},this.onProviderRequest=s=>{if(s.context!==this.context)return;if((s.contextTarget??s.composedPath()[0])===this.host)return;const e=new Set;for(const[s,{consumerHost:i}]of this.subscriptions)e.has(s)||(e.add(s),i.dispatchEvent(new s$3(this.context,i,s,!0)));s.stopPropagation();},this.host=s,void 0!==e.context?this.context=e.context:this.context=e,this.attachListeners(),this.host.addController?.(this);}attachListeners(){this.host.addEventListener("context-request",this.onContextRequest),this.host.addEventListener("context-provider",this.onProviderRequest);}hostConnected(){this.host.dispatchEvent(new e$1(this.context,this.host));}}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */function e({context:e}){return (n,i$1)=>{const r=new WeakMap;if("object"==typeof i$1)return {get(){return n.get.call(this)},set(t){return r.get(this).setValue(t),n.set.call(this,t)},init(n){return r.set(this,new i(this,{context:e,initialValue:n})),n}};{n.constructor.addInitializer((n=>{r.set(n,new i(n,{context:e}));}));const o=Object.getOwnPropertyDescriptor(n,i$1);let s;if(void 0===o){const t=new WeakMap;s={get(){return t.get(this)},set(e){r.get(this).setValue(e),t.set(this,e);},configurable:!0,enumerable:!0};}else {const t=o.set;s={...o,set(e){r.get(this).setValue(e),t?.call(this,e);}};}return void Object.defineProperty(n,i$1,s)}}}
+
+/**
+ * @license
+ * Copyright 2022 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */function c({context:c,subscribe:e}){return (o,n)=>{"object"==typeof n?n.addInitializer((function(){new s$2(this,{context:c,callback:t=>{o.set.call(this,t);},subscribe:e});})):o.constructor.addInitializer((o=>{new s$2(o,{context:c,callback:t=>{o[n]=t;},subscribe:e});}));}}
+
+const hassContext = n$1('hass');
+const configContext = n$1('config');
 
 // these aren't really private, but nor are they really useful to document
 
@@ -9778,7 +9826,7 @@ function friendlyDateTime(dateTimeish) {
   }
 }
 
-const variables = i$3 `
+const variables = i$4 `
   :host {
     /* MD3 Color System */
     --primary-gradient: linear-gradient(135deg, #4CAF50, #45a049);
@@ -9878,7 +9926,7 @@ const variables = i$3 `
   }
 `;
 
-let GrowspaceEnvChart = class GrowspaceEnvChart extends i {
+let GrowspaceEnvChart = class GrowspaceEnvChart extends i$1 {
     constructor() {
         super(...arguments);
         this.history = [];
@@ -10654,7 +10702,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i {
     `;
     }
 };
-GrowspaceEnvChart.styles = i$3 `
+GrowspaceEnvChart.styles = i$4 `
     :host { display: block; position: relative; }
     
     .gs-env-graph-card {
@@ -10795,71 +10843,71 @@ GrowspaceEnvChart.styles = i$3 `
     }
   `;
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "hass", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "device", void 0);
 __decorate([
-    n$1({ type: Array }),
+    n$2({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceEnvChart.prototype, "history", void 0);
 __decorate([
-    n$1({ type: Array }),
+    n$2({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceEnvChart.prototype, "dehumidifierHistory", void 0);
 __decorate([
-    n$1({ type: Array }),
+    n$2({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceEnvChart.prototype, "exhaustHistory", void 0);
 __decorate([
-    n$1({ type: Array }),
+    n$2({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceEnvChart.prototype, "humidifierHistory", void 0);
 __decorate([
-    n$1({ type: Array }),
+    n$2({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceEnvChart.prototype, "soilMoistureHistory", void 0);
 __decorate([
-    n$1({ type: String }),
+    n$2({ type: String }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "metricKey", void 0);
 __decorate([
-    n$1({ type: String }),
+    n$2({ type: String }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "unit", void 0);
 __decorate([
-    n$1({ type: String }),
+    n$2({ type: String }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "color", void 0);
 __decorate([
-    n$1({ type: String }),
+    n$2({ type: String }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "title", void 0);
 __decorate([
-    n$1({ type: String }),
+    n$2({ type: String }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "icon", void 0);
 __decorate([
-    n$1({ type: String }),
+    n$2({ type: String }),
     __metadata("design:type", String)
 ], GrowspaceEnvChart.prototype, "range", void 0);
 __decorate([
-    n$1({ type: String }),
+    n$2({ type: String }),
     __metadata("design:type", String)
 ], GrowspaceEnvChart.prototype, "type", void 0);
 __decorate([
-    n$1({ type: Array }),
+    n$2({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceEnvChart.prototype, "metrics", void 0);
 __decorate([
-    n$1({ type: Boolean }),
+    n$2({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "isCombined", void 0);
 __decorate([
-    n$1({ type: Object }),
+    n$2({ type: Object }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "metricConfig", void 0);
 __decorate([
@@ -10870,7 +10918,7 @@ GrowspaceEnvChart = __decorate([
     t('growspace-env-chart')
 ], GrowspaceEnvChart);
 
-let PlantOverviewDialog = class PlantOverviewDialog extends i {
+let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
     constructor() {
         super(...arguments);
         this.dialog = null;
@@ -11102,7 +11150,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i {
     `;
     }
 };
-PlantOverviewDialog.styles = i$3 `
+PlantOverviewDialog.styles = i$4 `
     :host {
       display: block;
     }
@@ -11236,18 +11284,18 @@ PlantOverviewDialog.styles = i$3 `
     /* Add other styles from dialog-renderer as needed */
   `;
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "dialog", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "growspaceOptions", void 0);
 PlantOverviewDialog = __decorate([
     t('plant-overview-dialog')
 ], PlantOverviewDialog);
 
-let StrainLibraryDialog = class StrainLibraryDialog extends i {
+let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
     constructor() {
         super(...arguments);
         this.open = false;
@@ -11931,7 +11979,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i {
     `;
     }
 };
-StrainLibraryDialog.styles = i$3 `
+StrainLibraryDialog.styles = i$4 `
     :host {
       --accent-green: #22c55e;
       --card-bg: #2d2d2d;
@@ -12609,11 +12657,11 @@ StrainLibraryDialog.styles = i$3 `
     }
   `;
 __decorate([
-    n$1({ type: Boolean }),
+    n$2({ type: Boolean }),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "open", void 0);
 __decorate([
-    n$1({ type: Array }),
+    n$2({ type: Array }),
     __metadata("design:type", Array)
 ], StrainLibraryDialog.prototype, "strains", void 0);
 __decorate([
@@ -12656,7 +12704,7 @@ StrainLibraryDialog = __decorate([
     t('strain-library-dialog')
 ], StrainLibraryDialog);
 
-let IrrigationDialog = class IrrigationDialog extends i {
+let IrrigationDialog = class IrrigationDialog extends i$1 {
     constructor() {
         super(...arguments);
         this.open = false;
@@ -12996,7 +13044,7 @@ let IrrigationDialog = class IrrigationDialog extends i {
     `;
     }
 };
-IrrigationDialog.styles = i$3 `
+IrrigationDialog.styles = i$4 `
     :host {
       --mdc-dialog-min-width: 400px;
       --mdc-dialog-max-width: 1000px;
@@ -13126,23 +13174,23 @@ IrrigationDialog.styles = i$3 `
     }
   `;
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "hass", void 0);
 __decorate([
-    n$1({ type: Boolean }),
+    n$2({ type: Boolean }),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "open", void 0);
 __decorate([
-    n$1({ type: String }),
+    n$2({ type: String }),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "growspaceId", void 0);
 __decorate([
-    n$1({ type: String }),
+    n$2({ type: String }),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "growspaceName", void 0);
 __decorate([
-    n$1({ type: String }),
+    n$2({ type: String }),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "growspaceEntityId", void 0);
 __decorate([
@@ -13181,7 +13229,7 @@ IrrigationDialog = __decorate([
     t('irrigation-dialog')
 ], IrrigationDialog);
 
-let GrowspacePlantCard = class GrowspacePlantCard extends i {
+let GrowspacePlantCard = class GrowspacePlantCard extends i$1 {
     constructor() {
         super(...arguments);
         this.strainLibrary = [];
@@ -13428,7 +13476,7 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i {
     `;
     }
 };
-GrowspacePlantCard.styles = i$3 `
+GrowspacePlantCard.styles = i$4 `
     :host {
       display: block;
       width: 100%;
@@ -13598,34 +13646,34 @@ GrowspacePlantCard.styles = i$3 `
     }
   `;
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspacePlantCard.prototype, "plant", void 0);
 __decorate([
-    n$1({ type: Number }),
+    n$2({ type: Number }),
     __metadata("design:type", Number)
 ], GrowspacePlantCard.prototype, "row", void 0);
 __decorate([
-    n$1({ type: Number }),
+    n$2({ type: Number }),
     __metadata("design:type", Number)
 ], GrowspacePlantCard.prototype, "col", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspacePlantCard.prototype, "strainLibrary", void 0);
 __decorate([
-    n$1({ type: Boolean }),
+    n$2({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowspacePlantCard.prototype, "isEditMode", void 0);
 __decorate([
-    n$1({ type: Boolean }),
+    n$2({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowspacePlantCard.prototype, "selected", void 0);
 GrowspacePlantCard = __decorate([
     t('growspace-plant-card')
 ], GrowspacePlantCard);
 
-let GrowspaceHeader = class GrowspaceHeader extends i {
+let GrowspaceHeader = class GrowspaceHeader extends i$1 {
     constructor() {
         super(...arguments);
         this.devices = [];
@@ -14226,7 +14274,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
     `;
     }
 };
-GrowspaceHeader.styles = i$3 `
+GrowspaceHeader.styles = i$4 `
     :host {
       display: block;
     }
@@ -14616,39 +14664,41 @@ GrowspaceHeader.styles = i$3 `
     }
   `;
 __decorate([
-    n$1({ attribute: false }),
+    c({ context: hassContext, subscribe: true }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "hass", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "device", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    c({ context: configContext, subscribe: true }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "config", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceHeader.prototype, "devices", void 0);
 __decorate([
-    n$1({ type: Boolean }),
+    n$2({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "compact", void 0);
 __decorate([
-    n$1({ type: Boolean }),
+    n$2({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "isEditMode", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "activeEnvGraphs", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "growspaceOptions", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "historyData", void 0);
 __decorate([
@@ -14656,7 +14706,7 @@ __decorate([
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_menuOpen", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceHeader.prototype, "linkedGraphGroups", void 0);
 __decorate([
@@ -14683,7 +14733,7 @@ GrowspaceHeader = __decorate([
     t('growspace-header')
 ], GrowspaceHeader);
 
-let GrowspaceGrid = class GrowspaceGrid extends i {
+let GrowspaceGrid = class GrowspaceGrid extends i$1 {
     constructor() {
         super(...arguments);
         this.plants = [];
@@ -14845,7 +14895,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i {
     `;
     }
 };
-GrowspaceGrid.styles = i$3 `
+GrowspaceGrid.styles = i$4 `
       :host {
         display: block;
       }
@@ -15084,31 +15134,31 @@ GrowspaceGrid.styles = i$3 `
       }
   `;
 __decorate([
-    n$1({ type: Array }),
+    n$2({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceGrid.prototype, "plants", void 0);
 __decorate([
-    n$1({ type: Number }),
+    n$2({ type: Number }),
     __metadata("design:type", Number)
 ], GrowspaceGrid.prototype, "rows", void 0);
 __decorate([
-    n$1({ type: Number }),
+    n$2({ type: Number }),
     __metadata("design:type", Number)
 ], GrowspaceGrid.prototype, "cols", void 0);
 __decorate([
-    n$1({ type: Array }),
+    n$2({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceGrid.prototype, "strainLibrary", void 0);
 __decorate([
-    n$1({ type: Boolean }),
+    n$2({ type: Boolean }),
     __metadata("design:type", Boolean)
 ], GrowspaceGrid.prototype, "isEditMode", void 0);
 __decorate([
-    n$1({ type: Object }),
+    n$2({ type: Object }),
     __metadata("design:type", Set)
 ], GrowspaceGrid.prototype, "selectedPlants", void 0);
 __decorate([
-    n$1({ type: Boolean }),
+    n$2({ type: Boolean }),
     __metadata("design:type", Boolean)
 ], GrowspaceGrid.prototype, "compact", void 0);
 GrowspaceGrid = __decorate([
@@ -15151,7 +15201,7 @@ const DEFAULT_METRIC_CONFIG = {
     type: 'line'
 };
 
-const growspaceCardStyles = i$3 `
+const growspaceCardStyles = i$4 `
       :host {
         display: block;
         font-family: 'Roboto', sans-serif;
@@ -16421,7 +16471,7 @@ const growspaceCardStyles = i$3 `
       }
 `;
 
-let GrowspaceAnalytics = class GrowspaceAnalytics extends i {
+let GrowspaceAnalytics = class GrowspaceAnalytics extends i$1 {
     constructor() {
         super(...arguments);
         this.historyData = [];
@@ -16568,7 +16618,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i {
 };
 GrowspaceAnalytics.styles = [
     growspaceCardStyles,
-    i$3 `
+    i$4 `
       :host {
         display: block;
       }
@@ -16580,50 +16630,50 @@ GrowspaceAnalytics.styles = [
     `
 ];
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceAnalytics.prototype, "hass", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceAnalytics.prototype, "device", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "historyData", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "dehumidifierHistory", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "exhaustHistory", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "humidifierHistory", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "soilMoistureHistory", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Set)
 ], GrowspaceAnalytics.prototype, "activeEnvGraphs", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "linkedGraphGroups", void 0);
 __decorate([
-    n$1({ type: String }),
+    n$2({ type: String }),
     __metadata("design:type", String)
 ], GrowspaceAnalytics.prototype, "range", void 0);
 GrowspaceAnalytics = __decorate([
     t('growspace-analytics')
 ], GrowspaceAnalytics);
 
-let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
+let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     constructor() {
         super(...arguments);
         this._addPlantDialog = null;
@@ -17746,10 +17796,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             response: null
         };
     }
-    render() {
-        if (!this.hass) {
-            return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
-        }
+    get _activeDevices() {
+        if (!this.hass)
+            return [];
+        // Ensure we have the latest HASS reference
         this.dataService = new DataService(this.hass);
         const devices = this.dataService.getGrowspaceDevices();
         // Filter out optimistically deleted plants
@@ -17759,6 +17809,18 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                 return !this._optimisticDeletedPlantIds.has(pId);
             });
         });
+        return devices;
+    }
+    _calculateCurrentGridLayout(deviceData) {
+        const effectiveRows = PlantUtils.calculateEffectiveRows(deviceData);
+        const { grid } = PlantUtils.createGridLayout(deviceData.plants, effectiveRows, deviceData.plants_per_row);
+        return { effectiveRows, grid };
+    }
+    render() {
+        if (!this.hass) {
+            return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
+        }
+        const devices = this._activeDevices;
         if (!devices.length) {
             return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
         }
@@ -17784,8 +17846,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             });
         }
         // Calculate grid layout
-        const effectiveRows = PlantUtils.calculateEffectiveRows(selectedDeviceData);
-        const { grid } = PlantUtils.createGridLayout(selectedDeviceData.plants, effectiveRows, selectedDeviceData.plants_per_row);
+        const { effectiveRows, grid } = this._calculateCurrentGridLayout(selectedDeviceData);
         const isWide = selectedDeviceData.plants_per_row > 7;
         const strainLibrary = this._strainLibrary;
         return x `
@@ -17793,8 +17854,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         <div class="sr-only-announcer" aria-live="polite"></div>
         <div class="unified-growspace-card" tabindex="0" @keydown=${this._handleKeyboardNav}>
           <growspace-header
-            .hass=${this.hass}
-            .config=${this._config}
             .device=${selectedDeviceData}
             .devices=${devices}
             .activeEnvGraphs=${this._activeEnvGraphs}
@@ -18194,18 +18253,20 @@ __decorate([
     __metadata("design:type", Object)
 ], GrowspaceManagerCard.prototype, "_notification", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    e({ context: hassContext }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCard.prototype, "hass", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    e({ context: configContext }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCard.prototype, "_config", void 0);
 GrowspaceManagerCard = __decorate([
     t('growspace-manager-card')
 ], GrowspaceManagerCard);
 
-let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i {
+let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$1 {
     constructor() {
         super(...arguments);
         this._growspaceOptions = [];
@@ -18286,7 +18347,7 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i {
         }));
     }
 };
-GrowspaceManagerCardEditor.styles = i$3 `
+GrowspaceManagerCardEditor.styles = i$4 `
     .form-group {
       margin-bottom: 12px;
     }
@@ -18302,11 +18363,11 @@ GrowspaceManagerCardEditor.styles = i$3 `
     }
   `;
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCardEditor.prototype, "hass", void 0);
 __decorate([
-    n$1({ attribute: false }),
+    n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCardEditor.prototype, "_config", void 0);
 __decorate([

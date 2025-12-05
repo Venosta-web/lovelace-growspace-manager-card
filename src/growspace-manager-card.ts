@@ -1,5 +1,7 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues, svg } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { provide } from '@lit/context';
+import { hassContext, configContext } from './context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiChevronDown, mdiChevronRight, mdiDelete, mdiCog, mdiBrain, mdiDotsVertical, mdiRadioboxMarked, mdiRadioboxBlank, mdiPencil, mdiCheckboxMarked, mdiCheckboxBlankOutline } from '@mdi/js';
 import { DateTime } from 'luxon';
@@ -72,7 +74,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
 
+  @provide({ context: hassContext })
   @property({ attribute: false }) public hass!: HomeAssistant;
+
+  @provide({ context: configContext })
   @property({ attribute: false }) private _config!: GrowspaceManagerCardConfig;
 
 
@@ -1257,11 +1262,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
 
 
-  protected render(): TemplateResult {
-    if (!this.hass) {
-      return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
-    }
+  private get _activeDevices(): GrowspaceDevice[] {
+    if (!this.hass) return [];
 
+    // Ensure we have the latest HASS reference
     this.dataService = new DataService(this.hass);
     const devices = this.dataService.getGrowspaceDevices();
 
@@ -1272,6 +1276,26 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         return !this._optimisticDeletedPlantIds.has(pId);
       });
     });
+
+    return devices;
+  }
+
+  private _calculateCurrentGridLayout(deviceData: GrowspaceDevice) {
+    const effectiveRows = PlantUtils.calculateEffectiveRows(deviceData);
+    const { grid } = PlantUtils.createGridLayout(
+      deviceData.plants,
+      effectiveRows,
+      deviceData.plants_per_row
+    );
+    return { effectiveRows, grid };
+  }
+
+  protected render(): TemplateResult {
+    if (!this.hass) {
+      return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
+    }
+
+    const devices = this._activeDevices;
 
     if (!devices.length) {
       return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
@@ -1295,8 +1319,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       return html`<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
     }
 
-
-
     const growspaceOptions: Record<string, string> = {};
     const growspaces = this.hass.states['sensor.growspaces_list']?.attributes?.growspaces;
     if (growspaces) {
@@ -1304,13 +1326,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         growspaceOptions[id] = name as string;
       });
     }
+
     // Calculate grid layout
-    const effectiveRows = PlantUtils.calculateEffectiveRows(selectedDeviceData);
-    const { grid } = PlantUtils.createGridLayout(
-      selectedDeviceData.plants,
-      effectiveRows,
-      selectedDeviceData.plants_per_row
-    );
+    const { effectiveRows, grid } = this._calculateCurrentGridLayout(selectedDeviceData);
 
     const isWide = selectedDeviceData.plants_per_row > 7;
     const strainLibrary = this._strainLibrary;
@@ -1320,8 +1338,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         <div class="sr-only-announcer" aria-live="polite"></div>
         <div class="unified-growspace-card" tabindex="0" @keydown=${this._handleKeyboardNav}>
           <growspace-header
-            .hass=${this.hass}
-            .config=${this._config}
             .device=${selectedDeviceData}
             .devices=${devices}
             .activeEnvGraphs=${this._activeEnvGraphs}
