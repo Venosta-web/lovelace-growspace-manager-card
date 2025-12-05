@@ -574,6 +574,54 @@ export class StrainLibraryDialog extends LitElement {
         cursor: not-allowed;
         border-color: transparent;
     }
+    /* MOBILE RESPONSIVENESS */
+    @media (max-width: 600px) {
+      ha-dialog {
+        --mdc-dialog-min-width: 95vw;
+        --mdc-dialog-max-width: 95vw;
+      }
+
+      .strain-dialog-container {
+        width: 95vw;
+        height: 90vh;
+        max-width: 95vw;
+      }
+
+      .sd-header {
+        padding: 16px;
+      }
+
+      .sd-title {
+        font-size: 1.1rem;
+      }
+
+      .sd-content {
+        padding: 16px;
+      }
+
+      .sd-grid {
+        grid-template-columns: 1fr; /* Single column on mobile */
+      }
+
+      .sd-footer {
+        flex-wrap: wrap;
+        padding: 16px;
+        gap: 8px;
+      }
+
+      .sd-btn {
+        flex: 1 1 auto; /* Allow buttons to grow and wrap */
+        padding: 10px 12px;
+        font-size: 0.85rem;
+        white-space: nowrap;
+      }
+      
+      /* Ensure icons in buttons don't break layout */
+      .sd-btn svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
   `;
 
   private _startEdit(strain?: StrainEntry) {
