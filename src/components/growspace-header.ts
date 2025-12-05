@@ -398,21 +398,20 @@ export class GrowspaceHeader extends LitElement {
         fill: currentColor;
       }
 
-      @media (max-width: 768px) {
-        .mobile-link-btn {
-          display: flex;
-          align-self: flex-end;
-          margin-bottom: 8px; /* Gap logic */
-        }
+      
+      .mobile-link-btn {
+        display: flex;
+        align-self: flex-end;
+        margin-bottom: 8px; /* Gap logic */
+      }
         
-        .gs-stats-chips.mobile-link-active,
-        .gs-device-chips.mobile-link-active {
-           overflow-x: visible;
-           flex-wrap: wrap;
-           mask-image: none;
-           -webkit-mask-image: none;
-           justify-content: flex-end;
-        }
+      .gs-stats-chips.mobile-link-active,
+      .gs-device-chips.mobile-link-active {
+        overflow-x: visible;
+        flex-wrap: wrap;
+        mask-image: none;
+        -webkit-mask-image: none;
+        justify-content: flex-end;
       }
   `;
 
