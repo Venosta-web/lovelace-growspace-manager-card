@@ -21,6 +21,7 @@ import {
   mdiLightbulbOff,
   mdiMagnify,
   mdiAirHumidifierOff,
+  mdiIdCard,
 
 } from '@mdi/js';
 import { GrowspaceDevice, GrowspaceManagerCardConfig } from '../types';
