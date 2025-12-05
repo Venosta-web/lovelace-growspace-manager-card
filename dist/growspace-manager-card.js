@@ -14345,6 +14345,8 @@ GrowspaceHeader.styles = i$3 `
       .gs-header-top {
         flex-direction: column;
         align-items: stretch;
+        position: relative; /* Anchor for absolute menu */
+        padding-right: 48px; /* Reserve space for menu button */
       }
 
       .header-controls {
@@ -14355,10 +14357,11 @@ GrowspaceHeader.styles = i$3 `
       }
 
       .menu-container {
-        align-self: flex-end;
-        order: -1;
-        margin-bottom: -8px; /* Pull chips up slightly */
-        z-index: 5;
+        position: absolute;
+        top: 0;
+        right: 0;
+        z-index: 10;
+        margin: 0;
       }
 
       .gs-device-chips {
