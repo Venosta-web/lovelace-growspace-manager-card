@@ -11435,7 +11435,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
       <div class="sd-header">
         <h2 class="sd-title">Strain Library</h2>
         <div class="header-actions">
-            <button class="menu-btn mobile-only" @click=${() => this._mobileMenuOpen = !this._mobileMenuOpen}>
+            <button class="menu-btn" @click=${() => this._mobileMenuOpen = !this._mobileMenuOpen}>
                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
             </button>
             <button class="sd-close-btn" @click=${() => this.dispatchEvent(new CustomEvent('close'))}>
@@ -12529,6 +12529,9 @@ StrainLibraryDialog.styles = i$4 `
     .mobile-actions { display: none; }
     .desktop-actions { display: flex; gap: 12px; }
 
+    /* Hide mobile-only buttons by default (Desktop) */
+    .fab-btn, .menu-btn { display: none; }
+
     @media (max-width: 600px) {
       ha-dialog {
         --mdc-dialog-min-width: 95vw;
@@ -12560,6 +12563,7 @@ StrainLibraryDialog.styles = i$4 `
       .sd-footer {
         display: none;
       }
+      
       
       .fab-btn {
         display: flex;
@@ -12601,7 +12605,7 @@ StrainLibraryDialog.styles = i$4 `
         cursor: pointer;
         transition: all 0.2s;
         z-index: 20;
-        display: none;
+        display: flex;
       }
       
       /* Mobile Menu Button */
@@ -12612,12 +12616,9 @@ StrainLibraryDialog.styles = i$4 `
         padding: 8px;
         cursor: pointer;
         border-radius: 50%;
-        display: none; 
+        display: block; 
       }
-      button.fab-btn,
-      button.menu-btn {
-        display: none;
-      }
+
       .header-actions {
         display: flex;
         align-items: center;

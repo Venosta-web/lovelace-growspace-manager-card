@@ -579,6 +579,9 @@ export class StrainLibraryDialog extends LitElement {
     .mobile-actions { display: none; }
     .desktop-actions { display: flex; gap: 12px; }
 
+    /* Hide mobile-only buttons by default (Desktop) */
+    .fab-btn, .menu-btn { display: none; }
+
     @media (max-width: 600px) {
       ha-dialog {
         --mdc-dialog-min-width: 95vw;
@@ -610,6 +613,7 @@ export class StrainLibraryDialog extends LitElement {
       .sd-footer {
         display: none;
       }
+      
       
       .fab-btn {
         display: flex;
@@ -651,7 +655,7 @@ export class StrainLibraryDialog extends LitElement {
         cursor: pointer;
         transition: all 0.2s;
         z-index: 20;
-        display: none;
+        display: flex;
       }
       
       /* Mobile Menu Button */
@@ -662,12 +666,9 @@ export class StrainLibraryDialog extends LitElement {
         padding: 8px;
         cursor: pointer;
         border-radius: 50%;
-        display: none; 
+        display: block; 
       }
-      button.fab-btn,
-      button.menu-btn {
-        display: none;
-      }
+
       .header-actions {
         display: flex;
         align-items: center;
@@ -839,7 +840,7 @@ export class StrainLibraryDialog extends LitElement {
       <div class="sd-header">
         <h2 class="sd-title">Strain Library</h2>
         <div class="header-actions">
-            <button class="menu-btn mobile-only" @click=${() => this._mobileMenuOpen = !this._mobileMenuOpen}>
+            <button class="menu-btn" @click=${() => this._mobileMenuOpen = !this._mobileMenuOpen}>
                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
             </button>
             <button class="sd-close-btn" @click=${() => this.dispatchEvent(new CustomEvent('close'))}>
