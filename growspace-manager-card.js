@@ -13672,6 +13672,11 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
         }));
         this._draggedMetric = null;
     }
+    _handleDragOver(e) {
+        if (this._draggedMetric) {
+            e.preventDefault();
+        }
+    }
     _isMetricLinked(metric) {
         const index = this.linkedGraphGroups.findIndex(g => g.includes(metric));
         return {
@@ -13830,7 +13835,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'temperature')}
                        @drop=${(e) => this._handleChipDrop(e, 'temperature')}
-                       @dragover=${(e) => e.preventDefault()}
+                       @dragover=${(e) => this._handleDragOver(e)}
                        @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
@@ -13858,7 +13863,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'humidity')}
                        @drop=${(e) => this._handleChipDrop(e, 'humidity')}
-                       @dragover=${(e) => e.preventDefault()}
+                       @dragover=${(e) => this._handleDragOver(e)}
                        @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
@@ -13886,7 +13891,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'vpd')}
                        @drop=${(e) => this._handleChipDrop(e, 'vpd')}
-                       @dragover=${(e) => e.preventDefault()}
+                       @dragover=${(e) => this._handleDragOver(e)}
                        @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
@@ -13914,7 +13919,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'co2')}
                        @drop=${(e) => this._handleChipDrop(e, 'co2')}
-                       @dragover=${(e) => e.preventDefault()}
+                       @dragover=${(e) => this._handleDragOver(e)}
                        @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
@@ -13942,7 +13947,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'light')}
                        @drop=${(e) => this._handleChipDrop(e, 'light')}
-                       @dragover=${(e) => e.preventDefault()}
+                       @dragover=${(e) => this._handleDragOver(e)}
                        @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
@@ -13971,7 +13976,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'soil_moisture')}
                        @drop=${(e) => this._handleChipDrop(e, 'soil_moisture')}
-                       @dragover=${(e) => e.preventDefault()}
+                       @dragover=${(e) => this._handleDragOver(e)}
                        @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
@@ -13999,7 +14004,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'irrigation')}
                        @drop=${(e) => this._handleChipDrop(e, 'irrigation')}
-                       @dragover=${(e) => e.preventDefault()}
+                       @dragover=${(e) => this._handleDragOver(e)}
                        @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
@@ -14028,7 +14033,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'drain')}
                        @drop=${(e) => this._handleChipDrop(e, 'drain')}
-                       @dragover=${(e) => e.preventDefault()}
+                       @dragover=${(e) => this._handleDragOver(e)}
                        @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
@@ -14057,7 +14062,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'optimal')}
                        @drop=${(e) => this._handleChipDrop(e, 'optimal')}
-                       @dragover=${(e) => e.preventDefault()}
+                       @dragover=${(e) => this._handleDragOver(e)}
                        @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
@@ -14130,7 +14135,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                      draggable="${this._chipDraggable}"
                      @dragstart=${(e) => this._handleChipDragStart(e, 'exhaust')}
                      @drop=${(e) => this._handleChipDrop(e, 'exhaust')}
-                     @dragover=${(e) => e.preventDefault()}
+                     @dragover=${(e) => this._handleDragOver(e)}
                      @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
@@ -14158,7 +14163,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                      draggable="${this._chipDraggable}"
                      @dragstart=${(e) => this._handleChipDragStart(e, 'humidifier')}
                      @drop=${(e) => this._handleChipDrop(e, 'humidifier')}
-                     @dragover=${(e) => e.preventDefault()}
+                     @dragover=${(e) => this._handleDragOver(e)}
                      @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
@@ -14186,7 +14191,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                      draggable="${this._chipDraggable}"
                      @dragstart=${(e) => this._handleChipDragStart(e, 'dehumidifier')}
                      @drop=${(e) => this._handleChipDrop(e, 'dehumidifier')}
-                     @dragover=${(e) => e.preventDefault()}
+                     @dragover=${(e) => this._handleDragOver(e)}
                      @click=${(e) => {
             const target = e.target;
             if (target.closest('.link-icon'))
@@ -14318,7 +14323,7 @@ GrowspaceHeader.styles = i$3 `
        -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
        padding: 4px 2px;
 
-       touch-action: pan-x;
+       touch-action: manipulation;
        max-width: 100%;
        -webkit-overflow-scrolling: touch;
     }
@@ -14343,7 +14348,7 @@ GrowspaceHeader.styles = i$3 `
       user-select: none;
       flex-shrink: 0;
        white-space: nowrap;
-       touch-action: pan-x;
+       touch-action: manipulation;
     }
 
     .stat-chip:hover {
@@ -14537,7 +14542,7 @@ GrowspaceHeader.styles = i$3 `
         padding: 4px 2px;
         padding-right: 16px;
         width: 100%;
-        touch-action: pan-x;
+        touch-action: manipulation;
       }
       .gs-device-chips::-webkit-scrollbar {
         display: none;

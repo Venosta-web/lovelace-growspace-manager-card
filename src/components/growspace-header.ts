@@ -147,7 +147,7 @@ export class GrowspaceHeader extends LitElement {
        -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
        padding: 4px 2px;
 
-       touch-action: pan-x;
+       touch-action: manipulation;
        max-width: 100%;
        -webkit-overflow-scrolling: touch;
     }
@@ -172,7 +172,7 @@ export class GrowspaceHeader extends LitElement {
       user-select: none;
       flex-shrink: 0;
        white-space: nowrap;
-       touch-action: pan-x;
+       touch-action: manipulation;
     }
 
     .stat-chip:hover {
@@ -366,7 +366,7 @@ export class GrowspaceHeader extends LitElement {
         padding: 4px 2px;
         padding-right: 16px;
         width: 100%;
-        touch-action: pan-x;
+        touch-action: manipulation;
       }
       .gs-device-chips::-webkit-scrollbar {
         display: none;
@@ -455,6 +455,12 @@ export class GrowspaceHeader extends LitElement {
     }));
 
     this._draggedMetric = null;
+  }
+
+  private _handleDragOver(e: DragEvent) {
+    if (this._draggedMetric) {
+      e.preventDefault();
+    }
   }
 
   private _isMetricLinked(metric: string): { linked: boolean, groupIndex: number, group: string[] } {
@@ -641,7 +647,7 @@ export class GrowspaceHeader extends LitElement {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'temperature')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'temperature')}
-                       @dragover=${(e: DragEvent) => e.preventDefault()}
+                       @dragover=${(e: DragEvent) => this._handleDragOver(e)}
                        @click=${(e: Event) => {
           const target = e.target as HTMLElement;
           if (target.closest('.link-icon')) return;
@@ -668,7 +674,7 @@ export class GrowspaceHeader extends LitElement {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'humidity')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'humidity')}
-                       @dragover=${(e: DragEvent) => e.preventDefault()}
+                       @dragover=${(e: DragEvent) => this._handleDragOver(e)}
                        @click=${(e: Event) => {
           const target = e.target as HTMLElement;
           if (target.closest('.link-icon')) return;
@@ -695,7 +701,7 @@ export class GrowspaceHeader extends LitElement {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'vpd')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'vpd')}
-                       @dragover=${(e: DragEvent) => e.preventDefault()}
+                       @dragover=${(e: DragEvent) => this._handleDragOver(e)}
                        @click=${(e: Event) => {
           const target = e.target as HTMLElement;
           if (target.closest('.link-icon')) return;
@@ -722,7 +728,7 @@ export class GrowspaceHeader extends LitElement {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'co2')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'co2')}
-                       @dragover=${(e: DragEvent) => e.preventDefault()}
+                       @dragover=${(e: DragEvent) => this._handleDragOver(e)}
                        @click=${(e: Event) => {
           const target = e.target as HTMLElement;
           if (target.closest('.link-icon')) return;
@@ -749,7 +755,7 @@ export class GrowspaceHeader extends LitElement {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'light')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'light')}
-                       @dragover=${(e: DragEvent) => e.preventDefault()}
+                       @dragover=${(e: DragEvent) => this._handleDragOver(e)}
                        @click=${(e: Event) => {
           const target = e.target as HTMLElement;
           if (target.closest('.link-icon')) return;
@@ -777,7 +783,7 @@ export class GrowspaceHeader extends LitElement {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'soil_moisture')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'soil_moisture')}
-                       @dragover=${(e: DragEvent) => e.preventDefault()}
+                       @dragover=${(e: DragEvent) => this._handleDragOver(e)}
                        @click=${(e: Event) => {
           const target = e.target as HTMLElement;
           if (target.closest('.link-icon')) return;
@@ -804,7 +810,7 @@ export class GrowspaceHeader extends LitElement {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'irrigation')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'irrigation')}
-                       @dragover=${(e: DragEvent) => e.preventDefault()}
+                       @dragover=${(e: DragEvent) => this._handleDragOver(e)}
                        @click=${(e: Event) => {
           const target = e.target as HTMLElement;
           if (target.closest('.link-icon')) return;
@@ -832,7 +838,7 @@ export class GrowspaceHeader extends LitElement {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'drain')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'drain')}
-                       @dragover=${(e: DragEvent) => e.preventDefault()}
+                       @dragover=${(e: DragEvent) => this._handleDragOver(e)}
                        @click=${(e: Event) => {
           const target = e.target as HTMLElement;
           if (target.closest('.link-icon')) return;
@@ -860,7 +866,7 @@ export class GrowspaceHeader extends LitElement {
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'optimal')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'optimal')}
-                       @dragover=${(e: DragEvent) => e.preventDefault()}
+                       @dragover=${(e: DragEvent) => this._handleDragOver(e)}
                        @click=${(e: Event) => {
           const target = e.target as HTMLElement;
           if (target.closest('.link-icon')) return;
@@ -932,7 +938,7 @@ export class GrowspaceHeader extends LitElement {
                      draggable="${this._chipDraggable}"
                      @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'exhaust')}
                      @drop=${(e: DragEvent) => this._handleChipDrop(e, 'exhaust')}
-                     @dragover=${(e: DragEvent) => e.preventDefault()}
+                     @dragover=${(e: DragEvent) => this._handleDragOver(e)}
                      @click=${(e: Event) => {
           const target = e.target as HTMLElement;
           if (target.closest('.link-icon')) return;
@@ -960,7 +966,7 @@ export class GrowspaceHeader extends LitElement {
                      draggable="${this._chipDraggable}"
                      @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'humidifier')}
                      @drop=${(e: DragEvent) => this._handleChipDrop(e, 'humidifier')}
-                     @dragover=${(e: DragEvent) => e.preventDefault()}
+                     @dragover=${(e: DragEvent) => this._handleDragOver(e)}
                      @click=${(e: Event) => {
           const target = e.target as HTMLElement;
           if (target.closest('.link-icon')) return;
@@ -987,7 +993,7 @@ export class GrowspaceHeader extends LitElement {
                      draggable="${this._chipDraggable}"
                      @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'dehumidifier')}
                      @drop=${(e: DragEvent) => this._handleChipDrop(e, 'dehumidifier')}
-                     @dragover=${(e: DragEvent) => e.preventDefault()}
+                     @dragover=${(e: DragEvent) => this._handleDragOver(e)}
                      @click=${(e: Event) => {
           const target = e.target as HTMLElement;
           if (target.closest('.link-icon')) return;
