@@ -326,13 +326,17 @@ export class GrowspaceHeader extends LitElement {
       }
 
       .header-controls {
-        flex-wrap: nowrap; /* Prevent wrapping of controls */
-        overflow: hidden; /* Contain the chips */
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        overflow: visible;
       }
 
       .menu-container {
-        /* Keep menu button accessible */
-        flex-shrink: 0;
+        align-self: flex-end;
+        order: -1;
+        margin-bottom: -8px; /* Pull chips up slightly */
+        z-index: 5;
       }
     }
   `;
