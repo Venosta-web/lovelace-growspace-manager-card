@@ -14347,8 +14347,10 @@ GrowspaceHeader.styles = i$3 `
       transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
       user-select: none;
       flex-shrink: 0;
+      user-select: none;
+      flex-shrink: 0;
        white-space: nowrap;
-       touch-action: manipulation;
+       touch-action: pan-x;
     }
 
     .stat-chip:hover {
@@ -14369,6 +14371,7 @@ GrowspaceHeader.styles = i$3 `
       height: 18px;
       fill: currentColor;
       opacity: 0.8;
+      pointer-events: none; /* Ensure key events pass through to chip/container */
     }
 
     .gs-device-chips {
@@ -14499,20 +14502,29 @@ GrowspaceHeader.styles = i$3 `
     @media (max-width: 768px) {
       .gs-title-group {
         gap: 8px;
+        min-width: 0; /* Enable flex shrinking */
       }
       .gs-stats-chips {
-        /* Ensure horizontal scroll on mobile */
-        justify-content: flex-start; /* Start from left on mobile */
+        justify-content: flex-start;
         mask-image: linear-gradient(to right, black 90%, transparent 100%);
         -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
-        padding-right: 16px; /* Add some padding for the fade effect */
+        padding-right: 16px;
+        /* Force layout properties for scrolling */
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        width: 100%;
+        min-width: 0;
+        touch-action: pan-x;
+        -webkit-overflow-scrolling: touch;
       }
 
       .gs-header-top {
         flex-direction: column;
         align-items: stretch;
-        position: relative; /* Anchor for absolute menu */
-        padding-right: 48px; /* Reserve space for menu button */
+        position: relative;
+        padding-right: 48px;
+        min-width: 0; /* Prevent overflow blowout */
       }
 
       .header-controls {
@@ -14520,6 +14532,7 @@ GrowspaceHeader.styles = i$3 `
         align-items: stretch;
         gap: 8px;
         overflow: visible;
+        min-width: 0;
       }
 
       .menu-container {
@@ -14542,12 +14555,15 @@ GrowspaceHeader.styles = i$3 `
         padding: 4px 2px;
         padding-right: 16px;
         width: 100%;
-        touch-action: manipulation;
+        touch-action: pan-x; /* Explicit pan-x for scrolling */
+        min-width: 0;
+        display: flex;
       }
       .gs-device-chips::-webkit-scrollbar {
         display: none;
       }
       
+      /* Mobile Link Button */
       .mobile-link-btn {
         display: flex;
         align-items: center;
@@ -14562,6 +14578,7 @@ GrowspaceHeader.styles = i$3 `
         transition: all 0.2s ease;
         align-self: flex-end;
         margin-bottom: 8px; /* Gap logic */
+        flex-shrink: 0;
       }
       
       .mobile-link-btn.active {
@@ -14576,6 +14593,7 @@ GrowspaceHeader.styles = i$3 `
         fill: currentColor;
       }
         
+      /* Link Mode Active State - WRAPPING ENABLED, SCROLL DISABLED */
       .gs-stats-chips.mobile-link-active,
       .gs-device-chips.mobile-link-active {
         overflow-x: visible;
