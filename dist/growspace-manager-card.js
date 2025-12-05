@@ -13512,7 +13512,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
           </div>
 
           <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
-            <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+            <div class="header-controls">
               
               <div class="stat-chip mobile-env-trigger ${this._mobileEnvExpanded ? 'active' : ''}"
                    @click=${() => this._mobileEnvExpanded = !this._mobileEnvExpanded}>
@@ -13934,6 +13934,14 @@ GrowspaceHeader.styles = i$3 `
       gap: 16px;
     }
 
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex: 1; /* Ensure it takes available space */
+    }
+
     .gs-title-group {
       display: flex;
       flex-direction: column;
@@ -14203,6 +14211,25 @@ GrowspaceHeader.styles = i$3 `
       .gs-header-top {
         flex-direction: column;
         align-items: stretch;
+      }
+
+      .header-controls {
+        flex-wrap: wrap;
+        justify-content: space-between;
+      }
+
+      .stat-chip.mobile-env-trigger {
+        order: 1;
+      }
+
+      .menu-container {
+        order: 2;
+      }
+
+      .gs-stats-chips {
+        order: 3;
+        width: 100%;
+        flex-basis: 100%;
       }
     }
   `;
