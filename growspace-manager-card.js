@@ -13707,9 +13707,9 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
         }
     }
     get _chipDraggable() {
-        // If user has touch, drag is ONLY allowed if explicitly in link mode.
-        // On desktop (no touch), drag is always allowed (unless logic changes).
-        if (this._hasTouch) {
+        // If user is on mobile (narrow width) OR has touch, drag is ONLY allowed if explicitly in link mode.
+        // This ensures consistency: if you see mobile UI, you get mobile behavior.
+        if (this._isMobileCheck || this._hasTouch) {
             return this._mobileLink.toString();
         }
         return 'true';
@@ -14343,7 +14343,6 @@ GrowspaceHeader.styles = i$3 `
       user-select: none;
       flex-shrink: 0;
        white-space: nowrap;
-       touch-action: pan-x;
     }
 
     .stat-chip:hover {
