@@ -14347,12 +14347,8 @@ GrowspaceHeader.styles = i$3 `
       transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
       user-select: none;
       flex-shrink: 0;
-      user-select: none;
-      flex-shrink: 0;
-       user-select: none;
-       flex-shrink: 0;
-       white-space: nowrap;
-       touch-action: auto;
+      white-space: nowrap;
+      touch-action: auto;
     }
 
     .stat-chip:hover {
@@ -14515,7 +14511,6 @@ GrowspaceHeader.styles = i$3 `
         display: flex;
         flex-wrap: nowrap;
         overflow-x: auto;
-        width: 100%;
         width: 100%;
         touch-action: manipulation;
         -webkit-overflow-scrolling: touch;
