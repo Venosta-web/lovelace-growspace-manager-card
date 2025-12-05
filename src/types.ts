@@ -134,19 +134,8 @@ export function createGrowspaceDevice(
 }
 
 export interface AddPlantDialogState {
-
   row: number;
   col: number;
-  strain?: string;
-  phenotype?: string;
-  mother_id?: string;
-  veg_start?: string;
-  flower_start?: string;
-  seedling_start?: string;
-  mother_start?: string;
-  clone_start?: string;
-  dry_start?: string;
-  cure_start?: string;
 }
 
 export interface PlantOverviewDialogState {
@@ -163,14 +152,7 @@ export interface StrainLibraryDialogState {
 }
 
 export interface ConfigDialogState {
-
   currentTab: 'add_growspace' | 'environment';
-  addGrowspaceData: {
-    name: string;
-    rows: number;
-    plants_per_row: number;
-    notification_service: string;
-  };
   environmentData: {
     selectedGrowspaceId: string;
     temp_sensor: string;
@@ -184,7 +166,6 @@ export interface ConfigDialogState {
 }
 
 export interface GrowMasterDialogState {
-
   growspaceId: string;
   userQuery: string;
   isLoading: boolean;

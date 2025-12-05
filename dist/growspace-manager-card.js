@@ -920,68 +920,6 @@ const t$1=globalThis,i$2=t$1.trustedTypes,s$5=i$2?i$2.createPolicy("lit-html",{c
  */const s$4=globalThis;class i$1 extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=B(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1);}render(){return T}}i$1._$litElement$=!0,i$1["finalized"]=!0,s$4.litElementHydrateSupport?.({LitElement:i$1});const o$1=s$4.litElementPolyfillSupport;o$1?.({LitElement:i$1});(s$4.litElementVersions??=[]).push("4.2.1");
 
 class DialogRenderer {
-    static renderAddPlantDialog(dialog, strainLibrary, growspaceName, callbacks) {
-        if (!dialog)
-            return x ``;
-        // Extract unique strain names from the library
-        const uniqueStrains = [...new Set(strainLibrary.map(s => s.strain))].sort();
-        const timelineContent = DialogRenderer.getTimelineContent(dialog, growspaceName, callbacks);
-        return x `
-      <ha-dialog
-        open
-        @closed=${callbacks.onClose}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
-      >
-        <div class="glass-dialog-container" style="--stage-color: var(--plant-border-color-default)">
-
-          <!-- HEADER -->
-          <div class="dialog-header">
-            <div class="dialog-title-group">
-               <h2 class="dialog-title">Add New Plant</h2>
-               <div class="dialog-subtitle">Enter plant details below</div>
-            </div>
-            <button class="md3-button text" @click=${callbacks.onClose} style="min-width: auto; padding: 8px;">
-               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                 <path d="${mdiClose}"></path>
-               </svg>
-            </button>
-          </div>
-
-          <div class="overview-grid">
-             <!-- IDENTITY CARD -->
-             <div class="detail-card">
-               <h3>Identity & Location</h3>
-               ${DialogRenderer.renderMD3SelectInput('Strain *', dialog.strain || '', uniqueStrains, callbacks.onStrainChange)}
-               ${DialogRenderer.renderMD3TextInput('Phenotype', dialog.phenotype || '', callbacks.onPhenotypeChange)}
-               <div style="display:flex; gap:16px;">
-                 ${DialogRenderer.renderMD3NumberInput('Row', dialog.row + 1, (v) => callbacks.onRowChange(v))}
-                 ${DialogRenderer.renderMD3NumberInput('Col', dialog.col + 1, (v) => callbacks.onColChange(v))}
-               </div>
-             </div>
-
-             <!-- TIMELINE CARD -->
-             <div class="detail-card">
-                ${timelineContent}
-             </div>
-          </div>
-
-          <!-- ACTION BUTTONS -->
-          <div class="button-group">
-            <button class="md3-button tonal" @click=${callbacks.onClose}>
-              Cancel
-            </button>
-            <button class="md3-button primary" @click=${callbacks.onConfirm}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
-              Add Plant
-            </button>
-          </div>
-
-        </div>
-      </ha-dialog>
-    `;
-    }
     static parseScheduleString(scheduleString) {
         if (typeof scheduleString !== 'string') {
             // If it's already an array (e.g., from a newly added event in the current session), return it.
@@ -1004,33 +942,6 @@ class DialogRenderer {
             console.error("Failed to parse irrigation schedule string:", scheduleString, e);
             return [];
         }
-    }
-    static getTimelineContent(dialog, growspaceName, callbacks) {
-        const name = growspaceName.toLowerCase();
-        let content;
-        if (name.includes('mother')) {
-            content = x `${DialogRenderer.renderMD3DateInput('Mother Start', dialog.mother_start || '', callbacks.onMotherStartChange)}`;
-        }
-        else if (name.includes('clone')) {
-            content = x `${DialogRenderer.renderMD3DateInput('Clone Start', dialog.clone_start || '', callbacks.onCloneStartChange)}`;
-        }
-        else if (name.includes('dry')) {
-            content = x `${DialogRenderer.renderMD3DateInput('Dry Start', dialog.dry_start || '', callbacks.onDryStartChange)}`;
-        }
-        else if (name.includes('cure')) {
-            content = x `${DialogRenderer.renderMD3DateInput('Cure Start', dialog.cure_start || '', callbacks.onCureStartChange)}`;
-        }
-        else {
-            content = x `
-        ${DialogRenderer.renderMD3DateInput('Seedling Start', dialog.seedling_start || '', callbacks.onSeedlingStartChange)}
-        ${DialogRenderer.renderMD3DateInput('Vegetative Start', dialog.veg_start || '', callbacks.onVegStartChange)}
-        ${DialogRenderer.renderMD3DateInput('Flower Start', dialog.flower_start || '', callbacks.onFlowerStartChange)}
-      `;
-        }
-        return x `
-      <h3>Timeline</h3>
-      ${content}
-    `;
     }
     static getImgStyle(meta) {
         if (!meta)
@@ -1195,335 +1106,7 @@ class DialogRenderer {
     `;
     }
     static renderPlantStats(plant) {
-        // Keeping for legacy/Add dialog if needed, though Add dialog doesn't show stats usually
         return this.renderPlantStatsMD3(plant);
-    }
-    static renderConfigDialog(dialog, growspaceOptions, callbacks) {
-        if (!dialog)
-            return x ``;
-        const activeTab = dialog.currentTab;
-        return x `
-      <ha-dialog
-        open
-        @closed=${callbacks.onClose}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
-      >
-        <style>
-          /* CONFIG DIALOG SPECIFIC STYLES */
-          .config-container {
-             background-color: #1a1a1a;
-             color: #fff;
-             display: flex;
-             flex-direction: column;
-             height: 80vh;
-             width: 500px;
-             max-width: 90vw;
-             border-radius: 24px;
-             overflow: hidden;
-             font-family: 'Roboto', sans-serif;
-             --accent-color: #22c55e;
-          }
-          .config-header {
-             padding: 20px 24px;
-             background: #2d2d2d;
-             display: flex;
-             align-items: center;
-             gap: 16px;
-             border-bottom: 1px solid rgba(255,255,255,0.1);
-          }
-          .config-title {
-             margin: 0;
-             font-size: 1.25rem;
-             font-weight: 600;
-          }
-          .config-tabs {
-             display: flex;
-             background: #2d2d2d;
-             padding: 0 16px;
-             border-bottom: 1px solid rgba(255,255,255,0.1);
-          }
-          .config-tab {
-             flex: 1;
-             padding: 16px 8px;
-             text-align: center;
-             cursor: pointer;
-             color: var(--secondary-text-color);
-             border-bottom: 3px solid transparent;
-             transition: all 0.2s;
-             display: flex;
-             flex-direction: column;
-             align-items: center;
-             gap: 4px;
-             font-size: 0.8rem;
-             font-weight: 500;
-          }
-          .config-tab svg {
-             width: 24px;
-             height: 24px;
-             margin-bottom: 4px;
-          }
-          .config-tab:hover {
-             color: #fff;
-             background: rgba(255,255,255,0.05);
-          }
-          .config-tab.active {
-             color: var(--accent-color);
-             border-bottom-color: var(--accent-color);
-          }
-          .config-content {
-             flex: 1;
-             padding: 24px;
-             overflow-y: auto;
-          }
-          .config-actions {
-             padding: 16px 24px;
-             border-top: 1px solid rgba(255,255,255,0.1);
-             display: flex;
-             justify-content: flex-end;
-             gap: 12px;
-             background: #2d2d2d;
-          }
-        </style>
-
-        <div class="config-container">
-           <!-- Header -->
-           <div class="config-header">
-              <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 12px;">
-                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-              </div>
-              <h2 class="config-title">Configuration</h2>
-              <div style="flex:1"></div>
-              <button class="md3-button text" @click=${callbacks.onClose} style="min-width: auto; padding: 8px;">
-                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
-              </button>
-           </div>
-
-           <!-- Tabs -->
-           <div class="config-tabs">
-              <div class="config-tab ${activeTab === 'add_growspace' ? 'active' : ''}"
-                   @click=${() => callbacks.onSwitchTab('add_growspace')}>
-                 <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
-                 Add Growspace
-              </div>
-               <div class="config-tab ${activeTab === 'environment' ? 'active' : ''}"
-                    @click=${() => callbacks.onSwitchTab('environment')}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
-                  Environment
-               </div>
-            </div>
-
-           <!-- Content -->
-            <div class="config-content">
-               ${activeTab === 'add_growspace' ? this.renderAddGrowspaceTab(dialog, callbacks) : E}
-               ${activeTab === 'environment' ? this.renderEnvironmentTab(dialog, growspaceOptions, callbacks) : E}
-            </div>
-
-           <!-- Actions -->
-           <div class="config-actions">
-              <button class="md3-button tonal" @click=${callbacks.onClose}>Cancel</button>
-              ${activeTab === 'add_growspace' ? x `
-                 <button class="md3-button primary" @click=${callbacks.onAddGrowspaceSubmit}>Add Growspace</button>
-              ` : E}
-               ${activeTab === 'environment' ? x `
-                  <button class="md3-button primary" @click=${callbacks.onEnvSubmit}>Save Sensors</button>
-               ` : E}
-            </div>
-        </div>
-      </ha-dialog>
-    `;
-    }
-    static renderAddGrowspaceTab(dialog, callbacks) {
-        const d = dialog.addGrowspaceData;
-        return x `
-      <div style="display:flex; flex-direction:column; gap:20px;">
-         <div class="detail-card">
-            <h3>New Growspace Details</h3>
-            ${this.renderMD3TextInput('Growspace Name', d.name, (v) => callbacks.onAddGrowspaceChange('name', v))}
-            <div style="display:flex; gap:16px;">
-               ${this.renderMD3NumberInput('Rows', d.rows, (v) => callbacks.onAddGrowspaceChange('rows', parseInt(v)))}
-               ${this.renderMD3NumberInput('Plants per Row', d.plants_per_row, (v) => callbacks.onAddGrowspaceChange('plants_per_row', parseInt(v)))}
-            </div>
-            ${this.renderMD3TextInput('Notification Service (Optional)', d.notification_service, (v) => callbacks.onAddGrowspaceChange('notification_service', v))}
-         </div>
-      </div>
-    `;
-    }
-    static renderEnvironmentTab(dialog, growspaces, callbacks) {
-        const d = dialog.environmentData;
-        // Convert record to array for select
-        const options = Object.entries(growspaces).map(([id, name]) => ({ id, name }));
-        return x `
-       <div style="display:flex; flex-direction:column; gap:20px;">
-          <div class="detail-card">
-             <h3>Select Target</h3>
-             <div class="md3-input-group">
-                <label class="md3-label">Growspace</label>
-                <select class="md3-input" .value=${d.selectedGrowspaceId} @change=${(e) => callbacks.onEnvChange('selectedGrowspaceId', e.target.value)}>
-                   <option value="">Select...</option>
-                   ${options.map(o => x `<option value="${o.id}">${o.name}</option>`)}
-                </select>
-             </div>
-          </div>
-
-          <div class="detail-card">
-             <h3>Sensors</h3>
-             ${this.renderMD3TextInput('Temperature Sensor ID', d.temp_sensor, (v) => callbacks.onEnvChange('temp_sensor', v))}
-             ${this.renderMD3TextInput('Humidity Sensor ID', d.humidity_sensor, (v) => callbacks.onEnvChange('humidity_sensor', v))}
-             ${this.renderMD3TextInput('VPD Sensor ID', d.vpd_sensor, (v) => callbacks.onEnvChange('vpd_sensor', v))}
-          </div>
-
-          <div class="detail-card">
-             <h3>Optional</h3>
-             ${this.renderMD3TextInput('CO2 Sensor ID', d.co2_sensor, (v) => callbacks.onEnvChange('co2_sensor', v))}
-             ${this.renderMD3TextInput('Circulation Fan ID', d.circulation_fan, (v) => callbacks.onEnvChange('circulation_fan', v))}
-          </div>
-
-          <div class="detail-card">
-             <h3>Thresholds</h3>
-             ${this.renderMD3NumberInput('Stress Threshold (0.0-1.0)', d.stress_threshold, (v) => callbacks.onEnvChange('stress_threshold', parseFloat(v)))}
-             ${this.renderMD3NumberInput('Mold Threshold (0.0-1.0)', d.mold_threshold, (v) => callbacks.onEnvChange('mold_threshold', parseFloat(v)))}
-          </div>
-       </div>
-    `;
-    }
-    static renderGrowMasterDialog(dialog, isStressed, personality, callbacks) {
-        if (!dialog)
-            return x ``;
-        // Border color based on stress
-        // Light Green: #4CAF50, Warning Orange: #FF9800
-        const borderColor = isStressed ? '#FF9800' : '#4CAF50';
-        const title = personality ? `Ask the ${personality}` : 'Ask the Grow Master';
-        return x `
-      <ha-dialog
-        open
-        @closed=${callbacks.onClose}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
-      >
-        <style>
-           .gm-container {
-              background: #1a1a1a;
-              color: #fff;
-              width: 500px;
-              max-width: 90vw;
-              border-radius: 24px;
-              display: flex;
-              flex-direction: column;
-              overflow: hidden;
-              font-family: 'Roboto', sans-serif;
-              border: 1px solid rgba(255,255,255,0.1);
-           }
-           .gm-header {
-              background: #2d2d2d;
-              padding: 20px 24px;
-              display: flex;
-              align-items: center;
-              gap: 16px;
-              border-bottom: 1px solid rgba(255,255,255,0.1);
-           }
-           .gm-content {
-              padding: 24px;
-              display: flex;
-              flex-direction: column;
-              gap: 20px;
-              overflow-y: auto;
-              max-height: 70vh;
-           }
-           .gm-response-box {
-              background: rgba(255,255,255,0.05);
-              border: 2px solid ${borderColor};
-              border-radius: 16px;
-              padding: 20px;
-              line-height: 1.6;
-              font-size: 0.95rem;
-              white-space: pre-wrap;
-              position: relative;
-           }
-           .gm-loading {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              padding: 40px;
-              color: var(--secondary-text-color);
-              gap: 12px;
-           }
-           @keyframes spin { 100% { transform: rotate(360deg); } }
-           .spinner {
-              animation: spin 1s linear infinite;
-              width: 24px;
-              height: 24px;
-           }
-        </style>
-
-        <div class="gm-container">
-           <div class="gm-header">
-              <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; color: ${borderColor}">
-                 <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-              </div>
-              <div style="flex:1">
-                 <h2 style="margin:0; font-size:1.25rem;">${title}</h2>
-                 <div style="font-size:0.8rem; color:var(--secondary-text-color); margin-top:4px;">
-                    ${isStressed ? 'Warning: Plant Stress Detected' : 'All systems normal'}
-                 </div>
-              </div>
-              <button class="md3-button text" @click=${callbacks.onClose} style="min-width:auto; padding:8px;">
-                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
-              </button>
-           </div>
-
-           <div class="gm-content">
-              <!-- Input Area -->
-              <div style="display:flex; flex-direction:column; gap:8px;">
-                 <label style="font-size:0.9rem; font-weight:500; color:#ccc;">Your Question</label>
-                 <textarea
-                    class="sd-textarea"
-                    placeholder="Ask about this growspace..."
-                    .value=${dialog.userQuery}
-                    @input=${(e) => callbacks.onQueryChange(e.target.value)}
-                    style="min-height: 80px;"
-                 ></textarea>
-              </div>
-
-              <!-- Action -->
-              <div style="display:flex; justify-content:flex-end; gap: 12px;">
-                 <button
-                    class="md3-button tonal"
-                    @click=${callbacks.onAnalyzeAll}
-                    ?disabled=${dialog.isLoading}
-                    style="opacity: ${dialog.isLoading ? 0.7 : 1}"
-                 >
-                    Analyze All
-                 </button>
-                 <button
-                    class="md3-button primary"
-                    @click=${callbacks.onAnalyze}
-                    ?disabled=${dialog.isLoading}
-                    style="opacity: ${dialog.isLoading ? 0.7 : 1}"
-                 >
-                    ${dialog.isLoading ? 'Analyzing...' : 'Analyze Environment'}
-                 </button>
-              </div>
-
-              <!-- Response Area -->
-              ${dialog.isLoading ? x `
-                 <div class="gm-loading">
-                    <svg class="spinner" viewBox="0 0 24 24"><path d="${mdiLoading}" fill="currentColor"></path></svg>
-                    <span>Consulting the archives...</span>
-                 </div>
-              ` : E}
-
-              ${!dialog.isLoading && dialog.response ? x `
-                 <div class="gm-response-box">
-                    ${dialog.response}
-                 </div>
-              ` : E}
-           </div>
-        </div>
-      </ha-dialog>
-    `;
     }
     static renderStrainRecommendationDialog(dialog, callbacks) {
         if (!dialog)
@@ -13226,6 +12809,961 @@ IrrigationDialog = __decorate([
     t('irrigation-dialog')
 ], IrrigationDialog);
 
+let AddPlantDialog = class AddPlantDialog extends i$1 {
+    constructor() {
+        super(...arguments);
+        this.strainLibrary = [];
+        this.growspaceName = '';
+        this.open = false;
+        // Initialize with values passed via methods or defaults
+        this.strain = '';
+        this.phenotype = '';
+        this.row = 0;
+        this.col = 0;
+        // Date fields
+        this.veg_start = '';
+        this.flower_start = '';
+        this.seedling_start = '';
+        this.mother_start = '';
+        this.clone_start = '';
+        this.dry_start = '';
+        this.cure_start = '';
+    }
+    // Provide a method to set initial data from parent if needed
+    setInitialState(row, col, strain = '', phenotype = '') {
+        this.row = row;
+        this.col = col;
+        this.strain = strain;
+        this.phenotype = phenotype;
+        // resetting dates
+        this.veg_start = '';
+        this.flower_start = '';
+        this.seedling_start = '';
+        this.mother_start = '';
+        this.clone_start = '';
+        this.dry_start = '';
+        this.cure_start = '';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _confirm() {
+        const payload = {
+            row: this.row,
+            col: this.col,
+            strain: this.strain,
+            phenotype: this.phenotype,
+            veg_start: this.veg_start,
+            flower_start: this.flower_start,
+            seedling_start: this.seedling_start,
+            mother_start: this.mother_start,
+            clone_start: this.clone_start,
+            dry_start: this.dry_start,
+            cure_start: this.cure_start,
+        };
+        this.dispatchEvent(new CustomEvent('add-plant-submit', {
+            detail: payload,
+            bubbles: true,
+            composed: true
+        }));
+    }
+    render() {
+        if (!this.open)
+            return x ``;
+        const uniqueStrains = [...new Set(this.strainLibrary.map(s => s.strain))].sort();
+        return x `
+    <ha-dialog
+      open
+      @closed=${this._close}
+      hideActions
+      .scrimClickAction=${''}
+      .escapeKeyAction=${''}
+    >
+      <div class="glass-dialog-container" style="--stage-color: var(--plant-border-color-default)">
+
+        <!-- HEADER -->
+        <div class="dialog-header">
+          <div class="dialog-title-group">
+             <h2 class="dialog-title">Add New Plant</h2>
+             <div class="dialog-subtitle">Enter plant details below</div>
+          </div>
+          <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
+             <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+               <path d="${mdiClose}"></path>
+             </svg>
+          </button>
+        </div>
+
+        <div class="overview-grid">
+           <!-- IDENTITY CARD -->
+           <div class="detail-card">
+             <h3>Identity & Location</h3>
+             ${DialogRenderer.renderMD3SelectInput('Strain *', this.strain, uniqueStrains, (v) => this.strain = v)}
+             ${DialogRenderer.renderMD3TextInput('Phenotype', this.phenotype, (v) => this.phenotype = v)}
+             <div style="display:flex; gap:16px;">
+               ${DialogRenderer.renderMD3NumberInput('Row', this.row + 1, (v) => this.row = parseInt(v) - 1)}
+               ${DialogRenderer.renderMD3NumberInput('Col', this.col + 1, (v) => this.col = parseInt(v) - 1)}
+             </div>
+           </div>
+
+           <!-- TIMELINE CARD -->
+           <div class="detail-card">
+              ${this.renderTimelineContent()}
+           </div>
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <div class="button-group">
+          <button class="md3-button tonal" @click=${this._close}>
+            Cancel
+          </button>
+          <button class="md3-button primary" @click=${this._confirm}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
+            Add Plant
+          </button>
+        </div>
+
+      </div>
+    </ha-dialog>
+  `;
+    }
+    renderTimelineContent() {
+        const name = this.growspaceName.toLowerCase();
+        if (name.includes('mother')) {
+            return x `${DialogRenderer.renderMD3DateInput('Mother Start', this.mother_start, (v) => this.mother_start = v)}`;
+        }
+        else if (name.includes('clone')) {
+            return x `${DialogRenderer.renderMD3DateInput('Clone Start', this.clone_start, (v) => this.clone_start = v)}`;
+        }
+        else if (name.includes('dry')) {
+            return x `${DialogRenderer.renderMD3DateInput('Dry Start', this.dry_start, (v) => this.dry_start = v)}`;
+        }
+        else if (name.includes('cure')) {
+            return x `${DialogRenderer.renderMD3DateInput('Cure Start', this.cure_start, (v) => this.cure_start = v)}`;
+        }
+        else {
+            return x `
+         ${DialogRenderer.renderMD3DateInput('Seedling Start', this.seedling_start, (v) => this.seedling_start = v)}
+         ${DialogRenderer.renderMD3DateInput('Veg Start', this.veg_start, (v) => this.veg_start = v)}
+         ${DialogRenderer.renderMD3DateInput('Flower Start', this.flower_start, (v) => this.flower_start = v)}
+       `;
+        }
+    }
+};
+AddPlantDialog.styles = i$4 `
+    :host {
+      display: block;
+    }
+    
+    /* Copied from original styles */
+    .glass-dialog-container {
+      position: relative;
+      padding: 0;
+      background: rgba(20, 20, 20, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+      width: 500px;
+      max-width: 90vw;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    .dialog-header {
+      padding: 20px 24px;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .dialog-title {
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: #e0e0e0;
+      margin: 0;
+      letter-spacing: 0.5px;
+    }
+
+    .dialog-subtitle {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+
+    .overview-grid {
+      display: grid;
+      gap: 16px;
+      padding: 24px;
+    }
+
+    .detail-card {
+      background: rgba(30, 30, 30, 0.5);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .detail-card h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #6b7280;
+      margin: 0 0 16px 0;
+      font-weight: 600;
+    }
+
+    .button-group {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 20px 24px;
+      background: rgba(0, 0, 0, 0.2);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .md3-button {
+      background: none;
+      border: none;
+      padding: 0 24px;
+      height: 40px;
+      border-radius: 20px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      letter-spacing: 0.1px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .md3-button.text {
+      color: #e0e0e0;
+    }
+    .md3-button.text:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .md3-button.tonal {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e0e0e0;
+    }
+    .md3-button.tonal:hover {
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .md3-button.primary {
+      background: #4CAF50;
+      color: #003300;
+    }
+    .md3-button.primary:hover {
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+      filter: brightness(1.1);
+    }
+  `;
+__decorate([
+    n$2({ attribute: false }),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "hass", void 0);
+__decorate([
+    n$2({ type: Array }),
+    __metadata("design:type", Array)
+], AddPlantDialog.prototype, "strainLibrary", void 0);
+__decorate([
+    n$2({ type: String }),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "growspaceName", void 0);
+__decorate([
+    n$2({ type: Boolean, reflect: true }),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "open", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "strain", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "phenotype", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "row", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "col", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "veg_start", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "flower_start", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "seedling_start", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "mother_start", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "clone_start", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "dry_start", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "cure_start", void 0);
+AddPlantDialog = __decorate([
+    t('add-plant-dialog')
+], AddPlantDialog);
+
+let ConfigDialog = class ConfigDialog extends i$1 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        // Growspace options for the environment tab select
+        this.growspaceOptions = {};
+        this.currentTab = 'environment';
+        // Add Growspace Data
+        this.add_name = '';
+        this.add_rows = 4;
+        this.add_plants_per_row = 4;
+        this.add_notification_service = 'mobile_app_notify';
+        // Environment Data
+        this.env_selectedGrowspaceId = '';
+        this.env_temp_sensor = '';
+        this.env_humidity_sensor = '';
+        this.env_vpd_sensor = '';
+        this.env_co2_sensor = '';
+        this.env_circulation_fan = '';
+        this.env_stress_threshold = 0.8;
+        this.env_mold_threshold = 0.8;
+    }
+    // Provide initial state setting from parent
+    setInitialState(currentTab = 'environment', environmentData) {
+        this.currentTab = currentTab;
+        if (environmentData) {
+            this.env_selectedGrowspaceId = environmentData.selectedGrowspaceId;
+            this.env_temp_sensor = environmentData.temp_sensor;
+            this.env_humidity_sensor = environmentData.humidity_sensor;
+            this.env_vpd_sensor = environmentData.vpd_sensor;
+            this.env_co2_sensor = environmentData.co2_sensor;
+            this.env_circulation_fan = environmentData.circulation_fan;
+            this.env_stress_threshold = environmentData.stress_threshold;
+            this.env_mold_threshold = environmentData.mold_threshold;
+        }
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _switchTab(tab) {
+        this.currentTab = tab;
+    }
+    // --- Submission Handlers ---
+    _submitAddGrowspace() {
+        this.dispatchEvent(new CustomEvent('add-growspace-submit', {
+            detail: {
+                name: this.add_name,
+                rows: this.add_rows,
+                plants_per_row: this.add_plants_per_row,
+                notification_service: this.add_notification_service
+            },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _submitEnvironment() {
+        this.dispatchEvent(new CustomEvent('configure-environment-submit', {
+            detail: {
+                selectedGrowspaceId: this.env_selectedGrowspaceId,
+                temp_sensor: this.env_temp_sensor,
+                humidity_sensor: this.env_humidity_sensor,
+                vpd_sensor: this.env_vpd_sensor,
+                co2_sensor: this.env_co2_sensor,
+                circulation_fan: this.env_circulation_fan,
+                stress_threshold: this.env_stress_threshold,
+                mold_threshold: this.env_mold_threshold
+            },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    render() {
+        if (!this.open)
+            return x ``;
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="config-container">
+           <!-- Header -->
+           <div class="config-header">
+              <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 12px;">
+                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+              </div>
+              <h2 class="config-title">Configuration</h2>
+              <div style="flex:1"></div>
+              <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
+                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+              </button>
+           </div>
+
+           <!-- Tabs -->
+           <div class="config-tabs">
+              <div class="config-tab ${this.currentTab === 'add_growspace' ? 'active' : ''}"
+                   @click=${() => this._switchTab('add_growspace')}>
+                 <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
+                 Add Growspace
+              </div>
+               <div class="config-tab ${this.currentTab === 'environment' ? 'active' : ''}"
+                    @click=${() => this._switchTab('environment')}>
+                  <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
+                  Environment
+               </div>
+            </div>
+
+           <!-- Content -->
+            <div class="config-content">
+               ${this.currentTab === 'add_growspace' ? this.renderAddGrowspaceTab() : E}
+               ${this.currentTab === 'environment' ? this.renderEnvironmentTab() : E}
+            </div>
+
+           <!-- Actions -->
+           <div class="config-actions">
+              <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+              ${this.currentTab === 'add_growspace' ? x `
+                 <button class="md3-button primary" @click=${this._submitAddGrowspace}>Add Growspace</button>
+              ` : E}
+               ${this.currentTab === 'environment' ? x `
+                  <button class="md3-button primary" @click=${this._submitEnvironment}>Save Sensors</button>
+               ` : E}
+            </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    renderAddGrowspaceTab() {
+        return x `
+     <div style="display:flex; flex-direction:column; gap:20px;">
+        <div class="detail-card">
+           <h3>New Growspace Details</h3>
+           ${DialogRenderer.renderMD3TextInput('Growspace Name', this.add_name, (v) => this.add_name = v)}
+           <div style="display:flex; gap:16px;">
+              ${DialogRenderer.renderMD3NumberInput('Rows', this.add_rows, (v) => this.add_rows = parseInt(v))}
+              ${DialogRenderer.renderMD3NumberInput('Plants per Row', this.add_plants_per_row, (v) => this.add_plants_per_row = parseInt(v))}
+           </div>
+           ${DialogRenderer.renderMD3TextInput('Notification Service (Optional)', this.add_notification_service, (v) => this.add_notification_service = v)}
+        </div>
+     </div>
+   `;
+    }
+    renderEnvironmentTab() {
+        const options = Object.entries(this.growspaceOptions).map(([id, name]) => ({ id, name }));
+        return x `
+      <div style="display:flex; flex-direction:column; gap:20px;">
+         <div class="detail-card">
+            <h3>Select Target</h3>
+            <div class="md3-input-group">
+               <label class="md3-label">Growspace</label>
+               <select class="md3-input" .value=${this.env_selectedGrowspaceId} @change=${(e) => this.env_selectedGrowspaceId = e.target.value}>
+                  <option value="">Select...</option>
+                  ${options.map(o => x `<option value="${o.id}">${o.name}</option>`)}
+               </select>
+            </div>
+         </div>
+
+         <div class="detail-card">
+            <h3>Sensors</h3>
+            ${DialogRenderer.renderMD3TextInput('Temperature Sensor ID', this.env_temp_sensor, (v) => this.env_temp_sensor = v)}
+            ${DialogRenderer.renderMD3TextInput('Humidity Sensor ID', this.env_humidity_sensor, (v) => this.env_humidity_sensor = v)}
+            ${DialogRenderer.renderMD3TextInput('VPD Sensor ID', this.env_vpd_sensor, (v) => this.env_vpd_sensor = v)}
+         </div>
+
+         <div class="detail-card">
+            <h3>Optional</h3>
+            ${DialogRenderer.renderMD3TextInput('CO2 Sensor ID', this.env_co2_sensor, (v) => this.env_co2_sensor = v)}
+            ${DialogRenderer.renderMD3TextInput('Circulation Fan ID', this.env_circulation_fan, (v) => this.env_circulation_fan = v)}
+         </div>
+
+         <div class="detail-card">
+            <h3>Thresholds</h3>
+            ${DialogRenderer.renderMD3NumberInput('Stress Threshold (0.0-1.0)', this.env_stress_threshold, (v) => this.env_stress_threshold = parseFloat(v))}
+            ${DialogRenderer.renderMD3NumberInput('Mold Threshold (0.0-1.0)', this.env_mold_threshold, (v) => this.env_mold_threshold = parseFloat(v))}
+         </div>
+      </div>
+   `;
+    }
+};
+ConfigDialog.styles = i$4 `
+    :host {
+      display: block;
+    }
+    
+    .config-container {
+      background-color: #1a1a1a;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      height: 80vh;
+      width: 500px;
+      max-width: 90vw;
+      border-radius: 24px;
+      overflow: hidden;
+      font-family: 'Roboto', sans-serif;
+      --accent-color: #22c55e;
+    }
+    .config-header {
+      padding: 20px 24px;
+      background: #2d2d2d;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .config-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .config-tabs {
+      display: flex;
+      background: #2d2d2d;
+      padding: 0 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .config-tab {
+      flex: 1;
+      padding: 16px 8px;
+      text-align: center;
+      cursor: pointer;
+      color: var(--secondary-text-color);
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .config-tab svg {
+      width: 24px;
+      height: 24px;
+      margin-bottom: 4px;
+      fill: currentColor;
+    }
+    .config-tab:hover {
+      color: #fff;
+      background: rgba(255,255,255,0.05);
+    }
+    .config-tab.active {
+      color: var(--accent-color);
+      border-bottom-color: var(--accent-color);
+    }
+    .config-content {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+    .config-actions {
+      padding: 16px 24px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      background: #2d2d2d;
+    }
+    
+    .detail-card {
+      background: rgba(30,30,30,0.5);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .detail-card h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #6b7280;
+      margin: 0 0 16px 0;
+      font-weight: 600;
+    }
+    
+    .md3-button {
+      background: none;
+      border: none;
+      padding: 0 24px;
+      height: 40px;
+      border-radius: 20px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .md3-button.text { color: #e0e0e0; }
+    .md3-button.text:hover { background: rgba(255,255,255,0.05); }
+    .md3-button.tonal { background: rgba(255,255,255,0.1); color: #e0e0e0; }
+    .md3-button.tonal:hover { background: rgba(255,255,255,0.15); }
+    .md3-button.primary { background: #4CAF50; color: #003300; }
+    .md3-button.primary:hover { filter: brightness(1.1); }
+
+    .md3-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+    .md3-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #9ca3af;
+      margin-left: 12px;
+    }
+    .md3-input {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #e5e7eb;
+      font-family: inherit;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .md3-input:focus {
+      outline: none;
+      border-color: #4CAF50;
+      background: rgba(255, 255, 255, 0.08);
+    }
+  `;
+__decorate([
+    n$2({ type: Boolean, reflect: true }),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "open", void 0);
+__decorate([
+    n$2({ type: Object }),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "growspaceOptions", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", String)
+], ConfigDialog.prototype, "currentTab", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "add_name", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "add_rows", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "add_plants_per_row", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "add_notification_service", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_selectedGrowspaceId", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_temp_sensor", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_humidity_sensor", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_vpd_sensor", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_co2_sensor", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_circulation_fan", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_stress_threshold", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_mold_threshold", void 0);
+ConfigDialog = __decorate([
+    t('config-dialog')
+], ConfigDialog);
+
+let GrowMasterDialog = class GrowMasterDialog extends i$1 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        // Props from parent
+        this.isStressed = false;
+        this.isLoading = false;
+        this.response = null;
+        this.userQuery = '';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _analyze() {
+        this.dispatchEvent(new CustomEvent('analyze-growspace', {
+            detail: { query: this.userQuery },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _analyzeAll() {
+        this.dispatchEvent(new CustomEvent('analyze-all-growspaces', {
+            detail: { query: this.userQuery },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    render() {
+        if (!this.open)
+            return x ``;
+        const borderColor = this.isStressed ? '#FF9800' : '#4CAF50';
+        const title = this.personality ? `Ask the ${this.personality}` : 'Ask the Grow Master';
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="gm-container" style="border-color: ${borderColor}">
+           <div class="gm-header">
+              <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; color: ${borderColor}">
+                 <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+              </div>
+              <div style="flex:1">
+                 <h2 style="margin:0; font-size:1.25rem;">${title}</h2>
+                 <div style="font-size:0.8rem; color:var(--secondary-text-color); margin-top:4px;">
+                    ${this.isStressed ? 'Warning: Plant Stress Detected' : 'All systems normal'}
+                 </div>
+              </div>
+              <button class="md3-button text" @click=${this._close} style="min-width:auto; padding:8px;">
+                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+              </button>
+           </div>
+
+           <div class="gm-content">
+              <!-- Input Area -->
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                 <label style="font-size:0.9rem; font-weight:500; color:#ccc;">Your Question</label>
+                 <textarea
+                    class="sd-textarea"
+                    placeholder="Ask about this growspace..."
+                    .value=${this.userQuery}
+                    @input=${(e) => this.userQuery = e.target.value}
+                    style="min-height: 80px;"
+                 ></textarea>
+              </div>
+
+              <!-- Action -->
+              <div style="display:flex; justify-content:flex-end; gap: 12px;">
+                 <button
+                    class="md3-button tonal"
+                    @click=${this._analyzeAll}
+                    ?disabled=${this.isLoading}
+                    style="opacity: ${this.isLoading ? 0.7 : 1}"
+                 >
+                    Analyze All
+                 </button>
+                 <button
+                    class="md3-button primary"
+                    @click=${this._analyze}
+                    ?disabled=${this.isLoading}
+                    style="opacity: ${this.isLoading ? 0.7 : 1}"
+                 >
+                    ${this.isLoading ? 'Analyzing...' : 'Analyze Environment'}
+                 </button>
+              </div>
+
+              <!-- Response Area -->
+              ${this.isLoading ? x `
+                 <div class="gm-loading">
+                    <svg class="spinner" viewBox="0 0 24 24"><path d="${mdiLoading}" fill="currentColor"></path></svg>
+                    <span>Consulting the archives...</span>
+                 </div>
+              ` : E}
+
+              ${!this.isLoading && this.response ? x `
+                 <div class="gm-response-box" style="border: 2px solid ${borderColor};">
+                    ${this.response}
+                 </div>
+              ` : E}
+           </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+};
+GrowMasterDialog.styles = i$4 `
+    :host {
+      display: block;
+    }
+    
+    .gm-container {
+      background: #1a1a1a;
+      color: #fff;
+      width: 500px;
+      max-width: 90vw;
+      border-radius: 24px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-family: 'Roboto', sans-serif;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .gm-header {
+      background: #2d2d2d;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .gm-content {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+      max-height: 70vh;
+    }
+    .gm-response-box {
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 20px;
+      line-height: 1.6;
+      font-size: 0.95rem;
+      white-space: pre-wrap;
+      position: relative;
+    }
+    .gm-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      color: var(--secondary-text-color);
+      gap: 12px;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .spinner {
+      animation: spin 1s linear infinite;
+      width: 24px;
+      height: 24px;
+    }
+    
+    .sd-textarea {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 12px;
+      color: #e0e0e0;
+      font-family: inherit;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+    .sd-textarea:focus {
+      outline: none;
+      border-color: #4CAF50;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .md3-button {
+      background: none;
+      border: none;
+      padding: 0 24px;
+      height: 40px;
+      border-radius: 20px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .md3-button.text { color: #e0e0e0; }
+    .md3-button.text:hover { background: rgba(255,255,255,0.05); }
+    .md3-button.tonal { background: rgba(255,255,255,0.1); color: #e0e0e0; }
+    .md3-button.tonal:hover { background: rgba(255,255,255,0.15); }
+    .md3-button.primary { background: #4CAF50; color: #003300; }
+    .md3-button.primary:hover { filter: brightness(1.1); }
+    
+    /* Disabled state */
+    button[disabled] {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  `;
+__decorate([
+    n$2({ type: Boolean, reflect: true }),
+    __metadata("design:type", Object)
+], GrowMasterDialog.prototype, "open", void 0);
+__decorate([
+    n$2({ type: Boolean }),
+    __metadata("design:type", Object)
+], GrowMasterDialog.prototype, "isStressed", void 0);
+__decorate([
+    n$2({ type: String }),
+    __metadata("design:type", String)
+], GrowMasterDialog.prototype, "personality", void 0);
+__decorate([
+    n$2({ type: Boolean }),
+    __metadata("design:type", Object)
+], GrowMasterDialog.prototype, "isLoading", void 0);
+__decorate([
+    n$2({ type: String }),
+    __metadata("design:type", Object)
+], GrowMasterDialog.prototype, "response", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowMasterDialog.prototype, "userQuery", void 0);
+GrowMasterDialog = __decorate([
+    t('grow-master-dialog')
+], GrowMasterDialog);
+
 let GrowspacePlantCard = class GrowspacePlantCard extends i$1 {
     constructor() {
         super(...arguments);
@@ -17106,69 +17644,13 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             .toFormat("yyyy-LL-dd'T'HH:mm"); // Format for datetime-local input
     }
     _openAddPlantDialog(row, col) {
-        const strainLibrary = this.dataService.getStrainLibrary();
-        // If library has entries, default to the first one
-        const defaultStrain = strainLibrary.length > 0 ? strainLibrary[0].strain : '';
-        const defaultPhenotype = strainLibrary.length > 0 ? strainLibrary[0].phenotype : '';
         this._activeDialog = {
             type: 'ADD_PLANT',
             payload: {
                 row,
-                col,
-                strain: defaultStrain,
-                phenotype: defaultPhenotype,
-                veg_start: '',
-                flower_start: '',
-                seedling_start: '',
-                mother_start: '',
-                clone_start: '',
-                dry_start: '',
-                cure_start: '',
+                col
             }
         };
-    }
-    async _confirmAddPlant() {
-        if (this._activeDialog.type !== 'ADD_PLANT' || !this.selectedDevice)
-            return;
-        const dialogState = this._activeDialog.payload;
-        if (!dialogState.strain) {
-            this._showToast('Please enter a strain!', 'error');
-            return;
-        }
-        const { row, col, strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start } = dialogState;
-        try {
-            const payload = {
-                growspace_id: this.selectedDevice,
-                row: row + 1,
-                col: col + 1,
-                strain,
-                phenotype,
-            };
-            const dateFields = ['veg_start', 'flower_start', 'seedling_start', 'mother_start', 'clone_start', 'dry_start', 'cure_start'];
-            dateFields.forEach(field => {
-                const value = dialogState[field];
-                if (value) {
-                    // If value is just a date (YYYY-MM-DD), append current time
-                    if (value.length === 10 && !value.includes('T')) {
-                        const now = new Date();
-                        const timePart = now.toTimeString().split(' ')[0]; // HH:MM:SS
-                        payload[field] = `${value}T${timePart}`;
-                    }
-                    else {
-                        // If it already has time or is in another format, use it as is (or format if needed)
-                        // Previously we stripped time, but now we want to keep it if present
-                        payload[field] = value;
-                    }
-                }
-            });
-            console.log("Adding plant to growspace:", this.selectedDevice, payload);
-            console.log("Adding plant:", payload);
-            await this.dataService.addPlant(payload);
-            this._activeDialog = { type: 'NONE' };
-        }
-        catch (err) {
-            console.error('Error adding plant:', err);
-        }
     }
     async _updatePlant() {
         if (this._activeDialog.type !== 'PLANT_OVERVIEW')
@@ -17622,13 +18104,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         this._activeDialog = {
             type: 'CONFIG',
             payload: {
-                currentTab: 'environment', // Default to environment tab as requested or logically appropriate
-                addGrowspaceData: {
-                    name: '',
-                    rows: 4,
-                    plants_per_row: 4,
-                    notification_service: 'mobile_app_notify'
-                },
+                currentTab: 'environment',
                 environmentData: {
                     selectedGrowspaceId: this.selectedDevice || '',
                     temp_sensor: '',
@@ -17642,40 +18118,49 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             }
         };
     }
-    async _handleConfigSubmits(type) {
+    async _handleAddGrowspace(detail) {
         if (this._activeDialog?.type !== 'CONFIG')
             return;
-        const dialogState = this._activeDialog.payload;
+        const { name, rows, plants_per_row, notification_service } = detail;
+        if (!name) {
+            this._showToast('Name is required', 'error');
+            return;
+        }
         try {
-            if (type === 'add') {
-                const d = dialogState.addGrowspaceData;
-                if (!d.name) {
-                    this._showToast('Name is required', 'error');
-                    return;
-                }
-                await this.dataService.addGrowspace(d);
-                this._showToast('Growspace added successfully!', 'success');
-            }
-            else if (type === 'env') {
-                const d = dialogState.environmentData;
-                if (!d.selectedGrowspaceId || !d.temp_sensor || !d.humidity_sensor || !d.vpd_sensor) {
-                    this._showToast('Growspace and required sensors (Temp, Hum, VPD) are mandatory', 'error');
-                    return;
-                }
-                await this.dataService.configureEnvironment({
-                    growspace_id: d.selectedGrowspaceId,
-                    temperature_sensor: d.temp_sensor,
-                    humidity_sensor: d.humidity_sensor,
-                    vpd_sensor: d.vpd_sensor,
-                    co2_sensor: d.co2_sensor || undefined,
-                    circulation_fan: d.circulation_fan || undefined,
-                    stress_threshold: d.stress_threshold,
-                    mold_threshold: d.mold_threshold
-                });
-                this._showToast('Environment configured successfully!', 'success');
-            }
-            this._activeDialog = { type: 'NONE' }; // Close dialog on success
-            this.requestUpdate();
+            await this.dataService.addGrowspace({
+                name,
+                rows: rows || 4,
+                plants_per_row: plants_per_row || 4,
+                notification_service: notification_service || 'mobile_app_notify'
+            });
+            this._showToast('Growspace added successfully!', 'success');
+            this._activeDialog = { type: 'NONE' };
+        }
+        catch (e) {
+            this._showToast(`Error: ${e.message}`, 'error');
+        }
+    }
+    async _handleEnvironmentConfig(detail) {
+        if (this._activeDialog?.type !== 'CONFIG')
+            return;
+        const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold } = detail;
+        if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor || !vpd_sensor) {
+            this._showToast('Growspace and required sensors (Temp, Hum, VPD) are mandatory', 'error');
+            return;
+        }
+        try {
+            await this.dataService.configureEnvironment({
+                growspace_id: selectedGrowspaceId,
+                temperature_sensor: temp_sensor,
+                humidity_sensor: humidity_sensor,
+                vpd_sensor: vpd_sensor,
+                co2_sensor: co2_sensor || undefined,
+                circulation_fan: circulation_fan || undefined,
+                stress_threshold: stress_threshold,
+                mold_threshold: mold_threshold
+            });
+            this._showToast('Environment configured successfully!', 'success');
+            this._activeDialog = { type: 'NONE' };
         }
         catch (e) {
             this._showToast(`Error: ${e.message}`, 'error');
@@ -17694,7 +18179,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             }
         };
         if (isStressed) {
-            this._analyzeGrowspace(true);
+            this._analyzeGrowspace('', true);
         }
     }
     async _handleAskAdvice() {
@@ -17708,71 +18193,36 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             payload: { ...dialogState, isLoading: true, response: null }
         };
         this.requestUpdate();
-        try {
-            const result = await this.dataService.askGrowAdvice(dialogState.growspaceId, dialogState.userQuery);
-            if (this._activeDialog?.type === 'GROW_MASTER') {
-                let responseText = null;
-                if (result && result.response) {
-                    if (typeof result.response === 'string') {
-                        responseText = result.response;
-                    }
-                    else if (typeof result.response === 'object' && 'response' in result.response && typeof result.response.response === 'string') {
-                        responseText = result.response.response;
-                    }
-                    else {
-                        responseText = JSON.stringify(result, null, 2);
-                    }
-                }
-                else {
-                    responseText = JSON.stringify(result, null, 2);
-                }
-                this._activeDialog = {
-                    type: 'GROW_MASTER',
-                    payload: { ...this._activeDialog.payload, isLoading: false, response: responseText }
-                };
-            }
-        }
-        catch (e) {
-            if (this._activeDialog?.type === 'GROW_MASTER') {
-                this._activeDialog = {
-                    type: 'GROW_MASTER',
-                    payload: { ...this._activeDialog.payload, isLoading: false, response: `Error: ${e.message || 'Failed to get advice.'}` }
-                };
-            }
-        }
-        finally {
-            this.requestUpdate();
-        }
+        this._analyzeGrowspace(dialogState.userQuery, false);
     }
-    async _analyzeGrowspace(all = false) {
-        if (this._activeDialog?.type !== 'GROW_MASTER')
+    async _analyzeGrowspace(query, all) {
+        if (this._activeDialog.type !== 'GROW_MASTER')
             return;
-        const dialogState = this._activeDialog.payload;
+        // Set loading state
         this._activeDialog = {
             type: 'GROW_MASTER',
-            payload: { ...dialogState, isLoading: true, response: null, mode: all ? 'all' : 'single' }
+            payload: { ...this._activeDialog.payload, isLoading: true, response: null }
         };
-        this.requestUpdate();
         try {
-            const result = all
-                ? await this.dataService.analyzeAllGrowspaces()
-                : await this.dataService.askGrowAdvice(dialogState.growspaceId, dialogState.userQuery); // Re-use for single analysis if needed
-            if (this._activeDialog?.type === 'GROW_MASTER') {
-                let responseText = null;
-                if (result && result.response) {
-                    if (typeof result.response === 'string') {
-                        responseText = result.response;
-                    }
-                    else if (typeof result.response === 'object' && 'response' in result.response && typeof result.response.response === 'string') {
-                        responseText = result.response.response;
-                    }
-                    else {
-                        responseText = JSON.stringify(result, null, 2);
-                    }
-                }
-                else {
-                    responseText = JSON.stringify(result, null, 2);
-                }
+            let result;
+            let responseText;
+            if (all) {
+                result = await this.dataService.analyzeAllGrowspaces();
+            }
+            else {
+                result = await this.dataService.askGrowAdvice(this.selectedDevice || '', query);
+            }
+            if (result && typeof result.response === 'object' && result.response.response) {
+                responseText = result.response.response;
+            }
+            else if (result && typeof result.response === 'string') {
+                responseText = result.response;
+            }
+            else {
+                responseText = JSON.stringify(result, null, 2);
+            }
+            // Update with response
+            if (this._activeDialog.type === 'GROW_MASTER') {
                 this._activeDialog = {
                     type: 'GROW_MASTER',
                     payload: { ...this._activeDialog.payload, isLoading: false, response: responseText }
@@ -17780,7 +18230,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             }
         }
         catch (e) {
-            if (this._activeDialog?.type === 'GROW_MASTER') {
+            console.error(e);
+            if (this._activeDialog.type === 'GROW_MASTER') {
                 this._activeDialog = {
                     type: 'GROW_MASTER',
                     payload: { ...this._activeDialog.payload, isLoading: false, response: `Error: ${e.message || 'Failed to get analysis.'}` }
@@ -17933,7 +18384,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
         </div>
       </ha-card>
-      
+
 
           ${this._notification ? x `
             <div class="toast-notification ${this._notification.type}">
@@ -18000,6 +18451,35 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             this._fetchHumidifierHistory(range);
         }
     }
+    async _confirmAddPlant(detail) {
+        const devices = this.dataService.getGrowspaceDevices();
+        const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
+        if (!selectedDeviceData)
+            return;
+        // Use detail directly
+        const { strain, phenotype, row, col, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start } = detail;
+        if (!strain) {
+            this._showToast("Please select a strain", "error");
+            return;
+        }
+        // ... rest of logic using these variables instead of state ...
+        try {
+            await this.dataService.addPlant({
+                growspace_id: selectedDeviceData.device_id,
+                strain,
+                phenotype: phenotype || '',
+                row,
+                col,
+                veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start
+            });
+            this._showToast("Plant added successfully", "success");
+            this._activeDialog = { type: 'NONE' };
+        }
+        catch (e) {
+            console.error(e);
+            this._showToast("Failed to add plant", "error");
+        }
+    }
     renderDialogs(growspaceOptions) {
         const active = this._activeDialog;
         if (active.type === 'NONE')
@@ -18010,43 +18490,23 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         // ADD PLANT DIALOG
         if (active.type === 'ADD_PLANT') {
             const dialogState = active.payload;
-            return DialogRenderer.renderAddPlantDialog(dialogState, strainLibrary, selectedDeviceData?.name ?? '', {
-                onClose: () => this._activeDialog = { type: 'NONE' },
-                onConfirm: () => this._confirmAddPlant(),
-                onStrainChange: (value) => {
-                    // When using the dropdown, we now get the unique strain name (string)
-                    const payload = { ...active.payload, strain: value };
-                    // Attempt to pre-fill phenotype from library (first match)
-                    const entry = strainLibrary.find(s => s.strain === value);
-                    if (entry && entry.phenotype) {
-                        payload.phenotype = entry.phenotype;
-                    }
-                    else {
-                        payload.phenotype = '';
-                    }
-                    this._activeDialog = { type: 'ADD_PLANT', payload };
-                },
-                onPhenotypeChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, phenotype: value } },
-                onVegStartChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, veg_start: value } },
-                onFlowerStartChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, flower_start: value } },
-                onSeedlingStartChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, seedling_start: value } },
-                onMotherStartChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, mother_start: value } },
-                onCloneStartChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, clone_start: value } },
-                onDryStartChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, dry_start: value } },
-                onCureStartChange: (value) => this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, cure_start: value } },
-                onRowChange: (value) => {
-                    const val = parseInt(value);
-                    if (!isNaN(val) && val > 0) {
-                        this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, row: val - 1 } };
-                    }
-                },
-                onColChange: (value) => {
-                    const val = parseInt(value);
-                    if (!isNaN(val) && val > 0) {
-                        this._activeDialog = { type: 'ADD_PLANT', payload: { ...active.payload, col: val - 1 } };
-                    }
-                },
-            });
+            return x `
+        <add-plant-dialog
+          .hass=${this.hass}
+          .open=${true}
+          .strainLibrary=${strainLibrary}
+          .growspaceName=${selectedDeviceData?.name ?? ''}
+          .row=${dialogState.row}
+          .col=${dialogState.col}
+          @close=${() => this._activeDialog = { type: 'NONE' }}
+          @add-plant-submit=${(e) => this._confirmAddPlant(e.detail)}
+          .setInitialState=${(el) => {
+                // Optional: if we want to pre-populate row/col when opening
+                if (el)
+                    el.setInitialState(dialogState.row, dialogState.col);
+            }}
+        ></add-plant-dialog>
+      `;
         }
         // PLANT OVERVIEW DIALOG
         if (active.type === 'PLANT_OVERVIEW') {
@@ -18104,22 +18564,20 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         // CONFIG DIALOG
         if (active.type === 'CONFIG') {
             const dialogState = active.payload;
-            return DialogRenderer.renderConfigDialog(dialogState, growspaceOptions, {
-                onClose: () => this._activeDialog = { type: 'NONE' },
-                onSwitchTab: (tab) => {
-                    this._activeDialog = { type: 'CONFIG', payload: { ...dialogState, currentTab: tab } };
-                },
-                onAddGrowspaceChange: (f, v) => {
-                    const newData = { ...dialogState.addGrowspaceData, [f]: v };
-                    this._activeDialog = { type: 'CONFIG', payload: { ...dialogState, addGrowspaceData: newData } };
-                },
-                onAddGrowspaceSubmit: () => this._handleConfigSubmits('add'),
-                onEnvChange: (f, v) => {
-                    const newData = { ...dialogState.environmentData, [f]: v };
-                    this._activeDialog = { type: 'CONFIG', payload: { ...dialogState, environmentData: newData } };
-                },
-                onEnvSubmit: () => this._handleConfigSubmits('env'),
-            });
+            return x `
+        <config-dialog
+          .open=${true}
+          .growspaceOptions=${growspaceOptions}
+          @close=${() => this._activeDialog = { type: 'NONE' }}
+          @add-growspace-submit=${(e) => this._handleAddGrowspace(e.detail)}
+          @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
+          .setInitialState=${(el) => {
+                // Pass initial state if needed
+                if (el)
+                    el.setInitialState(dialogState.currentTab, dialogState.environmentData);
+            }}
+        ></config-dialog>
+      `;
         }
         // GROW MASTER DIALOG
         if (active.type === 'GROW_MASTER') {
@@ -18151,14 +18609,18 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
                     personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
                 }
             }
-            return DialogRenderer.renderGrowMasterDialog(dialogState, isStressed, personality, {
-                onClose: () => this._activeDialog = { type: 'NONE' },
-                onQueryChange: (q) => {
-                    this._activeDialog = { type: 'GROW_MASTER', payload: { ...dialogState, userQuery: q } };
-                },
-                onAnalyze: () => this._analyzeGrowspace(false),
-                onAnalyzeAll: () => this._analyzeGrowspace(true)
-            });
+            return x `
+        <grow-master-dialog
+          .open=${true}
+          .isStressed=${isStressed}
+          .personality=${personality}
+          .isLoading=${dialogState.isLoading}
+          .response=${dialogState.response}
+          @close=${() => this._activeDialog = { type: 'NONE' }}
+          @analyze-growspace=${(e) => this._analyzeGrowspace(e.detail.query, false)}
+          @analyze-all-growspaces=${(e) => this._analyzeGrowspace(e.detail.query, true)}
+        ></grow-master-dialog>
+      `;
         }
         // STRAIN RECOMMENDATION DIALOG
         if (active.type === 'STRAIN_RECOMMENDATION') {

@@ -153,6 +153,8 @@ export class DataService {
     mother_start?: string;
     clone_start?: string;
     seedling_start?: string;
+    dry_start?: string;
+    cure_start?: string;
   }) {
     console.log("[DataService:addPlant] Sending payload:", params);
     try {
