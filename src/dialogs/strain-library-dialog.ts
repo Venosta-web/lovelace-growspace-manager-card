@@ -5,7 +5,7 @@ import {
   mdiContentCopy, mdiWeatherNight, mdiWeatherSunny, mdiTuneVariant,
   mdiLeaf, mdiArrowLeft, mdiCloudUpload, mdiPencil,
   mdiDownload, mdiBrain, mdiCamera, mdiImage, mdiViewDashboard,
-  mdiChevronLeft, mdiChevronRight
+  mdiChevronLeft, mdiChevronRight, mdiDotsVertical
 } from '@mdi/js';
 import { StrainEntry, CropMeta } from '../types';
 import { PlantUtils } from '../utils';
@@ -21,6 +21,7 @@ export class StrainLibraryDialog extends LitElement {
   @state() private _isCropping = false;
   @state() private _isImageSelectorOpen = false;
   @state() private _importDialogOpen = false;
+  @state() private _mobileMenuOpen = false;
 
   @state() private _importReplace = false;
 
@@ -575,6 +576,9 @@ export class StrainLibraryDialog extends LitElement {
         border-color: transparent;
     }
     /* MOBILE RESPONSIVENESS */
+    .mobile-actions { display: none; }
+    .desktop-actions { display: flex; gap: 12px; }
+
     @media (max-width: 600px) {
       ha-dialog {
         --mdc-dialog-min-width: 95vw;
@@ -585,6 +589,7 @@ export class StrainLibraryDialog extends LitElement {
         width: 95vw;
         height: 90vh;
         max-width: 95vw;
+        position: relative; /* For absolute positioning of FAB/Menu */
       }
 
       .sd-header {
@@ -604,22 +609,107 @@ export class StrainLibraryDialog extends LitElement {
       }
 
       .sd-footer {
-        flex-wrap: wrap;
         padding: 16px;
-        gap: 8px;
+        /* On mobile, we might want to hide the footer background or keep it for the menu button? 
+           Actually, if we use FAB, we might not need the footer bar at all, 
+           BUT we need a place for the "Menu" button if it's not in the header.
+           Let's keep the footer bar for the Menu button on the left/right.
+        */
+        justify-content: space-between; 
+        align-items: center;
+        min-height: 60px;
       }
 
-      .sd-btn {
-        flex: 1 1 auto; /* Allow buttons to grow and wrap */
-        padding: 10px 12px;
-        font-size: 0.85rem;
-        white-space: nowrap;
+      .desktop-actions { display: none; }
+      .mobile-actions { 
+          display: flex; 
+          width: 100%; 
+          justify-content: space-between; 
+          align-items: center;
+      }
+
+      /* FAB Styles */
+      .fab-btn {
+        position: absolute;
+        bottom: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
+        border-radius: 16px; /* M3 Container shape */
+        background: var(--accent-green); /* Primary Container color */
+        color: #fff; /* On Primary Container */
+        border: none;
+        box-shadow: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3); /* Elevation 3 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        z-index: 20;
+      }
+      .fab-btn:hover {
+        background: #16a34a;
+        box-shadow: 0 6px 10px 4px rgba(0,0,0,0.15), 0 2px 3px rgba(0,0,0,0.3); /* Elevation 4 */
+      }
+      .fab-btn svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      /* Mobile Menu Button */
+      .menu-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        padding: 8px;
+        cursor: pointer;
+        border-radius: 50%;
+      }
+      .menu-btn:hover {
+        background: rgba(255,255,255,0.1);
+        color: #fff;
+      }
+
+      /* Mobile Menu Dropdown */
+      .mobile-menu {
+        position: absolute;
+        bottom: 80px; /* Above footer */
+        left: 16px;
+        background: #2d2d2d; /* Surface Container */
+        border-radius: 4px; /* M3 Menu radius */
+        padding: 8px 0;
+        min-width: 200px;
+        box-shadow: 0 2px 6px 2px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.3); /* Elevation 2 */
+        z-index: 30;
+        display: flex;
+        flex-direction: column;
       }
       
-      /* Ensure icons in buttons don't break layout */
-      .sd-btn svg {
-        width: 16px;
-        height: 16px;
+      .mobile-menu-item {
+        padding: 12px 16px; /* M3 List Item padding */
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #fff; /* On Surface */
+        font-size: 0.9rem; /* Body Large */
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .mobile-menu-item:hover {
+        background: rgba(255,255,255,0.08); /* State Layer */
+      }
+      .mobile-menu-item svg {
+        width: 20px;
+        height: 20px;
+        fill: var(--text-secondary);
+      }
+      
+      /* Overlay to close menu */
+      .menu-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 25;
+        background: transparent;
       }
     }
   `;
@@ -814,22 +904,51 @@ export class StrainLibraryDialog extends LitElement {
       </div>
 
       <div class="sd-footer">
-        <button class="sd-btn secondary" @click=${() => this.dispatchEvent(new CustomEvent('get-recommendation'))}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-          Get Recommendation
-        </button>
-        <button class="sd-btn secondary" @click=${() => this._importDialogOpen = true}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
-          Import Strains
-        </button>
-        <button class="sd-btn secondary" @click=${() => this.dispatchEvent(new CustomEvent('export-library'))}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg>
-          Export Strains
-        </button>
-        <button class="sd-btn primary" @click=${() => this._startEdit()}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
-          New Strain
-        </button>
+        <!-- Desktop Actions -->
+        <div class="desktop-actions">
+            <button class="sd-btn secondary" @click=${() => this.dispatchEvent(new CustomEvent('get-recommendation'))}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+            Get Recommendation
+            </button>
+            <button class="sd-btn secondary" @click=${() => this._importDialogOpen = true}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
+            Import Strains
+            </button>
+            <button class="sd-btn secondary" @click=${() => this.dispatchEvent(new CustomEvent('export-library'))}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg>
+            Export Strains
+            </button>
+            <button class="sd-btn primary" @click=${() => this._startEdit()}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+            New Strain
+            </button>
+        </div>
+
+        <!-- Mobile Actions -->
+        <div class="mobile-actions">
+            <button class="menu-btn" @click=${() => this._mobileMenuOpen = !this._mobileMenuOpen}>
+                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
+            </button>
+            
+            ${this._mobileMenuOpen ? html`
+                <div class="menu-overlay" @click=${() => this._mobileMenuOpen = false}></div>
+                <div class="mobile-menu">
+                    <div class="mobile-menu-item" @click=${() => { this.dispatchEvent(new CustomEvent('get-recommendation')); this._mobileMenuOpen = false; }}>
+                        <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg> Get Recommendation
+                    </div>
+                    <div class="mobile-menu-item" @click=${() => { this._importDialogOpen = true; this._mobileMenuOpen = false; }}>
+                        <svg viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg> Import Strains
+                    </div>
+                    <div class="mobile-menu-item" @click=${() => { this.dispatchEvent(new CustomEvent('export-library')); this._mobileMenuOpen = false; }}>
+                        <svg viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg> Export Strains
+                    </div>
+                </div>
+            ` : nothing}
+
+            <button class="fab-btn" @click=${() => this._startEdit()}>
+                <svg style="fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+            </button>
+        </div>
       </div>
     `;
   }
