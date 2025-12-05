@@ -579,6 +579,37 @@ export class StrainLibraryDialog extends LitElement {
     .mobile-actions { display: none; }
     .desktop-actions { display: flex; gap: 12px; }
 
+    /* FAB Styles - Hidden on Desktop */
+    .fab-btn {
+        position: absolute;
+        bottom: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: var(--accent-green);
+        color: #fff;
+        border: none;
+        box-shadow: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3);
+        display: none; /* DEFAULT HIDDEN */
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        z-index: 20;
+    }
+
+    /* Mobile Menu Button - Hidden on Desktop */
+    .menu-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        padding: 8px;
+        cursor: pointer;
+        border-radius: 50%;
+        display: none; /* DEFAULT HIDDEN */
+    }
+
     @media (max-width: 600px) {
       ha-dialog {
         --mdc-dialog-min-width: 95vw;
@@ -608,73 +639,37 @@ export class StrainLibraryDialog extends LitElement {
         grid-template-columns: 1fr; /* Single column on mobile */
       }
 
-      /* FAB Styles */
-      .fab-btn {
-        position: absolute;
-        bottom: 24px;
-        right: 24px;
-        width: 56px;
-        height: 56px;
-        border-radius: 16px;
-        background: var(--accent-green);
-        color: #fff;
-        border: none;
-        box-shadow: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3);
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s;
-        z-index: 20;
-        display: none; /* Hidden by default (desktop) */
-      }
-      
-      /* Mobile Menu Button */
-      .menu-btn {
-        background: transparent;
-        border: none;
-        color: var(--text-secondary);
-        padding: 8px;
-        cursor: pointer;
-        border-radius: 50%;
-        display: none; /* Hidden by default */
-      }
-      
       .header-actions {
         display: flex;
         align-items: center;
         gap: 8px;
       }
 
-      @media (max-width: 600px) {
-        /* ... existing mobile styles ... */
-        
-        .sd-footer {
-          display: none; /* Hide footer completely on mobile */
-        }
-        
-        .fab-btn {
-          display: flex; /* Show FAB on mobile */
-        }
-        
-        .menu-btn {
-          display: flex; /* Show Menu button on mobile */
-        }
+      .sd-footer {
+        display: none; /* Hide footer completely on mobile */
+      }
+      
+      .fab-btn {
+        display: flex; /* Show FAB on mobile */
+      }
+      
+      .menu-btn {
+        display: flex; /* Show Menu button on mobile */
+      }
 
-        /* Mobile Menu Dropdown Position */
-        .mobile-menu {
-          position: absolute;
-          top: 60px; /* Below header */
-          right: 16px;
-          background: #2d2d2d;
-          border-radius: 4px;
-          padding: 8px 0;
-          min-width: 200px;
-          box-shadow: 0 2px 6px 2px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.3);
-          z-index: 30;
-          display: flex;
-          flex-direction: column;
-        }
-        
+      /* Mobile Menu Dropdown Position */
+      .mobile-menu {
+        position: absolute;
+        top: 60px; /* Below header */
+        right: 16px;
+        background: #2d2d2d;
+        border-radius: 4px;
+        padding: 8px 0;
+        min-width: 200px;
+        box-shadow: 0 2px 6px 2px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.3);
+        z-index: 30;
+        display: flex;
+        flex-direction: column;
       }
       
       .mobile-menu-item {
