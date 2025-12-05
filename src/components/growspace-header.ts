@@ -347,7 +347,9 @@ export class GrowspaceHeader extends LitElement {
         padding-right: 48px;
         min-width: 0;
       }
-
+      .header-controls-container {
+        max-width: 100%;
+      }
       .header-controls {
         flex-direction: column;
         align-items: stretch;
@@ -642,7 +644,7 @@ export class GrowspaceHeader extends LitElement {
             ` : ''}
           </div>
 
-          <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
+          <div class="header-controls-container" style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
             <div class="header-controls">
               
               <div class="mobile-link-btn ${this._mobileLink ? 'active' : ''}"
