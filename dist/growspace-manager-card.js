@@ -15106,6 +15106,42 @@ GrowspaceGrid = __decorate([
     t('growspace-grid')
 ], GrowspaceGrid);
 
+const METRIC_SORT_ORDER = [
+    'temperature',
+    'humidity',
+    'vpd',
+    'co2',
+    'light',
+    'soil_moisture',
+    'irrigation',
+    'drain',
+    'optimal',
+    'exhaust',
+    'humidifier',
+    'dehumidifier'
+];
+const METRIC_CONFIG = {
+    temperature: { color: '#ff5252', title: 'Temperature', unit: '°C', icon: mdiThermometer },
+    humidity: { color: '#2196f3', title: 'Humidity', unit: '%', icon: mdiWaterPercent },
+    vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa', icon: mdiCloudOutline },
+    co2: { color: '#4caf50', title: 'CO2', unit: 'ppm', icon: mdiWeatherCloudy },
+    soil_moisture: { color: '#03a9f4', title: 'Soil Moisture', unit: '%', icon: mdiWaterPercent },
+    light: { color: '#ffc107', title: 'Light', unit: 'state', icon: mdiLightbulbOn, type: 'step' },
+    irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state', icon: mdiWater, type: 'step' },
+    drain: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: 'step' },
+    exhaust: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
+    humidifier: { color: '#607d8b', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
+    dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: '', icon: mdiAirHumidifierOff },
+    optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state', icon: mdiRadioboxMarked, type: 'step' }
+};
+const DEFAULT_METRIC_CONFIG = {
+    color: '#fff',
+    title: 'Unknown',
+    unit: '',
+    icon: mdiMagnify,
+    type: 'line'
+};
+
 const growspaceCardStyles = i$3 `
       :host {
         display: block;
@@ -16376,6 +16412,208 @@ const growspaceCardStyles = i$3 `
       }
 `;
 
+let GrowspaceAnalytics = class GrowspaceAnalytics extends i {
+    constructor() {
+        super(...arguments);
+        this.historyData = [];
+        this.dehumidifierHistory = [];
+        this.exhaustHistory = [];
+        this.humidifierHistory = [];
+        this.soilMoistureHistory = [];
+        this.activeEnvGraphs = new Set();
+        this.linkedGraphGroups = [];
+        this.range = '24h';
+    }
+    render() {
+        if (this.activeEnvGraphs.size === 0)
+            return x ``;
+        if (!this.device)
+            return x ``;
+        // Helper to get sort index for a metric
+        const getSortIndex = (metric) => {
+            const index = METRIC_SORT_ORDER.indexOf(metric);
+            return index !== -1 ? index : 999;
+        };
+        // 1. Collect all items to render
+        const itemsToRender = [];
+        const processedMetrics = new Set();
+        // Process Linked Groups
+        this.linkedGraphGroups.forEach(group => {
+            const activeMetricsInGroup = group.filter(m => this.activeEnvGraphs.has(m));
+            if (activeMetricsInGroup.length > 0) {
+                // Sort index based on highest priority (lowest index) metric
+                const minIndex = Math.min(...activeMetricsInGroup.map(getSortIndex));
+                itemsToRender.push({
+                    type: 'group',
+                    metrics: activeMetricsInGroup,
+                    sortIndex: minIndex
+                });
+                activeMetricsInGroup.forEach(m => processedMetrics.add(m));
+            }
+        });
+        // Process Individual Metrics
+        this.activeEnvGraphs.forEach(metric => {
+            if (!processedMetrics.has(metric)) {
+                itemsToRender.push({
+                    type: 'single',
+                    metrics: [metric],
+                    sortIndex: getSortIndex(metric)
+                });
+            }
+        });
+        itemsToRender.sort((a, b) => a.sortIndex - b.sortIndex);
+        const graphs = itemsToRender.map(item => {
+            if (item.type === 'group') {
+                const activeMetrics = item.metrics;
+                // Pass the METRIC_CONFIG down for the combined graph to pick colors/titles
+                return x `
+              <growspace-env-chart
+                  .hass=${this.hass}
+                  .device=${this.device}
+                  .history=${this.historyData || []}
+                  .dehumidifierHistory=${this.dehumidifierHistory || []}
+                  .exhaustHistory=${this.exhaustHistory || []}
+                  .humidifierHistory=${this.humidifierHistory || []}
+                  .soilMoistureHistory=${this.soilMoistureHistory || []}
+                  .metrics=${activeMetrics}
+                  .isCombined=${true}
+                  .metricConfig=${METRIC_CONFIG}
+                  .range=${this.range}
+                  @toggle-graph=${this._handleToggleGraph}
+                  @unlink-graphs=${this._handleUnlinkGraphs}
+                  @unlink-graph=${this._handleUnlinkGraphMetric}
+              ></growspace-env-chart>
+          `;
+            }
+            else {
+                const metric = item.metrics[0];
+                const config = METRIC_CONFIG[metric] || DEFAULT_METRIC_CONFIG;
+                // Determine correct history array based on metric
+                let history = this.historyData || [];
+                if (metric === 'exhaust')
+                    history = this.exhaustHistory || [];
+                else if (metric === 'humidifier')
+                    history = this.humidifierHistory || [];
+                else if (metric === 'dehumidifier')
+                    history = this.dehumidifierHistory || [];
+                else if (metric === 'soil_moisture')
+                    history = this.soilMoistureHistory || [];
+                return x `
+          <growspace-env-chart
+              .hass=${this.hass}
+              .device=${this.device}
+              .history=${history}
+              .metricKey=${metric}
+              .unit=${config.unit}
+              .color=${config.color}
+              .title=${config.title}
+              .icon=${config.icon}
+              .range=${this.range}
+              .type=${config.type || 'line'}
+              @toggle-graph=${this._handleToggleGraph}
+          ></growspace-env-chart>
+        `;
+            }
+        });
+        return x `
+        <div class="graphs-container">
+            ${this.renderTimeRangeSelector()}
+            ${graphs}
+        </div>
+    `;
+    }
+    renderTimeRangeSelector() {
+        const ranges = ['1h', '6h', '24h', '7d'];
+        return x `
+      <div class="time-range-selector">
+        ${ranges.map(r => x `
+          <button 
+            class="range-btn ${this.range === r ? 'active' : ''}"
+            @click=${() => this._setGraphRange(r)}
+          >
+            ${r}
+          </button>
+        `)}
+      </div>
+    `;
+    }
+    _setGraphRange(range) {
+        this.dispatchEvent(new CustomEvent('range-change', {
+            detail: { range },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _handleToggleGraph(e) {
+        // Re-dispatch if needed, but since we use bubbles: true, it might go up automatically.
+        // However, if the event was stopped or we want to be explicit:
+        // The original event bubbles, so it should reach the top.
+        // But let's monitor if any processing is needed.
+    }
+    _handleUnlinkGraphs(e) {
+        // Original event bubbles
+    }
+    _handleUnlinkGraphMetric(e) {
+        // Original event bubbles
+    }
+};
+GrowspaceAnalytics.styles = [
+    growspaceCardStyles,
+    i$3 `
+      :host {
+        display: block;
+      }
+      .graphs-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+    `
+];
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspaceAnalytics.prototype, "hass", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspaceAnalytics.prototype, "device", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Array)
+], GrowspaceAnalytics.prototype, "historyData", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Array)
+], GrowspaceAnalytics.prototype, "dehumidifierHistory", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Array)
+], GrowspaceAnalytics.prototype, "exhaustHistory", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Array)
+], GrowspaceAnalytics.prototype, "humidifierHistory", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Array)
+], GrowspaceAnalytics.prototype, "soilMoistureHistory", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Set)
+], GrowspaceAnalytics.prototype, "activeEnvGraphs", void 0);
+__decorate([
+    n$1({ attribute: false }),
+    __metadata("design:type", Array)
+], GrowspaceAnalytics.prototype, "linkedGraphGroups", void 0);
+__decorate([
+    n$1({ type: String }),
+    __metadata("design:type", String)
+], GrowspaceAnalytics.prototype, "range", void 0);
+GrowspaceAnalytics = __decorate([
+    t('growspace-analytics')
+], GrowspaceAnalytics);
+
 let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
     constructor() {
         super(...arguments);
@@ -17563,222 +17801,28 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             @unlink-graphs=${this._handleUnlinkGraphs}
             @trigger-action=${this._handleHeaderAction}
           ></growspace-header>
-          ${this.renderGraphs()}
+          <growspace-analytics
+            .hass=${this.hass}
+            .device=${selectedDeviceData}
+            .historyData=${this._historyData || []}
+            .dehumidifierHistory=${this._dehumidifierHistory || []}
+            .exhaustHistory=${this._exhaustHistory || []}
+            .humidifierHistory=${this._humidifierHistory || []}
+            .soilMoistureHistory=${this._soilMoistureHistory || []}
+            .activeEnvGraphs=${this._activeEnvGraphs}
+            .linkedGraphGroups=${this._linkedGraphGroups}
+            .range=${this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h'}
+            @range-change=${(e) => this._setGraphRange(e.detail.range)}
+            @toggle-graph=${this._handleToggleEnvGraph}
+            @unlink-graphs=${this._handleUnlinkGraphs}
+            @unlink-graph=${this._handleUnlinkGraphMetric}
+          ></growspace-analytics>
           ${this.renderEditModeBanner()}
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
         </div>
       </ha-card>
       
       ${this.renderDialogs(growspaceOptions)}
-    `;
-    }
-    renderGraphs() {
-        if (this._activeEnvGraphs.size === 0)
-            return x ``;
-        const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
-        const selectedDeviceData = this.dataService.getGrowspaceDevices().find(d => d.device_id === this.selectedDevice);
-        if (!selectedDeviceData)
-            return x ``;
-        // Define the desired sort order (Environment chips first, then Device chips)
-        const METRIC_SORT_ORDER = [
-            'temperature',
-            'humidity',
-            'vpd',
-            'co2',
-            'light',
-            'soil_moisture',
-            'irrigation',
-            'drain',
-            'optimal',
-            'exhaust',
-            'humidifier',
-            'dehumidifier'
-        ];
-        // Helper to get sort index for a metric
-        const getSortIndex = (metric) => {
-            const index = METRIC_SORT_ORDER.indexOf(metric);
-            return index !== -1 ? index : 999; // Put unknown metrics at the end
-        };
-        // 1. Collect all items to render (Linked Groups + Individual Metrics)
-        const itemsToRender = [];
-        const processedMetrics = new Set();
-        // Process Linked Groups
-        this._linkedGraphGroups.forEach(group => {
-            const activeMetricsInGroup = group.filter(m => this._activeEnvGraphs.has(m));
-            if (activeMetricsInGroup.length > 0) {
-                // Calculate sort index based on the highest priority (lowest index) metric in the group
-                const minIndex = Math.min(...activeMetricsInGroup.map(getSortIndex));
-                itemsToRender.push({
-                    type: 'group',
-                    metrics: activeMetricsInGroup,
-                    sortIndex: minIndex
-                });
-                // Mark these metrics as processed so we don't render them individually
-                activeMetricsInGroup.forEach(m => processedMetrics.add(m));
-            }
-        });
-        // Process Individual Metrics (that are not part of a rendered group)
-        this._activeEnvGraphs.forEach(metric => {
-            if (!processedMetrics.has(metric)) {
-                itemsToRender.push({
-                    type: 'single',
-                    metrics: [metric],
-                    sortIndex: getSortIndex(metric)
-                });
-            }
-        });
-        // 2. Sort the items
-        itemsToRender.sort((a, b) => a.sortIndex - b.sortIndex);
-        console.log('Rendering Graphs. Active:', Array.from(this._activeEnvGraphs));
-        console.log('Sorted Items:', itemsToRender.map(i => `${i.metrics.join('+')} (${i.sortIndex})`));
-        // 3. Render the sorted items
-        const graphs = itemsToRender.map(item => {
-            if (item.type === 'group') {
-                const activeMetrics = item.metrics;
-                const metricConfig = {
-                    temperature: { color: '#ff5252', title: 'Temperature', unit: '°C' },
-                    humidity: { color: '#2196f3', title: 'Humidity', unit: '%' },
-                    vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa' },
-                    co2: { color: '#4caf50', title: 'CO2', unit: 'ppm' },
-                    soil_moisture: { color: '#03a9f4', title: 'Soil Moisture', unit: '%' },
-                    light: { color: '#ffc107', title: 'Light', unit: 'state' },
-                    irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state' },
-                    drain: { color: '#ff9800', title: 'Drain', unit: 'state' },
-                    exhaust: { color: '#795548', title: 'Exhaust', unit: '' },
-                    humidifier: { color: '#607d8b', title: 'Humidifier', unit: '' },
-                    dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: '' },
-                    optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state' }
-                };
-                return x `
-              <growspace-env-chart
-                  .hass=${this.hass}
-                  .device=${selectedDeviceData}
-                  .history=${this._historyData || []}
-                  .dehumidifierHistory=${this._dehumidifierHistory || []}
-                  .exhaustHistory=${this._exhaustHistory || []}
-                  .humidifierHistory=${this._humidifierHistory || []}
-                  .soilMoistureHistory=${this._soilMoistureHistory || []}
-                  .metrics=${activeMetrics}
-                  .isCombined=${true}
-                  .metricConfig=${metricConfig}
-                  .range=${range}
-                  @toggle-graph=${this._handleToggleEnvGraph}
-                  @unlink-graphs=${this._handleUnlinkGraphs}
-                  @unlink-graph=${this._handleUnlinkGraphMetric}
-              ></growspace-env-chart>
-          `;
-            }
-            else {
-                // Single Metric
-                const metric = item.metrics[0];
-                let color = '#fff';
-                let title = metric;
-                let unit = '';
-                let icon = mdiMagnify;
-                let type = 'line';
-                let history = this._historyData || [];
-                switch (metric) {
-                    case 'temperature':
-                        color = '#ff5252';
-                        title = 'Temperature';
-                        unit = '°C';
-                        icon = mdiThermometer;
-                        break;
-                    case 'humidity':
-                        color = '#2196f3';
-                        title = 'Humidity';
-                        unit = '%';
-                        icon = mdiWaterPercent;
-                        break;
-                    case 'vpd':
-                        color = '#9c27b0';
-                        title = 'VPD';
-                        unit = 'kPa';
-                        icon = mdiCloudOutline;
-                        break;
-                    case 'co2':
-                        color = '#4caf50';
-                        title = 'CO2';
-                        unit = 'ppm';
-                        icon = mdiWeatherCloudy;
-                        break;
-                    case 'soil_moisture':
-                        color = '#03a9f4';
-                        title = 'Soil Moisture';
-                        unit = '%';
-                        icon = mdiWaterPercent;
-                        history = this._soilMoistureHistory || [];
-                        break;
-                    case 'light':
-                        color = '#ffc107', title = 'Light', unit = 'state';
-                        icon = mdiLightbulbOn;
-                        type = 'step';
-                        break;
-                    case 'irrigation':
-                        color = '#03a9f4';
-                        title = 'Irrigation';
-                        unit = 'state';
-                        icon = mdiWater;
-                        type = 'step';
-                        break;
-                    case 'drain':
-                        color = '#ff9800';
-                        title = 'Drain';
-                        unit = 'state';
-                        icon = mdiWater;
-                        type = 'step';
-                        break;
-                    case 'exhaust':
-                        color = '#795548';
-                        title = 'Exhaust';
-                        unit = '';
-                        icon = mdiFan;
-                        history = this._exhaustHistory || [];
-                        break;
-                    case 'humidifier':
-                        color = '#607d8b';
-                        title = 'Humidifier';
-                        unit = '';
-                        icon = mdiAirHumidifier;
-                        history = this._humidifierHistory || [];
-                        break;
-                    case 'dehumidifier':
-                        color = '#546e7a';
-                        title = 'Dehumidifier';
-                        unit = '';
-                        icon = mdiAirHumidifierOff;
-                        history = this._dehumidifierHistory || [];
-                        break;
-                    case 'optimal':
-                        color = '#4caf50';
-                        title = 'Optimal Conditions';
-                        unit = 'state';
-                        icon = mdiRadioboxMarked;
-                        type = 'step';
-                        break;
-                }
-                return x `
-          <growspace-env-chart
-              .hass=${this.hass}
-              .device=${selectedDeviceData}
-              .history=${history}
-              .metricKey=${metric}
-              .unit=${unit}
-              .color=${color}
-              .title=${title}
-              .icon=${icon}
-              .range=${range}
-              .type=${type}
-              @toggle-graph=${this._handleToggleEnvGraph}
-          ></growspace-env-chart>
-        `;
-            }
-        });
-        return x `
-        <div class="graphs-container">
-            ${this.renderTimeRangeSelector()}
-            ${graphs}
-        </div>
     `;
     }
     renderEditModeBanner() {
@@ -17837,22 +17881,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         if (this._activeEnvGraphs.has('humidifier')) {
             this._fetchHumidifierHistory(range);
         }
-    }
-    renderTimeRangeSelector() {
-        const currentRange = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
-        const ranges = ['1h', '6h', '24h', '7d'];
-        return x `
-      <div class="time-range-selector">
-        ${ranges.map(range => x `
-          <button 
-            class="range-btn ${currentRange === range ? 'active' : ''}"
-            @click=${() => this._setGraphRange(range)}
-          >
-            ${range}
-          </button>
-        `)}
-      </div>
-    `;
     }
     renderDialogs(growspaceOptions) {
         const strainLibrary = this.dataService?.getStrainLibrary() || [];

@@ -1,7 +1,7 @@
 import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues, svg } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiMagnify, mdiChevronDown, mdiChevronRight, mdiDelete, mdiLightbulbOn, mdiLightbulbOff, mdiThermometer, mdiWaterPercent, mdiWeatherCloudy, mdiCloudOutline, mdiWeatherSunny, mdiWeatherNight, mdiCog, mdiBrain, mdiDotsVertical, mdiRadioboxMarked, mdiRadioboxBlank, mdiWater, mdiPencil, mdiCheckboxMarked, mdiCheckboxBlankOutline, mdiAirHumidifier, mdiLink, mdiFan, mdiWaterOff, mdiAirHumidifierOff } from '@mdi/js';
+import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiChevronDown, mdiChevronRight, mdiDelete, mdiCog, mdiBrain, mdiDotsVertical, mdiRadioboxMarked, mdiRadioboxBlank, mdiPencil, mdiCheckboxMarked, mdiCheckboxBlankOutline } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
@@ -29,6 +29,7 @@ import './dialogs/irrigation-dialog';
 import './components/plant-card';
 import './components/growspace-header';
 import './components/growspace-grid';
+import './components/growspace-analytics';
 import { growspaceCardStyles } from './styles/growspace-card.styles';
 
 @customElement('growspace-manager-card')
@@ -1336,7 +1337,22 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             @unlink-graphs=${this._handleUnlinkGraphs}
             @trigger-action=${this._handleHeaderAction}
           ></growspace-header>
-          ${this.renderGraphs()}
+          <growspace-analytics
+            .hass=${this.hass}
+            .device=${selectedDeviceData}
+            .historyData=${this._historyData || []}
+            .dehumidifierHistory=${this._dehumidifierHistory || []}
+            .exhaustHistory=${this._exhaustHistory || []}
+            .humidifierHistory=${this._humidifierHistory || []}
+            .soilMoistureHistory=${this._soilMoistureHistory || []}
+            .activeEnvGraphs=${this._activeEnvGraphs}
+            .linkedGraphGroups=${this._linkedGraphGroups}
+            .range=${this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h'}
+            @range-change=${(e: CustomEvent) => this._setGraphRange(e.detail.range)}
+            @toggle-graph=${this._handleToggleEnvGraph}
+            @unlink-graphs=${this._handleUnlinkGraphs}
+            @unlink-graph=${this._handleUnlinkGraphMetric}
+          ></growspace-analytics>
           ${this.renderEditModeBanner()}
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
         </div>
@@ -1346,167 +1362,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     `;
   }
 
-  private renderGraphs(): TemplateResult {
-    if (this._activeEnvGraphs.size === 0) return html``;
 
-    const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
-    const selectedDeviceData = this.dataService.getGrowspaceDevices().find(d => d.device_id === this.selectedDevice);
-
-    if (!selectedDeviceData) return html``;
-
-    // Define the desired sort order (Environment chips first, then Device chips)
-    const METRIC_SORT_ORDER = [
-      'temperature',
-      'humidity',
-      'vpd',
-      'co2',
-      'light',
-      'soil_moisture',
-      'irrigation',
-      'drain',
-      'optimal',
-      'exhaust',
-      'humidifier',
-      'dehumidifier'
-    ];
-
-    // Helper to get sort index for a metric
-    const getSortIndex = (metric: string): number => {
-      const index = METRIC_SORT_ORDER.indexOf(metric);
-      return index !== -1 ? index : 999; // Put unknown metrics at the end
-    };
-
-    // 1. Collect all items to render (Linked Groups + Individual Metrics)
-    const itemsToRender: {
-      type: 'group' | 'single';
-      metrics: string[];
-      sortIndex: number;
-    }[] = [];
-
-    const processedMetrics = new Set<string>();
-
-    // Process Linked Groups
-    this._linkedGraphGroups.forEach(group => {
-      const activeMetricsInGroup = group.filter(m => this._activeEnvGraphs.has(m));
-      if (activeMetricsInGroup.length > 0) {
-        // Calculate sort index based on the highest priority (lowest index) metric in the group
-        const minIndex = Math.min(...activeMetricsInGroup.map(getSortIndex));
-
-        itemsToRender.push({
-          type: 'group',
-          metrics: activeMetricsInGroup,
-          sortIndex: minIndex
-        });
-
-        // Mark these metrics as processed so we don't render them individually
-        activeMetricsInGroup.forEach(m => processedMetrics.add(m));
-      }
-    });
-
-    // Process Individual Metrics (that are not part of a rendered group)
-    this._activeEnvGraphs.forEach(metric => {
-      if (!processedMetrics.has(metric)) {
-        itemsToRender.push({
-          type: 'single',
-          metrics: [metric],
-          sortIndex: getSortIndex(metric)
-        });
-      }
-    });
-
-    // 2. Sort the items
-    itemsToRender.sort((a, b) => a.sortIndex - b.sortIndex);
-
-    console.log('Rendering Graphs. Active:', Array.from(this._activeEnvGraphs));
-    console.log('Sorted Items:', itemsToRender.map(i => `${i.metrics.join('+')} (${i.sortIndex})`));
-
-    // 3. Render the sorted items
-    const graphs: TemplateResult[] = itemsToRender.map(item => {
-      if (item.type === 'group') {
-        const activeMetrics = item.metrics;
-        const metricConfig: Record<string, any> = {
-          temperature: { color: '#ff5252', title: 'Temperature', unit: '°C' },
-          humidity: { color: '#2196f3', title: 'Humidity', unit: '%' },
-          vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa' },
-          co2: { color: '#4caf50', title: 'CO2', unit: 'ppm' },
-          soil_moisture: { color: '#03a9f4', title: 'Soil Moisture', unit: '%' },
-          light: { color: '#ffc107', title: 'Light', unit: 'state' },
-          irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state' },
-          drain: { color: '#ff9800', title: 'Drain', unit: 'state' },
-          exhaust: { color: '#795548', title: 'Exhaust', unit: '' },
-          humidifier: { color: '#607d8b', title: 'Humidifier', unit: '' },
-          dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: '' },
-          optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state' }
-        };
-
-        return html`
-              <growspace-env-chart
-                  .hass=${this.hass}
-                  .device=${selectedDeviceData}
-                  .history=${this._historyData || []}
-                  .dehumidifierHistory=${this._dehumidifierHistory || []}
-                  .exhaustHistory=${this._exhaustHistory || []}
-                  .humidifierHistory=${this._humidifierHistory || []}
-                  .soilMoistureHistory=${this._soilMoistureHistory || []}
-                  .metrics=${activeMetrics}
-                  .isCombined=${true}
-                  .metricConfig=${metricConfig}
-                  .range=${range}
-                  @toggle-graph=${this._handleToggleEnvGraph}
-                  @unlink-graphs=${this._handleUnlinkGraphs}
-                  @unlink-graph=${this._handleUnlinkGraphMetric}
-              ></growspace-env-chart>
-          `;
-      } else {
-        // Single Metric
-        const metric = item.metrics[0];
-        let color = '#fff';
-        let title = metric;
-        let unit = '';
-        let icon = mdiMagnify;
-        let type: 'line' | 'step' = 'line';
-        let history = this._historyData || [];
-
-        switch (metric) {
-          case 'temperature': color = '#ff5252'; title = 'Temperature'; unit = '°C'; icon = mdiThermometer; break;
-          case 'humidity': color = '#2196f3'; title = 'Humidity'; unit = '%'; icon = mdiWaterPercent; break;
-          case 'vpd': color = '#9c27b0'; title = 'VPD'; unit = 'kPa'; icon = mdiCloudOutline; break;
-          case 'co2': color = '#4caf50'; title = 'CO2'; unit = 'ppm'; icon = mdiWeatherCloudy; break;
-          case 'soil_moisture': color = '#03a9f4'; title = 'Soil Moisture'; unit = '%'; icon = mdiWaterPercent; history = this._soilMoistureHistory || []; break;
-          case 'light': color = '#ffc107', title = 'Light', unit = 'state'; icon = mdiLightbulbOn; type = 'step'; break;
-          case 'irrigation': color = '#03a9f4'; title = 'Irrigation'; unit = 'state'; icon = mdiWater; type = 'step'; break;
-          case 'drain': color = '#ff9800'; title = 'Drain'; unit = 'state'; icon = mdiWater; type = 'step'; break;
-          case 'exhaust': color = '#795548'; title = 'Exhaust'; unit = ''; icon = mdiFan; history = this._exhaustHistory || []; break;
-          case 'humidifier': color = '#607d8b'; title = 'Humidifier'; unit = ''; icon = mdiAirHumidifier; history = this._humidifierHistory || []; break;
-          case 'dehumidifier': color = '#546e7a'; title = 'Dehumidifier'; unit = ''; icon = mdiAirHumidifierOff; history = this._dehumidifierHistory || []; break;
-          case 'optimal': color = '#4caf50'; title = 'Optimal Conditions'; unit = 'state'; icon = mdiRadioboxMarked; type = 'step'; break;
-        }
-
-        return html`
-          <growspace-env-chart
-              .hass=${this.hass}
-              .device=${selectedDeviceData}
-              .history=${history}
-              .metricKey=${metric}
-              .unit=${unit}
-              .color=${color}
-              .title=${title}
-              .icon=${icon}
-              .range=${range}
-              .type=${type}
-              @toggle-graph=${this._handleToggleEnvGraph}
-          ></growspace-env-chart>
-        `;
-      }
-    });
-
-    return html`
-        <div class="graphs-container">
-            ${this.renderTimeRangeSelector()}
-            ${graphs}
-        </div>
-    `;
-  }
 
   private renderEditModeBanner(): TemplateResult {
     if (!this._isEditMode) return html``;
@@ -1576,23 +1432,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
   }
 
-  private renderTimeRangeSelector(): TemplateResult {
-    const currentRange = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
-    const ranges: ('1h' | '6h' | '24h' | '7d')[] = ['1h', '6h', '24h', '7d'];
 
-    return html`
-      <div class="time-range-selector">
-        ${ranges.map(range => html`
-          <button 
-            class="range-btn ${currentRange === range ? 'active' : ''}"
-            @click=${() => this._setGraphRange(range)}
-          >
-            ${range}
-          </button>
-        `)}
-      </div>
-    `;
-  }
 
   private renderDialogs(growspaceOptions: Record<string, string>): TemplateResult {
     const strainLibrary = this.dataService?.getStrainLibrary() || [];
