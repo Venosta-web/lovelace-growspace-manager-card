@@ -1,30 +1,22 @@
-import { LitElement, html, css, unsafeCSS, CSSResultGroup, TemplateResult, PropertyValues, svg } from 'lit';
+import { LitElement, html, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 import { hassContext, configContext } from './context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiPlus, mdiSprout, mdiFlower, mdiDna, mdiCannabis, mdiHairDryer, mdiChevronDown, mdiChevronRight, mdiDelete, mdiCog, mdiBrain, mdiDotsVertical, mdiRadioboxMarked, mdiRadioboxBlank, mdiPencil, mdiCheckboxMarked, mdiCheckboxBlankOutline } from '@mdi/js';
+import { mdiCheckboxMarked } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
-// Import our modules
 import {
   GrowspaceManagerCardConfig,
   PlantEntity,
-  PlantStage,
-  AddPlantDialogState,
-  PlantOverviewDialogState,
-  StrainLibraryDialogState,
-  ConfigDialogState,
-  GrowMasterDialogState,
   GrowspaceDevice,
   StrainEntry,
-  StrainRecommendationDialogState
 } from './types';
 import { ActiveDialogState } from './ui-state';
 import { PlantUtils } from "./utils";
 import { DataService } from './data-service';
-import { DialogRenderer } from './dialog-renderer';
+import { GrowspaceHistoryController, GrowspaceCardHost } from './controllers/growspace-history-controller';
 import './growspace-env-chart';
 import './dialogs/plant-overview-dialog';
 import './dialogs/strain-library-dialog';
@@ -40,29 +32,20 @@ import './components/growspace-analytics';
 import { growspaceCardStyles } from './styles/growspace-card.styles';
 
 @customElement('growspace-manager-card')
-export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
+export class GrowspaceManagerCard extends LitElement implements LovelaceCard, GrowspaceCardHost {
   @state() private _activeDialog: ActiveDialogState = { type: 'NONE' };
   @state() private _defaultApplied = false;
   @state() private _optimisticDeletedPlantIds: Set<string> = new Set();
-  @state() private selectedDevice: string | null = null;
+  @state() public selectedDevice: string | null = null;
   @state() private _isCompactView: boolean = false;
-  @state() private _isControlDehumidifier: boolean = false;
   @state() private _strainLibrary: StrainEntry[] = [];
-  @state() private _historyData: any[] | null = null;
-  @state() private _dehumidifierHistory: any[] | null = null;
-  @state() private _exhaustHistory: any[] | null = null;
-  @state() private _humidifierHistory: any[] | null = null;
-  @state() private _soilMoistureHistory: any[] | null = null;
-
-  @state() private _activeEnvGraphs: Set<string> = new Set();
-  @state() private _linkedGraphGroups: string[][] = [];
-  @state() private _graphRanges: Record<string, '1h' | '6h' | '24h' | '7d'> = {};
+  // History controller manages history state
+  public historyController = new GrowspaceHistoryController(this);
 
   @state() private _menuOpen: boolean = false;
   @state() private _isEditMode: boolean = false;
   @state() private _selectedPlants: Set<string> = new Set();
   @state() private _focusedPlantIndex: number = -1;
-  @state() private _mobileEnvExpanded: boolean = false;
   @state() private _notification: { message: string, type: 'info' | 'error' | 'success' } | null = null;
 
   private _showToast(message: string, type: 'info' | 'error' | 'success' = 'info') {
@@ -80,7 +63,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @property({ attribute: false }) private _config!: GrowspaceManagerCardConfig;
 
 
-  private dataService!: DataService;
+  public dataService!: DataService;
   static styles: CSSResultGroup = [
     variables,
     growspaceCardStyles
@@ -110,202 +93,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   protected firstUpdated() {
     this.dataService = new DataService(this.hass);
     this.initializeSelectedDevice();
-    this._fetchHistory();
     this._fetchStrainLibrary();
   }
 
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
-    if (changedProps.has('selectedDevice')) {
-      const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
-      this._fetchHistory(range);
-      if (this._activeEnvGraphs.has('dehumidifier')) {
-        this._fetchDehumidifierHistory(range);
-      }
-      if (this._activeEnvGraphs.has('soil_moisture')) {
-        this._fetchSoilMoistureHistory(range);
-      }
-    }
   }
 
-  private async _fetchHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
-    if (!this.hass || !this.selectedDevice) return;
-    const devices = this.dataService.getGrowspaceDevices();
-    const device = devices.find(d => d.device_id === this.selectedDevice);
-    if (!device) return;
 
-    let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-    if (device.overview_entity_id) {
-      slug = device.overview_entity_id.replace('sensor.', '');
-    }
-
-    let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
-    // Specific logic for 'cure' and 'dry' growspaces
-    if (slug === 'cure') {
-      envEntityId = `binary_sensor.cure_optimal_curing`;
-    } else if (slug === 'dry') {
-      envEntityId = `binary_sensor.dry_optimal_drying`;
-    }
-
-    // Get history based on range
-    const now = new Date();
-    let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    switch (range) {
-      case '1h':
-        startTime = new Date(now.getTime() - 60 * 60 * 1000);
-        break;
-      case '6h':
-        startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-        break;
-      case '7d':
-        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-    }
-
-    try {
-      const history = await this.dataService.getHistory(envEntityId, startTime, now);
-      this._historyData = history;
-    } catch (e) {
-      console.error("Failed to fetch history", e);
-    }
-  }
-
-  private async _fetchDehumidifierHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
-    if (!this.hass || !this.selectedDevice) return;
-    const devices = this.dataService.getGrowspaceDevices();
-    const device = devices.find(d => d.device_id === this.selectedDevice);
-    if (!device || !device.overview_entity_id) return;
-
-    const overviewEntity = this.hass.states[device.overview_entity_id];
-    const dehumidifierEntityId = overviewEntity?.attributes?.dehumidifier_entity;
-
-    if (!dehumidifierEntityId) return;
-
-    const now = new Date();
-    let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    switch (range) {
-      case '1h':
-        startTime = new Date(now.getTime() - 60 * 60 * 1000);
-        break;
-      case '6h':
-        startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-        break;
-      case '7d':
-        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-    }
-
-    try {
-      const history = await this.dataService.getHistory(dehumidifierEntityId, startTime, now);
-      this._dehumidifierHistory = history;
-    } catch (e) {
-      console.error("Failed to fetch dehumidifier history", e);
-    }
-  }
-
-  private async _fetchExhaustHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
-    if (!this.hass || !this.selectedDevice) return;
-    const devices = this.dataService.getGrowspaceDevices();
-    const device = devices.find(d => d.device_id === this.selectedDevice);
-    if (!device || !device.overview_entity_id) return;
-
-    const overviewEntity = this.hass.states[device.overview_entity_id];
-    const exhaustEntityId = overviewEntity?.attributes?.exhaust_entity;
-
-    if (!exhaustEntityId) return;
-
-    const now = new Date();
-    let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    switch (range) {
-      case '1h':
-        startTime = new Date(now.getTime() - 60 * 60 * 1000);
-        break;
-      case '6h':
-        startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-        break;
-      case '7d':
-        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-    }
-
-    try {
-      const history = await this.dataService.getHistory(exhaustEntityId, startTime, now);
-      this._exhaustHistory = history;
-    } catch (e) {
-      console.error("Failed to fetch exhaust history", e);
-    }
-  }
-
-  private async _fetchHumidifierHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
-    if (!this.hass || !this.selectedDevice) return;
-    const devices = this.dataService.getGrowspaceDevices();
-    const device = devices.find(d => d.device_id === this.selectedDevice);
-    if (!device || !device.overview_entity_id) return;
-
-    const overviewEntity = this.hass.states[device.overview_entity_id];
-    const humidifierEntityId = overviewEntity?.attributes?.humidifier_entity;
-
-    if (!humidifierEntityId) return;
-
-    const now = new Date();
-    let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    switch (range) {
-      case '1h':
-        startTime = new Date(now.getTime() - 60 * 60 * 1000);
-        break;
-      case '6h':
-        startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-        break;
-      case '7d':
-        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-    }
-
-    try {
-      const history = await this.dataService.getHistory(humidifierEntityId, startTime, now);
-      this._humidifierHistory = history;
-    } catch (e) {
-      console.error("Failed to fetch humidifier history", e);
-    }
-  }
-
-  private async _fetchSoilMoistureHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
-    if (!this.hass || !this.selectedDevice) return;
-    const devices = this.dataService.getGrowspaceDevices();
-    const device = devices.find(d => d.device_id === this.selectedDevice);
-    if (!device || !device.overview_entity_id) return;
-
-    const overviewEntity = this.hass.states[device.overview_entity_id];
-    const soilMoistureEntityId = overviewEntity?.attributes?.soil_moisture_sensor;
-
-    if (!soilMoistureEntityId) return;
-
-    const now = new Date();
-    let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    switch (range) {
-      case '1h':
-        startTime = new Date(now.getTime() - 60 * 60 * 1000);
-        break;
-      case '6h':
-        startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-        break;
-      case '7d':
-        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-    }
-
-    try {
-      const history = await this.dataService.getHistory(soilMoistureEntityId, startTime, now);
-      this._soilMoistureHistory = history;
-    } catch (e) {
-      console.error("Failed to fetch soil moisture history", e);
-    }
-  }
 
   private async _fetchStrainLibrary() {
     if (!this.hass) return;
@@ -701,29 +496,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
 
 
-  private _handleToggleEnvGraph(e: CustomEvent) {
-    const metric = e.detail.metric;
-    this._toggleEnvGraph(metric);
-  }
 
-  private _toggleEnvGraph(metric: string) {
-    const newSet = new Set(this._activeEnvGraphs);
-    if (newSet.has(metric)) {
-      newSet.delete(metric);
-    } else {
-      newSet.add(metric);
-      const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
-      if (metric === 'dehumidifier') {
-        this._fetchDehumidifierHistory(range);
-      } else if (metric === 'exhaust') {
-        this._fetchExhaustHistory(range);
-      } else if (metric === 'humidifier') {
-        this._fetchHumidifierHistory(range);
-      }
-    }
-    this._activeEnvGraphs = newSet;
-    this.requestUpdate();
-  }
 
   private async _addStrain(strainData: Partial<StrainEntry>) {
     if (!strainData.strain) return;
@@ -885,48 +658,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       });
   }
 
-  // --- Graph Linking Logic ---
-  private _handleLinkGraphs(e: CustomEvent) {
-    const { metric1, metric2 } = e.detail;
-    this._linkGraphs(metric1, metric2);
-  }
-
-  private _linkGraphs(metric1: string, metric2: string) {
-    // Check if already linked
-    const existingGroupIndex = this._linkedGraphGroups.findIndex(group =>
-      group.includes(metric1) || group.includes(metric2)
-    );
-
-    if (existingGroupIndex !== -1) {
-      // Add to existing group if not present
-      const group = [...this._linkedGraphGroups[existingGroupIndex]];
-      if (!group.includes(metric1)) group.push(metric1);
-      if (!group.includes(metric2)) group.push(metric2);
-
-      const newGroups = [...this._linkedGraphGroups];
-      newGroups[existingGroupIndex] = group;
-      this._linkedGraphGroups = newGroups;
-    } else {
-      // Create new group
-      this._linkedGraphGroups = [...this._linkedGraphGroups, [metric1, metric2]];
-    }
-
-    // Ensure combined graph is active
-    this._activeEnvGraphs.add(metric1);
-    this._activeEnvGraphs.add(metric2);
-
-    // Fetch history for new metrics if needed
-    const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
-    [metric1, metric2].forEach(m => {
-      if (m === 'dehumidifier') this._fetchDehumidifierHistory(range);
-      if (m === 'exhaust') this._fetchExhaustHistory(range);
-      if (m === 'humidifier') this._fetchHumidifierHistory(range);
-      if (m === 'soil_moisture') this._fetchSoilMoistureHistory(range);
-    });
-
-    this.requestUpdate();
-  }
-
   private _handleHeaderAction(e: CustomEvent) {
     const action = e.detail.action;
     switch (action) {
@@ -973,36 +704,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
   }
 
-  private _handleUnlinkGraphMetric(e: CustomEvent) {
-    const metric = e.detail.metric;
-    const groupIndex = this._linkedGraphGroups.findIndex(g => g.includes(metric));
-    if (groupIndex !== -1) {
-      this._unlinkGraphs(groupIndex);
-    }
-  }
 
-  private _handleUnlinkGraphs(e: CustomEvent) {
-    const groupIndex = e.detail.groupIndex;
-    this._unlinkGraphs(groupIndex);
-  }
 
-  private _unlinkGraphs(groupIndex: number) {
-    if (groupIndex >= 0 && groupIndex < this._linkedGraphGroups.length) {
-      const newGroups = [...this._linkedGraphGroups];
-      newGroups.splice(groupIndex, 1);
-      this._linkedGraphGroups = newGroups;
-      this.requestUpdate();
-    }
-  }
 
-  private _isMetricLinked(metric: string): { linked: boolean, groupIndex: number, group: string[] } {
-    const index = this._linkedGraphGroups.findIndex(g => g.includes(metric));
-    return {
-      linked: index !== -1,
-      groupIndex: index,
-      group: index !== -1 ? this._linkedGraphGroups[index] : []
-    };
-  }
 
   // Configuration Dialog Methods
   private _openConfigDialog() {
@@ -1266,34 +970,34 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           <growspace-header
             .device=${selectedDeviceData}
             .devices=${devices}
-            .activeEnvGraphs=${this._activeEnvGraphs}
-            .historyData=${this._historyData}
+            .activeEnvGraphs=${this.historyController.activeEnvGraphs}
+            .historyData=${this.historyController.historyData || null}
             .compact=${this._isCompactView}
             .isEditMode=${this._isEditMode}
             .selectedDevice=${this.selectedDevice}
             .growspaceOptions=${growspaceOptions}
-            .linkedGraphGroups=${this._linkedGraphGroups}
+            .linkedGraphGroups=${this.historyController.linkedGraphGroups}
             @growspace-changed=${this._handleDeviceChange}
-            @toggle-env-graph=${this._handleToggleEnvGraph}
-            @link-graphs=${this._handleLinkGraphs}
-            @unlink-graphs=${this._handleUnlinkGraphs}
+            @toggle-env-graph=${(e: CustomEvent) => this.historyController.toggleEnvGraph({ metric: e.detail.metric, visible: true })}
+            @link-graphs=${(e: CustomEvent) => this.historyController.linkGraphs(e.detail.metric1, e.detail.metric2)}
+            @unlink-graphs=${(e: CustomEvent) => this.historyController.unlinkGraphGroup(e.detail.groupIndex)}
             @trigger-action=${this._handleHeaderAction}
           ></growspace-header>
           <growspace-analytics
             .hass=${this.hass}
             .device=${selectedDeviceData}
-            .historyData=${this._historyData || []}
-            .dehumidifierHistory=${this._dehumidifierHistory || []}
-            .exhaustHistory=${this._exhaustHistory || []}
-            .humidifierHistory=${this._humidifierHistory || []}
-            .soilMoistureHistory=${this._soilMoistureHistory || []}
-            .activeEnvGraphs=${this._activeEnvGraphs}
-            .linkedGraphGroups=${this._linkedGraphGroups}
-            .range=${this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h'}
-            @range-change=${(e: CustomEvent) => this._setGraphRange(e.detail.range)}
-            @toggle-graph=${this._handleToggleEnvGraph}
-            @unlink-graphs=${this._handleUnlinkGraphs}
-            @unlink-graph=${this._handleUnlinkGraphMetric}
+            .historyData=${this.historyController.historyData || []}
+            .dehumidifierHistory=${this.historyController.dehumidifierHistory || []}
+            .exhaustHistory=${this.historyController.exhaustHistory || []}
+            .humidifierHistory=${this.historyController.humidifierHistory || []}
+            .soilMoistureHistory=${this.historyController.soilMoistureHistory || []}
+            .activeEnvGraphs=${this.historyController.activeEnvGraphs}
+            .linkedGraphGroups=${this.historyController.linkedGraphGroups}
+            .range=${this.historyController.getRange()}
+            @range-change=${(e: CustomEvent) => this.historyController.setGraphRange(e.detail.range)}
+            @toggle-graph=${(e: CustomEvent) => this.historyController.toggleEnvGraph({ metric: e.detail.metric, visible: true })}
+            @unlink-graphs=${(e: CustomEvent) => this.historyController.unlinkGraphGroup(e.detail.groupIndex)}
+            @unlink-graph=${(e: CustomEvent) => this.historyController.unlinkGraphMetric(e.detail.metric)}
           ></growspace-analytics>
           ${this.renderEditModeBanner()}
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
@@ -1362,23 +1066,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
 
-  private _setGraphRange(range: '1h' | '6h' | '24h' | '7d') {
-    if (!this.selectedDevice) return;
-    this._graphRanges = {
-      ...this._graphRanges,
-      [this.selectedDevice]: range
-    };
-    this._fetchHistory(range);
-    if (this._activeEnvGraphs.has('dehumidifier')) {
-      this._fetchDehumidifierHistory(range);
-    }
-    if (this._activeEnvGraphs.has('exhaust')) {
-      this._fetchExhaustHistory(range);
-    }
-    if (this._activeEnvGraphs.has('humidifier')) {
-      this._fetchHumidifierHistory(range);
-    }
-  }
+
 
   private async _confirmAddPlant(detail: any) {
     const devices = this.dataService.getGrowspaceDevices();
@@ -1593,7 +1281,4 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     return html``;
   }
-
-
-
 }

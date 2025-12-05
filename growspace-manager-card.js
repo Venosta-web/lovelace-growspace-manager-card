@@ -9437,6 +9437,237 @@ const variables = i$4 `
   }
 `;
 
+class GrowspaceHistoryController {
+    constructor(host) {
+        this.historyData = null;
+        this.dehumidifierHistory = null;
+        this.exhaustHistory = null;
+        this.humidifierHistory = null;
+        this.soilMoistureHistory = null;
+        this.activeEnvGraphs = new Set();
+        this.linkedGraphGroups = [];
+        this.graphRanges = {};
+        this._prevSelectedDevice = null;
+        (this.host = host).addController(this);
+    }
+    hostConnected() {
+        // Initial fetch if needed, though hostUpdated usually handles it
+    }
+    hostUpdated() {
+        // We can check if we need to refetch based on changes.
+        // However, without keeping track of previous state, we might over-fetch.
+        // The original card fetched in `updated` checking `changedProps.has('selectedDevice')`.
+        // ReactiveController doesn't get `changedProps` in `hostUpdated`.
+        // We might need to rely on explicit calls or manual caching.
+        // But the user said "Listen for changes... to automatically re-fetch".
+        // We can store prevSelectedDevice.
+    }
+    initFetch() {
+        // Called manually from firstUpdated if needed
+        this._fetchHistory();
+    }
+    async hostUpdate() {
+        // Logic to detect changes if possible, or we rely on hostUpdated
+        if (this.host.selectedDevice !== this._prevSelectedDevice) {
+            this._prevSelectedDevice = this.host.selectedDevice;
+            const range = this.getRange();
+            await this._fetchHistory(range);
+            this.refreshSecondaryHistories(range);
+        }
+    }
+    getRange() {
+        return this.host.selectedDevice ? (this.graphRanges[this.host.selectedDevice] || '24h') : '24h';
+    }
+    setGraphRange(range) {
+        if (!this.host.selectedDevice)
+            return;
+        this.graphRanges = {
+            ...this.graphRanges,
+            [this.host.selectedDevice]: range
+        };
+        this.host.requestUpdate();
+        this._fetchHistory(range);
+        this.refreshSecondaryHistories(range);
+    }
+    toggleEnvGraph(details) {
+        const { metric } = details;
+        const newSet = new Set(this.activeEnvGraphs);
+        if (newSet.has(metric)) {
+            newSet.delete(metric);
+        }
+        else {
+            newSet.add(metric);
+            // Fetch history for this metric if needed
+            const range = this.getRange();
+            if (metric === 'dehumidifier')
+                this._fetchDehumidifierHistory(range);
+            if (metric === 'exhaust')
+                this._fetchExhaustHistory(range);
+            if (metric === 'humidifier')
+                this._fetchHumidifierHistory(range);
+            if (metric === 'soil_moisture')
+                this._fetchSoilMoistureHistory(range);
+        }
+        this.activeEnvGraphs = newSet;
+        this.host.requestUpdate();
+    }
+    linkGraphs(metric1, metric2) {
+        // Check if already linked
+        const existingGroupIndex = this.linkedGraphGroups.findIndex(group => group.includes(metric1) || group.includes(metric2));
+        let newGroups = [...this.linkedGraphGroups];
+        if (existingGroupIndex >= 0) {
+            // Add unique
+            const group = new Set(newGroups[existingGroupIndex]);
+            group.add(metric1);
+            group.add(metric2);
+            newGroups[existingGroupIndex] = Array.from(group);
+        }
+        else {
+            // Create new group
+            newGroups.push([metric1, metric2]);
+        }
+        this.linkedGraphGroups = newGroups;
+        this.host.requestUpdate();
+    }
+    unlinkGraphGroup(index) {
+        if (index >= 0 && index < this.linkedGraphGroups.length) {
+            const newGroups = [...this.linkedGraphGroups];
+            newGroups.splice(index, 1);
+            this.linkedGraphGroups = newGroups;
+            this.host.requestUpdate();
+        }
+    }
+    clearAllLinks() {
+        this.linkedGraphGroups = [];
+        this.host.requestUpdate();
+    }
+    unlinkGraphMetric(metric) {
+        this.linkedGraphGroups = this.linkedGraphGroups.map(group => group.filter(m => m !== metric)).filter(group => group.length > 1);
+        this.host.requestUpdate();
+    }
+    refreshSecondaryHistories(range) {
+        if (this.activeEnvGraphs.has('dehumidifier'))
+            this._fetchDehumidifierHistory(range);
+        if (this.activeEnvGraphs.has('exhaust'))
+            this._fetchExhaustHistory(range);
+        if (this.activeEnvGraphs.has('humidifier'))
+            this._fetchHumidifierHistory(range);
+        if (this.activeEnvGraphs.has('soil_moisture'))
+            this._fetchSoilMoistureHistory(range);
+    }
+    async _fetchHistory(range = '24h') {
+        if (!this.host.hass || !this.host.selectedDevice)
+            return;
+        const devices = this.host.dataService.getGrowspaceDevices();
+        const device = devices.find(d => d.device_id === this.host.selectedDevice);
+        if (!device)
+            return;
+        let slug = device.name.toLowerCase().replace(/\s+/g, '_');
+        if (device.overview_entity_id) {
+            slug = device.overview_entity_id.replace('sensor.', '');
+        }
+        let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+        if (slug === 'cure') {
+            envEntityId = `binary_sensor.cure_optimal_curing`;
+        }
+        else if (slug === 'dry') {
+            envEntityId = `binary_sensor.dry_optimal_drying`;
+        }
+        const { start, end } = this.calculateTimeRange(range);
+        try {
+            const history = await this.host.dataService.getHistory(envEntityId, start, end);
+            this.historyData = history;
+            this.host.requestUpdate();
+        }
+        catch (e) {
+            console.error("Failed to fetch history", e);
+        }
+    }
+    async _fetchDehumidifierHistory(range = '24h') {
+        const { device, entityId } = this.getRelatedEntityId('dehumidifier_entity');
+        if (!device || !entityId)
+            return;
+        const { start, end } = this.calculateTimeRange(range);
+        try {
+            const history = await this.host.dataService.getHistory(entityId, start, end);
+            this.dehumidifierHistory = history;
+            this.host.requestUpdate();
+        }
+        catch (e) {
+            console.error("Failed to fetch dehumidifier history", e);
+        }
+    }
+    async _fetchExhaustHistory(range = '24h') {
+        const { device, entityId } = this.getRelatedEntityId('exhaust_entity');
+        if (!device || !entityId)
+            return;
+        const { start, end } = this.calculateTimeRange(range);
+        try {
+            const history = await this.host.dataService.getHistory(entityId, start, end);
+            this.exhaustHistory = history;
+            this.host.requestUpdate();
+        }
+        catch (e) {
+            console.error("Failed to fetch exhaust history", e);
+        }
+    }
+    async _fetchHumidifierHistory(range = '24h') {
+        const { device, entityId } = this.getRelatedEntityId('humidifier_entity');
+        if (!device || !entityId)
+            return;
+        const { start, end } = this.calculateTimeRange(range);
+        try {
+            const history = await this.host.dataService.getHistory(entityId, start, end);
+            this.humidifierHistory = history;
+            this.host.requestUpdate();
+        }
+        catch (e) {
+            console.error("Failed to fetch humidifier history", e);
+        }
+    }
+    async _fetchSoilMoistureHistory(range = '24h') {
+        const { device, entityId } = this.getRelatedEntityId('soil_moisture_sensor');
+        if (!device || !entityId)
+            return;
+        const { start, end } = this.calculateTimeRange(range);
+        try {
+            const history = await this.host.dataService.getHistory(entityId, start, end);
+            this.soilMoistureHistory = history;
+            this.host.requestUpdate();
+        }
+        catch (e) {
+            console.error("Failed to fetch soil moisture history", e);
+        }
+    }
+    getRelatedEntityId(attribute) {
+        if (!this.host.hass || !this.host.selectedDevice)
+            return { device: null, entityId: null };
+        const devices = this.host.dataService.getGrowspaceDevices();
+        const device = devices.find(d => d.device_id === this.host.selectedDevice);
+        if (!device || !device.overview_entity_id)
+            return { device, entityId: null };
+        const overviewEntity = this.host.hass.states[device.overview_entity_id];
+        const entityId = overviewEntity?.attributes?.[attribute];
+        return { device, entityId };
+    }
+    calculateTimeRange(range) {
+        const now = new Date();
+        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        switch (range) {
+            case '1h':
+                startTime = new Date(now.getTime() - 60 * 60 * 1000);
+                break;
+            case '6h':
+                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+                break;
+            case '7d':
+                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+        }
+        return { start: startTime, end: now };
+    }
+}
+
 let GrowspaceEnvChart = class GrowspaceEnvChart extends i$1 {
     constructor() {
         super(...arguments);
@@ -17354,21 +17585,13 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         this._optimisticDeletedPlantIds = new Set();
         this.selectedDevice = null;
         this._isCompactView = false;
-        this._isControlDehumidifier = false;
         this._strainLibrary = [];
-        this._historyData = null;
-        this._dehumidifierHistory = null;
-        this._exhaustHistory = null;
-        this._humidifierHistory = null;
-        this._soilMoistureHistory = null;
-        this._activeEnvGraphs = new Set();
-        this._linkedGraphGroups = [];
-        this._graphRanges = {};
+        // History controller manages history state
+        this.historyController = new GrowspaceHistoryController(this);
         this._menuOpen = false;
         this._isEditMode = false;
         this._selectedPlants = new Set();
         this._focusedPlantIndex = -1;
-        this._mobileEnvExpanded = false;
         this._notification = null;
         this._handleDocumentClick = (e) => {
             if (this._menuOpen) {
@@ -17419,190 +17642,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     firstUpdated() {
         this.dataService = new DataService(this.hass);
         this.initializeSelectedDevice();
-        this._fetchHistory();
         this._fetchStrainLibrary();
     }
     updated(changedProps) {
         super.updated(changedProps);
-        if (changedProps.has('selectedDevice')) {
-            const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
-            this._fetchHistory(range);
-            if (this._activeEnvGraphs.has('dehumidifier')) {
-                this._fetchDehumidifierHistory(range);
-            }
-            if (this._activeEnvGraphs.has('soil_moisture')) {
-                this._fetchSoilMoistureHistory(range);
-            }
-        }
-    }
-    async _fetchHistory(range = '24h') {
-        if (!this.hass || !this.selectedDevice)
-            return;
-        const devices = this.dataService.getGrowspaceDevices();
-        const device = devices.find(d => d.device_id === this.selectedDevice);
-        if (!device)
-            return;
-        let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-        if (device.overview_entity_id) {
-            slug = device.overview_entity_id.replace('sensor.', '');
-        }
-        let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
-        // Specific logic for 'cure' and 'dry' growspaces
-        if (slug === 'cure') {
-            envEntityId = `binary_sensor.cure_optimal_curing`;
-        }
-        else if (slug === 'dry') {
-            envEntityId = `binary_sensor.dry_optimal_drying`;
-        }
-        // Get history based on range
-        const now = new Date();
-        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        switch (range) {
-            case '1h':
-                startTime = new Date(now.getTime() - 60 * 60 * 1000);
-                break;
-            case '6h':
-                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-                break;
-            case '7d':
-                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                break;
-        }
-        try {
-            const history = await this.dataService.getHistory(envEntityId, startTime, now);
-            this._historyData = history;
-        }
-        catch (e) {
-            console.error("Failed to fetch history", e);
-        }
-    }
-    async _fetchDehumidifierHistory(range = '24h') {
-        if (!this.hass || !this.selectedDevice)
-            return;
-        const devices = this.dataService.getGrowspaceDevices();
-        const device = devices.find(d => d.device_id === this.selectedDevice);
-        if (!device || !device.overview_entity_id)
-            return;
-        const overviewEntity = this.hass.states[device.overview_entity_id];
-        const dehumidifierEntityId = overviewEntity?.attributes?.dehumidifier_entity;
-        if (!dehumidifierEntityId)
-            return;
-        const now = new Date();
-        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        switch (range) {
-            case '1h':
-                startTime = new Date(now.getTime() - 60 * 60 * 1000);
-                break;
-            case '6h':
-                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-                break;
-            case '7d':
-                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                break;
-        }
-        try {
-            const history = await this.dataService.getHistory(dehumidifierEntityId, startTime, now);
-            this._dehumidifierHistory = history;
-        }
-        catch (e) {
-            console.error("Failed to fetch dehumidifier history", e);
-        }
-    }
-    async _fetchExhaustHistory(range = '24h') {
-        if (!this.hass || !this.selectedDevice)
-            return;
-        const devices = this.dataService.getGrowspaceDevices();
-        const device = devices.find(d => d.device_id === this.selectedDevice);
-        if (!device || !device.overview_entity_id)
-            return;
-        const overviewEntity = this.hass.states[device.overview_entity_id];
-        const exhaustEntityId = overviewEntity?.attributes?.exhaust_entity;
-        if (!exhaustEntityId)
-            return;
-        const now = new Date();
-        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        switch (range) {
-            case '1h':
-                startTime = new Date(now.getTime() - 60 * 60 * 1000);
-                break;
-            case '6h':
-                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-                break;
-            case '7d':
-                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                break;
-        }
-        try {
-            const history = await this.dataService.getHistory(exhaustEntityId, startTime, now);
-            this._exhaustHistory = history;
-        }
-        catch (e) {
-            console.error("Failed to fetch exhaust history", e);
-        }
-    }
-    async _fetchHumidifierHistory(range = '24h') {
-        if (!this.hass || !this.selectedDevice)
-            return;
-        const devices = this.dataService.getGrowspaceDevices();
-        const device = devices.find(d => d.device_id === this.selectedDevice);
-        if (!device || !device.overview_entity_id)
-            return;
-        const overviewEntity = this.hass.states[device.overview_entity_id];
-        const humidifierEntityId = overviewEntity?.attributes?.humidifier_entity;
-        if (!humidifierEntityId)
-            return;
-        const now = new Date();
-        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        switch (range) {
-            case '1h':
-                startTime = new Date(now.getTime() - 60 * 60 * 1000);
-                break;
-            case '6h':
-                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-                break;
-            case '7d':
-                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                break;
-        }
-        try {
-            const history = await this.dataService.getHistory(humidifierEntityId, startTime, now);
-            this._humidifierHistory = history;
-        }
-        catch (e) {
-            console.error("Failed to fetch humidifier history", e);
-        }
-    }
-    async _fetchSoilMoistureHistory(range = '24h') {
-        if (!this.hass || !this.selectedDevice)
-            return;
-        const devices = this.dataService.getGrowspaceDevices();
-        const device = devices.find(d => d.device_id === this.selectedDevice);
-        if (!device || !device.overview_entity_id)
-            return;
-        const overviewEntity = this.hass.states[device.overview_entity_id];
-        const soilMoistureEntityId = overviewEntity?.attributes?.soil_moisture_sensor;
-        if (!soilMoistureEntityId)
-            return;
-        const now = new Date();
-        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        switch (range) {
-            case '1h':
-                startTime = new Date(now.getTime() - 60 * 60 * 1000);
-                break;
-            case '6h':
-                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-                break;
-            case '7d':
-                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                break;
-        }
-        try {
-            const history = await this.dataService.getHistory(soilMoistureEntityId, startTime, now);
-            this._soilMoistureHistory = history;
-        }
-        catch (e) {
-            console.error("Failed to fetch soil moisture history", e);
-        }
     }
     async _fetchStrainLibrary() {
         if (!this.hass)
@@ -17933,31 +17976,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             payload: true
         };
     }
-    _handleToggleEnvGraph(e) {
-        const metric = e.detail.metric;
-        this._toggleEnvGraph(metric);
-    }
-    _toggleEnvGraph(metric) {
-        const newSet = new Set(this._activeEnvGraphs);
-        if (newSet.has(metric)) {
-            newSet.delete(metric);
-        }
-        else {
-            newSet.add(metric);
-            const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
-            if (metric === 'dehumidifier') {
-                this._fetchDehumidifierHistory(range);
-            }
-            else if (metric === 'exhaust') {
-                this._fetchExhaustHistory(range);
-            }
-            else if (metric === 'humidifier') {
-                this._fetchHumidifierHistory(range);
-            }
-        }
-        this._activeEnvGraphs = newSet;
-        this.requestUpdate();
-    }
     async _addStrain(strainData) {
         if (!strainData.strain)
             return;
@@ -18099,75 +18117,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             console.error('Error moving clone:', err);
         });
     }
-    // --- Graph Linking Logic ---
-    _handleChipDragStart(e, metric) {
-        e.dataTransfer?.setData("text/plain", JSON.stringify({ type: 'env-metric', metric }));
-        e.dataTransfer.effectAllowed = "link";
-    }
-    _handleChipDrop(e, targetMetric) {
-        e.preventDefault();
-        const data = e.dataTransfer?.getData("text/plain");
-        if (!data)
-            return;
-        try {
-            // Handle simple string metric (from component) or JSON payload (legacy/internal)
-            let sourceMetric = data;
-            try {
-                const payload = JSON.parse(data);
-                if (payload.type === 'env-metric') {
-                    sourceMetric = payload.metric;
-                }
-            }
-            catch (e) {
-                // Not JSON, assume raw metric string
-            }
-            if (sourceMetric === targetMetric)
-                return;
-            this._linkGraphs(sourceMetric, targetMetric);
-        }
-        catch (err) {
-            console.error("Error parsing drop data", err);
-        }
-    }
-    _handleLinkGraphs(e) {
-        const { metric1, metric2 } = e.detail;
-        this._linkGraphs(metric1, metric2);
-    }
-    _linkGraphs(metric1, metric2) {
-        // Check if already linked
-        const existingGroupIndex = this._linkedGraphGroups.findIndex(group => group.includes(metric1) || group.includes(metric2));
-        if (existingGroupIndex !== -1) {
-            // Add to existing group if not present
-            const group = [...this._linkedGraphGroups[existingGroupIndex]];
-            if (!group.includes(metric1))
-                group.push(metric1);
-            if (!group.includes(metric2))
-                group.push(metric2);
-            const newGroups = [...this._linkedGraphGroups];
-            newGroups[existingGroupIndex] = group;
-            this._linkedGraphGroups = newGroups;
-        }
-        else {
-            // Create new group
-            this._linkedGraphGroups = [...this._linkedGraphGroups, [metric1, metric2]];
-        }
-        // Ensure combined graph is active
-        this._activeEnvGraphs.add(metric1);
-        this._activeEnvGraphs.add(metric2);
-        // Fetch history for new metrics if needed
-        const range = this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h';
-        [metric1, metric2].forEach(m => {
-            if (m === 'dehumidifier')
-                this._fetchDehumidifierHistory(range);
-            if (m === 'exhaust')
-                this._fetchExhaustHistory(range);
-            if (m === 'humidifier')
-                this._fetchHumidifierHistory(range);
-            if (m === 'soil_moisture')
-                this._fetchSoilMoistureHistory(range);
-        });
-        this.requestUpdate();
-    }
     _handleHeaderAction(e) {
         const action = e.detail.action;
         switch (action) {
@@ -18209,33 +18158,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
                 this._openGrowMasterDialog();
                 break;
         }
-    }
-    _handleUnlinkGraphMetric(e) {
-        const metric = e.detail.metric;
-        const groupIndex = this._linkedGraphGroups.findIndex(g => g.includes(metric));
-        if (groupIndex !== -1) {
-            this._unlinkGraphs(groupIndex);
-        }
-    }
-    _handleUnlinkGraphs(e) {
-        const groupIndex = e.detail.groupIndex;
-        this._unlinkGraphs(groupIndex);
-    }
-    _unlinkGraphs(groupIndex) {
-        if (groupIndex >= 0 && groupIndex < this._linkedGraphGroups.length) {
-            const newGroups = [...this._linkedGraphGroups];
-            newGroups.splice(groupIndex, 1);
-            this._linkedGraphGroups = newGroups;
-            this.requestUpdate();
-        }
-    }
-    _isMetricLinked(metric) {
-        const index = this._linkedGraphGroups.findIndex(g => g.includes(metric));
-        return {
-            linked: index !== -1,
-            groupIndex: index,
-            group: index !== -1 ? this._linkedGraphGroups[index] : []
-        };
     }
     // Configuration Dialog Methods
     _openConfigDialog() {
@@ -18471,34 +18393,34 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
           <growspace-header
             .device=${selectedDeviceData}
             .devices=${devices}
-            .activeEnvGraphs=${this._activeEnvGraphs}
-            .historyData=${this._historyData}
+            .activeEnvGraphs=${this.historyController.activeEnvGraphs}
+            .historyData=${this.historyController.historyData || null}
             .compact=${this._isCompactView}
             .isEditMode=${this._isEditMode}
             .selectedDevice=${this.selectedDevice}
             .growspaceOptions=${growspaceOptions}
-            .linkedGraphGroups=${this._linkedGraphGroups}
+            .linkedGraphGroups=${this.historyController.linkedGraphGroups}
             @growspace-changed=${this._handleDeviceChange}
-            @toggle-env-graph=${this._handleToggleEnvGraph}
-            @link-graphs=${this._handleLinkGraphs}
-            @unlink-graphs=${this._handleUnlinkGraphs}
+            @toggle-env-graph=${(e) => this.historyController.toggleEnvGraph({ metric: e.detail.metric, visible: true })}
+            @link-graphs=${(e) => this.historyController.linkGraphs(e.detail.metric1, e.detail.metric2)}
+            @unlink-graphs=${(e) => this.historyController.unlinkGraphGroup(e.detail.groupIndex)}
             @trigger-action=${this._handleHeaderAction}
           ></growspace-header>
           <growspace-analytics
             .hass=${this.hass}
             .device=${selectedDeviceData}
-            .historyData=${this._historyData || []}
-            .dehumidifierHistory=${this._dehumidifierHistory || []}
-            .exhaustHistory=${this._exhaustHistory || []}
-            .humidifierHistory=${this._humidifierHistory || []}
-            .soilMoistureHistory=${this._soilMoistureHistory || []}
-            .activeEnvGraphs=${this._activeEnvGraphs}
-            .linkedGraphGroups=${this._linkedGraphGroups}
-            .range=${this.selectedDevice ? (this._graphRanges[this.selectedDevice] || '24h') : '24h'}
-            @range-change=${(e) => this._setGraphRange(e.detail.range)}
-            @toggle-graph=${this._handleToggleEnvGraph}
-            @unlink-graphs=${this._handleUnlinkGraphs}
-            @unlink-graph=${this._handleUnlinkGraphMetric}
+            .historyData=${this.historyController.historyData || []}
+            .dehumidifierHistory=${this.historyController.dehumidifierHistory || []}
+            .exhaustHistory=${this.historyController.exhaustHistory || []}
+            .humidifierHistory=${this.historyController.humidifierHistory || []}
+            .soilMoistureHistory=${this.historyController.soilMoistureHistory || []}
+            .activeEnvGraphs=${this.historyController.activeEnvGraphs}
+            .linkedGraphGroups=${this.historyController.linkedGraphGroups}
+            .range=${this.historyController.getRange()}
+            @range-change=${(e) => this.historyController.setGraphRange(e.detail.range)}
+            @toggle-graph=${(e) => this.historyController.toggleEnvGraph({ metric: e.detail.metric, visible: true })}
+            @unlink-graphs=${(e) => this.historyController.unlinkGraphGroup(e.detail.groupIndex)}
+            @unlink-graph=${(e) => this.historyController.unlinkGraphMetric(e.detail.metric)}
           ></growspace-analytics>
           ${this.renderEditModeBanner()}
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
@@ -18552,24 +18474,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         }}
       ></growspace-grid>
     `;
-    }
-    _setGraphRange(range) {
-        if (!this.selectedDevice)
-            return;
-        this._graphRanges = {
-            ...this._graphRanges,
-            [this.selectedDevice]: range
-        };
-        this._fetchHistory(range);
-        if (this._activeEnvGraphs.has('dehumidifier')) {
-            this._fetchDehumidifierHistory(range);
-        }
-        if (this._activeEnvGraphs.has('exhaust')) {
-            this._fetchExhaustHistory(range);
-        }
-        if (this._activeEnvGraphs.has('humidifier')) {
-            this._fetchHumidifierHistory(range);
-        }
     }
     async _confirmAddPlant(detail) {
         const devices = this.dataService.getGrowspaceDevices();
@@ -18796,44 +18700,8 @@ __decorate([
 ], GrowspaceManagerCard.prototype, "_isCompactView", void 0);
 __decorate([
     r(),
-    __metadata("design:type", Boolean)
-], GrowspaceManagerCard.prototype, "_isControlDehumidifier", void 0);
-__decorate([
-    r(),
     __metadata("design:type", Array)
 ], GrowspaceManagerCard.prototype, "_strainLibrary", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Object)
-], GrowspaceManagerCard.prototype, "_historyData", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Object)
-], GrowspaceManagerCard.prototype, "_dehumidifierHistory", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Object)
-], GrowspaceManagerCard.prototype, "_exhaustHistory", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Object)
-], GrowspaceManagerCard.prototype, "_humidifierHistory", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Object)
-], GrowspaceManagerCard.prototype, "_soilMoistureHistory", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Set)
-], GrowspaceManagerCard.prototype, "_activeEnvGraphs", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Array)
-], GrowspaceManagerCard.prototype, "_linkedGraphGroups", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Object)
-], GrowspaceManagerCard.prototype, "_graphRanges", void 0);
 __decorate([
     r(),
     __metadata("design:type", Boolean)
@@ -18850,10 +18718,6 @@ __decorate([
     r(),
     __metadata("design:type", Number)
 ], GrowspaceManagerCard.prototype, "_focusedPlantIndex", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Boolean)
-], GrowspaceManagerCard.prototype, "_mobileEnvExpanded", void 0);
 __decorate([
     r(),
     __metadata("design:type", Object)
