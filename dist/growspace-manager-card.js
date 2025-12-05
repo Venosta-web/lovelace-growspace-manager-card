@@ -15869,6 +15869,48 @@ const growspaceCardStyles = i$3 `
             justify-content: center;
         }
       }
+
+      /* Toast Notification */
+      .toast-notification {
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #323232;
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 100;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: slideUpFade 0.3s ease-out;
+        min-width: 200px;
+        text-align: center;
+      }
+
+      .toast-notification.success {
+        background: var(--success-color, #4caf50);
+        color: #fff;
+      }
+
+      .toast-notification.error {
+        background: var(--error-color, #f44336);
+        color: #fff;
+      }
+
+      @keyframes slideUpFade {
+        from {
+          opacity: 0;
+          transform: translate(-50%, 20px);
+        }
+        to {
+          opacity: 1;
+          transform: translate(-50%, 0);
+        }
+      }
 `;
 
 let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
@@ -15900,6 +15942,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         this._selectedPlants = new Set();
         this._focusedPlantIndex = -1;
         this._mobileEnvExpanded = false;
+        this._notification = null;
         this._handleDocumentClick = (e) => {
             if (this._menuOpen) {
                 const path = e.composedPath();
@@ -15931,6 +15974,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
                 console.error(`Failed to take clone: ${error.message}`);
             });
         };
+    }
+    _showToast(message, type = 'info') {
+        this._notification = { message, type };
+        setTimeout(() => {
+            this._notification = null;
+        }, 4000);
     }
     connectedCallback() {
         super.connectedCallback();
@@ -16327,7 +16376,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         if (!this._addPlantDialog || !this.selectedDevice)
             return;
         if (!this._addPlantDialog.strain) {
-            alert('Please enter a strain!');
+            this._showToast('Please enter a strain!', 'error');
             return;
         }
         const { row, col, strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start } = this._addPlantDialog;
@@ -16440,7 +16489,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         catch (err) {
             console.error("Error deleting plant:", err);
             // Ideally revert the optimistic update here, but for now just alert
-            alert("Failed to delete plant. It may reappear on refresh.");
+            this._showToast("Failed to delete plant. It may reappear on refresh.", 'error');
             this.updateGrid(); // Force refresh to sync with backend
         }
     }
@@ -16454,7 +16503,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         let targetGrowspace = "";
         const movableStages = new Set(["mother", "flower", "dry", "cure"]);
         if (!stage || !movableStages.has(stage)) {
-            alert("Plant must be in mother or flower or dry or cure stage to move. stage is " + stage);
+            this._showToast("Plant must be in mother or flower or dry or cure stage to move. stage is " + stage, 'error');
             return;
         }
         // Decide the target growspace
@@ -16606,12 +16655,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             return;
         try {
             const result = await this.dataService.importStrainLibrary(file, replace);
-            alert(`Import successful! ${result.imported_count || ''} strains imported.`);
+            this._showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
             await this._fetchStrainLibrary();
         }
         catch (err) {
             console.error("Import failed:", err);
-            alert(`Import failed: ${err.message}`);
+            this._showToast(`Import failed: ${err.message}`, 'error');
         }
     }
     updateGrid() {
@@ -16827,19 +16876,19 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             return;
         const d = this._configDialog.addGrowspaceData;
         if (!d.name) {
-            alert('Name is required');
+            this._showToast('Name is required', 'error');
             return;
         }
         this.dataService.addGrowspace(d)
             .then(() => { this._configDialog = null; this.requestUpdate(); })
-            .catch(e => alert(`Error: ${e.message}`));
+            .catch(e => this._showToast(`Error: ${e.message}`, 'error'));
     }
     _handleEnvSubmit() {
         if (!this._configDialog)
             return;
         const d = this._configDialog.environmentData;
         if (!d.selectedGrowspaceId || !d.temp_sensor || !d.humidity_sensor || !d.vpd_sensor) {
-            alert('Growspace and required sensors (Temp, Hum, VPD) are mandatory');
+            this._showToast('Growspace and required sensors (Temp, Hum, VPD) are mandatory', 'error');
             return;
         }
         this.dataService.configureEnvironment({
@@ -16853,7 +16902,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
             mold_threshold: d.mold_threshold
         })
             .then(() => { this._configDialog = null; this.requestUpdate(); })
-            .catch(e => alert(`Error: ${e.message}`));
+            .catch(e => this._showToast(`Error: ${e.message}`, 'error'));
     }
     // Grow Master Methods
     _openGrowMasterDialog() {
@@ -17533,6 +17582,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i {
         .growspaceEntityId=${selectedDeviceData?.overview_entity_id || ''}
         @close=${() => this._irrigationDialogOpen = false}
       ></irrigation-dialog>
+
+      ${this._notification ? x `
+        <div class="toast-notification ${this._notification.type}">
+          ${this._notification.message}
+        </div>
+      ` : ''}
     `;
     }
 };
@@ -17644,6 +17699,10 @@ __decorate([
     r(),
     __metadata("design:type", Boolean)
 ], GrowspaceManagerCard.prototype, "_mobileEnvExpanded", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "_notification", void 0);
 __decorate([
     n$1({ attribute: false }),
     __metadata("design:type", Object)

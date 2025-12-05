@@ -1226,4 +1226,46 @@ export const growspaceCardStyles = css`
             justify-content: center;
         }
       }
+
+      /* Toast Notification */
+      .toast-notification {
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #323232;
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 100;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: slideUpFade 0.3s ease-out;
+        min-width: 200px;
+        text-align: center;
+      }
+
+      .toast-notification.success {
+        background: var(--success-color, #4caf50);
+        color: #fff;
+      }
+
+      .toast-notification.error {
+        background: var(--error-color, #f44336);
+        color: #fff;
+      }
+
+      @keyframes slideUpFade {
+        from {
+          opacity: 0;
+          transform: translate(-50%, 20px);
+        }
+        to {
+          opacity: 1;
+          transform: translate(-50%, 0);
+        }
+      }
 `;

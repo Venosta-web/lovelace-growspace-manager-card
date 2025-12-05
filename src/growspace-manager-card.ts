@@ -61,6 +61,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @state() private _selectedPlants: Set<string> = new Set();
   @state() private _focusedPlantIndex: number = -1;
   @state() private _mobileEnvExpanded: boolean = false;
+  @state() private _notification: { message: string, type: 'info' | 'error' | 'success' } | null = null;
+
+  private _showToast(message: string, type: 'info' | 'error' | 'success' = 'info') {
+    this._notification = { message, type };
+    setTimeout(() => {
+      this._notification = null;
+    }, 4000);
+  }
 
 
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -523,7 +531,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   private async _confirmAddPlant() {
     if (!this._addPlantDialog || !this.selectedDevice) return;
     if (!this._addPlantDialog.strain) {
-      alert('Please enter a strain!');
+      this._showToast('Please enter a strain!', 'error');
       return;
     }
 
@@ -649,7 +657,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     } catch (err) {
       console.error("Error deleting plant:", err);
       // Ideally revert the optimistic update here, but for now just alert
-      alert("Failed to delete plant. It may reappear on refresh.");
+      this._showToast("Failed to delete plant. It may reappear on refresh.", 'error');
       this.updateGrid(); // Force refresh to sync with backend
     }
   }
@@ -665,7 +673,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     const movableStages = new Set(["mother", "flower", "dry", "cure"]);
     if (!stage || !movableStages.has(stage)) {
-      alert("Plant must be in mother or flower or dry or cure stage to move. stage is " + stage);
+      this._showToast("Plant must be in mother or flower or dry or cure stage to move. stage is " + stage, 'error');
       return;
     }
 
@@ -849,11 +857,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     try {
       const result = await this.dataService.importStrainLibrary(file, replace);
-      alert(`Import successful! ${result.imported_count || ''} strains imported.`);
+      this._showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
       await this._fetchStrainLibrary();
     } catch (err: any) {
       console.error("Import failed:", err);
-      alert(`Import failed: ${err.message}`);
+      this._showToast(`Import failed: ${err.message}`, 'error');
     }
   }
 
@@ -1092,17 +1100,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   private _handleAddGrowspaceSubmit() {
     if (!this._configDialog) return;
     const d = this._configDialog.addGrowspaceData;
-    if (!d.name) { alert('Name is required'); return; }
+    if (!d.name) { this._showToast('Name is required', 'error'); return; }
     this.dataService.addGrowspace(d)
       .then(() => { this._configDialog = null; this.requestUpdate(); })
-      .catch(e => alert(`Error: ${e.message}`));
+      .catch(e => this._showToast(`Error: ${e.message}`, 'error'));
   }
 
   private _handleEnvSubmit() {
     if (!this._configDialog) return;
     const d = this._configDialog.environmentData;
     if (!d.selectedGrowspaceId || !d.temp_sensor || !d.humidity_sensor || !d.vpd_sensor) {
-      alert('Growspace and required sensors (Temp, Hum, VPD) are mandatory');
+      this._showToast('Growspace and required sensors (Temp, Hum, VPD) are mandatory', 'error');
       return;
     }
     this.dataService.configureEnvironment({
@@ -1116,7 +1124,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       mold_threshold: d.mold_threshold
     })
       .then(() => { this._configDialog = null; this.requestUpdate(); })
-      .catch(e => alert(`Error: ${e.message}`));
+      .catch(e => this._showToast(`Error: ${e.message}`, 'error'));
   }
 
   // Grow Master Methods
@@ -1774,6 +1782,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         .growspaceEntityId=${selectedDeviceData?.overview_entity_id || ''}
         @close=${() => this._irrigationDialogOpen = false}
       ></irrigation-dialog>
+
+      ${this._notification ? html`
+        <div class="toast-notification ${this._notification.type}">
+          ${this._notification.message}
+        </div>
+      ` : ''}
     `;
   }
 }
