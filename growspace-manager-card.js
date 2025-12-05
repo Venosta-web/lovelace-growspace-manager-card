@@ -334,6 +334,61 @@ PlantUtils.stageIcons = {
     cure: mdiCannabis,
 };
 
+class GrowspaceAdapter {
+    static transformToDevices(allStates) {
+        // Identify overview sensors by their attributes
+        const overviewSensors = allStates.filter((entity) => {
+            const attrs = entity.attributes;
+            return (entity.entity_id.startsWith('sensor.') &&
+                attrs.growspace_id !== undefined &&
+                attrs.rows !== undefined &&
+                attrs.plants_per_row !== undefined &&
+                attrs.row === undefined &&
+                attrs.col === undefined);
+        });
+        // We can map directly from the identified overview sensors, as they represent the growspaces.
+        // The previous logic created a map first, but since we are iterating overviewSensors to find them again,
+        // we can just iterate them directly.
+        return overviewSensors.map(overview => {
+            const attributes = overview.attributes;
+            const growspaceId = attributes.growspace_id;
+            const name = attributes.friendly_name || `Growspace ${growspaceId}`;
+            const type = attributes.type ??
+                (name.toLowerCase().includes('dry') ? 'dry' :
+                    name.toLowerCase().includes('cure') ? 'cure' : 'normal');
+            // Reconstruct plant entities from grid
+            const plants = [];
+            const grid = attributes.grid || {};
+            Object.values(grid).forEach((slot) => {
+                if (slot) {
+                    // Create a synthetic entity ID since individual plant entities are gone
+                    // Note: The replace regexes were moved from the original code
+                    const entityId = `sensor.${slot.strain.toLowerCase().replace(/ /g, '_')}_${slot.phenotype.replace(/#/g, '').toLowerCase()}`;
+                    plants.push({
+                        entity_id: entityId,
+                        state: slot.stage || 'unknown',
+                        attributes: {
+                            ...slot,
+                            growspace_id: growspaceId,
+                            friendly_name: `${slot.strain} ${slot.phenotype}`,
+                            stage: slot.stage
+                        }
+                    });
+                }
+            });
+            return createGrowspaceDevice({
+                device_id: growspaceId,
+                overview_entity_id: overview.entity_id,
+                name,
+                plants,
+                rows: attributes.rows ?? 3,
+                plants_per_row: attributes.plants_per_row ?? 3,
+                type,
+            });
+        });
+    }
+}
+
 class DataService {
     constructor(hass) {
         this.hass = hass;
@@ -342,56 +397,7 @@ class DataService {
         if (!this.hass)
             return [];
         const allStates = Object.values(this.hass.states);
-        // Identify overview sensors by their attributes (growspace_id + grid info),
-        // and exclude plant entities (which have row/col).
-        const overviewSensors = allStates.filter((entity) => entity.entity_id.startsWith('sensor.') &&
-            entity.attributes?.growspace_id !== undefined &&
-            entity.attributes?.rows !== undefined &&
-            entity.attributes?.plants_per_row !== undefined &&
-            entity.attributes?.row === undefined &&
-            entity.attributes?.col === undefined);
-        // Initialize device groups with overview sensors (includes empty growspaces)
-        const deviceGroups = new Map();
-        overviewSensors.forEach((ov) => {
-            const gid = ov.attributes.growspace_id;
-            deviceGroups.set(gid, []);
-        });
-        // Build devices array
-        return Array.from(deviceGroups.entries()).map(([growspaceId, _]) => {
-            const overview = overviewSensors.find(ov => ov.attributes?.growspace_id === growspaceId);
-            const name = overview?.attributes?.friendly_name ||
-                `Growspace ${growspaceId}`;
-            const type = overview?.attributes?.type ??
-                (name.toLowerCase().includes('dry') ? 'dry' :
-                    name.toLowerCase().includes('cure') ? 'cure' : 'normal');
-            // Reconstruct plant entities from grid
-            const plants = [];
-            const grid = overview?.attributes?.grid || {};
-            Object.values(grid).forEach((slot) => {
-                if (slot) {
-                    // Create a synthetic entity ID since individual plant entities are gone
-                    const entityId = `sensor.${slot.strain.toLowerCase().replace(/ /g, '_')}_${slot.phenotype.replace(/#/g, '').toLowerCase()}`;
-                    plants.push({
-                        entity_id: entityId,
-                        state: slot.stage || 'unknown',
-                        attributes: {
-                            ...slot,
-                            growspace_id: growspaceId,
-                            friendly_name: `${slot.strain} ${slot.phenotype}`
-                        }
-                    });
-                }
-            });
-            return createGrowspaceDevice({
-                device_id: growspaceId,
-                overview_entity_id: overview?.entity_id,
-                name,
-                plants,
-                rows: overview?.attributes?.rows ?? 3,
-                plants_per_row: overview?.attributes?.plants_per_row ?? 3,
-                type,
-            });
-        });
+        return GrowspaceAdapter.transformToDevices(allStates);
     }
     getGrowspaceId(entity) {
         // Plant entities expose growspace_id directly
