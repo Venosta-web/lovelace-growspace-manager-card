@@ -13514,15 +13514,16 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
           <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
             <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
               
+              <div class="stat-chip mobile-env-trigger ${this._mobileEnvExpanded ? 'active' : ''}"
+                   @click=${() => this._mobileEnvExpanded = !this._mobileEnvExpanded}>
+                <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>
+                Environment
+                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-left: 4px; opacity: 0.7;">
+                  <path d="${this._mobileEnvExpanded ? mdiChevronDown : mdiChevronRight}"></path>
+                </svg>
+              </div>
+
               <div class="gs-stats-chips ${this._mobileEnvExpanded ? 'expanded' : ''}">
-                <div class="stat-chip mobile-env-trigger ${this._mobileEnvExpanded ? 'active' : ''}"
-                     @click=${() => this._mobileEnvExpanded = !this._mobileEnvExpanded}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiWeatherCloudy}"></path></svg>
-                  Environment
-                  <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-left: 4px; opacity: 0.7;">
-                    <path d="${this._mobileEnvExpanded ? mdiChevronDown : mdiChevronRight}"></path>
-                  </svg>
-                </div>
 
                 ${temp !== undefined ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('temperature') ? 'active' : ''}"
@@ -14183,12 +14184,16 @@ GrowspaceHeader.styles = i$3 `
         flex-wrap: wrap;
         mask-image: none;
         -webkit-mask-image: none;
+        padding: 0; /* Ensure no padding when collapsed */
+        margin: 0;
       }
 
       .gs-stats-chips.expanded {
         max-height: 500px;
         opacity: 1;
         overflow: visible;
+        padding: 4px 2px; /* Restore padding */
+        margin-top: 8px;
       }
 
       .stat-chip.mobile-env-trigger {
