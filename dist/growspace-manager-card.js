@@ -14059,7 +14059,6 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                 </div>` : ''}
             </div>
           </div>
-          </div>
         </div>
       </div>
     `;

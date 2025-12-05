@@ -912,7 +912,6 @@ export class GrowspaceHeader extends LitElement {
                 </div>` : ''}
             </div>
           </div>
-          </div>
         </div>
       </div>
     `;
