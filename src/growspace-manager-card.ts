@@ -886,38 +886,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   // --- Graph Linking Logic ---
-
-  private _handleChipDragStart(e: DragEvent, metric: string) {
-    e.dataTransfer?.setData("text/plain", JSON.stringify({ type: 'env-metric', metric }));
-    e.dataTransfer!.effectAllowed = "link";
-  }
-
-  private _handleChipDrop(e: DragEvent, targetMetric: string) {
-    e.preventDefault();
-    const data = e.dataTransfer?.getData("text/plain");
-    if (!data) return;
-
-    try {
-      // Handle simple string metric (from component) or JSON payload (legacy/internal)
-      let sourceMetric = data;
-      try {
-        const payload = JSON.parse(data);
-        if (payload.type === 'env-metric') {
-          sourceMetric = payload.metric;
-        }
-      } catch (e) {
-        // Not JSON, assume raw metric string
-      }
-
-      if (sourceMetric === targetMetric) return;
-
-      this._linkGraphs(sourceMetric, targetMetric);
-
-    } catch (err) {
-      console.error("Error parsing drop data", err);
-    }
-  }
-
   private _handleLinkGraphs(e: CustomEvent) {
     const { metric1, metric2 } = e.detail;
     this._linkGraphs(metric1, metric2);
@@ -1417,7 +1385,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
     if (!selectedDeviceData) return;
 
-    // Use detail directly
     const {
       strain, phenotype, row, col,
       veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start
@@ -1428,7 +1395,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       return;
     }
 
-    // ... rest of logic using these variables instead of state ...
     try {
       await this.dataService.addPlant({
         growspace_id: selectedDeviceData.device_id,
