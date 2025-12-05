@@ -17,8 +17,6 @@ import {
   mdiAirHumidifier,
   mdiLink,
   mdiFan,
-  mdiChevronDown,
-  mdiChevronRight,
   mdiLightbulbOn,
   mdiLightbulbOff,
   mdiMagnify,

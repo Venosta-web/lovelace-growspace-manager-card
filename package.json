@@ -1,6 +1,6 @@
 {
   "name": "lovelace-growspace-manager-card",
-  "version": "1.0.1-alpha.1",
+  "version": "1.0.20-alpha.1",
   "description": "",
   "main": "rollup.config.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "test:coverage:full": "node scripts/run-coverage.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Venosta-web",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
