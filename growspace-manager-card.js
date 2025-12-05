@@ -13631,6 +13631,11 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
         this._menuOpen = false;
         this.linkedGraphGroups = [];
         this._draggedMetric = null;
+        this._mobileLink = false;
+        this._isCompact = false; // Using _isCompact or similar for mobile check, but code uses media queries.
+        // I will use a direct checks or a dedicated state for reactivity.
+        this._isMobileCheck = false;
+        this._checkMobileBound = () => this._checkMobile();
     }
     _handleDeviceChange(e) {
         const target = e.target;
@@ -13681,6 +13686,21 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
             bubbles: true,
             composed: true
         }));
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        this._checkMobile();
+        window.addEventListener('resize', this._checkMobileBound);
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        window.removeEventListener('resize', this._checkMobileBound);
+    }
+    _checkMobile() {
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        if (this._isMobileCheck !== isMobile) {
+            this._isMobileCheck = isMobile;
+        }
     }
     _triggerAction(action) {
         this.dispatchEvent(new CustomEvent('trigger-action', {
@@ -13786,11 +13806,16 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
           <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
             <div class="header-controls">
               
-              <div class="gs-stats-chips">
+              <div class="mobile-link-btn ${this._mobileLink ? 'active' : ''}"
+                   @click=${() => this._mobileLink = !this._mobileLink}>
+                 <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
+              </div>
+
+              <div class="gs-stats-chips ${this._mobileLink ? 'mobile-link-active' : ''}">
 
                 ${temp !== undefined ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('temperature') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'temperature')}
                        @drop=${(e) => this._handleChipDrop(e, 'temperature')}
                        @dragover=${(e) => e.preventDefault()}
@@ -13818,7 +13843,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
                 ${hum !== undefined ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('humidity') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'humidity')}
                        @drop=${(e) => this._handleChipDrop(e, 'humidity')}
                        @dragover=${(e) => e.preventDefault()}
@@ -13846,7 +13871,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
                 ${vpd !== undefined ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('vpd') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'vpd')}
                        @drop=${(e) => this._handleChipDrop(e, 'vpd')}
                        @dragover=${(e) => e.preventDefault()}
@@ -13874,7 +13899,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
                 ${co2 !== undefined ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('co2') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'co2')}
                        @drop=${(e) => this._handleChipDrop(e, 'co2')}
                        @dragover=${(e) => e.preventDefault()}
@@ -13902,7 +13927,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
                 ${hasLightSensor ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('light') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'light')}
                        @drop=${(e) => this._handleChipDrop(e, 'light')}
                        @dragover=${(e) => e.preventDefault()}
@@ -13931,7 +13956,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
                 
                 ${getValue(overviewEntity, 'soil_moisture_value') !== undefined ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('soil_moisture') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'soil_moisture')}
                        @drop=${(e) => this._handleChipDrop(e, 'soil_moisture')}
                        @dragover=${(e) => e.preventDefault()}
@@ -13959,7 +13984,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
                 ${nextIrrigation ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('irrigation') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'irrigation')}
                        @drop=${(e) => this._handleChipDrop(e, 'irrigation')}
                        @dragover=${(e) => e.preventDefault()}
@@ -13988,7 +14013,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
                 ${nextDrain ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('drain') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'drain')}
                        @drop=${(e) => this._handleChipDrop(e, 'drain')}
                        @dragover=${(e) => e.preventDefault()}
@@ -14017,7 +14042,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
                 ${envEntity ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('optimal') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'optimal')}
                        @drop=${(e) => this._handleChipDrop(e, 'optimal')}
                        @dragover=${(e) => e.preventDefault()}
@@ -14087,10 +14112,10 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
               </div>
             </div>
 
-            <div class="gs-device-chips">
+            <div class="gs-device-chips ${this._mobileLink ? 'mobile-link-active' : ''}">
               ${overviewEntity?.attributes?.exhaust_entity ? x `
                 <div class="stat-chip ${this.activeEnvGraphs.has('exhaust') ? 'active' : ''}"
-                     draggable="true"
+                     draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                      @dragstart=${(e) => this._handleChipDragStart(e, 'exhaust')}
                      @drop=${(e) => this._handleChipDrop(e, 'exhaust')}
                      @dragover=${(e) => e.preventDefault()}
@@ -14118,7 +14143,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
               ${overviewEntity?.attributes?.humidifier_entity ? x `
                 <div class="stat-chip ${this.activeEnvGraphs.has('humidifier') ? 'active' : ''}"
-                     draggable="true"
+                     draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                      @dragstart=${(e) => this._handleChipDragStart(e, 'humidifier')}
                      @drop=${(e) => this._handleChipDrop(e, 'humidifier')}
                      @dragover=${(e) => e.preventDefault()}
@@ -14146,7 +14171,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i {
 
               ${overviewEntity?.attributes?.dehumidifier_entity ? x `
                 <div class="stat-chip ${this.activeEnvGraphs.has('dehumidifier') ? 'active' : ''}"
-                     draggable="true"
+                     draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                      @dragstart=${(e) => this._handleChipDragStart(e, 'dehumidifier')}
                      @drop=${(e) => this._handleChipDrop(e, 'dehumidifier')}
                      @dragover=${(e) => e.preventDefault()}
@@ -14496,7 +14521,49 @@ GrowspaceHeader.styles = i$3 `
       .gs-device-chips::-webkit-scrollbar {
         display: none;
       }
-    }
+      
+      .mobile-link-btn {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      
+      .mobile-link-btn.active {
+        background: var(--primary-color, #03a9f4);
+        border-color: var(--primary-color, #03a9f4);
+        box-shadow: 0 0 12px rgba(3, 169, 244, 0.4);
+      }
+      
+      .mobile-link-btn svg {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+      }
+
+      @media (max-width: 768px) {
+        .mobile-link-btn {
+          display: flex;
+          align-self: flex-end;
+          margin-bottom: 8px; /* Gap logic */
+        }
+        
+        .gs-stats-chips.mobile-link-active,
+        .gs-device-chips.mobile-link-active {
+           overflow-x: visible;
+           flex-wrap: wrap;
+           mask-image: none;
+           -webkit-mask-image: none;
+           justify-content: flex-end;
+        }
+      }
   `;
 __decorate([
     n$1({ attribute: false }),
@@ -14546,6 +14613,18 @@ __decorate([
     r(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_draggedMetric", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "_mobileLink", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "_isCompact", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "_isMobileCheck", void 0);
 GrowspaceHeader = __decorate([
     t('growspace-header')
 ], GrowspaceHeader);

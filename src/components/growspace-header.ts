@@ -362,7 +362,49 @@ export class GrowspaceHeader extends LitElement {
       .gs-device-chips::-webkit-scrollbar {
         display: none;
       }
-    }
+      
+      .mobile-link-btn {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      
+      .mobile-link-btn.active {
+        background: var(--primary-color, #03a9f4);
+        border-color: var(--primary-color, #03a9f4);
+        box-shadow: 0 0 12px rgba(3, 169, 244, 0.4);
+      }
+      
+      .mobile-link-btn svg {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+      }
+
+      @media (max-width: 768px) {
+        .mobile-link-btn {
+          display: flex;
+          align-self: flex-end;
+          margin-bottom: 8px; /* Gap logic */
+        }
+        
+        .gs-stats-chips.mobile-link-active,
+        .gs-device-chips.mobile-link-active {
+           overflow-x: visible;
+           flex-wrap: wrap;
+           mask-image: none;
+           -webkit-mask-image: none;
+           justify-content: flex-end;
+        }
+      }
   `;
 
   private _handleDeviceChange(e: Event) {
@@ -421,6 +463,31 @@ export class GrowspaceHeader extends LitElement {
       bubbles: true,
       composed: true
     }));
+  }
+
+  @state() private _mobileLink = false;
+  @state() private _isCompact = false; // Using _isCompact or similar for mobile check, but code uses media queries.
+  // I will use a direct checks or a dedicated state for reactivity.
+  @state() private _isMobileCheck = false;
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._checkMobile();
+    window.addEventListener('resize', this._checkMobileBound);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener('resize', this._checkMobileBound);
+  }
+
+  private _checkMobileBound = () => this._checkMobile();
+
+  private _checkMobile() {
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    if (this._isMobileCheck !== isMobile) {
+      this._isMobileCheck = isMobile;
+    }
   }
 
   private _triggerAction(action: string) {
@@ -537,11 +604,16 @@ export class GrowspaceHeader extends LitElement {
           <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
             <div class="header-controls">
               
-              <div class="gs-stats-chips">
+              <div class="mobile-link-btn ${this._mobileLink ? 'active' : ''}"
+                   @click=${() => this._mobileLink = !this._mobileLink}>
+                 <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
+              </div>
+
+              <div class="gs-stats-chips ${this._mobileLink ? 'mobile-link-active' : ''}">
 
                 ${temp !== undefined ? html`
                   <div class="stat-chip ${this.activeEnvGraphs.has('temperature') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'temperature')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'temperature')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
@@ -568,7 +640,7 @@ export class GrowspaceHeader extends LitElement {
 
                 ${hum !== undefined ? html`
                   <div class="stat-chip ${this.activeEnvGraphs.has('humidity') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'humidity')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'humidity')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
@@ -595,7 +667,7 @@ export class GrowspaceHeader extends LitElement {
 
                 ${vpd !== undefined ? html`
                   <div class="stat-chip ${this.activeEnvGraphs.has('vpd') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'vpd')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'vpd')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
@@ -622,7 +694,7 @@ export class GrowspaceHeader extends LitElement {
 
                 ${co2 !== undefined ? html`
                   <div class="stat-chip ${this.activeEnvGraphs.has('co2') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'co2')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'co2')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
@@ -649,7 +721,7 @@ export class GrowspaceHeader extends LitElement {
 
                 ${hasLightSensor ? html`
                   <div class="stat-chip ${this.activeEnvGraphs.has('light') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'light')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'light')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
@@ -677,7 +749,7 @@ export class GrowspaceHeader extends LitElement {
                 
                 ${getValue(overviewEntity, 'soil_moisture_value') !== undefined ? html`
                   <div class="stat-chip ${this.activeEnvGraphs.has('soil_moisture') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'soil_moisture')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'soil_moisture')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
@@ -704,7 +776,7 @@ export class GrowspaceHeader extends LitElement {
 
                 ${nextIrrigation ? html`
                   <div class="stat-chip ${this.activeEnvGraphs.has('irrigation') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'irrigation')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'irrigation')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
@@ -732,7 +804,7 @@ export class GrowspaceHeader extends LitElement {
 
                 ${nextDrain ? html`
                   <div class="stat-chip ${this.activeEnvGraphs.has('drain') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'drain')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'drain')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
@@ -760,7 +832,7 @@ export class GrowspaceHeader extends LitElement {
 
                 ${envEntity ? html`
                   <div class="stat-chip ${this.activeEnvGraphs.has('optimal') ? 'active' : ''}"
-                       draggable="true"
+                       draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'optimal')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'optimal')}
                        @dragover=${(e: DragEvent) => e.preventDefault()}
@@ -829,10 +901,10 @@ export class GrowspaceHeader extends LitElement {
               </div>
             </div>
 
-            <div class="gs-device-chips">
+            <div class="gs-device-chips ${this._mobileLink ? 'mobile-link-active' : ''}">
               ${overviewEntity?.attributes?.exhaust_entity ? html`
                 <div class="stat-chip ${this.activeEnvGraphs.has('exhaust') ? 'active' : ''}"
-                     draggable="true"
+                     draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                      @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'exhaust')}
                      @drop=${(e: DragEvent) => this._handleChipDrop(e, 'exhaust')}
                      @dragover=${(e: DragEvent) => e.preventDefault()}
@@ -860,7 +932,7 @@ export class GrowspaceHeader extends LitElement {
 
               ${overviewEntity?.attributes?.humidifier_entity ? html`
                 <div class="stat-chip ${this.activeEnvGraphs.has('humidifier') ? 'active' : ''}"
-                     draggable="true"
+                     draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                      @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'humidifier')}
                      @drop=${(e: DragEvent) => this._handleChipDrop(e, 'humidifier')}
                      @dragover=${(e: DragEvent) => e.preventDefault()}
@@ -887,7 +959,7 @@ export class GrowspaceHeader extends LitElement {
 
               ${overviewEntity?.attributes?.dehumidifier_entity ? html`
                 <div class="stat-chip ${this.activeEnvGraphs.has('dehumidifier') ? 'active' : ''}"
-                     draggable="true"
+                     draggable="${(this._isMobileCheck ? this._mobileLink : true).toString()}"
                      @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'dehumidifier')}
                      @drop=${(e: DragEvent) => this._handleChipDrop(e, 'dehumidifier')}
                      @dragover=${(e: DragEvent) => e.preventDefault()}
