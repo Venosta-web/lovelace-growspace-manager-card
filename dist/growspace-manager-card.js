@@ -14549,7 +14549,7 @@ GrowspaceHeader.styles = i$3 `
       }
       
       .mobile-link-btn {
-        display: none;
+        display: flex;
         align-items: center;
         justify-content: center;
         width: 40px;
@@ -14560,6 +14560,8 @@ GrowspaceHeader.styles = i$3 `
         color: #fff;
         cursor: pointer;
         transition: all 0.2s ease;
+        align-self: flex-end;
+        margin-bottom: 8px; /* Gap logic */
       }
       
       .mobile-link-btn.active {
@@ -14573,13 +14575,6 @@ GrowspaceHeader.styles = i$3 `
         height: 24px;
         fill: currentColor;
       }
-
-      
-      .mobile-link-btn {
-        display: flex;
-        align-self: flex-end;
-        margin-bottom: 8px; /* Gap logic */
-      }
         
       .gs-stats-chips.mobile-link-active,
       .gs-device-chips.mobile-link-active {
@@ -14589,6 +14584,7 @@ GrowspaceHeader.styles = i$3 `
         -webkit-mask-image: none;
         justify-content: flex-end;
       }
+    }
   `;
 __decorate([
     n$1({ attribute: false }),
