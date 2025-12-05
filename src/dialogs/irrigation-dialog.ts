@@ -191,42 +191,90 @@ export class IrrigationDialog extends LitElement {
         });
     }
 
-    private _saveIrrigationPumpSettings() {
-        if (!this.growspaceId) return;
+    private async _saveSettings() {
+        if (!this.growspaceId || !this._dataService) return;
 
-        this.hass.callService('growspace_manager', 'configure_irrigation', {
-            growspace_id: this.growspaceId,
-            irrigation_pump: this._irrigation_pump_entity,
-            drain_pump: this._drain_pump_entity,
-            irrigation_duration: this._irrigation_duration,
-            drain_duration: this._drain_duration,
-            irrigation_times: this._irrigation_times.map(t => `${t.time}|${t.duration || this._irrigation_duration}`),
-            drain_times: this._drain_times.map(t => `${t.time}|${t.duration || this._drain_duration}`)
-        });
+        try {
+            await this._dataService.setIrrigationSettings({
+                growspace_id: this.growspaceId,
+                irrigation_pump_entity: this._irrigation_pump_entity,
+                drain_pump_entity: this._drain_pump_entity,
+                irrigation_duration: this._irrigation_duration,
+                drain_duration: this._drain_duration
+            });
+        } catch (e) {
+            console.error('Failed to save settings:', e);
+        }
     }
 
-    private _addIrrigationTime(time: string, duration?: number) {
-        const newTime: IrrigationTime = { time, duration: duration || this._irrigation_duration };
-        this._irrigation_times = [...this._irrigation_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
-        this._adding_irrigation_time = undefined;
-        this._saveIrrigationPumpSettings();
+    private async _addIrrigationTime(time: string, duration?: number) {
+        if (!this.growspaceId || !this._dataService) return;
+
+        try {
+            await this._dataService.addIrrigationTime({
+                growspace_id: this.growspaceId,
+                time,
+                duration: duration || this._irrigation_duration
+            });
+
+            // Optimistic update
+            const newTime: IrrigationTime = { time, duration: duration || this._irrigation_duration };
+            this._irrigation_times = [...this._irrigation_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
+            this._adding_irrigation_time = undefined;
+        } catch (e) {
+            console.error('Failed to add irrigation time:', e);
+        }
     }
 
-    private _removeIrrigationTime(time: string) {
-        this._irrigation_times = this._irrigation_times.filter(t => t.time !== time);
-        this._saveIrrigationPumpSettings();
+    private async _removeIrrigationTime(time: string) {
+        if (!this.growspaceId || !this._dataService) return;
+
+        try {
+            await this._dataService.removeIrrigationTime({
+                growspace_id: this.growspaceId,
+                time
+            });
+
+            // Optimistic update
+            this._irrigation_times = this._irrigation_times.filter(t => t.time !== time);
+        } catch (e) {
+            console.error('Failed to remove irrigation time:', e);
+        }
     }
 
-    private _addDrainTime(time: string, duration?: number) {
-        const newTime: IrrigationTime = { time, duration: duration || this._drain_duration };
-        this._drain_times = [...this._drain_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
-        this._adding_drain_time = undefined;
-        this._saveIrrigationPumpSettings();
+    private async _addDrainTime(time: string, duration?: number) {
+        if (!this.growspaceId || !this._dataService) return;
+
+        try {
+            await this._dataService.addDrainTime({
+                growspace_id: this.growspaceId,
+                time,
+                duration: duration || this._drain_duration
+            });
+
+            // Optimistic update
+            const newTime: IrrigationTime = { time, duration: duration || this._drain_duration };
+            this._drain_times = [...this._drain_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
+            this._adding_drain_time = undefined;
+        } catch (e) {
+            console.error('Failed to add drain time:', e);
+        }
     }
 
-    private _removeDrainTime(time: string) {
-        this._drain_times = this._drain_times.filter(t => t.time !== time);
-        this._saveIrrigationPumpSettings();
+    private async _removeDrainTime(time: string) {
+        if (!this.growspaceId || !this._dataService) return;
+
+        try {
+            await this._dataService.removeDrainTime({
+                growspace_id: this.growspaceId,
+                time
+            });
+
+            // Optimistic update
+            this._drain_times = this._drain_times.filter(t => t.time !== time);
+        } catch (e) {
+            console.error('Failed to remove drain time:', e);
+        }
     }
 
     private _startAddingIrrigationTime(x: number, width: number) {
