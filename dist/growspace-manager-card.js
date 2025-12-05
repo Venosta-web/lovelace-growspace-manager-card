@@ -11511,7 +11511,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
       ` : E}
 
       <!-- Mobile FAB -->
-      <button class="fab-btn mobile-only" @click=${() => this._startEdit()}>
+      <button class="fab-btn" @click=${() => this._startEdit()}>
         <svg style="fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
       </button>
 
@@ -12539,7 +12539,7 @@ StrainLibraryDialog.styles = i$4 `
         width: 95vw;
         height: 90vh;
         max-width: 95vw;
-        position: relative; /* For absolute positioning of FAB/Menu */
+        position: relative;
       }
 
       .sd-header {
@@ -12601,7 +12601,7 @@ StrainLibraryDialog.styles = i$4 `
         cursor: pointer;
         transition: all 0.2s;
         z-index: 20;
-        display: none; /* Hidden by default (desktop) */
+        display: none;
       }
       
       /* Mobile Menu Button */
@@ -12612,9 +12612,12 @@ StrainLibraryDialog.styles = i$4 `
         padding: 8px;
         cursor: pointer;
         border-radius: 50%;
-        display: none; /* Hidden by default */
+        display: none; 
       }
-      
+      button.fab-btn,
+      button.menu-btn {
+        display: none;
+      }
       .header-actions {
         display: flex;
         align-items: center;

@@ -589,7 +589,7 @@ export class StrainLibraryDialog extends LitElement {
         width: 95vw;
         height: 90vh;
         max-width: 95vw;
-        position: relative; /* For absolute positioning of FAB/Menu */
+        position: relative;
       }
 
       .sd-header {
@@ -651,7 +651,7 @@ export class StrainLibraryDialog extends LitElement {
         cursor: pointer;
         transition: all 0.2s;
         z-index: 20;
-        display: none; /* Hidden by default (desktop) */
+        display: none;
       }
       
       /* Mobile Menu Button */
@@ -662,9 +662,12 @@ export class StrainLibraryDialog extends LitElement {
         padding: 8px;
         cursor: pointer;
         border-radius: 50%;
-        display: none; /* Hidden by default */
+        display: none; 
       }
-      
+      button.fab-btn,
+      button.menu-btn {
+        display: none;
+      }
       .header-actions {
         display: flex;
         align-items: center;
@@ -912,7 +915,7 @@ export class StrainLibraryDialog extends LitElement {
       ` : nothing}
 
       <!-- Mobile FAB -->
-      <button class="fab-btn mobile-only" @click=${() => this._startEdit()}>
+      <button class="fab-btn" @click=${() => this._startEdit()}>
         <svg style="fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
       </button>
 
