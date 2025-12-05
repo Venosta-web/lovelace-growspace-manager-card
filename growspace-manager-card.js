@@ -14491,8 +14491,8 @@ GrowspaceHeader.styles = i$3 `
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 40px;
-      height: 40px;
+      width: 16px;
+      height: 16px;
       margin-left: -8px;
       margin-right: -8px;
     }
@@ -14560,7 +14560,10 @@ GrowspaceHeader.styles = i$3 `
       .gs-device-chips::-webkit-scrollbar {
         display: none;
       }
-      
+      .link-icon {
+        width: 24px;
+        height: 24px;
+      }
       /* Mobile Link Button */
       .mobile-link-btn {
         display: flex;
