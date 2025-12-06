@@ -10528,6 +10528,15 @@ const dialogStyles = i$4 `
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   }
 
+  /* Restored from 1.0.24.3.0 */
+  .dialog-content-grid {
+    padding: 24px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
   .dialog-header {
     display: flex;
     align-items: center;
@@ -10696,6 +10705,22 @@ const dialogStyles = i$4 `
     }
     .dialog-header {
       padding: 12px 16px;
+    }
+    
+    /* Restored responsive rules */
+    .dialog-content-grid {
+      flex: 1;
+      min-height: 0;
+      padding: 8px;
+    }
+    .detail-card {
+      overflow: unset;
+    }
+    .dialog-header .md3-button.text {
+      flex: 0;
+    }
+    .detail-card .md3-button {
+      flex: 1 1 1;
     }
   }
 `;
@@ -11070,7 +11095,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
             </button>
           </div>
 
-          <div class="overview-grid">
+          <div class="dialog-content-grid">
              <!-- IDENTITY & LOCATION CARD -->
              <div class="detail-card">
                 <h3>Identity & Location</h3>

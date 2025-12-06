@@ -11,7 +11,7 @@
     "test:coverage:full": "node scripts/run-coverage.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Venosta-web",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {

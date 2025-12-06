@@ -283,7 +283,7 @@ export class PlantOverviewDialog extends LitElement {
             </button>
           </div>
 
-          <div class="overview-grid">
+          <div class="dialog-content-grid">
              <!-- IDENTITY & LOCATION CARD -->
              <div class="detail-card">
                 <h3>Identity & Location</h3>
