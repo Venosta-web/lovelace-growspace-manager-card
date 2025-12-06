@@ -198,7 +198,7 @@ export class GrowspaceLogbook extends LitElement {
               </div>
               
               ${event.category === 'alert' ? html`
-                  <div class="event-probability" style="color: ${this._getSeverityColor(event.severity)}">
+                  <div class="event-probability" style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}">
                     ${this._formatProb(event.severity)}
                   </div>
                 ` : html`
@@ -212,7 +212,14 @@ export class GrowspaceLogbook extends LitElement {
       </div>
     `;
   }
-  private _getSeverityColor(severity: number): string {
+  private _getSeverityColor(severity: number, sensorType?: string): string {
+    if (sensorType === 'optimal') {
+      if (severity >= 0.9) return 'var(--success-color, #4CAF50)';
+      if (severity >= 0.75) return 'var(--warning-color)';
+      return 'var(--error-color)';
+    }
+
+    // Default logic (High severity = Bad)
     if (severity >= 0.9) return 'var(--error-color)';
     if (severity >= 0.75) return 'var(--warning-color)';
     return 'var(--primary-text-color)';
