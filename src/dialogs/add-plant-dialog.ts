@@ -92,7 +92,6 @@ export class AddPlantDialog extends LitElement {
       border-radius: 12px;
       padding: 16px;
       border: 1px solid rgba(255, 255, 255, 0.05);
-      overflow: hidden;
       max-width: 100%;
       box-sizing: border-box;
     }
@@ -117,10 +116,17 @@ export class AddPlantDialog extends LitElement {
     }
     
     @media (max-width: 450px) {
+      .overview-grid {
+        flex: 1;
+        min-height: 0;
+      }
       .button-group {
         justify-content: center;
       }
-      .md3-button {
+      .detail-card .md3-button {
+        flex: 1 1 1;
+      }
+      .button-group .md3-button {
         flex: 1 1 auto;
         min-width: 100px;
       }
