@@ -66,7 +66,6 @@ export const dialogStyles = css`
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 12px;
     padding: 16px;
-    overflow: hidden;
     max-width: 100%;
     box-sizing: border-box;
   }
@@ -200,9 +199,6 @@ export const dialogStyles = css`
       flex: 1;
       min-height: 0;
       padding: 8px;
-    }
-    .detail-card {
-      overflow: unset;
     }
     .dialog-header .md3-button.text {
       flex: 0;
