@@ -11787,33 +11787,27 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
               `}
             </div>
 
-            <md3-text-input 
-              label="Strain Name *" 
-              .value=${s.strain || ''}
-              list="strain-suggestions"
-              @change=${(e) => this._handleEditorChange('strain', e.detail)}>
-            </md3-text-input>
+            <div class="sd-form-group">
+              <label class="sd-label">Strain Name *</label>
+              <input type="text" class="sd-input" list="strain-suggestions" .value=${s.strain || ''} @input=${(e) => this._handleEditorChange('strain', e.target.value)} />
+            </div>
 
-            <md3-text-input 
-              label="Phenotype"
-              placeholder="e.g. #1 (Optional)" 
-              .value=${s.phenotype || ''} 
-              @change=${(e) => this._handleEditorChange('phenotype', e.detail)}>
-            </md3-text-input>
+            <div class="sd-form-group">
+              <label class="sd-label">Phenotype</label>
+              <input type="text" class="sd-input" placeholder="e.g. #1 (Optional)" .value=${s.phenotype || ''} @input=${(e) => this._handleEditorChange('phenotype', e.target.value)} />
+            </div>
 
-            <md3-text-input 
-              label="Breeder/Seedbank"
-              list="breeder-suggestions"
-              .value=${s.breeder || ''} 
-              @change=${(e) => this._handleEditorChange('breeder', e.detail)}>
-            </md3-text-input>
+            <div class="sd-form-group">
+              <label class="sd-label">Breeder/Seedbank</label>
+              <input type="text" class="sd-input" list="breeder-suggestions" .value=${s.breeder || ''} @input=${(e) => this._handleEditorChange('breeder', e.target.value)} />
+            </div>
             
           </div>
 
           <!-- RIGHT COL: GENETICS -->
           <div class="editor-col">
-            <div style="margin-bottom: 20px;">
-              <label class="md3-label" style="display:block; margin-bottom:8px; color:var(--secondary-text-color);">Type *</label>
+            <div class="sd-form-group">
+              <label class="sd-label">Type *</label>
               <div class="type-selector-grid">
                 ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map(t => {
             let icon = mdiLeaf;
@@ -11894,31 +11888,21 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
               </div>
             ` : E}
 
-            <div style="display:flex; gap:16px; margin-bottom: 20px;">
-                <div style="flex:1">
-                    <md3-number-input 
-                        label="Min Flowering Days" 
-                        .value=${s.flowering_days_min || ''} 
-                         @change=${(e) => this._handleEditorChange('flowering_days_min', e.detail)}>
-                    </md3-number-input>
-                </div>
-                <div style="flex:1">
-                    <md3-number-input 
-                        label="Max Flowering Days" 
-                        .value=${s.flowering_days_max || ''} 
-                         @change=${(e) => this._handleEditorChange('flowering_days_max', e.detail)}>
-                    </md3-number-input>
-                </div>
+            <div class="sd-form-group">
+              <label class="sd-label">Flowering Time (Days)</label>
+              <div style="display:flex; gap:16px;">
+                <input type="number" class="sd-input" placeholder="Min" .value=${s.flowering_days_min || ''} @input=${(e) => this._handleEditorChange('flowering_days_min', e.target.value)} />
+                <input type="number" class="sd-input" placeholder="Max" .value=${s.flowering_days_max || ''} @input=${(e) => this._handleEditorChange('flowering_days_max', e.target.value)} />
+              </div>
             </div>
 
-            <md3-text-input 
-                label="Lineage" 
-                .value=${s.lineage || ''} 
-                @change=${(e) => this._handleEditorChange('lineage', e.detail)}>
-            </md3-text-input>
+            <div class="sd-form-group">
+              <label class="sd-label">Lineage</label>
+              <input type="text" class="sd-input" .value=${s.lineage || ''} @input=${(e) => this._handleEditorChange('lineage', e.target.value)} />
+            </div>
 
-            <div style="margin-bottom: 20px;">
-              <label class="md3-label" style="display:block; margin-bottom:8px; color:var(--secondary-text-color);">Sex</label>
+            <div class="sd-form-group">
+              <label class="sd-label">Sex</label>
               <div style="display:flex; gap:20px; padding: 8px 0;">
                 ${['Feminized', 'Regular'].map(sex => x `
                   <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:white;">
@@ -11932,8 +11916,8 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
               </div>
             </div>
 
-            <div style="margin-bottom: 20px;">
-              <label class="md3-label" style="display:block; margin-bottom:8px; color:var(--secondary-text-color);">Description</label>
+            <div class="sd-form-group">
+              <label class="sd-label">Description</label>
               <textarea class="sd-textarea" 
                 .value=${s.description || ''} 
                 @input=${(e) => this._handleEditorChange('description', e.target.value)}
@@ -12288,6 +12272,37 @@ StrainLibraryDialog.styles = [
         background: rgba(255,255,255,0.08);
     }
     
+    /* FORMS */
+    .sd-form-group {
+      margin-bottom: 20px;
+    }
+    .sd-label {
+      display: block;
+      color: var(--secondary-text-color);
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .sd-input, .sd-textarea, .sd-select {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    .sd-input:focus, .sd-textarea:focus, .sd-select:focus {
+      border-color: var(--accent-green);
+    }
+    .sd-textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
     /* EDITOR LAYOUT */
     .editor-layout {
         display: grid;
