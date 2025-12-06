@@ -1,5 +1,5 @@
 import { HomeAssistant } from "custom-card-helpers";
-import { BayesianEvent } from "../types";
+import { GrowspaceEvent } from "../types";
 
 export class GrowspaceLogbookController {
     private hass: HomeAssistant;
@@ -8,14 +8,14 @@ export class GrowspaceLogbookController {
         this.hass = hass;
     }
 
-    async fetchEventLog(growspaceId: string): Promise<BayesianEvent[]> {
+    async fetchEventLog(growspaceId: string): Promise<GrowspaceEvent[]> {
         if (!this.hass) {
             console.warn("Home Assistant instance not available");
             return [];
         }
 
         try {
-            const response = await this.hass.callWS<Record<string, BayesianEvent[]>>({
+            const response = await this.hass.callWS<Record<string, GrowspaceEvent[]>>({
                 type: "growspace_manager/get_log",
                 growspace_id: growspaceId,
             });
