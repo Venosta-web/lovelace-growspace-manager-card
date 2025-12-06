@@ -10973,7 +10973,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
         this.open = false;
         this.growspaceOptions = {};
         this.editedAttributes = {};
-        this.isEditing = false;
+        this.isEditing = true;
         this.showAllDates = false;
         this.cloneTargetId = '';
     }

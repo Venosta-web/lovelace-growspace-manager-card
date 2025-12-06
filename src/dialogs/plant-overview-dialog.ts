@@ -23,7 +23,7 @@ export class PlantOverviewDialog extends LitElement {
   @property({ type: Object }) growspaceOptions: Record<string, string> = {};
 
   @state() private editedAttributes: PlantOverviewEditedAttributes = {};
-  @state() private isEditing = false;
+  @state() private isEditing = true;
   @state() private showAllDates = false;
   @state() private cloneTargetId = '';
 
