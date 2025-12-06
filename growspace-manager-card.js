@@ -11053,16 +11053,20 @@ PlantOverviewDialog.styles = i$4 `
       min-width: 0; /* Critical for flex items to shrink below minimum content size */
     }
 
-    @media (max-width: 600px) {
+    @media (max-width: 450px) {
       .overview-grid {
-        grid-template-columns: 1fr;
-        padding: 16px;
+        flex: 1;
+        min-height: 0;
       }
-      .dialog-header {
-        padding: 12px 16px;
+      .button-group {
+        justify-content: center;
       }
-      .detail-card {
-        padding: 12px;
+      .detail-card .md3-button {
+        flex: 1 1 1;
+      }
+      .button-group .md3-button {
+        flex: 1 1 auto;
+        min-width: 100px;
       }
     }
   `;
