@@ -11043,19 +11043,21 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
     _renderPlantStats(plant) {
         if (!plant.attributes)
             return E;
-        const age = PlantUtils.calculatePlantAge(plant);
+        const stats = [
+            { label: 'Vegetative Days', value: plant.attributes.veg_days, unit: 'days' },
+            { label: 'Flowering Days', value: plant.attributes.flower_days, unit: 'days' },
+            { label: 'Mother Days', value: plant.attributes.mom_days, unit: 'days' },
+            { label: 'Clone Days', value: plant.attributes.clone_days, unit: 'days' },
+            { label: 'Drying Days', value: plant.attributes.dry_days, unit: 'days' },
+            { label: 'Curing Days', value: plant.attributes.cure_days, unit: 'days' },
+        ].filter(s => s.value !== undefined && s.value !== null);
+        if (stats.length === 0)
+            return E;
         return x `
         <div class="detail-card">
-            <h3>Statistics</h3>
+            <h3>Days in Stage</h3>
             <div class="stat-grid">
-               ${this._renderStatItem('Age', age, 'days')}
-               ${this._renderStatItem('Height', plant.attributes.height, 'cm')}
-               ${this._renderStatItem('PPFD', plant.attributes.ppfd, 'µmol')}
-               ${this._renderStatItem('DLI', plant.attributes.dli, 'mol/d')}
-               ${this._renderStatItem('EC', plant.attributes.ec, 'mS/cm')}
-               ${this._renderStatItem('pH', plant.attributes.ph, '')}
-               ${this._renderStatItem('Temp', plant.attributes.temperature, '°C')}
-               ${this._renderStatItem('Hum', plant.attributes.humidity, '%')}
+               ${stats.map(s => this._renderStatItem(s.label, s.value, s.unit))}
             </div>
         </div>
       `;
@@ -11094,7 +11096,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
             </button>
           </div>
 
-          <div class="dialog-content-grid">
+          <div class="overview-grid">
              <!-- IDENTITY & LOCATION CARD -->
              <div class="detail-card">
                 <h3>Identity & Location</h3>
@@ -11122,10 +11124,9 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
                    </div>
                 `}
              </div>
-             
              <!-- STATS CARD -->
              ${this._renderPlantStats(this.plant)}
-
+             
              <!-- TIMELINE CARD -->
              <div class="detail-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -11164,6 +11165,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
                    ` : E}
                 `}
              </div>
+            
           </div>
 
           <!-- ACTION BUTTONS -->
@@ -11247,11 +11249,11 @@ PlantOverviewDialog.styles = [
       }
       
       .overview-grid {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 24px;
         padding: 24px;
         overflow-y: auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
       }
 
       /* Timeline Styles */
