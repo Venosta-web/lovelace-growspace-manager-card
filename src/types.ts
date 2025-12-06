@@ -182,4 +182,14 @@ export interface IrrigationTime {
   duration?: number;
 }
 
+export interface BayesianEvent {
+  sensor_type: string;
+  growspace_id: string;
+  start_time: string; // ISO string
+  end_time: string;   // ISO string
+  duration_sec: number;
+  max_probability: number;
+  reasons: string[];
+}
+
 
