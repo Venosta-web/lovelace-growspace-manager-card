@@ -6,7 +6,7 @@ import {
   mdiDelete, mdiCannabis, mdiArrowRight
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { PlantEntity, PlantOverviewEditedAttributes, IrrigationTime } from '../types';
+import { PlantEntity, PlantOverviewEditedAttributes, PlantOverviewDialogState } from '../types';
 import { PlantUtils } from '../utils';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/md3-text-input';
@@ -18,6 +18,7 @@ import '../components/ui/md3-date-input';
 export class PlantOverviewDialog extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
   @property({ type: Boolean, reflect: true }) open = false;
+  @property({ attribute: false }) dialog?: PlantOverviewDialogState;
   @property({ type: Object }) plant?: PlantEntity;
   @property({ type: Object }) growspaceOptions: Record<string, string> = {};
 
@@ -25,6 +26,25 @@ export class PlantOverviewDialog extends LitElement {
   @state() private isEditing = false;
   @state() private showAllDates = false;
   @state() private cloneTargetId = '';
+
+  willUpdate(changedProps: Map<string, any>) {
+    if (changedProps.has('dialog') && this.dialog) {
+      this.plant = this.dialog.plant;
+      this.editedAttributes = this.dialog.editedAttributes || {
+        strain: this.plant?.attributes.strain,
+        phenotype: this.plant?.attributes.phenotype,
+        stage: this.plant?.state,
+        veg_start: this.plant?.attributes.veg_start,
+        flower_start: this.plant?.attributes.flower_start,
+        seedling_start: this.plant?.attributes.seedling_start,
+        mother_start: this.plant?.attributes.mother_start,
+        clone_start: this.plant?.attributes.clone_start,
+        dry_start: this.plant?.attributes.dry_start,
+        cure_start: this.plant?.attributes.cure_start,
+      };
+      this.cloneTargetId = '';
+    }
+  }
 
   static styles = [
     dialogStyles,
@@ -152,25 +172,7 @@ export class PlantOverviewDialog extends LitElement {
     `
   ];
 
-  /* Lifecycles */
-  updated(changedProps: Map<string, any>) {
-    if (changedProps.has('plant') && this.plant) {
-      // Reset edited attributes when plant changes
-      this.editedAttributes = {
-        strain: this.plant.attributes.strain,
-        phenotype: this.plant.attributes.phenotype,
-        stage: this.plant.state,
-        veg_start: this.plant.attributes.veg_start,
-        flower_start: this.plant.attributes.flower_start,
-        seedling_start: this.plant.attributes.seedling_start,
-        mother_start: this.plant.attributes.mother_start,
-        clone_start: this.plant.attributes.clone_start,
-        dry_start: this.plant.attributes.dry_start,
-        cure_start: this.plant.attributes.cure_start,
-      };
-      this.cloneTargetId = '';
-    }
-  }
+
 
   private _close() {
     this.dispatchEvent(new CustomEvent('close'));

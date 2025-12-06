@@ -10977,21 +10977,20 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
         this.showAllDates = false;
         this.cloneTargetId = '';
     }
-    /* Lifecycles */
-    updated(changedProps) {
-        if (changedProps.has('plant') && this.plant) {
-            // Reset edited attributes when plant changes
-            this.editedAttributes = {
-                strain: this.plant.attributes.strain,
-                phenotype: this.plant.attributes.phenotype,
-                stage: this.plant.state,
-                veg_start: this.plant.attributes.veg_start,
-                flower_start: this.plant.attributes.flower_start,
-                seedling_start: this.plant.attributes.seedling_start,
-                mother_start: this.plant.attributes.mother_start,
-                clone_start: this.plant.attributes.clone_start,
-                dry_start: this.plant.attributes.dry_start,
-                cure_start: this.plant.attributes.cure_start,
+    willUpdate(changedProps) {
+        if (changedProps.has('dialog') && this.dialog) {
+            this.plant = this.dialog.plant;
+            this.editedAttributes = this.dialog.editedAttributes || {
+                strain: this.plant?.attributes.strain,
+                phenotype: this.plant?.attributes.phenotype,
+                stage: this.plant?.state,
+                veg_start: this.plant?.attributes.veg_start,
+                flower_start: this.plant?.attributes.flower_start,
+                seedling_start: this.plant?.attributes.seedling_start,
+                mother_start: this.plant?.attributes.mother_start,
+                clone_start: this.plant?.attributes.clone_start,
+                dry_start: this.plant?.attributes.dry_start,
+                cure_start: this.plant?.attributes.cure_start,
             };
             this.cloneTargetId = '';
         }
@@ -11373,6 +11372,10 @@ __decorate([
     n$2({ type: Boolean, reflect: true }),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "open", void 0);
+__decorate([
+    n$2({ attribute: false }),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "dialog", void 0);
 __decorate([
     n$2({ type: Object }),
     __metadata("design:type", Object)
