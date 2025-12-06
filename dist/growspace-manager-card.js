@@ -14159,7 +14159,7 @@ class GrowspaceLogbookController {
                 type: "growspace_manager/get_log",
                 growspace_id: growspaceId,
             });
-            return response.events || [];
+            return response[growspaceId] || [];
         }
         catch (e) {
             console.error("Error fetching event log:", e);
