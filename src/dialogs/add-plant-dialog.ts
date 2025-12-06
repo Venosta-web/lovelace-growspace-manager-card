@@ -186,6 +186,35 @@ export class AddPlantDialog extends LitElement {
       flex: 1;
       min-width: 0;
     }
+
+    .md3-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      margin-bottom: 12px;
+    }
+    .md3-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #9ca3af;
+      margin-left: 4px;
+    }
+    .md3-input {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border-radius: 8px;
+      padding: 10px 12px;
+      width: 100%;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+    .md3-input:focus {
+      outline: none;
+      border-color: #4CAF50;
+      background: rgba(255, 255, 255, 0.08);
+    }
   `;
 
   // Provide a method to set initial data from parent if needed
