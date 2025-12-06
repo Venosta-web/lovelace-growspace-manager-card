@@ -141,6 +141,13 @@ export class GrowspaceLogbook extends LitElement {
     return `${mins}m ${secs}s`;
   }
 
+  private _formatProb(val: number | undefined): string {
+    if (val === undefined || val === null || isNaN(val)) {
+       return '--%';
+    }
+    return `${Math.round(Number(val) * 100)}%`;
+  }
+
   private _formatTime(isoString: string): string {
     try {
       const date = new Date(isoString);
@@ -188,7 +195,7 @@ export class GrowspaceLogbook extends LitElement {
               ${/* CONDITIONAL RENDERING BASED ON CATEGORY */
       event.category === 'alert' ? html`
                   <div class="event-probability" style="color: ${this._getSeverityColor(event.severity)}">
-                    ${Math.round(event.severity * 100)}%
+                    ${this._formatProb(event.severity)}
                   </div>
                 ` : html`
                    <div class="event-probability">

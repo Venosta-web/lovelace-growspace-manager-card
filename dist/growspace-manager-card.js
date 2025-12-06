@@ -14207,6 +14207,12 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$1 {
         const secs = seconds % 60;
         return `${mins}m ${secs}s`;
     }
+    _formatProb(val) {
+        if (val === undefined || val === null || isNaN(val)) {
+            return '--%';
+        }
+        return `${Math.round(Number(val) * 100)}%`;
+    }
     _formatTime(isoString) {
         try {
             const date = new Date(isoString);
@@ -14234,30 +14240,38 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$1 {
         return x `
       <div class="log-container">
         ${sortedEvents.map(event => x `
-          <div class="event-card">
-            <div class="event-header">
-              <span class="event-time">${this._formatTime(event.start_time)}</span>
-              <span class="event-duration">${this._formatDuration(event.duration_sec)}</span>
-            </div>
-            
-            <div class="event-details">
+          <div class="event-details">
               <div>
                 <div class="event-type">${event.sensor_type.replace(/_/g, ' ')}</div>
-                ${event.reasons && event.reasons.length > 0 ? x `
+                
+                ${ /* Show reasons if available */event.reasons && event.reasons.length > 0 ? x `
                   <div class="event-reasons">
                     ${event.reasons.map(reason => x `<span class="reason-badge">${reason}</span>`)}
                   </div>
                 ` : E}
               </div>
               
-              <div class="event-probability">
-                ${Math.round(event.max_probability * 100)}%
-              </div>
+              ${ /* CONDITIONAL RENDERING BASED ON CATEGORY */event.category === 'alert' ? x `
+                  <div class="event-probability" style="color: ${this._getSeverityColor(event.severity)}">
+                    ${this._formatProb(event.severity)}
+                  </div>
+                ` : x `
+                   <div class="event-probability">
+                     <ha-icon icon="mdi:water"></ha-icon>
+                   </div>
+                `}
             </div>
           </div>
         `)}
       </div>
     `;
+    }
+    _getSeverityColor(severity) {
+        if (severity >= 0.9)
+            return 'var(--error-color)';
+        if (severity >= 0.75)
+            return 'var(--warning-color)';
+        return 'var(--primary-text-color)';
     }
 };
 GrowspaceLogbook.styles = [
