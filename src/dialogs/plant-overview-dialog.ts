@@ -145,6 +145,27 @@ export class PlantOverviewDialog extends LitElement {
         padding: 8px;
     }
     /* Add other styles from dialog-renderer as needed */
+    .row-col-grid {
+      display: flex;
+      gap: 16px;
+    }
+    .row-col-grid > * {
+      flex: 1;
+      min-width: 0; /* Critical for flex items to shrink below minimum content size */
+    }
+
+    @media (max-width: 600px) {
+      .overview-grid {
+        grid-template-columns: 1fr;
+        padding: 16px;
+      }
+      .dialog-header {
+        padding: 12px 16px;
+      }
+      .detail-card {
+        padding: 12px;
+      }
+    }
   `;
 
   private _close() {
@@ -251,7 +272,7 @@ export class PlantOverviewDialog extends LitElement {
                <h3>Identity & Location ${isBulkEdit ? '(Read-only in bulk mode)' : ''}</h3>
                ${DialogRenderer.renderMD3TextInput('Strain Name', editedAttributes.strain || '', (v) => this._attributeChange('strain', v))}
                ${DialogRenderer.renderMD3TextInput('Phenotype', editedAttributes.phenotype || '', (v) => this._attributeChange('phenotype', v))}
-               <div style="display:flex; gap:16px;">
+               <div class="row-col-grid">
                  ${DialogRenderer.renderMD3NumberInput('Row', editedAttributes.row || 1, (v) => this._attributeChange('row', parseInt(v)))}
                  ${DialogRenderer.renderMD3NumberInput('Col', editedAttributes.col || 1, (v) => this._attributeChange('col', parseInt(v)))}
                </div>
