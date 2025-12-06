@@ -11051,12 +11051,12 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
         };
         const normCurrent = normalize(currentStage);
         const stats = [
-            { label: 'Vegetative Days', value: plant.attributes.veg_days, unit: 'days', stage: 'vegetative' },
-            { label: 'Flowering Days', value: plant.attributes.flower_days, unit: 'days', stage: 'flower' },
-            { label: 'Mother Days', value: plant.attributes.mom_days, unit: 'days', stage: 'mother' },
-            { label: 'Clone Days', value: plant.attributes.clone_days, unit: 'days', stage: 'clone' },
-            { label: 'Drying Days', value: plant.attributes.dry_days, unit: 'days', stage: 'dry' },
-            { label: 'Curing Days', value: plant.attributes.cure_days, unit: 'days', stage: 'cure' },
+            { label: 'Vegetative Stage', value: plant.attributes.veg_days, unit: 'days', stage: 'vegetative' },
+            { label: 'Flowering Stage', value: plant.attributes.flower_days, unit: 'days', stage: 'flower' },
+            { label: 'Mother Stage', value: plant.attributes.mom_days, unit: 'days', stage: 'mother' },
+            { label: 'Clone Stage', value: plant.attributes.clone_days, unit: 'days', stage: 'clone' },
+            { label: 'Drying Stage', value: plant.attributes.dry_days, unit: 'days', stage: 'dry' },
+            { label: 'Curing Stage', value: plant.attributes.cure_days, unit: 'days', stage: 'cure' },
         ].filter(s => {
             if (s.value === undefined || s.value === null)
                 return false;
