@@ -13259,6 +13259,7 @@ AddPlantDialog.styles = i$4 `
       }
       .dialog-title-group {
         flex: 5;
+        text-align: center;
       }
       .button-group {
         justify-content: center;

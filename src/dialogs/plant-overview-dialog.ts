@@ -177,6 +177,7 @@ export class PlantOverviewDialog extends LitElement {
       }
       .dialog-title-group {
         flex: 5;
+        text-align: center;
       }
       .button-group {
         justify-content: center;
