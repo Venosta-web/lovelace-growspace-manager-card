@@ -11061,6 +11061,9 @@ PlantOverviewDialog.styles = i$4 `
       .button-group {
         justify-content: center;
       }
+      .detail-card  {
+        overflow: unset
+      }
       .detail-card .md3-button {
         flex: 1 1 1;
       }
