@@ -14177,6 +14177,21 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$1 {
     firstUpdated() {
         this._initController();
     }
+    _getSeverityColor(severity, sensorType) {
+        if (sensorType?.toLowerCase() === 'optimal') {
+            if (severity >= 0.9)
+                return 'var(--success-color, #4CAF50)';
+            if (severity >= 0.75)
+                return 'var(--warning-color)';
+            return 'var(--error-color)';
+        }
+        // Default logic (High severity = Bad)
+        if (severity >= 0.9)
+            return 'var(--error-color)';
+        if (severity >= 0.75)
+            return 'var(--warning-color)';
+        return 'var(--primary-text-color)';
+    }
     willUpdate(changedProps) {
         if (changedProps.has('hass') && !this._controller) {
             this._initController();
@@ -14258,7 +14273,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$1 {
               </div>
               
               ${event.category === 'alert' ? x `
-                  <div class="event-probability" style="color: ${this._getSeverityColor(event.severity)}">
+                  <div class="event-probability" style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}">
                     ${this._formatProb(event.severity)}
                   </div>
                 ` : x `
@@ -14271,13 +14286,6 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$1 {
         `)}
       </div>
     `;
-    }
-    _getSeverityColor(severity) {
-        if (severity >= 0.9)
-            return 'var(--error-color)';
-        if (severity >= 0.75)
-            return 'var(--warning-color)';
-        return 'var(--primary-text-color)';
     }
 };
 GrowspaceLogbook.styles = [

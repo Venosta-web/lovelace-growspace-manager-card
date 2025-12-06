@@ -108,6 +108,18 @@ export class GrowspaceLogbook extends LitElement {
     this._initController();
   }
 
+  private _getSeverityColor(severity: number, sensorType?: string): string {
+    if (sensorType?.toLowerCase() === 'optimal') {
+      if (severity >= 0.9) return 'var(--success-color, #4CAF50)';
+      if (severity >= 0.75) return 'var(--warning-color)';
+      return 'var(--error-color)';
+    }
+
+    // Default logic (High severity = Bad)
+    if (severity >= 0.9) return 'var(--error-color)';
+    if (severity >= 0.75) return 'var(--warning-color)';
+    return 'var(--primary-text-color)';
+  }
   protected willUpdate(changedProps: Map<string, any>) {
     if (changedProps.has('hass') && !this._controller) {
       this._initController();
@@ -211,18 +223,6 @@ export class GrowspaceLogbook extends LitElement {
         `)}
       </div>
     `;
-  }
-  private _getSeverityColor(severity: number, sensorType?: string): string {
-    if (sensorType === 'optimal') {
-      if (severity >= 0.9) return 'var(--success-color, #4CAF50)';
-      if (severity >= 0.75) return 'var(--warning-color)';
-      return 'var(--error-color)';
-    }
-
-    // Default logic (High severity = Bad)
-    if (severity >= 0.9) return 'var(--error-color)';
-    if (severity >= 0.75) return 'var(--warning-color)';
-    return 'var(--primary-text-color)';
   }
 }
 
