@@ -442,7 +442,6 @@ export class StrainLibraryDialog extends LitElement {
        .sd-footer { display: none; }
        .fab-btn { display: flex; }
        .editor-layout { grid-template-columns: 1fr; }
-    }
      }
      .fab-btn {
         position: absolute;
