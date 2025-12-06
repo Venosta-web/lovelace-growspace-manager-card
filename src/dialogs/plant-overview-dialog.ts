@@ -33,6 +33,8 @@ export class PlantOverviewDialog extends LitElement {
       this.editedAttributes = this.dialog.editedAttributes || {
         strain: this.plant?.attributes.strain,
         phenotype: this.plant?.attributes.phenotype,
+        row: this.plant?.attributes.row,
+        col: this.plant?.attributes.col,
         stage: this.plant?.state,
         veg_start: this.plant?.attributes.veg_start,
         flower_start: this.plant?.attributes.flower_start,
@@ -316,6 +318,19 @@ export class PlantOverviewDialog extends LitElement {
                      .value=${this.editedAttributes.phenotype || ''}
                      @change=${(e: CustomEvent) => this._attributeChange('phenotype', e.detail)}
                    ></md3-text-input>
+                   
+                   <div style="display:flex; gap:16px;">
+                     <md3-number-input
+                       label="Row"
+                       .value=${this.editedAttributes.row ?? ''}
+                       @change=${(e: CustomEvent) => this._attributeChange('row', e.detail)}
+                     ></md3-number-input>
+                     <md3-number-input
+                       label="Column"
+                       .value=${this.editedAttributes.col ?? ''}
+                       @change=${(e: CustomEvent) => this._attributeChange('col', e.detail)}
+                     ></md3-number-input>
+                   </div>
                 ` : html`
                    <div class="stat-grid">
                       <div class="stat-item">
@@ -325,6 +340,14 @@ export class PlantOverviewDialog extends LitElement {
                       <div class="stat-item">
                         <span class="stat-value">${this.plant.attributes.phenotype || 'N/A'}</span>
                         <span class="stat-label">Phenotype</span>
+                      </div>
+                      <div class="stat-item">
+                        <span class="stat-value">${this.plant.attributes.row ?? '-'}</span>
+                        <span class="stat-label">Row</span>
+                      </div>
+                      <div class="stat-item">
+                        <span class="stat-value">${this.plant.attributes.col ?? '-'}</span>
+                        <span class="stat-label">Col</span>
                       </div>
                    </div>
                 `}
