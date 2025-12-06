@@ -14240,18 +14240,24 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$1 {
         return x `
       <div class="log-container">
         ${sortedEvents.map(event => x `
-          <div class="event-details">
+          <div class="event-card">
+            <div class="event-header">
+              <span class="event-time">${this._formatTime(event.start_time)}</span>
+              <span class="event-duration">${this._formatDuration(event.duration_sec)}</span>
+            </div>
+            
+            <div class="event-details">
               <div>
                 <div class="event-type">${event.sensor_type.replace(/_/g, ' ')}</div>
                 
-                ${ /* Show reasons if available */event.reasons && event.reasons.length > 0 ? x `
+                ${event.reasons && event.reasons.length > 0 ? x `
                   <div class="event-reasons">
                     ${event.reasons.map(reason => x `<span class="reason-badge">${reason}</span>`)}
                   </div>
                 ` : E}
               </div>
               
-              ${ /* CONDITIONAL RENDERING BASED ON CATEGORY */event.category === 'alert' ? x `
+              ${event.category === 'alert' ? x `
                   <div class="event-probability" style="color: ${this._getSeverityColor(event.severity)}">
                     ${this._formatProb(event.severity)}
                   </div>
