@@ -173,12 +173,19 @@ export class PlantOverviewDialog extends LitElement {
       .overview-grid {
         flex: 1;
         min-height: 0;
+        padding: 8px;
+      }
+      .dialog-title-group {
+        flex: 5;
       }
       .button-group {
         justify-content: center;
       }
       .detail-card  {
         overflow: unset
+      }
+      .dialog-header .md3-button.text {
+        flex: 0;
       }
       .detail-card .md3-button {
         flex: 1 1 1;
