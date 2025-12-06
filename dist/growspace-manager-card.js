@@ -110,6 +110,44 @@ class PlantUtils {
             return "vegetative";
         return "seedling";
     }
+    static calculatePlantAge(plant) {
+        if (!plant || !plant.attributes)
+            return 0;
+        const stage = this.getPlantStage(plant);
+        const attrs = plant.attributes;
+        let startStr;
+        switch (stage) {
+            case 'flower':
+                startStr = attrs.flower_start;
+                break;
+            case 'vegetative':
+                startStr = attrs.veg_start;
+                break;
+            case 'mother':
+                startStr = attrs.mom_start;
+                break;
+            case 'clone':
+                startStr = attrs.clone_start;
+                break;
+            case 'dry':
+                startStr = attrs.dry_start;
+                break;
+            case 'cure':
+                startStr = attrs.cure_start;
+                break;
+            case 'seedling':
+                startStr = attrs.planted_date;
+                break;
+        }
+        if (!startStr)
+            return 0;
+        const start = new Date(startStr);
+        const now = new Date();
+        if (isNaN(start.getTime()))
+            return 0;
+        const diff = now.getTime() - start.getTime();
+        return Math.floor(diff / (1000 * 60 * 60 * 24));
+    }
     static createGridLayout(plants, rows, cols) {
         const grid = Array.from({ length: rows }, () => Array.from({ length: cols }, () => null));
         plants.forEach((plant) => {
@@ -313,6 +351,11 @@ class PlantUtils {
             img.onload = () => resolve();
             img.onerror = () => reject();
         });
+    }
+    static getImgStyle(meta) {
+        if (!meta)
+            return 'width: 100%; height: 100%; object-fit: cover;';
+        return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
     }
 }
 PlantUtils.stageColors = {
@@ -893,228 +936,6 @@ class DataService {
     }
 }
 
-/**
- * @license
- * Copyright 2019 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const t$2=globalThis,e$4=t$2.ShadowRoot&&(void 0===t$2.ShadyCSS||t$2.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$6=Symbol(),o$4=new WeakMap;class n$5{constructor(t,e,o){if(this._$cssResult$=!0,o!==s$6)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$4&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$4.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$4.set(s,t));}return t}toString(){return this.cssText}}const r$4=t=>new n$5("string"==typeof t?t:t+"",void 0,s$6),i$4=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$5(o,t,s$6)},S$1=(s,o)=>{if(e$4)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$2.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$3=e$4?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$4(e)})(t):t;
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const{is:i$3,defineProperty:e$3,getOwnPropertyDescriptor:h$1,getOwnPropertyNames:r$3,getOwnPropertySymbols:o$3,getPrototypeOf:n$4}=Object,a$1=globalThis,c$2=a$1.trustedTypes,l$2=c$2?c$2.emptyScript:"",p$1=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$1={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$1=(t,s)=>!i$3(t,s),b$1={attribute:!0,type:String,converter:u$1,reflect:!1,useDefault:!1,hasChanged:f$1};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;class y$1 extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=!0),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$3(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$1(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$4(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$3(t),...o$3(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$3(s));}else void 0!==s&&i.push(c$3(s));return i}static _$Eu(t,s){const i=s.attribute;return !1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&!0===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$1).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$1;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$1)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);}!1===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),!0!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),!0===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=!0;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];!0!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=!1;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=!1,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return !0}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}}y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$1?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const t$1=globalThis,i$2=t$1.trustedTypes,s$5=i$2?i$2.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$2="$lit$",h=`lit$${Math.random().toFixed(9).slice(2)}$`,o$2="?"+h,n$3=`<${o$2}>`,r$2=document,l$1=()=>r$2.createComment(""),c$1=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v=/-->/g,_=/>/g,m=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$2.createTreeWalker(r$2,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$5?s$5.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f?"!--"===u[1]?c=v:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m):void 0!==u[3]&&(c=m):c===m?">"===u[0]?(c=r??f,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m:'"'===u[3]?g:p):c===g||c===p?c=m:c===v||c===_?c=f:(c=m,r=void 0);const x=c===m&&t[i+1].startsWith("/>")?" ":"";l+=c===f?s+n$3:d>=0?(o.push(a),s.slice(0,d)+e$2+s.slice(d)+h+x):s+h+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e$2)){const i=v[a++],s=r.getAttribute(t).split(h),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h),s=t.length-1;if(s>0){r.textContent=i$2?i$2.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$2)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h,t+1));)d.push({type:7,index:c}),t+=h.length-1;}c++;}}static createElement(t,i){const s=r$2.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c$1(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(!1),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}class M{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$2).importNode(i,!0);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$2,e}p(t){let i=0;for(const s of this._$AV)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??!0;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c$1(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c$1(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$2.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(!1,!0,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=!1;if(void 0===h)t=S(this,t,i,0),o=!c$1(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c$1(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const j=t$1.litHtmlPolyfillSupport;j?.(N,R),(t$1.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const s$4=globalThis;class i$1 extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=B(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1);}render(){return T}}i$1._$litElement$=!0,i$1["finalized"]=!0,s$4.litElementHydrateSupport?.({LitElement:i$1});const o$1=s$4.litElementPolyfillSupport;o$1?.({LitElement:i$1});(s$4.litElementVersions??=[]).push("4.2.1");
-
-class DialogRenderer {
-    static parseScheduleString(scheduleString) {
-        if (typeof scheduleString !== 'string') {
-            // If it's already an array (e.g., from a newly added event in the current session), return it.
-            return scheduleString;
-        }
-        if (!scheduleString || scheduleString === '[]') {
-            return [];
-        }
-        try {
-            // FIX/DEFENSE: Replace single quotes with double quotes.
-            const jsonString = scheduleString.replace(/'/g, '"');
-            const parsed = JSON.parse(jsonString);
-            if (Array.isArray(parsed)) {
-                return parsed;
-            }
-            return [];
-        }
-        catch (e) {
-            // Log the error for debugging and return an empty array to prevent UI breakage.
-            console.error("Failed to parse irrigation schedule string:", scheduleString, e);
-            return [];
-        }
-    }
-    static getImgStyle(meta) {
-        if (!meta)
-            return 'width: 100%; height: 100%; object-fit: cover;';
-        return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
-    }
-    static renderMD3TextInput(label, value, onChange) {
-        return x `
-      <div class="md3-input-group">
-        <label class="md3-label">${label}</label>
-        <input
-          type="text"
-          class="md3-input"
-          style="width: 100%; box-sizing: border-box;"
-          .value=${value}
-          @input=${(e) => onChange(e.target.value)}
-        />
-      </div>
-    `;
-    }
-    static renderMD3SelectInput(label, value, options, onChange) {
-        return x `
-      <div class="md3-input-group">
-        <label class="md3-label">${label}</label>
-        <select
-          class="md3-input"
-          style="width: 100%; box-sizing: border-box;"
-          .value=${value}
-          @change=${(e) => onChange(e.target.value)}
-        >
-          <option value="">Select...</option>
-          ${options.map(opt => x `<option value="${opt}" ?selected=${opt === value}>${opt}</option>`)}
-        </select>
-      </div>
-    `;
-    }
-    static renderMD3NumberInput(label, value, onChange) {
-        return x `
-      <div class="md3-input-group">
-        <label class="md3-label">${label}</label>
-        <input
-          type="number"
-          class="md3-input"
-          style="width: 100%; box-sizing: border-box;"
-          min="1"
-          .value=${value}
-          @input=${(e) => onChange(e.target.value)}
-        />
-      </div>
-    `;
-    }
-    static renderMD3DateTimeInput(label, value, onChange) {
-        const formattedValue = PlantUtils.toDateTimeLocal(value);
-        return x `
-      <div class="md3-input-group">
-        <label class="md3-label">${label}</label>
-        <input
-          type="datetime-local"
-          class="md3-input"
-          style="width: 100%; box-sizing: border-box;"
-          .value=${formattedValue}
-          @input=${(e) => onChange(e.target.value)}
-          @click=${(e) => e.target.showPicker()}
-        />
-      </div>
-    `;
-    }
-    static renderMD3DateInput(label, value, onChange) {
-        // For date input, we need YYYY-MM-DD
-        const formattedValue = value ? value.split('T')[0] : '';
-        return x `
-      <div class="md3-input-group">
-        <label class="md3-label">${label}</label>
-        <input
-          type="date"
-          class="md3-input"
-          style="width: 100%; box-sizing: border-box;"
-          .value=${formattedValue}
-          @input=${(e) => onChange(e.target.value)}
-          @click=${(e) => e.target.showPicker()}
-        />
-      </div>
-    `;
-    }
-    // Legacy render methods for Add Dialog (kept simple for now as requested focused on Overview)
-    static renderTextInput(label, value, onChange) {
-        return x `
-      <div class="form-group">
-        <label>${label}</label>
-        <input 
-          type="text" 
-          class="form-input"
-          .value=${value}
-          @input=${(e) => onChange(e.target.value)}
-        />
-      </div>
-    `;
-    }
-    static renderNumberInput(label, value, onChange) {
-        return x `
-      <div class="form-group">
-        <label>${label}</label>
-        <input 
-          type="number" 
-          class="form-input"
-          min="1"
-          .value=${value}
-          @input=${(e) => onChange(e.target.value)}
-        />
-      </div>
-    `;
-    }
-    static renderDateTimeInput(label, icon, value, onChange) {
-        return x `
-      <div class="form-group">
-        <label>
-          <svg style="width:16px;height:16px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-            <path d="${icon}"></path>
-          </svg>
-          ${label}
-        </label>
-        <input 
-          type="datetime-local" 
-          class="form-input"
-          .value=${value}
-          @input=${(e) => onChange(e.target.value)}
-        />
-      </div>
-    `;
-    }
-    // Public helper for plant stats
-    static renderPlantStatsMD3(plant) {
-        const hasStats = plant.attributes?.veg_days || plant.attributes?.flower_days ||
-            plant.attributes?.dry_days || plant.attributes?.cure_days;
-        if (!hasStats)
-            return x ``;
-        return x `
-      <div class="detail-card">
-        <h3>Current Progress</h3>
-        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-           ${plant.attributes?.veg_days ? x `
-             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
-               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-veg);">${plant.attributes.veg_days}</span>
-               <span style="font-size:0.7rem; opacity:0.7;">Veg Days</span>
-             </div>
-           ` : ''}
-           ${plant.attributes?.flower_days ? x `
-             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
-               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-flower);">${plant.attributes.flower_days}</span>
-               <span style="font-size:0.7rem; opacity:0.7;">Flower Days</span>
-             </div>
-           ` : ''}
-           ${plant.attributes?.dry_days ? x `
-             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
-               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-dry);">${plant.attributes.dry_days}</span>
-               <span style="font-size:0.7rem; opacity:0.7;">Drying Days</span>
-             </div>
-           ` : ''}
-           ${plant.attributes?.cure_days ? x `
-             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; min-width: 60px;">
-               <span style="font-size:1.2rem; font-weight:bold; color: var(--stage-cure);">${plant.attributes.cure_days}</span>
-               <span style="font-size:0.7rem; opacity:0.7;">Curing Days</span>
-             </div>
-           ` : ''}
-        </div>
-      </div>
-    `;
-    }
-    static renderPlantStats(plant) {
-        return this.renderPlantStatsMD3(plant);
-    }
-}
-
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
 
@@ -1145,6 +966,32 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
     var e = new Error(message);
     return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
 };
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const t$2=globalThis,e$4=t$2.ShadowRoot&&(void 0===t$2.ShadyCSS||t$2.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$6=Symbol(),o$4=new WeakMap;class n$5{constructor(t,e,o){if(this._$cssResult$=!0,o!==s$6)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$4&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$4.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$4.set(s,t));}return t}toString(){return this.cssText}}const r$4=t=>new n$5("string"==typeof t?t:t+"",void 0,s$6),i$4=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$5(o,t,s$6)},S$1=(s,o)=>{if(e$4)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$2.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$3=e$4?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$4(e)})(t):t;
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const{is:i$3,defineProperty:e$3,getOwnPropertyDescriptor:h$1,getOwnPropertyNames:r$3,getOwnPropertySymbols:o$3,getPrototypeOf:n$4}=Object,a$1=globalThis,c$2=a$1.trustedTypes,l$2=c$2?c$2.emptyScript:"",p$1=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$1={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$1=(t,s)=>!i$3(t,s),b$1={attribute:!0,type:String,converter:u$1,reflect:!1,useDefault:!1,hasChanged:f$1};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;class y$1 extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=!0),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$3(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$1(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$4(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$3(t),...o$3(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$3(s));}else void 0!==s&&i.push(c$3(s));return i}static _$Eu(t,s){const i=s.attribute;return !1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&!0===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$1).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$1;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$1)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);}!1===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),!0!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),!0===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=!0;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];!0!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=!1;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=!1,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return !0}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}}y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$1?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const t$1=globalThis,i$2=t$1.trustedTypes,s$5=i$2?i$2.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$2="$lit$",h=`lit$${Math.random().toFixed(9).slice(2)}$`,o$2="?"+h,n$3=`<${o$2}>`,r$2=document,l$1=()=>r$2.createComment(""),c$1=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v=/-->/g,_=/>/g,m=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$2.createTreeWalker(r$2,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$5?s$5.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f?"!--"===u[1]?c=v:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m):void 0!==u[3]&&(c=m):c===m?">"===u[0]?(c=r??f,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m:'"'===u[3]?g:p):c===g||c===p?c=m:c===v||c===_?c=f:(c=m,r=void 0);const x=c===m&&t[i+1].startsWith("/>")?" ":"";l+=c===f?s+n$3:d>=0?(o.push(a),s.slice(0,d)+e$2+s.slice(d)+h+x):s+h+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e$2)){const i=v[a++],s=r.getAttribute(t).split(h),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h),s=t.length-1;if(s>0){r.textContent=i$2?i$2.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$2)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h,t+1));)d.push({type:7,index:c}),t+=h.length-1;}c++;}}static createElement(t,i){const s=r$2.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c$1(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(!1),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}class M{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$2).importNode(i,!0);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$2,e}p(t){let i=0;for(const s of this._$AV)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??!0;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c$1(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c$1(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$2.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(!1,!0,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=!1;if(void 0===h)t=S(this,t,i,0),o=!c$1(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c$1(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const j=t$1.litHtmlPolyfillSupport;j?.(N,R),(t$1.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const s$4=globalThis;class i$1 extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=B(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1);}render(){return T}}i$1._$litElement$=!0,i$1["finalized"]=!0,s$4.litElementHydrateSupport?.({LitElement:i$1});const o$1=s$4.litElementPolyfillSupport;o$1?.({LitElement:i$1});(s$4.litElementVersions??=[]).push("4.2.1");
 
 /**
  * @license
@@ -10665,19 +10512,474 @@ GrowspaceEnvChart = __decorate([
     t('growspace-env-chart')
 ], GrowspaceEnvChart);
 
+const dialogStyles = i$4 `
+  .glass-dialog-container {
+    background: rgba(20, 20, 20, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh;
+    color: #fff;
+    font-family: 'Roboto', sans-serif;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  .dialog-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .dialog-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+    color: var(--stage-color, #4CAF50);
+  }
+
+  .dialog-title-group {
+    flex: 1;
+  }
+
+  .dialog-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+  }
+
+  .dialog-subtitle {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    margin-top: 2px;
+  }
+
+  .detail-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 16px;
+    overflow: hidden;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .detail-card h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 1rem;
+    font-weight: 500;
+    opacity: 0.9;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+  }
+
+  .button-group {
+    padding: 16px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .md3-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 24px;
+    height: 40px;
+    border-radius: 20px;
+    border: none;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .md3-button.text {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 0 12px;
+  }
+  .md3-button.text:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+  }
+  .md3-button.tonal {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+  .md3-button.tonal:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+  .md3-button.primary {
+    background: var(--primary-color, #4CAF50);
+    color: #fff;
+  }
+  .md3-button.primary:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  }
+  .md3-button.danger {
+    background: rgba(244, 67, 54, 0.1);
+    color: #f44336;
+  }
+  .md3-button.danger:hover {
+    background: rgba(244, 67, 54, 0.2);
+  }
+
+  .row-col-grid {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .row-col-grid > * {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* MD3 Input Styles */
+  .md3-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    margin-bottom: 12px;
+  }
+  .md3-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #9ca3af;
+    margin-left: 4px;
+  }
+  .md3-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-radius: 8px;
+    padding: 10px 12px;
+    width: 100%;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+  .md3-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  @media (max-width: 450px) {
+    .glass-dialog-container {
+      width: 100vw;
+      max-width: 100%;
+      height: 100vh;
+      border-radius: 0;
+    }
+    .button-group {
+      justify-content: center;
+    }
+    .md3-button {
+      flex: 1 1 auto;
+      min-width: 100px;
+    }
+    .dialog-header {
+      padding: 12px 16px;
+    }
+  }
+`;
+
+let Md3TextInput = class Md3TextInput extends i$1 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = '';
+        this.type = 'text';
+        this.placeholder = '';
+        this.list = '';
+    }
+    _handleInput(e) {
+        const value = e.target.value;
+        this.value = value;
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${this.label}</label>
+        <input
+          .type=${this.type}
+          class="md3-input"
+          .value=${this.value}
+          .placeholder=${this.placeholder}
+          .list=${this.list}
+          @input=${this._handleInput}
+        />
+      </div>
+    `;
+    }
+};
+Md3TextInput.styles = [
+    dialogStyles,
+    i$4 `
+      :host {
+        display: block;
+        width: 100%;
+      }
+    `
+];
+__decorate([
+    n$2(),
+    __metadata("design:type", Object)
+], Md3TextInput.prototype, "label", void 0);
+__decorate([
+    n$2(),
+    __metadata("design:type", Object)
+], Md3TextInput.prototype, "value", void 0);
+__decorate([
+    n$2(),
+    __metadata("design:type", Object)
+], Md3TextInput.prototype, "type", void 0);
+__decorate([
+    n$2(),
+    __metadata("design:type", Object)
+], Md3TextInput.prototype, "placeholder", void 0);
+__decorate([
+    n$2(),
+    __metadata("design:type", Object)
+], Md3TextInput.prototype, "list", void 0);
+Md3TextInput = __decorate([
+    t('md3-text-input')
+], Md3TextInput);
+
+let Md3NumberInput = class Md3NumberInput extends i$1 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = 0;
+        this.min = 0;
+        this.placeholder = '';
+    }
+    _handleInput(e) {
+        const value = e.target.value;
+        this.value = Number(value);
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${this.label}</label>
+        <input
+          type="number"
+          class="md3-input"
+          .min=${this.min}
+          .max=${this.max}
+          .value=${this.value}
+          .placeholder=${this.placeholder}
+          @input=${this._handleInput}
+        />
+      </div>
+    `;
+    }
+};
+Md3NumberInput.styles = [
+    dialogStyles,
+    i$4 `
+      :host {
+        display: block;
+        width: 100%;
+      }
+    `
+];
+__decorate([
+    n$2(),
+    __metadata("design:type", Object)
+], Md3NumberInput.prototype, "label", void 0);
+__decorate([
+    n$2({ type: Number }),
+    __metadata("design:type", Object)
+], Md3NumberInput.prototype, "value", void 0);
+__decorate([
+    n$2({ type: Number }),
+    __metadata("design:type", Object)
+], Md3NumberInput.prototype, "min", void 0);
+__decorate([
+    n$2({ type: Number }),
+    __metadata("design:type", Number)
+], Md3NumberInput.prototype, "max", void 0);
+__decorate([
+    n$2(),
+    __metadata("design:type", Object)
+], Md3NumberInput.prototype, "placeholder", void 0);
+Md3NumberInput = __decorate([
+    t('md3-number-input')
+], Md3NumberInput);
+
+let Md3Select = class Md3Select extends i$1 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = '';
+        this.options = [];
+    }
+    _handleChange(e) {
+        const value = e.target.value;
+        this.value = value;
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${this.label}</label>
+        <select
+          class="md3-input"
+          .value=${this.value}
+          @change=${this._handleChange}
+        >
+          <option value="">Select...</option>
+          ${this.options.map(opt => {
+            const label = typeof opt === 'string' ? opt : opt.label;
+            const val = typeof opt === 'string' ? opt : opt.value;
+            return x `<option value="${val}" ?selected=${val === this.value}>${label}</option>`;
+        })}
+        </select>
+      </div>
+    `;
+    }
+};
+Md3Select.styles = [
+    dialogStyles,
+    i$4 `
+      :host {
+        display: block;
+        width: 100%;
+      }
+    `
+];
+__decorate([
+    n$2(),
+    __metadata("design:type", Object)
+], Md3Select.prototype, "label", void 0);
+__decorate([
+    n$2(),
+    __metadata("design:type", Object)
+], Md3Select.prototype, "value", void 0);
+__decorate([
+    n$2({ type: Array }),
+    __metadata("design:type", Array)
+], Md3Select.prototype, "options", void 0);
+Md3Select = __decorate([
+    t('md3-select')
+], Md3Select);
+
+let Md3DateInput = class Md3DateInput extends i$1 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = '';
+        this.time = false; // if true, uses datetime-local
+    }
+    _handleInput(e) {
+        const value = e.target.value;
+        this.value = value;
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        let formattedValue = this.value;
+        if (this.time) {
+            formattedValue = PlantUtils.toDateTimeLocal(this.value);
+        }
+        else {
+            formattedValue = this.value ? this.value.split('T')[0] : '';
+        }
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${this.label}</label>
+        <input
+          .type=${this.time ? 'datetime-local' : 'date'}
+          class="md3-input"
+          .value=${formattedValue}
+          @input=${this._handleInput}
+          @click=${(e) => e.target.showPicker()}
+        />
+      </div>
+    `;
+    }
+};
+Md3DateInput.styles = [
+    dialogStyles,
+    i$4 `
+      :host {
+        display: block;
+        width: 100%;
+      }
+    `
+];
+__decorate([
+    n$2(),
+    __metadata("design:type", Object)
+], Md3DateInput.prototype, "label", void 0);
+__decorate([
+    n$2(),
+    __metadata("design:type", Object)
+], Md3DateInput.prototype, "value", void 0);
+__decorate([
+    n$2({ type: Boolean }),
+    __metadata("design:type", Object)
+], Md3DateInput.prototype, "time", void 0);
+Md3DateInput = __decorate([
+    t('md3-date-input')
+], Md3DateInput);
+
 let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
     constructor() {
         super(...arguments);
-        this.dialog = null;
+        this.open = false;
         this.growspaceOptions = {};
+        this.editedAttributes = {};
+        this.isEditing = false;
+        this.showAllDates = false;
+        this.cloneTargetId = '';
+    }
+    /* Lifecycles */
+    updated(changedProps) {
+        if (changedProps.has('plant') && this.plant) {
+            // Reset edited attributes when plant changes
+            this.editedAttributes = {
+                strain: this.plant.attributes.strain,
+                phenotype: this.plant.attributes.phenotype,
+                stage: this.plant.state,
+                veg_start: this.plant.attributes.veg_start,
+                flower_start: this.plant.attributes.flower_start,
+                seedling_start: this.plant.attributes.seedling_start,
+                mother_start: this.plant.attributes.mother_start,
+                clone_start: this.plant.attributes.clone_start,
+                dry_start: this.plant.attributes.dry_start,
+                cure_start: this.plant.attributes.cure_start,
+            };
+            this.cloneTargetId = '';
+        }
     }
     _close() {
         this.dispatchEvent(new CustomEvent('close'));
     }
     _update() {
-        this.dispatchEvent(new CustomEvent('update'));
+        this.dispatchEvent(new CustomEvent('update', { detail: this.editedAttributes }));
     }
     _delete(plantId) {
+        if (!confirm('Are you sure you want to delete this plant? This action cannot be undone.'))
+            return;
         this.dispatchEvent(new CustomEvent('delete', { detail: { plantId } }));
     }
     _harvest(plant) {
@@ -10689,23 +10991,57 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
     _takeClone(plant, numClones) {
         this.dispatchEvent(new CustomEvent('take-clone', { detail: { plant, numClones } }));
     }
-    _moveClone(plant, targetGrowspace) {
-        this.dispatchEvent(new CustomEvent('move-clone', { detail: { plant, targetGrowspace } }));
+    _moveClone(plant) {
+        if (!this.cloneTargetId) {
+            // alert is not ideal but keeping for now as per previous logic
+            alert('Select a growspace');
+            return;
+        }
+        this.dispatchEvent(new CustomEvent('move-clone', { detail: { plant, targetGrowspace: this.cloneTargetId } }));
     }
     _attributeChange(key, value) {
-        this.dispatchEvent(new CustomEvent('attribute-change', { detail: { key, value } }));
+        this.editedAttributes = { ...this.editedAttributes, [key]: value };
+        this.requestUpdate();
     }
     _toggleShowAllDates() {
-        this.dispatchEvent(new CustomEvent('toggle-show-all-dates'));
+        this.showAllDates = !this.showAllDates;
+    }
+    _renderStatItem(label, value, unit = '') {
+        if (value === undefined || value === null || value === '')
+            return E;
+        return x `
+        <div class="stat-item">
+            <span class="stat-value">${value} ${unit}</span>
+            <span class="stat-label">${label}</span>
+        </div>
+      `;
+    }
+    _renderPlantStats(plant) {
+        if (!plant.attributes)
+            return E;
+        const age = PlantUtils.calculatePlantAge(plant);
+        return x `
+        <div class="detail-card">
+            <h3>Statistics</h3>
+            <div class="stat-grid">
+               ${this._renderStatItem('Age', age, 'days')}
+               ${this._renderStatItem('Height', plant.attributes.height, 'cm')}
+               ${this._renderStatItem('PPFD', plant.attributes.ppfd, 'µmol')}
+               ${this._renderStatItem('DLI', plant.attributes.dli, 'mol/d')}
+               ${this._renderStatItem('EC', plant.attributes.ec, 'mS/cm')}
+               ${this._renderStatItem('pH', plant.attributes.ph, '')}
+               ${this._renderStatItem('Temp', plant.attributes.temperature, '°C')}
+               ${this._renderStatItem('Hum', plant.attributes.humidity, '%')}
+            </div>
+        </div>
+      `;
     }
     render() {
-        if (!this.dialog)
+        if (!this.plant)
             return x ``;
-        const { plant, editedAttributes, selectedPlantIds } = this.dialog;
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        const stageColor = PlantUtils.getPlantStageColor(plant.state);
-        const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
-        const isBulkEdit = selectedPlantIds && selectedPlantIds.length > 1;
+        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+        const stageColor = PlantUtils.getPlantStageColor(this.plant.state);
+        const stageIcon = PlantUtils.getPlantStageIcon(this.plant.state);
         return x `
       <ha-dialog
         open
@@ -10715,32 +11051,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
         .escapeKeyAction=${''}
       >
         <div class="glass-dialog-container" style="--stage-color: ${stageColor}">
-
-          <!-- BULK EDIT BANNER -->
-          ${isBulkEdit ? x `
-            <div style="
-              background: rgba(34, 197, 94, 0.1);
-              border: 1px solid rgba(34, 197, 94, 0.3);
-              border-radius: 8px;
-              padding: 12px 16px;
-              margin-bottom: 16px;
-              color: #22c55e;
-              display: flex;
-              align-items: center;
-              gap: 12px;
-            ">
-              <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiPencil}"></path>
-              </svg>
-              <div>
-                <strong>Bulk Editing ${selectedPlantIds.length} Plants</strong>
-                <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 4px;">
-                  Only date fields can be edited in bulk mode. Identity & location fields are protected.
-                </div>
-              </div>
-            </div>
-          ` : E}
-
+        
           <!-- HEADER -->
           <div class="dialog-header">
             <div class="dialog-icon">
@@ -10749,8 +11060,8 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
               </svg>
             </div>
             <div class="dialog-title-group">
-               <h2 class="dialog-title">${editedAttributes.strain || 'Unknown Strain'}</h2>
-               <div class="dialog-subtitle">${plant.state} Stage • ${editedAttributes.phenotype || 'No Phenotype'}</div>
+              <h2 class="dialog-title">${this.editedAttributes.strain || 'Unknown Strain'}</h2>
+              <div class="dialog-subtitle">${this.plant.state} Stage • ${this.editedAttributes.phenotype || 'No Phenotype'}</div>
             </div>
             <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
@@ -10761,334 +11072,306 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
 
           <div class="overview-grid">
              <!-- IDENTITY & LOCATION CARD -->
-             <div class="detail-card" style="${isBulkEdit ? 'opacity: 0.5; pointer-events: none;' : ''}">
-               <h3>Identity & Location ${isBulkEdit ? '(Read-only in bulk mode)' : ''}</h3>
-               ${DialogRenderer.renderMD3TextInput('Strain Name', editedAttributes.strain || '', (v) => this._attributeChange('strain', v))}
-               ${DialogRenderer.renderMD3TextInput('Phenotype', editedAttributes.phenotype || '', (v) => this._attributeChange('phenotype', v))}
-               <div class="row-col-grid">
-                 ${DialogRenderer.renderMD3NumberInput('Row', editedAttributes.row || 1, (v) => this._attributeChange('row', parseInt(v)))}
-                 ${DialogRenderer.renderMD3NumberInput('Col', editedAttributes.col || 1, (v) => this._attributeChange('col', parseInt(v)))}
-               </div>
+             <div class="detail-card">
+                <h3>Identity & Location</h3>
+                ${this.isEditing ? x `
+                   <md3-text-input
+                     label="Strain Name"
+                     .value=${this.editedAttributes.strain || ''}
+                     @change=${(e) => this._attributeChange('strain', e.detail)}
+                   ></md3-text-input>
+                   <md3-text-input
+                     label="Phenotype"
+                     .value=${this.editedAttributes.phenotype || ''}
+                     @change=${(e) => this._attributeChange('phenotype', e.detail)}
+                   ></md3-text-input>
+                ` : x `
+                   <div class="stat-grid">
+                      <div class="stat-item">
+                        <span class="stat-value">${this.plant.attributes.strain}</span>
+                        <span class="stat-label">Strain</span>
+                      </div>
+                      <div class="stat-item">
+                        <span class="stat-value">${this.plant.attributes.phenotype || 'N/A'}</span>
+                        <span class="stat-label">Phenotype</span>
+                      </div>
+                   </div>
+                `}
              </div>
+             
+             <!-- STATS CARD -->
+             ${this._renderPlantStats(this.plant)}
 
              <!-- TIMELINE CARD -->
              <div class="detail-card">
-               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                 <h3 style="margin: 0;">Timeline</h3>
-                 <button class="md3-button text" style="min-width: auto; padding: 4px;" @click=${this._toggleShowAllDates}>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <h3 style="margin: 0;">Timeline</h3>
+                  <button class="md3-button text" style="min-width: auto; padding: 4px;" @click=${this._toggleShowAllDates}>
                     <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-                 </button>
-               </div>
-               
-               ${this.dialog.showAllDates ? x `
-                  ${DialogRenderer.renderMD3DateTimeInput('Seedling Start', editedAttributes.seedling_start ?? '', (v) => this._attributeChange('seedling_start', v))}
-                  ${DialogRenderer.renderMD3DateTimeInput('Mother Start', editedAttributes.mother_start ?? '', (v) => this._attributeChange('mother_start', v))}
-                  ${DialogRenderer.renderMD3DateTimeInput('Clone Start', editedAttributes.clone_start ?? '', (v) => this._attributeChange('clone_start', v))}
-                  ${DialogRenderer.renderMD3DateTimeInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => this._attributeChange('veg_start', v))}
-                  ${DialogRenderer.renderMD3DateTimeInput('Flower Start', editedAttributes.flower_start ?? '', (v) => this._attributeChange('flower_start', v))}
-                  ${DialogRenderer.renderMD3DateTimeInput('Dry Start', editedAttributes.dry_start ?? '', (v) => this._attributeChange('dry_start', v))}
-                  ${DialogRenderer.renderMD3DateTimeInput('Cure Start', editedAttributes.cure_start ?? '', (v) => this._attributeChange('cure_start', v))}
-               ` : x `
-                  ${editedAttributes.stage === 'mother'
-            ? DialogRenderer.renderMD3DateTimeInput('Mother Start', editedAttributes.mother_start ?? '', (v) => this._attributeChange('mother_start', v))
-            : E}
-                  ${editedAttributes.stage === 'clone'
-            ? DialogRenderer.renderMD3DateTimeInput('Clone Start', editedAttributes.clone_start ?? '', (v) => this._attributeChange('clone_start', v))
-            : E}
-                  ${editedAttributes.stage === 'veg' || editedAttributes.stage === 'flower'
-            ? DialogRenderer.renderMD3DateTimeInput('Vegetative Start', editedAttributes.veg_start ?? '', (v) => this._attributeChange('veg_start', v))
-            : E}
-                  ${editedAttributes.stage === 'flower'
-            ? DialogRenderer.renderMD3DateTimeInput('Flower Start', editedAttributes.flower_start ?? '', (v) => this._attributeChange('flower_start', v))
-            : E}
-                  ${editedAttributes.stage === 'dry' || editedAttributes.stage === 'cure'
-            ? DialogRenderer.renderMD3DateTimeInput('Dry Start', editedAttributes.dry_start ?? '', (v) => this._attributeChange('dry_start', v))
-            : E}
-                  ${editedAttributes.stage === 'cure'
-            ? DialogRenderer.renderMD3DateTimeInput('Cure Start', editedAttributes.cure_start ?? '', (v) => this._attributeChange('cure_start', v))
-            : E}
-               `}
+                  </button>
+                </div>
+                
+                ${this.showAllDates ? x `
+                   <md3-date-input label="Seedling Start" .value=${this.editedAttributes.seedling_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('seedling_start', e.detail)}></md3-date-input>
+                   <md3-date-input label="Mother Start" .value=${this.editedAttributes.mother_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('mother_start', e.detail)}></md3-date-input>
+                   <md3-date-input label="Clone Start" .value=${this.editedAttributes.clone_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('clone_start', e.detail)}></md3-date-input>
+                   <md3-date-input label="Vegetative Start" .value=${this.editedAttributes.veg_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('veg_start', e.detail)}></md3-date-input>
+                   <md3-date-input label="Flower Start" .value=${this.editedAttributes.flower_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('flower_start', e.detail)}></md3-date-input>
+                   <md3-date-input label="Dry Start" .value=${this.editedAttributes.dry_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('dry_start', e.detail)}></md3-date-input>
+                   <md3-date-input label="Cure Start" .value=${this.editedAttributes.cure_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('cure_start', e.detail)}></md3-date-input>
+                ` : x `
+                   ${this.editedAttributes.stage === 'mother' ? x `
+                       <md3-date-input label="Mother Start" .value=${this.editedAttributes.mother_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('mother_start', e.detail)}></md3-date-input>
+                   ` : E}
+                   ${this.editedAttributes.stage === 'clone' ? x `
+                       <md3-date-input label="Clone Start" .value=${this.editedAttributes.clone_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('clone_start', e.detail)}></md3-date-input>
+                   ` : E}
+                   ${this.editedAttributes.stage === 'veg' || this.editedAttributes.stage === 'flower' ? x `
+                       <md3-date-input label="Vegetative Start" .value=${this.editedAttributes.veg_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('veg_start', e.detail)}></md3-date-input>
+                   ` : E}
+                   ${this.editedAttributes.stage === 'flower' ? x `
+                       <md3-date-input label="Flower Start" .value=${this.editedAttributes.flower_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('flower_start', e.detail)}></md3-date-input>
+                   ` : E}
+                   ${this.editedAttributes.stage === 'dry' || this.editedAttributes.stage === 'cure' ? x `
+                       <md3-date-input label="Dry Start" .value=${this.editedAttributes.dry_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('dry_start', e.detail)}></md3-date-input>
+                   ` : E}
+                   ${this.editedAttributes.stage === 'cure' ? x `
+                       <md3-date-input label="Cure Start" .value=${this.editedAttributes.cure_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('cure_start', e.detail)}></md3-date-input>
+                   ` : E}
+                `}
              </div>
-
-             <!-- STATS CARD -->
-             ${DialogRenderer.renderPlantStatsMD3(plant)}
-
           </div>
 
           <!-- ACTION BUTTONS -->
-          <div class="button-group">
+          <div class="button-group" style="padding: 16px 24px;">
              <button class="md3-button danger" @click=${() => this._delete(plantId)}>
-               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
-               Delete
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+                Delete
              </button>
 
              <button class="md3-button tonal" @click=${this._update}>
-               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
-               Save Changes
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
+                Save
              </button>
 
-             <!-- DYNAMIC ACTIONS BASED ON STAGE -->
-             ${plant.state.toLowerCase() === 'mother' ? x `
-                <div class="take-clone-container" style="display:contents;" data-plant-id="${plant.entity_id}">
-                  <!-- Ideally this input should be styled nicely too, but for now inline -->
-                   <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value="1"
-                    class="num-clones-input md3-input"
-                    style="width: 60px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 8px; text-align:center; padding:0;"
-                  >
-                  <button class="md3-button primary"
-                    @click=${(e) => {
+             <!-- DYNAMIC ACTIONS -->
+             ${this.plant.state.toLowerCase() === 'mother' ? x `
+                 <div class="take-clone-container" style="display:contents;" data-plant-id="${this.plant.entity_id}">
+                    <md3-number-input
+                      .min=${1}
+                      .max=${10}
+                      .value=${1}
+                      id="clone-count-input"
+                      style="width: 80px;"
+                    ></md3-number-input>
+                    <button class="md3-button primary"
+                      @click=${(e) => {
             const btn = e.currentTarget;
-            // Find the input sibling (since we used display:contents, they are siblings in the flex container)
-            const input = btn.previousElementSibling;
-            const numClones = input ? parseInt(input.value, 10) : 1;
-            this._takeClone(plant, numClones);
+            const container = btn.parentElement;
+            const inputEl = container?.querySelector('md3-number-input');
+            const numClones = inputEl ? Number(inputEl.value) : 1;
+            this._takeClone(this.plant, numClones);
         }}
-                  >
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
-                    Take Clone
-                  </button>
+                    >
+                      <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+                      Take Clone
+                    </button>
+                 </div>
+             ` : E}
+
+             ${this.plant.state.toLowerCase() === 'flower' ? x `
+                <button class="md3-button primary" @click=${() => this._harvest(this.plant)}>
+                  <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
+                  Harvest
+                </button>
+             ` : E}
+
+             ${this.plant.state.toLowerCase() === 'dry' ? x `
+                <button class="md3-button primary" @click=${() => this._finishDrying(this.plant)}>
+                  <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
+                  Finish Drying
+                </button>
+             ` : E}
+             
+             ${this.plant.state.toLowerCase() === 'clone' ? x `
+                <div style="display:contents; display:flex; gap: 8px; align-items: center;">
+                     <md3-select
+                       .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
+                       .value=${this.cloneTargetId}
+                       @change=${(e) => this.cloneTargetId = e.detail}
+                       style="min-width: 150px;"
+                     ></md3-select>
+                     <button class="md3-button primary"
+                       @click=${() => this._moveClone(this.plant)}
+                     >
+                       <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
+                       Move
+                     </button>
                 </div>
              ` : E}
-
-             ${plant.state.toLowerCase() === 'flower' ? x `
-               <button class="md3-button primary" @click=${() => this._harvest(plant)}>
-                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
-                 Harvest
-               </button>
-             ` : E}
-
-             ${plant.state.toLowerCase() === 'dry' ? x `
-               <button class="md3-button primary" @click=${() => this._finishDrying(plant)}>
-                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
-                 Finish Drying
-               </button>
-             ` : E}
-
-             ${plant.state.toLowerCase() === 'clone' ? x `
-               <div style="display:contents;">
-                  <select class="md3-input" style="width: auto; height: 40px; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 0 16px;" id="clone-target-select">
-                    <option value="">Move to...</option>
-                    ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
-                  </select>
-                  <button class="md3-button primary"
-                    @click=${(e) => {
-            const btn = e.currentTarget;
-            const select = btn.previousElementSibling;
-            if (!select.value) {
-                alert('Select a growspace');
-                return;
-            }
-            this._moveClone(plant, select.value);
-        }}
-                  >
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
-                    Move
-                  </button>
-               </div>
-             ` : E}
           </div>
-
         </div>
       </ha-dialog>
     `;
     }
 };
-PlantOverviewDialog.styles = i$4 `
-    :host {
-      display: block;
-    }
-    .glass-dialog-container {
-      background: rgba(20, 20, 20, 0.6);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      max-height: 85vh;
-      color: #fff;
-      font-family: 'Roboto', sans-serif;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    }
-    .dialog-header {
-      display: flex;
-      align-items: center;
-      padding: 16px 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(0, 0, 0, 0.2);
-    }
-    .dialog-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.05);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 16px;
-      color: var(--stage-color, #4CAF50);
-    }
-    .dialog-title-group {
-      flex: 1;
-    }
-    .dialog-title {
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 500;
-    }
-    .dialog-subtitle {
-      font-size: 0.85rem;
-      opacity: 0.7;
-      margin-top: 2px;
-    }
-    .overview-grid {
-      padding: 24px;
-      overflow-y: auto;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 16px;
-    }
-    .detail-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 16px;
-      overflow: hidden;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    .detail-card h3 {
-      margin-top: 0;
-      margin-bottom: 16px;
-      font-size: 1rem;
-      font-weight: 500;
-      opacity: 0.9;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      padding-bottom: 8px;
-    }
-    .button-group {
-      padding: 16px 24px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(0, 0, 0, 0.2);
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    @media (max-width: 450px) {
-      .button-group {
-        justify-content: center;
+PlantOverviewDialog.styles = [
+    dialogStyles,
+    i$4 `
+      :host {
+        display: block;
       }
-      .md3-button {
-        flex: 1 1 auto;
-        min-width: 100px;
-      }
-    }
-    .md3-button {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0 24px;
-      height: 40px;
-      border-radius: 20px;
-      border: none;
-      font-family: inherit;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .md3-button.text {
-      background: transparent;
-      color: rgba(255, 255, 255, 0.7);
-      padding: 0 12px;
-    }
-    .md3-button.text:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: #fff;
-    }
-    .md3-button.tonal {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-    }
-    .md3-button.tonal:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-    .md3-button.primary {
-      background: var(--primary-color, #2196F3);
-      color: #fff;
-    }
-    .md3-button.primary:hover {
-      filter: brightness(1.1);
-      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
-    }
-    .md3-button.danger {
-      background: rgba(244, 67, 54, 0.1);
-      color: #f44336;
-    }
-    .md3-button.danger:hover {
-      background: rgba(244, 67, 54, 0.2);
-    }
-    .md3-input {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #fff;
-        border-radius: 4px;
-        padding: 8px;
-    }
-    /* Add other styles from dialog-renderer as needed */
-    .row-col-grid {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .row-col-grid > * {
-      flex: 1;
-      min-width: 0; /* Critical for flex items to shrink below minimum content size */
-    }
-
-    @media (max-width: 450px) {
+      
       .overview-grid {
-        flex: 1;
-        min-height: 0;
-        padding: 8px;
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+        padding: 24px;
+        overflow-y: auto;
       }
-      .dialog-title-group {
-        flex: 5;
+
+      /* Timeline Styles */
+      .timeline {
+        position: relative;
+        padding-left: 24px;
+        border-left: 2px solid rgba(255, 255, 255, 0.1);
+        margin-top: 16px;
+      }
+      .timeline-event {
+        margin-bottom: 24px;
+        position: relative;
+      }
+      .timeline-event::before {
+        content: '';
+        position: absolute;
+        left: -31px;
+        top: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--event-color, #4CAF50);
+        border: 2px solid #2c2c2c;
+      }
+      .timeline-date {
+        font-size: 0.8rem;
+        opacity: 0.6;
+        margin-bottom: 4px;
+      }
+      .timeline-content {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      /* Stat Grid */
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 12px;
+      }
+      .stat-item {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 12px;
         text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
       }
-      .button-group {
-        justify-content: center;
+      .stat-value {
+        font-size: 1.1rem;
+        font-weight: 500;
       }
-      .detail-card  {
-        overflow: unset
+      .stat-label {
+        font-size: 0.75rem;
+        opacity: 0.7;
       }
-      .dialog-header .md3-button.text {
-        flex: 0;
+
+      /* Image Gallery */
+      .image-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 8px;
+        margin-top: 12px;
       }
-      .detail-card .md3-button {
-        flex: 1 1 1;
+      .plant-image {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: cover;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        border: 1px solid rgba(255, 255, 255, 0.1);
       }
-      .button-group .md3-button {
-        flex: 1 1 auto;
-        min-width: 100px;
+      .plant-image:hover {
+        transform: scale(1.05);
       }
-    }
-  `;
+      
+      .md3-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+        margin-bottom: 12px;
+      }
+
+      @media(max-width: 600px) {
+        .overview-grid {
+          grid-template-columns: 1fr;
+          padding: 16px;
+        }
+      }
+      @media(max-width: 450px) {
+        .glass-dialog-container {
+          border-radius: 0;
+          width: 100vw;
+          height: 100vh;
+          max-width: 100%;
+        }
+        .overview-grid {
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+        }
+        .dialog-header {
+          padding: 12px 16px;
+        }
+      }
+    `
+];
 __decorate([
     n$2({ attribute: false }),
     __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "dialog", void 0);
+], PlantOverviewDialog.prototype, "hass", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$2({ type: Boolean, reflect: true }),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "open", void 0);
+__decorate([
+    n$2({ type: Object }),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "plant", void 0);
+__decorate([
+    n$2({ type: Object }),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "growspaceOptions", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "editedAttributes", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "isEditing", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "showAllDates", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "cloneTargetId", void 0);
 PlantOverviewDialog = __decorate([
     t('plant-overview-dialog')
 ], PlantOverviewDialog);
@@ -11195,7 +11478,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
     }
     render() {
         if (!this.open)
-            return x ``;
+            return E;
         return x `
       <ha-dialog
         open
@@ -11204,7 +11487,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
         .scrimClickAction=${''}
         .escapeKeyAction=${''}
       >
-        <div class="strain-dialog-container">
+        <div class="glass-dialog-container">
           ${this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView()}
         </div>
 
@@ -11221,7 +11504,6 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
             (s.phenotype && s.phenotype.toLowerCase().includes(query)));
         // Pagination Logic
         const totalPages = Math.ceil(filteredStrains.length / this.ITEMS_PER_PAGE);
-        // Ensure current page is valid (e.g. if filtering reduced pages)
         if (this._currentPage > totalPages && totalPages > 0) {
             this._currentPage = totalPages;
         }
@@ -11230,33 +11512,37 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
         const startIndex = (this._currentPage - 1) * this.ITEMS_PER_PAGE;
         const paginatedStrains = filteredStrains.slice(startIndex, startIndex + this.ITEMS_PER_PAGE);
         return x `
-      <div class="sd-header">
-        <h2 class="sd-title">Strain Library</h2>
-        <div class="header-actions">
-            <button class="menu-btn" @click=${() => this._mobileMenuOpen = !this._mobileMenuOpen}>
+      <div class="dialog-header">
+        <div class="dialog-icon">
+            <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiLeaf}"></path></svg>
+        </div>
+        <div class="dialog-title-group">
+            <h2 class="dialog-title">Strain Library</h2>
+        </div>
+        
+        <div class="header-actions" style="display:flex; gap:8px;">
+            <button class="md3-button text" @click=${() => this._mobileMenuOpen = !this._mobileMenuOpen} style="min-width:auto; padding:8px; display: none;">
                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
             </button>
-            <button class="sd-close-btn" @click=${() => this.dispatchEvent(new CustomEvent('close'))}>
+            <style>@media(max-width:600px){ button[style*="mdiDotsVertical"] { display: flex !important; } }</style>
+            
+            <button class="md3-button text" @click=${() => this.dispatchEvent(new CustomEvent('close'))} style="min-width:auto; padding:8px;">
                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
             </button>
         </div>
       </div>
 
       <div class="sd-content">
-        <!-- ... search and grid ... -->
         <div class="search-bar-container">
           <div class="search-input-wrapper">
-            <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-            <input
-              type="text"
-              class="search-bar-input"
-              placeholder="Search Strains by Name, Breeder..."
-              .value=${this._searchQuery}
-              @input=${(e) => {
-            this._searchQuery = e.target.value;
-            this._currentPage = 1; // Reset to page 1 on search
+             <md3-text-input 
+                placeholder="Search Strains by Name, Breeder..."
+                .value=${this._searchQuery}
+                @change=${(e) => {
+            this._searchQuery = e.detail;
+            this._currentPage = 1;
         }}
-            />
+             ></md3-text-input>
           </div>
         </div>
 
@@ -11265,7 +11551,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
         </div>
 
         ${filteredStrains.length === 0 ? x `
-          <div style="text-align:center; padding: 40px; color: var(--text-secondary);">
+          <div style="text-align:center; padding: 40px; color: var(--secondary-text-color);">
             <svg style="width:48px;height:48px;fill:currentColor; opacity:0.5;" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
             <p>No strains found matching "${query}"</p>
           </div>
@@ -11310,23 +11596,23 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
 
       <!-- Mobile FAB -->
       <button class="fab-btn" @click=${() => this._startEdit()}>
-        <svg style="fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+        <svg style="fill:currentColor; width: 24px; height: 24px;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
       </button>
 
       <div class="sd-footer">
-        <button class="sd-btn secondary" @click=${() => this.dispatchEvent(new CustomEvent('get-recommendation'))}>
+        <button class="md3-button tonal" @click=${() => this.dispatchEvent(new CustomEvent('get-recommendation'))}>
           <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
           Get Recommendation
         </button>
-        <button class="sd-btn secondary" @click=${() => this._importDialogOpen = true}>
+        <button class="md3-button tonal" @click=${() => this._importDialogOpen = true}>
           <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
           Import Strains
         </button>
-        <button class="sd-btn secondary" @click=${() => this.dispatchEvent(new CustomEvent('export-library'))}>
+        <button class="md3-button tonal" @click=${() => this.dispatchEvent(new CustomEvent('export-library'))}>
           <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg>
           Export Strains
         </button>
-        <button class="sd-btn primary" @click=${() => this._startEdit()}>
+        <button class="md3-button primary" @click=${() => this._startEdit()}>
           <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
           New Strain
         </button>
@@ -11390,17 +11676,17 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
         ${uniqueBreeders.map(name => x `<option value="${name}"></option>`)}
       </datalist>
 
-      <div class="sd-header">
-        <div style="display:flex; align-items:center; gap:16px;">
-          <button class="sd-btn secondary" style="padding: 8px 12px;" @click=${() => this._view = 'browse'}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiArrowLeft}"></path></svg>
-            Back
-          </button>
-          <h2 class="sd-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
-        </div>
-        <button class="sd-close-btn" @click=${() => this.dispatchEvent(new CustomEvent('close'))}>
-          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
-        </button>
+      <div class="dialog-header">
+         <div style="display:flex; align-items:center; gap:16px;">
+           <button class="md3-button tonal" style="padding: 0 12px; height: 32px;" @click=${() => this._view = 'browse'}>
+             <svg style="width:18px;height:18px;fill:currentColor; margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiArrowLeft}"></path></svg>
+             Back
+           </button>
+           <h2 class="dialog-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
+         </div>
+         <button class="md3-button text" @click=${() => this.dispatchEvent(new CustomEvent('close'))} style="min-width:auto; padding:8px;">
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+         </button>
       </div>
 
       <div class="sd-content">
@@ -11410,7 +11696,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
             <div class="photo-upload-area"
                 @click=${(e) => {
             const target = e.target;
-            if (!target.closest('.crop-btn') && !target.closest('.select-library-btn') && !target.closest('.sd-btn')) {
+            if (!target.closest('.crop-btn') && !target.closest('.select-library-btn') && !target.closest('.md3-button')) {
                 e.currentTarget.querySelector('input')?.click();
             }
         }}
@@ -11452,7 +11738,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
               ` : x `
                 <div style="display: flex; gap: 16px; align-items: center;">
                   <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                      <button class="sd-btn secondary" @click=${(e) => e.currentTarget.nextElementSibling.click()}>
+                      <button class="md3-button tonal" @click=${(e) => e.currentTarget.nextElementSibling.click()}>
                         <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
                         Camera
                       </button>
@@ -11460,7 +11746,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
                   </div>
                   
                   <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                      <button class="sd-btn secondary" @click=${(e) => e.currentTarget.nextElementSibling.click()}>
+                      <button class="md3-button tonal" @click=${(e) => e.currentTarget.nextElementSibling.click()}>
                         <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
                         Gallery
                       </button>
@@ -11471,26 +11757,33 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
               `}
             </div>
 
-            <div class="sd-form-group">
-              <label class="sd-label">Strain Name *</label>
-              <input type="text" class="sd-input" list="strain-suggestions" .value=${s.strain || ''} @input=${(e) => this._handleEditorChange('strain', e.target.value)} />
-            </div>
+            <md3-text-input 
+              label="Strain Name *" 
+              .value=${s.strain || ''}
+              list="strain-suggestions"
+              @change=${(e) => this._handleEditorChange('strain', e.detail)}>
+            </md3-text-input>
 
-            <div class="sd-form-group">
-              <label class="sd-label">Phenotype</label>
-              <input type="text" class="sd-input" placeholder="e.g. #1 (Optional)" .value=${s.phenotype || ''} @input=${(e) => this._handleEditorChange('phenotype', e.target.value)} />
-            </div>
+            <md3-text-input 
+              label="Phenotype"
+              placeholder="e.g. #1 (Optional)" 
+              .value=${s.phenotype || ''} 
+              @change=${(e) => this._handleEditorChange('phenotype', e.detail)}>
+            </md3-text-input>
 
-            <div class="sd-form-group">
-              <label class="sd-label">Breeder/Seedbank</label>
-              <input type="text" class="sd-input" list="breeder-suggestions" .value=${s.breeder || ''} @input=${(e) => this._handleEditorChange('breeder', e.target.value)} />
-            </div>
+            <md3-text-input 
+              label="Breeder/Seedbank"
+              list="breeder-suggestions"
+              .value=${s.breeder || ''} 
+              @change=${(e) => this._handleEditorChange('breeder', e.detail)}>
+            </md3-text-input>
+            
           </div>
 
           <!-- RIGHT COL: GENETICS -->
           <div class="editor-col">
-            <div class="sd-form-group">
-              <label class="sd-label">Type *</label>
+            <div style="margin-bottom: 20px;">
+              <label class="md3-label" style="display:block; margin-bottom:8px; color:var(--secondary-text-color);">Type *</label>
               <div class="type-selector-grid">
                 ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map(t => {
             let icon = mdiLeaf;
@@ -11505,7 +11798,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
                     <div class="type-option ${isActive ? 'active' : ''}"
                         @click=${() => this._handleEditorChange('type', t)}>
                       <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-                      <span class="type-label">${t}</span>
+                      <span class="type-label" style="font-size:0.85rem; font-weight:500;">${t}</span>
                     </div>
                   `;
         })}
@@ -11513,11 +11806,11 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
             </div>
 
             ${(s.type || '').toLowerCase() === 'hybrid' ? x `
-              <div class="sd-form-group">
-                <label class="sd-label">Hybrid Composition (%)</label>
+              <div style="margin-bottom: 20px;">
+                <label class="md3-label" style="display:block; margin-bottom:8px; color:var(--secondary-text-color);">Hybrid Composition (%)</label>
                 <div class="hg-container" style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;">
                   <div class="hg-labels">
-                    <div class="hg-input-label">
+                    <div class="hg-input-label" style="display:flex; align-items:center; gap:4px;">
                       <span>Indica:</span>
                       <input class="hg-num-input" type="number" min="0" max="100"
                         .value=${s.indica_percentage || 0}
@@ -11532,7 +11825,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
         }} />
                       <span>%</span>
                     </div>
-                    <div class="hg-input-label">
+                    <div class="hg-input-label" style="display:flex; align-items:center; gap:4px;">
                       <span>Sativa:</span>
                       <input class="hg-num-input" type="number" min="0" max="100"
                         .value=${s.sativa_percentage || 0}
@@ -11571,21 +11864,31 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
               </div>
             ` : E}
 
-            <div class="sd-form-group">
-              <label class="sd-label">Flowering Time (Days)</label>
-              <div style="display:flex; gap:16px;">
-                <input type="number" class="sd-input" placeholder="Min" .value=${s.flowering_days_min || ''} @input=${(e) => this._handleEditorChange('flowering_days_min', e.target.value)} />
-                <input type="number" class="sd-input" placeholder="Max" .value=${s.flowering_days_max || ''} @input=${(e) => this._handleEditorChange('flowering_days_max', e.target.value)} />
-              </div>
+            <div style="display:flex; gap:16px; margin-bottom: 20px;">
+                <div style="flex:1">
+                    <md3-number-input 
+                        label="Min Flowering Days" 
+                        .value=${s.flowering_days_min || ''} 
+                         @change=${(e) => this._handleEditorChange('flowering_days_min', e.detail)}>
+                    </md3-number-input>
+                </div>
+                <div style="flex:1">
+                    <md3-number-input 
+                        label="Max Flowering Days" 
+                        .value=${s.flowering_days_max || ''} 
+                         @change=${(e) => this._handleEditorChange('flowering_days_max', e.detail)}>
+                    </md3-number-input>
+                </div>
             </div>
 
-            <div class="sd-form-group">
-              <label class="sd-label">Lineage</label>
-              <input type="text" class="sd-input" .value=${s.lineage || ''} @input=${(e) => this._handleEditorChange('lineage', e.target.value)} />
-            </div>
+            <md3-text-input 
+                label="Lineage" 
+                .value=${s.lineage || ''} 
+                @change=${(e) => this._handleEditorChange('lineage', e.detail)}>
+            </md3-text-input>
 
-            <div class="sd-form-group">
-              <label class="sd-label">Sex</label>
+            <div style="margin-bottom: 20px;">
+              <label class="md3-label" style="display:block; margin-bottom:8px; color:var(--secondary-text-color);">Sex</label>
               <div style="display:flex; gap:20px; padding: 8px 0;">
                 ${['Feminized', 'Regular'].map(sex => x `
                   <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:white;">
@@ -11599,17 +11902,20 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
               </div>
             </div>
 
-            <div class="sd-form-group">
-              <label class="sd-label">Description</label>
-              <textarea class="sd-textarea" .value=${s.description || ''} @input=${(e) => this._handleEditorChange('description', e.target.value)}></textarea>
+            <div style="margin-bottom: 20px;">
+              <label class="md3-label" style="display:block; margin-bottom:8px; color:var(--secondary-text-color);">Description</label>
+              <textarea class="sd-textarea" 
+                .value=${s.description || ''} 
+                @input=${(e) => this._handleEditorChange('description', e.target.value)}
+              ></textarea>
             </div>
           </div>
         </div>
       </div>
 
       <div class="sd-footer">
-        <button class="sd-btn secondary" @click=${() => this._view = 'browse'}>Cancel</button>
-        <button class="sd-btn primary" @click=${() => this._handleSave()}>
+        <button class="md3-button tonal" @click=${() => this._view = 'browse'}>Cancel</button>
+        <button class="md3-button primary" @click=${() => this._handleSave()}>
           <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
           Save Strain
         </button>
@@ -11692,10 +11998,10 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
         });
         return x `
       <div class="crop-overlay">
-        <div style="background: #1a1a1a; width: 80%; max-width: 800px; height: 80%; max-height: 600px; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color);">
-          <div class="sd-header">
-            <h2 class="sd-title">Select from Library</h2>
-            <button class="sd-close-btn" @click=${() => this._toggleImageSelector(false)}>
+        <div class="glass-dialog-container" style="width: 80%; max-width: 800px; height: 80%; max-height: 600px;">
+          <div class="dialog-header">
+            <h2 class="dialog-title">Select from Library</h2>
+            <button class="md3-button text" @click=${() => this._toggleImageSelector(false)} style="min-width:auto; padding:8px;">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
             </button>
           </div>
@@ -11716,7 +12022,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
                 </div>
               `)}
             </div>
-            ${imageMap.size === 0 ? x `<p style="text-align: center; color: var(--text-secondary); margin-top: 40px;">No images found in library.</p>` : E}
+            ${imageMap.size === 0 ? x `<p style="text-align: center; color: var(--secondary-text-color); margin-top: 40px;">No images found in library.</p>` : E}
           </div>
         </div>
       </div>
@@ -11725,214 +12031,98 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
     renderImportDialog() {
         return x `
       <div class="crop-overlay">
-        <div style="background: #1a1a1a; width: 400px; max-width: 90vw; border-radius: 16px; padding: 24px; border: 1px solid var(--border-color); color: #fff; display: flex; flex-direction: column; gap: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 style="margin: 0; font-size: 1.25rem;">Import Strains</h2>
-            <button class="sd-close-btn" @click=${() => this._importDialogOpen = false}>
+        <div class="glass-dialog-container" style="width: 400px; max-width: 90vw; height: auto;">
+          <div class="dialog-header">
+            <h2 class="dialog-title">Import Strains</h2>
+            <button class="md3-button text" @click=${() => this._importDialogOpen = false} style="min-width:auto; padding:8px;">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
             </button>
           </div>
+          
+          <div style="padding: 24px;">
+            <div style="font-size: 0.9rem; color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 20px;">
+                Select a ZIP file containing your strain library export. You can either merge the new strains with your existing library or replace it entirely.
+            </div>
 
-          <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">
-            Select a ZIP file containing your strain library export. You can either merge the new strains with your existing library or replace it entirely.
-          </div>
+            <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                <input type="radio" name="import_mode"
+                        .checked=${!this._importReplace}
+                        @change=${() => this._importReplace = false}
+                        style="accent-color: var(--accent-green); transform: scale(1.2);" />
+                <div>
+                    <div style="font-weight: 600;">Merge</div>
+                    <div style="font-size: 0.8rem; color: var(--secondary-text-color);">Add new strains, keep existing ones.</div>
+                </div>
+                </label>
 
-          <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
-            <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
-              <input type="radio" name="import_mode"
-                      .checked=${!this._importReplace}
-                      @change=${() => this._importReplace = false}
-                      style="accent-color: var(--accent-green); transform: scale(1.2);" />
-              <div>
-                <div style="font-weight: 600;">Merge</div>
-                <div style="font-size: 0.8rem; color: var(--text-secondary);">Add new strains, keep existing ones.</div>
-              </div>
-            </label>
+                <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 12px 0;"></div>
 
-            <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 12px 0;"></div>
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                <input type="radio" name="import_mode"
+                        .checked=${this._importReplace}
+                        @change=${() => this._importReplace = true}
+                        style="accent-color: var(--accent-green); transform: scale(1.2);" />
+                <div>
+                    <div style="font-weight: 600;">Replace</div>
+                    <div style="font-size: 0.8rem; color: var(--secondary-text-color);">Overwrite entire library with import.</div>
+                </div>
+                </label>
+            </div>
 
-            <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
-              <input type="radio" name="import_mode"
-                    .checked=${this._importReplace}
-                    @change=${() => this._importReplace = true}
-                    style="accent-color: var(--accent-green); transform: scale(1.2);" />
-              <div>
-                <div style="font-weight: 600;">Replace</div>
-                <div style="font-size: 0.8rem; color: var(--text-secondary);">Overwrite entire library with import.</div>
-              </div>
-            </label>
-          </div>
-
-          <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
-            <button class="sd-btn secondary" @click=${() => this._importDialogOpen = false}>
-              Cancel
-            </button>
-            <button class="sd-btn primary" @click=${() => this._handleImportFile()}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
-              Select File
-            </button>
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
+                <button class="md3-button tonal" @click=${() => this._importDialogOpen = false}>
+                Cancel
+                </button>
+                <button class="md3-button primary" @click=${() => this._handleImportFile()}>
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
+                Select File
+                </button>
+            </div>
           </div>
         </div>
       </div>
     `;
     }
 };
-StrainLibraryDialog.styles = i$4 `
+StrainLibraryDialog.styles = [
+    dialogStyles,
+    i$4 `
     :host {
-      --accent-green: #22c55e;
-      --card-bg: #2d2d2d;
-      --input-bg: #2d2d2d;
-      --text-secondary: #9ca3af;
-      --border-color: #374151;
-      font-family: 'Roboto', sans-serif;
+      --accent-green: #4CAF50;
+      /* Using dialogStyles variables where possible */
     }
 
-    ha-dialog {
-      --mdc-dialog-min-width: 80vw;
-      --mdc-dialog-max-width: 95vw;
-      --dialog-surface-margin: 24px;
-      --dialog-content-padding: 0;
-      --dialog-scrollable-header-padding: 0;
-    }
-
-    /* STRICT DARK MODE & SHARED STYLES */
+    /* Additional specific styles */
+    
+    /* Layout Overrides */
     .strain-dialog-container {
-        background-color: #1a1a1a; /* Deep Charcoal */
-        color: #fff;
-        display: flex;
-        flex-direction: column;
-        height: 85vh;
+        @apply .glass-dialog-container; 
+        /* Since we can't use @apply in standard css without processor, we must duplicate or rely on .glass-dialog-container class in render */
+        /* But we will use the class in render */
+    }
+
+    .glass-dialog-container {
         width: 80vw;
         max-width: 95vw;
-        border-radius: 16px;
-        overflow: hidden;
+        height: 85vh;
     }
-
-    /* SCROLLBAR */
-    .strain-dialog-container ::-webkit-scrollbar { width: 8px; }
-    .strain-dialog-container ::-webkit-scrollbar-track { background: transparent; }
-    .strain-dialog-container ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-    .strain-dialog-container ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-
-    /* HEADER */
-    .sd-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--border-color);
-      background: #1a1a1a;
-      z-index: 10;
-    }
-    .sd-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: #fff;
-      margin: 0;
-    }
-    .sd-close-btn {
-      background: none;
-      border: none;
-      color: var(--text-secondary);
-      cursor: pointer;
-      padding: 8px;
-      border-radius: 50%;
-      transition: all 0.2s;
-    }
-    .sd-close-btn:hover {
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-    }
-
-    /* CONTENT AREA */
+    
     .sd-content {
-      flex: 1;
-      overflow-y: auto;
       padding: 24px;
-      background: #1a1a1a;
-    }
-
-    /* FOOTER */
-    .sd-footer {
-      padding: 16px 24px;
-      border-top: 1px solid var(--border-color);
-      background: #1a1a1a;
+      overflow-y: auto;
+      flex: 1;
       display: flex;
-      justify-content: flex-end;
-      gap: 12px;
+      flex-direction: column;
     }
 
-    /* BUTTONS */
-    .sd-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: none;
-    }
-    .sd-btn.primary {
-      background: var(--accent-green);
-      color: #fff;
-    }
-    .sd-btn.primary:hover {
-      background: #16a34a;
-      box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
-    }
-    .sd-btn.secondary {
-      background: var(--card-bg);
-      color: var(--text-secondary);
-      border: 1px solid var(--border-color);
-    }
-    .sd-btn.secondary:hover {
-      background: #374151;
-      color: #fff;
-    }
-    .sd-btn.danger {
-        background: rgba(220, 38, 38, 0.1);
-        color: #ef4444;
-        border: 1px solid rgba(220, 38, 38, 0.2);
-    }
-    .sd-btn.danger:hover {
-        background: rgba(220, 38, 38, 0.2);
-    }
-
-    /* FORMS */
-    .sd-form-group {
-      margin-bottom: 20px;
-    }
-    .sd-label {
-      display: block;
-      color: var(--text-secondary);
-      font-size: 0.85rem;
-      margin-bottom: 8px;
-      font-weight: 500;
-    }
-    .sd-input, .sd-textarea, .sd-select {
-      width: 100%;
-      background: var(--input-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 12px 16px;
-      color: #fff;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-      box-sizing: border-box;
-    }
-    .sd-input:focus, .sd-textarea:focus, .sd-select:focus {
-      border-color: var(--accent-green);
-    }
-    .sd-textarea {
-      resize: vertical;
-      min-height: 100px;
+    .sd-footer {
+        padding: 16px 24px;
+        background: rgba(0,0,0,0.2);
+        border-top: 1px solid rgba(255,255,255,0.1);
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
     }
 
     /* GRID & CARDS */
@@ -11942,14 +12132,15 @@ StrainLibraryDialog.styles = i$4 `
       gap: 20px;
     }
     .strain-card {
-        background: var(--card-bg);
+        background: rgba(255,255,255,0.05);
         border-radius: 12px;
         overflow: hidden;
-        border: 1px solid var(--border-color);
+        border: 1px solid rgba(255,255,255,0.05);
         transition: all 0.3s ease;
         position: relative;
         display: flex;
         flex-direction: column;
+        cursor: pointer;
     }
     .strain-card:hover {
         border-color: var(--accent-green);
@@ -11994,7 +12185,7 @@ StrainLibraryDialog.styles = i$4 `
         flex-direction: column;
         gap: 4px;
         font-size: 0.8rem;
-        color: var(--text-secondary);
+        color: var(--secondary-text-color);
     }
     .sc-actions {
         position: absolute;
@@ -12039,46 +12230,26 @@ StrainLibraryDialog.styles = i$4 `
         transform: translateY(-50%);
         width: 20px;
         height: 20px;
-        fill: var(--text-secondary);
+        fill: var(--secondary-text-color);
+        pointer-events: none;
     }
     .search-bar-input {
         width: 100%;
-        background: var(--card-bg);
-        border: 1px solid var(--border-color);
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
         border-radius: 12px;
         padding: 14px 14px 14px 48px;
         color: #fff;
         font-size: 1rem;
         outline: none;
         box-sizing: border-box;
+        font-family: inherit;
     }
     .search-bar-input:focus {
         border-color: var(--accent-green);
+        background: rgba(255,255,255,0.08);
     }
-    .filter-chips {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        align-items: center;
-    }
-    .filter-chip {
-        background: #374151;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        color: #fff;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-    .clear-link {
-        color: var(--accent-green);
-        font-size: 0.85rem;
-        text-decoration: underline;
-        cursor: pointer;
-        margin-left: 8px;
-    }
-
+    
     /* EDITOR LAYOUT */
     .editor-layout {
         display: grid;
@@ -12089,49 +12260,9 @@ StrainLibraryDialog.styles = i$4 `
         .editor-layout { grid-template-columns: 1fr; }
     }
 
-    /* TYPE SELECTOR */
-    .type-selector-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-    }
-    .type-option {
-        background: var(--input-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        padding: 16px;
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.2s;
-        text-align: center;
-    }
-    .type-option:hover {
-        border-color: #666;
-    }
-    .type-option.active {
-        background: rgba(34, 197, 94, 0.1);
-        border-color: var(--accent-green);
-        color: #fff;
-    }
-    .type-option svg {
-        width: 28px;
-        height: 28px;
-        fill: var(--text-secondary);
-    }
-    .type-option.active svg {
-        fill: var(--accent-green);
-    }
-    .type-label {
-        font-size: 0.85rem;
-        font-weight: 500;
-    }
-
     /* PHOTO UPLOAD */
     .photo-upload-area {
-        border: 2px dashed var(--border-color);
+        border: 2px dashed rgba(255,255,255,0.1);
         border-radius: 12px;
         background: rgba(255,255,255,0.02);
         height: 240px;
@@ -12139,7 +12270,7 @@ StrainLibraryDialog.styles = i$4 `
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        color: var(--text-secondary);
+        color: var(--secondary-text-color);
         cursor: pointer;
         transition: all 0.2s;
         margin-bottom: 20px;
@@ -12148,7 +12279,7 @@ StrainLibraryDialog.styles = i$4 `
     }
     .photo-upload-area:hover {
         border-color: var(--accent-green);
-        background: rgba(34, 197, 94, 0.05);
+        background: rgba(76, 175, 80, 0.05);
     }
     .select-library-btn {
         position: absolute;
@@ -12204,7 +12335,44 @@ StrainLibraryDialog.styles = i$4 `
         accent-color: var(--accent-green);
     }
 
-    /* HYBRID GRAPH STYLES */
+    /* Type Selector */
+    .type-selector-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .type-option {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 16px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        text-align: center;
+    }
+    .type-option:hover {
+        border-color: #666;
+    }
+    .type-option.active {
+        background: rgba(76, 175, 80, 0.1);
+        border-color: var(--accent-green);
+        color: #fff;
+    }
+    .type-option svg {
+        width: 28px;
+        height: 28px;
+        fill: var(--secondary-text-color);
+    }
+    .type-option.active svg {
+        fill: var(--accent-green);
+    }
+    
+    /* Hybrid Graph */
     .hg-container {
         display: flex;
         flex-direction: column;
@@ -12245,36 +12413,16 @@ StrainLibraryDialog.styles = i$4 `
     }
     .hg-tick {
         position: absolute;
-        top: 0;
-        bottom: 0;
+        top: 0; bottom: 0;
         width: 1px;
         background: rgba(255,255,255,0.4);
         pointer-events: none;
     }
-    .hg-legend-container {
-        position: relative;
-        height: 14px;
-        width: 100%;
-        margin-top: 2px;
-    }
-    .hg-legend-label {
-        position: absolute;
-        font-size: 0.65rem;
-        color: var(--text-secondary);
-        transform: translateX(-50%);
-    }
-    .hg-legend-label.start { left: 0; transform: none; }
-    .hg-legend-label.end { right: 0; transform: none; }
-
-    .hg-input-label {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
+    
     .hg-num-input {
         background: transparent;
         border: none;
-        border-bottom: 1px solid var(--text-secondary);
+        border-bottom: 1px solid var(--secondary-text-color);
         color: #fff;
         width: 36px;
         text-align: center;
@@ -12282,12 +12430,12 @@ StrainLibraryDialog.styles = i$4 `
         font-weight: 700;
         padding: 0;
     }
-        .hg-num-input:focus {
+    .hg-num-input:focus {
         outline: none;
         border-bottom-color: var(--accent-green);
     }
-
-    /* PAGINATION */
+    
+    /* Pagination */
     .pagination-container {
         display: flex;
         align-items: center;
@@ -12297,13 +12445,13 @@ StrainLibraryDialog.styles = i$4 `
         padding-bottom: 8px;
     }
     .pagination-text {
-        color: var(--text-secondary);
+        color: var(--secondary-text-color);
         font-size: 0.9rem;
         font-weight: 500;
     }
     .pagination-btn {
-        background: var(--card-bg);
-        border: 1px solid var(--border-color);
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
         color: #fff;
         width: 36px;
         height: 36px;
@@ -12317,140 +12465,86 @@ StrainLibraryDialog.styles = i$4 `
     .pagination-btn:hover:not(:disabled) {
         border-color: var(--accent-green);
         color: var(--accent-green);
+        background: rgba(255,255,255,0.1);
     }
     .pagination-btn:disabled {
         opacity: 0.5;
         cursor: not-allowed;
         border-color: transparent;
     }
-    /* MOBILE RESPONSIVENESS */
-    .mobile-actions { display: none; }
-    .desktop-actions { display: flex; gap: 12px; }
 
-    /* Hide mobile-only buttons by default (Desktop) */
-    .fab-btn, .menu-btn { display: none; }
-
-    @media (max-width: 600px) {
-      ha-dialog {
-        --mdc-dialog-min-width: 95vw;
-        --mdc-dialog-max-width: 95vw;
-      }
-
-      .strain-dialog-container {
-        width: 95vw;
-        height: 90vh;
-        max-width: 95vw;
-        position: relative;
-      }
-
-      .sd-header {
-        padding: 16px;
-      }
-
-      .sd-title {
-        font-size: 1.1rem;
-      }
-
-      .sd-content {
-        padding: 16px;
-      }
-
-      .sd-grid {
-        grid-template-columns: 1fr;
-      }
-      .sd-footer {
-        display: none;
-      }
-      
-      
-      .fab-btn {
-        display: flex;
-      }
-      
-      .menu-btn {
-        display: flex;
-      }
-
-      /* Mobile Menu Dropdown Position */
-      .mobile-menu {
+    /* Mobile Responsive */
+     @media (max-width: 600px) {
+       .glass-dialog-container {
+         width: 95vw;
+         height: 90vh;
+         max-width: 95vw;
+       }
+       .sd-header { padding: 16px; }
+       .sd-content { padding: 16px; }
+       .sd-grid { grid-template-columns: 1fr; }
+       .sd-footer { display: none; }
+     }
+     
+     .fab-btn {
         position: absolute;
-        top: 60px;
-        right: 16px;
-        background: #2d2d2d;
-        border-radius: 4px;
-        padding: 8px 0;
-        min-width: 200px;
-        box-shadow: 0 2px 6px 2px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.3);
-        z-index: 30;
-        display: flex;
-        flex-direction: column;
-      }
-      /* FAB Styles */
-      .fab-btn {
-        position: absolute;
-        bottom: 24px;
-        right: 24px;
-        width: 56px;
-        height: 56px;
+        bottom: 24px; right: 24px;
+        width: 56px; height: 56px;
         border-radius: 16px;
         background: var(--accent-green);
         color: #fff;
         border: none;
-        box-shadow: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        box-shadow: 0 4px 8px 3px rgba(0,0,0,0.15);
+        display: none; /* Hidden on desktop */
+        align-items: center; justify-content: center;
         cursor: pointer;
-        transition: all 0.2s;
         z-index: 20;
-        display: flex;
-      }
-      
-      /* Mobile Menu Button */
-      .menu-btn {
-        background: transparent;
-        border: none;
-        color: var(--text-secondary);
-        padding: 8px;
-        cursor: pointer;
-        border-radius: 50%;
-        display: block; 
-      }
+     }
 
-      .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .mobile-menu-item {
-        padding: 12px 16px; /* M3 List Item padding */
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        color: #fff; /* On Surface */
-        font-size: 0.9rem; /* Body Large */
-        cursor: pointer;
-        transition: background 0.2s;
-      }
-      .mobile-menu-item:hover {
-        background: rgba(255,255,255,0.08); /* State Layer */
-      }
-      .mobile-menu-item svg {
-        width: 20px;
-        height: 20px;
-        fill: var(--text-secondary);
-      }
-      
-      /* Overlay to close menu */
-      .menu-overlay {
+     .sd-textarea {
+          width: 100%;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 8px;
+          padding: 12px;
+          color: #fff;
+          font-family: inherit;
+          resize: vertical;
+          box-sizing: border-box;
+          font-size: 1rem; 
+     }
+     .sd-textarea:focus {
+        border-color: var(--accent-green);
+        outline: none;
+        background: rgba(255,255,255,0.08);
+     }
+     
+     /* Mobile menu */
+     .mobile-menu {
         position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        z-index: 25;
-        background: transparent;
+        top: 60px; right: 16px;
+        background: #2d2d2d;
+        border-radius: 4px;
+        padding: 8px 0;
+        min-width: 200px;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+        z-index: 30;
       }
-    }
-  `;
+      .mobile-menu-item {
+        padding: 12px 16px;
+        display: flex; align-items: center; gap: 12px;
+        color: #fff; cursor: pointer;
+      }
+      .mobile-menu-item:hover { background: rgba(255,255,255,0.08); }
+      .mobile-menu-item svg { width: 20px; height: 20px; fill: var(--secondary-text-color); }
+      .menu-overlay { position: absolute; inset:0; z-index: 25; }
+      
+      /* Mobile Button Visibility */
+      @media (max-width: 600px) {
+        .fab-btn { display: flex; }
+      }
+    `
+];
 __decorate([
     n$2({ type: Boolean }),
     __metadata("design:type", Object)
@@ -12669,7 +12763,7 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
       >
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
           <div class="dialog-header">
-            <div class="dialog-icon" style="background: ${dialogColor}30; color: ${dialogColor};">
+            <div class="dialog-icon">
               <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiWater}"></path>
               </svg>
@@ -12725,7 +12819,7 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
         </div>
 
         <div
-          class="${type}-time-bar"
+          class="${type}-time-bar time-bar-container"
           @click=${(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             const x = e.clientX - rect.left;
@@ -12733,12 +12827,12 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
                 ? this._startAddingIrrigationTime(x, rect.width)
                 : this._startAddingDrainTime(x, rect.width);
         }}
-          style="position: relative; height: 80px; background: rgba(0,0,0,0.3); border-radius: 8px; cursor: crosshair; border: 2px solid ${color}40;"
+          style="border: 2px solid ${color}40;"
         >
           ${Array.from({ length: 25 }, (_, i) => i).map(hour => x `
-            <div style="position: absolute; left: ${(hour / 24) * 100}%; top: 0; bottom: 0; border-left: 1px solid ${hour % 6 === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)'}; pointer-events: none;">
+            <div class="time-tick ${hour % 6 === 0 ? 'major' : ''}" style="left: ${(hour / 24) * 100}%;">
               ${hour % 3 === 0 ? x `
-                <span style="position: absolute; bottom: -22px; left: -12px; font-size: 0.7rem; color: var(--secondary-text-color);">${hour.toString().padStart(2, '0')}:00</span>
+                <span class="time-label">${hour.toString().padStart(2, '0')}:00</span>
               ` : ''}
             </div>
           `)}
@@ -12748,6 +12842,7 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
             const position = ((hours + minutes / 60) / 24) * 100;
             return x `
               <div
+                class="chart-marker"
                 @click=${(e) => {
                 e.stopPropagation();
                 if (confirm(`Remove ${type} time ${t.time}?`)) {
@@ -12756,18 +12851,18 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
                         : this._removeDrainTime(t.time);
                 }
             }}
-                style="position: absolute; left: ${position}%; top: 10%; bottom: 10%; width: 4px; background: ${color}; cursor: pointer; box-shadow: 0 0 8px ${color}; border-radius: 2px;"
+                style="left: ${position}%; background: ${color}; box-shadow: 0 0 8px ${color};"
                 title="${t.time} | Duration: ${t.duration || defaultDuration}seconds"
               >
-                <div style="position: absolute; left: 8px; top: -24px; background: ${color}; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-                  ${t.time} | ${t.duration || defaultDuration}seconds
+                <div class="chart-tooltip" style="background: ${color};">
+                  ${t.time} | ${t.duration || defaultDuration}s
                 </div>
               </div>
             `;
         })}
         </div>
 
-        <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--secondary-text-color);">
+        <div class="legend-row">
           <span>00:00</span>
           <span>06:00</span>
           <span>12:00</span>
@@ -12776,35 +12871,30 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
         </div>
 
         ${addingTime ? x `
-          <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;" 
+          <div class="overlay-backdrop" 
                @click=${() => type === 'irrigation' ? this._adding_irrigation_time = undefined : this._adding_drain_time = undefined}>
-            <div class="detail-card" style="max-width: 400px; margin: 0;" @click=${(e) => e.stopPropagation()}>
+            <div class="detail-card" style="max-width: 400px; margin: 0; background: #2d2d2d; width: 90%;" @click=${(e) => e.stopPropagation()}>
               <h3>Add ${title} Time</h3>
 
-              <div class="md3-input-group">
-                <label class="md3-label">Time</label>
-                <input
-                  type="time"
-                  class="md3-input"
-                  .value=${addingTime.time}
-                  @input=${(e) => {
-            const val = e.target.value;
+              <md3-text-input
+                label="Time"
+                type="time"
+                .value=${addingTime.time}
+                @change=${(e) => {
+            const val = e.target.value || e.detail; // md3-text-input uses detail
             if (type === 'irrigation' && this._adding_irrigation_time)
                 this._adding_irrigation_time = { ...this._adding_irrigation_time, time: val };
             if (type === 'drain' && this._adding_drain_time)
                 this._adding_drain_time = { ...this._adding_drain_time, time: val };
         }}
-                />
-              </div>
+              ></md3-text-input>
 
-              <div class="md3-input-group">
-                <label class="md3-label">Duration (seconds)</label>
-                <input
-                  type="number"
-                  class="md3-input"
-                  .value=${addingTime.duration.toString()}
-                  @input=${(e) => {
-            const val = parseInt(e.target.value);
+              <md3-number-input
+                label="Duration (seconds)"
+                .value=${addingTime.duration}
+                .min=${1}
+                @change=${(e) => {
+            const val = parseInt(e.detail);
             if (!isNaN(val)) {
                 if (type === 'irrigation' && this._adding_irrigation_time)
                     this._adding_irrigation_time = { ...this._adding_irrigation_time, duration: val };
@@ -12812,9 +12902,7 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
                     this._adding_drain_time = { ...this._adding_drain_time, duration: val };
             }
         }}
-                  min="1"
-                />
-              </div>
+              ></md3-number-input>
 
               <div class="button-group">
                 <button class="md3-button tonal" @click=${() => type === 'irrigation' ? this._adding_irrigation_time = undefined : this._adding_drain_time = undefined}>
@@ -12839,136 +12927,92 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
     `;
     }
 };
-IrrigationDialog.styles = i$4 `
-    :host {
-      --mdc-dialog-min-width: 400px;
-      --mdc-dialog-max-width: 1000px;
-    }
-    .glass-dialog-container {
-      background: rgba(30, 30, 30, 0.95);
-      border-radius: 24px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      color: #fff;
-    }
-    .dialog-header {
-      padding: 20px 24px;
-      background: #2d2d2d;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .dialog-icon {
-      padding: 10px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .dialog-title-group {
-      flex: 1;
-    }
-    .dialog-title {
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 600;
-    }
-    .dialog-subtitle {
-      font-size: 0.9rem;
-      color: var(--secondary-text-color);
-      margin-top: 4px;
-    }
-    .dialog-body {
-      padding: 24px;
-      overflow-y: auto;
-      max-height: 70vh;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-    .detail-card {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 16px;
-      padding: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .md3-button {
-      border: none;
-      border-radius: 20px;
-      padding: 0 24px;
-      height: 40px;
-      font-family: inherit;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all 0.2s;
-    }
-    .md3-button.text {
-      background: transparent;
-      color: var(--primary-text-color);
-    }
-    .md3-button.text:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-    .md3-button.tonal {
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--primary-text-color);
-    }
-    .md3-button.tonal:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-    .md3-button.primary {
-      background: var(--primary-color, #2196F3);
-      color: #fff;
-    }
-    .md3-button.primary:hover {
-      filter: brightness(1.1);
-      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
-    }
-    .md3-input-group {
-      margin-bottom: 16px;
-    }
-    .md3-label {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 0.85rem;
-      color: var(--secondary-text-color);
-      font-weight: 500;
-    }
-    .md3-input {
-      width: 100%;
-      background: rgba(0, 0, 0, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 10px 12px;
-      color: #fff;
-      font-family: inherit;
-      font-size: 0.95rem;
-      transition: all 0.2s;
-      box-sizing: border-box;
-    }
-    .md3-input:focus {
-      outline: none;
-      border-color: var(--primary-color, #2196F3);
-      background: rgba(0, 0, 0, 0.3);
-    }
-    .button-group {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      padding: 16px 24px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      background: #2d2d2d;
-    }
-  `;
+IrrigationDialog.styles = [
+    dialogStyles,
+    i$4 `
+        :host {
+             --mdc-dialog-min-width: 400px;
+             --mdc-dialog-max-width: 1000px;
+        }
+        
+        /* Overrides/Specific Layouts */
+        .dialog-body {
+            padding: 24px;
+            overflow-y: auto;
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Time Bar Visualization */
+        .time-bar-container {
+             position: relative; 
+             height: 80px; 
+             background: rgba(0,0,0,0.3); 
+             border-radius: 8px; 
+             cursor: crosshair; 
+        }
+        
+        .time-tick {
+             position: absolute; 
+             top: 0; bottom: 0; 
+             border-left: 1px solid rgba(255,255,255,0.05); 
+             pointer-events: none;
+        }
+        .time-tick.major {
+             border-left-color: rgba(255,255,255,0.2);
+        }
+        
+        .time-label {
+             position: absolute; 
+             bottom: -22px; 
+             left: -12px; 
+             font-size: 0.7rem; 
+             color: var(--secondary-text-color);
+        }
+
+        .chart-marker {
+             position: absolute; 
+             top: 10%; bottom: 10%; 
+             width: 4px; 
+             cursor: pointer; 
+             border-radius: 2px;
+        }
+        
+        .chart-tooltip {
+             position: absolute; 
+             left: 8px; top: -24px; 
+             color: #fff; 
+             padding: 4px 8px; 
+             border-radius: 4px; 
+             font-size: 0.7rem; 
+             white-space: nowrap; 
+             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+             z-index: 10;
+        }
+
+        .legend-row {
+             margin-top: 30px; 
+             display: flex; 
+             justify-content: space-between; 
+             font-size: 0.7rem; 
+             color: var(--secondary-text-color);
+        }
+        
+        .overlay-backdrop {
+             position: fixed; 
+             top: 0; left: 0; right: 0; bottom: 0; 
+             background: rgba(0,0,0,0.7); 
+             display: flex; 
+             align-items: center; 
+             justify-content: center; 
+             z-index: 10000;
+        }
+    `
+];
 __decorate([
+    c({ context: hassContext, subscribe: true }),
     n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "hass", void 0);
@@ -13118,11 +13162,28 @@ let AddPlantDialog = class AddPlantDialog extends i$1 {
            <!-- IDENTITY CARD -->
            <div class="detail-card">
              <h3>Identity & Location</h3>
-             ${DialogRenderer.renderMD3SelectInput('Strain *', this.strain, uniqueStrains, (v) => this.strain = v)}
-             ${DialogRenderer.renderMD3TextInput('Phenotype', this.phenotype, (v) => this.phenotype = v)}
+             <md3-select
+               label="Strain *"
+               .value=${this.strain}
+               .options=${uniqueStrains}
+               @change=${(e) => this.strain = e.detail}
+             ></md3-select>
+             <md3-text-input
+               label="Phenotype"
+               .value=${this.phenotype}
+               @change=${(e) => this.phenotype = e.detail}
+             ></md3-text-input>
              <div class="row-col-grid">
-               ${DialogRenderer.renderMD3NumberInput('Row', this.row + 1, (v) => this.row = parseInt(v) - 1)}
-               ${DialogRenderer.renderMD3NumberInput('Col', this.col + 1, (v) => this.col = parseInt(v) - 1)}
+               <md3-number-input
+                 label="Row"
+                 .value=${this.row + 1}
+                 @change=${(e) => this.row = parseInt(e.detail) - 1}
+               ></md3-number-input>
+               <md3-number-input
+                 label="Col"
+                 .value=${this.col + 1}
+                 @change=${(e) => this.col = parseInt(e.detail) - 1}
+               ></md3-number-input>
              </div>
            </div>
 
@@ -13151,215 +13212,50 @@ let AddPlantDialog = class AddPlantDialog extends i$1 {
     renderTimelineContent() {
         const name = this.growspaceName.toLowerCase();
         if (name.includes('mother')) {
-            return x `${DialogRenderer.renderMD3DateInput('Mother Start', this.mother_start, (v) => this.mother_start = v)}`;
+            return x `<md3-date-input label="Mother Start" .value=${this.mother_start} @change=${(e) => this.mother_start = e.detail}></md3-date-input>`;
         }
         else if (name.includes('clone')) {
-            return x `${DialogRenderer.renderMD3DateInput('Clone Start', this.clone_start, (v) => this.clone_start = v)}`;
+            return x `<md3-date-input label="Clone Start" .value=${this.clone_start} @change=${(e) => this.clone_start = e.detail}></md3-date-input>`;
         }
         else if (name.includes('dry')) {
-            return x `${DialogRenderer.renderMD3DateInput('Dry Start', this.dry_start, (v) => this.dry_start = v)}`;
+            return x `<md3-date-input label="Dry Start" .value=${this.dry_start} @change=${(e) => this.dry_start = e.detail}></md3-date-input>`;
         }
         else if (name.includes('cure')) {
-            return x `${DialogRenderer.renderMD3DateInput('Cure Start', this.cure_start, (v) => this.cure_start = v)}`;
+            return x `<md3-date-input label="Cure Start" .value=${this.cure_start} @change=${(e) => this.cure_start = e.detail}></md3-date-input>`;
         }
         else {
             return x `
-         ${DialogRenderer.renderMD3DateInput('Seedling Start', this.seedling_start, (v) => this.seedling_start = v)}
-         ${DialogRenderer.renderMD3DateInput('Veg Start', this.veg_start, (v) => this.veg_start = v)}
-         ${DialogRenderer.renderMD3DateInput('Flower Start', this.flower_start, (v) => this.flower_start = v)}
+         <md3-date-input label="Seedling Start" .value=${this.seedling_start} @change=${(e) => this.seedling_start = e.detail}></md3-date-input>
+         <md3-date-input label="Veg Start" .value=${this.veg_start} @change=${(e) => this.veg_start = e.detail}></md3-date-input>
+         <md3-date-input label="Flower Start" .value=${this.flower_start} @change=${(e) => this.flower_start = e.detail}></md3-date-input>
        `;
         }
     }
 };
-AddPlantDialog.styles = i$4 `
-    :host {
-      display: block;
-    }
-    .glass-dialog-container {
-      background: rgba(20, 20, 20, 0.6);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      max-height: 85vh;
-      color: #fff;
-      font-family: 'Roboto', sans-serif;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-      width: 500px;
-      max-width: 90vw;
-    }
-    .dialog-header {
-      display: flex;
-      align-items: center;
-      padding: 16px 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(0, 0, 0, 0.2);
-    }
-    .dialog-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.05);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 16px;
-      color: var(--primary-color, #4CAF50);
-    }
-    .dialog-title-group {
-      flex: 1;
-    }
-    .dialog-title {
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 500;
-    }
-    .dialog-subtitle {
-      font-size: 0.85rem;
-      opacity: 0.7;
-      margin-top: 2px;
-    }
-    .overview-grid {
-      padding: 24px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .detail-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 16px;
-      overflow: hidden;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    .detail-card h3 {
-      margin-top: 0;
-      margin-bottom: 16px;
-      font-size: 1rem;
-      font-weight: 500;
-      opacity: 0.9;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      padding-bottom: 8px;
-    }
-    .button-group {
-      padding: 16px 24px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(0, 0, 0, 0.2);
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    @media (max-width: 450px) {
-      .glass-dialog-container {
-        width: 100vw;
-        max-width: 100%;
-        height: 100vh;
-        border-radius: 0;
+AddPlantDialog.styles = [
+    dialogStyles,
+    i$4 `
+      :host {
+        display: block;
       }
       .overview-grid {
-        flex: 1;
-        min-height: 0;
-        padding: 16px;
+        padding: 24px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
       }
-      .dialog-header {
-         padding: 12px 16px;
+      @media (max-width: 450px) {
+        .overview-grid {
+          flex: 1;
+          min-height: 0;
+          padding: 16px;
+        }
       }
-      .button-group {
-        justify-content: center;
-      }
-      .md3-button {
-        flex: 1 1 auto;
-        min-width: 100px;
-      }
-    }
-
-    .md3-button {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0 24px;
-      height: 40px;
-      border-radius: 20px;
-      border: none;
-      font-family: inherit;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .md3-button.text {
-      background: transparent;
-      color: rgba(255, 255, 255, 0.7);
-      padding: 0 12px;
-    }
-    .md3-button.text:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: #fff;
-    }
-    .md3-button.tonal {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-    }
-    .md3-button.tonal:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-    .md3-button.primary {
-      background: var(--primary-color, #4CAF50);
-      color: #fff;
-    }
-    .md3-button.primary:hover {
-      filter: brightness(1.1);
-      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-    }
-    
-    .row-col-grid {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .row-col-grid > * {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .md3-input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex: 1;
-      margin-bottom: 12px;
-    }
-    .md3-label {
-      font-size: 12px;
-      font-weight: 500;
-      color: #9ca3af;
-      margin-left: 4px;
-    }
-    .md3-input {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #fff;
-      border-radius: 8px;
-      padding: 10px 12px;
-      width: 100%;
-      box-sizing: border-box;
-      font-family: inherit;
-    }
-    .md3-input:focus {
-      outline: none;
-      border-color: #4CAF50;
-      background: rgba(255, 255, 255, 0.08);
-    }
-  `;
+    `
+];
 __decorate([
+    c({ context: hassContext, subscribe: true }),
     n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "hass", void 0);
@@ -13559,279 +13455,179 @@ let ConfigDialog = class ConfigDialog extends i$1 {
       <div style="display:flex; flex-direction:column; gap:20px;">
          <div class="detail-card">
             <h3>New Growspace Details</h3>
-            ${DialogRenderer.renderMD3TextInput('Growspace Name', this.add_name, (v) => this.add_name = v)}
+            <md3-text-input
+              label="Growspace Name"
+              .value=${this.add_name}
+              @change=${(e) => this.add_name = e.detail}
+            ></md3-text-input>
             <div class="row-col-grid">
-               ${DialogRenderer.renderMD3NumberInput('Rows', this.add_rows, (v) => this.add_rows = parseInt(v))}
-               ${DialogRenderer.renderMD3NumberInput('Plants per Row', this.add_plants_per_row, (v) => this.add_plants_per_row = parseInt(v))}
+               <md3-number-input
+                 label="Rows"
+                 .value=${this.add_rows}
+                 @change=${(e) => this.add_rows = parseInt(e.detail)}
+               ></md3-number-input>
+               <md3-number-input
+                 label="Plants per Row"
+                 .value=${this.add_plants_per_row}
+                 @change=${(e) => this.add_plants_per_row = parseInt(e.detail)}
+               ></md3-number-input>
             </div>
-            ${DialogRenderer.renderMD3TextInput('Notification Service (Optional)', this.add_notification_service, (v) => this.add_notification_service = v)}
+            <md3-text-input
+              label="Notification Service (Optional)"
+              .value=${this.add_notification_service}
+              @change=${(e) => this.add_notification_service = e.detail}
+            ></md3-text-input>
          </div>
       </div>
    `;
     }
     renderEnvironmentTab() {
-        const options = Object.entries(this.growspaceOptions).map(([id, name]) => ({ id, name }));
+        Object.entries(this.growspaceOptions).map(([id, name]) => id); // Md3Select expects plain strings for now, or I need to update it?
+        // Wait, md3-select expects string[]. So I need to adapt or update md3-select to support objects/keys.
+        // The current md3-select component (step 326) takes options: string[]. It uses <option value="opt">opt</option>. So label=value.
+        // That's a limitation. I should have made it support {label, value}.
+        // For now, I'll update Md3Select or workaround?
+        // The previous implementation utilized IDs vs Names.
+        // I should probably update Md3Select to support objects, or just pass IDs but that's ugly.
+        // I'll stick to the plan: use the components I created. If they are insufficient, I should fix them.
+        // Let's check md3-select again. It renders `value="${opt}"` and content `${opt}`.
+        // This is definitely a regression if I use it as is.
+        // I'll use the manual render for the select here for now (using the new classes), and use the components for the text inputs.
+        // Or, I can define the select manually.
         return x `
       <div style="display:flex; flex-direction:column; gap:20px;">
          <div class="detail-card">
             <h3>Select Target</h3>
             <div class="md3-input-group">
                <label class="md3-label">Growspace</label>
-               <select class="md3-input" .value=${this.env_selectedGrowspaceId} @change=${(e) => this.env_selectedGrowspaceId = e.target.value}>
+               <select
+                 class="md3-input"
+                 .value=${this.env_selectedGrowspaceId}
+                 @change=${(e) => this.env_selectedGrowspaceId = e.target.value}
+               >
                   <option value="">Select...</option>
-                  ${options.map(o => x `<option value="${o.id}">${o.name}</option>`)}
+                  ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
                </select>
             </div>
          </div>
 
          <div class="detail-card">
             <h3>Sensors</h3>
-            ${DialogRenderer.renderMD3TextInput('Temperature Sensor ID', this.env_temp_sensor, (v) => this.env_temp_sensor = v)}
-            ${DialogRenderer.renderMD3TextInput('Humidity Sensor ID', this.env_humidity_sensor, (v) => this.env_humidity_sensor = v)}
-            ${DialogRenderer.renderMD3TextInput('VPD Sensor ID', this.env_vpd_sensor, (v) => this.env_vpd_sensor = v)}
+            <md3-text-input
+              label="Temperature Sensor ID"
+              .value=${this.env_temp_sensor}
+              @change=${(e) => this.env_temp_sensor = e.detail}
+            ></md3-text-input>
+            <md3-text-input
+              label="Humidity Sensor ID"
+              .value=${this.env_humidity_sensor}
+              @change=${(e) => this.env_humidity_sensor = e.detail}
+            ></md3-text-input>
+            <md3-text-input
+              label="VPD Sensor ID"
+              .value=${this.env_vpd_sensor}
+              @change=${(e) => this.env_vpd_sensor = e.detail}
+            ></md3-text-input>
          </div>
 
          <div class="detail-card">
             <h3>Optional</h3>
-            ${DialogRenderer.renderMD3TextInput('CO2 Sensor ID', this.env_co2_sensor, (v) => this.env_co2_sensor = v)}
-            ${DialogRenderer.renderMD3TextInput('Circulation Fan ID', this.env_circulation_fan, (v) => this.env_circulation_fan = v)}
+            <md3-text-input
+              label="CO2 Sensor ID"
+              .value=${this.env_co2_sensor}
+              @change=${(e) => this.env_co2_sensor = e.detail}
+            ></md3-text-input>
+            <md3-text-input
+              label="Circulation Fan ID"
+              .value=${this.env_circulation_fan}
+              @change=${(e) => this.env_circulation_fan = e.detail}
+            ></md3-text-input>
          </div>
 
          <div class="detail-card">
             <h3>Thresholds</h3>
-            ${DialogRenderer.renderMD3NumberInput('Stress Threshold (0.0-1.0)', this.env_stress_threshold, (v) => this.env_stress_threshold = parseFloat(v))}
-            ${DialogRenderer.renderMD3NumberInput('Mold Threshold (0.0-1.0)', this.env_mold_threshold, (v) => this.env_mold_threshold = parseFloat(v))}
+            <md3-number-input
+              label="Stress Threshold (0.0-1.0)"
+              .value=${this.env_stress_threshold}
+              @change=${(e) => this.env_stress_threshold = parseFloat(e.detail)}
+            ></md3-number-input>
+            <md3-number-input
+              label="Mold Threshold (0.0-1.0)"
+              .value=${this.env_mold_threshold}
+              @change=${(e) => this.env_mold_threshold = parseFloat(e.detail)}
+            ></md3-number-input>
          </div>
       </div>
    `;
     }
 };
-ConfigDialog.styles = i$4 `
-    :host {
-      display: block;
-    }
-    .glass-dialog-container {
-      background: rgba(20, 20, 20, 0.6);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      max-height: 85vh;
-      color: #fff;
-      font-family: 'Roboto', sans-serif;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-      width: 500px;
-      max-width: 90vw;
-    }
-    .dialog-header {
-      display: flex;
-      align-items: center;
-      padding: 16px 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(0, 0, 0, 0.2);
-    }
-    .dialog-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.05);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 16px;
-      color: var(--primary-color, #4CAF50);
-    }
-    .dialog-title-group {
-      flex: 1;
-    }
-    .dialog-title {
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 500;
-    }
-    .dialog-subtitle {
-      font-size: 0.85rem;
-      opacity: 0.7;
-      margin-top: 2px;
-    }
-    
-    /* Config Tabs Specific */
-    .config-tabs {
-      display: flex;
-      padding: 0 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      background: transparent;
-    }
-    .config-tab {
-      flex: 1;
-      padding: 16px 8px;
-      text-align: center;
-      cursor: pointer;
-      color: rgba(255,255,255,0.5);
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      background: transparent;
-    }
-    .config-tab svg {
-      width: 24px;
-      height: 24px;
-      margin-bottom: 4px;
-      fill: currentColor;
-    }
-    .config-tab:hover {
-      color: #fff;
-      background: rgba(255,255,255,0.05);
-      border-radius: 8px 8px 0 0;
-    }
-    .config-tab.active {
-      color: var(--primary-color, #4CAF50);
-      border-bottom-color: var(--primary-color, #4CAF50);
-    }
-    .config-content {
-      padding: 24px;
-      overflow-y: auto;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .detail-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 16px;
-      overflow: hidden;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    .detail-card h3 {
-      margin-top: 0;
-      margin-bottom: 16px;
-      font-size: 1rem;
-      font-weight: 500;
-      opacity: 0.9;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      padding-bottom: 8px;
-    }
-    .button-group {
-      padding: 16px 24px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(0, 0, 0, 0.2);
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    @media (max-width: 450px) {
-      .glass-dialog-container {
-        width: 100vw;
-        max-width: 100%;
-        height: 100vh;
-        border-radius: 0;
+ConfigDialog.styles = [
+    dialogStyles,
+    i$4 `
+      :host {
+        display: block;
+      }
+      
+      /* Config Tabs Specific */
+      .config-tabs {
+        display: flex;
+        padding: 0 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        background: transparent;
+      }
+      .config-tab {
+        flex: 1;
+        padding: 16px 8px;
+        text-align: center;
+        cursor: pointer;
+        color: rgba(255,255,255,0.5);
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        background: transparent;
+      }
+      .config-tab svg {
+        width: 24px;
+        height: 24px;
+        margin-bottom: 4px;
+        fill: currentColor;
+      }
+      .config-tab:hover {
+        color: #fff;
+        background: rgba(255,255,255,0.05);
+        border-radius: 8px 8px 0 0;
+      }
+      .config-tab.active {
+        color: var(--primary-color, #4CAF50);
+        border-bottom-color: var(--primary-color, #4CAF50);
       }
       .config-content {
-        padding: 16px;
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
       }
-      .dialog-header {
-         padding: 12px 16px;
+      
+      @media (max-width: 450px) {
+        .glass-dialog-container {
+          width: 100vw;
+          max-width: 100%;
+          height: 100vh;
+          border-radius: 0;
+        }
+        .config-content {
+          padding: 16px;
+        }
       }
-      .button-group {
-        justify-content: center;
-      }
-      .md3-button {
-        flex: 1 1 auto;
-        min-width: 100px;
-      }
-    }
-
-    .md3-button {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0 24px;
-      height: 40px;
-      border-radius: 20px;
-      border: none;
-      font-family: inherit;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .md3-button.text {
-      background: transparent;
-      color: rgba(255, 255, 255, 0.7);
-      padding: 0 12px;
-    }
-    .md3-button.text:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: #fff;
-    }
-    .md3-button.tonal {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-    }
-    .md3-button.tonal:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-    .md3-button.primary {
-      background: var(--primary-color, #4CAF50);
-      color: #fff;
-    }
-    .md3-button.primary:hover {
-      filter: brightness(1.1);
-      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-    }
-    
-    .md3-input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex: 1;
-    }
-    .md3-label {
-      font-size: 12px;
-      font-weight: 500;
-      color: #9ca3af;
-      margin-left: 12px;
-    }
-    .md3-input {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 12px 16px;
-      color: #e5e7eb;
-      font-family: inherit;
-      font-size: 14px;
-      transition: all 0.2s;
-    }
-    .md3-input:focus {
-      outline: none;
-      border-color: #4CAF50;
-      background: rgba(255, 255, 255, 0.08);
-    }
-    
-    .row-col-grid {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .row-col-grid > * {
-      flex: 1;
-      min-width: 0;
-    }
-  `;
+    `
+];
 __decorate([
     n$2({ type: Boolean, reflect: true }),
     __metadata("design:type", Object)
@@ -13936,14 +13732,14 @@ let GrowMasterDialog = class GrowMasterDialog extends i$1 {
         .scrimClickAction=${''}
         .escapeKeyAction=${''}
       >
-        <div class="gm-container" style="border-color: ${borderColor}">
-           <div class="gm-header">
-              <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; color: ${borderColor}">
+        <div class="glass-dialog-container" style="border-color: ${borderColor}">
+           <div class="dialog-header">
+              <div class="dialog-icon" style="color: ${borderColor}">
                  <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
               </div>
-              <div style="flex:1">
-                 <h2 style="margin:0; font-size:1.25rem;">${title}</h2>
-                 <div style="font-size:0.8rem; color:var(--secondary-text-color); margin-top:4px;">
+              <div class="dialog-title-group">
+                 <h2 class="dialog-title">${title}</h2>
+                 <div class="dialog-subtitle">
                     ${this.isStressed ? 'Warning: Plant Stress Detected' : 'All systems normal'}
                  </div>
               </div>
@@ -13952,10 +13748,10 @@ let GrowMasterDialog = class GrowMasterDialog extends i$1 {
               </button>
            </div>
 
-           <div class="gm-content">
+           <div class="content-padding">
               <!-- Input Area -->
-              <div style="display:flex; flex-direction:column; gap:8px;">
-                 <label style="font-size:0.9rem; font-weight:500; color:#ccc;">Your Question</label>
+              <div class="md3-input-group">
+                 <label class="md3-label">Your Question</label>
                  <textarea
                     class="sd-textarea"
                     placeholder="Ask about this growspace..."
@@ -13966,7 +13762,7 @@ let GrowMasterDialog = class GrowMasterDialog extends i$1 {
               </div>
 
               <!-- Action -->
-              <div style="display:flex; justify-content:flex-end; gap: 12px;">
+              <div class="button-group" style="padding: 12px 0; justify-content: flex-end;">
                  <button
                     class="md3-button tonal"
                     @click=${this._analyzeAll}
@@ -14004,109 +13800,66 @@ let GrowMasterDialog = class GrowMasterDialog extends i$1 {
     `;
     }
 };
-GrowMasterDialog.styles = i$4 `
-    :host {
-      display: block;
-    }
-    
-    .gm-container {
-      background: #1a1a1a;
-      color: #fff;
-      width: 500px;
-      max-width: 90vw;
-      border-radius: 24px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      font-family: 'Roboto', sans-serif;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .gm-header {
-      background: #2d2d2d;
-      padding: 20px 24px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    .gm-content {
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      overflow-y: auto;
-      max-height: 70vh;
-    }
-    .gm-response-box {
-      background: rgba(255,255,255,0.05);
-      border-radius: 16px;
-      padding: 20px;
-      line-height: 1.6;
-      font-size: 0.95rem;
-      white-space: pre-wrap;
-      position: relative;
-    }
-    .gm-loading {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
-      color: var(--secondary-text-color);
-      gap: 12px;
-    }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-    .spinner {
-      animation: spin 1s linear infinite;
-      width: 24px;
-      height: 24px;
-    }
-    
-    .sd-textarea {
-      width: 100%;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 12px;
-      color: #e0e0e0;
-      font-family: inherit;
-      resize: vertical;
-      box-sizing: border-box;
-    }
-    .sd-textarea:focus {
-      outline: none;
-      border-color: #4CAF50;
-      background: rgba(255, 255, 255, 0.08);
-    }
+GrowMasterDialog.styles = [
+    dialogStyles,
+    i$4 `
+        :host {
+            display: block;
+        }
+        
+        /* Specific overrides or additions */
+        .gm-response-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+            position: relative;
+            margin-top: 20px;
+        }
+        .gm-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.7);
+            gap: 12px;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .spinner {
+            animation: spin 1s linear infinite;
+            width: 24px;
+            height: 24px;
+        }
+        
+        .sd-textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            color: #fff;
+            font-family: inherit;
+            resize: vertical;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        .sd-textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: rgba(255, 255, 255, 0.08);
+        }
 
-    .md3-button {
-      background: none;
-      border: none;
-      padding: 0 24px;
-      height: 40px;
-      border-radius: 20px;
-      font-family: 'Roboto', sans-serif;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all 0.2s ease;
-    }
-    .md3-button.text { color: #e0e0e0; }
-    .md3-button.text:hover { background: rgba(255,255,255,0.05); }
-    .md3-button.tonal { background: rgba(255,255,255,0.1); color: #e0e0e0; }
-    .md3-button.tonal:hover { background: rgba(255,255,255,0.15); }
-    .md3-button.primary { background: #4CAF50; color: #003300; }
-    .md3-button.primary:hover { filter: brightness(1.1); }
-    
-    /* Disabled state */
-    button[disabled] {
-      cursor: not-allowed;
-      opacity: 0.5;
-    }
-  `;
+        .content-padding {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+    `
+];
 __decorate([
     n$2({ type: Boolean, reflect: true }),
     __metadata("design:type", Object)
@@ -14164,23 +13917,23 @@ let StrainRecommendationDialog = class StrainRecommendationDialog extends i$1 {
         .scrimClickAction=${''}
         .escapeKeyAction=${''}
       >
-        <div class="gm-container">
-           <div class="gm-header">
-              <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; color: #4CAF50">
+        <div class="glass-dialog-container">
+           <div class="dialog-header">
+              <div class="dialog-icon" style="color: #4CAF50">
                  <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
               </div>
-              <div style="flex:1">
-                 <h2 style="margin:0; font-size:1.25rem;">Get Strain Recommendation</h2>
+              <div class="dialog-title-group">
+                 <h2 class="dialog-title">Get Strain Recommendation</h2>
               </div>
               <button class="md3-button text" @click=${this._close} style="min-width:auto; padding:8px;">
                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
               </button>
            </div>
 
-           <div class="gm-content">
+           <div class="content-padding">
               <!-- Input Area -->
-              <div style="display:flex; flex-direction:column; gap:8px;">
-                 <label style="font-size:0.9rem; font-weight:500; color:#ccc;">Your Preferences</label>
+              <div class="md3-input-group">
+                 <label class="md3-label">Your Preferences</label>
                  <textarea
                     class="sd-textarea"
                     placeholder="e.g., something fruity and good for daytime use..."
@@ -14191,12 +13944,12 @@ let StrainRecommendationDialog = class StrainRecommendationDialog extends i$1 {
               </div>
 
               <!-- Action -->
-              <div style="display:flex; justify-content:flex-end; gap: 12px;">
+              <div class="button-group" style="padding: 0; justify-content: flex-end;">
                  <button
                     class="md3-button tonal"
                     @click=${this._close}
                  >
-                    OK
+                    Cancel
                  </button>
                  <button
                     class="md3-button primary"
@@ -14226,101 +13979,61 @@ let StrainRecommendationDialog = class StrainRecommendationDialog extends i$1 {
     `;
     }
 };
-StrainRecommendationDialog.styles = i$4 `
-    :host {
-      display: block;
-    }
-    .gm-container {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      padding: 8px;
-    }
-    .gm-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 8px;
-    }
-    .gm-content {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .sd-textarea {
-      width: 100%;
-      background: rgba(0, 0, 0, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      color: var(--primary-text-color);
-      padding: 12px;
-      font-family: inherit;
-      resize: vertical;
-      box-sizing: border-box;
-    }
-    .sd-textarea:focus {
-      outline: none;
-      border-color: var(--primary-color);
-    }
-    .md3-button {
-      border: none;
-      border-radius: 20px;
-      padding: 10px 24px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      font-size: 14px;
-    }
-    .md3-button.tonal {
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--primary-text-color);
-    }
-    .md3-button.tonal:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-    .md3-button.primary {
-      background: var(--primary-color);
-      color: var(--text-primary-color);
-    }
-    .md3-button.primary:hover {
-      filter: brightness(1.1);
-    }
-    .md3-button.text {
-      background: transparent;
-      color: var(--primary-text-color);
-      padding: 8px;
-    }
-    .md3-button.text:hover {
-      background: rgba(255, 255, 255, 0.05);
-    }
-    .gm-loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      padding: 24px;
-      color: var(--secondary-text-color);
-    }
-    .spinner {
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      100% { transform: rotate(360deg); }
-    }
-    .gm-response-box {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 16px;
-      line-height: 1.5;
-      white-space: pre-wrap;
-    }
-  `;
+StrainRecommendationDialog.styles = [
+    dialogStyles,
+    i$4 `
+        :host {
+            display: block;
+        }
+        .content-padding {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .sd-textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            padding: 12px;
+            font-family: inherit;
+            resize: vertical;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        .sd-textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .gm-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.7);
+            gap: 12px;
+        }
+        .spinner {
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+        .gm-response-box {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            margin-top: 16px;
+        }
+    `
+];
 __decorate([
     n$2({ attribute: false }),
     __metadata("design:type", Object)
@@ -14560,7 +14273,7 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$1 {
             src="${imageUrl}" 
             loading="lazy" 
             alt="${strainName || 'Plant'}"
-            style="${DialogRenderer.getImgStyle(imageCropMeta)}"
+            style="${PlantUtils.getImgStyle(imageCropMeta)}"
           />
           <div class="plant-card-overlay"></div>
         ` : ''}
@@ -19065,5 +18778,5 @@ var growspaceManagerCardEditor = /*#__PURE__*/Object.freeze({
     get GrowspaceManagerCardEditor () { return GrowspaceManagerCardEditor; }
 });
 
-export { DataService, DialogRenderer, GrowspaceManagerCard, PlantUtils, createGrowspaceDevice, stageInputs };
+export { DataService, GrowspaceManagerCard, PlantUtils, createGrowspaceDevice, stageInputs };
 //# sourceMappingURL=growspace-manager-card.js.map

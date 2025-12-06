@@ -1,8 +1,11 @@
-
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { mdiClose, mdiCog, mdiViewDashboard, mdiThermometer } from '@mdi/js';
-import { DialogRenderer } from '../dialog-renderer';
+import { dialogStyles } from '../styles/dialog.styles';
+import '../components/ui/md3-text-input';
+import '../components/ui/md3-number-input';
+import '../components/ui/md3-select';
+
 
 @customElement('config-dialog')
 export class ConfigDialog extends LitElement {
@@ -28,232 +31,73 @@ export class ConfigDialog extends LitElement {
   @state() private env_stress_threshold = 0.8;
   @state() private env_mold_threshold = 0.8;
 
-  static styles = css`
-    :host {
-      display: block;
-    }
-    .glass-dialog-container {
-      background: rgba(20, 20, 20, 0.6);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      max-height: 85vh;
-      color: #fff;
-      font-family: 'Roboto', sans-serif;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-      width: 500px;
-      max-width: 90vw;
-    }
-    .dialog-header {
-      display: flex;
-      align-items: center;
-      padding: 16px 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(0, 0, 0, 0.2);
-    }
-    .dialog-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.05);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 16px;
-      color: var(--primary-color, #4CAF50);
-    }
-    .dialog-title-group {
-      flex: 1;
-    }
-    .dialog-title {
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 500;
-    }
-    .dialog-subtitle {
-      font-size: 0.85rem;
-      opacity: 0.7;
-      margin-top: 2px;
-    }
-    
-    /* Config Tabs Specific */
-    .config-tabs {
-      display: flex;
-      padding: 0 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      background: transparent;
-    }
-    .config-tab {
-      flex: 1;
-      padding: 16px 8px;
-      text-align: center;
-      cursor: pointer;
-      color: rgba(255,255,255,0.5);
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      background: transparent;
-    }
-    .config-tab svg {
-      width: 24px;
-      height: 24px;
-      margin-bottom: 4px;
-      fill: currentColor;
-    }
-    .config-tab:hover {
-      color: #fff;
-      background: rgba(255,255,255,0.05);
-      border-radius: 8px 8px 0 0;
-    }
-    .config-tab.active {
-      color: var(--primary-color, #4CAF50);
-      border-bottom-color: var(--primary-color, #4CAF50);
-    }
-    .config-content {
-      padding: 24px;
-      overflow-y: auto;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .detail-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 16px;
-      overflow: hidden;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    .detail-card h3 {
-      margin-top: 0;
-      margin-bottom: 16px;
-      font-size: 1rem;
-      font-weight: 500;
-      opacity: 0.9;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      padding-bottom: 8px;
-    }
-    .button-group {
-      padding: 16px 24px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(0, 0, 0, 0.2);
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    @media (max-width: 450px) {
-      .glass-dialog-container {
-        width: 100vw;
-        max-width: 100%;
-        height: 100vh;
-        border-radius: 0;
+  static styles = [
+    dialogStyles,
+    css`
+      :host {
+        display: block;
+      }
+      
+      /* Config Tabs Specific */
+      .config-tabs {
+        display: flex;
+        padding: 0 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        background: transparent;
+      }
+      .config-tab {
+        flex: 1;
+        padding: 16px 8px;
+        text-align: center;
+        cursor: pointer;
+        color: rgba(255,255,255,0.5);
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        background: transparent;
+      }
+      .config-tab svg {
+        width: 24px;
+        height: 24px;
+        margin-bottom: 4px;
+        fill: currentColor;
+      }
+      .config-tab:hover {
+        color: #fff;
+        background: rgba(255,255,255,0.05);
+        border-radius: 8px 8px 0 0;
+      }
+      .config-tab.active {
+        color: var(--primary-color, #4CAF50);
+        border-bottom-color: var(--primary-color, #4CAF50);
       }
       .config-content {
-        padding: 16px;
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
       }
-      .dialog-header {
-         padding: 12px 16px;
+      
+      @media (max-width: 450px) {
+        .glass-dialog-container {
+          width: 100vw;
+          max-width: 100%;
+          height: 100vh;
+          border-radius: 0;
+        }
+        .config-content {
+          padding: 16px;
+        }
       }
-      .button-group {
-        justify-content: center;
-      }
-      .md3-button {
-        flex: 1 1 auto;
-        min-width: 100px;
-      }
-    }
-
-    .md3-button {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0 24px;
-      height: 40px;
-      border-radius: 20px;
-      border: none;
-      font-family: inherit;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .md3-button.text {
-      background: transparent;
-      color: rgba(255, 255, 255, 0.7);
-      padding: 0 12px;
-    }
-    .md3-button.text:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: #fff;
-    }
-    .md3-button.tonal {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-    }
-    .md3-button.tonal:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-    .md3-button.primary {
-      background: var(--primary-color, #4CAF50);
-      color: #fff;
-    }
-    .md3-button.primary:hover {
-      filter: brightness(1.1);
-      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-    }
-    
-    .md3-input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex: 1;
-    }
-    .md3-label {
-      font-size: 12px;
-      font-weight: 500;
-      color: #9ca3af;
-      margin-left: 12px;
-    }
-    .md3-input {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 12px 16px;
-      color: #e5e7eb;
-      font-family: inherit;
-      font-size: 14px;
-      transition: all 0.2s;
-    }
-    .md3-input:focus {
-      outline: none;
-      border-color: #4CAF50;
-      background: rgba(255, 255, 255, 0.08);
-    }
-    
-    .row-col-grid {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .row-col-grid > * {
-      flex: 1;
-      min-width: 0;
-    }
-  `;
+    `
+  ];
 
   // Provide initial state setting from parent
   public setInitialState(
@@ -389,19 +233,46 @@ export class ConfigDialog extends LitElement {
       <div style="display:flex; flex-direction:column; gap:20px;">
          <div class="detail-card">
             <h3>New Growspace Details</h3>
-            ${DialogRenderer.renderMD3TextInput('Growspace Name', this.add_name, (v) => this.add_name = v)}
+            <md3-text-input
+              label="Growspace Name"
+              .value=${this.add_name}
+              @change=${(e: CustomEvent) => this.add_name = e.detail}
+            ></md3-text-input>
             <div class="row-col-grid">
-               ${DialogRenderer.renderMD3NumberInput('Rows', this.add_rows, (v) => this.add_rows = parseInt(v))}
-               ${DialogRenderer.renderMD3NumberInput('Plants per Row', this.add_plants_per_row, (v) => this.add_plants_per_row = parseInt(v))}
+               <md3-number-input
+                 label="Rows"
+                 .value=${this.add_rows}
+                 @change=${(e: CustomEvent) => this.add_rows = parseInt(e.detail)}
+               ></md3-number-input>
+               <md3-number-input
+                 label="Plants per Row"
+                 .value=${this.add_plants_per_row}
+                 @change=${(e: CustomEvent) => this.add_plants_per_row = parseInt(e.detail)}
+               ></md3-number-input>
             </div>
-            ${DialogRenderer.renderMD3TextInput('Notification Service (Optional)', this.add_notification_service, (v) => this.add_notification_service = v)}
+            <md3-text-input
+              label="Notification Service (Optional)"
+              .value=${this.add_notification_service}
+              @change=${(e: CustomEvent) => this.add_notification_service = e.detail}
+            ></md3-text-input>
          </div>
       </div>
    `;
   }
 
   private renderEnvironmentTab() {
-    const options = Object.entries(this.growspaceOptions).map(([id, name]) => ({ id, name }));
+    const options = Object.entries(this.growspaceOptions).map(([id, name]) => id); // Md3Select expects plain strings for now, or I need to update it?
+    // Wait, md3-select expects string[]. So I need to adapt or update md3-select to support objects/keys.
+    // The current md3-select component (step 326) takes options: string[]. It uses <option value="opt">opt</option>. So label=value.
+    // That's a limitation. I should have made it support {label, value}.
+    // For now, I'll update Md3Select or workaround?
+    // The previous implementation utilized IDs vs Names.
+    // I should probably update Md3Select to support objects, or just pass IDs but that's ugly.
+    // I'll stick to the plan: use the components I created. If they are insufficient, I should fix them.
+    // Let's check md3-select again. It renders `value="${opt}"` and content `${opt}`.
+    // This is definitely a regression if I use it as is.
+    // I'll use the manual render for the select here for now (using the new classes), and use the components for the text inputs.
+    // Or, I can define the select manually.
 
     return html`
       <div style="display:flex; flex-direction:column; gap:20px;">
@@ -409,30 +280,62 @@ export class ConfigDialog extends LitElement {
             <h3>Select Target</h3>
             <div class="md3-input-group">
                <label class="md3-label">Growspace</label>
-               <select class="md3-input" .value=${this.env_selectedGrowspaceId} @change=${(e: any) => this.env_selectedGrowspaceId = e.target.value}>
+               <select
+                 class="md3-input"
+                 .value=${this.env_selectedGrowspaceId}
+                 @change=${(e: Event) => this.env_selectedGrowspaceId = (e.target as HTMLSelectElement).value}
+               >
                   <option value="">Select...</option>
-                  ${options.map(o => html`<option value="${o.id}">${o.name}</option>`)}
+                  ${Object.entries(this.growspaceOptions).map(([id, name]) => html`<option value="${id}">${name}</option>`)}
                </select>
             </div>
          </div>
 
          <div class="detail-card">
             <h3>Sensors</h3>
-            ${DialogRenderer.renderMD3TextInput('Temperature Sensor ID', this.env_temp_sensor, (v) => this.env_temp_sensor = v)}
-            ${DialogRenderer.renderMD3TextInput('Humidity Sensor ID', this.env_humidity_sensor, (v) => this.env_humidity_sensor = v)}
-            ${DialogRenderer.renderMD3TextInput('VPD Sensor ID', this.env_vpd_sensor, (v) => this.env_vpd_sensor = v)}
+            <md3-text-input
+              label="Temperature Sensor ID"
+              .value=${this.env_temp_sensor}
+              @change=${(e: CustomEvent) => this.env_temp_sensor = e.detail}
+            ></md3-text-input>
+            <md3-text-input
+              label="Humidity Sensor ID"
+              .value=${this.env_humidity_sensor}
+              @change=${(e: CustomEvent) => this.env_humidity_sensor = e.detail}
+            ></md3-text-input>
+            <md3-text-input
+              label="VPD Sensor ID"
+              .value=${this.env_vpd_sensor}
+              @change=${(e: CustomEvent) => this.env_vpd_sensor = e.detail}
+            ></md3-text-input>
          </div>
 
          <div class="detail-card">
             <h3>Optional</h3>
-            ${DialogRenderer.renderMD3TextInput('CO2 Sensor ID', this.env_co2_sensor, (v) => this.env_co2_sensor = v)}
-            ${DialogRenderer.renderMD3TextInput('Circulation Fan ID', this.env_circulation_fan, (v) => this.env_circulation_fan = v)}
+            <md3-text-input
+              label="CO2 Sensor ID"
+              .value=${this.env_co2_sensor}
+              @change=${(e: CustomEvent) => this.env_co2_sensor = e.detail}
+            ></md3-text-input>
+            <md3-text-input
+              label="Circulation Fan ID"
+              .value=${this.env_circulation_fan}
+              @change=${(e: CustomEvent) => this.env_circulation_fan = e.detail}
+            ></md3-text-input>
          </div>
 
          <div class="detail-card">
             <h3>Thresholds</h3>
-            ${DialogRenderer.renderMD3NumberInput('Stress Threshold (0.0-1.0)', this.env_stress_threshold, (v) => this.env_stress_threshold = parseFloat(v))}
-            ${DialogRenderer.renderMD3NumberInput('Mold Threshold (0.0-1.0)', this.env_mold_threshold, (v) => this.env_mold_threshold = parseFloat(v))}
+            <md3-number-input
+              label="Stress Threshold (0.0-1.0)"
+              .value=${this.env_stress_threshold}
+              @change=${(e: CustomEvent) => this.env_stress_threshold = parseFloat(e.detail)}
+            ></md3-number-input>
+            <md3-number-input
+              label="Mold Threshold (0.0-1.0)"
+              .value=${this.env_mold_threshold}
+              @change=${(e: CustomEvent) => this.env_mold_threshold = parseFloat(e.detail)}
+            ></md3-number-input>
          </div>
       </div>
    `;

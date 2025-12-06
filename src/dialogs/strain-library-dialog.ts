@@ -9,6 +9,9 @@ import {
 } from '@mdi/js';
 import { StrainEntry, CropMeta } from '../types';
 import { PlantUtils } from '../utils';
+import { dialogStyles } from '../styles/dialog.styles';
+import '../components/ui/md3-text-input';
+import '../components/ui/md3-number-input';
 
 @customElement('strain-library-dialog')
 export class StrainLibraryDialog extends LitElement {
@@ -29,162 +32,44 @@ export class StrainLibraryDialog extends LitElement {
   @state() private _currentPage = 1;
   private readonly ITEMS_PER_PAGE = 15;
 
-  static styles = css`
+  static styles = [
+    dialogStyles,
+    css`
     :host {
-      --accent-green: #22c55e;
-      --card-bg: #2d2d2d;
-      --input-bg: #2d2d2d;
-      --text-secondary: #9ca3af;
-      --border-color: #374151;
-      font-family: 'Roboto', sans-serif;
+      --accent-green: #4CAF50;
+      /* Using dialogStyles variables where possible */
     }
 
-    ha-dialog {
-      --mdc-dialog-min-width: 80vw;
-      --mdc-dialog-max-width: 95vw;
-      --dialog-surface-margin: 24px;
-      --dialog-content-padding: 0;
-      --dialog-scrollable-header-padding: 0;
-    }
-
-    /* STRICT DARK MODE & SHARED STYLES */
+    /* Additional specific styles */
+    
+    /* Layout Overrides */
     .strain-dialog-container {
-        background-color: #1a1a1a; /* Deep Charcoal */
-        color: #fff;
-        display: flex;
-        flex-direction: column;
-        height: 85vh;
+        @apply .glass-dialog-container; 
+        /* Since we can't use @apply in standard css without processor, we must duplicate or rely on .glass-dialog-container class in render */
+        /* But we will use the class in render */
+    }
+
+    .glass-dialog-container {
         width: 80vw;
         max-width: 95vw;
-        border-radius: 16px;
-        overflow: hidden;
+        height: 85vh;
     }
-
-    /* SCROLLBAR */
-    .strain-dialog-container ::-webkit-scrollbar { width: 8px; }
-    .strain-dialog-container ::-webkit-scrollbar-track { background: transparent; }
-    .strain-dialog-container ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-    .strain-dialog-container ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-
-    /* HEADER */
-    .sd-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--border-color);
-      background: #1a1a1a;
-      z-index: 10;
-    }
-    .sd-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: #fff;
-      margin: 0;
-    }
-    .sd-close-btn {
-      background: none;
-      border: none;
-      color: var(--text-secondary);
-      cursor: pointer;
-      padding: 8px;
-      border-radius: 50%;
-      transition: all 0.2s;
-    }
-    .sd-close-btn:hover {
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-    }
-
-    /* CONTENT AREA */
+    
     .sd-content {
-      flex: 1;
-      overflow-y: auto;
       padding: 24px;
-      background: #1a1a1a;
-    }
-
-    /* FOOTER */
-    .sd-footer {
-      padding: 16px 24px;
-      border-top: 1px solid var(--border-color);
-      background: #1a1a1a;
+      overflow-y: auto;
+      flex: 1;
       display: flex;
-      justify-content: flex-end;
-      gap: 12px;
+      flex-direction: column;
     }
 
-    /* BUTTONS */
-    .sd-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: none;
-    }
-    .sd-btn.primary {
-      background: var(--accent-green);
-      color: #fff;
-    }
-    .sd-btn.primary:hover {
-      background: #16a34a;
-      box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
-    }
-    .sd-btn.secondary {
-      background: var(--card-bg);
-      color: var(--text-secondary);
-      border: 1px solid var(--border-color);
-    }
-    .sd-btn.secondary:hover {
-      background: #374151;
-      color: #fff;
-    }
-    .sd-btn.danger {
-        background: rgba(220, 38, 38, 0.1);
-        color: #ef4444;
-        border: 1px solid rgba(220, 38, 38, 0.2);
-    }
-    .sd-btn.danger:hover {
-        background: rgba(220, 38, 38, 0.2);
-    }
-
-    /* FORMS */
-    .sd-form-group {
-      margin-bottom: 20px;
-    }
-    .sd-label {
-      display: block;
-      color: var(--text-secondary);
-      font-size: 0.85rem;
-      margin-bottom: 8px;
-      font-weight: 500;
-    }
-    .sd-input, .sd-textarea, .sd-select {
-      width: 100%;
-      background: var(--input-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 12px 16px;
-      color: #fff;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-      box-sizing: border-box;
-    }
-    .sd-input:focus, .sd-textarea:focus, .sd-select:focus {
-      border-color: var(--accent-green);
-    }
-    .sd-textarea {
-      resize: vertical;
-      min-height: 100px;
+    .sd-footer {
+        padding: 16px 24px;
+        background: rgba(0,0,0,0.2);
+        border-top: 1px solid rgba(255,255,255,0.1);
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
     }
 
     /* GRID & CARDS */
@@ -194,14 +79,15 @@ export class StrainLibraryDialog extends LitElement {
       gap: 20px;
     }
     .strain-card {
-        background: var(--card-bg);
+        background: rgba(255,255,255,0.05);
         border-radius: 12px;
         overflow: hidden;
-        border: 1px solid var(--border-color);
+        border: 1px solid rgba(255,255,255,0.05);
         transition: all 0.3s ease;
         position: relative;
         display: flex;
         flex-direction: column;
+        cursor: pointer;
     }
     .strain-card:hover {
         border-color: var(--accent-green);
@@ -246,7 +132,7 @@ export class StrainLibraryDialog extends LitElement {
         flex-direction: column;
         gap: 4px;
         font-size: 0.8rem;
-        color: var(--text-secondary);
+        color: var(--secondary-text-color);
     }
     .sc-actions {
         position: absolute;
@@ -291,46 +177,26 @@ export class StrainLibraryDialog extends LitElement {
         transform: translateY(-50%);
         width: 20px;
         height: 20px;
-        fill: var(--text-secondary);
+        fill: var(--secondary-text-color);
+        pointer-events: none;
     }
     .search-bar-input {
         width: 100%;
-        background: var(--card-bg);
-        border: 1px solid var(--border-color);
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
         border-radius: 12px;
         padding: 14px 14px 14px 48px;
         color: #fff;
         font-size: 1rem;
         outline: none;
         box-sizing: border-box;
+        font-family: inherit;
     }
     .search-bar-input:focus {
         border-color: var(--accent-green);
+        background: rgba(255,255,255,0.08);
     }
-    .filter-chips {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        align-items: center;
-    }
-    .filter-chip {
-        background: #374151;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        color: #fff;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-    .clear-link {
-        color: var(--accent-green);
-        font-size: 0.85rem;
-        text-decoration: underline;
-        cursor: pointer;
-        margin-left: 8px;
-    }
-
+    
     /* EDITOR LAYOUT */
     .editor-layout {
         display: grid;
@@ -341,49 +207,9 @@ export class StrainLibraryDialog extends LitElement {
         .editor-layout { grid-template-columns: 1fr; }
     }
 
-    /* TYPE SELECTOR */
-    .type-selector-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-    }
-    .type-option {
-        background: var(--input-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        padding: 16px;
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.2s;
-        text-align: center;
-    }
-    .type-option:hover {
-        border-color: #666;
-    }
-    .type-option.active {
-        background: rgba(34, 197, 94, 0.1);
-        border-color: var(--accent-green);
-        color: #fff;
-    }
-    .type-option svg {
-        width: 28px;
-        height: 28px;
-        fill: var(--text-secondary);
-    }
-    .type-option.active svg {
-        fill: var(--accent-green);
-    }
-    .type-label {
-        font-size: 0.85rem;
-        font-weight: 500;
-    }
-
     /* PHOTO UPLOAD */
     .photo-upload-area {
-        border: 2px dashed var(--border-color);
+        border: 2px dashed rgba(255,255,255,0.1);
         border-radius: 12px;
         background: rgba(255,255,255,0.02);
         height: 240px;
@@ -391,7 +217,7 @@ export class StrainLibraryDialog extends LitElement {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        color: var(--text-secondary);
+        color: var(--secondary-text-color);
         cursor: pointer;
         transition: all 0.2s;
         margin-bottom: 20px;
@@ -400,7 +226,7 @@ export class StrainLibraryDialog extends LitElement {
     }
     .photo-upload-area:hover {
         border-color: var(--accent-green);
-        background: rgba(34, 197, 94, 0.05);
+        background: rgba(76, 175, 80, 0.05);
     }
     .select-library-btn {
         position: absolute;
@@ -456,7 +282,44 @@ export class StrainLibraryDialog extends LitElement {
         accent-color: var(--accent-green);
     }
 
-    /* HYBRID GRAPH STYLES */
+    /* Type Selector */
+    .type-selector-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .type-option {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 16px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        text-align: center;
+    }
+    .type-option:hover {
+        border-color: #666;
+    }
+    .type-option.active {
+        background: rgba(76, 175, 80, 0.1);
+        border-color: var(--accent-green);
+        color: #fff;
+    }
+    .type-option svg {
+        width: 28px;
+        height: 28px;
+        fill: var(--secondary-text-color);
+    }
+    .type-option.active svg {
+        fill: var(--accent-green);
+    }
+    
+    /* Hybrid Graph */
     .hg-container {
         display: flex;
         flex-direction: column;
@@ -497,36 +360,16 @@ export class StrainLibraryDialog extends LitElement {
     }
     .hg-tick {
         position: absolute;
-        top: 0;
-        bottom: 0;
+        top: 0; bottom: 0;
         width: 1px;
         background: rgba(255,255,255,0.4);
         pointer-events: none;
     }
-    .hg-legend-container {
-        position: relative;
-        height: 14px;
-        width: 100%;
-        margin-top: 2px;
-    }
-    .hg-legend-label {
-        position: absolute;
-        font-size: 0.65rem;
-        color: var(--text-secondary);
-        transform: translateX(-50%);
-    }
-    .hg-legend-label.start { left: 0; transform: none; }
-    .hg-legend-label.end { right: 0; transform: none; }
-
-    .hg-input-label {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
+    
     .hg-num-input {
         background: transparent;
         border: none;
-        border-bottom: 1px solid var(--text-secondary);
+        border-bottom: 1px solid var(--secondary-text-color);
         color: #fff;
         width: 36px;
         text-align: center;
@@ -534,12 +377,12 @@ export class StrainLibraryDialog extends LitElement {
         font-weight: 700;
         padding: 0;
     }
-        .hg-num-input:focus {
+    .hg-num-input:focus {
         outline: none;
         border-bottom-color: var(--accent-green);
     }
-
-    /* PAGINATION */
+    
+    /* Pagination */
     .pagination-container {
         display: flex;
         align-items: center;
@@ -549,13 +392,13 @@ export class StrainLibraryDialog extends LitElement {
         padding-bottom: 8px;
     }
     .pagination-text {
-        color: var(--text-secondary);
+        color: var(--secondary-text-color);
         font-size: 0.9rem;
         font-weight: 500;
     }
     .pagination-btn {
-        background: var(--card-bg);
-        border: 1px solid var(--border-color);
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
         color: #fff;
         width: 36px;
         height: 36px;
@@ -569,140 +412,86 @@ export class StrainLibraryDialog extends LitElement {
     .pagination-btn:hover:not(:disabled) {
         border-color: var(--accent-green);
         color: var(--accent-green);
+        background: rgba(255,255,255,0.1);
     }
     .pagination-btn:disabled {
         opacity: 0.5;
         cursor: not-allowed;
         border-color: transparent;
     }
-    /* MOBILE RESPONSIVENESS */
-    .mobile-actions { display: none; }
-    .desktop-actions { display: flex; gap: 12px; }
 
-    /* Hide mobile-only buttons by default (Desktop) */
-    .fab-btn, .menu-btn { display: none; }
-
-    @media (max-width: 600px) {
-      ha-dialog {
-        --mdc-dialog-min-width: 95vw;
-        --mdc-dialog-max-width: 95vw;
-      }
-
-      .strain-dialog-container {
-        width: 95vw;
-        height: 90vh;
-        max-width: 95vw;
-        position: relative;
-      }
-
-      .sd-header {
-        padding: 16px;
-      }
-
-      .sd-title {
-        font-size: 1.1rem;
-      }
-
-      .sd-content {
-        padding: 16px;
-      }
-
-      .sd-grid {
-        grid-template-columns: 1fr;
-      }
-      .sd-footer {
-        display: none;
-      }
-      
-      
-      .fab-btn {
-        display: flex;
-      }
-      
-      .menu-btn {
-        display: flex;
-      }
-
-      /* Mobile Menu Dropdown Position */
-      .mobile-menu {
+    /* Mobile Responsive */
+     @media (max-width: 600px) {
+       .glass-dialog-container {
+         width: 95vw;
+         height: 90vh;
+         max-width: 95vw;
+       }
+       .sd-header { padding: 16px; }
+       .sd-content { padding: 16px; }
+       .sd-grid { grid-template-columns: 1fr; }
+       .sd-footer { display: none; }
+     }
+     
+     .fab-btn {
         position: absolute;
-        top: 60px;
-        right: 16px;
-        background: #2d2d2d;
-        border-radius: 4px;
-        padding: 8px 0;
-        min-width: 200px;
-        box-shadow: 0 2px 6px 2px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.3);
-        z-index: 30;
-        display: flex;
-        flex-direction: column;
-      }
-      /* FAB Styles */
-      .fab-btn {
-        position: absolute;
-        bottom: 24px;
-        right: 24px;
-        width: 56px;
-        height: 56px;
+        bottom: 24px; right: 24px;
+        width: 56px; height: 56px;
         border-radius: 16px;
         background: var(--accent-green);
         color: #fff;
         border: none;
-        box-shadow: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        box-shadow: 0 4px 8px 3px rgba(0,0,0,0.15);
+        display: none; /* Hidden on desktop */
+        align-items: center; justify-content: center;
         cursor: pointer;
-        transition: all 0.2s;
         z-index: 20;
-        display: flex;
-      }
-      
-      /* Mobile Menu Button */
-      .menu-btn {
-        background: transparent;
-        border: none;
-        color: var(--text-secondary);
-        padding: 8px;
-        cursor: pointer;
-        border-radius: 50%;
-        display: block; 
-      }
+     }
 
-      .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .mobile-menu-item {
-        padding: 12px 16px; /* M3 List Item padding */
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        color: #fff; /* On Surface */
-        font-size: 0.9rem; /* Body Large */
-        cursor: pointer;
-        transition: background 0.2s;
-      }
-      .mobile-menu-item:hover {
-        background: rgba(255,255,255,0.08); /* State Layer */
-      }
-      .mobile-menu-item svg {
-        width: 20px;
-        height: 20px;
-        fill: var(--text-secondary);
-      }
-      
-      /* Overlay to close menu */
-      .menu-overlay {
+     .sd-textarea {
+          width: 100%;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 8px;
+          padding: 12px;
+          color: #fff;
+          font-family: inherit;
+          resize: vertical;
+          box-sizing: border-box;
+          font-size: 1rem; 
+     }
+     .sd-textarea:focus {
+        border-color: var(--accent-green);
+        outline: none;
+        background: rgba(255,255,255,0.08);
+     }
+     
+     /* Mobile menu */
+     .mobile-menu {
         position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        z-index: 25;
-        background: transparent;
+        top: 60px; right: 16px;
+        background: #2d2d2d;
+        border-radius: 4px;
+        padding: 8px 0;
+        min-width: 200px;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+        z-index: 30;
       }
-    }
-  `;
+      .mobile-menu-item {
+        padding: 12px 16px;
+        display: flex; align-items: center; gap: 12px;
+        color: #fff; cursor: pointer;
+      }
+      .mobile-menu-item:hover { background: rgba(255,255,255,0.08); }
+      .mobile-menu-item svg { width: 20px; height: 20px; fill: var(--secondary-text-color); }
+      .menu-overlay { position: absolute; inset:0; z-index: 25; }
+      
+      /* Mobile Button Visibility */
+      @media (max-width: 600px) {
+        .fab-btn { display: flex; }
+      }
+    `
+  ];
 
   private _startEdit(strain?: StrainEntry) {
     if (strain) {
@@ -794,8 +583,8 @@ export class StrainLibraryDialog extends LitElement {
     return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
   }
 
-  protected render(): TemplateResult {
-    if (!this.open) return html``;
+  render() {
+    if (!this.open) return nothing;
 
     return html`
       <ha-dialog
@@ -805,7 +594,7 @@ export class StrainLibraryDialog extends LitElement {
         .scrimClickAction=${''}
         .escapeKeyAction=${''}
       >
-        <div class="strain-dialog-container">
+        <div class="glass-dialog-container">
           ${this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView()}
         </div>
 
@@ -827,7 +616,6 @@ export class StrainLibraryDialog extends LitElement {
     // Pagination Logic
     const totalPages = Math.ceil(filteredStrains.length / this.ITEMS_PER_PAGE);
 
-    // Ensure current page is valid (e.g. if filtering reduced pages)
     if (this._currentPage > totalPages && totalPages > 0) {
       this._currentPage = totalPages;
     }
@@ -837,33 +625,37 @@ export class StrainLibraryDialog extends LitElement {
     const paginatedStrains = filteredStrains.slice(startIndex, startIndex + this.ITEMS_PER_PAGE);
 
     return html`
-      <div class="sd-header">
-        <h2 class="sd-title">Strain Library</h2>
-        <div class="header-actions">
-            <button class="menu-btn" @click=${() => this._mobileMenuOpen = !this._mobileMenuOpen}>
+      <div class="dialog-header">
+        <div class="dialog-icon">
+            <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiLeaf}"></path></svg>
+        </div>
+        <div class="dialog-title-group">
+            <h2 class="dialog-title">Strain Library</h2>
+        </div>
+        
+        <div class="header-actions" style="display:flex; gap:8px;">
+            <button class="md3-button text" @click=${() => this._mobileMenuOpen = !this._mobileMenuOpen} style="min-width:auto; padding:8px; display: none;">
                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
             </button>
-            <button class="sd-close-btn" @click=${() => this.dispatchEvent(new CustomEvent('close'))}>
+            <style>@media(max-width:600px){ button[style*="mdiDotsVertical"] { display: flex !important; } }</style>
+            
+            <button class="md3-button text" @click=${() => this.dispatchEvent(new CustomEvent('close'))} style="min-width:auto; padding:8px;">
                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
             </button>
         </div>
       </div>
 
       <div class="sd-content">
-        <!-- ... search and grid ... -->
         <div class="search-bar-container">
           <div class="search-input-wrapper">
-            <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-            <input
-              type="text"
-              class="search-bar-input"
-              placeholder="Search Strains by Name, Breeder..."
-              .value=${this._searchQuery}
-              @input=${(e: Event) => {
-        this._searchQuery = (e.target as HTMLInputElement).value;
-        this._currentPage = 1; // Reset to page 1 on search
+             <md3-text-input 
+                placeholder="Search Strains by Name, Breeder..."
+                .value=${this._searchQuery}
+                @change=${(e: CustomEvent) => {
+        this._searchQuery = e.detail;
+        this._currentPage = 1;
       }}
-            />
+             ></md3-text-input>
           </div>
         </div>
 
@@ -872,7 +664,7 @@ export class StrainLibraryDialog extends LitElement {
         </div>
 
         ${filteredStrains.length === 0 ? html`
-          <div style="text-align:center; padding: 40px; color: var(--text-secondary);">
+          <div style="text-align:center; padding: 40px; color: var(--secondary-text-color);">
             <svg style="width:48px;height:48px;fill:currentColor; opacity:0.5;" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
             <p>No strains found matching "${query}"</p>
           </div>
@@ -917,23 +709,23 @@ export class StrainLibraryDialog extends LitElement {
 
       <!-- Mobile FAB -->
       <button class="fab-btn" @click=${() => this._startEdit()}>
-        <svg style="fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+        <svg style="fill:currentColor; width: 24px; height: 24px;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
       </button>
 
       <div class="sd-footer">
-        <button class="sd-btn secondary" @click=${() => this.dispatchEvent(new CustomEvent('get-recommendation'))}>
+        <button class="md3-button tonal" @click=${() => this.dispatchEvent(new CustomEvent('get-recommendation'))}>
           <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
           Get Recommendation
         </button>
-        <button class="sd-btn secondary" @click=${() => this._importDialogOpen = true}>
+        <button class="md3-button tonal" @click=${() => this._importDialogOpen = true}>
           <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
           Import Strains
         </button>
-        <button class="sd-btn secondary" @click=${() => this.dispatchEvent(new CustomEvent('export-library'))}>
+        <button class="md3-button tonal" @click=${() => this.dispatchEvent(new CustomEvent('export-library'))}>
           <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg>
           Export Strains
         </button>
-        <button class="sd-btn primary" @click=${() => this._startEdit()}>
+        <button class="md3-button primary" @click=${() => this._startEdit()}>
           <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
           New Strain
         </button>
@@ -1001,17 +793,17 @@ export class StrainLibraryDialog extends LitElement {
         ${uniqueBreeders.map(name => html`<option value="${name}"></option>`)}
       </datalist>
 
-      <div class="sd-header">
-        <div style="display:flex; align-items:center; gap:16px;">
-          <button class="sd-btn secondary" style="padding: 8px 12px;" @click=${() => this._view = 'browse'}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiArrowLeft}"></path></svg>
-            Back
-          </button>
-          <h2 class="sd-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
-        </div>
-        <button class="sd-close-btn" @click=${() => this.dispatchEvent(new CustomEvent('close'))}>
-          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
-        </button>
+      <div class="dialog-header">
+         <div style="display:flex; align-items:center; gap:16px;">
+           <button class="md3-button tonal" style="padding: 0 12px; height: 32px;" @click=${() => this._view = 'browse'}>
+             <svg style="width:18px;height:18px;fill:currentColor; margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiArrowLeft}"></path></svg>
+             Back
+           </button>
+           <h2 class="dialog-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
+         </div>
+         <button class="md3-button text" @click=${() => this.dispatchEvent(new CustomEvent('close'))} style="min-width:auto; padding:8px;">
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+         </button>
       </div>
 
       <div class="sd-content">
@@ -1021,7 +813,7 @@ export class StrainLibraryDialog extends LitElement {
             <div class="photo-upload-area"
                 @click=${(e: Event) => {
         const target = e.target as HTMLElement;
-        if (!target.closest('.crop-btn') && !target.closest('.select-library-btn') && !target.closest('.sd-btn')) {
+        if (!target.closest('.crop-btn') && !target.closest('.select-library-btn') && !target.closest('.md3-button')) {
           (e.currentTarget as HTMLElement).querySelector('input')?.click();
         }
       }}
@@ -1063,7 +855,7 @@ export class StrainLibraryDialog extends LitElement {
               ` : html`
                 <div style="display: flex; gap: 16px; align-items: center;">
                   <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                      <button class="sd-btn secondary" @click=${(e: Event) => ((e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement).click()}>
+                      <button class="md3-button tonal" @click=${(e: Event) => ((e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement).click()}>
                         <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
                         Camera
                       </button>
@@ -1071,7 +863,7 @@ export class StrainLibraryDialog extends LitElement {
                   </div>
                   
                   <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                      <button class="sd-btn secondary" @click=${(e: Event) => ((e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement).click()}>
+                      <button class="md3-button tonal" @click=${(e: Event) => ((e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement).click()}>
                         <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
                         Gallery
                       </button>
@@ -1082,26 +874,33 @@ export class StrainLibraryDialog extends LitElement {
               `}
             </div>
 
-            <div class="sd-form-group">
-              <label class="sd-label">Strain Name *</label>
-              <input type="text" class="sd-input" list="strain-suggestions" .value=${s.strain || ''} @input=${(e: any) => this._handleEditorChange('strain', e.target.value)} />
-            </div>
+            <md3-text-input 
+              label="Strain Name *" 
+              .value=${s.strain || ''}
+              list="strain-suggestions"
+              @change=${(e: CustomEvent) => this._handleEditorChange('strain', e.detail)}>
+            </md3-text-input>
 
-            <div class="sd-form-group">
-              <label class="sd-label">Phenotype</label>
-              <input type="text" class="sd-input" placeholder="e.g. #1 (Optional)" .value=${s.phenotype || ''} @input=${(e: any) => this._handleEditorChange('phenotype', e.target.value)} />
-            </div>
+            <md3-text-input 
+              label="Phenotype"
+              placeholder="e.g. #1 (Optional)" 
+              .value=${s.phenotype || ''} 
+              @change=${(e: CustomEvent) => this._handleEditorChange('phenotype', e.detail)}>
+            </md3-text-input>
 
-            <div class="sd-form-group">
-              <label class="sd-label">Breeder/Seedbank</label>
-              <input type="text" class="sd-input" list="breeder-suggestions" .value=${s.breeder || ''} @input=${(e: any) => this._handleEditorChange('breeder', e.target.value)} />
-            </div>
+            <md3-text-input 
+              label="Breeder/Seedbank"
+              list="breeder-suggestions"
+              .value=${s.breeder || ''} 
+              @change=${(e: CustomEvent) => this._handleEditorChange('breeder', e.detail)}>
+            </md3-text-input>
+            
           </div>
 
           <!-- RIGHT COL: GENETICS -->
           <div class="editor-col">
-            <div class="sd-form-group">
-              <label class="sd-label">Type *</label>
+            <div style="margin-bottom: 20px;">
+              <label class="md3-label" style="display:block; margin-bottom:8px; color:var(--secondary-text-color);">Type *</label>
               <div class="type-selector-grid">
                 ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map(t => {
             let icon = mdiLeaf;
@@ -1114,7 +913,7 @@ export class StrainLibraryDialog extends LitElement {
                     <div class="type-option ${isActive ? 'active' : ''}"
                         @click=${() => this._handleEditorChange('type', t)}>
                       <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-                      <span class="type-label">${t}</span>
+                      <span class="type-label" style="font-size:0.85rem; font-weight:500;">${t}</span>
                     </div>
                   `;
           })}
@@ -1122,11 +921,11 @@ export class StrainLibraryDialog extends LitElement {
             </div>
 
             ${(s.type || '').toLowerCase() === 'hybrid' ? html`
-              <div class="sd-form-group">
-                <label class="sd-label">Hybrid Composition (%)</label>
+              <div style="margin-bottom: 20px;">
+                <label class="md3-label" style="display:block; margin-bottom:8px; color:var(--secondary-text-color);">Hybrid Composition (%)</label>
                 <div class="hg-container" style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;">
                   <div class="hg-labels">
-                    <div class="hg-input-label">
+                    <div class="hg-input-label" style="display:flex; align-items:center; gap:4px;">
                       <span>Indica:</span>
                       <input class="hg-num-input" type="number" min="0" max="100"
                         .value=${s.indica_percentage || 0}
@@ -1138,7 +937,7 @@ export class StrainLibraryDialog extends LitElement {
         }} />
                       <span>%</span>
                     </div>
-                    <div class="hg-input-label">
+                    <div class="hg-input-label" style="display:flex; align-items:center; gap:4px;">
                       <span>Sativa:</span>
                       <input class="hg-num-input" type="number" min="0" max="100"
                         .value=${s.sativa_percentage || 0}
@@ -1171,21 +970,31 @@ export class StrainLibraryDialog extends LitElement {
               </div>
             ` : nothing}
 
-            <div class="sd-form-group">
-              <label class="sd-label">Flowering Time (Days)</label>
-              <div style="display:flex; gap:16px;">
-                <input type="number" class="sd-input" placeholder="Min" .value=${s.flowering_days_min || ''} @input=${(e: any) => this._handleEditorChange('flowering_days_min', e.target.value)} />
-                <input type="number" class="sd-input" placeholder="Max" .value=${s.flowering_days_max || ''} @input=${(e: any) => this._handleEditorChange('flowering_days_max', e.target.value)} />
-              </div>
+            <div style="display:flex; gap:16px; margin-bottom: 20px;">
+                <div style="flex:1">
+                    <md3-number-input 
+                        label="Min Flowering Days" 
+                        .value=${s.flowering_days_min || ''} 
+                         @change=${(e: CustomEvent) => this._handleEditorChange('flowering_days_min', e.detail)}>
+                    </md3-number-input>
+                </div>
+                <div style="flex:1">
+                    <md3-number-input 
+                        label="Max Flowering Days" 
+                        .value=${s.flowering_days_max || ''} 
+                         @change=${(e: CustomEvent) => this._handleEditorChange('flowering_days_max', e.detail)}>
+                    </md3-number-input>
+                </div>
             </div>
 
-            <div class="sd-form-group">
-              <label class="sd-label">Lineage</label>
-              <input type="text" class="sd-input" .value=${s.lineage || ''} @input=${(e: any) => this._handleEditorChange('lineage', e.target.value)} />
-            </div>
+            <md3-text-input 
+                label="Lineage" 
+                .value=${s.lineage || ''} 
+                @change=${(e: CustomEvent) => this._handleEditorChange('lineage', e.detail)}>
+            </md3-text-input>
 
-            <div class="sd-form-group">
-              <label class="sd-label">Sex</label>
+            <div style="margin-bottom: 20px;">
+              <label class="md3-label" style="display:block; margin-bottom:8px; color:var(--secondary-text-color);">Sex</label>
               <div style="display:flex; gap:20px; padding: 8px 0;">
                 ${['Feminized', 'Regular'].map(sex => html`
                   <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:white;">
@@ -1199,17 +1008,20 @@ export class StrainLibraryDialog extends LitElement {
               </div>
             </div>
 
-            <div class="sd-form-group">
-              <label class="sd-label">Description</label>
-              <textarea class="sd-textarea" .value=${s.description || ''} @input=${(e: any) => this._handleEditorChange('description', e.target.value)}></textarea>
+            <div style="margin-bottom: 20px;">
+              <label class="md3-label" style="display:block; margin-bottom:8px; color:var(--secondary-text-color);">Description</label>
+              <textarea class="sd-textarea" 
+                .value=${s.description || ''} 
+                @input=${(e: any) => this._handleEditorChange('description', e.target.value)}
+              ></textarea>
             </div>
           </div>
         </div>
       </div>
 
       <div class="sd-footer">
-        <button class="sd-btn secondary" @click=${() => this._view = 'browse'}>Cancel</button>
-        <button class="sd-btn primary" @click=${() => this._handleSave()}>
+        <button class="md3-button tonal" @click=${() => this._view = 'browse'}>Cancel</button>
+        <button class="md3-button primary" @click=${() => this._handleSave()}>
           <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
           Save Strain
         </button>
@@ -1301,10 +1113,10 @@ export class StrainLibraryDialog extends LitElement {
 
     return html`
       <div class="crop-overlay">
-        <div style="background: #1a1a1a; width: 80%; max-width: 800px; height: 80%; max-height: 600px; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color);">
-          <div class="sd-header">
-            <h2 class="sd-title">Select from Library</h2>
-            <button class="sd-close-btn" @click=${() => this._toggleImageSelector(false)}>
+        <div class="glass-dialog-container" style="width: 80%; max-width: 800px; height: 80%; max-height: 600px;">
+          <div class="dialog-header">
+            <h2 class="dialog-title">Select from Library</h2>
+            <button class="md3-button text" @click=${() => this._toggleImageSelector(false)} style="min-width:auto; padding:8px;">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
             </button>
           </div>
@@ -1325,7 +1137,7 @@ export class StrainLibraryDialog extends LitElement {
                 </div>
               `)}
             </div>
-            ${imageMap.size === 0 ? html`<p style="text-align: center; color: var(--text-secondary); margin-top: 40px;">No images found in library.</p>` : nothing}
+            ${imageMap.size === 0 ? html`<p style="text-align: center; color: var(--secondary-text-color); margin-top: 40px;">No images found in library.</p>` : nothing}
           </div>
         </div>
       </div>
@@ -1335,52 +1147,54 @@ export class StrainLibraryDialog extends LitElement {
   private renderImportDialog(): TemplateResult {
     return html`
       <div class="crop-overlay">
-        <div style="background: #1a1a1a; width: 400px; max-width: 90vw; border-radius: 16px; padding: 24px; border: 1px solid var(--border-color); color: #fff; display: flex; flex-direction: column; gap: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 style="margin: 0; font-size: 1.25rem;">Import Strains</h2>
-            <button class="sd-close-btn" @click=${() => this._importDialogOpen = false}>
+        <div class="glass-dialog-container" style="width: 400px; max-width: 90vw; height: auto;">
+          <div class="dialog-header">
+            <h2 class="dialog-title">Import Strains</h2>
+            <button class="md3-button text" @click=${() => this._importDialogOpen = false} style="min-width:auto; padding:8px;">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
             </button>
           </div>
+          
+          <div style="padding: 24px;">
+            <div style="font-size: 0.9rem; color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 20px;">
+                Select a ZIP file containing your strain library export. You can either merge the new strains with your existing library or replace it entirely.
+            </div>
 
-          <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">
-            Select a ZIP file containing your strain library export. You can either merge the new strains with your existing library or replace it entirely.
-          </div>
+            <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                <input type="radio" name="import_mode"
+                        .checked=${!this._importReplace}
+                        @change=${() => this._importReplace = false}
+                        style="accent-color: var(--accent-green); transform: scale(1.2);" />
+                <div>
+                    <div style="font-weight: 600;">Merge</div>
+                    <div style="font-size: 0.8rem; color: var(--secondary-text-color);">Add new strains, keep existing ones.</div>
+                </div>
+                </label>
 
-          <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
-            <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
-              <input type="radio" name="import_mode"
-                      .checked=${!this._importReplace}
-                      @change=${() => this._importReplace = false}
-                      style="accent-color: var(--accent-green); transform: scale(1.2);" />
-              <div>
-                <div style="font-weight: 600;">Merge</div>
-                <div style="font-size: 0.8rem; color: var(--text-secondary);">Add new strains, keep existing ones.</div>
-              </div>
-            </label>
+                <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 12px 0;"></div>
 
-            <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 12px 0;"></div>
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                <input type="radio" name="import_mode"
+                        .checked=${this._importReplace}
+                        @change=${() => this._importReplace = true}
+                        style="accent-color: var(--accent-green); transform: scale(1.2);" />
+                <div>
+                    <div style="font-weight: 600;">Replace</div>
+                    <div style="font-size: 0.8rem; color: var(--secondary-text-color);">Overwrite entire library with import.</div>
+                </div>
+                </label>
+            </div>
 
-            <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
-              <input type="radio" name="import_mode"
-                    .checked=${this._importReplace}
-                    @change=${() => this._importReplace = true}
-                    style="accent-color: var(--accent-green); transform: scale(1.2);" />
-              <div>
-                <div style="font-weight: 600;">Replace</div>
-                <div style="font-size: 0.8rem; color: var(--text-secondary);">Overwrite entire library with import.</div>
-              </div>
-            </label>
-          </div>
-
-          <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
-            <button class="sd-btn secondary" @click=${() => this._importDialogOpen = false}>
-              Cancel
-            </button>
-            <button class="sd-btn primary" @click=${() => this._handleImportFile()}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
-              Select File
-            </button>
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
+                <button class="md3-button tonal" @click=${() => this._importDialogOpen = false}>
+                Cancel
+                </button>
+                <button class="md3-button primary" @click=${() => this._handleImportFile()}>
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
+                Select File
+                </button>
+            </div>
           </div>
         </div>
       </div>

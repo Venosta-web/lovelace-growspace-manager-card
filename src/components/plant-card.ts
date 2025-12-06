@@ -3,7 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { mdiSprout, mdiFlower, mdiHairDryer, mdiCannabis, mdiCheckboxMarked, mdiCheckboxBlankOutline } from '@mdi/js';
 import { PlantEntity, StrainEntry } from '../types';
 import { PlantUtils } from '../utils';
-import { DialogRenderer } from '../dialog-renderer';
+
 
 @customElement('growspace-plant-card')
 export class GrowspacePlantCard extends LitElement {
@@ -421,7 +421,7 @@ export class GrowspacePlantCard extends LitElement {
             src="${imageUrl}" 
             loading="lazy" 
             alt="${strainName || 'Plant'}"
-            style="${DialogRenderer.getImgStyle(imageCropMeta)}"
+            style="${PlantUtils.getImgStyle(imageCropMeta)}"
           />
           <div class="plant-card-overlay"></div>
         ` : ''}

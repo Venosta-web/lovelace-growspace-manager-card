@@ -1,5 +1,5 @@
 import { mdiSprout, mdiFlower, mdiHairDryer, mdiCannabis } from "@mdi/js";
-import { PlantEntity, GrowspaceDevice, PlantStage } from "./types";
+import { PlantEntity, GrowspaceDevice, PlantStage, CropMeta } from "./types";
 
 export const PLANT_STAGES: PlantStage[] = [
   "seedling",
@@ -62,6 +62,31 @@ export class PlantUtils {
     if (attrs.veg_start && new Date(attrs.veg_start) <= now) return "vegetative";
 
     return "seedling";
+  }
+
+  static calculatePlantAge(plant: PlantEntity): number {
+    if (!plant || !plant.attributes) return 0;
+    const stage = this.getPlantStage(plant);
+    const attrs = plant.attributes;
+    let startStr: string | undefined;
+
+    switch (stage) {
+      case 'flower': startStr = attrs.flower_start; break;
+      case 'vegetative': startStr = attrs.veg_start; break;
+      case 'mother': startStr = attrs.mom_start; break;
+      case 'clone': startStr = attrs.clone_start; break;
+      case 'dry': startStr = attrs.dry_start; break;
+      case 'cure': startStr = attrs.cure_start; break;
+      case 'seedling': startStr = attrs.planted_date; break;
+    }
+
+    if (!startStr) return 0;
+    const start = new Date(startStr);
+    const now = new Date();
+    if (isNaN(start.getTime())) return 0;
+
+    const diff = now.getTime() - start.getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
   }
   static createGridLayout(
     plants: PlantEntity[],
@@ -292,5 +317,10 @@ export class PlantUtils {
       img.onload = () => resolve();
       img.onerror = () => reject();
     });
+  }
+
+  static getImgStyle(meta?: CropMeta): string {
+    if (!meta) return 'width: 100%; height: 100%; object-fit: cover;';
+    return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
   }
 }

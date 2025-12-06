@@ -1,14 +1,22 @@
-
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { consume } from '@lit/context';
+import { hassContext } from '../context';
 import { HomeAssistant } from 'custom-card-helpers';
 import { mdiClose, mdiSprout } from '@mdi/js';
-import { StrainEntry, IrrigationTime } from '../types';
-import { DialogRenderer } from '../dialog-renderer';
+import { StrainEntry } from '../types';
+import { dialogStyles } from '../styles/dialog.styles';
+import '../components/ui/md3-text-input';
+import '../components/ui/md3-number-input';
+import '../components/ui/md3-select';
+import '../components/ui/md3-date-input';
 
 @customElement('add-plant-dialog')
 export class AddPlantDialog extends LitElement {
-  @property({ attribute: false }) hass!: HomeAssistant;
+  @consume({ context: hassContext, subscribe: true })
+  @property({ attribute: false })
+  hass!: HomeAssistant;
+
   @property({ type: Array }) strainLibrary: StrainEntry[] = [];
   @property({ type: String }) growspaceName = '';
   @property({ type: Boolean, reflect: true }) open = false;
@@ -28,194 +36,28 @@ export class AddPlantDialog extends LitElement {
   @state() private dry_start = '';
   @state() private cure_start = '';
 
-  static styles = css`
-    :host {
-      display: block;
-    }
-    .glass-dialog-container {
-      background: rgba(20, 20, 20, 0.6);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      max-height: 85vh;
-      color: #fff;
-      font-family: 'Roboto', sans-serif;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-      width: 500px;
-      max-width: 90vw;
-    }
-    .dialog-header {
-      display: flex;
-      align-items: center;
-      padding: 16px 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(0, 0, 0, 0.2);
-    }
-    .dialog-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.05);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 16px;
-      color: var(--primary-color, #4CAF50);
-    }
-    .dialog-title-group {
-      flex: 1;
-    }
-    .dialog-title {
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 500;
-    }
-    .dialog-subtitle {
-      font-size: 0.85rem;
-      opacity: 0.7;
-      margin-top: 2px;
-    }
-    .overview-grid {
-      padding: 24px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .detail-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 16px;
-      overflow: hidden;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    .detail-card h3 {
-      margin-top: 0;
-      margin-bottom: 16px;
-      font-size: 1rem;
-      font-weight: 500;
-      opacity: 0.9;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      padding-bottom: 8px;
-    }
-    .button-group {
-      padding: 16px 24px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(0, 0, 0, 0.2);
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    @media (max-width: 450px) {
-      .glass-dialog-container {
-        width: 100vw;
-        max-width: 100%;
-        height: 100vh;
-        border-radius: 0;
+  static styles = [
+    dialogStyles,
+    css`
+      :host {
+        display: block;
       }
       .overview-grid {
-        flex: 1;
-        min-height: 0;
-        padding: 16px;
+        padding: 24px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
       }
-      .dialog-header {
-         padding: 12px 16px;
+      @media (max-width: 450px) {
+        .overview-grid {
+          flex: 1;
+          min-height: 0;
+          padding: 16px;
+        }
       }
-      .button-group {
-        justify-content: center;
-      }
-      .md3-button {
-        flex: 1 1 auto;
-        min-width: 100px;
-      }
-    }
-
-    .md3-button {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0 24px;
-      height: 40px;
-      border-radius: 20px;
-      border: none;
-      font-family: inherit;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .md3-button.text {
-      background: transparent;
-      color: rgba(255, 255, 255, 0.7);
-      padding: 0 12px;
-    }
-    .md3-button.text:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: #fff;
-    }
-    .md3-button.tonal {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-    }
-    .md3-button.tonal:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-    .md3-button.primary {
-      background: var(--primary-color, #4CAF50);
-      color: #fff;
-    }
-    .md3-button.primary:hover {
-      filter: brightness(1.1);
-      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-    }
-    
-    .row-col-grid {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .row-col-grid > * {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .md3-input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex: 1;
-      margin-bottom: 12px;
-    }
-    .md3-label {
-      font-size: 12px;
-      font-weight: 500;
-      color: #9ca3af;
-      margin-left: 4px;
-    }
-    .md3-input {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #fff;
-      border-radius: 8px;
-      padding: 10px 12px;
-      width: 100%;
-      box-sizing: border-box;
-      font-family: inherit;
-    }
-    .md3-input:focus {
-      outline: none;
-      border-color: #4CAF50;
-      background: rgba(255, 255, 255, 0.08);
-    }
-  `;
+    `
+  ];
 
   // Provide a method to set initial data from parent if needed
   public setInitialState(row: number, col: number, strain: string = '', phenotype: string = '') {
@@ -296,11 +138,28 @@ export class AddPlantDialog extends LitElement {
            <!-- IDENTITY CARD -->
            <div class="detail-card">
              <h3>Identity & Location</h3>
-             ${DialogRenderer.renderMD3SelectInput('Strain *', this.strain, uniqueStrains, (v) => this.strain = v)}
-             ${DialogRenderer.renderMD3TextInput('Phenotype', this.phenotype, (v) => this.phenotype = v)}
+             <md3-select
+               label="Strain *"
+               .value=${this.strain}
+               .options=${uniqueStrains}
+               @change=${(e: CustomEvent) => this.strain = e.detail}
+             ></md3-select>
+             <md3-text-input
+               label="Phenotype"
+               .value=${this.phenotype}
+               @change=${(e: CustomEvent) => this.phenotype = e.detail}
+             ></md3-text-input>
              <div class="row-col-grid">
-               ${DialogRenderer.renderMD3NumberInput('Row', this.row + 1, (v) => this.row = parseInt(v) - 1)}
-               ${DialogRenderer.renderMD3NumberInput('Col', this.col + 1, (v) => this.col = parseInt(v) - 1)}
+               <md3-number-input
+                 label="Row"
+                 .value=${this.row + 1}
+                 @change=${(e: CustomEvent) => this.row = parseInt(e.detail) - 1}
+               ></md3-number-input>
+               <md3-number-input
+                 label="Col"
+                 .value=${this.col + 1}
+                 @change=${(e: CustomEvent) => this.col = parseInt(e.detail) - 1}
+               ></md3-number-input>
              </div>
            </div>
 
@@ -331,18 +190,18 @@ export class AddPlantDialog extends LitElement {
     const name = this.growspaceName.toLowerCase();
 
     if (name.includes('mother')) {
-      return html`${DialogRenderer.renderMD3DateInput('Mother Start', this.mother_start, (v) => this.mother_start = v)}`;
+      return html`<md3-date-input label="Mother Start" .value=${this.mother_start} @change=${(e: CustomEvent) => this.mother_start = e.detail}></md3-date-input>`;
     } else if (name.includes('clone')) {
-      return html`${DialogRenderer.renderMD3DateInput('Clone Start', this.clone_start, (v) => this.clone_start = v)}`;
+      return html`<md3-date-input label="Clone Start" .value=${this.clone_start} @change=${(e: CustomEvent) => this.clone_start = e.detail}></md3-date-input>`;
     } else if (name.includes('dry')) {
-      return html`${DialogRenderer.renderMD3DateInput('Dry Start', this.dry_start, (v) => this.dry_start = v)}`;
+      return html`<md3-date-input label="Dry Start" .value=${this.dry_start} @change=${(e: CustomEvent) => this.dry_start = e.detail}></md3-date-input>`;
     } else if (name.includes('cure')) {
-      return html`${DialogRenderer.renderMD3DateInput('Cure Start', this.cure_start, (v) => this.cure_start = v)}`;
+      return html`<md3-date-input label="Cure Start" .value=${this.cure_start} @change=${(e: CustomEvent) => this.cure_start = e.detail}></md3-date-input>`;
     } else {
       return html`
-         ${DialogRenderer.renderMD3DateInput('Seedling Start', this.seedling_start, (v) => this.seedling_start = v)}
-         ${DialogRenderer.renderMD3DateInput('Veg Start', this.veg_start, (v) => this.veg_start = v)}
-         ${DialogRenderer.renderMD3DateInput('Flower Start', this.flower_start, (v) => this.flower_start = v)}
+         <md3-date-input label="Seedling Start" .value=${this.seedling_start} @change=${(e: CustomEvent) => this.seedling_start = e.detail}></md3-date-input>
+         <md3-date-input label="Veg Start" .value=${this.veg_start} @change=${(e: CustomEvent) => this.veg_start = e.detail}></md3-date-input>
+         <md3-date-input label="Flower Start" .value=${this.flower_start} @change=${(e: CustomEvent) => this.flower_start = e.detail}></md3-date-input>
        `;
     }
   }
