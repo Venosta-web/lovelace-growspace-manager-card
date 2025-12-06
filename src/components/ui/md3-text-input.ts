@@ -35,7 +35,7 @@ export class Md3TextInput extends LitElement {
           class="md3-input"
           .value=${this.value}
           .placeholder=${this.placeholder}
-          .list=${this.list}
+          list=${this.list}
           @input=${this._handleInput}
         />
       </div>

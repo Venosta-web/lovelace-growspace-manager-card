@@ -10748,7 +10748,7 @@ let Md3TextInput = class Md3TextInput extends i$1 {
           class="md3-input"
           .value=${this.value}
           .placeholder=${this.placeholder}
-          .list=${this.list}
+          list=${this.list}
           @input=${this._handleInput}
         />
       </div>
