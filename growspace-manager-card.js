@@ -13310,11 +13310,11 @@ __decorate([
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "phenotype", void 0);
 __decorate([
-    r(),
+    n$2({ type: Number }),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "row", void 0);
 __decorate([
-    r(),
+    n$2({ type: Number }),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "col", void 0);
 __decorate([
@@ -18477,11 +18477,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
           .col=${dialogState.col}
           @close=${() => this._activeDialog = { type: 'NONE' }}
           @add-plant-submit=${(e) => this._confirmAddPlant(e.detail)}
-          .setInitialState=${(el) => {
-                // Optional: if we want to pre-populate row/col when opening
-                if (el)
-                    el.setInitialState(dialogState.row, dialogState.col);
-            }}
         ></add-plant-dialog>
       `;
         }

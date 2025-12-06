@@ -24,8 +24,8 @@ export class AddPlantDialog extends LitElement {
   // Initialize with values passed via methods or defaults
   @state() private strain = '';
   @state() private phenotype = '';
-  @state() private row = 0;
-  @state() private col = 0;
+  @property({ type: Number }) row = 0;
+  @property({ type: Number }) col = 0;
 
   // Date fields
   @state() private veg_start = '';

@@ -1121,10 +1121,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
           .col=${dialogState.col}
           @close=${() => this._activeDialog = { type: 'NONE' }}
           @add-plant-submit=${(e: CustomEvent) => this._confirmAddPlant(e.detail)}
-          .setInitialState=${(el: any) => {
-          // Optional: if we want to pre-populate row/col when opening
-          if (el) el.setInitialState(dialogState.row, dialogState.col);
-        }}
         ></add-plant-dialog>
       `;
     }
