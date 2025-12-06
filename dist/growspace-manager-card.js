@@ -12118,6 +12118,14 @@ StrainLibraryDialog.styles = [
       /* Using dialogStyles variables where possible */
     }
 
+    ha-dialog {
+      --mdc-dialog-min-width: 80vw;
+      --mdc-dialog-max-width: 95vw;
+      --dialog-surface-margin: 24px;
+      --dialog-content-padding: 0;
+      --dialog-scrollable-header-padding: 0;
+    }
+
     /* Additional specific styles */
     
     /* Layout Overrides */
@@ -12280,9 +12288,6 @@ StrainLibraryDialog.styles = [
         display: grid;
         grid-template-columns: 1fr 1.5fr;
         gap: 32px;
-    }
-    @media (max-width: 800px) {
-        .editor-layout { grid-template-columns: 1fr; }
     }
 
     /* PHOTO UPLOAD */
@@ -12500,6 +12505,10 @@ StrainLibraryDialog.styles = [
 
     /* Mobile Responsive */
      @media (max-width: 600px) {
+      ha-dialog {
+        --mdc-dialog-min-width: 95vw;
+        --mdc-dialog-max-width: 95vw;
+      }
        .glass-dialog-container {
          width: 95vw;
          height: 90vh;
@@ -12509,8 +12518,10 @@ StrainLibraryDialog.styles = [
        .sd-content { padding: 16px; }
        .sd-grid { grid-template-columns: 1fr; }
        .sd-footer { display: none; }
+       .fab-btn { display: flex; }
+       .editor-layout { grid-template-columns: 1fr; }
+    }
      }
-     
      .fab-btn {
         position: absolute;
         bottom: 24px; right: 24px;
@@ -12563,11 +12574,6 @@ StrainLibraryDialog.styles = [
       .mobile-menu-item:hover { background: rgba(255,255,255,0.08); }
       .mobile-menu-item svg { width: 20px; height: 20px; fill: var(--secondary-text-color); }
       .menu-overlay { position: absolute; inset:0; z-index: 25; }
-      
-      /* Mobile Button Visibility */
-      @media (max-width: 600px) {
-        .fab-btn { display: flex; }
-      }
     `
 ];
 __decorate([
