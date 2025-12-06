@@ -114,6 +114,17 @@ export class ConfigDialog extends LitElement {
       justify-content: flex-end;
       gap: 12px;
       background: #2d2d2d;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 450px) {
+      .config-actions {
+        justify-content: center;
+      }
+      .md3-button {
+        flex: 1 1 auto;
+        min-width: 100px;
+      }
     }
     
     .detail-card {

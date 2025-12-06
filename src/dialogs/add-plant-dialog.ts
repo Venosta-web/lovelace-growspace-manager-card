@@ -113,6 +113,17 @@ export class AddPlantDialog extends LitElement {
       padding: 20px 24px;
       background: rgba(0, 0, 0, 0.2);
       border-top: 1px solid rgba(255, 255, 255, 0.05);
+      flex-wrap: wrap;
+    }
+    
+    @media (max-width: 450px) {
+      .button-group {
+        justify-content: center;
+      }
+      .md3-button {
+        flex: 1 1 auto;
+        min-width: 100px;
+      }
     }
 
     .md3-button {

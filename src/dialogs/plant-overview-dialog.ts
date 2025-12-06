@@ -94,6 +94,17 @@ export class PlantOverviewDialog extends LitElement {
       display: flex;
       justify-content: flex-end;
       gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 450px) {
+      .button-group {
+        justify-content: center;
+      }
+      .md3-button {
+        flex: 1 1 auto;
+        min-width: 100px;
+      }
     }
     .md3-button {
       display: inline-flex;
