@@ -74,6 +74,9 @@ export class PlantOverviewDialog extends LitElement {
       border: 1px solid rgba(255, 255, 255, 0.05);
       border-radius: 12px;
       padding: 16px;
+      overflow: hidden;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .detail-card h3 {
       margin-top: 0;
@@ -148,6 +151,7 @@ export class PlantOverviewDialog extends LitElement {
     .row-col-grid {
       display: flex;
       gap: 16px;
+      flex-wrap: wrap;
     }
     .row-col-grid > * {
       flex: 1;

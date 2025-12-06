@@ -955,6 +955,7 @@ class DialogRenderer {
         <input
           type="text"
           class="md3-input"
+          style="width: 100%; box-sizing: border-box;"
           .value=${value}
           @input=${(e) => onChange(e.target.value)}
         />
@@ -967,6 +968,7 @@ class DialogRenderer {
         <label class="md3-label">${label}</label>
         <select
           class="md3-input"
+          style="width: 100%; box-sizing: border-box;"
           .value=${value}
           @change=${(e) => onChange(e.target.value)}
         >
@@ -983,6 +985,7 @@ class DialogRenderer {
         <input
           type="number"
           class="md3-input"
+          style="width: 100%; box-sizing: border-box;"
           min="1"
           .value=${value}
           @input=${(e) => onChange(e.target.value)}
@@ -998,6 +1001,7 @@ class DialogRenderer {
         <input
           type="datetime-local"
           class="md3-input"
+          style="width: 100%; box-sizing: border-box;"
           .value=${formattedValue}
           @input=${(e) => onChange(e.target.value)}
           @click=${(e) => e.target.showPicker()}
@@ -1014,6 +1018,7 @@ class DialogRenderer {
         <input
           type="date"
           class="md3-input"
+          style="width: 100%; box-sizing: border-box;"
           .value=${formattedValue}
           @input=${(e) => onChange(e.target.value)}
           @click=${(e) => e.target.showPicker()}
@@ -10953,6 +10958,9 @@ PlantOverviewDialog.styles = i$4 `
       border: 1px solid rgba(255, 255, 255, 0.05);
       border-radius: 12px;
       padding: 16px;
+      overflow: hidden;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .detail-card h3 {
       margin-top: 0;
@@ -11027,6 +11035,7 @@ PlantOverviewDialog.styles = i$4 `
     .row-col-grid {
       display: flex;
       gap: 16px;
+      flex-wrap: wrap;
     }
     .row-col-grid > * {
       flex: 1;
@@ -13080,7 +13089,7 @@ let AddPlantDialog = class AddPlantDialog extends i$1 {
              <h3>Identity & Location</h3>
              ${DialogRenderer.renderMD3SelectInput('Strain *', this.strain, uniqueStrains, (v) => this.strain = v)}
              ${DialogRenderer.renderMD3TextInput('Phenotype', this.phenotype, (v) => this.phenotype = v)}
-             <div style="display:flex; gap:16px;">
+             <div class="flex-row-wrap">
                ${DialogRenderer.renderMD3NumberInput('Row', this.row + 1, (v) => this.row = parseInt(v) - 1)}
                ${DialogRenderer.renderMD3NumberInput('Col', this.col + 1, (v) => this.col = parseInt(v) - 1)}
              </div>
@@ -13150,6 +13159,15 @@ AddPlantDialog.styles = i$4 `
       max-width: 90vw;
       font-family: 'Roboto', sans-serif;
     }
+    
+    @media (max-width: 600px) {
+      .glass-dialog-container {
+        width: 100vw;
+        max-width: 100%;
+        height: 100vh;
+        border-radius: 0;
+      }
+    }
 
     .dialog-header {
       padding: 20px 24px;
@@ -13185,6 +13203,9 @@ AddPlantDialog.styles = i$4 `
       border-radius: 12px;
       padding: 16px;
       border: 1px solid rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     
     .detail-card h3 {
@@ -13248,6 +13269,16 @@ AddPlantDialog.styles = i$4 `
     .md3-button.primary:hover {
       box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
       filter: brightness(1.1);
+    }
+
+    .flex-row-wrap {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .flex-row-wrap > * {
+      flex: 1;
+      min-width: 0;
     }
   `;
 __decorate([
@@ -13449,7 +13480,7 @@ let ConfigDialog = class ConfigDialog extends i$1 {
         <div class="detail-card">
            <h3>New Growspace Details</h3>
            ${DialogRenderer.renderMD3TextInput('Growspace Name', this.add_name, (v) => this.add_name = v)}
-           <div style="display:flex; gap:16px;">
+           <div class="flex-row-wrap">
               ${DialogRenderer.renderMD3NumberInput('Rows', this.add_rows, (v) => this.add_rows = parseInt(v))}
               ${DialogRenderer.renderMD3NumberInput('Plants per Row', this.add_plants_per_row, (v) => this.add_plants_per_row = parseInt(v))}
            </div>
@@ -13512,6 +13543,14 @@ ConfigDialog.styles = i$4 `
       overflow: hidden;
       font-family: 'Roboto', sans-serif;
       --accent-color: #22c55e;
+    }
+    @media (max-width: 600px) {
+      .config-container {
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+        max-width: none; /* override max-width */
+      }
     }
     .config-header {
       padding: 20px 24px;
@@ -13580,6 +13619,9 @@ ConfigDialog.styles = i$4 `
       border-radius: 12px;
       padding: 16px;
       border: 1px solid rgba(255,255,255,0.05);
+      overflow: hidden;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .detail-card h3 {
       font-size: 0.75rem;
@@ -13639,6 +13681,16 @@ ConfigDialog.styles = i$4 `
       outline: none;
       border-color: #4CAF50;
       background: rgba(255, 255, 255, 0.08);
+    }
+    
+    .flex-row-wrap {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .flex-row-wrap > * {
+      flex: 1;
+      min-width: 0;
     }
   `;
 __decorate([

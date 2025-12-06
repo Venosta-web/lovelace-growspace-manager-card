@@ -6,29 +6,29 @@ import { DialogRenderer } from '../dialog-renderer';
 
 @customElement('config-dialog')
 export class ConfigDialog extends LitElement {
-    @property({ type: Boolean, reflect: true }) open = false;
-    // Growspace options for the environment tab select
-    @property({ type: Object }) growspaceOptions: Record<string, string> = {};
+  @property({ type: Boolean, reflect: true }) open = false;
+  // Growspace options for the environment tab select
+  @property({ type: Object }) growspaceOptions: Record<string, string> = {};
 
-    @state() private currentTab: 'add_growspace' | 'environment' = 'environment';
+  @state() private currentTab: 'add_growspace' | 'environment' = 'environment';
 
-    // Add Growspace Data
-    @state() private add_name = '';
-    @state() private add_rows = 4;
-    @state() private add_plants_per_row = 4;
-    @state() private add_notification_service = 'mobile_app_notify';
+  // Add Growspace Data
+  @state() private add_name = '';
+  @state() private add_rows = 4;
+  @state() private add_plants_per_row = 4;
+  @state() private add_notification_service = 'mobile_app_notify';
 
-    // Environment Data
-    @state() private env_selectedGrowspaceId = '';
-    @state() private env_temp_sensor = '';
-    @state() private env_humidity_sensor = '';
-    @state() private env_vpd_sensor = '';
-    @state() private env_co2_sensor = '';
-    @state() private env_circulation_fan = '';
-    @state() private env_stress_threshold = 0.8;
-    @state() private env_mold_threshold = 0.8;
+  // Environment Data
+  @state() private env_selectedGrowspaceId = '';
+  @state() private env_temp_sensor = '';
+  @state() private env_humidity_sensor = '';
+  @state() private env_vpd_sensor = '';
+  @state() private env_co2_sensor = '';
+  @state() private env_circulation_fan = '';
+  @state() private env_stress_threshold = 0.8;
+  @state() private env_mold_threshold = 0.8;
 
-    static styles = css`
+  static styles = css`
     :host {
       display: block;
     }
@@ -45,6 +45,14 @@ export class ConfigDialog extends LitElement {
       overflow: hidden;
       font-family: 'Roboto', sans-serif;
       --accent-color: #22c55e;
+    }
+    @media (max-width: 600px) {
+      .config-container {
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+        max-width: none; /* override max-width */
+      }
     }
     .config-header {
       padding: 20px 24px;
@@ -113,6 +121,9 @@ export class ConfigDialog extends LitElement {
       border-radius: 12px;
       padding: 16px;
       border: 1px solid rgba(255,255,255,0.05);
+      overflow: hidden;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .detail-card h3 {
       font-size: 0.75rem;
@@ -173,80 +184,90 @@ export class ConfigDialog extends LitElement {
       border-color: #4CAF50;
       background: rgba(255, 255, 255, 0.08);
     }
+    
+    .flex-row-wrap {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .flex-row-wrap > * {
+      flex: 1;
+      min-width: 0;
+    }
   `;
 
-    // Provide initial state setting from parent
-    public setInitialState(
-        currentTab: 'add_growspace' | 'environment' = 'environment',
-        environmentData?: {
-            selectedGrowspaceId: string;
-            temp_sensor: string;
-            humidity_sensor: string;
-            vpd_sensor: string;
-            co2_sensor: string;
-            circulation_fan: string;
-            stress_threshold: number;
-            mold_threshold: number;
-        }
-    ) {
-        this.currentTab = currentTab;
-        if (environmentData) {
-            this.env_selectedGrowspaceId = environmentData.selectedGrowspaceId;
-            this.env_temp_sensor = environmentData.temp_sensor;
-            this.env_humidity_sensor = environmentData.humidity_sensor;
-            this.env_vpd_sensor = environmentData.vpd_sensor;
-            this.env_co2_sensor = environmentData.co2_sensor;
-            this.env_circulation_fan = environmentData.circulation_fan;
-            this.env_stress_threshold = environmentData.stress_threshold;
-            this.env_mold_threshold = environmentData.mold_threshold;
-        }
+  // Provide initial state setting from parent
+  public setInitialState(
+    currentTab: 'add_growspace' | 'environment' = 'environment',
+    environmentData?: {
+      selectedGrowspaceId: string;
+      temp_sensor: string;
+      humidity_sensor: string;
+      vpd_sensor: string;
+      co2_sensor: string;
+      circulation_fan: string;
+      stress_threshold: number;
+      mold_threshold: number;
     }
-
-    private _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+  ) {
+    this.currentTab = currentTab;
+    if (environmentData) {
+      this.env_selectedGrowspaceId = environmentData.selectedGrowspaceId;
+      this.env_temp_sensor = environmentData.temp_sensor;
+      this.env_humidity_sensor = environmentData.humidity_sensor;
+      this.env_vpd_sensor = environmentData.vpd_sensor;
+      this.env_co2_sensor = environmentData.co2_sensor;
+      this.env_circulation_fan = environmentData.circulation_fan;
+      this.env_stress_threshold = environmentData.stress_threshold;
+      this.env_mold_threshold = environmentData.mold_threshold;
     }
+  }
 
-    private _switchTab(tab: 'add_growspace' | 'environment') {
-        this.currentTab = tab;
-    }
+  private _close() {
+    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+  }
 
-    // --- Submission Handlers ---
+  private _switchTab(tab: 'add_growspace' | 'environment') {
+    this.currentTab = tab;
+  }
 
-    private _submitAddGrowspace() {
-        this.dispatchEvent(new CustomEvent('add-growspace-submit', {
-            detail: {
-                name: this.add_name,
-                rows: this.add_rows,
-                plants_per_row: this.add_plants_per_row,
-                notification_service: this.add_notification_service
-            },
-            bubbles: true,
-            composed: true
-        }));
-    }
+  // --- Submission Handlers ---
 
-    private _submitEnvironment() {
-        this.dispatchEvent(new CustomEvent('configure-environment-submit', {
-            detail: {
-                selectedGrowspaceId: this.env_selectedGrowspaceId,
-                temp_sensor: this.env_temp_sensor,
-                humidity_sensor: this.env_humidity_sensor,
-                vpd_sensor: this.env_vpd_sensor,
-                co2_sensor: this.env_co2_sensor,
-                circulation_fan: this.env_circulation_fan,
-                stress_threshold: this.env_stress_threshold,
-                mold_threshold: this.env_mold_threshold
-            },
-            bubbles: true,
-            composed: true
-        }));
-    }
+  private _submitAddGrowspace() {
+    this.dispatchEvent(new CustomEvent('add-growspace-submit', {
+      detail: {
+        name: this.add_name,
+        rows: this.add_rows,
+        plants_per_row: this.add_plants_per_row,
+        notification_service: this.add_notification_service
+      },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
+  private _submitEnvironment() {
+    this.dispatchEvent(new CustomEvent('configure-environment-submit', {
+      detail: {
+        selectedGrowspaceId: this.env_selectedGrowspaceId,
+        temp_sensor: this.env_temp_sensor,
+        humidity_sensor: this.env_humidity_sensor,
+        vpd_sensor: this.env_vpd_sensor,
+        co2_sensor: this.env_co2_sensor,
+        circulation_fan: this.env_circulation_fan,
+        stress_threshold: this.env_stress_threshold,
+        mold_threshold: this.env_mold_threshold
+      },
+      bubbles: true,
+      composed: true
+    }));
+  }
 
 
-    render() {
-        if (!this.open) return html``;
+  render() {
+    if (!this.open) return html``;
 
-        return html`
+    return html`
       <ha-dialog
         open
         @closed=${this._close}
@@ -300,15 +321,15 @@ export class ConfigDialog extends LitElement {
         </div>
       </ha-dialog>
     `;
-    }
+  }
 
-    private renderAddGrowspaceTab() {
-        return html`
+  private renderAddGrowspaceTab() {
+    return html`
      <div style="display:flex; flex-direction:column; gap:20px;">
         <div class="detail-card">
            <h3>New Growspace Details</h3>
            ${DialogRenderer.renderMD3TextInput('Growspace Name', this.add_name, (v) => this.add_name = v)}
-           <div style="display:flex; gap:16px;">
+           <div class="flex-row-wrap">
               ${DialogRenderer.renderMD3NumberInput('Rows', this.add_rows, (v) => this.add_rows = parseInt(v))}
               ${DialogRenderer.renderMD3NumberInput('Plants per Row', this.add_plants_per_row, (v) => this.add_plants_per_row = parseInt(v))}
            </div>
@@ -316,12 +337,12 @@ export class ConfigDialog extends LitElement {
         </div>
      </div>
    `;
-    }
+  }
 
-    private renderEnvironmentTab() {
-        const options = Object.entries(this.growspaceOptions).map(([id, name]) => ({ id, name }));
+  private renderEnvironmentTab() {
+    const options = Object.entries(this.growspaceOptions).map(([id, name]) => ({ id, name }));
 
-        return html`
+    return html`
       <div style="display:flex; flex-direction:column; gap:20px;">
          <div class="detail-card">
             <h3>Select Target</h3>
@@ -354,5 +375,5 @@ export class ConfigDialog extends LitElement {
          </div>
       </div>
    `;
-    }
+  }
 }

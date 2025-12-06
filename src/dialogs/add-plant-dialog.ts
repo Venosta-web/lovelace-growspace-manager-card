@@ -8,27 +8,27 @@ import { DialogRenderer } from '../dialog-renderer';
 
 @customElement('add-plant-dialog')
 export class AddPlantDialog extends LitElement {
-    @property({ attribute: false }) hass!: HomeAssistant;
-    @property({ type: Array }) strainLibrary: StrainEntry[] = [];
-    @property({ type: String }) growspaceName = '';
-    @property({ type: Boolean, reflect: true }) open = false;
+  @property({ attribute: false }) hass!: HomeAssistant;
+  @property({ type: Array }) strainLibrary: StrainEntry[] = [];
+  @property({ type: String }) growspaceName = '';
+  @property({ type: Boolean, reflect: true }) open = false;
 
-    // Initialize with values passed via methods or defaults
-    @state() private strain = '';
-    @state() private phenotype = '';
-    @state() private row = 0;
-    @state() private col = 0;
+  // Initialize with values passed via methods or defaults
+  @state() private strain = '';
+  @state() private phenotype = '';
+  @state() private row = 0;
+  @state() private col = 0;
 
-    // Date fields
-    @state() private veg_start = '';
-    @state() private flower_start = '';
-    @state() private seedling_start = '';
-    @state() private mother_start = '';
-    @state() private clone_start = '';
-    @state() private dry_start = '';
-    @state() private cure_start = '';
+  // Date fields
+  @state() private veg_start = '';
+  @state() private flower_start = '';
+  @state() private seedling_start = '';
+  @state() private mother_start = '';
+  @state() private clone_start = '';
+  @state() private dry_start = '';
+  @state() private cure_start = '';
 
-    static styles = css`
+  static styles = css`
     :host {
       display: block;
     }
@@ -47,6 +47,15 @@ export class AddPlantDialog extends LitElement {
       width: 500px;
       max-width: 90vw;
       font-family: 'Roboto', sans-serif;
+    }
+    
+    @media (max-width: 600px) {
+      .glass-dialog-container {
+        width: 100vw;
+        max-width: 100%;
+        height: 100vh;
+        border-radius: 0;
+      }
     }
 
     .dialog-header {
@@ -83,6 +92,9 @@ export class AddPlantDialog extends LitElement {
       border-radius: 12px;
       padding: 16px;
       border: 1px solid rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     
     .detail-card h3 {
@@ -147,56 +159,66 @@ export class AddPlantDialog extends LitElement {
       box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
       filter: brightness(1.1);
     }
+
+    .flex-row-wrap {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .flex-row-wrap > * {
+      flex: 1;
+      min-width: 0;
+    }
   `;
 
-    // Provide a method to set initial data from parent if needed
-    public setInitialState(row: number, col: number, strain: string = '', phenotype: string = '') {
-        this.row = row;
-        this.col = col;
-        this.strain = strain;
-        this.phenotype = phenotype;
-        // resetting dates
-        this.veg_start = '';
-        this.flower_start = '';
-        this.seedling_start = '';
-        this.mother_start = '';
-        this.clone_start = '';
-        this.dry_start = '';
-        this.cure_start = '';
-    }
+  // Provide a method to set initial data from parent if needed
+  public setInitialState(row: number, col: number, strain: string = '', phenotype: string = '') {
+    this.row = row;
+    this.col = col;
+    this.strain = strain;
+    this.phenotype = phenotype;
+    // resetting dates
+    this.veg_start = '';
+    this.flower_start = '';
+    this.seedling_start = '';
+    this.mother_start = '';
+    this.clone_start = '';
+    this.dry_start = '';
+    this.cure_start = '';
+  }
 
-    private _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
+  private _close() {
+    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+  }
 
-    private _confirm() {
-        const payload = {
-            row: this.row,
-            col: this.col,
-            strain: this.strain,
-            phenotype: this.phenotype,
-            veg_start: this.veg_start,
-            flower_start: this.flower_start,
-            seedling_start: this.seedling_start,
-            mother_start: this.mother_start,
-            clone_start: this.clone_start,
-            dry_start: this.dry_start,
-            cure_start: this.cure_start,
-        };
+  private _confirm() {
+    const payload = {
+      row: this.row,
+      col: this.col,
+      strain: this.strain,
+      phenotype: this.phenotype,
+      veg_start: this.veg_start,
+      flower_start: this.flower_start,
+      seedling_start: this.seedling_start,
+      mother_start: this.mother_start,
+      clone_start: this.clone_start,
+      dry_start: this.dry_start,
+      cure_start: this.cure_start,
+    };
 
-        this.dispatchEvent(new CustomEvent('add-plant-submit', {
-            detail: payload,
-            bubbles: true,
-            composed: true
-        }));
-    }
+    this.dispatchEvent(new CustomEvent('add-plant-submit', {
+      detail: payload,
+      bubbles: true,
+      composed: true
+    }));
+  }
 
-    render() {
-        if (!this.open) return html``;
+  render() {
+    if (!this.open) return html``;
 
-        const uniqueStrains = [...new Set(this.strainLibrary.map(s => s.strain))].sort();
+    const uniqueStrains = [...new Set(this.strainLibrary.map(s => s.strain))].sort();
 
-        return html`
+    return html`
     <ha-dialog
       open
       @closed=${this._close}
@@ -225,7 +247,7 @@ export class AddPlantDialog extends LitElement {
              <h3>Identity & Location</h3>
              ${DialogRenderer.renderMD3SelectInput('Strain *', this.strain, uniqueStrains, (v) => this.strain = v)}
              ${DialogRenderer.renderMD3TextInput('Phenotype', this.phenotype, (v) => this.phenotype = v)}
-             <div style="display:flex; gap:16px;">
+             <div class="flex-row-wrap">
                ${DialogRenderer.renderMD3NumberInput('Row', this.row + 1, (v) => this.row = parseInt(v) - 1)}
                ${DialogRenderer.renderMD3NumberInput('Col', this.col + 1, (v) => this.col = parseInt(v) - 1)}
              </div>
@@ -251,25 +273,25 @@ export class AddPlantDialog extends LitElement {
       </div>
     </ha-dialog>
   `;
-    }
+  }
 
-    private renderTimelineContent() {
-        const name = this.growspaceName.toLowerCase();
+  private renderTimelineContent() {
+    const name = this.growspaceName.toLowerCase();
 
-        if (name.includes('mother')) {
-            return html`${DialogRenderer.renderMD3DateInput('Mother Start', this.mother_start, (v) => this.mother_start = v)}`;
-        } else if (name.includes('clone')) {
-            return html`${DialogRenderer.renderMD3DateInput('Clone Start', this.clone_start, (v) => this.clone_start = v)}`;
-        } else if (name.includes('dry')) {
-            return html`${DialogRenderer.renderMD3DateInput('Dry Start', this.dry_start, (v) => this.dry_start = v)}`;
-        } else if (name.includes('cure')) {
-            return html`${DialogRenderer.renderMD3DateInput('Cure Start', this.cure_start, (v) => this.cure_start = v)}`;
-        } else {
-            return html`
+    if (name.includes('mother')) {
+      return html`${DialogRenderer.renderMD3DateInput('Mother Start', this.mother_start, (v) => this.mother_start = v)}`;
+    } else if (name.includes('clone')) {
+      return html`${DialogRenderer.renderMD3DateInput('Clone Start', this.clone_start, (v) => this.clone_start = v)}`;
+    } else if (name.includes('dry')) {
+      return html`${DialogRenderer.renderMD3DateInput('Dry Start', this.dry_start, (v) => this.dry_start = v)}`;
+    } else if (name.includes('cure')) {
+      return html`${DialogRenderer.renderMD3DateInput('Cure Start', this.cure_start, (v) => this.cure_start = v)}`;
+    } else {
+      return html`
          ${DialogRenderer.renderMD3DateInput('Seedling Start', this.seedling_start, (v) => this.seedling_start = v)}
          ${DialogRenderer.renderMD3DateInput('Veg Start', this.veg_start, (v) => this.veg_start = v)}
          ${DialogRenderer.renderMD3DateInput('Flower Start', this.flower_start, (v) => this.flower_start = v)}
        `;
-        }
     }
+  }
 }
