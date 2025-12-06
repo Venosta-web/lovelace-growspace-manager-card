@@ -230,14 +230,28 @@ export class PlantOverviewDialog extends LitElement {
   private _renderPlantStats(plant: PlantEntity) {
     if (!plant.attributes) return nothing;
 
+    const currentStage = (plant.state || '').toLowerCase();
+    const normalize = (s: string) => {
+      if (s === 'veg') return 'vegetative';
+      if (s === 'mom') return 'mother';
+      return s;
+    };
+    const normCurrent = normalize(currentStage);
+
     const stats = [
-      { label: 'Vegetative Days', value: plant.attributes.veg_days, unit: 'days' },
-      { label: 'Flowering Days', value: plant.attributes.flower_days, unit: 'days' },
-      { label: 'Mother Days', value: plant.attributes.mom_days, unit: 'days' },
-      { label: 'Clone Days', value: plant.attributes.clone_days, unit: 'days' },
-      { label: 'Drying Days', value: plant.attributes.dry_days, unit: 'days' },
-      { label: 'Curing Days', value: plant.attributes.cure_days, unit: 'days' },
-    ].filter(s => s.value !== undefined && s.value !== null);
+      { label: 'Vegetative Days', value: plant.attributes.veg_days, unit: 'days', stage: 'vegetative' },
+      { label: 'Flowering Days', value: plant.attributes.flower_days, unit: 'days', stage: 'flower' },
+      { label: 'Mother Days', value: plant.attributes.mom_days, unit: 'days', stage: 'mother' },
+      { label: 'Clone Days', value: plant.attributes.clone_days, unit: 'days', stage: 'clone' },
+      { label: 'Drying Days', value: plant.attributes.dry_days, unit: 'days', stage: 'dry' },
+      { label: 'Curing Days', value: plant.attributes.cure_days, unit: 'days', stage: 'cure' },
+    ].filter(s => {
+      if (s.value === undefined || s.value === null) return false;
+      const val = Number(s.value);
+      if (val > 0) return true;
+      // Show if 0 but it's the current stage
+      return s.stage === normCurrent;
+    });
 
     if (stats.length === 0) return nothing;
 
