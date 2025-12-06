@@ -32,54 +32,68 @@ export class ConfigDialog extends LitElement {
     :host {
       display: block;
     }
-    
-    .config-container {
-      background-color: #1a1a1a;
-      color: #fff;
+    .glass-dialog-container {
+      background: rgba(20, 20, 20, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
-      height: 80vh;
+      max-height: 85vh;
+      color: #fff;
+      font-family: 'Roboto', sans-serif;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
       width: 500px;
       max-width: 90vw;
-      border-radius: 24px;
-      overflow: hidden;
-      font-family: 'Roboto', sans-serif;
-      --accent-color: #22c55e;
     }
-    @media (max-width: 600px) {
-      .config-container {
-        width: 100vw;
-        height: 100vh;
-        border-radius: 0;
-        max-width: none; /* override max-width */
-      }
-    }
-    .config-header {
-      padding: 20px 24px;
-      background: #2d2d2d;
+    .dialog-header {
       display: flex;
       align-items: center;
-      gap: 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.2);
     }
-    .config-title {
+    .dialog-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 16px;
+      color: var(--primary-color, #4CAF50);
+    }
+    .dialog-title-group {
+      flex: 1;
+    }
+    .dialog-title {
       margin: 0;
       font-size: 1.25rem;
-      font-weight: 600;
+      font-weight: 500;
     }
+    .dialog-subtitle {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+    
+    /* Config Tabs Specific */
     .config-tabs {
       display: flex;
-      background: #2d2d2d;
       padding: 0 16px;
       border-bottom: 1px solid rgba(255,255,255,0.1);
+      background: transparent;
     }
     .config-tab {
       flex: 1;
       padding: 16px 8px;
       text-align: center;
       cursor: pointer;
-      color: var(--secondary-text-color);
-      border-bottom: 3px solid transparent;
+      color: rgba(255,255,255,0.5);
+      border-bottom: 2px solid transparent;
       transition: all 0.2s;
       display: flex;
       flex-direction: column;
@@ -87,6 +101,7 @@ export class ConfigDialog extends LitElement {
       gap: 4px;
       font-size: 0.8rem;
       font-weight: 500;
+      background: transparent;
     }
     .config-tab svg {
       width: 24px;
@@ -97,28 +112,63 @@ export class ConfigDialog extends LitElement {
     .config-tab:hover {
       color: #fff;
       background: rgba(255,255,255,0.05);
+      border-radius: 8px 8px 0 0;
     }
     .config-tab.active {
-      color: var(--accent-color);
-      border-bottom-color: var(--accent-color);
+      color: var(--primary-color, #4CAF50);
+      border-bottom-color: var(--primary-color, #4CAF50);
     }
     .config-content {
-      flex: 1;
       padding: 24px;
       overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
-    .config-actions {
+
+    .detail-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 16px;
+      overflow: hidden;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .detail-card h3 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 1rem;
+      font-weight: 500;
+      opacity: 0.9;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 8px;
+    }
+    .button-group {
       padding: 16px 24px;
-      border-top: 1px solid rgba(255,255,255,0.1);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.2);
       display: flex;
       justify-content: flex-end;
       gap: 12px;
-      background: #2d2d2d;
       flex-wrap: wrap;
     }
 
     @media (max-width: 450px) {
-      .config-actions {
+      .glass-dialog-container {
+        width: 100vw;
+        max-width: 100%;
+        height: 100vh;
+        border-radius: 0;
+      }
+      .config-content {
+        padding: 16px;
+      }
+      .dialog-header {
+         padding: 12px 16px;
+      }
+      .button-group {
         justify-content: center;
       }
       .md3-button {
@@ -126,48 +176,46 @@ export class ConfigDialog extends LitElement {
         min-width: 100px;
       }
     }
-    
-    .detail-card {
-      background: rgba(30,30,30,0.5);
-      border-radius: 12px;
-      padding: 16px;
-      border: 1px solid rgba(255,255,255,0.05);
-      overflow: hidden;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    .detail-card h3 {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: #6b7280;
-      margin: 0 0 16px 0;
-      font-weight: 600;
-    }
-    
+
     .md3-button {
-      background: none;
-      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       padding: 0 24px;
       height: 40px;
       border-radius: 20px;
-      font-family: 'Roboto', sans-serif;
-      font-size: 0.875rem;
+      border: none;
+      font-family: inherit;
+      font-size: 0.9rem;
       font-weight: 500;
       cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all 0.2s ease;
+      transition: all 0.2s;
     }
-    .md3-button.text { color: #e0e0e0; }
-    .md3-button.text:hover { background: rgba(255,255,255,0.05); }
-    .md3-button.tonal { background: rgba(255,255,255,0.1); color: #e0e0e0; }
-    .md3-button.tonal:hover { background: rgba(255,255,255,0.15); }
-    .md3-button.primary { background: #4CAF50; color: #003300; }
-    .md3-button.primary:hover { filter: brightness(1.1); }
-
+    .md3-button.text {
+      background: transparent;
+      color: rgba(255, 255, 255, 0.7);
+      padding: 0 12px;
+    }
+    .md3-button.text:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+    }
+    .md3-button.tonal {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .md3-button.tonal:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .md3-button.primary {
+      background: var(--primary-color, #4CAF50);
+      color: #fff;
+    }
+    .md3-button.primary:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    }
+    
     .md3-input-group {
       display: flex;
       flex-direction: column;
@@ -196,12 +244,12 @@ export class ConfigDialog extends LitElement {
       background: rgba(255, 255, 255, 0.08);
     }
     
-    .flex-row-wrap {
+    .row-col-grid {
       display: flex;
       gap: 16px;
       flex-wrap: wrap;
     }
-    .flex-row-wrap > * {
+    .row-col-grid > * {
       flex: 1;
       min-width: 0;
     }
@@ -286,14 +334,16 @@ export class ConfigDialog extends LitElement {
         .scrimClickAction=${''}
         .escapeKeyAction=${''}
       >
-        <div class="config-container">
+        <div class="glass-dialog-container">
            <!-- Header -->
-           <div class="config-header">
-              <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 12px;">
+           <div class="dialog-header">
+              <div class="dialog-icon">
                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
               </div>
-              <h2 class="config-title">Configuration</h2>
-              <div style="flex:1"></div>
+              <div class="dialog-title-group">
+                 <h2 class="dialog-title">Configuration</h2>
+                 <div class="dialog-subtitle">Manage growspaces & settings</div>
+              </div>
               <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
               </button>
@@ -320,7 +370,7 @@ export class ConfigDialog extends LitElement {
             </div>
 
            <!-- Actions -->
-           <div class="config-actions">
+           <div class="button-group">
               <button class="md3-button tonal" @click=${this._close}>Cancel</button>
               ${this.currentTab === 'add_growspace' ? html`
                  <button class="md3-button primary" @click=${this._submitAddGrowspace}>Add Growspace</button>
@@ -336,17 +386,17 @@ export class ConfigDialog extends LitElement {
 
   private renderAddGrowspaceTab() {
     return html`
-     <div style="display:flex; flex-direction:column; gap:20px;">
-        <div class="detail-card">
-           <h3>New Growspace Details</h3>
-           ${DialogRenderer.renderMD3TextInput('Growspace Name', this.add_name, (v) => this.add_name = v)}
-           <div class="flex-row-wrap">
-              ${DialogRenderer.renderMD3NumberInput('Rows', this.add_rows, (v) => this.add_rows = parseInt(v))}
-              ${DialogRenderer.renderMD3NumberInput('Plants per Row', this.add_plants_per_row, (v) => this.add_plants_per_row = parseInt(v))}
-           </div>
-           ${DialogRenderer.renderMD3TextInput('Notification Service (Optional)', this.add_notification_service, (v) => this.add_notification_service = v)}
-        </div>
-     </div>
+      <div style="display:flex; flex-direction:column; gap:20px;">
+         <div class="detail-card">
+            <h3>New Growspace Details</h3>
+            ${DialogRenderer.renderMD3TextInput('Growspace Name', this.add_name, (v) => this.add_name = v)}
+            <div class="row-col-grid">
+               ${DialogRenderer.renderMD3NumberInput('Rows', this.add_rows, (v) => this.add_rows = parseInt(v))}
+               ${DialogRenderer.renderMD3NumberInput('Plants per Row', this.add_plants_per_row, (v) => this.add_plants_per_row = parseInt(v))}
+            </div>
+            ${DialogRenderer.renderMD3TextInput('Notification Service (Optional)', this.add_notification_service, (v) => this.add_notification_service = v)}
+         </div>
+      </div>
    `;
   }
 

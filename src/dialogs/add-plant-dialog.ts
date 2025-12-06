@@ -32,168 +32,157 @@ export class AddPlantDialog extends LitElement {
     :host {
       display: block;
     }
-    
-    /* Copied from original styles */
     .glass-dialog-container {
-      position: relative;
-      padding: 0;
       background: rgba(20, 20, 20, 0.6);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border-radius: 20px;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      border-radius: 16px;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      max-height: 85vh;
+      color: #fff;
+      font-family: 'Roboto', sans-serif;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
       width: 500px;
       max-width: 90vw;
-      font-family: 'Roboto', sans-serif;
     }
-    
-    @media (max-width: 600px) {
+    .dialog-header {
+      display: flex;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.2);
+    }
+    .dialog-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 16px;
+      color: var(--primary-color, #4CAF50);
+    }
+    .dialog-title-group {
+      flex: 1;
+    }
+    .dialog-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 500;
+    }
+    .dialog-subtitle {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+    .overview-grid {
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .detail-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 16px;
+      overflow: hidden;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .detail-card h3 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 1rem;
+      font-weight: 500;
+      opacity: 0.9;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 8px;
+    }
+    .button-group {
+      padding: 16px 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.2);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 450px) {
       .glass-dialog-container {
         width: 100vw;
         max-width: 100%;
         height: 100vh;
         border-radius: 0;
       }
-    }
-
-    .dialog-header {
-      padding: 20px 24px;
-      background: rgba(255, 255, 255, 0.03);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .dialog-title {
-      font-size: 1.25rem;
-      font-weight: 500;
-      color: #e0e0e0;
-      margin: 0;
-      letter-spacing: 0.5px;
-    }
-
-    .dialog-subtitle {
-      font-size: 0.85rem;
-      color: #9ca3af;
-      margin-top: 4px;
-    }
-
-    .overview-grid {
-      display: grid;
-      gap: 16px;
-      padding: 24px;
-    }
-
-    .detail-card {
-      background: rgba(30, 30, 30, 0.5);
-      border-radius: 12px;
-      padding: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    
-    .detail-card h3 {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: #6b7280;
-      margin: 0 0 16px 0;
-      font-weight: 600;
-    }
-
-    .button-group {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      padding: 20px 24px;
-      background: rgba(0, 0, 0, 0.2);
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-      flex-wrap: wrap;
-    }
-    
-    @media (max-width: 450px) {
       .overview-grid {
         flex: 1;
         min-height: 0;
-        padding: 8px;
+        padding: 16px;
       }
-      .dialog-title-group {
-        flex: 5;
-        text-align: center;
+      .dialog-header {
+         padding: 12px 16px;
       }
       .button-group {
         justify-content: center;
       }
-      .detail-card  {
-        overflow: unset
-      }
-      .dialog-header .md3-button.text {
-        flex: 0;
-      }
-      .detail-card .md3-button {
-        flex: 1 1 1;
-      }
-      .button-group .md3-button {
+      .md3-button {
         flex: 1 1 auto;
         min-width: 100px;
       }
     }
 
     .md3-button {
-      background: none;
-      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       padding: 0 24px;
       height: 40px;
       border-radius: 20px;
-      font-family: 'Roboto', sans-serif;
-      font-size: 0.875rem;
+      border: none;
+      font-family: inherit;
+      font-size: 0.9rem;
       font-weight: 500;
-      letter-spacing: 0.1px;
       cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all 0.2s ease;
-      position: relative;
-      overflow: hidden;
+      transition: all 0.2s;
     }
-
     .md3-button.text {
-      color: #e0e0e0;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.7);
+      padding: 0 12px;
     }
     .md3-button.text:hover {
       background: rgba(255, 255, 255, 0.05);
+      color: #fff;
     }
-
     .md3-button.tonal {
       background: rgba(255, 255, 255, 0.1);
-      color: #e0e0e0;
+      color: #fff;
     }
     .md3-button.tonal:hover {
       background: rgba(255, 255, 255, 0.15);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
-
     .md3-button.primary {
-      background: #4CAF50;
-      color: #003300;
+      background: var(--primary-color, #4CAF50);
+      color: #fff;
     }
     .md3-button.primary:hover {
-      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
       filter: brightness(1.1);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
     }
-
-    .flex-row-wrap {
+    
+    .row-col-grid {
       display: flex;
       gap: 16px;
       flex-wrap: wrap;
     }
-    .flex-row-wrap > * {
+    .row-col-grid > * {
       flex: 1;
       min-width: 0;
     }
@@ -254,19 +243,24 @@ export class AddPlantDialog extends LitElement {
       .scrimClickAction=${''}
       .escapeKeyAction=${''}
     >
-      <div class="glass-dialog-container" style="--stage-color: var(--plant-border-color-default)">
+      <div class="glass-dialog-container">
 
         <!-- HEADER -->
         <div class="dialog-header">
-          <div class="dialog-title-group">
-             <h2 class="dialog-title">Add New Plant</h2>
-             <div class="dialog-subtitle">Enter plant details below</div>
-          </div>
-          <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
-             <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-               <path d="${mdiClose}"></path>
-             </svg>
-          </button>
+           <div class="dialog-icon">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiSprout}"></path>
+              </svg>
+           </div>
+           <div class="dialog-title-group">
+              <h2 class="dialog-title">Add New Plant</h2>
+              <div class="dialog-subtitle">Enter plant details below</div>
+           </div>
+           <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+           </button>
         </div>
 
         <div class="overview-grid">
@@ -275,7 +269,7 @@ export class AddPlantDialog extends LitElement {
              <h3>Identity & Location</h3>
              ${DialogRenderer.renderMD3SelectInput('Strain *', this.strain, uniqueStrains, (v) => this.strain = v)}
              ${DialogRenderer.renderMD3TextInput('Phenotype', this.phenotype, (v) => this.phenotype = v)}
-             <div class="flex-row-wrap">
+             <div class="row-col-grid">
                ${DialogRenderer.renderMD3NumberInput('Row', this.row + 1, (v) => this.row = parseInt(v) - 1)}
                ${DialogRenderer.renderMD3NumberInput('Col', this.col + 1, (v) => this.col = parseInt(v) - 1)}
              </div>
@@ -283,6 +277,7 @@ export class AddPlantDialog extends LitElement {
 
            <!-- TIMELINE CARD -->
            <div class="detail-card">
+              <h3>Timeline</h3>
               ${this.renderTimelineContent()}
            </div>
         </div>
