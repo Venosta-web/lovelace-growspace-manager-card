@@ -17,4 +17,5 @@ export type ActiveDialogState =
     | { type: 'CONFIG'; payload: ConfigDialogState }
     | { type: 'GROW_MASTER'; payload: GrowMasterDialogState }
     | { type: 'STRAIN_RECOMMENDATION'; payload: StrainRecommendationDialogState }
-    | { type: 'IRRIGATION'; payload: boolean };
+    | { type: 'IRRIGATION'; payload: boolean }
+    | { type: 'LOGBOOK'; payload: { growspaceId: string } };

@@ -25,6 +25,7 @@ import './dialogs/add-plant-dialog';
 import './dialogs/config-dialog';
 import './dialogs/grow-master-dialog';
 import './dialogs/strain-recommendation-dialog';
+import './dialogs/logbook-dialog';
 import './components/plant-card';
 import './components/growspace-header';
 import './components/growspace-grid';
@@ -701,6 +702,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       case 'ai':
         this._openGrowMasterDialog();
         break;
+      case 'logbook':
+        this._openLogbookDialog();
+        break;
     }
   }
 
@@ -889,6 +893,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     } finally {
       this.requestUpdate();
     }
+  }
+
+  private _openLogbookDialog() {
+    if (!this.selectedDevice) return;
+    this._activeDialog = {
+      type: 'LOGBOOK',
+      payload: {
+        growspaceId: this.selectedDevice
+      }
+    };
   }
 
 
@@ -1273,6 +1287,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
            @close=${() => this._activeDialog = { type: 'NONE' }}
          ></irrigation-dialog>
         `;
+    }
+
+    // LOGBOOK DIALOG
+    if (active.type === 'LOGBOOK') {
+      const dialogState = active.payload;
+      return html`
+        <logbook-dialog
+          .hass=${this.hass}
+          .open=${true}
+          .growspaceId=${dialogState.growspaceId}
+          @close=${() => this._activeDialog = { type: 'NONE' }}
+        ></logbook-dialog>
+      `;
     }
 
     return html``;

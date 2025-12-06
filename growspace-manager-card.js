@@ -12,6 +12,7 @@ var mdiCheckboxMarked = "M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C
 var mdiChevronDown = "M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z";
 var mdiChevronLeft = "M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z";
 var mdiChevronRight = "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z";
+var mdiClipboardTextClock = "M21 11.11V5C21 3.9 20.11 3 19 3H14.82C14.4 1.84 13.3 1 12 1S9.6 1.84 9.18 3H5C3.9 3 3 3.9 3 5V19C3 20.11 3.9 21 5 21H11.11C12.37 22.24 14.09 23 16 23C19.87 23 23 19.87 23 16C23 14.09 22.24 12.37 21 11.11M12 3C12.55 3 13 3.45 13 4S12.55 5 12 5 11 4.55 11 4 11.45 3 12 3M6 7H18V9H6V7M9.08 17H6V15H9.08C9.03 15.33 9 15.66 9 16S9.03 16.67 9.08 17M6 13V11H11.11C10.5 11.57 10.04 12.25 9.68 13H6M16 21C13.24 21 11 18.76 11 16S13.24 11 16 11 21 13.24 21 16 18.76 21 16 21M16.5 16.25L19.36 17.94L18.61 19.16L15 17V12H16.5V16.25Z";
 var mdiClose = "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z";
 var mdiCloudOutline = "M6.5 20Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20M6.5 18H18.5Q19.55 18 20.27 17.27 21 16.55 21 15.5 21 14.45 20.27 13.73 19.55 13 18.5 13H17V11Q17 8.93 15.54 7.46 14.08 6 12 6 9.93 6 8.46 7.46 7 8.93 7 11H6.5Q5.05 11 4.03 12.03 3 13.05 3 14.5 3 15.95 4.03 17 5.05 18 6.5 18M12 12Z";
 var mdiCloudUpload = "M11 20H6.5Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20H13V12.85L14.6 14.4L16 13L12 9L8 13L9.4 14.4L11 12.85Z";
@@ -14144,6 +14145,320 @@ StrainRecommendationDialog = __decorate([
     t('strain-recommendation-dialog')
 ], StrainRecommendationDialog);
 
+class GrowspaceLogbookController {
+    constructor(hass) {
+        this.hass = hass;
+    }
+    async fetchEventLog(growspaceId) {
+        if (!this.hass) {
+            console.warn("Home Assistant instance not available");
+            return [];
+        }
+        try {
+            const response = await this.hass.callWS({
+                type: "growspace_manager/get_log",
+                growspace_id: growspaceId,
+            });
+            return response.events || [];
+        }
+        catch (e) {
+            console.error("Error fetching event log:", e);
+            return [];
+        }
+    }
+}
+
+let GrowspaceLogbook = class GrowspaceLogbook extends i$1 {
+    constructor() {
+        super(...arguments);
+        this._events = [];
+        this._isLoading = false;
+    }
+    firstUpdated() {
+        this._initController();
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('hass') && !this._controller) {
+            this._initController();
+        }
+        if (changedProps.has('growspaceId')) {
+            this._fetchEvents();
+        }
+    }
+    _initController() {
+        if (this.hass && !this._controller) {
+            this._controller = new GrowspaceLogbookController(this.hass);
+            this._fetchEvents();
+        }
+    }
+    async _fetchEvents() {
+        if (!this._controller || !this.growspaceId)
+            return;
+        this._isLoading = true;
+        try {
+            this._events = await this._controller.fetchEventLog(this.growspaceId);
+        }
+        finally {
+            this._isLoading = false;
+        }
+    }
+    _formatDuration(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}m ${secs}s`;
+    }
+    _formatTime(isoString) {
+        try {
+            const date = new Date(isoString);
+            return date.toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        catch {
+            return isoString;
+        }
+    }
+    render() {
+        if (this._isLoading) {
+            return x `<div class="empty-state">Loading events...</div>`;
+        }
+        if (!this._events || this._events.length === 0) {
+            return x `<div class="empty-state">No events recorded for this growspace.</div>`;
+        }
+        // Sort by time descending (newest first)
+        // Assuming backend returns sorted, but good to ensure
+        const sortedEvents = [...this._events].sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+        return x `
+      <div class="log-container">
+        ${sortedEvents.map(event => x `
+          <div class="event-card">
+            <div class="event-header">
+              <span class="event-time">${this._formatTime(event.start_time)}</span>
+              <span class="event-duration">${this._formatDuration(event.duration_sec)}</span>
+            </div>
+            
+            <div class="event-details">
+              <div>
+                <div class="event-type">${event.sensor_type.replace(/_/g, ' ')}</div>
+                ${event.reasons && event.reasons.length > 0 ? x `
+                  <div class="event-reasons">
+                    ${event.reasons.map(reason => x `<span class="reason-badge">${reason}</span>`)}
+                  </div>
+                ` : E}
+              </div>
+              
+              <div class="event-probability">
+                ${Math.round(event.max_probability * 100)}%
+              </div>
+            </div>
+          </div>
+        `)}
+      </div>
+    `;
+    }
+};
+GrowspaceLogbook.styles = [
+    dialogStyles,
+    i$4 `
+      :host {
+        display: block;
+        height: 100%;
+        overflow: hidden;
+      }
+      .log-container {
+        height: 100%;
+        overflow-y: auto;
+        padding-right: 4px; /* Space for scrollbar */
+      }
+      .log-container::-webkit-scrollbar {
+        width: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+      }
+      .log-container::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 4px;
+      }
+      .event-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .event-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .event-time {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        font-weight: 500;
+        color: var(--primary-text-color);
+      }
+      .event-duration {
+        font-size: 0.85rem;
+        opacity: 0.6;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 8px;
+        border-radius: 12px;
+      }
+      .event-details {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: start;
+      }
+      .event-type {
+        font-weight: 600;
+        color: var(--accent-color, #4CAF50);
+        margin-bottom: 4px;
+        text-transform: capitalize;
+      }
+      .event-probability {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary-text-color);
+        text-align: right;
+      }
+      .event-reasons {
+        font-size: 0.85rem;
+        opacity: 0.7;
+        margin-top: 8px;
+        line-height: 1.4;
+      }
+      .reason-badge {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin-right: 6px;
+        margin-bottom: 4px;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        opacity: 0.5;
+        font-style: italic;
+      }
+    `
+];
+__decorate([
+    n$2({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspaceLogbook.prototype, "hass", void 0);
+__decorate([
+    n$2({ type: String }),
+    __metadata("design:type", String)
+], GrowspaceLogbook.prototype, "growspaceId", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Array)
+], GrowspaceLogbook.prototype, "_events", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceLogbook.prototype, "_isLoading", void 0);
+GrowspaceLogbook = __decorate([
+    t('growspace-logbook')
+], GrowspaceLogbook);
+
+let LogbookDialog = class LogbookDialog extends i$1 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceId = '';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    render() {
+        if (!this.open)
+            return x ``;
+        return x `
+      <ha-dialog
+        .open=${this.open}
+        @closed=${this._close}
+        hideActions
+        .heading=${true}
+      >
+        <div slot="heading" class="dialog-header">
+           <h2 class="dialog-title">Events Logbook</h2>
+           <button class="md3-button text" @click=${this._close} style="min-width:auto; padding:8px;">
+             <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+           </button>
+        </div>
+        
+        <div class="content-wrapper">
+          <growspace-logbook
+            .hass=${this.hass}
+            .growspaceId=${this.growspaceId}
+          ></growspace-logbook>
+        </div>
+      </ha-dialog>
+    `;
+    }
+};
+LogbookDialog.styles = [
+    dialogStyles,
+    i$4 `
+      ha-dialog {
+        --mdc-dialog-min-width: 90vw;
+        --mdc-dialog-max-width: 90vw;
+        --mdc-dialog-min-height: 80vh;
+        --mdc-dialog-max-height: 90vh;
+      }
+      
+      @media (min-width: 600px) {
+        ha-dialog {
+          --mdc-dialog-min-width: 600px;
+          --mdc-dialog-max-width: 800px;
+        }
+      }
+
+      .dialog-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+      
+      .content-wrapper {
+        height: 70vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      growspace-logbook {
+        flex: 1;
+        overflow: hidden;
+        margin-top: 16px;
+      }
+    `
+];
+__decorate([
+    n$2({ attribute: false }),
+    __metadata("design:type", Object)
+], LogbookDialog.prototype, "hass", void 0);
+__decorate([
+    n$2({ type: Boolean }),
+    __metadata("design:type", Object)
+], LogbookDialog.prototype, "open", void 0);
+__decorate([
+    n$2({ type: String }),
+    __metadata("design:type", Object)
+], LogbookDialog.prototype, "growspaceId", void 0);
+LogbookDialog = __decorate([
+    t('logbook-dialog')
+], LogbookDialog);
+
 let GrowspacePlantCard = class GrowspacePlantCard extends i$1 {
     constructor() {
         super(...arguments);
@@ -15092,6 +15407,10 @@ let GrowspaceHeader = class GrowspaceHeader extends i$1 {
                     <div class="menu-item" @click=${() => this._triggerAction('ai')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
                       <span class="menu-item-label">Ask AI</span>
+                    </div>
+                    <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
+                      <span class="menu-item-label">Logbook</span>
                     </div>
                   </div>
                 ` : ''}
@@ -18168,6 +18487,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             case 'ai':
                 this._openGrowMasterDialog();
                 break;
+            case 'logbook':
+                this._openLogbookDialog();
+                break;
         }
     }
     // Configuration Dialog Methods
@@ -18343,6 +18665,16 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         finally {
             this.requestUpdate();
         }
+    }
+    _openLogbookDialog() {
+        if (!this.selectedDevice)
+            return;
+        this._activeDialog = {
+            type: 'LOGBOOK',
+            payload: {
+                growspaceId: this.selectedDevice
+            }
+        };
     }
     get _activeDevices() {
         if (!this.hass)
@@ -18676,6 +19008,18 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
            @close=${() => this._activeDialog = { type: 'NONE' }}
          ></irrigation-dialog>
         `;
+        }
+        // LOGBOOK DIALOG
+        if (active.type === 'LOGBOOK') {
+            const dialogState = active.payload;
+            return x `
+        <logbook-dialog
+          .hass=${this.hass}
+          .open=${true}
+          .growspaceId=${dialogState.growspaceId}
+          @close=${() => this._activeDialog = { type: 'NONE' }}
+        ></logbook-dialog>
+      `;
         }
         return x ``;
     }
