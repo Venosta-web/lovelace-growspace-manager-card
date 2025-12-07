@@ -15073,9 +15073,25 @@ let GrowspaceHeader = class GrowspaceHeader extends i$1 {
         const temp = getValue(envEntity, 'temperature');
         const hum = getValue(envEntity, 'humidity');
         const vpd = getValue(envEntity, 'vpd');
-        const vpdStatus = overviewEntity?.attributes?.vpd_status;
+        let vpdStatus = overviewEntity?.attributes?.vpd_status;
         const vpdTargetMin = overviewEntity?.attributes?.vpd_target_min;
         const vpdTargetMax = overviewEntity?.attributes?.vpd_target_max;
+        const vpdDangerMin = overviewEntity?.attributes?.vpd_danger_min;
+        const vpdDangerMax = overviewEntity?.attributes?.vpd_danger_max;
+        // Fallback: If status is unknown but we have values, calculate it locally
+        if ((!vpdStatus || vpdStatus === 'unknown') && vpd !== undefined &&
+            vpdTargetMin !== undefined && vpdTargetMax !== undefined &&
+            vpdDangerMin !== undefined && vpdDangerMax !== undefined) {
+            if (vpd < vpdDangerMin || vpd > vpdDangerMax) {
+                vpdStatus = 'danger';
+            }
+            else if (vpd < vpdTargetMin || vpd > vpdTargetMax) {
+                vpdStatus = 'warning';
+            }
+            else {
+                vpdStatus = 'optimal';
+            }
+        }
         const isSpecialGrowspace = isCure || isDry;
         const co2Value = getValue(envEntity, 'co2');
         const co2 = (isSpecialGrowspace || co2Value === undefined || co2Value === null) ? undefined : co2Value;
