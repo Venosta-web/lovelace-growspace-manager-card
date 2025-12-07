@@ -188,6 +188,11 @@ export class GrowspaceHeader extends LitElement {
       70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
       100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
     }
+    .stat-chip.status-optimal {
+      color: #2e7d32 !important;
+      border-color: rgba(46, 125, 50, 0.5) !important;
+      background: rgba(46, 125, 50, 0.1) !important;
+    }
 
     .stat-chip.status-warning {
       color: #ffa726 !important;
