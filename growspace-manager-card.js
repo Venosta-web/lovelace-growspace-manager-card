@@ -9207,103 +9207,274 @@ function friendlyDateTime(dateTimeish) {
 
 const variables = i$4 `
   :host {
-    /* MD3 Color System */
     --primary-gradient: linear-gradient(135deg, #4CAF50, #45a049);
     --secondary-gradient: linear-gradient(135deg, #2196F3, #1976D2);
     --danger-gradient: linear-gradient(135deg, #f44336, #d32f2f);
     
     /* MD3 Elevation Levels */
+    /* HA Theme variable mapping */
+    --growspace-primary: var(--primary-color, #4CAF50);
+    --growspace-accent: var(--accent-color, #2196F3);
+    --growspace-error: var(--error-color, #f44336);
+    
+    /* Text */
+    --growspace-text-primary: var(--primary-text-color, #212121);
+    --growspace-text-secondary: var(--secondary-text-color, #727272);
+    --growspace-text-inverse: #ffffff; /* For typical dark gradients */
+    
+    /* Backgrounds - Using color-mix for glassmorphism */
+    /* 80% opacity of card background */
+    --growspace-glass-bg: color-mix(in srgb, var(--ha-card-background, #1e1e1e) 80%, transparent);
+    --growspace-glass-bg-hover: color-mix(in srgb, var(--ha-card-background, #1e1e1e) 90%, transparent);
+    
+    /* Borders */
+    --growspace-border: var(--divider-color, rgba(255, 255, 255, 0.12));
+    
+    /* MD3 Elevation Levels (Approximate using shadows) */
     --md3-elevation-level0: none;
     --md3-elevation-level1: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
-    --md3-elevation-level2: 0 1px 2px rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15);
-    --md3-elevation-level3: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3);
-    --md3-elevation-level4: 0 6px 10px 4px rgba(0,0,0,0.15), 0 2px 3px rgba(0,0,0,0.3);
-    --md3-elevation-level5: 0 8px 12px 6px rgba(0,0,0,0.15), 0 4px 4px rgba(0,0,0,0.3);
     
-    --surface-elevation: var(--md3-elevation-level1);
-    --surface-elevation-hover: var(--md3-elevation-level2);
-    
-    /* Spacing (MD3 spacing system) */
+    /* Spacing */
     --spacing-xs: 4px;
     --spacing-sm: 8px;
     --spacing-md: 16px;
     --spacing-lg: 24px;
     --spacing-xl: 32px;
     
-    /* Border Radius (MD3 shape system) */
-    --border-radius-xs: 4px;
-    --border-radius-sm: 8px;
-    --border-radius-md: 12px;
-    --border-radius-lg: 16px;
-    --border-radius-xl: 28px;
-    --border-radius: 12px; /* Default */
+    /* Radius */
+    --border-radius: 12px;
     
-    /* MD3 Typography Scale */
-    --font-size-xs: 0.6875rem;   /* 11px */
-    --font-size-sm: 0.875rem;    /* 14px - Body Small */
-    --font-size-md: 1rem;        /* 16px - Body Medium */
-    --font-size-lg: 1.25rem;     /* 20px - Title Large */
-    --font-size-xl: 1.5rem;      /* 24px - Headline Small */
-
-    /* Font Weights */
-    --font-weight-regular: 400;
-    --font-weight-medium: 500;
-    --font-weight-bold: 700;
-    
-    /* MD3 Motion Tokens */
-    --md3-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
-    --md3-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
-    --md3-motion-duration-short1: 50ms;
-    --md3-motion-duration-short2: 100ms;
-    --md3-motion-duration-short3: 150ms;
-    --md3-motion-duration-short4: 200ms;
-    --md3-motion-duration-medium1: 250ms;
-    --md3-motion-duration-medium2: 300ms;
-    --md3-motion-duration-long1: 400ms;
-    --md3-motion-duration-long2: 500ms;
-
-    /* Growspace Theme Colors */
-    --growspace-card-bg: var(--card-background-color, #1e1e1e);
-    --growspace-card-text: var(--primary-text-color, #fff);
-    --growspace-card-accent: var(--primary-color, #4caf50);
-    --growspace-empty-bg: rgba(255, 255, 255, 0.05);
-    --growspace-empty-bg-hover: rgba(255, 255, 255, 0.1);
-    --plant-border-color-default: #2196f3;
-
-    /* Card Shadows (using MD3 elevation) */
-    --card-shadow: var(--md3-elevation-level1);
-    --card-shadow-hover: var(--md3-elevation-level2);
-
-    /* Transitions (using MD3 motion) */
-    --transition: all var(--md3-motion-duration-short4) var(--md3-motion-easing-standard);
-    --transition-fast: all var(--md3-motion-duration-short2) var(--md3-motion-easing-standard);
-    --transition-medium: all var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);
-
-    /* Divider */
-    --divider-color: rgba(255, 255, 255, 0.12);
-
-    /* Plant Stage Colors */
+    /* Plant Stages */
     --stage-veg: #4caf50;
     --stage-flower: #ff9800;
     --stage-dry: #9c27b0;
     --stage-cure: #2196f3;
-
-    /* Error/Warning Colors */
-    --error-color: #f44336;
-    --error-bg: rgba(244, 67, 54, 0.1);
-    --error-border: rgba(244, 67, 54, 0.3);
     
-    /* Strain Dialog */
-    --strain-dialog-bg: var(--ha-card-background, #1e1e1e);
-    --strain-dialog-color: var(--primary-text-color, #fff);
-    --strain-border-color: #4caf50;
-    --strain-input-bg: #2a2a2a;
-    --strain-input-border: #3a3a3a;
+    /* Gradients (Optional - keep friendly names but use vars?) */
+    --primary-gradient: linear-gradient(135deg, var(--growspace-primary) 0%, color-mix(in srgb, var(--growspace-primary) 80%, black) 100%);
     
-    /* Light Color */
-    --primary-light-color: #FFEB3B;
+    /* Dialog Specific */
+    --growspace-dialog-bg: var(--ha-card-background, #1e1e1e);
+    --growspace-backdrop: rgba(0, 0, 0, 0.6);
   }
 `;
+
+class GrowspaceStore {
+    constructor(host) {
+        // State properties
+        this.selectedDevice = null;
+        this.strainLibrary = [];
+        this.activeDialog = { type: 'NONE' };
+        this.isEditMode = false;
+        this.selectedPlants = new Set();
+        this.optimisticDeletedPlantIds = new Set();
+        this.isCompactView = false;
+        this.defaultApplied = false;
+        this.host = host;
+        host.addController(this);
+    }
+    hostConnected() {
+        // Initial fetches or setup if needed
+    }
+    hostDisconnected() {
+        // Cleanup
+    }
+    // --- Phase 2: Caching Logic ---
+    async fetchStrainLibrary() {
+        if (!this.host.hass)
+            return;
+        const CACHE_KEY = 'growspace_strain_library_v2';
+        const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+        // 1. Get backend "version" (using last_updated of the strain sensor as proxy)
+        // We need to find the sensor first. DataService has logic for this, let's reuse/duplicate the find logic 
+        // or rely on DataService to get the sensor entity.
+        // Ideally DataService exposes a way to get the sensor ID or the sensor object.
+        // For now, let's peek at the states directly as DataService does.
+        const allStates = Object.values(this.host.hass.states);
+        const strainSensor = allStates.find((s) => s.attributes?.strains !== undefined && s.attributes?.strains !== null);
+        const backendVersion = strainSensor?.last_updated || 'unknown';
+        // 2. Try to load from cache
+        let cacheValid = false;
+        const cachedRaw = localStorage.getItem(CACHE_KEY);
+        if (cachedRaw) {
+            try {
+                const cache = JSON.parse(cachedRaw);
+                const age = Date.now() - cache.timestamp;
+                // Validate: Version match AND Age < 24h
+                if (cache.version === backendVersion && age < CACHE_DURATION_MS) {
+                    this.strainLibrary = cache.data;
+                    this.host.requestUpdate();
+                    cacheValid = true;
+                    console.log('[GrowspaceStore] Loaded strain library from cache.');
+                }
+                else {
+                    console.log('[GrowspaceStore] Cache expired or version mismatch.', {
+                        cachedVer: cache.version,
+                        backendVer: backendVersion,
+                        ageHours: age / 1000 / 3600
+                    });
+                }
+            }
+            catch (e) {
+                console.warn('[GrowspaceStore] Failed to parse cached library. Clearing.', e);
+                localStorage.removeItem(CACHE_KEY);
+            }
+        }
+        if (!cacheValid) {
+            // 3. Fetch from backend
+            try {
+                const currentStrains = await this.host.dataService.fetchStrainLibrary();
+                this.strainLibrary = currentStrains;
+                // 4. Update cache
+                const newCache = {
+                    version: backendVersion,
+                    timestamp: Date.now(),
+                    data: currentStrains
+                };
+                localStorage.setItem(CACHE_KEY, JSON.stringify(newCache));
+                this.host.requestUpdate();
+                console.log('[GrowspaceStore] Fetched and cached strain library.');
+            }
+            catch (e) {
+                console.error('[GrowspaceStore] Failed to fetch strain library:', e);
+                // Fallback: if we have stale cache in memory, maybe keep using it? 
+                // Or if we failed, we basically have empty library.
+            }
+        }
+    }
+    // --- Logic Moved from Card ---
+    async updatePlant() {
+        if (this.activeDialog.type !== 'PLANT_OVERVIEW')
+            return;
+        const dialogState = this.activeDialog.payload;
+        const { plant, editedAttributes, selectedPlantIds } = dialogState;
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        const targetIds = (selectedPlantIds && selectedPlantIds.length > 0) ? selectedPlantIds : [plantId];
+        const isBulkEdit = targetIds.length > 1;
+        const payloadTemplate = {};
+        const dateFields = ['seedling_start', 'mother_start', 'clone_start', 'veg_start', 'flower_start', 'dry_start', 'cure_start'];
+        const fieldsToProcess = isBulkEdit
+            ? dateFields
+            : ['strain', 'phenotype', 'row', 'col', ...dateFields];
+        fieldsToProcess.forEach(field => {
+            if (editedAttributes[field] !== undefined) {
+                if (dateFields.includes(field)) {
+                    const val = String(editedAttributes[field] || '');
+                    if (!val || val === 'null' || val === 'undefined') {
+                        payloadTemplate[field] = null;
+                    }
+                    else {
+                        const formattedDate = PlantUtils.formatDateForBackend(val);
+                        if (formattedDate) {
+                            payloadTemplate[field] = formattedDate;
+                        }
+                    }
+                }
+                else {
+                    if (editedAttributes[field] !== null) {
+                        payloadTemplate[field] = editedAttributes[field];
+                    }
+                }
+            }
+        });
+        try {
+            const updatePromises = targetIds.map(id => {
+                const payload = { ...payloadTemplate, plant_id: id };
+                if (isBulkEdit) {
+                    delete payload.row;
+                    delete payload.col;
+                }
+                return this.host.dataService.updatePlant(payload);
+            });
+            await Promise.all(updatePromises);
+            this.activeDialog = { type: 'NONE' };
+            if (this.isEditMode) {
+                this.selectedPlants = new Set();
+                this.isEditMode = false;
+            }
+            this.host.requestUpdate();
+        }
+        catch (err) {
+            console.error("Error updating plant(s):", err);
+        }
+    }
+    async handleDeletePlant(plantId, forceUpdateGrid) {
+        if (!confirm("Are you sure you want to delete this plant?"))
+            return;
+        this.optimisticDeletedPlantIds.add(plantId);
+        this.host.requestUpdate();
+        this.activeDialog = { type: 'NONE' };
+        this.host.requestUpdate();
+        try {
+            await this.host.dataService.removePlant(plantId);
+        }
+        catch (err) {
+            console.error("Error deleting plant:", err);
+            // Revert optimistic update? For now just alert logic from original code mostly kept, 
+            // but simplistic:
+            forceUpdateGrid(); // Callback to parent to force refresh
+        }
+    }
+    handlePlantClick(plant) {
+        if (this.isEditMode && this.selectedPlants.size > 0) {
+            this.togglePlantSelection(plant);
+            this.openPlantOverviewDialog(plant, Array.from(this.selectedPlants));
+        }
+        else {
+            this.openPlantOverviewDialog(plant);
+        }
+    }
+    openPlantOverviewDialog(plant, selectedIds) {
+        this.activeDialog = {
+            type: 'PLANT_OVERVIEW',
+            payload: {
+                plant,
+                editedAttributes: { ...plant.attributes },
+                activeTab: 'dashboard',
+                selectedPlantIds: selectedIds
+            }
+        };
+        this.host.requestUpdate();
+    }
+    togglePlantSelection(plant) {
+        const plantId = plant.attributes.plant_id;
+        if (!plantId)
+            return;
+        const newSet = new Set(this.selectedPlants);
+        if (newSet.has(plantId)) {
+            newSet.delete(plantId);
+        }
+        else {
+            newSet.add(plantId);
+        }
+        this.selectedPlants = newSet;
+        this.host.requestUpdate();
+    }
+    selectAllPlants() {
+        const devices = this.host.dataService.getGrowspaceDevices();
+        const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
+        if (!selectedDeviceData)
+            return;
+        const allPlantIds = new Set();
+        selectedDeviceData.plants?.forEach(plant => {
+            const plantId = plant.attributes.plant_id;
+            if (plantId && !this.optimisticDeletedPlantIds.has(plantId)) {
+                allPlantIds.add(plantId);
+            }
+        });
+        this.selectedPlants = allPlantIds;
+        this.host.requestUpdate();
+    }
+    deselectAllPlants() {
+        this.selectedPlants = new Set();
+        this.host.requestUpdate();
+    }
+    exitEditMode() {
+        this.isEditMode = false;
+        this.selectedPlants = new Set();
+        this.host.requestUpdate();
+    }
+}
 
 class GrowspaceHistoryController {
     constructor(host) {
@@ -9336,22 +9507,22 @@ class GrowspaceHistoryController {
     }
     async hostUpdate() {
         // Logic to detect changes if possible, or we rely on hostUpdated
-        if (this.host.selectedDevice !== this._prevSelectedDevice) {
-            this._prevSelectedDevice = this.host.selectedDevice;
+        if (this.host.store.selectedDevice !== this._prevSelectedDevice) {
+            this._prevSelectedDevice = this.host.store.selectedDevice;
             const range = this.getRange();
             await this._fetchHistory(range);
             this.refreshSecondaryHistories(range);
         }
     }
     getRange() {
-        return this.host.selectedDevice ? (this.graphRanges[this.host.selectedDevice] || '24h') : '24h';
+        return this.host.store.selectedDevice ? (this.graphRanges[this.host.store.selectedDevice] || '24h') : '24h';
     }
     setGraphRange(range) {
-        if (!this.host.selectedDevice)
+        if (!this.host.store.selectedDevice)
             return;
         this.graphRanges = {
             ...this.graphRanges,
-            [this.host.selectedDevice]: range
+            [this.host.store.selectedDevice]: range
         };
         this.host.requestUpdate();
         this._fetchHistory(range);
@@ -9424,10 +9595,10 @@ class GrowspaceHistoryController {
             this._fetchSoilMoistureHistory(range);
     }
     async _fetchHistory(range = '24h') {
-        if (!this.host.hass || !this.host.selectedDevice)
+        if (!this.host.hass || !this.host.store.selectedDevice)
             return;
         const devices = this.host.dataService.getGrowspaceDevices();
-        const device = devices.find(d => d.device_id === this.host.selectedDevice);
+        const device = devices.find(d => d.device_id === this.host.store.selectedDevice);
         if (!device)
             return;
         let slug = device.name.toLowerCase().replace(/\s+/g, '_');
@@ -9508,10 +9679,10 @@ class GrowspaceHistoryController {
         }
     }
     getRelatedEntityId(attribute) {
-        if (!this.host.hass || !this.host.selectedDevice)
+        if (!this.host.hass || !this.host.store.selectedDevice)
             return { device: null, entityId: null };
         const devices = this.host.dataService.getGrowspaceDevices();
-        const device = devices.find(d => d.device_id === this.host.selectedDevice);
+        const device = devices.find(d => d.device_id === this.host.store.selectedDevice);
         if (!device || !device.overview_entity_id)
             return { device, entityId: null };
         const overviewEntity = this.host.hass.states[device.overview_entity_id];
@@ -10530,18 +10701,18 @@ GrowspaceEnvChart = __decorate([
 
 const dialogStyles = i$4 `
   .glass-dialog-container {
-    background: rgba(20, 20, 20, 0.6);
+    background: var(--growspace-glass-bg, rgba(20, 20, 20, 0.6));
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--growspace-border);
     border-radius: 16px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     max-height: 85vh;
-    color: #fff;
+    color: var(--growspace-text-primary);
     font-family: 'Roboto', sans-serif;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    box-shadow: var(--card-shadow);
   }
 
   /* Restored from 1.0.24.3.0 */
@@ -10557,15 +10728,15 @@ const dialogStyles = i$4 `
     display: flex;
     align-items: center;
     padding: 16px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--growspace-border);
+    background: color-mix(in srgb, var(--growspace-bg) 60%, transparent);
   }
 
   .dialog-icon {
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--growspace-surface-2, rgba(255, 255, 255, 0.05));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -10585,13 +10756,13 @@ const dialogStyles = i$4 `
 
   .dialog-subtitle {
     font-size: 0.85rem;
-    opacity: 0.7;
+    color: var(--growspace-text-secondary);
     margin-top: 2px;
   }
 
   .detail-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--growspace-surface-2);
+    border: 1px solid var(--growspace-border);
     border-radius: 12px;
     padding: 16px;
     max-width: 100%;
@@ -10604,14 +10775,14 @@ const dialogStyles = i$4 `
     font-size: 1rem;
     font-weight: 500;
     opacity: 0.9;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--growspace-border);
     padding-bottom: 8px;
   }
 
   .button-group {
     padding: 16px 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid var(--growspace-border);
+    background: color-mix(in srgb, var(--growspace-bg) 60%, transparent);
     display: flex;
     justify-content: flex-end;
     gap: 12px;
@@ -10634,23 +10805,23 @@ const dialogStyles = i$4 `
   }
   .md3-button.text {
     background: transparent;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--growspace-text-secondary);
     padding: 0 12px;
   }
   .md3-button.text:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
+    background: var(--growspace-surface-2);
+    color: var(--growspace-text-primary);
   }
   .md3-button.tonal {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    background: var(--growspace-surface-2);
+    color: var(--growspace-text-primary);
   }
   .md3-button.tonal:hover {
     background: rgba(255, 255, 255, 0.15);
   }
   .md3-button.primary {
-    background: var(--primary-color, #4CAF50);
-    color: #fff;
+    background: var(--growspace-primary);
+    color: var(--growspace-text-inverse);
   }
   .md3-button.primary:hover {
     filter: brightness(1.1);
@@ -10689,9 +10860,9 @@ const dialogStyles = i$4 `
     margin-left: 4px;
   }
   .md3-input {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #fff;
+    background: var(--growspace-surface-2);
+    border: 1px solid var(--growspace-border);
+    color: var(--growspace-text-primary);
     border-radius: 8px;
     padding: 10px 12px;
     width: 100%;
@@ -14579,11 +14750,11 @@ GrowspaceLogbook.styles = [
         border-radius: 4px;
       }
       .event-card {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--growspace-surface-2);
         border-radius: 12px;
         padding: 16px;
         margin-bottom: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--growspace-border);
       }
       .event-header {
         display: flex;
@@ -14600,9 +14771,10 @@ GrowspaceLogbook.styles = [
       .event-duration {
         font-size: 0.85rem;
         opacity: 0.6;
-        background: rgba(255, 255, 255, 0.1);
+        background: var(--growspace-surface-2);
         padding: 2px 8px;
         border-radius: 12px;
+        color: var(--growspace-text-secondary);
       }
       .event-details {
         display: grid;
@@ -14630,11 +14802,12 @@ GrowspaceLogbook.styles = [
       }
       .reason-badge {
         display: inline-block;
-        background: rgba(255, 255, 255, 0.08);
+        background: var(--growspace-surface-2);
         padding: 2px 8px;
         border-radius: 4px;
         margin-right: 6px;
         margin-bottom: 4px;
+        border: 1px solid var(--growspace-border);
       }
       .filter-bar {
         display: flex;
@@ -14649,27 +14822,28 @@ GrowspaceLogbook.styles = [
         display: none; /* Chrome/Safari/Opera */
       }
       .filter-chip {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--growspace-surface-2);
+        border: 1px solid var(--growspace-border);
         padding: 6px 16px;
         border-radius: 20px;
         font-size: 0.9rem;
         cursor: pointer;
         transition: all 0.2s ease;
-        color: var(--primary-text-color);
+        color: var(--growspace-text-primary);
         opacity: 0.7;
         flex-shrink: 0;
       }
       .filter-chip.active {
-        background: var(--accent-color, #4CAF50);
-        color: white;
+        background: var(--growspace-accent, #4CAF50);
+        color: var(--growspace-text-inverse);
         opacity: 1;
         border-color: transparent;
         font-weight: 500;
         box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       }
       .filter-chip:hover:not(.active) {
-        background: rgba(255, 255, 255, 0.1);
+        background: var(--growspace-surface-2);
+        filter: brightness(1.1);
         opacity: 0.9;
       }
       .empty-state {
@@ -16838,22 +17012,22 @@ const growspaceCardStyles = i$4 `
       /* Unified Card Container - Glassmorphism 2.0 */
       .unified-growspace-card {
         /* Deep glass effect */
-        background: rgba(20, 20, 24, 0.6);
+        background: var(--growspace-glass-bg);
         background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
         backdrop-filter: blur(24px);
         -webkit-backdrop-filter: blur(24px);
 
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--growspace-border);
         border-radius: 28px; /* MD3 Large rounding */
         padding: 24px;
         display: flex;
         flex-direction: column;
         gap: 24px;
-        color: #fff;
+        color: var(--growspace-text-primary);
         position: relative;
         overflow: hidden;
         box-shadow: 
-          0 4px 24px -1px rgba(0, 0, 0, 0.2),
+          var(--card-shadow),
           0 0 0 1px rgba(255, 255, 255, 0.02) inset;
       }
       /* Edit Mode Banner */
@@ -16884,7 +17058,7 @@ const growspaceCardStyles = i$4 `
         display: flex;
         align-items: center;
         gap: 12px;
-        color: #fff;
+        color: var(--growspace-text-primary);
         font-weight: 500;
         font-size: 0.95rem;
       }
@@ -16961,9 +17135,9 @@ const growspaceCardStyles = i$4 `
         justify-content: flex-end;
       }
       .range-btn {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--growspace-surface-2);
         border: 1px solid transparent;
-        color: rgba(255, 255, 255, 0.7);
+        color: var(--growspace-text-secondary);
         border-radius: 8px; /* Small rounding for compact look */
         padding: 6px 12px;
         font-size: 0.75rem;
@@ -16973,8 +17147,8 @@ const growspaceCardStyles = i$4 `
         letter-spacing: 0.5px;
       }
       .range-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: #fff;
+        background: var(--growspace-surface-2);
+        color: var(--growspace-text-primary);
       }
       .range-btn.active {
         background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.15);
@@ -16990,7 +17164,7 @@ const growspaceCardStyles = i$4 `
          margin-top: -24px;
          padding: 0 10px;
          font-size: 0.75rem;
-         color: rgba(255, 255, 255, 0.3);
+         color: var(--growspace-text-secondary);
          font-weight: 500;
          position: relative;
          z-index: 2;
@@ -17047,10 +17221,10 @@ const growspaceCardStyles = i$4 `
 
       /* Light Cycle Card Nested */
       .gs-light-cycle-card {
-        background: rgba(0, 0, 0, 0.2);
+        background: var(--growspace-surface-2);
         border-radius: 16px;
         padding: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--growspace-border);
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -17136,8 +17310,8 @@ const growspaceCardStyles = i$4 `
 
       .action-card {
          flex: 1;
-         background: rgba(255, 255, 255, 0.05);
-         border: 1px solid rgba(255, 255, 255, 0.05);
+         background: var(--growspace-surface-2);
+         border: 1px solid var(--growspace-border);
          border-radius: 16px;
          padding: 16px;
          display: flex;
@@ -17299,7 +17473,7 @@ const growspaceCardStyles = i$4 `
         color: var(--secondary-text-color);
         cursor: pointer;
         transition: all 0.2s ease;
-        background: rgba(255, 255, 255, 0.02);
+        background: var(--growspace-surface-2);
       }
 
       .plant-card-empty:hover {
@@ -17326,9 +17500,9 @@ const growspaceCardStyles = i$4 `
         padding: var(--spacing-sm) var(--spacing-lg);
         padding-left: 40px;
         border-radius: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--primary-text-color);
+        border: 1px solid var(--growspace-border);
+        background: var(--growspace-surface-2);
+        color: var(--growspace-text-primary);
         backdrop-filter: blur(10px);
         box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
         transition: var(--transition);
@@ -17350,9 +17524,9 @@ const growspaceCardStyles = i$4 `
       }
 
       .strain-table-container {
-        background: rgba(255, 255, 255, 0.02);
+        background: var(--growspace-surface-2);
         border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--growspace-border);
         backdrop-filter: blur(10px);
         overflow: hidden;
         max-height: 60vh;
@@ -18317,17 +18491,11 @@ GrowspaceAnalytics = __decorate([
 let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     constructor() {
         super(...arguments);
-        this._activeDialog = { type: 'NONE' };
-        this._defaultApplied = false;
-        this._optimisticDeletedPlantIds = new Set();
-        this.selectedDevice = null;
-        this._isCompactView = false;
-        this._strainLibrary = [];
+        // Store instance
+        this.store = new GrowspaceStore(this);
         // History controller manages history state
         this.historyController = new GrowspaceHistoryController(this);
         this._menuOpen = false;
-        this._isEditMode = false;
-        this._selectedPlants = new Set();
         this._focusedPlantIndex = -1;
         this._notification = null;
         this._handleDocumentClick = (e) => {
@@ -18379,50 +18547,26 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     firstUpdated() {
         this.dataService = new DataService(this.hass);
         this.initializeSelectedDevice();
-        this._fetchStrainLibrary();
+        this.store.fetchStrainLibrary();
     }
     updated(changedProps) {
         super.updated(changedProps);
     }
-    async _fetchStrainLibrary() {
-        if (!this.hass)
-            return;
-        // 1. Try to load from cache first for instant render
-        const cachedLibrary = localStorage.getItem('growspace_strain_library');
-        if (cachedLibrary) {
-            try {
-                this._strainLibrary = JSON.parse(cachedLibrary);
-                this.requestUpdate();
-            }
-            catch (e) {
-                console.warn('Failed to parse cached strain library', e);
-            }
-        }
-        try {
-            const currentStrains = await this.dataService.fetchStrainLibrary();
-            this._strainLibrary = currentStrains;
-            // Update cache
-            localStorage.setItem('growspace_strain_library', JSON.stringify(currentStrains));
-        }
-        catch (e) {
-            console.error('Failed to fetch strain library for grid:', e);
-        }
-    }
     initializeSelectedDevice() {
         const devices = this.dataService.getGrowspaceDevices();
-        if (!devices.length || this.selectedDevice)
+        if (!devices.length || this.store.selectedDevice)
             return;
         // Try to apply default from config
         if (this._config?.default_growspace) {
             const defaultDevice = devices.find(d => d.device_id === this._config.default_growspace ||
                 d.name === this._config.default_growspace);
             if (defaultDevice) {
-                this.selectedDevice = defaultDevice.device_id;
+                this.store.selectedDevice = defaultDevice.device_id;
                 return;
             }
         }
         // Fallback to first device
-        this.selectedDevice = devices[0].device_id;
+        this.store.selectedDevice = devices[0].device_id;
     }
     static async getConfigElement() {
         // path must match where the editor JS is served relative to the card script
@@ -18441,61 +18585,22 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             throw new Error("Invalid configuration");
         this._config = config;
         if (this._config.compact !== undefined) {
-            this._isCompactView = this._config.compact;
+            this.store.isCompactView = this._config.compact;
         }
     }
     getCardSize() { return 4; }
     // Event handlers
     _handleDeviceChange(e) {
-        this.selectedDevice = e.detail.deviceId;
-    }
-    _togglePlantSelection(plant) {
-        const plantId = plant.attributes.plant_id;
-        if (!plantId)
-            return;
-        const newSet = new Set(this._selectedPlants);
-        if (newSet.has(plantId)) {
-            newSet.delete(plantId);
-        }
-        else {
-            newSet.add(plantId);
-        }
-        this._selectedPlants = newSet;
-        this.requestUpdate();
-    }
-    // Bulk Edit Helper Methods
-    _selectAllPlants() {
-        const devices = this.dataService.getGrowspaceDevices();
-        const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
-        if (!selectedDeviceData)
-            return;
-        const allPlantIds = new Set();
-        selectedDeviceData.plants?.forEach(plant => {
-            const plantId = plant.attributes.plant_id;
-            if (plantId && !this._optimisticDeletedPlantIds.has(plantId)) {
-                allPlantIds.add(plantId);
-            }
-        });
-        this._selectedPlants = allPlantIds;
-        this.requestUpdate();
-    }
-    _deselectAllPlants() {
-        this._selectedPlants = new Set();
-        this.requestUpdate();
-    }
-    _exitEditMode() {
-        this._isEditMode = false;
-        this._selectedPlants = new Set();
-        this.requestUpdate();
+        this.store.selectedDevice = e.detail.deviceId;
     }
     _handleKeyboardNav(e) {
-        if (!this.selectedDevice)
+        if (!this.store.selectedDevice)
             return;
         const devices = this.dataService.getGrowspaceDevices();
-        const device = devices.find(d => d.device_id === this.selectedDevice);
+        const device = devices.find(d => d.device_id === this.store.selectedDevice);
         if (!device)
             return;
-        const plants = device.plants.filter(p => !this._optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
+        const plants = device.plants.filter(p => !this.store.optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
         if (plants.length === 0)
             return;
         if (e.key === 'ArrowRight') {
@@ -18508,7 +18613,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         }
         else if (e.key === 'Enter' || e.key === ' ') {
             if (this._focusedPlantIndex >= 0 && this._focusedPlantIndex < plants.length) {
-                this._handlePlantClick(plants[this._focusedPlantIndex]);
+                this.store.handlePlantClick(plants[this._focusedPlantIndex]);
             }
         }
     }
@@ -18527,33 +18632,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             announcer.textContent = message;
         }
     }
-    _handlePlantClick(plant) {
-        // If in edit mode and we have selections, open dialog for ALL selected plants
-        if (this._isEditMode && this._selectedPlants.size > 0) {
-            const plantId = plant.attributes.plant_id;
-            // If clicked plant is NOT selected, add it to selection then open.
-            if (plantId && !this._selectedPlants.has(plantId)) {
-                this._togglePlantSelection(plant);
-            }
-            // Pass the set of IDs to the dialog
-            this._openPlantOverviewDialog(plant, Array.from(this._selectedPlants));
-        }
-        else {
-            // Normal behavior
-            this._openPlantOverviewDialog(plant);
-        }
-    }
-    _openPlantOverviewDialog(plant, selectedIds) {
-        this._activeDialog = {
-            type: 'PLANT_OVERVIEW',
-            payload: {
-                plant,
-                editedAttributes: { ...plant.attributes },
-                activeTab: 'dashboard',
-                selectedPlantIds: selectedIds
-            }
-        };
-    }
     getHaDateTimeString() {
         // hass.config.time_zone is your Home Assistant timezone
         const tz = this.hass.config.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -18562,7 +18640,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             .toFormat("yyyy-LL-dd'T'HH:mm"); // Format for datetime-local input
     }
     _openAddPlantDialog(row, col) {
-        this._activeDialog = {
+        this.store.activeDialog = {
             type: 'ADD_PLANT',
             payload: {
                 row,
@@ -18570,93 +18648,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             }
         };
     }
-    async _updatePlant() {
-        if (this._activeDialog.type !== 'PLANT_OVERVIEW')
-            return;
-        const dialogState = this._activeDialog.payload;
-        // Use dialogState instead of accessing via this._plantOverviewDialog
-        const { plant, editedAttributes, selectedPlantIds } = dialogState;
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        // Determine target IDs: either the single plant or the bulk selection
-        const targetIds = (selectedPlantIds && selectedPlantIds.length > 0) ? selectedPlantIds : [plantId];
-        const isBulkEdit = targetIds.length > 1;
-        const payloadTemplate = {};
-        const dateFields = ['seedling_start', 'mother_start', 'clone_start', 'veg_start', 'flower_start', 'dry_start', 'cure_start'];
-        // SAFEGUARD: For bulk edits, ONLY process date fields
-        // For single edits, process all fields as before
-        const fieldsToProcess = isBulkEdit
-            ? dateFields
-            : ['strain', 'phenotype', 'row', 'col', ...dateFields];
-        fieldsToProcess.forEach(field => {
-            if (editedAttributes[field] !== undefined) {
-                if (dateFields.includes(field)) {
-                    const val = String(editedAttributes[field] || '');
-                    if (!val || val === 'null' || val === 'undefined') {
-                        // Explicitly clear the date if it's empty
-                        payloadTemplate[field] = null;
-                    }
-                    else {
-                        const formattedDate = PlantUtils.formatDateForBackend(val);
-                        if (formattedDate) {
-                            payloadTemplate[field] = formattedDate;
-                        }
-                    }
-                }
-                else {
-                    // Non-date fields (strain, phenotype, row, col) - only for single edits
-                    if (editedAttributes[field] !== null) {
-                        payloadTemplate[field] = editedAttributes[field];
-                    }
-                }
-            }
-        });
-        try {
-            // Execute updates for all target plants
-            const updatePromises = targetIds.map(id => {
-                const payload = { ...payloadTemplate, plant_id: id };
-                // Don't update row/col for bulk edits as it would stack them
-                if (isBulkEdit) {
-                    delete payload.row;
-                    delete payload.col;
-                }
-                return this.dataService.updatePlant(payload);
-            });
-            await Promise.all(updatePromises);
-            this._activeDialog = { type: 'NONE' };
-            // Clear selection after successful bulk update
-            if (this._isEditMode) {
-                this._selectedPlants = new Set();
-                this._isEditMode = false; // Optional: exit edit mode
-            }
-        }
-        catch (err) {
-            console.error("Error updating plant(s):", err);
-        }
-    }
-    async _handleDeletePlant(plantId) {
-        if (!confirm("Are you sure you want to delete this plant?"))
-            return;
-        // Optimistic Update: Immediately track as deleted
-        this._optimisticDeletedPlantIds.add(plantId);
-        this.requestUpdate();
-        // Close dialog immediately
-        this._activeDialog = { type: 'NONE' };
-        try {
-            await this.dataService.removePlant(plantId);
-        }
-        catch (err) {
-            console.error("Error deleting plant:", err);
-            // Ideally revert the optimistic update here, but for now just alert
-            this._showToast("Failed to delete plant. It may reappear on refresh.", 'error');
-            this.updateGrid(); // Force refresh to sync with backend
-        }
-    }
     async _movePlantToNextStage(_) {
-        if (this._activeDialog.type !== 'PLANT_OVERVIEW') {
+        if (this.store.activeDialog.type !== 'PLANT_OVERVIEW') {
             console.error("No plant found in overview dialog");
             return;
         }
-        const plant = this._activeDialog.payload.plant;
+        const plant = this.store.activeDialog.payload.plant;
         const stage = plant.attributes?.stage;
         let targetGrowspace = "";
         const movableStages = new Set(["mother", "flower", "dry", "cure"]);
@@ -18683,7 +18680,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             // Call your coordinator/service
             await this.dataService.harvestPlant(plantId, targetGrowspace);
             // Close dialog
-            this._activeDialog = { type: 'NONE' };
+            this.store.activeDialog = { type: 'NONE' };
         }
         catch (err) {
             console.error("Error moving plant to next stage:", err);
@@ -18697,8 +18694,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     }
     // Strain library methods
     async _openStrainLibraryDialog() {
-        await this._fetchStrainLibrary();
-        this._activeDialog = {
+        await this.store.fetchStrainLibrary();
+        this.store.activeDialog = {
             type: 'STRAIN_LIBRARY',
             payload: {}
         };
@@ -18706,9 +18703,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     }
     //Irrigation dialog methods
     _openIrrigationDialog() {
-        if (!this.selectedDevice)
+        if (!this.store.selectedDevice)
             return;
-        this._activeDialog = {
+        this.store.activeDialog = {
             type: 'IRRIGATION',
             payload: true
         };
@@ -18734,7 +18731,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         try {
             await this.dataService.addStrain(payload);
             // Refresh full library
-            await this._fetchStrainLibrary();
+            await this.store.fetchStrainLibrary();
         }
         catch (err) {
             console.error("Error adding strain:", err);
@@ -18748,12 +18745,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
             await this.dataService.removeStrain(strain, phenotype);
             // Optimistic update
-            if (this._strainLibrary) {
-                this._strainLibrary = this._strainLibrary.filter(s => s.key !== strainKey);
+            if (this.store.strainLibrary) {
+                this.store.strainLibrary = this.store.strainLibrary.filter(s => s.key !== strainKey);
                 this.requestUpdate();
             }
             // Refresh full library for grid
-            await this._fetchStrainLibrary();
+            await this.store.fetchStrainLibrary();
         }
         catch (err) {
             console.error("Error removing strain:", err);
@@ -18795,7 +18792,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         try {
             const result = await this.dataService.importStrainLibrary(file, replace);
             this._showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
-            await this._fetchStrainLibrary();
+            await this.store.fetchStrainLibrary();
         }
         catch (err) {
             console.error("Import failed:", err);
@@ -18810,7 +18807,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     }
     async _handleDrop(e, targetRow, targetCol, targetPlant, sourcePlant) {
         e.preventDefault();
-        if (!sourcePlant || !this.selectedDevice)
+        if (!sourcePlant || !this.store.selectedDevice)
             return;
         try {
             if (targetPlant) {
@@ -18849,7 +18846,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             .then(() => {
             console.log(`Moved clone ${plant.attributes.friendly_name} to ${targetGrowspace}`);
             // Optionally refresh local state
-            this._activeDialog = { type: 'NONE' };
+            this.store.activeDialog = { type: 'NONE' };
         }).catch((err) => {
             console.error('Error moving clone:', err);
         });
@@ -18861,29 +18858,15 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
                 this._openConfigDialog();
                 break;
             case 'edit':
-                this._isEditMode = !this._isEditMode;
+                this.store.isEditMode = !this.store.isEditMode;
+                this.requestUpdate();
                 break;
             case 'compact':
-                this._isCompactView = !this._isCompactView;
+                this.store.isCompactView = !this.store.isCompactView;
+                this.requestUpdate();
                 break;
             case 'control_dehumidifier':
-                if (this.selectedDevice) {
-                    const device = this.dataService.getGrowspaceDevices().find(d => d.device_id === this.selectedDevice);
-                    if (device && device.overview_entity_id) {
-                        const stateObj = this.hass.states[device.overview_entity_id];
-                        const attrs = stateObj?.attributes || {};
-                        // 1. Get current state (Default to false if attribute missing)
-                        // Ensure your backend GrowspaceOverviewSensor exposes this attribute!
-                        const currentStatus = attrs.dehumidifier_control_enabled === true;
-                        // 2. Call service with opposite state
-                        this.dataService.setDehumidifierControl(this.selectedDevice, !currentStatus)
-                            .then(() => {
-                            console.log(`Toggled dehumidifier control to ${!currentStatus} for`, this.selectedDevice);
-                        }).catch(err => {
-                            console.error('Failed to toggle dehumidifier control:', err);
-                        });
-                    }
-                }
+                console.warn('Dehumidifier control logic implementation pending.');
                 break;
             case 'strains':
                 this._openStrainLibraryDialog();
@@ -18901,12 +18884,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     }
     // Configuration Dialog Methods
     _openConfigDialog() {
-        this._activeDialog = {
+        this.store.activeDialog = {
             type: 'CONFIG',
             payload: {
                 currentTab: 'environment',
                 environmentData: {
-                    selectedGrowspaceId: this.selectedDevice || '',
+                    selectedGrowspaceId: this.store.selectedDevice || '',
                     temp_sensor: '',
                     humidity_sensor: '',
                     vpd_sensor: '',
@@ -18919,7 +18902,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         };
     }
     async _handleAddGrowspace(detail) {
-        if (this._activeDialog?.type !== 'CONFIG')
+        if (this.store.activeDialog?.type !== 'CONFIG')
             return;
         const { name, rows, plants_per_row, notification_service } = detail;
         if (!name) {
@@ -18934,14 +18917,14 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
                 notification_service: notification_service || 'mobile_app_notify'
             });
             this._showToast('Growspace added successfully!', 'success');
-            this._activeDialog = { type: 'NONE' };
+            this.store.activeDialog = { type: 'NONE' };
         }
         catch (e) {
             this._showToast(`Error: ${e.message}`, 'error');
         }
     }
     async _handleEnvironmentConfig(detail) {
-        if (this._activeDialog?.type !== 'CONFIG')
+        if (this.store.activeDialog?.type !== 'CONFIG')
             return;
         const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold } = detail;
         if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor || !vpd_sensor) {
@@ -18960,7 +18943,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
                 mold_threshold: mold_threshold
             });
             this._showToast('Environment configured successfully!', 'success');
-            this._activeDialog = { type: 'NONE' };
+            this.store.activeDialog = { type: 'NONE' };
         }
         catch (e) {
             this._showToast(`Error: ${e.message}`, 'error');
@@ -18968,10 +18951,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     }
     // Grow Master Methods
     async _openGrowMasterDialog(isStressed = false, personality) {
-        this._activeDialog = {
+        this.store.activeDialog = {
             type: 'GROW_MASTER',
             payload: {
-                growspaceId: this.selectedDevice || '',
+                growspaceId: this.store.selectedDevice || '',
                 isLoading: false,
                 response: null,
                 mode: isStressed ? 'all' : 'single'
@@ -18982,12 +18965,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         }
     }
     async _analyzeGrowspace(query, all) {
-        if (this._activeDialog.type !== 'GROW_MASTER')
+        if (this.store.activeDialog.type !== 'GROW_MASTER')
             return;
         // Set loading state
-        this._activeDialog = {
+        this.store.activeDialog = {
             type: 'GROW_MASTER',
-            payload: { ...this._activeDialog.payload, isLoading: true, response: null }
+            payload: { ...this.store.activeDialog.payload, isLoading: true, response: null }
         };
         try {
             let result;
@@ -18996,7 +18979,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
                 result = await this.dataService.analyzeAllGrowspaces();
             }
             else {
-                result = await this.dataService.askGrowAdvice(this.selectedDevice || '', query);
+                result = await this.dataService.askGrowAdvice(this.store.selectedDevice || '', query);
             }
             if (result && typeof result.response === 'object' && result.response.response) {
                 responseText = result.response.response;
@@ -19008,19 +18991,19 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
                 responseText = JSON.stringify(result, null, 2);
             }
             // Update with response
-            if (this._activeDialog.type === 'GROW_MASTER') {
-                this._activeDialog = {
+            if (this.store.activeDialog.type === 'GROW_MASTER') {
+                this.store.activeDialog = {
                     type: 'GROW_MASTER',
-                    payload: { ...this._activeDialog.payload, isLoading: false, response: responseText }
+                    payload: { ...this.store.activeDialog.payload, isLoading: false, response: responseText }
                 };
             }
         }
         catch (e) {
             console.error(e);
-            if (this._activeDialog.type === 'GROW_MASTER') {
-                this._activeDialog = {
+            if (this.store.activeDialog.type === 'GROW_MASTER') {
+                this.store.activeDialog = {
                     type: 'GROW_MASTER',
-                    payload: { ...this._activeDialog.payload, isLoading: false, response: `Error: ${e.message || 'Failed to get analysis.'}` }
+                    payload: { ...this.store.activeDialog.payload, isLoading: false, response: `Error: ${e.message || 'Failed to get analysis.'}` }
                 };
             }
         }
@@ -19029,7 +19012,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         }
     }
     _openStrainRecommendationDialog() {
-        this._activeDialog = {
+        this.store.activeDialog = {
             type: 'STRAIN_RECOMMENDATION',
             payload: {
                 isLoading: false,
@@ -19038,7 +19021,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         };
     }
     async _getStrainRecommendation(query) {
-        if (this._activeDialog?.type !== 'STRAIN_RECOMMENDATION')
+        if (this.store.activeDialog?.type !== 'STRAIN_RECOMMENDATION')
             return;
         // We actually need the query from the event or state.
         // We actually need the query from the event or state.
@@ -19047,7 +19030,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         this.requestUpdate();
         try {
             const response = await this.dataService.getStrainRecommendation(query || '');
-            if (this._activeDialog?.type === 'STRAIN_RECOMMENDATION') {
+            if (this.store.activeDialog?.type === 'STRAIN_RECOMMENDATION') {
                 let responseText = null;
                 if (response && typeof response.response === 'string') {
                     responseText = response.response;
@@ -19055,17 +19038,17 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
                 else {
                     responseText = JSON.stringify(response, null, 2);
                 }
-                this._activeDialog = {
+                this.store.activeDialog = {
                     type: 'STRAIN_RECOMMENDATION',
-                    payload: { ...this._activeDialog.payload, isLoading: false, response: responseText }
+                    payload: { ...this.store.activeDialog.payload, isLoading: false, response: responseText }
                 };
             }
         }
         catch (e) {
-            if (this._activeDialog?.type === 'STRAIN_RECOMMENDATION') {
-                this._activeDialog = {
+            if (this.store.activeDialog?.type === 'STRAIN_RECOMMENDATION') {
+                this.store.activeDialog = {
                     type: 'STRAIN_RECOMMENDATION',
-                    payload: { ...this._activeDialog.payload, isLoading: false, response: `Error: ${e.message || 'Failed to get recommendation.'}` }
+                    payload: { ...this.store.activeDialog.payload, isLoading: false, response: `Error: ${e.message || 'Failed to get recommendation.'}` }
                 };
             }
         }
@@ -19074,12 +19057,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         }
     }
     _openLogbookDialog() {
-        if (!this.selectedDevice)
+        if (!this.store.selectedDevice)
             return;
-        this._activeDialog = {
+        this.store.activeDialog = {
             type: 'LOGBOOK',
             payload: {
-                growspaceId: this.selectedDevice
+                growspaceId: this.store.selectedDevice
             }
         };
     }
@@ -19093,7 +19076,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         devices.forEach(d => {
             d.plants = d.plants.filter(p => {
                 const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
-                return !this._optimisticDeletedPlantIds.has(pId);
+                return !this.store.optimisticDeletedPlantIds.has(pId);
             });
         });
         return devices;
@@ -19112,16 +19095,16 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
         }
         // Apply default growspace logic
-        if (!this._defaultApplied && this._config?.default_growspace) {
+        if (!this.store.defaultApplied && this._config?.default_growspace) {
             const match = devices.find(d => d.device_id === this._config.default_growspace || d.name === this._config.default_growspace);
             if (match)
-                this.selectedDevice = match.device_id;
-            this._defaultApplied = true;
+                this.store.selectedDevice = match.device_id;
+            this.store.defaultApplied = true;
         }
-        if (!this.selectedDevice || !devices.find(d => d.device_id === this.selectedDevice)) {
-            this.selectedDevice = devices[0].device_id;
+        if (!this.store.selectedDevice || !devices.find(d => d.device_id === this.store.selectedDevice)) {
+            this.store.selectedDevice = devices[0].device_id;
         }
-        const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
+        const selectedDeviceData = devices.find(d => d.device_id === this.store.selectedDevice);
         if (!selectedDeviceData) {
             return x `<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
         }
@@ -19135,7 +19118,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         // Calculate grid layout
         const { effectiveRows, grid } = this._calculateCurrentGridLayout(selectedDeviceData);
         const isWide = selectedDeviceData.plants_per_row > 7;
-        const strainLibrary = this._strainLibrary;
+        const strainLibrary = this.store.strainLibrary;
         return x `
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="sr-only-announcer" aria-live="polite"></div>
@@ -19145,9 +19128,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             .devices=${devices}
             .activeEnvGraphs=${this.historyController.activeEnvGraphs}
             .historyData=${this.historyController.historyData || null}
-            .compact=${this._isCompactView}
-            .isEditMode=${this._isEditMode}
-            .selectedDevice=${this.selectedDevice}
+            .compact=${this.store.isCompactView}
+            .isEditMode=${this.store.isEditMode}
+            .selectedDevice=${this.store.selectedDevice}
             .growspaceOptions=${growspaceOptions}
             .linkedGraphGroups=${this.historyController.linkedGraphGroups}
             @growspace-changed=${this._handleDeviceChange}
@@ -19187,7 +19170,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         `;
     }
     renderEditModeBanner() {
-        if (!this._isEditMode)
+        if (!this.store.isEditMode)
             return x ``;
         return x `
       <div class="edit-mode-banner">
@@ -19195,12 +19178,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
           <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
             <path d="${mdiCheckboxMarked}"></path>
           </svg>
-          <span>${this._selectedPlants.size} plant(s) selected</span>
+          <span>${this.store.selectedPlants.size} plant(s) selected</span>
         </div>
         <div class="banner-actions">
-          <button class="md3-button text" @click=${this._selectAllPlants}>Select All</button>
-          <button class="md3-button text" @click=${this._deselectAllPlants}>Clear</button>
-          <button class="md3-button text" @click=${this._exitEditMode}>Exit</button>
+          <button class="md3-button text" @click=${() => this.store.selectAllPlants()}>Select All</button>
+          <button class="md3-button text" @click=${() => this.store.deselectAllPlants()}>Clear</button>
+          <button class="md3-button text" @click=${() => this.store.exitEditMode()}>Exit</button>
         </div>
       </div>
     `;
@@ -19212,14 +19195,14 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         .rows=${rows}
         .cols=${cols}
         .strainLibrary=${strainLibrary}
-        .isEditMode=${this._isEditMode}
-        .selectedPlants=${this._selectedPlants}
-        .compact=${this._isCompactView}
-        @plant-click=${(e) => this._handlePlantClick(e.detail.plant)}
+        .isEditMode=${this.store.isEditMode}
+        .selectedPlants=${this.store.selectedPlants}
+        .compact=${this.store.isCompactView}
+        @plant-click=${(e) => this.store.handlePlantClick(e.detail.plant)}
         @add-plant-click=${(e) => this._openAddPlantDialog(e.detail.row, e.detail.col)}
         @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, e.detail.targetRow, e.detail.targetCol, e.detail.targetPlant, e.detail.sourcePlant)}
         @selection-changed=${(e) => {
-            this._selectedPlants = e.detail.selectedPlants;
+            this.store.selectedPlants = e.detail.selectedPlants;
             this.requestUpdate();
         }}
       ></growspace-grid>
@@ -19227,7 +19210,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     }
     async _confirmAddPlant(detail) {
         const devices = this.dataService.getGrowspaceDevices();
-        const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
+        const selectedDeviceData = devices.find(d => d.device_id === this.store.selectedDevice);
         if (!selectedDeviceData)
             return;
         const { strain, phenotype, row, col, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start } = detail;
@@ -19245,7 +19228,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
                 veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start
             });
             this._showToast("Plant added successfully", "success");
-            this._activeDialog = { type: 'NONE' };
+            this.store.activeDialog = { type: 'NONE' };
         }
         catch (e) {
             console.error(e);
@@ -19253,12 +19236,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         }
     }
     renderDialogs(growspaceOptions) {
-        const active = this._activeDialog;
+        const active = this.store.activeDialog;
         if (active.type === 'NONE')
             return x ``;
         const strainLibrary = this.dataService?.getStrainLibrary() || [];
         const devices = this.dataService.getGrowspaceDevices();
-        const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
+        const selectedDeviceData = devices.find(d => d.device_id === this.store.selectedDevice);
         // ADD PLANT DIALOG
         if (active.type === 'ADD_PLANT') {
             const dialogState = active.payload;
@@ -19270,7 +19253,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
           .growspaceName=${selectedDeviceData?.name ?? ''}
           .row=${dialogState.row}
           .col=${dialogState.col}
-          @close=${() => this._activeDialog = { type: 'NONE' }}
+          @close=${() => this.store.activeDialog = { type: 'NONE' }}
           @add-plant-submit=${(e) => this._confirmAddPlant(e.detail)}
         ></add-plant-dialog>
       `;
@@ -19281,21 +19264,21 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         <plant-overview-dialog
           .dialog=${active.payload}
           .growspaceOptions=${growspaceOptions}
-          @close=${() => this._activeDialog = { type: 'NONE' }}
-          @update=${() => this._updatePlant()}
-          @delete=${(e) => this._handleDeletePlant(e.detail.plantId)}
+          @close=${() => this.store.activeDialog = { type: 'NONE' }}
+          @update=${() => this.store.updatePlant()}
+          @delete=${(e) => this.store.handleDeletePlant(e.detail.plantId, () => this.updateGrid())}
           @harvest=${(e) => this._harvestPlant(e.detail.plant)}
           @finish-drying=${(e) => this._finishDryingPlant(e.detail.plant)}
           @take-clone=${(e) => {
                 this.clonePlant(e.detail.plant, e.detail.numClones);
-                this._activeDialog = { type: 'NONE' };
+                this.store.activeDialog = { type: 'NONE' };
             }}
           @move-clone=${(e) => {
                 const { plant, targetGrowspace } = e.detail;
                 this.dataService.moveClone(plant.attributes.plant_id, targetGrowspace)
                     .then(() => {
                     console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
-                    this._activeDialog = { type: 'NONE' };
+                    this.store.activeDialog = { type: 'NONE' };
                 }).catch((err) => {
                     console.error('Error moving clone:', err);
                 });
@@ -19318,8 +19301,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             return x `
         <strain-library-dialog
           .open=${true}
-          .strains=${this._strainLibrary || []}
-          @close=${() => this._activeDialog = { type: 'NONE' }}
+          .strains=${this.store.strainLibrary || []}
+          @close=${() => this.store.activeDialog = { type: 'NONE' }}
           @save-strain=${(e) => this._addStrain(e.detail)}
           @delete-strain=${(e) => this._removeStrain(e.detail.key)}
           @import-library=${(e) => this._performImport(e.detail.file, e.detail.replace)}
@@ -19335,7 +19318,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         <config-dialog
           .open=${true}
           .growspaceOptions=${growspaceOptions}
-          @close=${() => this._activeDialog = { type: 'NONE' }}
+          @close=${() => this.store.activeDialog = { type: 'NONE' }}
           @add-growspace-submit=${(e) => this._handleAddGrowspace(e.detail)}
           @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
           .setInitialState=${(el) => {
@@ -19353,9 +19336,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             let isStressed = false;
             let personality = undefined;
             // Attempt to find stress sensor
-            if (this.selectedDevice && this.hass) {
+            if (this.store.selectedDevice && this.hass) {
                 // Pattern checking for stress sensor
-                const id = this.selectedDevice;
+                const id = this.store.selectedDevice;
                 const stressEntityIds = [
                     `binary_sensor.${id}_plants_under_stress`,
                     `binary_sensor.${id}_stress`,
@@ -19383,7 +19366,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
           .personality=${personality}
           .isLoading=${dialogState.isLoading}
           .response=${dialogState.response}
-          @close=${() => this._activeDialog = { type: 'NONE' }}
+          @close=${() => this.store.activeDialog = { type: 'NONE' }}
           @analyze-growspace=${(e) => this._analyzeGrowspace(e.detail.query, false)}
           @analyze-all-growspaces=${(e) => this._analyzeGrowspace(e.detail.query, true)}
         ></grow-master-dialog>
@@ -19398,7 +19381,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
           .hass=${this.hass}
           .isLoading=${dialogState.isLoading}
           .response=${dialogState.response}
-          @close=${() => this._activeDialog = { type: 'NONE' }}
+          @close=${() => this.store.activeDialog = { type: 'NONE' }}
           @get-recommendation=${(e) => this._getStrainRecommendation(e.detail.query)}
         ></strain-recommendation-dialog>
       `;
@@ -19409,10 +19392,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
          <irrigation-dialog
            .hass=${this.hass}
            .open=${true}
-           .growspaceId=${this.selectedDevice}
+           .growspaceId=${this.store.selectedDevice}
            .growspaceName=${selectedDeviceData?.name || ''}
            .growspaceEntityId=${selectedDeviceData?.overview_entity_id || ''}
-           @close=${() => this._activeDialog = { type: 'NONE' }}
+           @close=${() => this.store.activeDialog = { type: 'NONE' }}
          ></irrigation-dialog>
         `;
         }
@@ -19424,7 +19407,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
           .hass=${this.hass}
           .open=${true}
           .growspaceId=${dialogState.growspaceId}
-          @close=${() => this._activeDialog = { type: 'NONE' }}
+          @close=${() => this.store.activeDialog = { type: 'NONE' }}
         ></logbook-dialog>
       `;
         }
@@ -19437,40 +19420,8 @@ GrowspaceManagerCard.styles = [
 ];
 __decorate([
     r(),
-    __metadata("design:type", Object)
-], GrowspaceManagerCard.prototype, "_activeDialog", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Object)
-], GrowspaceManagerCard.prototype, "_defaultApplied", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Set)
-], GrowspaceManagerCard.prototype, "_optimisticDeletedPlantIds", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Object)
-], GrowspaceManagerCard.prototype, "selectedDevice", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Boolean)
-], GrowspaceManagerCard.prototype, "_isCompactView", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Array)
-], GrowspaceManagerCard.prototype, "_strainLibrary", void 0);
-__decorate([
-    r(),
     __metadata("design:type", Boolean)
 ], GrowspaceManagerCard.prototype, "_menuOpen", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Boolean)
-], GrowspaceManagerCard.prototype, "_isEditMode", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Set)
-], GrowspaceManagerCard.prototype, "_selectedPlants", void 0);
 __decorate([
     r(),
     __metadata("design:type", Number)

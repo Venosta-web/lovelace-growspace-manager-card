@@ -2,18 +2,18 @@ import { css } from 'lit';
 
 export const dialogStyles = css`
   .glass-dialog-container {
-    background: rgba(20, 20, 20, 0.6);
+    background: var(--growspace-glass-bg, rgba(20, 20, 20, 0.6));
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--growspace-border);
     border-radius: 16px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     max-height: 85vh;
-    color: #fff;
+    color: var(--growspace-text-primary);
     font-family: 'Roboto', sans-serif;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    box-shadow: var(--card-shadow);
   }
 
   /* Restored from 1.0.24.3.0 */
@@ -29,15 +29,15 @@ export const dialogStyles = css`
     display: flex;
     align-items: center;
     padding: 16px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--growspace-border);
+    background: color-mix(in srgb, var(--growspace-bg) 60%, transparent);
   }
 
   .dialog-icon {
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--growspace-surface-2, rgba(255, 255, 255, 0.05));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -57,13 +57,13 @@ export const dialogStyles = css`
 
   .dialog-subtitle {
     font-size: 0.85rem;
-    opacity: 0.7;
+    color: var(--growspace-text-secondary);
     margin-top: 2px;
   }
 
   .detail-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--growspace-surface-2);
+    border: 1px solid var(--growspace-border);
     border-radius: 12px;
     padding: 16px;
     max-width: 100%;
@@ -76,14 +76,14 @@ export const dialogStyles = css`
     font-size: 1rem;
     font-weight: 500;
     opacity: 0.9;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--growspace-border);
     padding-bottom: 8px;
   }
 
   .button-group {
     padding: 16px 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid var(--growspace-border);
+    background: color-mix(in srgb, var(--growspace-bg) 60%, transparent);
     display: flex;
     justify-content: flex-end;
     gap: 12px;
@@ -106,23 +106,23 @@ export const dialogStyles = css`
   }
   .md3-button.text {
     background: transparent;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--growspace-text-secondary);
     padding: 0 12px;
   }
   .md3-button.text:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
+    background: var(--growspace-surface-2);
+    color: var(--growspace-text-primary);
   }
   .md3-button.tonal {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    background: var(--growspace-surface-2);
+    color: var(--growspace-text-primary);
   }
   .md3-button.tonal:hover {
     background: rgba(255, 255, 255, 0.15);
   }
   .md3-button.primary {
-    background: var(--primary-color, #4CAF50);
-    color: #fff;
+    background: var(--growspace-primary);
+    color: var(--growspace-text-inverse);
   }
   .md3-button.primary:hover {
     filter: brightness(1.1);
@@ -161,9 +161,9 @@ export const dialogStyles = css`
     margin-left: 4px;
   }
   .md3-input {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #fff;
+    background: var(--growspace-surface-2);
+    border: 1px solid var(--growspace-border);
+    color: var(--growspace-text-primary);
     border-radius: 8px;
     padding: 10px 12px;
     width: 100%;

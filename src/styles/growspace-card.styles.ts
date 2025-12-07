@@ -22,22 +22,22 @@ export const growspaceCardStyles = css`
       /* Unified Card Container - Glassmorphism 2.0 */
       .unified-growspace-card {
         /* Deep glass effect */
-        background: rgba(20, 20, 24, 0.6);
+        background: var(--growspace-glass-bg);
         background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
         backdrop-filter: blur(24px);
         -webkit-backdrop-filter: blur(24px);
 
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--growspace-border);
         border-radius: 28px; /* MD3 Large rounding */
         padding: 24px;
         display: flex;
         flex-direction: column;
         gap: 24px;
-        color: #fff;
+        color: var(--growspace-text-primary);
         position: relative;
         overflow: hidden;
         box-shadow: 
-          0 4px 24px -1px rgba(0, 0, 0, 0.2),
+          var(--card-shadow),
           0 0 0 1px rgba(255, 255, 255, 0.02) inset;
       }
       /* Edit Mode Banner */
@@ -68,7 +68,7 @@ export const growspaceCardStyles = css`
         display: flex;
         align-items: center;
         gap: 12px;
-        color: #fff;
+        color: var(--growspace-text-primary);
         font-weight: 500;
         font-size: 0.95rem;
       }
@@ -145,9 +145,9 @@ export const growspaceCardStyles = css`
         justify-content: flex-end;
       }
       .range-btn {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--growspace-surface-2);
         border: 1px solid transparent;
-        color: rgba(255, 255, 255, 0.7);
+        color: var(--growspace-text-secondary);
         border-radius: 8px; /* Small rounding for compact look */
         padding: 6px 12px;
         font-size: 0.75rem;
@@ -157,8 +157,8 @@ export const growspaceCardStyles = css`
         letter-spacing: 0.5px;
       }
       .range-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: #fff;
+        background: var(--growspace-surface-2);
+        color: var(--growspace-text-primary);
       }
       .range-btn.active {
         background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.15);
@@ -174,7 +174,7 @@ export const growspaceCardStyles = css`
          margin-top: -24px;
          padding: 0 10px;
          font-size: 0.75rem;
-         color: rgba(255, 255, 255, 0.3);
+         color: var(--growspace-text-secondary);
          font-weight: 500;
          position: relative;
          z-index: 2;
@@ -231,10 +231,10 @@ export const growspaceCardStyles = css`
 
       /* Light Cycle Card Nested */
       .gs-light-cycle-card {
-        background: rgba(0, 0, 0, 0.2);
+        background: var(--growspace-surface-2);
         border-radius: 16px;
         padding: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--growspace-border);
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -320,8 +320,8 @@ export const growspaceCardStyles = css`
 
       .action-card {
          flex: 1;
-         background: rgba(255, 255, 255, 0.05);
-         border: 1px solid rgba(255, 255, 255, 0.05);
+         background: var(--growspace-surface-2);
+         border: 1px solid var(--growspace-border);
          border-radius: 16px;
          padding: 16px;
          display: flex;
@@ -483,7 +483,7 @@ export const growspaceCardStyles = css`
         color: var(--secondary-text-color);
         cursor: pointer;
         transition: all 0.2s ease;
-        background: rgba(255, 255, 255, 0.02);
+        background: var(--growspace-surface-2);
       }
 
       .plant-card-empty:hover {
@@ -510,9 +510,9 @@ export const growspaceCardStyles = css`
         padding: var(--spacing-sm) var(--spacing-lg);
         padding-left: 40px;
         border-radius: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--primary-text-color);
+        border: 1px solid var(--growspace-border);
+        background: var(--growspace-surface-2);
+        color: var(--growspace-text-primary);
         backdrop-filter: blur(10px);
         box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
         transition: var(--transition);
@@ -534,9 +534,9 @@ export const growspaceCardStyles = css`
       }
 
       .strain-table-container {
-        background: rgba(255, 255, 255, 0.02);
+        background: var(--growspace-surface-2);
         border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--growspace-border);
         backdrop-filter: blur(10px);
         overflow: hidden;
         max-height: 60vh;

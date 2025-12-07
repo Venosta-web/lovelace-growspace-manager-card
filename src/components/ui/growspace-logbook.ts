@@ -39,11 +39,11 @@ export class GrowspaceLogbook extends LitElement {
         border-radius: 4px;
       }
       .event-card {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--growspace-surface-2);
         border-radius: 12px;
         padding: 16px;
         margin-bottom: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--growspace-border);
       }
       .event-header {
         display: flex;
@@ -60,9 +60,10 @@ export class GrowspaceLogbook extends LitElement {
       .event-duration {
         font-size: 0.85rem;
         opacity: 0.6;
-        background: rgba(255, 255, 255, 0.1);
+        background: var(--growspace-surface-2);
         padding: 2px 8px;
         border-radius: 12px;
+        color: var(--growspace-text-secondary);
       }
       .event-details {
         display: grid;
@@ -90,11 +91,12 @@ export class GrowspaceLogbook extends LitElement {
       }
       .reason-badge {
         display: inline-block;
-        background: rgba(255, 255, 255, 0.08);
+        background: var(--growspace-surface-2);
         padding: 2px 8px;
         border-radius: 4px;
         margin-right: 6px;
         margin-bottom: 4px;
+        border: 1px solid var(--growspace-border);
       }
       .filter-bar {
         display: flex;
@@ -109,27 +111,28 @@ export class GrowspaceLogbook extends LitElement {
         display: none; /* Chrome/Safari/Opera */
       }
       .filter-chip {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--growspace-surface-2);
+        border: 1px solid var(--growspace-border);
         padding: 6px 16px;
         border-radius: 20px;
         font-size: 0.9rem;
         cursor: pointer;
         transition: all 0.2s ease;
-        color: var(--primary-text-color);
+        color: var(--growspace-text-primary);
         opacity: 0.7;
         flex-shrink: 0;
       }
       .filter-chip.active {
-        background: var(--accent-color, #4CAF50);
-        color: white;
+        background: var(--growspace-accent, #4CAF50);
+        color: var(--growspace-text-inverse);
         opacity: 1;
         border-color: transparent;
         font-weight: 500;
         box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       }
       .filter-chip:hover:not(.active) {
-        background: rgba(255, 255, 255, 0.1);
+        background: var(--growspace-surface-2);
+        filter: brightness(1.1);
         opacity: 0.9;
       }
       .empty-state {

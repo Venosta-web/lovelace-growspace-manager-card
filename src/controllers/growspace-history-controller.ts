@@ -1,11 +1,12 @@
 import { ReactiveController, ReactiveControllerHost } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { DataService } from '../data-service';
+import { GrowspaceStore } from '../store/growspace-store';
 
 // Interface for the host to ensure it has the required properties
 export interface GrowspaceCardHost extends ReactiveControllerHost {
     hass: HomeAssistant;
-    selectedDevice: string | null;
+    store: GrowspaceStore;
     dataService: DataService;
 }
 
@@ -49,8 +50,8 @@ export class GrowspaceHistoryController implements ReactiveController {
 
     async hostUpdate() {
         // Logic to detect changes if possible, or we rely on hostUpdated
-        if (this.host.selectedDevice !== this._prevSelectedDevice) {
-            this._prevSelectedDevice = this.host.selectedDevice;
+        if (this.host.store.selectedDevice !== this._prevSelectedDevice) {
+            this._prevSelectedDevice = this.host.store.selectedDevice;
             const range = this.getRange();
             await this._fetchHistory(range);
             this.refreshSecondaryHistories(range);
@@ -58,14 +59,14 @@ export class GrowspaceHistoryController implements ReactiveController {
     }
 
     getRange(): '1h' | '6h' | '24h' | '7d' {
-        return this.host.selectedDevice ? (this.graphRanges[this.host.selectedDevice] || '24h') : '24h';
+        return this.host.store.selectedDevice ? (this.graphRanges[this.host.store.selectedDevice] || '24h') : '24h';
     }
 
     setGraphRange(range: '1h' | '6h' | '24h' | '7d') {
-        if (!this.host.selectedDevice) return;
+        if (!this.host.store.selectedDevice) return;
         this.graphRanges = {
             ...this.graphRanges,
-            [this.host.selectedDevice]: range
+            [this.host.store.selectedDevice]: range
         };
         this.host.requestUpdate();
 
@@ -143,9 +144,9 @@ export class GrowspaceHistoryController implements ReactiveController {
     }
 
     private async _fetchHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
-        if (!this.host.hass || !this.host.selectedDevice) return;
+        if (!this.host.hass || !this.host.store.selectedDevice) return;
         const devices = this.host.dataService.getGrowspaceDevices();
-        const device = devices.find(d => d.device_id === this.host.selectedDevice);
+        const device = devices.find(d => d.device_id === this.host.store.selectedDevice);
         if (!device) return;
 
         let slug = device.name.toLowerCase().replace(/\s+/g, '_');
@@ -226,9 +227,9 @@ export class GrowspaceHistoryController implements ReactiveController {
     }
 
     private getRelatedEntityId(attribute: string) {
-        if (!this.host.hass || !this.host.selectedDevice) return { device: null, entityId: null };
+        if (!this.host.hass || !this.host.store.selectedDevice) return { device: null, entityId: null };
         const devices = this.host.dataService.getGrowspaceDevices();
-        const device = devices.find(d => d.device_id === this.host.selectedDevice);
+        const device = devices.find(d => d.device_id === this.host.store.selectedDevice);
         if (!device || !device.overview_entity_id) return { device, entityId: null };
 
         const overviewEntity = this.host.hass.states[device.overview_entity_id];

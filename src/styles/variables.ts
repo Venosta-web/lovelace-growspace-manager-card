@@ -2,12 +2,30 @@ import { css, CSSResult } from 'lit';
 
 export const variables: CSSResult = css`
   :host {
-    /* MD3 Color System */
     --primary-gradient: linear-gradient(135deg, #4CAF50, #45a049);
     --secondary-gradient: linear-gradient(135deg, #2196F3, #1976D2);
     --danger-gradient: linear-gradient(135deg, #f44336, #d32f2f);
     
     /* MD3 Elevation Levels */
+    /* HA Theme variable mapping */
+    --growspace-primary: var(--primary-color, #4CAF50);
+    --growspace-accent: var(--accent-color, #2196F3);
+    --growspace-error: var(--error-color, #f44336);
+    
+    /* Text */
+    --growspace-text-primary: var(--primary-text-color, #212121);
+    --growspace-text-secondary: var(--secondary-text-color, #727272);
+    --growspace-text-inverse: #ffffff; /* For typical dark gradients */
+    
+    /* Backgrounds - Using color-mix for glassmorphism */
+    /* 80% opacity of card background */
+    --growspace-glass-bg: color-mix(in srgb, var(--ha-card-background, #1e1e1e) 80%, transparent);
+    --growspace-glass-bg-hover: color-mix(in srgb, var(--ha-card-background, #1e1e1e) 90%, transparent);
+    
+    /* Borders */
+    --growspace-border: var(--divider-color, rgba(255, 255, 255, 0.12));
+    
+    /* MD3 Elevation Levels (Approximate using shadows) */
     --md3-elevation-level0: none;
     --md3-elevation-level1: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
     --md3-elevation-level2: 0 1px 2px rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15);
@@ -25,77 +43,20 @@ export const variables: CSSResult = css`
     --spacing-lg: 24px;
     --spacing-xl: 32px;
     
-    /* Border Radius (MD3 shape system) */
-    --border-radius-xs: 4px;
-    --border-radius-sm: 8px;
-    --border-radius-md: 12px;
-    --border-radius-lg: 16px;
-    --border-radius-xl: 28px;
-    --border-radius: 12px; /* Default */
+    /* Radius */
+    --border-radius: 12px;
     
-    /* MD3 Typography Scale */
-    --font-size-xs: 0.6875rem;   /* 11px */
-    --font-size-sm: 0.875rem;    /* 14px - Body Small */
-    --font-size-md: 1rem;        /* 16px - Body Medium */
-    --font-size-lg: 1.25rem;     /* 20px - Title Large */
-    --font-size-xl: 1.5rem;      /* 24px - Headline Small */
-
-    /* Font Weights */
-    --font-weight-regular: 400;
-    --font-weight-medium: 500;
-    --font-weight-bold: 700;
-    
-    /* MD3 Motion Tokens */
-    --md3-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
-    --md3-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
-    --md3-motion-duration-short1: 50ms;
-    --md3-motion-duration-short2: 100ms;
-    --md3-motion-duration-short3: 150ms;
-    --md3-motion-duration-short4: 200ms;
-    --md3-motion-duration-medium1: 250ms;
-    --md3-motion-duration-medium2: 300ms;
-    --md3-motion-duration-long1: 400ms;
-    --md3-motion-duration-long2: 500ms;
-
-    /* Growspace Theme Colors */
-    --growspace-card-bg: var(--card-background-color, #1e1e1e);
-    --growspace-card-text: var(--primary-text-color, #fff);
-    --growspace-card-accent: var(--primary-color, #4caf50);
-    --growspace-empty-bg: rgba(255, 255, 255, 0.05);
-    --growspace-empty-bg-hover: rgba(255, 255, 255, 0.1);
-    --plant-border-color-default: #2196f3;
-
-    /* Card Shadows (using MD3 elevation) */
-    --card-shadow: var(--md3-elevation-level1);
-    --card-shadow-hover: var(--md3-elevation-level2);
-
-    /* Transitions (using MD3 motion) */
-    --transition: all var(--md3-motion-duration-short4) var(--md3-motion-easing-standard);
-    --transition-fast: all var(--md3-motion-duration-short2) var(--md3-motion-easing-standard);
-    --transition-medium: all var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);
-
-    /* Divider */
-    --divider-color: rgba(255, 255, 255, 0.12);
-
-    /* Plant Stage Colors */
+    /* Plant Stages */
     --stage-veg: #4caf50;
     --stage-flower: #ff9800;
     --stage-dry: #9c27b0;
     --stage-cure: #2196f3;
-
-    /* Error/Warning Colors */
-    --error-color: #f44336;
-    --error-bg: rgba(244, 67, 54, 0.1);
-    --error-border: rgba(244, 67, 54, 0.3);
     
-    /* Strain Dialog */
-    --strain-dialog-bg: var(--ha-card-background, #1e1e1e);
-    --strain-dialog-color: var(--primary-text-color, #fff);
-    --strain-border-color: #4caf50;
-    --strain-input-bg: #2a2a2a;
-    --strain-input-border: #3a3a3a;
+    /* Gradients (Optional - keep friendly names but use vars?) */
+    --primary-gradient: linear-gradient(135deg, var(--growspace-primary) 0%, color-mix(in srgb, var(--growspace-primary) 80%, black) 100%);
     
-    /* Light Color */
-    --primary-light-color: #FFEB3B;
+    /* Dialog Specific */
+    --growspace-dialog-bg: var(--ha-card-background, #1e1e1e);
+    --growspace-backdrop: rgba(0, 0, 0, 0.6);
   }
 `;
