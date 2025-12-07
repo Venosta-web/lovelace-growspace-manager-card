@@ -15670,21 +15670,42 @@ GrowspaceHeader.styles = i$4 `
     .stat-chip {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 8px 16px;
-      font-size: 0.875rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 0.9rem;
       font-weight: 500;
       color: rgba(255, 255, 255, 0.9);
       backdrop-filter: blur(8px);
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-      user-select: none;
+      transition: all 0.2s ease;
+      position: relative;
+      user-select: none; /* Prevent text selection during drag */
       flex-shrink: 0;
       white-space: nowrap;
-      touch-action: auto;
+      touch-action: none; /* Prevent browser handling of gestures to allow custom drag */
+    }
+
+    /* Status Colors */
+    @keyframes pulse-red {
+      0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+    }
+
+    .stat-chip.status-warning {
+      color: #ffa726 !important;
+      border-color: rgba(255, 167, 38, 0.5) !important;
+      background: rgba(255, 167, 38, 0.1) !important;
+    }
+
+    .stat-chip.status-danger {
+      color: #ef5350 !important;
+      border-color: rgba(239, 83, 80, 0.5) !important;
+      background: rgba(239, 83, 80, 0.1) !important;
+      animation: pulse-red 2s infinite;
     }
 
     .stat-chip:hover {
