@@ -1,5 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
-import { GrowspaceDevice, StrainEntry, CropMeta } from './types';
+import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy } from './types';
 import { GrowspaceAdapter } from './adapters/growspace-adapter';
 import { noChange } from 'lit';
 
@@ -319,6 +319,21 @@ export class DataService {
       return res;
     } catch (err) {
       console.error("[DataService:removeIrrigationTime] Error:", err);
+      throw err;
+    }
+  }
+
+  async setIrrigationStrategy(growspaceId: string, strategy: Partial<IrrigationStrategy>) {
+    console.log("[DataService:setIrrigationStrategy] Setting strategy:", strategy);
+    try {
+      const res = await this.hass.callService('growspace_manager', 'set_irrigation_strategy', {
+        growspace_id: growspaceId,
+        ...strategy
+      });
+      console.log("[DataService:setIrrigationStrategy] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:setIrrigationStrategy] Error:", err);
       throw err;
     }
   }

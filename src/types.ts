@@ -193,4 +193,15 @@ export interface GrowspaceEvent {
   reasons: string[];
 }
 
+export interface IrrigationStrategy {
+  enabled: boolean;
+  lights_on_time: string;
+  p0_duration_minutes: number;
+  p2_stop_before_lights_off_minutes: number;
+  target_vwc_percent: number;
+  maintenance_dryback_percent: number;
+  shot_duration_seconds: number;
+  shot_interval_minutes: number;
+}
+
 

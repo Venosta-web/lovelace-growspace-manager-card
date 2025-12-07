@@ -721,6 +721,21 @@ class DataService {
             throw err;
         }
     }
+    async setIrrigationStrategy(growspaceId, strategy) {
+        console.log("[DataService:setIrrigationStrategy] Setting strategy:", strategy);
+        try {
+            const res = await this.hass.callService('growspace_manager', 'set_irrigation_strategy', {
+                growspace_id: growspaceId,
+                ...strategy
+            });
+            console.log("[DataService:setIrrigationStrategy] Response:", res);
+            return res;
+        }
+        catch (err) {
+            console.error("[DataService:setIrrigationStrategy] Error:", err);
+            throw err;
+        }
+    }
     async addDrainTime(params) {
         console.log("[DataService:addDrainTime] Adding drain time:", params);
         try {
@@ -12680,6 +12695,94 @@ StrainLibraryDialog = __decorate([
     t('strain-library-dialog')
 ], StrainLibraryDialog);
 
+let Md3Switch = class Md3Switch extends i$1 {
+    constructor() {
+        super(...arguments);
+        this.checked = false;
+        this.disabled = false;
+    }
+    _handleClick() {
+        if (this.disabled)
+            return;
+        this.checked = !this.checked;
+        this.dispatchEvent(new CustomEvent('change', {
+            detail: { checked: this.checked },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    render() {
+        return x `
+      <button 
+        role="switch" 
+        aria-checked=${this.checked} 
+        @click=${this._handleClick}
+        ?disabled=${this.disabled}
+      >
+        <div class="handle"></div>
+      </button>
+    `;
+    }
+};
+Md3Switch.styles = i$4 `
+    :host {
+      display: inline-block;
+      vertical-align: middle;
+      --md-switch-width: 52px;
+      --md-switch-height: 32px;
+      --md-switch-handle-size: 24px;
+      --md-switch-track-color-on: var(--primary-color, #2196F3);
+      --md-switch-track-color-off: rgba(255, 255, 255, 0.1);
+      --md-switch-handle-color: #fff;
+    }
+
+    button {
+      all: unset;
+      position: relative;
+      width: var(--md-switch-width);
+      height: var(--md-switch-height);
+      border-radius: calc(var(--md-switch-height) / 2);
+      background: var(--md-switch-track-color-off);
+      cursor: pointer;
+      transition: background-color 0.2s;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-sizing: border-box;
+    }
+
+    :host([checked]) button {
+      background: var(--md-switch-track-color-on);
+      border-color: transparent;
+    }
+
+    .handle {
+      position: absolute;
+      top: 50%;
+      left: 4px;
+      transform: translateY(-50%);
+      width: var(--md-switch-handle-size);
+      height: var(--md-switch-handle-size);
+      background: var(--md-switch-handle-color);
+      border-radius: 50%;
+      transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+
+    :host([checked]) .handle {
+      transform: translate(20px, -50%); /* 52 - 4 - 24 - 4 = 20px move */
+    }
+  `;
+__decorate([
+    n$2({ type: Boolean }),
+    __metadata("design:type", Object)
+], Md3Switch.prototype, "checked", void 0);
+__decorate([
+    n$2({ type: Boolean }),
+    __metadata("design:type", Object)
+], Md3Switch.prototype, "disabled", void 0);
+Md3Switch = __decorate([
+    t('md3-switch')
+], Md3Switch);
+
 let IrrigationDialog = class IrrigationDialog extends i$1 {
     constructor() {
         super(...arguments);
@@ -12693,6 +12796,8 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
         this._drain_duration = 60;
         this._irrigation_times = [];
         this._drain_times = [];
+        this._activeTab = 'schedules';
+        this._strategy = {};
     }
     willUpdate(changedProps) {
         if (changedProps.has('open') && this.open) {
@@ -12715,7 +12820,21 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
         this._drain_duration = attrs.drain_duration || 60;
         this._irrigation_times = this._parseScheduleString(attrs.irrigation_times || []);
         this._drain_times = this._parseScheduleString(attrs.drain_times || []);
+        // Initialize Strategy
+        // The backend attribute 'irrigation_strategy' might be missing on older entities
+        const strat = attrs.irrigation_strategy || {};
+        this._strategy = {
+            enabled: strat.enabled || false,
+            lights_on_time: strat.lights_on_time || '06:00:00',
+            p0_duration_minutes: strat.p0_duration_minutes || 60,
+            p2_stop_before_lights_off_minutes: strat.p2_stop_before_lights_off_minutes || 120,
+            target_vwc_percent: strat.target_vwc_percent || 45.0,
+            maintenance_dryback_percent: strat.maintenance_dryback_percent || 3.0,
+            shot_duration_seconds: strat.shot_duration_seconds || 15,
+            shot_interval_minutes: strat.shot_interval_minutes || 15
+        };
     }
+    // ... (Keep existing _parseScheduleString, _saveSettings, _addIrrigationTime, etc. - ensure logical flow)
     _parseScheduleString(scheduleString) {
         if (Array.isArray(scheduleString))
             return scheduleString;
@@ -12836,10 +12955,23 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
     _close() {
         this.dispatchEvent(new CustomEvent('close'));
     }
+    async _saveStrategy() {
+        if (!this.growspaceId || !this._dataService)
+            return;
+        try {
+            await this._dataService.setIrrigationStrategy(this.growspaceId, this._strategy);
+        }
+        catch (e) {
+            console.error('Failed to save strategy:', e);
+        }
+    }
+    _updateStrategyField(field, value) {
+        this._strategy = { ...this._strategy, [field]: value };
+    }
     render() {
         if (!this.open)
             return E;
-        const dialogColor = '#2196F3'; // Irrigation Blue
+        const dialogColor = '#2196F3';
         return x `
       <ha-dialog
         open
@@ -12866,20 +12998,120 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
             </button>
           </div>
 
+          <!-- Tabs -->
+          <div class="tabs-row" style="display: flex; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0;">
+            <div class="tab-item ${this._activeTab === 'schedules' ? 'active' : ''}"
+                 @click=${() => this._activeTab = 'schedules'}
+                 style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
+            >
+              <style>
+                .tab-item.active { border-bottom-color: ${dialogColor} !important; opacity: 1 !important; }
+                .tab-item:hover { opacity: 1 !important; background: rgba(255,255,255,0.05); }
+              </style>
+              Schedules
+            </div>
+            <div class="tab-item ${this._activeTab === 'steering' ? 'active' : ''}"
+                 @click=${() => this._activeTab = 'steering'}
+                 style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
+            >
+              Crop Steering (VWC)
+            </div>
+          </div>
+
           <div class="dialog-body">
-            ${this._renderScheduleSection('Irrigation Schedule', this._irrigation_times, this._irrigation_duration, 'irrigation', dialogColor)}
-
-            ${this._renderScheduleSection('Drain Schedule', this._drain_times, this._drain_duration, 'drain', '#FF9800')}
+            ${this._activeTab === 'schedules' ? this._renderSchedulesTab(dialogColor) : this._renderSteeringTab(dialogColor)}
           </div>
-
+          
           <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close}>
-              Close
-            </button>
+             <button class="md3-button tonal" @click=${this._close}>Close</button>
+             ${this._activeTab === 'steering' ? x `
+                <button class="md3-button primary" style="background: ${dialogColor};" @click=${this._saveStrategy}>Save Strategy</button>
+             ` : ''}
           </div>
+
         </div>
       </ha-dialog>
     `;
+    }
+    _renderSchedulesTab(color) {
+        return x `
+            ${this._renderScheduleSection('Irrigation Schedule', this._irrigation_times, this._irrigation_duration, 'irrigation', color)}
+
+            ${this._renderScheduleSection('Drain Schedule', this._drain_times, this._drain_duration, 'drain', '#FF9800')}
+      `;
+    }
+    _renderSteeringTab(color) {
+        return x `
+        <div class="detail-card">
+            <h3 style="margin-top: 0;">Crop Steering Configuration</h3>
+            <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 20px;">
+                Enable logic-based irrigation based on volumetric water content (VWC) targets. Overrides basic schedules when active.
+            </p>
+
+            <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div style="grid-column: span 2; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
+                    <span>Enable VWC Steering</span>
+                    <md3-switch 
+                        .checked=${this._strategy.enabled}
+                        @change=${(e) => this._updateStrategyField('enabled', e.target.checked)}
+                    ></md3-switch>
+                </div>
+
+                <div style="grid-column: span 2; border-bottom: 1px solid rgba(255,255,255,0.1); margin: 8px 0;"></div>
+                <h4 style="grid-column: span 2; margin: 4px 0;">Targets</h4>
+
+                <md3-number-input
+                    label="Target VWC (%)"
+                    .value=${this._strategy.target_vwc_percent}
+                    @change=${(e) => this._updateStrategyField('target_vwc_percent', parseFloat(e.detail))}
+                ></md3-number-input>
+
+                <md3-number-input
+                    label="Dryback (%)"
+                    .value=${this._strategy.maintenance_dryback_percent}
+                    @change=${(e) => this._updateStrategyField('maintenance_dryback_percent', parseFloat(e.detail))}
+                ></md3-number-input>
+
+
+                <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Timing</h4>
+                
+                <md3-text-input
+                    label="Lights On Time"
+                    type="time"
+                    .value=${this._strategy.lights_on_time}
+                    @change=${(e) => this._updateStrategyField('lights_on_time', e.target.value || e.detail)}
+                ></md3-text-input>
+
+                <md3-number-input
+                    label="P0 Duration (min)"
+                    .value=${this._strategy.p0_duration_minutes}
+                    @change=${(e) => this._updateStrategyField('p0_duration_minutes', parseInt(e.detail))}
+                ></md3-number-input>
+
+                <md3-number-input
+                    label="P2 Stop Buffer (min)"
+                    .value=${this._strategy.p2_stop_before_lights_off_minutes}
+                    @change=${(e) => this._updateStrategyField('p2_stop_before_lights_off_minutes', parseInt(e.detail))}
+                ></md3-number-input>
+
+
+                <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Dosing</h4>
+
+                <md3-number-input
+                    label="Shot Duration (sec)"
+                    .value=${this._strategy.shot_duration_seconds}
+                    @change=${(e) => this._updateStrategyField('shot_duration_seconds', parseInt(e.detail))}
+                ></md3-number-input>
+
+                <md3-number-input
+                    label="Shot Interval (min)"
+                    .value=${this._strategy.shot_interval_minutes}
+                    @change=${(e) => this._updateStrategyField('shot_interval_minutes', parseInt(e.detail))}
+                ></md3-number-input>
+
+            </div>
+        </div>
+      `;
     }
     _renderScheduleSection(title, times, defaultDuration, type, color) {
         const addingTime = type === 'irrigation' ? this._adding_irrigation_time : this._adding_drain_time;
@@ -13151,6 +13383,14 @@ __decorate([
     r(),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "_adding_drain_time", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", String)
+], IrrigationDialog.prototype, "_activeTab", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_strategy", void 0);
 IrrigationDialog = __decorate([
     t('irrigation-dialog')
 ], IrrigationDialog);
