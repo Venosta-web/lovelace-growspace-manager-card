@@ -14413,6 +14413,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$1 {
         super(...arguments);
         this._events = [];
         this._isLoading = false;
+        this._activeFilter = 'all';
     }
     firstUpdated() {
         this._initController();
@@ -14486,15 +14487,40 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$1 {
         if (this._isLoading) {
             return x `<div class="empty-state">Loading events...</div>`;
         }
-        if (!this._events || this._events.length === 0) {
-            return x `<div class="empty-state">No events recorded for this growspace.</div>`;
+        const allEvents = this._events || [];
+        // Filter logic
+        let filteredEvents = allEvents;
+        if (this._activeFilter === 'alerts') {
+            filteredEvents = allEvents.filter(e => e.category === 'alert' || e.severity >= 0.75);
+        }
+        else if (this._activeFilter === 'irrigation') {
+            filteredEvents = allEvents.filter(e => e.category === 'irrigation' || ['irrigation', 'drain'].includes(e.sensor_type));
+        }
+        else if (this._activeFilter === 'environment') {
+            filteredEvents = allEvents.filter(e => ['temperature', 'humidity', 'vpd', 'co2'].includes(e.sensor_type));
         }
         // Sort by time descending (newest first)
-        // Assuming backend returns sorted, but good to ensure
-        const sortedEvents = [...this._events].sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+        const sortedEvents = [...filteredEvents].sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+        const filters = [
+            { id: 'all', label: 'All' },
+            { id: 'alerts', label: 'Alerts' },
+            { id: 'irrigation', label: 'Irrigation' },
+            { id: 'environment', label: 'Environment' }
+        ];
         return x `
+      <div class="filter-bar">
+        ${filters.map(filter => x `
+          <div 
+            class="filter-chip ${this._activeFilter === filter.id ? 'active' : ''}"
+            @click=${() => this._activeFilter = filter.id}
+          >
+            ${filter.label}
+          </div>
+        `)}
+      </div>
+
       <div class="log-container">
-        ${sortedEvents.map(event => x `
+        ${sortedEvents.length > 0 ? sortedEvents.map(event => x `
           <div class="event-card">
             <div class="event-header">
               <span class="event-time">${this._formatTime(event.start_time)}</span>
@@ -14523,7 +14549,9 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$1 {
                 `}
             </div>
           </div>
-        `)}
+        `) : x `
+          <div class="empty-state">No events found for "${filters.find(f => f.id === this._activeFilter)?.label}".</div>
+        `}
       </div>
     `;
     }
@@ -14608,6 +14636,42 @@ GrowspaceLogbook.styles = [
         margin-right: 6px;
         margin-bottom: 4px;
       }
+      .filter-bar {
+        display: flex;
+        gap: 8px;
+        padding: 0 4px 12px 4px;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE/Edge */
+      }
+      .filter-bar::-webkit-scrollbar {
+        display: none; /* Chrome/Safari/Opera */
+      }
+      .filter-chip {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: var(--primary-text-color);
+        opacity: 0.7;
+        flex-shrink: 0;
+      }
+      .filter-chip.active {
+        background: var(--accent-color, #4CAF50);
+        color: white;
+        opacity: 1;
+        border-color: transparent;
+        font-weight: 500;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      }
+      .filter-chip:hover:not(.active) {
+        background: rgba(255, 255, 255, 0.1);
+        opacity: 0.9;
+      }
       .empty-state {
         text-align: center;
         padding: 40px 20px;
@@ -14632,6 +14696,10 @@ __decorate([
     r(),
     __metadata("design:type", Object)
 ], GrowspaceLogbook.prototype, "_isLoading", void 0);
+__decorate([
+    r(),
+    __metadata("design:type", Object)
+], GrowspaceLogbook.prototype, "_activeFilter", void 0);
 GrowspaceLogbook = __decorate([
     t('growspace-logbook')
 ], GrowspaceLogbook);
