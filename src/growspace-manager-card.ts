@@ -750,12 +750,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
   private renderGrid(grid: (PlantEntity | null)[][], rows: number, cols: number, strainLibrary: StrainEntry[]): TemplateResult {
     return html`
-      <ha-fab
-        .label=${this.store.state.isEditMode ? "Done" : "Edit"}
-        .icon=${this.store.state.isEditMode ? "mdi:check" : "mdi:pencil"}
-        @click=${() => this.store.setEditMode(!this.store.state.isEditMode)}
-        class="edit-fab ${this.store.state.isEditMode ? 'active' : ''}"
-      ></ha-fab>
       <growspace-grid
         .plants=${grid}
         .rows=${rows}

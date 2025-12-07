@@ -18533,7 +18533,6 @@ class GrowspaceStore {
         };
         this.requestUpdate();
     }
-    // Duplicate updatePlant removed. keeping updatePlantFromDialog and generic updatePlant(id, attrs)
     async updatePlant(plantId, updates) {
         try {
             await this.dataService.updatePlant({ plant_id: plantId, ...updates });
@@ -19486,12 +19485,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     }
     renderGrid(grid, rows, cols, strainLibrary) {
         return x `
-      <ha-fab
-        .label=${this.store.state.isEditMode ? "Done" : "Edit"}
-        .icon=${this.store.state.isEditMode ? "mdi:check" : "mdi:pencil"}
-        @click=${() => this.store.setEditMode(!this.store.state.isEditMode)}
-        class="edit-fab ${this.store.state.isEditMode ? 'active' : ''}"
-      ></ha-fab>
       <growspace-grid
         .plants=${grid}
         .rows=${rows}
