@@ -248,13 +248,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   }
 
   private _openAddPlantDialog(row: number, col: number) {
-    this.store.setActiveDialog({
-      type: 'ADD_PLANT',
-      payload: {
-        row,
-        col
-      }
-    });
+    this.store.openAddPlantDialog(row, col);
   }
 
 
@@ -374,6 +368,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   private _handleHeaderAction(e: CustomEvent) {
     const action = e.detail.action;
     switch (action) {
+      case 'add_plant':
+        this.store.openAddPlantDialog();
+        break;
       case 'config':
         this._openConfigDialog();
         break;
@@ -843,7 +840,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
           .dialog=${active.payload}
           .growspaceOptions=${growspaceOptions}
           @close=${() => this.store.closeActiveDialog()}
-          @update=${(e: CustomEvent) => this.store.updatePlant(e.detail.plantId, e.detail.attributes)}
+          @update=${() => this.store.updatePlantFromDialog(active.payload)}
           @delete=${(e: CustomEvent) => this.store.handleDeletePlant(e.detail.plantId)}
           @harvest=${(e: CustomEvent) => this.store.harvestPlant(e.detail.plant)}
           @finish-drying=${(e: CustomEvent) => this.store.finishDryingPlant(e.detail.plant)}

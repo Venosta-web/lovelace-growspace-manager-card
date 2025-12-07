@@ -263,6 +263,64 @@ export class GrowspaceStore implements ReactiveController {
         this.requestUpdate();
     }
 
+    async updatePlantFromDialog(dialogState: any) {
+        const { plant, editedAttributes, selectedPlantIds } = dialogState;
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+
+        const targetIds = (selectedPlantIds && selectedPlantIds.length > 0) ? selectedPlantIds : [plantId];
+        const isBulkEdit = targetIds.length > 1;
+
+        const payloadTemplate: any = {};
+        const dateFields = ['seedling_start', 'mother_start', 'clone_start', 'veg_start', 'flower_start', 'dry_start', 'cure_start'];
+
+        const fieldsToProcess = isBulkEdit
+            ? dateFields
+            : ['strain', 'phenotype', 'row', 'col', ...dateFields];
+
+        fieldsToProcess.forEach(field => {
+            if (editedAttributes[field] !== undefined) {
+                if (dateFields.includes(field)) {
+                    const val = String(editedAttributes[field] || '');
+                    if (!val || val === 'null' || val === 'undefined') {
+                        payloadTemplate[field] = null;
+                    } else {
+                        const formattedDate = PlantUtils.formatDateForBackend(val);
+                        if (formattedDate) {
+                            payloadTemplate[field] = formattedDate;
+                        }
+                    }
+                } else {
+                    if (editedAttributes[field] !== null) {
+                        payloadTemplate[field] = editedAttributes[field];
+                    }
+                }
+            }
+        });
+
+        try {
+            const updatePromises = targetIds.map((id: string) => {
+                const payload = { ...payloadTemplate, plant_id: id };
+                if (isBulkEdit) {
+                    delete payload.row;
+                    delete payload.col;
+                }
+                return this.dataService.updatePlant(payload);
+            });
+
+            await Promise.all(updatePromises);
+
+            this.closeActiveDialog();
+
+            if (this.state.isEditMode) {
+                this.state.selectedPlants = new Set();
+                this.state.isEditMode = false;
+            }
+            this.requestUpdate();
+        } catch (err) {
+            console.error("Error updating plant(s):", err);
+        }
+    }
+
     async updatePlant(plantId: string, updates: Partial<PlantEntity['attributes']>) {
         try {
             await this.dataService.updatePlant({ plant_id: plantId, ...updates });
@@ -466,6 +524,59 @@ export class GrowspaceStore implements ReactiveController {
 
     async finishDryingPlant(plant: PlantEntity) {
         await this.handleMovePlantToNextStage(plant);
+    }
+
+    openAddPlantDialog(row?: number, col?: number) {
+        // If row/col specified, use them (clicked from grid)
+        if (row !== undefined && col !== undefined) {
+            this.fetchStrainLibrary();
+            this.setActiveDialog({
+                type: 'ADD_PLANT',
+                payload: { row, col }
+            });
+            return;
+        }
+
+        // Auto-find free slot if not specified
+        if (!this.state.selectedDevice) return;
+        const devices = this.dataService.getGrowspaceDevices();
+        const device = devices.find(d => d.device_id === this.state.selectedDevice);
+
+        if (device) {
+            const rows = device.rows || 4;
+            const cols = device.plants_per_row || 4;
+            const occupied = new Set();
+            if (device.plants) {
+                device.plants.forEach(p => {
+                    if (p.attributes.row !== undefined && p.attributes.col !== undefined) {
+                        occupied.add(`${p.attributes.row},${p.attributes.col}`);
+                    }
+                });
+            }
+
+            let targetRow = 0;
+            let targetCol = 0;
+            let found = false;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (!occupied.has(`${r},${c}`)) {
+                        targetRow = r;
+                        targetCol = c;
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) break;
+            }
+
+            // If full, default to 0,0 (let backend reject or user change)
+            this.fetchStrainLibrary();
+            this.setActiveDialog({
+                type: 'ADD_PLANT',
+                payload: { row: targetRow, col: targetCol }
+            });
+        }
     }
 
     async clonePlant(plant: PlantEntity, numClones: number) {
