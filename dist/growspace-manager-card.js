@@ -15390,7 +15390,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$1 {
                   </div>` : ''}
 
                 ${envEntity ? x `
-                  <div class="stat-chip ${this.activeEnvGraphs.has('optimal') ? 'active' : ''}"
+                  <div class="stat-chip ${this.activeEnvGraphs.has('optimal') ? 'active' : ''} ${envEntity.state === 'on' ? 'status-optimal' : 'status-warning'}"
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'optimal')}
                        @drop=${(e) => this._handleChipDrop(e, 'optimal')}
@@ -15696,7 +15696,6 @@ GrowspaceHeader.styles = i$4 `
     }
     .stat-chip.status-optimal {
       color: #2e7d32 !important;
-      border-color: rgba(46, 125, 50, 0.5) !important;
       background: rgba(46, 125, 50, 0.1) !important;
     }
 

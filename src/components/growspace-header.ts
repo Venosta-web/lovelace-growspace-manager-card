@@ -190,7 +190,6 @@ export class GrowspaceHeader extends LitElement {
     }
     .stat-chip.status-optimal {
       color: #2e7d32 !important;
-      border-color: rgba(46, 125, 50, 0.5) !important;
       background: rgba(46, 125, 50, 0.1) !important;
     }
 
@@ -931,7 +930,7 @@ export class GrowspaceHeader extends LitElement {
                   </div>` : ''}
 
                 ${envEntity ? html`
-                  <div class="stat-chip ${this.activeEnvGraphs.has('optimal') ? 'active' : ''}"
+                  <div class="stat-chip ${this.activeEnvGraphs.has('optimal') ? 'active' : ''} ${envEntity.state === 'on' ? 'status-optimal' : 'status-warning'}"
                        draggable="${this._chipDraggable}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'optimal')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'optimal')}
