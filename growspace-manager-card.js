@@ -15073,6 +15073,9 @@ let GrowspaceHeader = class GrowspaceHeader extends i$1 {
         const temp = getValue(envEntity, 'temperature');
         const hum = getValue(envEntity, 'humidity');
         const vpd = getValue(envEntity, 'vpd');
+        const vpdStatus = overviewEntity?.attributes?.vpd_status;
+        const vpdTargetMin = overviewEntity?.attributes?.vpd_target_min;
+        const vpdTargetMax = overviewEntity?.attributes?.vpd_target_max;
         const isSpecialGrowspace = isCure || isDry;
         const co2Value = getValue(envEntity, 'co2');
         const co2 = (isSpecialGrowspace || co2Value === undefined || co2Value === null) ? undefined : co2Value;
@@ -15199,8 +15202,9 @@ let GrowspaceHeader = class GrowspaceHeader extends i$1 {
                   </div>` : ''}
 
                 ${vpd !== undefined ? x `
-                  <div class="stat-chip ${this.activeEnvGraphs.has('vpd') ? 'active' : ''}"
+                  <div class="stat-chip ${this.activeEnvGraphs.has('vpd') ? 'active' : ''} ${vpdStatus ? `status-${vpdStatus}` : ''}"
                        draggable="${this._chipDraggable}"
+                       title="${vpdTargetMin !== undefined && vpdTargetMax !== undefined ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})` : ''}"
                        @dragstart=${(e) => this._handleChipDragStart(e, 'vpd')}
                        @drop=${(e) => this._handleChipDrop(e, 'vpd')}
                        @dragover=${(e) => this._handleDragOver(e)}
@@ -16542,6 +16546,32 @@ const growspaceCardStyles = i$4 `
         fill: currentColor;
       }
 
+      .stat-chip svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+        opacity: 0.8;
+        pointer-events: none; /* Ensure key events pass through to chip/container */
+      }
+
+      @keyframes pulse-red {
+        0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+      }
+
+      .stat-chip.status-warning {
+        color: #ffa726 !important;
+        border-color: rgba(255, 167, 38, 0.5) !important;
+        background: rgba(255, 167, 38, 0.1) !important;
+      }
+
+      .stat-chip.status-danger {
+        color: #ef5350 !important;
+        border-color: rgba(239, 83, 80, 0.5) !important;
+        background: rgba(239, 83, 80, 0.1) !important;
+        animation: pulse-red 2s infinite;
+      }
       .banner-actions {
         display: flex;
         gap: 8px;

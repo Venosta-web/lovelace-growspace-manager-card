@@ -591,6 +591,9 @@ export class GrowspaceHeader extends LitElement {
     const temp = getValue(envEntity, 'temperature');
     const hum = getValue(envEntity, 'humidity');
     const vpd = getValue(envEntity, 'vpd');
+    const vpdStatus = overviewEntity?.attributes?.vpd_status;
+    const vpdTargetMin = overviewEntity?.attributes?.vpd_target_min;
+    const vpdTargetMax = overviewEntity?.attributes?.vpd_target_max;
 
     const isSpecialGrowspace = isCure || isDry;
     const co2Value = getValue(envEntity, 'co2');
@@ -721,8 +724,9 @@ export class GrowspaceHeader extends LitElement {
                   </div>` : ''}
 
                 ${vpd !== undefined ? html`
-                  <div class="stat-chip ${this.activeEnvGraphs.has('vpd') ? 'active' : ''}"
+                  <div class="stat-chip ${this.activeEnvGraphs.has('vpd') ? 'active' : ''} ${vpdStatus ? `status-${vpdStatus}` : ''}"
                        draggable="${this._chipDraggable}"
+                       title="${vpdTargetMin !== undefined && vpdTargetMax !== undefined ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})` : ''}"
                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'vpd')}
                        @drop=${(e: DragEvent) => this._handleChipDrop(e, 'vpd')}
                        @dragover=${(e: DragEvent) => this._handleDragOver(e)}
