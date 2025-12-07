@@ -18787,11 +18787,11 @@ class GrowspaceStore {
                     }
                 });
             }
-            let targetRow = 0;
-            let targetCol = 0;
+            let targetRow = 1;
+            let targetCol = 1;
             let found = false;
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
+            for (let r = 1; r <= rows; r++) {
+                for (let c = 1; c <= cols; c++) {
                     if (!occupied.has(`${r},${c}`)) {
                         targetRow = r;
                         targetCol = c;
@@ -18802,7 +18802,7 @@ class GrowspaceStore {
                 if (found)
                     break;
             }
-            // If full, default to 0,0 (let backend reject or user change)
+            // If full, default to 1,1 or last found (let backend reject or user change)
             this.fetchStrainLibrary();
             this.setActiveDialog({
                 type: 'ADD_PLANT',
