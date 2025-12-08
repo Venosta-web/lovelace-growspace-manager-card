@@ -25,8 +25,99 @@ export interface GrowspaceOverviewEntity extends HassEntity {
 }
 
 export class GrowspaceAdapter {
+    static transformGrowspace(overview: GrowspaceOverviewEntity, wsData: any = null): GrowspaceDevice {
+        const attributes = overview.attributes;
+        const growspaceId = attributes.growspace_id;
+
+        const name = attributes.friendly_name || `Growspace ${growspaceId}`;
+
+        const type: GrowspaceType =
+            (attributes.type as GrowspaceType) ??
+            (name.toLowerCase().includes('dry') ? 'dry' :
+                name.toLowerCase().includes('cure') ? 'cure' : 'normal');
+
+        // Prefer WS data for grid, fallback to attributes.grid (legacy/fallback)
+        const grid = wsData?.grid || attributes.grid || {};
+        const plants: PlantEntity[] = [];
+
+        Object.values(grid).forEach((slot: any) => {
+            if (slot) {
+                const entityId = `sensor.${slot.strain.toLowerCase().replace(/ /g, '_')}_${slot.phenotype.replace(/#/g, '').toLowerCase()}`;
+
+                plants.push({
+                    entity_id: entityId,
+                    state: (slot.stage as PlantStage) || 'unknown',
+                    attributes: {
+                        ...slot,
+                        growspace_id: growspaceId,
+                        friendly_name: `${slot.strain} ${slot.phenotype}`,
+                        stage: slot.stage as PlantStage
+                    }
+                });
+            }
+        });
+
+        // Extract enhanced metrics from WS data or attributes
+        const bioMetrics = wsData ? {
+            vpd_status: wsData.vpd_status,
+            vpd_target_min: wsData.vpd_target_min,
+            vpd_target_max: wsData.vpd_target_max,
+            vpd_danger_min: wsData.vpd_danger_min,
+            vpd_danger_max: wsData.vpd_danger_max,
+            granular_stage: wsData.granular_stage,
+            is_day: wsData.is_day,
+            veg_week: wsData.veg_week,
+            flower_week: wsData.flower_week,
+        } : {
+            // Fallback to attributes if WS failed or not used (though we removed them from backend)
+            vpd_status: attributes.vpd_status,
+            vpd_target_min: attributes.vpd_target_min,
+            vpd_target_max: attributes.vpd_target_max,
+            granular_stage: attributes.granular_stage,
+            is_day: attributes.is_day
+        };
+
+        const irrigationTimes = wsData?.irrigation_times || attributes.irrigation_times || [];
+        const drainTimes = wsData?.drain_times || attributes.drain_times || [];
+
+        // Environment attributes
+        const envAttrs = wsData ? {
+            temperature_sensor: wsData.temperature_sensor,
+            humidity_sensor: wsData.humidity_sensor,
+            vpd_sensor: wsData.vpd_sensor,
+            co2_sensor: wsData.co2_sensor,
+            dehumidifier_entity: wsData.dehumidifier_entity,
+            humidifier_entity: wsData.humidifier_entity,
+            exhaust_entity: wsData.exhaust_entity,
+            dehumidifier_control_enabled: wsData.dehumidifier_control_enabled
+        } : {
+            // Fallback
+            temperature_sensor: attributes.temperature_sensor,
+            humidity_sensor: attributes.humidity_sensor,
+            vpd_sensor: attributes.vpd_sensor,
+            exhaust_entity: attributes.exhaust_entity,
+            dehumidifier_entity: attributes.dehumidifier_entity
+        };
+
+        return createGrowspaceDevice({
+            device_id: growspaceId,
+            overview_entity_id: overview.entity_id,
+            name,
+            plants,
+            rows: attributes.rows ?? 3,
+            plants_per_row: attributes.plants_per_row ?? 3,
+            type,
+            last_updated: overview.last_updated,
+            biological_metrics: bioMetrics,
+            irrigation_times: irrigationTimes,
+            drain_times: drainTimes,
+            environment_attributes: envAttrs
+        });
+    }
+
     static transformToDevices(allStates: HassEntity[]): GrowspaceDevice[] {
-        // Identify overview sensors by their attributes
+        // Legacy method - might be unused after refactor, but kept for safety if needed
+        // Assuming no WS data available here, so grid comes from attributes (which might be empty now)
         const overviewSensors = allStates.filter((entity): entity is GrowspaceOverviewEntity => {
             const attrs = entity.attributes;
             return (
@@ -39,54 +130,6 @@ export class GrowspaceAdapter {
             );
         });
 
-        // We can map directly from the identified overview sensors, as they represent the growspaces.
-        // The previous logic created a map first, but since we are iterating overviewSensors to find them again,
-        // we can just iterate them directly.
-
-        return overviewSensors.map(overview => {
-            const attributes = overview.attributes;
-            const growspaceId = attributes.growspace_id;
-
-            const name = attributes.friendly_name || `Growspace ${growspaceId}`;
-
-            const type: GrowspaceType =
-                (attributes.type as GrowspaceType) ??
-                (name.toLowerCase().includes('dry') ? 'dry' :
-                    name.toLowerCase().includes('cure') ? 'cure' : 'normal');
-
-            // Reconstruct plant entities from grid
-            const plants: PlantEntity[] = [];
-            const grid = attributes.grid || {};
-
-            Object.values(grid).forEach((slot) => {
-                if (slot) {
-                    // Create a synthetic entity ID since individual plant entities are gone
-                    // Note: The replace regexes were moved from the original code
-                    const entityId = `sensor.${slot.strain.toLowerCase().replace(/ /g, '_')}_${slot.phenotype.replace(/#/g, '').toLowerCase()}`;
-
-                    plants.push({
-                        entity_id: entityId,
-                        state: (slot.stage as PlantStage) || 'unknown',
-                        attributes: {
-                            ...slot,
-                            growspace_id: growspaceId,
-                            friendly_name: `${slot.strain} ${slot.phenotype}`,
-                            stage: slot.stage as PlantStage
-                        }
-                    });
-                }
-            });
-
-            return createGrowspaceDevice({
-                device_id: growspaceId,
-                overview_entity_id: overview.entity_id,
-                name,
-                plants,
-                rows: attributes.rows ?? 3,
-                plants_per_row: attributes.plants_per_row ?? 3,
-                type,
-                last_updated: overview.last_updated,
-            });
-        });
+        return overviewSensors.map(overview => this.transformGrowspace(overview, null));
     }
 }

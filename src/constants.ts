@@ -59,6 +59,7 @@ export const DEFAULT_METRIC_CONFIG: MetricConfigItem = {
 };
 
 export const DOMAIN = 'growspace_manager';
+export const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
 
 export const SERVICES = {
     GET_STRAIN_LIBRARY: 'get_strain_library',

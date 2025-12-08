@@ -368,7 +368,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         break;
       case 'control_dehumidifier':
         if (this.store.state.selectedDevice) {
-          const device = this.store.dataService.getGrowspaceDevices().find(d => d.device_id === this.store.state.selectedDevice);
+          const device = this.store.state.devices.find(d => d.device_id === this.store.state.selectedDevice);
 
           if (device && device.overview_entity_id) {
             const stateObj = this.hass.states[device.overview_entity_id];
@@ -590,22 +590,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   private get _activeDevices(): GrowspaceDevice[] {
     if (!this.hass) return [];
 
-    // Ensure we have the latest HASS reference
-    if (this.hass) {
-      this.store.updateHass(this.hass);
-    }
+    // updateHass is handled in updated() lifecycle, do not call here to avoid loops.
 
-    const devices = this.store.dataService.getGrowspaceDevices();
+    // Use store state
+    const devices = this.store.state.devices;
 
     // Filter out optimistically deleted plants
-    devices.forEach(d => {
-      d.plants = d.plants.filter(p => {
+    return devices.map(d => ({
+      ...d,
+      plants: d.plants.filter(p => {
         const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
         return !this.store.state.optimisticDeletedPlantIds.has(pId);
-      });
-    });
-
-    return devices;
+      })
+    }));
   }
 
   private _calculateCurrentGridLayout(deviceData: GrowspaceDevice) {
@@ -777,7 +774,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
 
   private async _confirmAddPlant(detail: any) {
-    const devices = this.store.dataService.getGrowspaceDevices();
+    const devices = this.store.state.devices;
     const selectedDeviceData = devices.find(d => d.device_id === this.store.state.selectedDevice);
     if (!selectedDeviceData) return;
 

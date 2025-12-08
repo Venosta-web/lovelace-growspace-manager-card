@@ -417,8 +417,88 @@ PlantUtils.stageIcons = {
 };
 
 class GrowspaceAdapter {
+    static transformGrowspace(overview, wsData = null) {
+        const attributes = overview.attributes;
+        const growspaceId = attributes.growspace_id;
+        const name = attributes.friendly_name || `Growspace ${growspaceId}`;
+        const type = attributes.type ??
+            (name.toLowerCase().includes('dry') ? 'dry' :
+                name.toLowerCase().includes('cure') ? 'cure' : 'normal');
+        // Prefer WS data for grid, fallback to attributes.grid (legacy/fallback)
+        const grid = wsData?.grid || attributes.grid || {};
+        const plants = [];
+        Object.values(grid).forEach((slot) => {
+            if (slot) {
+                const entityId = `sensor.${slot.strain.toLowerCase().replace(/ /g, '_')}_${slot.phenotype.replace(/#/g, '').toLowerCase()}`;
+                plants.push({
+                    entity_id: entityId,
+                    state: slot.stage || 'unknown',
+                    attributes: {
+                        ...slot,
+                        growspace_id: growspaceId,
+                        friendly_name: `${slot.strain} ${slot.phenotype}`,
+                        stage: slot.stage
+                    }
+                });
+            }
+        });
+        // Extract enhanced metrics from WS data or attributes
+        const bioMetrics = wsData ? {
+            vpd_status: wsData.vpd_status,
+            vpd_target_min: wsData.vpd_target_min,
+            vpd_target_max: wsData.vpd_target_max,
+            vpd_danger_min: wsData.vpd_danger_min,
+            vpd_danger_max: wsData.vpd_danger_max,
+            granular_stage: wsData.granular_stage,
+            is_day: wsData.is_day,
+            veg_week: wsData.veg_week,
+            flower_week: wsData.flower_week,
+        } : {
+            // Fallback to attributes if WS failed or not used (though we removed them from backend)
+            vpd_status: attributes.vpd_status,
+            vpd_target_min: attributes.vpd_target_min,
+            vpd_target_max: attributes.vpd_target_max,
+            granular_stage: attributes.granular_stage,
+            is_day: attributes.is_day
+        };
+        const irrigationTimes = wsData?.irrigation_times || attributes.irrigation_times || [];
+        const drainTimes = wsData?.drain_times || attributes.drain_times || [];
+        // Environment attributes
+        const envAttrs = wsData ? {
+            temperature_sensor: wsData.temperature_sensor,
+            humidity_sensor: wsData.humidity_sensor,
+            vpd_sensor: wsData.vpd_sensor,
+            co2_sensor: wsData.co2_sensor,
+            dehumidifier_entity: wsData.dehumidifier_entity,
+            humidifier_entity: wsData.humidifier_entity,
+            exhaust_entity: wsData.exhaust_entity,
+            dehumidifier_control_enabled: wsData.dehumidifier_control_enabled
+        } : {
+            // Fallback
+            temperature_sensor: attributes.temperature_sensor,
+            humidity_sensor: attributes.humidity_sensor,
+            vpd_sensor: attributes.vpd_sensor,
+            exhaust_entity: attributes.exhaust_entity,
+            dehumidifier_entity: attributes.dehumidifier_entity
+        };
+        return createGrowspaceDevice({
+            device_id: growspaceId,
+            overview_entity_id: overview.entity_id,
+            name,
+            plants,
+            rows: attributes.rows ?? 3,
+            plants_per_row: attributes.plants_per_row ?? 3,
+            type,
+            last_updated: overview.last_updated,
+            biological_metrics: bioMetrics,
+            irrigation_times: irrigationTimes,
+            drain_times: drainTimes,
+            environment_attributes: envAttrs
+        });
+    }
     static transformToDevices(allStates) {
-        // Identify overview sensors by their attributes
+        // Legacy method - might be unused after refactor, but kept for safety if needed
+        // Assuming no WS data available here, so grid comes from attributes (which might be empty now)
         const overviewSensors = allStates.filter((entity) => {
             const attrs = entity.attributes;
             return (entity.entity_id.startsWith('sensor.') &&
@@ -428,47 +508,7 @@ class GrowspaceAdapter {
                 attrs.row === undefined &&
                 attrs.col === undefined);
         });
-        // We can map directly from the identified overview sensors, as they represent the growspaces.
-        // The previous logic created a map first, but since we are iterating overviewSensors to find them again,
-        // we can just iterate them directly.
-        return overviewSensors.map(overview => {
-            const attributes = overview.attributes;
-            const growspaceId = attributes.growspace_id;
-            const name = attributes.friendly_name || `Growspace ${growspaceId}`;
-            const type = attributes.type ??
-                (name.toLowerCase().includes('dry') ? 'dry' :
-                    name.toLowerCase().includes('cure') ? 'cure' : 'normal');
-            // Reconstruct plant entities from grid
-            const plants = [];
-            const grid = attributes.grid || {};
-            Object.values(grid).forEach((slot) => {
-                if (slot) {
-                    // Create a synthetic entity ID since individual plant entities are gone
-                    // Note: The replace regexes were moved from the original code
-                    const entityId = `sensor.${slot.strain.toLowerCase().replace(/ /g, '_')}_${slot.phenotype.replace(/#/g, '').toLowerCase()}`;
-                    plants.push({
-                        entity_id: entityId,
-                        state: slot.stage || 'unknown',
-                        attributes: {
-                            ...slot,
-                            growspace_id: growspaceId,
-                            friendly_name: `${slot.strain} ${slot.phenotype}`,
-                            stage: slot.stage
-                        }
-                    });
-                }
-            });
-            return createGrowspaceDevice({
-                device_id: growspaceId,
-                overview_entity_id: overview.entity_id,
-                name,
-                plants,
-                rows: attributes.rows ?? 3,
-                plants_per_row: attributes.plants_per_row ?? 3,
-                type,
-                last_updated: overview.last_updated,
-            });
-        });
+        return overviewSensors.map(overview => this.transformGrowspace(overview, null));
     }
 }
 
@@ -508,6 +548,7 @@ const DEFAULT_METRIC_CONFIG = {
     type: 'line'
 };
 const DOMAIN = 'growspace_manager';
+const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
 const SERVICES = {
     GET_STRAIN_LIBRARY: 'get_strain_library',
     ADD_PLANT: 'add_plant',
@@ -544,11 +585,36 @@ class DataService {
     updateHass(hass) {
         this.hass = hass;
     }
-    getGrowspaceDevices() {
+    async fetchGrowspaceData(growspaceId) {
+        if (!this.hass)
+            return null;
+        try {
+            const result = await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_GET_DATA,
+                growspace_id: growspaceId,
+            });
+            return result;
+        }
+        catch (err) {
+            console.error("[DataService:fetchGrowspaceData] Error:", err);
+            // Fallback: If WS fails, we return null, and adapter will try to use attributes (which might be empty for heavy data)
+            return null;
+        }
+    }
+    getGrowspaceDevices(wsDataMap = {}) {
         if (!this.hass)
             return [];
         const allStates = Object.values(this.hass.states);
-        return GrowspaceAdapter.transformToDevices(allStates);
+        const overviewSensors = allStates.filter((s) => s.entity_id.startsWith('sensor.') &&
+            s.attributes.growspace_id !== undefined &&
+            s.attributes.plants_per_row !== undefined &&
+            s.attributes.row === undefined &&
+            s.attributes.col === undefined);
+        return overviewSensors.map((sensor) => {
+            const growspaceId = sensor.attributes.growspace_id;
+            const wsData = wsDataMap[growspaceId] || null;
+            return GrowspaceAdapter.transformGrowspace(sensor, wsData);
+        });
     }
     getGrowspaceId(entity) {
         // Plant entities expose growspace_id directly
@@ -18548,8 +18614,11 @@ class GrowspaceStore {
             menuOpen: false,
             notification: null,
             isCompactView: false,
-            defaultApplied: false
+            defaultApplied: false,
+            devices: []
         };
+        this.wsDataCache = {};
+        this._isFetchingWS = false;
         this.handleTakeClone = (motherPlant, numClones) => {
             const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
             this.dataService.takeClone({
@@ -18567,21 +18636,74 @@ class GrowspaceStore {
     }
     hostConnected() {
         // Lifecycle hook
+        // We can't subscribe here because hass might not be set yet. 
+        // Logic handled in updateHass/subscribe
     }
     hostDisconnected() {
-        // Lifecycle hook
+        if (this._unsubEvents) {
+            this._unsubEvents();
+            this._unsubEvents = undefined;
+        }
     }
     updateHass(hass) {
         this.hass = hass;
         this.dataService.updateHass(hass);
-        if (!this.state.selectedDevice) {
-            const devices = this.dataService.getGrowspaceDevices();
-            if (devices.length > 0) {
-                this.state.selectedDevice = devices[0].device_id;
-                this.requestUpdate();
-            }
+        this._ensureEventSubscription();
+        // If cache empty, fetch initial
+        if (Object.keys(this.wsDataCache).length === 0 && !this._isFetchingWS) {
+            this._refreshGrowspaceData();
+        }
+        else {
+            // Just re-calculate derived state (sync) because entities might have changed
+            this._updateDevicesState();
+        }
+        if (!this.state.selectedDevice && this.state.devices.length > 0) {
+            this.state.selectedDevice = this.state.devices[0].device_id;
+            this.requestUpdate();
         }
         this.pruneOptimisticDeletions();
+    }
+    async _ensureEventSubscription() {
+        if (this._unsubEvents || !this.hass)
+            return;
+        try {
+            this._unsubEvents = await this.hass.connection.subscribeEvents(() => this._refreshGrowspaceData(), // specific logic to handle event payload? Msg is empty usually.
+            'growspace_updated');
+        }
+        catch (err) {
+            console.error("Failed to subscribe to growspace events", err);
+        }
+    }
+    async _refreshGrowspaceData() {
+        if (!this.hass || this._isFetchingWS)
+            return;
+        this._isFetchingWS = true;
+        try {
+            // Find all growspace IDs from sensors
+            const overviewSensors = Object.values(this.hass.states).filter((s) => s.entity_id.startsWith('sensor.') &&
+                s.attributes.growspace_id !== undefined);
+            await Promise.all(overviewSensors.map(async (sensor) => {
+                const id = sensor.attributes.growspace_id;
+                const data = await this.dataService.fetchGrowspaceData(id);
+                if (data) {
+                    this.wsDataCache[id] = data;
+                }
+            }));
+            this._updateDevicesState();
+        }
+        catch (e) {
+            console.error("Error refreshing WS data", e);
+        }
+        finally {
+            this._isFetchingWS = false;
+        }
+    }
+    _updateDevicesState() {
+        const devices = this.dataService.getGrowspaceDevices(this.wsDataCache);
+        // Only update if changes? Lit handles diffing usually, but devices is deep object.
+        // We just assign it. Use careful comparison if render loops appear.
+        this.state.devices = devices;
+        this.requestUpdate();
     }
     requestUpdate() {
         this.host.requestUpdate();
@@ -18610,7 +18732,7 @@ class GrowspaceStore {
         if (config?.compact !== undefined) {
             this.state.isCompactView = config.compact;
         }
-        const devices = this.dataService.getGrowspaceDevices();
+        const devices = this.state.devices;
         if (!devices.length || this.state.selectedDevice)
             return;
         // Try to apply default from config
@@ -18683,7 +18805,7 @@ class GrowspaceStore {
         }
         if (!this.state.selectedDevice)
             return;
-        const devices = this.dataService.getGrowspaceDevices();
+        const devices = this.state.devices;
         const device = devices.find(d => d.device_id === this.state.selectedDevice);
         if (!device)
             return;
@@ -18737,7 +18859,7 @@ class GrowspaceStore {
     selectAllPlants() {
         if (!this.state.selectedDevice)
             return;
-        const devices = this.dataService.getGrowspaceDevices();
+        const devices = this.state.devices;
         const selectedDeviceData = devices.find(d => d.device_id === this.state.selectedDevice);
         if (selectedDeviceData && selectedDeviceData.plants) {
             selectedDeviceData.plants.forEach(plant => {
@@ -18906,7 +19028,7 @@ class GrowspaceStore {
         if (this.state.optimisticDeletedPlantIds.size === 0)
             return;
         const allPlantIds = new Set();
-        const devices = this.dataService.getGrowspaceDevices();
+        const devices = this.state.devices;
         devices.forEach(d => d.plants.forEach(p => allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))));
         const toRemove = new Set();
         this.state.optimisticDeletedPlantIds.forEach(id => {
@@ -18998,6 +19120,8 @@ class GrowspaceStore {
         if (this.hass) {
             this.dataService.updateHass(this.hass);
         }
+        // Trigger generic request update, but also maybe refresh WS data if we expect backend changes?
+        // Actions usually trigger backend changes which fire growspace_updated, so subscription handles it.
         this.requestUpdate();
     }
     async handleDrop(targetRow, targetCol, targetPlant, sourcePlant) {
@@ -19073,7 +19197,7 @@ class GrowspaceStore {
         // Auto-find free slot if not specified
         if (!this.state.selectedDevice)
             return;
-        const devices = this.dataService.getGrowspaceDevices();
+        const devices = this.state.devices;
         const device = devices.find(d => d.device_id === this.state.selectedDevice);
         if (device) {
             const rows = device.rows || 4;
@@ -19092,7 +19216,7 @@ class GrowspaceStore {
         await this.handleTakeClone(plant, numClones);
     }
     async confirmAddPlant(detail) {
-        const devices = this.dataService.getGrowspaceDevices();
+        const devices = this.state.devices;
         const selectedDeviceData = devices.find(d => d.device_id === this.state.selectedDevice);
         if (!selectedDeviceData)
             return;
@@ -19505,7 +19629,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
                 break;
             case 'control_dehumidifier':
                 if (this.store.state.selectedDevice) {
-                    const device = this.store.dataService.getGrowspaceDevices().find(d => d.device_id === this.store.state.selectedDevice);
+                    const device = this.store.state.devices.find(d => d.device_id === this.store.state.selectedDevice);
                     if (device && device.overview_entity_id) {
                         const stateObj = this.hass.states[device.overview_entity_id];
                         const attrs = stateObj?.attributes || {};
@@ -19706,19 +19830,17 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
     get _activeDevices() {
         if (!this.hass)
             return [];
-        // Ensure we have the latest HASS reference
-        if (this.hass) {
-            this.store.updateHass(this.hass);
-        }
-        const devices = this.store.dataService.getGrowspaceDevices();
+        // updateHass is handled in updated() lifecycle, do not call here to avoid loops.
+        // Use store state
+        const devices = this.store.state.devices;
         // Filter out optimistically deleted plants
-        devices.forEach(d => {
-            d.plants = d.plants.filter(p => {
+        return devices.map(d => ({
+            ...d,
+            plants: d.plants.filter(p => {
                 const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
                 return !this.store.state.optimisticDeletedPlantIds.has(pId);
-            });
-        });
-        return devices;
+            })
+        }));
     }
     _calculateCurrentGridLayout(deviceData) {
         // Create a signature that uniquely identifies the data state for the grid
@@ -19854,7 +19976,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
     `;
     }
     async _confirmAddPlant(detail) {
-        const devices = this.store.dataService.getGrowspaceDevices();
+        const devices = this.store.state.devices;
         const selectedDeviceData = devices.find(d => d.device_id === this.store.state.selectedDevice);
         if (!selectedDeviceData)
             return;

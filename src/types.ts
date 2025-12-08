@@ -132,6 +132,31 @@ export interface GrowspaceDevice {
   rows: number;
   plants_per_row: number;
   last_updated?: string;
+  // Enhanced data from WebSocket
+  biological_metrics?: {
+    vpd_status?: string;
+    vpd_target_min?: number;
+    vpd_target_max?: number;
+    vpd_danger_min?: number;
+    vpd_danger_max?: number;
+    granular_stage?: string;
+    is_day?: boolean;
+    veg_week?: number;
+    flower_week?: number;
+    [key: string]: any;
+  };
+  irrigation_times?: { time: string; duration?: number }[];
+  drain_times?: { time: string; duration?: number }[];
+  environment_attributes?: {
+    temperature_sensor?: string;
+    humidity_sensor?: string;
+    vpd_sensor?: string;
+    co2_sensor?: string;
+    dehumidifier_entity?: string;
+    humidifier_entity?: string;
+    exhaust_entity?: string;
+    [key: string]: any;
+  };
 }
 export function createGrowspaceDevice(
   params: Omit<GrowspaceDevice, "type"> & { type?: GrowspaceType }

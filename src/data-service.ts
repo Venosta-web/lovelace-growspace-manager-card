@@ -2,7 +2,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy } from './types';
 import { GrowspaceAdapter } from './adapters/growspace-adapter';
 import { noChange } from 'lit';
-import { DOMAIN, SERVICES } from './constants';
+import { DOMAIN, SERVICES, WS_TYPE_GET_DATA } from './constants';
 
 export class DataService {
   public hass!: HomeAssistant;
@@ -17,11 +17,39 @@ export class DataService {
     this.hass = hass;
   }
 
-  getGrowspaceDevices(): GrowspaceDevice[] {
+  async fetchGrowspaceData(growspaceId?: string): Promise<any> {
+    if (!this.hass) return null;
+    try {
+      const result = await this.hass.connection.sendMessagePromise({
+        type: WS_TYPE_GET_DATA,
+        growspace_id: growspaceId,
+      });
+      return result;
+    } catch (err) {
+      console.error("[DataService:fetchGrowspaceData] Error:", err);
+      // Fallback: If WS fails, we return null, and adapter will try to use attributes (which might be empty for heavy data)
+      return null;
+    }
+  }
+
+  getGrowspaceDevices(wsDataMap: Record<string, any> = {}): GrowspaceDevice[] {
     if (!this.hass) return [];
 
     const allStates = Object.values(this.hass.states);
-    return GrowspaceAdapter.transformToDevices(allStates);
+
+    const overviewSensors = allStates.filter((s: any) =>
+      s.entity_id.startsWith('sensor.') &&
+      s.attributes.growspace_id !== undefined &&
+      s.attributes.plants_per_row !== undefined &&
+      s.attributes.row === undefined &&
+      s.attributes.col === undefined
+    );
+
+    return overviewSensors.map((sensor: any) => {
+      const growspaceId = sensor.attributes.growspace_id;
+      const wsData = wsDataMap[growspaceId] || null;
+      return GrowspaceAdapter.transformGrowspace(sensor, wsData);
+    });
   }
 
   private getGrowspaceId(entity: any): string {

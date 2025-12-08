@@ -1,0 +1,27 @@
+name: Cleanup Old Prereleases
+
+on:
+  # Run this workflow whenever a new release is published
+  release:
+    types: [published]
+  # Allow manual triggering from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete older prereleases
+        uses: dev-drprasad/delete-older-releases@v0.3.4
+        with:
+          # Number of most recent prereleases to keep
+          keep_latest: 10
+          # Only delete prereleases (ignore full releases)
+          delete_prerelease_only: true
+          # Delete the tag associated with the release as well
+          delete_tags: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

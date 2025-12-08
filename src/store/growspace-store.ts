@@ -23,6 +23,7 @@ export interface GrowspaceState {
     notification: { message: string, type: 'info' | 'error' | 'success' } | null;
     isCompactView: boolean;
     defaultApplied: boolean;
+    devices: GrowspaceDevice[];
 }
 
 export class GrowspaceStore implements ReactiveController {
@@ -42,8 +43,13 @@ export class GrowspaceStore implements ReactiveController {
         menuOpen: false,
         notification: null,
         isCompactView: false,
-        defaultApplied: false
+        defaultApplied: false,
+        devices: []
     };
+
+    private wsDataCache: Record<string, any> = {};
+    private _unsubEvents: (() => void) | undefined;
+    private _isFetchingWS = false;
 
     constructor(host: ReactiveControllerHost) {
         this.host = host;
@@ -53,25 +59,85 @@ export class GrowspaceStore implements ReactiveController {
 
     hostConnected() {
         // Lifecycle hook
+        // We can't subscribe here because hass might not be set yet. 
+        // Logic handled in updateHass/subscribe
     }
 
     hostDisconnected() {
-        // Lifecycle hook
+        if (this._unsubEvents) {
+            this._unsubEvents();
+            this._unsubEvents = undefined;
+        }
     }
 
     updateHass(hass: HomeAssistant) {
         this.hass = hass;
         this.dataService.updateHass(hass);
 
-        if (!this.state.selectedDevice) {
-            const devices = this.dataService.getGrowspaceDevices();
-            if (devices.length > 0) {
-                this.state.selectedDevice = devices[0].device_id;
-                this.requestUpdate();
-            }
+        this._ensureEventSubscription();
+
+        // If cache empty, fetch initial
+        if (Object.keys(this.wsDataCache).length === 0 && !this._isFetchingWS) {
+            this._refreshGrowspaceData();
+        } else {
+            // Just re-calculate derived state (sync) because entities might have changed
+            this._updateDevicesState();
+        }
+
+        if (!this.state.selectedDevice && this.state.devices.length > 0) {
+            this.state.selectedDevice = this.state.devices[0].device_id;
+            this.requestUpdate();
         }
 
         this.pruneOptimisticDeletions();
+    }
+
+    private async _ensureEventSubscription() {
+        if (this._unsubEvents || !this.hass) return;
+
+        try {
+            this._unsubEvents = await this.hass.connection.subscribeEvents(
+                () => this._refreshGrowspaceData(), // specific logic to handle event payload? Msg is empty usually.
+                'growspace_updated'
+            );
+        } catch (err) {
+            console.error("Failed to subscribe to growspace events", err);
+        }
+    }
+
+    private async _refreshGrowspaceData() {
+        if (!this.hass || this._isFetchingWS) return;
+        this._isFetchingWS = true;
+
+        try {
+            // Find all growspace IDs from sensors
+            const overviewSensors = Object.values(this.hass.states).filter((s: any) =>
+                s.entity_id.startsWith('sensor.') &&
+                s.attributes.growspace_id !== undefined
+            );
+
+            await Promise.all(overviewSensors.map(async (sensor: any) => {
+                const id = sensor.attributes.growspace_id;
+                const data = await this.dataService.fetchGrowspaceData(id);
+                if (data) {
+                    this.wsDataCache[id] = data;
+                }
+            }));
+
+            this._updateDevicesState();
+        } catch (e) {
+            console.error("Error refreshing WS data", e);
+        } finally {
+            this._isFetchingWS = false;
+        }
+    }
+
+    private _updateDevicesState() {
+        const devices = this.dataService.getGrowspaceDevices(this.wsDataCache);
+        // Only update if changes? Lit handles diffing usually, but devices is deep object.
+        // We just assign it. Use careful comparison if render loops appear.
+        this.state.devices = devices;
+        this.requestUpdate();
     }
 
     requestUpdate() {
@@ -107,7 +173,7 @@ export class GrowspaceStore implements ReactiveController {
             this.state.isCompactView = config.compact;
         }
 
-        const devices = this.dataService.getGrowspaceDevices();
+        const devices = this.state.devices;
         if (!devices.length || this.state.selectedDevice) return;
 
         // Try to apply default from config
@@ -189,7 +255,7 @@ export class GrowspaceStore implements ReactiveController {
         }
 
         if (!this.state.selectedDevice) return;
-        const devices = this.dataService.getGrowspaceDevices();
+        const devices = this.state.devices;
         const device = devices.find(d => d.device_id === this.state.selectedDevice);
         if (!device) return;
 
@@ -241,7 +307,7 @@ export class GrowspaceStore implements ReactiveController {
 
     selectAllPlants() {
         if (!this.state.selectedDevice) return;
-        const devices = this.dataService.getGrowspaceDevices();
+        const devices = this.state.devices;
         const selectedDeviceData = devices.find(d => d.device_id === this.state.selectedDevice);
 
         if (selectedDeviceData && selectedDeviceData.plants) {
@@ -435,7 +501,7 @@ export class GrowspaceStore implements ReactiveController {
         if (this.state.optimisticDeletedPlantIds.size === 0) return;
 
         const allPlantIds = new Set<string>();
-        const devices = this.dataService.getGrowspaceDevices();
+        const devices = this.state.devices;
         devices.forEach(d => d.plants.forEach(p => allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))));
 
         const toRemove = new Set<string>();
@@ -547,6 +613,8 @@ export class GrowspaceStore implements ReactiveController {
         if (this.hass) {
             this.dataService.updateHass(this.hass);
         }
+        // Trigger generic request update, but also maybe refresh WS data if we expect backend changes?
+        // Actions usually trigger backend changes which fire growspace_updated, so subscription handles it.
         this.requestUpdate();
     }
 
@@ -628,7 +696,7 @@ export class GrowspaceStore implements ReactiveController {
 
         // Auto-find free slot if not specified
         if (!this.state.selectedDevice) return;
-        const devices = this.dataService.getGrowspaceDevices();
+        const devices = this.state.devices;
         const device = devices.find(d => d.device_id === this.state.selectedDevice);
 
         if (device) {
@@ -656,7 +724,7 @@ export class GrowspaceStore implements ReactiveController {
     }
 
     async confirmAddPlant(detail: any) {
-        const devices = this.dataService.getGrowspaceDevices();
+        const devices = this.state.devices;
         const selectedDeviceData = devices.find(d => d.device_id === this.state.selectedDevice);
         if (!selectedDeviceData) return;
 
