@@ -108,6 +108,29 @@ export class PlantUtils {
     return { rows, cols, grid };
   }
 
+  static findFirstAvailableSlot(
+    plants: PlantEntity[],
+    rows: number,
+    cols: number
+  ): { row: number; col: number } {
+    const occupied = new Set<string>();
+    plants.forEach((p) => {
+      if (p.attributes.row !== undefined && p.attributes.col !== undefined) {
+        occupied.add(`${p.attributes.row},${p.attributes.col}`);
+      }
+    });
+
+    for (let r = 1; r <= rows; r++) {
+      for (let c = 1; c <= cols; c++) {
+        if (!occupied.has(`${r},${c}`)) {
+          return { row: r, col: c };
+        }
+      }
+    }
+    // Default to first slot if full
+    return { row: 1, col: 1 };
+  }
+
   static calculateEffectiveRows(device: GrowspaceDevice): number {
     const { name, plants, plants_per_row, rows } = device;
 

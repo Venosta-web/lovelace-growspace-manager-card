@@ -57,3 +57,32 @@ export const DEFAULT_METRIC_CONFIG: MetricConfigItem = {
     icon: mdiMagnify,
     type: 'line'
 };
+
+export const DOMAIN = 'growspace_manager';
+
+export const SERVICES = {
+    GET_STRAIN_LIBRARY: 'get_strain_library',
+    ADD_PLANT: 'add_plant',
+    UPDATE_PLANT: 'update_plant',
+    REMOVE_PLANT: 'remove_plant',
+    HARVEST_PLANT: 'harvest_plant',
+    TAKE_CLONE: 'take_clone',
+    SWITCH_PLANTS: 'switch_plants',
+    MOVE_CLONE: 'move_clone',
+    SET_DEHUMIDIFIER_CONTROL: 'set_dehumidifier_control',
+    SET_IRRIGATION_SETTINGS: 'set_irrigation_settings',
+    ADD_IRRIGATION_TIME: 'add_irrigation_time',
+    REMOVE_IRRIGATION_TIME: 'remove_irrigation_time',
+    SET_IRRIGATION_STRATEGY: 'set_irrigation_strategy',
+    ADD_DRAIN_TIME: 'add_drain_time',
+    REMOVE_DRAIN_TIME: 'remove_drain_time',
+    EXPORT_STRAIN_LIBRARY: 'export_strain_library',
+    ADD_STRAIN: 'add_strain',
+    REMOVE_STRAIN: 'remove_strain',
+    CLEAR_STRAIN_LIBRARY: 'clear_strain_library',
+    ADD_GROWSPACE: 'add_growspace',
+    CONFIGURE_ENVIRONMENT: 'configure_environment',
+    ASK_GROW_ADVICE: 'ask_grow_advice',
+    ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
+    STRAIN_RECOMMENDATION: 'strain_recommendation'
+};

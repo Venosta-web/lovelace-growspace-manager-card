@@ -21,6 +21,8 @@ export interface GrowspaceState {
     focusedPlantIndex: number;
     menuOpen: boolean;
     notification: { message: string, type: 'info' | 'error' | 'success' } | null;
+    isCompactView: boolean;
+    defaultApplied: boolean;
 }
 
 export class GrowspaceStore implements ReactiveController {
@@ -38,7 +40,9 @@ export class GrowspaceStore implements ReactiveController {
         optimisticDeletedPlantIds: new Set(),
         focusedPlantIndex: -1,
         menuOpen: false,
-        notification: null
+        notification: null,
+        isCompactView: false,
+        defaultApplied: false
     };
 
     constructor(host: ReactiveControllerHost) {
@@ -63,6 +67,7 @@ export class GrowspaceStore implements ReactiveController {
             // DataService constructor takes hass.
             this.dataService = new DataService(this.hass);
         }
+        this.pruneOptimisticDeletions();
     }
 
     requestUpdate() {
@@ -70,6 +75,18 @@ export class GrowspaceStore implements ReactiveController {
     }
 
     // --- Actions / Logic ---
+
+    // State Setters
+    setIsCompactView(value: boolean) {
+        this.state.isCompactView = value;
+        this.requestUpdate();
+    }
+
+    setDefaultApplied(value: boolean) {
+        this.state.defaultApplied = value;
+        // No requestUpdate needed usually as this is internal logic flag, but safer to update
+        this.requestUpdate();
+    }
 
     showToast(message: string, type: 'info' | 'error' | 'success' = 'info') {
         this.state.notification = { message, type };
@@ -81,6 +98,11 @@ export class GrowspaceStore implements ReactiveController {
     }
 
     initializeSelectedDevice(config: any) {
+        // Update compact view from config if not already set (or always?)
+        if (config?.compact !== undefined) {
+            this.state.isCompactView = config.compact;
+        }
+
         const devices = this.dataService.getGrowspaceDevices();
         if (!devices.length || this.state.selectedDevice) return;
 
@@ -92,6 +114,7 @@ export class GrowspaceStore implements ReactiveController {
             );
             if (defaultDevice) {
                 this.state.selectedDevice = defaultDevice.device_id;
+                this.state.defaultApplied = true;
                 this.requestUpdate();
                 return;
             }
@@ -102,7 +125,12 @@ export class GrowspaceStore implements ReactiveController {
         this.requestUpdate();
     }
 
-    async fetchStrainLibrary() {
+    fetchStrainLibrary() {
+        return this._fetchStrainLibraryImpl();
+    }
+
+    private async _fetchStrainLibraryImpl() {
+        // ... existing logic ...
         if (!this.hass) return;
 
         const CACHE_KEY = 'growspace_strain_library_v2';
@@ -121,8 +149,6 @@ export class GrowspaceStore implements ReactiveController {
                     this.state.strainLibrary = cache.data;
                     this.requestUpdate();
                     usedCache = true;
-                    // Background refresh if older than 1 hour? Or just trust it?
-                    // Let's trust it for now to reduce load, but maybe refresh if > 12h
                 }
             } catch (e) {
                 console.warn('Failed to parse cached strain library', e);
@@ -148,8 +174,41 @@ export class GrowspaceStore implements ReactiveController {
                 }
             } catch (e) {
                 console.error('Failed to fetch strain library:', e);
-                // If fetch fails but we had a stale cache, maybe use it?
-                // For now, simpler logic.
+            }
+        }
+    }
+
+    handleKeyboardNavigation(key: string) {
+        if (this.state.isEditMode && key === 'Escape') {
+            this.exitEditMode();
+            return;
+        }
+
+        if (!this.state.selectedDevice) return;
+        const devices = this.dataService.getGrowspaceDevices();
+        const device = devices.find(d => d.device_id === this.state.selectedDevice);
+        if (!device) return;
+
+        const plants = device.plants.filter(p => !this.state.optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
+        if (plants.length === 0) return;
+
+        if (key === 'ArrowRight') {
+            this.setFocusedPlantIndex((this.state.focusedPlantIndex + 1) % plants.length);
+        } else if (key === 'ArrowLeft') {
+            this.setFocusedPlantIndex((this.state.focusedPlantIndex - 1 + plants.length) % plants.length);
+        } else if (key === 'Enter' || key === ' ') {
+            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
+                this.handlePlantClick(plants[this.state.focusedPlantIndex]);
+            }
+        } else if (key === 'Delete' || key === 'Backspace') {
+            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
+                const focusedPlant = plants[this.state.focusedPlantIndex];
+                if (focusedPlant) {
+                    this.handleDeletePlant(focusedPlant.entity_id);
+                }
+            } else if (this.state.selectedPlants.size > 0) {
+                // If multiple plants are selected, delete them
+                this.handleDeletePlant(Array.from(this.state.selectedPlants));
             }
         }
     }
@@ -348,8 +407,10 @@ export class GrowspaceStore implements ReactiveController {
 
             this.showToast("Plant(s) deleted", "success");
 
+            // Do NOT remove from optimistic set here. 
+            // We wait for updateHass/pruneOptimisticDeletions to confirm they are gone from HA state.
+
             ids.forEach(id => {
-                this.state.optimisticDeletedPlantIds.delete(id);
                 this.state.selectedPlants.delete(id);
             });
 
@@ -363,6 +424,28 @@ export class GrowspaceStore implements ReactiveController {
             this.showToast(`Failed to delete: ${e.message}`, "error");
             ids.forEach(id => this.state.optimisticDeletedPlantIds.delete(id));
             this.requestUpdate();
+        }
+    }
+
+    private pruneOptimisticDeletions() {
+        if (this.state.optimisticDeletedPlantIds.size === 0) return;
+
+        const allPlantIds = new Set<string>();
+        const devices = this.dataService.getGrowspaceDevices();
+        devices.forEach(d => d.plants.forEach(p => allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))));
+
+        const toRemove = new Set<string>();
+        this.state.optimisticDeletedPlantIds.forEach(id => {
+            // If the plant ID is NOT in the current data, it means deletion is confirmed/propagated.
+            // So we can stop masking it.
+            if (!allPlantIds.has(id)) {
+                toRemove.add(id);
+            }
+        });
+
+        if (toRemove.size > 0) {
+            toRemove.forEach(id => this.state.optimisticDeletedPlantIds.delete(id));
+            this.requestUpdate(); // Not strictly needed if it just affects rendering of missing items, but good for debug
         }
     }
 
@@ -545,30 +628,12 @@ export class GrowspaceStore implements ReactiveController {
         if (device) {
             const rows = device.rows || 4;
             const cols = device.plants_per_row || 4;
-            const occupied = new Set();
-            if (device.plants) {
-                device.plants.forEach(p => {
-                    if (p.attributes.row !== undefined && p.attributes.col !== undefined) {
-                        occupied.add(`${p.attributes.row},${p.attributes.col}`);
-                    }
-                });
-            }
 
-            let targetRow = 1;
-            let targetCol = 1;
-            let found = false;
-
-            for (let r = 1; r <= rows; r++) {
-                for (let c = 1; c <= cols; c++) {
-                    if (!occupied.has(`${r},${c}`)) {
-                        targetRow = r;
-                        targetCol = c;
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) break;
-            }
+            const { row: targetRow, col: targetCol } = PlantUtils.findFirstAvailableSlot(
+                device.plants || [],
+                rows,
+                cols
+            );
 
             // If full, default to 1,1 or last found (let backend reject or user change)
             this.fetchStrainLibrary();

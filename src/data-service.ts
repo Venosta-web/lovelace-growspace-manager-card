@@ -2,6 +2,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy } from './types';
 import { GrowspaceAdapter } from './adapters/growspace-adapter';
 import { noChange } from 'lit';
+import { DOMAIN, SERVICES } from './constants';
 
 export class DataService {
   constructor(private hass: HomeAssistant) { }
@@ -87,8 +88,8 @@ export class DataService {
     try {
       const serviceResponse: any = await this.hass.connection.sendMessagePromise({
         type: 'call_service',
-        domain: 'growspace_manager',
-        service: 'get_strain_library',
+        domain: DOMAIN,
+        service: SERVICES.GET_STRAIN_LIBRARY,
         service_data: {},
         return_response: true,
       });
@@ -168,7 +169,7 @@ export class DataService {
       if (params.growspace_id === "clone" || params.growspace_id === "clone_overview") {
         params.clone_start = new Date().toISOString().split('T')[0];
       }
-      const res = await this.hass.callService("growspace_manager", "add_plant", params);
+      const res = await this.hass.callService(DOMAIN, SERVICES.ADD_PLANT, params);
       console.log("[DataService:addPlant] Response:", res);
       return res;
     } catch (err) {
@@ -179,7 +180,7 @@ export class DataService {
   async updatePlant(params: { plant_id: string;[key: string]: any }) {
     console.log("[DataService:updatePlant] Sending payload:", params);
     try {
-      const res = await this.hass.callService("growspace_manager", "update_plant", params);
+      const res = await this.hass.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
       console.log("[DataService:updatePlant] Response:", res);
       return res;
     } catch (err) {
@@ -191,7 +192,7 @@ export class DataService {
   async removePlant(plantId: string) {
     console.log("[DataService:removePlant] Removing plant_id:", plantId);
     try {
-      const res = await this.hass.callService("growspace_manager", "remove_plant", { plant_id: plantId });
+      const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_PLANT, { plant_id: plantId });
       console.log("[DataService:removePlant] Response:", res);
       return res;
     } catch (err) {
@@ -217,9 +218,9 @@ export class DataService {
       }
       // Note: Backend only accepts target_growspace_id. 
       // If target is a custom name, we can't send it unless we resolve it to an ID first.
-      // For now, we'll assume the UI passes IDs or we map known ones.
+      // We will assume the UI passes IDs or we map known ones.
 
-      const res = await this.hass.callService("growspace_manager", "harvest_plant", payload);
+      const res = await this.hass.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
       console.log("[DataService:harvestPlant] Response:", res);
       return res;
     } catch (err) {
@@ -231,7 +232,7 @@ export class DataService {
   async takeClone(params: { mother_plant_id: string; num_clones?: number; target_growspace_id?: string }) {
     console.log("[DataService:takeClone] Cloning plant:", params);
     try {
-      const res = await this.hass.callService("growspace_manager", "take_clone", params);
+      const res = await this.hass.callService(DOMAIN, SERVICES.TAKE_CLONE, params);
       console.log("[DataService:takeClone] Response:", res);
       return res;
     } catch (error) {
@@ -243,7 +244,7 @@ export class DataService {
   async swapPlants(plant1Id: string, plant2Id: string) {
     console.log(`[DataService:swapPlants] Swapping plants: ${plant1Id} and ${plant2Id}`);
     try {
-      const res = await this.hass.callService("growspace_manager", "switch_plants", {
+      const res = await this.hass.callService(DOMAIN, SERVICES.SWITCH_PLANTS, {
         plant1_id: plant1Id,
         plant2_id: plant2Id,
       });
@@ -258,7 +259,7 @@ export class DataService {
   async moveClone(plantId: string, targetGrowspaceId: string) {
     console.log(`[DataService:moveClone] Moving clone: ${plantId} to ${targetGrowspaceId}`);
     try {
-      const res = await this.hass.callService('growspace_manager', 'move_clone', {
+      const res = await this.hass.callService(DOMAIN, SERVICES.MOVE_CLONE, {
         plant_id: plantId,
         target_growspace_id: targetGrowspaceId
       });
@@ -273,7 +274,7 @@ export class DataService {
   async setDehumidifierControl(growspaceId: string, enabled: boolean) {
     console.log(`[DataService:setDehumidifierControl] Setting dehumidifier control for ${growspaceId} to ${enabled}`);
     try {
-      const res = await this.hass.callService('growspace_manager', 'set_dehumidifier_control', {
+      const res = await this.hass.callService(DOMAIN, SERVICES.SET_DEHUMIDIFIER_CONTROL, {
         growspace_id: growspaceId,
         enabled: enabled
       });
@@ -294,7 +295,7 @@ export class DataService {
   }) {
     console.log("[DataService:setIrrigationSettings] Setting irrigation settings:", params);
     try {
-      const res = await this.hass.callService('growspace_manager', 'set_irrigation_settings', params);
+      const res = await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, params);
       console.log("[DataService:setIrrigationSettings] Response:", res);
       return res;
     } catch (err) {
@@ -306,7 +307,7 @@ export class DataService {
   async addIrrigationTime(params: { growspace_id: string; time: string; duration?: number }) {
     console.log("[DataService:addIrrigationTime] Adding irrigation time:", params);
     try {
-      const res = await this.hass.callService('growspace_manager', 'add_irrigation_time', params);
+      const res = await this.hass.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, params);
       console.log("[DataService:addIrrigationTime] Response:", res);
       return res;
     } catch (err) {
@@ -318,7 +319,7 @@ export class DataService {
   async removeIrrigationTime(params: { growspace_id: string; time: string }) {
     console.log("[DataService:removeIrrigationTime] Removing irrigation time:", params);
     try {
-      const res = await this.hass.callService('growspace_manager', 'remove_irrigation_time', params);
+      const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, params);
       console.log("[DataService:removeIrrigationTime] Response:", res);
       return res;
     } catch (err) {
@@ -330,7 +331,7 @@ export class DataService {
   async setIrrigationStrategy(growspaceId: string, strategy: Partial<IrrigationStrategy>) {
     console.log("[DataService:setIrrigationStrategy] Setting strategy:", strategy);
     try {
-      const res = await this.hass.callService('growspace_manager', 'set_irrigation_strategy', {
+      const res = await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, {
         growspace_id: growspaceId,
         ...strategy
       });
@@ -345,7 +346,7 @@ export class DataService {
   async addDrainTime(params: { growspace_id: string; time: string; duration?: number }) {
     console.log("[DataService:addDrainTime] Adding drain time:", params);
     try {
-      const res = await this.hass.callService('growspace_manager', 'add_drain_time', params);
+      const res = await this.hass.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, params);
       console.log("[DataService:addDrainTime] Response:", res);
       return res;
     } catch (err) {
@@ -357,7 +358,7 @@ export class DataService {
   async removeDrainTime(params: { growspace_id: string; time: string }) {
     console.log("[DataService:removeDrainTime] Removing drain time:", params);
     try {
-      const res = await this.hass.callService('growspace_manager', 'remove_drain_time', params);
+      const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, params);
       console.log("[DataService:removeDrainTime] Response:", res);
       return res;
     } catch (err) {
@@ -369,7 +370,7 @@ export class DataService {
   async exportStrainLibrary() {
     console.log("[DataService:exportStrainLibrary] Exporting strain library");
     try {
-      const res = await this.hass.callService('growspace_manager', 'export_strain_library');
+      const res = await this.hass.callService(DOMAIN, SERVICES.EXPORT_STRAIN_LIBRARY);
       console.log("[DataService:exportStrainLibrary] Response:", res);
       return res;
     } catch (err) {
@@ -420,7 +421,7 @@ export class DataService {
         }
       }
 
-      const res = await this.hass.callService("growspace_manager", "add_strain", payload);
+      const res = await this.hass.callService(DOMAIN, SERVICES.ADD_STRAIN, payload);
       console.log("[DataService:addStrain] Response:", res);
       return res;
     } catch (err) {
@@ -432,7 +433,7 @@ export class DataService {
   async removeStrain(strain: string, phenotype?: string) {
     console.log("[DataService:removeStrain] Removing strain:", strain, phenotype);
     try {
-      const res = await this.hass.callService("growspace_manager", "remove_strain", {
+      const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_STRAIN, {
         strain,
         phenotype
       });
@@ -452,12 +453,9 @@ export class DataService {
     formData.append('replace', replace.toString());
 
     try {
-      const response = await fetch('/api/growspace_manager/import_strains', {
+      const response = await this.hass.fetchWithAuth('/api/growspace_manager/import_strains', {
         method: 'POST',
         body: formData,
-        headers: {
-          'Authorization': `Bearer ${this.hass.auth.data.access_token}`
-        }
       });
 
       if (!response.ok) {
@@ -483,7 +481,7 @@ export class DataService {
   async clearStrainLibrary() {
     console.log("[DataService:clearStrainLibrary] Clearing library");
     try {
-      const res = await this.hass.callService("growspace_manager", "clear_strain_library");
+      const res = await this.hass.callService(DOMAIN, SERVICES.CLEAR_STRAIN_LIBRARY);
       console.log("[DataService:clearStrainLibrary] Response:", res);
       return res;
     } catch (err) {
@@ -507,7 +505,7 @@ export class DataService {
         plants_per_row: data.plants_per_row,
         notification_target: data.notification_service // Map to backend field
       };
-      const res = await this.hass.callService("growspace_manager", "add_growspace", payload);
+      const res = await this.hass.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
       console.log("[DataService:addGrowspace] Response:", res);
       return res;
     } catch (err) {
@@ -528,7 +526,7 @@ export class DataService {
   }) {
     console.log("[DataService:configureEnvironment] Configuring sensors:", data);
     try {
-      const res = await this.hass.callService("growspace_manager", "configure_environment", data);
+      const res = await this.hass.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, data);
       console.log("[DataService:configureEnvironment] Response:", res);
       return res;
     } catch (err) {
@@ -543,8 +541,8 @@ export class DataService {
       // UPDATED: Use sendMessagePromise to send return_response=true
       return await this.hass.connection.sendMessagePromise({
         type: 'call_service',
-        domain: 'growspace_manager',
-        service: 'ask_grow_advice',
+        domain: DOMAIN,
+        service: SERVICES.ASK_GROW_ADVICE,
         service_data: {
           growspace_id: growspaceId,
           user_query: userQuery,
@@ -562,8 +560,8 @@ export class DataService {
     try {
       return await this.hass.connection.sendMessagePromise({
         type: 'call_service',
-        domain: 'growspace_manager',
-        service: 'analyze_all_growspaces',
+        domain: DOMAIN,
+        service: SERVICES.ANALYZE_ALL_GROWSPACES,
         service_data: {},
         return_response: true,
       });
@@ -578,8 +576,8 @@ export class DataService {
     try {
       return await this.hass.connection.sendMessagePromise({
         type: 'call_service',
-        domain: 'growspace_manager',
-        service: 'strain_recommendation',
+        domain: DOMAIN,
+        service: SERVICES.STRAIN_RECOMMENDATION,
         service_data: {
           user_query: userQuery,
         },

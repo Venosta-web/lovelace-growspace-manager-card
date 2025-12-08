@@ -38,11 +38,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   public store = new GrowspaceStore(this);
   /* Getter for convenience/compatibility if needed, or update call sites */
   get selectedDevice() { return this.store.state.selectedDevice; }
-  @state() private _defaultApplied = false;
-  @state() private _isCompactView: boolean = false;
+
   // History controller manages history state
   public historyController = new GrowspaceHistoryController(this);
-  // @state() private _menuOpen: boolean = false; // Keep UI state local if valid, or move if shared? Store has it. // This seems to be unused or moved to store.
 
   @provide({ context: hassContext })
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -60,24 +58,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
   connectedCallback() {
     super.connectedCallback();
-    document.addEventListener('click', this._handleDocumentClick);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    document.removeEventListener('click', this._handleDocumentClick);
   }
-
-  private _handleDocumentClick = (e: Event) => {
-    // Assuming _menuOpen is now managed by the store or removed
-    // if (this._menuOpen) {
-    //   const path = e.composedPath();
-    //   const menuContainer = this.shadowRoot?.querySelector('.menu-container');
-    //   if (menuContainer && !path.includes(menuContainer)) {
-    //     this._menuOpen = false;
-    //   }
-    // }
-  };
 
   protected firstUpdated() {
     this.dataService = new DataService(this.hass);
@@ -93,6 +78,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       if (this.dataService) {
         this.dataService.updateHass(this.hass);
       }
+    }
+    // Handle focus update from store state
+    if (this.store.state.focusedPlantIndex >= 0) {
+      this._focusPlantByIndex(this.store.state.focusedPlantIndex);
     }
   }
 
@@ -113,8 +102,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   public setConfig(config: GrowspaceManagerCardConfig): void {
     if (!config) throw new Error("Invalid configuration");
     this._config = config;
+    // handled in initializeSelectedDevice or store setter, but we can set initial state here if store exists?
+    // Actually store exists in constructor.
     if (this._config.compact !== undefined) {
-      this._isCompactView = this._config.compact;
+      this.store.state.isCompactView = this._config.compact;
     }
   }
 
@@ -147,41 +138,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   }
 
   private _handleKeyboardNav(e: KeyboardEvent) {
-    if (this.store.state.isEditMode && e.key === 'Escape') {
-      this.store.setEditMode(false);
-      this.store.clearPlantSelection();
-      return;
-    }
-
-    if (!this.selectedDevice) return;
-    const devices = this.dataService.getGrowspaceDevices();
-    const device = devices.find(d => d.device_id === this.selectedDevice);
-    if (!device) return;
-
-    const plants = device.plants.filter(p => !this.store.state.optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
-    if (plants.length === 0) return;
-
-    if (e.key === 'ArrowRight') {
-      this.store.setFocusedPlantIndex((this.store.state.focusedPlantIndex + 1) % plants.length);
-      this._focusPlantByIndex(this.store.state.focusedPlantIndex);
-    } else if (e.key === 'ArrowLeft') {
-      this.store.setFocusedPlantIndex((this.store.state.focusedPlantIndex - 1 + plants.length) % plants.length);
-      this._focusPlantByIndex(this.store.state.focusedPlantIndex);
-    } else if (e.key === 'Enter' || e.key === ' ') {
-      if (this.store.state.focusedPlantIndex >= 0 && this.store.state.focusedPlantIndex < plants.length) {
-        this._handlePlantClick(plants[this.store.state.focusedPlantIndex]);
-      }
-    } else if (e.key === 'Delete' || e.key === 'Backspace') {
-      if (this.store.state.focusedPlantIndex >= 0 && this.store.state.focusedPlantIndex < plants.length) {
-        const focusedPlant = plants[this.store.state.focusedPlantIndex];
-        if (focusedPlant) {
-          this.store.handleDeletePlant(focusedPlant.entity_id);
-        }
-      } else if (this.store.state.selectedPlants.size > 0) {
-        // If multiple plants are selected, delete them
-        this.store.handleDeletePlant(Array.from(this.store.state.selectedPlants));
-      }
-    }
+    this.store.handleKeyboardNavigation(e.key);
   }
 
   private _focusPlantByIndex(index: number) {
@@ -339,7 +296,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
   private updateGrid(): void {
     // Refresh data from Home Assistant
-    this.dataService = new DataService(this.hass);
+    if (this.hass && this.dataService) {
+      this.dataService.updateHass(this.hass);
+    }
     // Force Lit to re-render
     this.requestUpdate();
     this.store.updateGrid();
@@ -381,7 +340,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         this.store.setEditMode(!this.store.state.isEditMode);
         break;
       case 'compact':
-        this._isCompactView = !this._isCompactView;
+        this.store.setIsCompactView(!this.store.state.isCompactView);
         break;
       case 'control_dehumidifier':
         if (this.store.state.selectedDevice) {
@@ -608,7 +567,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     if (!this.hass) return [];
 
     // Ensure we have the latest HASS reference
-    this.dataService = new DataService(this.hass);
+    if (!this.dataService) {
+      this.dataService = new DataService(this.hass);
+    } else {
+      this.dataService.updateHass(this.hass);
+    }
+
     const devices = this.dataService.getGrowspaceDevices();
 
     // Filter out optimistically deleted plants
@@ -644,12 +608,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     }
 
     // Apply default growspace logic
-    if (!this._defaultApplied && this._config?.default_growspace) {
+    if (!this.store.state.defaultApplied && this._config?.default_growspace) {
       const match = devices.find(d =>
         d.device_id === this._config.default_growspace || d.name === this._config.default_growspace
       );
       if (match) this.store.handleDeviceChange(match.device_id); // Use store method
-      this._defaultApplied = true;
+      this.store.setDefaultApplied(true);
     }
 
     if (!this.selectedDevice || !devices.find(d => d.device_id === this.selectedDevice)) {
@@ -684,7 +648,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
             .devices=${devices}
             .activeEnvGraphs=${this.historyController.activeEnvGraphs}
             .historyData=${this.historyController.historyData || null}
-            .compact=${this._isCompactView}
+            .compact=${this.store.state.isCompactView}
             .isEditMode=${this.store.state.isEditMode}
             .selectedDevice=${this.store.state.selectedDevice}
             .growspaceOptions=${growspaceOptions}
@@ -757,7 +721,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         .strainLibrary=${strainLibrary}
         .isEditMode=${this.store.state.isEditMode}
         .selectedPlants=${this.store.state.selectedPlants}
-        .compact=${this._isCompactView}
+        .compact=${this.store.state.isCompactView}
         @plant-click=${(e: CustomEvent) => this._handlePlantClick(e.detail.plant)}
         @add-plant-click=${(e: CustomEvent) => this._openAddPlantDialog(e.detail.row, e.detail.col)}
         @plant-drop=${(e: CustomEvent) =>

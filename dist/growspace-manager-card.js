@@ -160,6 +160,23 @@ class PlantUtils {
         });
         return { rows, cols, grid };
     }
+    static findFirstAvailableSlot(plants, rows, cols) {
+        const occupied = new Set();
+        plants.forEach((p) => {
+            if (p.attributes.row !== undefined && p.attributes.col !== undefined) {
+                occupied.add(`${p.attributes.row},${p.attributes.col}`);
+            }
+        });
+        for (let r = 1; r <= rows; r++) {
+            for (let c = 1; c <= cols; c++) {
+                if (!occupied.has(`${r},${c}`)) {
+                    return { row: r, col: c };
+                }
+            }
+        }
+        // Default to first slot if full
+        return { row: 1, col: 1 };
+    }
     static calculateEffectiveRows(device) {
         const { name, plants, plants_per_row, rows } = device;
         if (name === "dry" || name === "cure" || name === "mother" || name === "clone") {
@@ -433,6 +450,69 @@ class GrowspaceAdapter {
     }
 }
 
+const METRIC_SORT_ORDER = [
+    'temperature',
+    'humidity',
+    'vpd',
+    'co2',
+    'light',
+    'soil_moisture',
+    'irrigation',
+    'drain',
+    'optimal',
+    'exhaust',
+    'humidifier',
+    'dehumidifier'
+];
+const METRIC_CONFIG = {
+    temperature: { color: '#ff5252', title: 'Temperature', unit: '°C', icon: mdiThermometer },
+    humidity: { color: '#2196f3', title: 'Humidity', unit: '%', icon: mdiWaterPercent },
+    vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa', icon: mdiCloudOutline },
+    co2: { color: '#4caf50', title: 'CO2', unit: 'ppm', icon: mdiWeatherCloudy },
+    soil_moisture: { color: '#03a9f4', title: 'Soil Moisture', unit: '%', icon: mdiWaterPercent },
+    light: { color: '#ffc107', title: 'Light', unit: 'state', icon: mdiLightbulbOn, type: 'step' },
+    irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state', icon: mdiWater, type: 'step' },
+    drain: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: 'step' },
+    exhaust: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
+    humidifier: { color: '#607d8b', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
+    dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: 'state', icon: mdiAirHumidifierOff, type: 'step' },
+    optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state', icon: mdiRadioboxMarked, type: 'step' }
+};
+const DEFAULT_METRIC_CONFIG = {
+    color: '#fff',
+    title: 'Unknown',
+    unit: '',
+    icon: mdiMagnify,
+    type: 'line'
+};
+const DOMAIN = 'growspace_manager';
+const SERVICES = {
+    GET_STRAIN_LIBRARY: 'get_strain_library',
+    ADD_PLANT: 'add_plant',
+    UPDATE_PLANT: 'update_plant',
+    REMOVE_PLANT: 'remove_plant',
+    HARVEST_PLANT: 'harvest_plant',
+    TAKE_CLONE: 'take_clone',
+    SWITCH_PLANTS: 'switch_plants',
+    MOVE_CLONE: 'move_clone',
+    SET_DEHUMIDIFIER_CONTROL: 'set_dehumidifier_control',
+    SET_IRRIGATION_SETTINGS: 'set_irrigation_settings',
+    ADD_IRRIGATION_TIME: 'add_irrigation_time',
+    REMOVE_IRRIGATION_TIME: 'remove_irrigation_time',
+    SET_IRRIGATION_STRATEGY: 'set_irrigation_strategy',
+    ADD_DRAIN_TIME: 'add_drain_time',
+    REMOVE_DRAIN_TIME: 'remove_drain_time',
+    EXPORT_STRAIN_LIBRARY: 'export_strain_library',
+    ADD_STRAIN: 'add_strain',
+    REMOVE_STRAIN: 'remove_strain',
+    CLEAR_STRAIN_LIBRARY: 'clear_strain_library',
+    ADD_GROWSPACE: 'add_growspace',
+    CONFIGURE_ENVIRONMENT: 'configure_environment',
+    ASK_GROW_ADVICE: 'ask_grow_advice',
+    ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
+    STRAIN_RECOMMENDATION: 'strain_recommendation'
+};
+
 class DataService {
     constructor(hass) {
         this.hass = hass;
@@ -505,8 +585,9 @@ class DataService {
         try {
             const serviceResponse = await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
-                domain: 'growspace_manager',
-                service: 'get_strain_library',
+                type: 'call_service',
+                domain: DOMAIN,
+                service: SERVICES.GET_STRAIN_LIBRARY,
                 service_data: {},
                 return_response: true,
             });
@@ -568,7 +649,7 @@ class DataService {
             if (params.growspace_id === "clone" || params.growspace_id === "clone_overview") {
                 params.clone_start = new Date().toISOString().split('T')[0];
             }
-            const res = await this.hass.callService("growspace_manager", "add_plant", params);
+            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_PLANT, params);
             console.log("[DataService:addPlant] Response:", res);
             return res;
         }
@@ -580,7 +661,7 @@ class DataService {
     async updatePlant(params) {
         console.log("[DataService:updatePlant] Sending payload:", params);
         try {
-            const res = await this.hass.callService("growspace_manager", "update_plant", params);
+            const res = await this.hass.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
             console.log("[DataService:updatePlant] Response:", res);
             return res;
         }
@@ -592,7 +673,7 @@ class DataService {
     async removePlant(plantId) {
         console.log("[DataService:removePlant] Removing plant_id:", plantId);
         try {
-            const res = await this.hass.callService("growspace_manager", "remove_plant", { plant_id: plantId });
+            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_PLANT, { plant_id: plantId });
             console.log("[DataService:removePlant] Response:", res);
             return res;
         }
@@ -621,8 +702,8 @@ class DataService {
             }
             // Note: Backend only accepts target_growspace_id. 
             // If target is a custom name, we can't send it unless we resolve it to an ID first.
-            // For now, we'll assume the UI passes IDs or we map known ones.
-            const res = await this.hass.callService("growspace_manager", "harvest_plant", payload);
+            // We will assume the UI passes IDs or we map known ones.
+            const res = await this.hass.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
             console.log("[DataService:harvestPlant] Response:", res);
             return res;
         }
@@ -634,7 +715,7 @@ class DataService {
     async takeClone(params) {
         console.log("[DataService:takeClone] Cloning plant:", params);
         try {
-            const res = await this.hass.callService("growspace_manager", "take_clone", params);
+            const res = await this.hass.callService(DOMAIN, SERVICES.TAKE_CLONE, params);
             console.log("[DataService:takeClone] Response:", res);
             return res;
         }
@@ -646,7 +727,7 @@ class DataService {
     async swapPlants(plant1Id, plant2Id) {
         console.log(`[DataService:swapPlants] Swapping plants: ${plant1Id} and ${plant2Id}`);
         try {
-            const res = await this.hass.callService("growspace_manager", "switch_plants", {
+            const res = await this.hass.callService(DOMAIN, SERVICES.SWITCH_PLANTS, {
                 plant1_id: plant1Id,
                 plant2_id: plant2Id,
             });
@@ -661,7 +742,7 @@ class DataService {
     async moveClone(plantId, targetGrowspaceId) {
         console.log(`[DataService:moveClone] Moving clone: ${plantId} to ${targetGrowspaceId}`);
         try {
-            const res = await this.hass.callService('growspace_manager', 'move_clone', {
+            const res = await this.hass.callService(DOMAIN, SERVICES.MOVE_CLONE, {
                 plant_id: plantId,
                 target_growspace_id: targetGrowspaceId
             });
@@ -676,7 +757,7 @@ class DataService {
     async setDehumidifierControl(growspaceId, enabled) {
         console.log(`[DataService:setDehumidifierControl] Setting dehumidifier control for ${growspaceId} to ${enabled}`);
         try {
-            const res = await this.hass.callService('growspace_manager', 'set_dehumidifier_control', {
+            const res = await this.hass.callService(DOMAIN, SERVICES.SET_DEHUMIDIFIER_CONTROL, {
                 growspace_id: growspaceId,
                 enabled: enabled
             });
@@ -691,7 +772,7 @@ class DataService {
     async setIrrigationSettings(params) {
         console.log("[DataService:setIrrigationSettings] Setting irrigation settings:", params);
         try {
-            const res = await this.hass.callService('growspace_manager', 'set_irrigation_settings', params);
+            const res = await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, params);
             console.log("[DataService:setIrrigationSettings] Response:", res);
             return res;
         }
@@ -703,7 +784,7 @@ class DataService {
     async addIrrigationTime(params) {
         console.log("[DataService:addIrrigationTime] Adding irrigation time:", params);
         try {
-            const res = await this.hass.callService('growspace_manager', 'add_irrigation_time', params);
+            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, params);
             console.log("[DataService:addIrrigationTime] Response:", res);
             return res;
         }
@@ -715,7 +796,7 @@ class DataService {
     async removeIrrigationTime(params) {
         console.log("[DataService:removeIrrigationTime] Removing irrigation time:", params);
         try {
-            const res = await this.hass.callService('growspace_manager', 'remove_irrigation_time', params);
+            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, params);
             console.log("[DataService:removeIrrigationTime] Response:", res);
             return res;
         }
@@ -727,7 +808,7 @@ class DataService {
     async setIrrigationStrategy(growspaceId, strategy) {
         console.log("[DataService:setIrrigationStrategy] Setting strategy:", strategy);
         try {
-            const res = await this.hass.callService('growspace_manager', 'set_irrigation_strategy', {
+            const res = await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, {
                 growspace_id: growspaceId,
                 ...strategy
             });
@@ -742,7 +823,7 @@ class DataService {
     async addDrainTime(params) {
         console.log("[DataService:addDrainTime] Adding drain time:", params);
         try {
-            const res = await this.hass.callService('growspace_manager', 'add_drain_time', params);
+            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, params);
             console.log("[DataService:addDrainTime] Response:", res);
             return res;
         }
@@ -754,7 +835,7 @@ class DataService {
     async removeDrainTime(params) {
         console.log("[DataService:removeDrainTime] Removing drain time:", params);
         try {
-            const res = await this.hass.callService('growspace_manager', 'remove_drain_time', params);
+            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, params);
             console.log("[DataService:removeDrainTime] Response:", res);
             return res;
         }
@@ -766,7 +847,7 @@ class DataService {
     async exportStrainLibrary() {
         console.log("[DataService:exportStrainLibrary] Exporting strain library");
         try {
-            const res = await this.hass.callService('growspace_manager', 'export_strain_library');
+            const res = await this.hass.callService(DOMAIN, SERVICES.EXPORT_STRAIN_LIBRARY);
             console.log("[DataService:exportStrainLibrary] Response:", res);
             return res;
         }
@@ -801,7 +882,7 @@ class DataService {
                     delete payload.image;
                 }
             }
-            const res = await this.hass.callService("growspace_manager", "add_strain", payload);
+            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_STRAIN, payload);
             console.log("[DataService:addStrain] Response:", res);
             return res;
         }
@@ -813,7 +894,7 @@ class DataService {
     async removeStrain(strain, phenotype) {
         console.log("[DataService:removeStrain] Removing strain:", strain, phenotype);
         try {
-            const res = await this.hass.callService("growspace_manager", "remove_strain", {
+            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_STRAIN, {
                 strain,
                 phenotype
             });
@@ -831,12 +912,9 @@ class DataService {
         formData.append('file', file);
         formData.append('replace', replace.toString());
         try {
-            const response = await fetch('/api/growspace_manager/import_strains', {
+            const response = await this.hass.fetchWithAuth('/api/growspace_manager/import_strains', {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'Authorization': `Bearer ${this.hass.auth.data.access_token}`
-                }
             });
             if (!response.ok) {
                 const errorText = await response.text();
@@ -859,7 +937,7 @@ class DataService {
     async clearStrainLibrary() {
         console.log("[DataService:clearStrainLibrary] Clearing library");
         try {
-            const res = await this.hass.callService("growspace_manager", "clear_strain_library");
+            const res = await this.hass.callService(DOMAIN, SERVICES.CLEAR_STRAIN_LIBRARY);
             console.log("[DataService:clearStrainLibrary] Response:", res);
             return res;
         }
@@ -878,7 +956,7 @@ class DataService {
                 plants_per_row: data.plants_per_row,
                 notification_target: data.notification_service // Map to backend field
             };
-            const res = await this.hass.callService("growspace_manager", "add_growspace", payload);
+            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
             console.log("[DataService:addGrowspace] Response:", res);
             return res;
         }
@@ -890,7 +968,7 @@ class DataService {
     async configureEnvironment(data) {
         console.log("[DataService:configureEnvironment] Configuring sensors:", data);
         try {
-            const res = await this.hass.callService("growspace_manager", "configure_environment", data);
+            const res = await this.hass.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, data);
             console.log("[DataService:configureEnvironment] Response:", res);
             return res;
         }
@@ -905,8 +983,8 @@ class DataService {
             // UPDATED: Use sendMessagePromise to send return_response=true
             return await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
-                domain: 'growspace_manager',
-                service: 'ask_grow_advice',
+                domain: DOMAIN,
+                service: SERVICES.ASK_GROW_ADVICE,
                 service_data: {
                     growspace_id: growspaceId,
                     user_query: userQuery,
@@ -924,8 +1002,8 @@ class DataService {
         try {
             return await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
-                domain: 'growspace_manager',
-                service: 'analyze_all_growspaces',
+                domain: DOMAIN,
+                service: SERVICES.ANALYZE_ALL_GROWSPACES,
                 service_data: {},
                 return_response: true,
             });
@@ -940,8 +1018,8 @@ class DataService {
         try {
             return await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
-                domain: 'growspace_manager',
-                service: 'strain_recommendation',
+                domain: DOMAIN,
+                service: SERVICES.STRAIN_RECOMMENDATION,
                 service_data: {
                     user_query: userQuery,
                 },
@@ -16783,42 +16861,6 @@ GrowspaceGrid = __decorate([
     t('growspace-grid')
 ], GrowspaceGrid);
 
-const METRIC_SORT_ORDER = [
-    'temperature',
-    'humidity',
-    'vpd',
-    'co2',
-    'light',
-    'soil_moisture',
-    'irrigation',
-    'drain',
-    'optimal',
-    'exhaust',
-    'humidifier',
-    'dehumidifier'
-];
-const METRIC_CONFIG = {
-    temperature: { color: '#ff5252', title: 'Temperature', unit: '°C', icon: mdiThermometer },
-    humidity: { color: '#2196f3', title: 'Humidity', unit: '%', icon: mdiWaterPercent },
-    vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa', icon: mdiCloudOutline },
-    co2: { color: '#4caf50', title: 'CO2', unit: 'ppm', icon: mdiWeatherCloudy },
-    soil_moisture: { color: '#03a9f4', title: 'Soil Moisture', unit: '%', icon: mdiWaterPercent },
-    light: { color: '#ffc107', title: 'Light', unit: 'state', icon: mdiLightbulbOn, type: 'step' },
-    irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state', icon: mdiWater, type: 'step' },
-    drain: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: 'step' },
-    exhaust: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
-    humidifier: { color: '#607d8b', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
-    dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: 'state', icon: mdiAirHumidifierOff, type: 'step' },
-    optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state', icon: mdiRadioboxMarked, type: 'step' }
-};
-const DEFAULT_METRIC_CONFIG = {
-    color: '#fff',
-    title: 'Unknown',
-    unit: '',
-    icon: mdiMagnify,
-    type: 'line'
-};
-
 const growspaceCardStyles = i$4 `
       :host {
         display: block;
@@ -18329,7 +18371,9 @@ class GrowspaceStore {
             optimisticDeletedPlantIds: new Set(),
             focusedPlantIndex: -1,
             menuOpen: false,
-            notification: null
+            notification: null,
+            isCompactView: false,
+            defaultApplied: false
         };
         this.handleTakeClone = (motherPlant, numClones) => {
             const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
@@ -18361,11 +18405,22 @@ class GrowspaceStore {
             // DataService constructor takes hass.
             this.dataService = new DataService(this.hass);
         }
+        this.pruneOptimisticDeletions();
     }
     requestUpdate() {
         this.host.requestUpdate();
     }
     // --- Actions / Logic ---
+    // State Setters
+    setIsCompactView(value) {
+        this.state.isCompactView = value;
+        this.requestUpdate();
+    }
+    setDefaultApplied(value) {
+        this.state.defaultApplied = value;
+        // No requestUpdate needed usually as this is internal logic flag, but safer to update
+        this.requestUpdate();
+    }
     showToast(message, type = 'info') {
         this.state.notification = { message, type };
         this.requestUpdate();
@@ -18375,6 +18430,10 @@ class GrowspaceStore {
         }, 4000);
     }
     initializeSelectedDevice(config) {
+        // Update compact view from config if not already set (or always?)
+        if (config?.compact !== undefined) {
+            this.state.isCompactView = config.compact;
+        }
         const devices = this.dataService.getGrowspaceDevices();
         if (!devices.length || this.state.selectedDevice)
             return;
@@ -18384,6 +18443,7 @@ class GrowspaceStore {
                 d.name === config.default_growspace);
             if (defaultDevice) {
                 this.state.selectedDevice = defaultDevice.device_id;
+                this.state.defaultApplied = true;
                 this.requestUpdate();
                 return;
             }
@@ -18392,7 +18452,11 @@ class GrowspaceStore {
         this.state.selectedDevice = devices[0].device_id;
         this.requestUpdate();
     }
-    async fetchStrainLibrary() {
+    fetchStrainLibrary() {
+        return this._fetchStrainLibraryImpl();
+    }
+    async _fetchStrainLibraryImpl() {
+        // ... existing logic ...
         if (!this.hass)
             return;
         const CACHE_KEY = 'growspace_strain_library_v2';
@@ -18408,8 +18472,6 @@ class GrowspaceStore {
                     this.state.strainLibrary = cache.data;
                     this.requestUpdate();
                     usedCache = true;
-                    // Background refresh if older than 1 hour? Or just trust it?
-                    // Let's trust it for now to reduce load, but maybe refresh if > 12h
                 }
             }
             catch (e) {
@@ -18435,8 +18497,44 @@ class GrowspaceStore {
             }
             catch (e) {
                 console.error('Failed to fetch strain library:', e);
-                // If fetch fails but we had a stale cache, maybe use it?
-                // For now, simpler logic.
+            }
+        }
+    }
+    handleKeyboardNavigation(key) {
+        if (this.state.isEditMode && key === 'Escape') {
+            this.exitEditMode();
+            return;
+        }
+        if (!this.state.selectedDevice)
+            return;
+        const devices = this.dataService.getGrowspaceDevices();
+        const device = devices.find(d => d.device_id === this.state.selectedDevice);
+        if (!device)
+            return;
+        const plants = device.plants.filter(p => !this.state.optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
+        if (plants.length === 0)
+            return;
+        if (key === 'ArrowRight') {
+            this.setFocusedPlantIndex((this.state.focusedPlantIndex + 1) % plants.length);
+        }
+        else if (key === 'ArrowLeft') {
+            this.setFocusedPlantIndex((this.state.focusedPlantIndex - 1 + plants.length) % plants.length);
+        }
+        else if (key === 'Enter' || key === ' ') {
+            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
+                this.handlePlantClick(plants[this.state.focusedPlantIndex]);
+            }
+        }
+        else if (key === 'Delete' || key === 'Backspace') {
+            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
+                const focusedPlant = plants[this.state.focusedPlantIndex];
+                if (focusedPlant) {
+                    this.handleDeletePlant(focusedPlant.entity_id);
+                }
+            }
+            else if (this.state.selectedPlants.size > 0) {
+                // If multiple plants are selected, delete them
+                this.handleDeletePlant(Array.from(this.state.selectedPlants));
             }
         }
     }
@@ -18611,8 +18709,9 @@ class GrowspaceStore {
             // Assuming dataService.deletePlant takes one ID.
             await Promise.all(ids.map(id => this.dataService.removePlant(id)));
             this.showToast("Plant(s) deleted", "success");
+            // Do NOT remove from optimistic set here. 
+            // We wait for updateHass/pruneOptimisticDeletions to confirm they are gone from HA state.
             ids.forEach(id => {
-                this.state.optimisticDeletedPlantIds.delete(id);
                 this.state.selectedPlants.delete(id);
             });
             if (this.state.activeDialog.type === 'PLANT_OVERVIEW') {
@@ -18625,6 +18724,25 @@ class GrowspaceStore {
             this.showToast(`Failed to delete: ${e.message}`, "error");
             ids.forEach(id => this.state.optimisticDeletedPlantIds.delete(id));
             this.requestUpdate();
+        }
+    }
+    pruneOptimisticDeletions() {
+        if (this.state.optimisticDeletedPlantIds.size === 0)
+            return;
+        const allPlantIds = new Set();
+        const devices = this.dataService.getGrowspaceDevices();
+        devices.forEach(d => d.plants.forEach(p => allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))));
+        const toRemove = new Set();
+        this.state.optimisticDeletedPlantIds.forEach(id => {
+            // If the plant ID is NOT in the current data, it means deletion is confirmed/propagated.
+            // So we can stop masking it.
+            if (!allPlantIds.has(id)) {
+                toRemove.add(id);
+            }
+        });
+        if (toRemove.size > 0) {
+            toRemove.forEach(id => this.state.optimisticDeletedPlantIds.delete(id));
+            this.requestUpdate(); // Not strictly needed if it just affects rendering of missing items, but good for debug
         }
     }
     async handleMovePlantToNextStage(plant) {
@@ -18782,29 +18900,7 @@ class GrowspaceStore {
         if (device) {
             const rows = device.rows || 4;
             const cols = device.plants_per_row || 4;
-            const occupied = new Set();
-            if (device.plants) {
-                device.plants.forEach(p => {
-                    if (p.attributes.row !== undefined && p.attributes.col !== undefined) {
-                        occupied.add(`${p.attributes.row},${p.attributes.col}`);
-                    }
-                });
-            }
-            let targetRow = 1;
-            let targetCol = 1;
-            let found = false;
-            for (let r = 1; r <= rows; r++) {
-                for (let c = 1; c <= cols; c++) {
-                    if (!occupied.has(`${r},${c}`)) {
-                        targetRow = r;
-                        targetCol = c;
-                        found = true;
-                        break;
-                    }
-                }
-                if (found)
-                    break;
-            }
+            const { row: targetRow, col: targetCol } = PlantUtils.findFirstAvailableSlot(device.plants || [], rows, cols);
             // If full, default to 1,1 or last found (let backend reject or user change)
             this.fetchStrainLibrary();
             // Convert 1-based backend coordinates to 0-based dialog coordinates
@@ -18979,20 +19075,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     constructor() {
         super(...arguments);
         this.store = new GrowspaceStore(this);
-        this._defaultApplied = false;
-        this._isCompactView = false;
         // History controller manages history state
         this.historyController = new GrowspaceHistoryController(this);
-        this._handleDocumentClick = (e) => {
-            // Assuming _menuOpen is now managed by the store or removed
-            // if (this._menuOpen) {
-            //   const path = e.composedPath();
-            //   const menuContainer = this.shadowRoot?.querySelector('.menu-container');
-            //   if (menuContainer && !path.includes(menuContainer)) {
-            //     this._menuOpen = false;
-            //   }
-            // }
-        };
         this._handleTakeClone = (motherPlant) => {
             const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
             this.dataService.takeClone({
@@ -19008,11 +19092,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     get selectedDevice() { return this.store.state.selectedDevice; }
     connectedCallback() {
         super.connectedCallback();
-        document.addEventListener('click', this._handleDocumentClick);
     }
     disconnectedCallback() {
         super.disconnectedCallback();
-        document.removeEventListener('click', this._handleDocumentClick);
     }
     firstUpdated() {
         this.dataService = new DataService(this.hass);
@@ -19027,6 +19109,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             if (this.dataService) {
                 this.dataService.updateHass(this.hass);
             }
+        }
+        // Handle focus update from store state
+        if (this.store.state.focusedPlantIndex >= 0) {
+            this._focusPlantByIndex(this.store.state.focusedPlantIndex);
         }
     }
     static async getConfigElement() {
@@ -19045,8 +19131,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         if (!config)
             throw new Error("Invalid configuration");
         this._config = config;
+        // handled in initializeSelectedDevice or store setter, but we can set initial state here if store exists?
+        // Actually store exists in constructor.
         if (this._config.compact !== undefined) {
-            this._isCompactView = this._config.compact;
+            this.store.state.isCompactView = this._config.compact;
         }
     }
     getCardSize() { return 4; }
@@ -19072,45 +19160,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         this.store.clearPlantSelection();
     }
     _handleKeyboardNav(e) {
-        if (this.store.state.isEditMode && e.key === 'Escape') {
-            this.store.setEditMode(false);
-            this.store.clearPlantSelection();
-            return;
-        }
-        if (!this.selectedDevice)
-            return;
-        const devices = this.dataService.getGrowspaceDevices();
-        const device = devices.find(d => d.device_id === this.selectedDevice);
-        if (!device)
-            return;
-        const plants = device.plants.filter(p => !this.store.state.optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
-        if (plants.length === 0)
-            return;
-        if (e.key === 'ArrowRight') {
-            this.store.setFocusedPlantIndex((this.store.state.focusedPlantIndex + 1) % plants.length);
-            this._focusPlantByIndex(this.store.state.focusedPlantIndex);
-        }
-        else if (e.key === 'ArrowLeft') {
-            this.store.setFocusedPlantIndex((this.store.state.focusedPlantIndex - 1 + plants.length) % plants.length);
-            this._focusPlantByIndex(this.store.state.focusedPlantIndex);
-        }
-        else if (e.key === 'Enter' || e.key === ' ') {
-            if (this.store.state.focusedPlantIndex >= 0 && this.store.state.focusedPlantIndex < plants.length) {
-                this._handlePlantClick(plants[this.store.state.focusedPlantIndex]);
-            }
-        }
-        else if (e.key === 'Delete' || e.key === 'Backspace') {
-            if (this.store.state.focusedPlantIndex >= 0 && this.store.state.focusedPlantIndex < plants.length) {
-                const focusedPlant = plants[this.store.state.focusedPlantIndex];
-                if (focusedPlant) {
-                    this.store.handleDeletePlant(focusedPlant.entity_id);
-                }
-            }
-            else if (this.store.state.selectedPlants.size > 0) {
-                // If multiple plants are selected, delete them
-                this.store.handleDeletePlant(Array.from(this.store.state.selectedPlants));
-            }
-        }
+        this.store.handleKeyboardNavigation(e.key);
     }
     _focusPlantByIndex(index) {
         const grid = this.shadowRoot?.querySelector('.growspace-grid');
@@ -19234,7 +19284,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     }
     updateGrid() {
         // Refresh data from Home Assistant
-        this.dataService = new DataService(this.hass);
+        if (this.hass && this.dataService) {
+            this.dataService.updateHass(this.hass);
+        }
         // Force Lit to re-render
         this.requestUpdate();
         this.store.updateGrid();
@@ -19267,7 +19319,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
                 this.store.setEditMode(!this.store.state.isEditMode);
                 break;
             case 'compact':
-                this._isCompactView = !this._isCompactView;
+                this.store.setIsCompactView(!this.store.state.isCompactView);
                 break;
             case 'control_dehumidifier':
                 if (this.store.state.selectedDevice) {
@@ -19473,7 +19525,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         if (!this.hass)
             return [];
         // Ensure we have the latest HASS reference
-        this.dataService = new DataService(this.hass);
+        if (!this.dataService) {
+            this.dataService = new DataService(this.hass);
+        }
+        else {
+            this.dataService.updateHass(this.hass);
+        }
         const devices = this.dataService.getGrowspaceDevices();
         // Filter out optimistically deleted plants
         devices.forEach(d => {
@@ -19498,11 +19555,11 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
         }
         // Apply default growspace logic
-        if (!this._defaultApplied && this._config?.default_growspace) {
+        if (!this.store.state.defaultApplied && this._config?.default_growspace) {
             const match = devices.find(d => d.device_id === this._config.default_growspace || d.name === this._config.default_growspace);
             if (match)
                 this.store.handleDeviceChange(match.device_id); // Use store method
-            this._defaultApplied = true;
+            this.store.setDefaultApplied(true);
         }
         if (!this.selectedDevice || !devices.find(d => d.device_id === this.selectedDevice)) {
             this.store.handleDeviceChange(devices[0].device_id); // Use store method
@@ -19531,7 +19588,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             .devices=${devices}
             .activeEnvGraphs=${this.historyController.activeEnvGraphs}
             .historyData=${this.historyController.historyData || null}
-            .compact=${this._isCompactView}
+            .compact=${this.store.state.isCompactView}
             .isEditMode=${this.store.state.isEditMode}
             .selectedDevice=${this.store.state.selectedDevice}
             .growspaceOptions=${growspaceOptions}
@@ -19600,7 +19657,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         .strainLibrary=${strainLibrary}
         .isEditMode=${this.store.state.isEditMode}
         .selectedPlants=${this.store.state.selectedPlants}
-        .compact=${this._isCompactView}
+        .compact=${this.store.state.isCompactView}
         @plant-click=${(e) => this._handlePlantClick(e.detail.plant)}
         @add-plant-click=${(e) => this._openAddPlantDialog(e.detail.row, e.detail.col)}
         @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, e.detail.targetRow, e.detail.targetCol, e.detail.targetPlant, e.detail.sourcePlant)}
@@ -19820,14 +19877,6 @@ GrowspaceManagerCard.styles = [
     variables,
     growspaceCardStyles
 ];
-__decorate([
-    r(),
-    __metadata("design:type", Object)
-], GrowspaceManagerCard.prototype, "_defaultApplied", void 0);
-__decorate([
-    r(),
-    __metadata("design:type", Boolean)
-], GrowspaceManagerCard.prototype, "_isCompactView", void 0);
 __decorate([
     e({ context: hassContext }),
     n$2({ attribute: false }),
