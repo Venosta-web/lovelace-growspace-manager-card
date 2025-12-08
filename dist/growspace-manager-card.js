@@ -18804,9 +18804,10 @@ class GrowspaceStore {
             }
             // If full, default to 1,1 or last found (let backend reject or user change)
             this.fetchStrainLibrary();
+            // Convert 1-based backend coordinates to 0-based dialog coordinates
             this.setActiveDialog({
                 type: 'ADD_PLANT',
-                payload: { row: targetRow, col: targetCol }
+                payload: { row: targetRow - 1, col: targetCol - 1 }
             });
         }
     }
@@ -18818,7 +18819,10 @@ class GrowspaceStore {
         const selectedDeviceData = devices.find(d => d.device_id === this.state.selectedDevice);
         if (!selectedDeviceData)
             return;
-        const { strain, phenotype, row, col, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start } = detail;
+        // Convert 0-based dialog coordinates to 1-based backend coordinates
+        const row = detail.row + 1;
+        const col = detail.col + 1;
+        const { strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start } = detail;
         if (!strain) {
             this.showToast("Please select a strain", "error");
             return;

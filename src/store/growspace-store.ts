@@ -572,9 +572,10 @@ export class GrowspaceStore implements ReactiveController {
 
             // If full, default to 1,1 or last found (let backend reject or user change)
             this.fetchStrainLibrary();
+            // Convert 1-based backend coordinates to 0-based dialog coordinates
             this.setActiveDialog({
                 type: 'ADD_PLANT',
-                payload: { row: targetRow, col: targetCol }
+                payload: { row: targetRow - 1, col: targetCol - 1 }
             });
         }
     }
@@ -588,8 +589,12 @@ export class GrowspaceStore implements ReactiveController {
         const selectedDeviceData = devices.find(d => d.device_id === this.state.selectedDevice);
         if (!selectedDeviceData) return;
 
+        // Convert 0-based dialog coordinates to 1-based backend coordinates
+        const row = detail.row + 1;
+        const col = detail.col + 1;
+
         const {
-            strain, phenotype, row, col,
+            strain, phenotype,
             veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start
         } = detail;
 
