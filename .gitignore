@@ -34,6 +34,7 @@ growspace-manager-card.js
 
 # Playwright
 playwright-report/
+coverage/tmp
 
 # Logs and Debug output
 *_log.txt

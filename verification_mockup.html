@@ -50,11 +50,67 @@
         };
 
         // Populate Hass States with corrected attributes
-        hass.states["sensor.standard_overview"] = { entity_id: "sensor.standard_overview", attributes: { growspace_id: "standard", friendly_name: "Standard Space", rows: 2, plants_per_row: 2 } };
-        hass.states["sensor.mother_overview"] = { entity_id: "sensor.mother_overview", attributes: { growspace_id: "mother", friendly_name: "Mother Space", rows: 1, plants_per_row: 2 } };
-        hass.states["sensor.clone_overview"] = { entity_id: "sensor.clone_overview", attributes: { growspace_id: "clone", friendly_name: "Clone Space", rows: 1, plants_per_row: 2 } };
-        hass.states["sensor.dry_overview"] = { entity_id: "sensor.dry_overview", attributes: { growspace_id: "dry", friendly_name: "Dry Space", rows: 1, plants_per_row: 2 } };
-        hass.states["sensor.cure_overview"] = { entity_id: "sensor.cure_overview", attributes: { growspace_id: "cure", friendly_name: "Cure Space", rows: 1, plants_per_row: 2 } };
+        // Populate Hass States with corrected attributes INCLUDING GRID
+        hass.states["sensor.standard_overview"] = {
+            entity_id: "sensor.standard_overview",
+            attributes: {
+                growspace_id: "standard",
+                friendly_name: "Standard Space",
+                rows: 2,
+                plants_per_row: 2,
+                grid: {
+                    "1-1": { strain: "Strain 1", phenotype: "#1", stage: "vegetative", row: 1, col: 1 }
+                }
+            }
+        };
+        hass.states["sensor.mother_overview"] = {
+            entity_id: "sensor.mother_overview",
+            attributes: {
+                growspace_id: "mother",
+                friendly_name: "Mother Space",
+                rows: 1,
+                plants_per_row: 2,
+                grid: {
+                    "1-1": { strain: "Mother 1", phenotype: "#1", stage: "mother", row: 1, col: 1 }
+                }
+            }
+        };
+        hass.states["sensor.clone_overview"] = {
+            entity_id: "sensor.clone_overview",
+            attributes: {
+                growspace_id: "clone",
+                friendly_name: "Clone Space",
+                rows: 1,
+                plants_per_row: 2,
+                grid: {
+                    "1-1": { strain: "Clone 1", phenotype: "#1", stage: "clone", row: 1, col: 1 }
+                }
+            }
+        };
+        hass.states["sensor.dry_overview"] = {
+            entity_id: "sensor.dry_overview",
+            attributes: {
+                growspace_id: "dry",
+                friendly_name: "Dry Space",
+                rows: 1,
+                plants_per_row: 2,
+                grid: {
+                    "1-1": { strain: "Dry 1", phenotype: "#1", stage: "dry", row: 1, col: 1 }
+                }
+            }
+        };
+        hass.states["sensor.cure_overview"] = {
+            entity_id: "sensor.cure_overview",
+            attributes: {
+                growspace_id: "cure",
+                friendly_name: "Cure Space",
+                rows: 1,
+                plants_per_row: 2,
+                grid: {
+                    "1-1": { strain: "Cure 1", phenotype: "#1", stage: "cure", row: 1, col: 1 }
+                }
+            }
+        };
 
         hass.states["sensor.growspaces_list"] = {
              entity_id: "sensor.growspaces_list",

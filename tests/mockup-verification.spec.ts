@@ -1,12 +1,17 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage-helper';
 
 test.describe('Verification Mockup', () => {
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ coveragePage: page }) => {
         await page.goto('/verification_mockup.html');
     });
 
-    test('renders all growspace types correctly', async ({ page }) => {
+    test('renders all growspace types correctly', async ({ coveragePage: page }) => {
         // Wait for custom element to be defined and cards to render
+        // This ensures the card has received the hass object from the HTML script
+        await page.waitForFunction(() => {
+            const card = document.querySelector('growspace-manager-card');
+            return card && (card as any).hass && (card as any).hass.states;
+        });
 
         // Check Standard Card
         const standardCard = page.locator('#card-standard');

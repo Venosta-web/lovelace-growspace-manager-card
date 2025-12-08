@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Simple coverage report aggregator
-const coverageDir = path.join(__dirname, '..', 'coverage');
+const coverageDir = path.join(__dirname, '..', 'coverage', 'tmp');
 
 if (!fs.existsSync(coverageDir)) {
     console.log('No coverage data found. Run tests with coverage collection enabled.');
@@ -24,21 +24,46 @@ let coveredBytes = 0;
 const fileStats = [];
 
 files.forEach(file => {
-    const data = JSON.parse(fs.readFileSync(path.join(coverageDir, file), 'utf8'));
+    const content = JSON.parse(fs.readFileSync(path.join(coverageDir, file), 'utf8'));
+    const data = Array.isArray(content) ? content : (content.result || []);
 
     data.forEach(entry => {
         if (entry.url && entry.url.includes('growspace-manager-card')) {
-            const totalFileBytes = entry.text.length;
-            let covered = 0;
+            const content = entry.source || entry.text;
+            const totalFileBytes = content ? content.length : 0;
+            let coveredForFileEntry = 0; // Renamed to avoid confusion with global coveredBytes
 
-            entry.ranges.forEach(range => {
-                covered += (range.end - range.start);
-            });
+            if (totalFileBytes > 0 && entry.functions) {
+                entry.functions.forEach(fn => {
+                    // Merge ranges to avoid double counting
+                    const sortedRanges = fn.ranges.sort((a, b) => a.startOffset - b.startOffset);
+                    let mergedRanges = [];
+                    if (sortedRanges.length > 0) {
+                        let current = { ...sortedRanges[0] }; // Clone to avoid modifying original
+                        for (let i = 1; i < sortedRanges.length; i++) {
+                            let next = sortedRanges[i];
+                            if (current.endOffset >= next.startOffset) {
+                                current.endOffset = Math.max(current.endOffset, next.endOffset);
+                            } else {
+                                mergedRanges.push(current);
+                                current = { ...next }; // Clone next
+                            }
+                        }
+                        mergedRanges.push(current);
+                    }
+
+                    mergedRanges.forEach(range => {
+                        if (range.count > 0) { // Only count if the range was executed
+                            coveredForFileEntry += (range.endOffset - range.startOffset);
+                        }
+                    });
+                });
+            }
 
             totalBytes += totalFileBytes;
-            coveredBytes += covered;
+            coveredBytes += coveredForFileEntry; // Add the calculated covered bytes for this entry
 
-            const coverage = ((covered / totalFileBytes) * 100).toFixed(2);
+            const coverage = totalFileBytes > 0 ? ((coveredForFileEntry / totalFileBytes) * 100).toFixed(2) : 0;
             fileStats.push({
                 file: entry.url.split('/').pop(),
                 coverage: parseFloat(coverage)
@@ -50,8 +75,11 @@ files.forEach(file => {
 // Display results
 console.log('File Coverage:');
 fileStats.forEach(stat => {
-    const bar = '█'.repeat(Math.floor(stat.coverage / 2));
-    const empty = '░'.repeat(50 - Math.floor(stat.coverage / 2));
+    const coverageVal = Math.min(100, Math.max(0, stat.coverage));
+    const barLen = Math.floor(coverageVal / 2);
+    const emptyLen = Math.max(0, 50 - barLen);
+    const bar = '█'.repeat(barLen);
+    const empty = '░'.repeat(emptyLen);
     console.log(`  ${stat.file.padEnd(40)} ${bar}${empty} ${stat.coverage.toFixed(2)}%`);
 });
 

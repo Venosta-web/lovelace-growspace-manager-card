@@ -1,9 +1,9 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage-helper';
 import { createMockHass } from './mocks/hass';
 
 test.describe('Strain Library', () => {
 
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ coveragePage: page }) => {
         await page.goto('/');
         const card = page.locator('growspace-manager-card');
         await expect(card).toBeAttached();
@@ -45,11 +45,12 @@ test.describe('Strain Library', () => {
                     }
                 },
                 localize: (key: string) => `[${key}]`,
+                callApi: async () => Promise.resolve(),
             };
         }, { config: { type: 'custom:growspace-manager-card', entity: 'sensor.4x4_tent', compact: true }, hassData });
     });
 
-    test('can add and remove a strain', async ({ page }) => {
+    test('can add and remove a strain', async ({ coveragePage: page }) => {
         page.on('console', msg => console.log(`[Browser] ${msg.text()}`));
         const card = page.locator('growspace-manager-card');
         const serviceCalls: any[] = [];
@@ -68,11 +69,11 @@ test.describe('Strain Library', () => {
         await expect(strainsMenuItem).toBeVisible();
         await strainsMenuItem.click();
 
-        const dialog = page.locator('ha-dialog[open]');
+        const dialog = page.locator('strain-library-dialog ha-dialog');
         await expect(dialog).toBeVisible();
 
         // 2. Click "New Strain" button
-        const newStrainBtn = dialog.locator('.sd-btn.primary', { hasText: 'New Strain' });
+        const newStrainBtn = dialog.locator('.md3-button.primary', { hasText: 'New Strain' });
         await expect(newStrainBtn).toBeVisible();
         await newStrainBtn.click();
 
@@ -90,7 +91,7 @@ test.describe('Strain Library', () => {
         await phenoInput.fill(newPheno);
 
         // Save Strain
-        const saveBtn = dialog.locator('.sd-btn.primary', { hasText: 'Save Strain' });
+        const saveBtn = dialog.locator('.md3-button.primary', { hasText: 'Save Strain' });
         await saveBtn.click();
 
         // 4. Verify Service Call for Add
@@ -109,7 +110,7 @@ test.describe('Strain Library', () => {
 
         const existingStrainCard = dialog.locator('.strain-card', { hasText: 'Gorilla Glue' }).first();
         // Let's verify we are in browse view (header says "Strain Library")
-        const headerTitle = dialog.locator('.sd-title');
+        const headerTitle = dialog.locator('.dialog-title');
         await expect(headerTitle).toHaveText('Strain Library');
 
         await expect(existingStrainCard).toBeVisible();

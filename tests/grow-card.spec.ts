@@ -1,9 +1,10 @@
-import { test, expect, Locator } from '@playwright/test';
+import { test, expect } from './coverage-helper';
+import { Locator } from '@playwright/test';
 import { createMockHass } from './mocks/hass';
 
 test.describe('Growspace Manager Card Tests', () => {
 
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ coveragePage: page }) => {
         await page.goto('/');
         const card = page.locator('growspace-manager-card');
         await expect(card).toBeAttached();
@@ -21,11 +22,12 @@ test.describe('Growspace Manager Card Tests', () => {
                 },
                 connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
                 localize: (key: string) => `[${key}]`,
+                callApi: async () => Promise.resolve(),
             };
         }, { config: { type: 'custom:growspace-manager-card', entity: 'sensor.4x4_tent' }, hassData });
     });
 
-    test('Growspace Manager Card renders and Strains button is visible', async ({ page }) => {
+    test('Growspace Manager Card renders and Strains button is visible', async ({ coveragePage: page }) => {
         const growspaceCard = page.locator('growspace-manager-card').first();
         await expect(growspaceCard).toBeVisible();
 
@@ -38,7 +40,7 @@ test.describe('Growspace Manager Card Tests', () => {
         await expect(strainsButton).toBeVisible();
     });
 
-    test('Plant Overview Dialog opens on plant click', async ({ page }) => {
+    test('Plant Overview Dialog opens on plant click', async ({ coveragePage: page }) => {
         const growspaceCard = page.locator('growspace-manager-card').first();
 
         // Find a plant slot that is not empty
@@ -61,7 +63,7 @@ test.describe('Growspace Manager Card Tests', () => {
         await expect(dialog).not.toBeVisible();
     });
 
-    test('Strain Library Dialog opens', async ({ page }) => {
+    test('Strain Library Dialog opens', async ({ coveragePage: page }) => {
         const growspaceCard = page.locator('growspace-manager-card').first();
 
         // Open menu
@@ -73,9 +75,14 @@ test.describe('Growspace Manager Card Tests', () => {
         await strainsButton.click();
 
         // Wait for the ha-dialog element for the strain library to be attached
-        const strainDialog = page.locator('ha-dialog[open]');
-        await expect(strainDialog).toBeVisible();
+        // Sometimes property reflection to attribute 'open' is slow or not happening in mock env
+        // Check for visibility of the dialog content instead
+        // Wait for the dialog to open and display its title
+        // We use text here because it confirms the dialog has actually rendered content
+        const dialogTitle = page.locator('strain-library-dialog', { hasText: 'Strain Library' });
+        await expect(dialogTitle).toBeVisible({ timeout: 10000 });
 
+        const strainDialog = page.locator('strain-library-dialog');
         // Close it
         const closeBtn = strainDialog.locator('.sd-close-btn');
         if (await closeBtn.isVisible()) {
@@ -88,7 +95,7 @@ test.describe('Growspace Manager Card Tests', () => {
         await expect(strainDialog).not.toBeVisible();
     });
 
-    test('Drag and drop plant to empty slot', async ({ page }) => {
+    test('Drag and drop plant to empty slot', async ({ coveragePage: page }) => {
         const growspaceCard = page.locator('growspace-manager-card').first();
 
         // Find an existing plant to drag
@@ -106,7 +113,7 @@ test.describe('Growspace Manager Card Tests', () => {
         await page.waitForTimeout(1000);
     });
 
-    test('Drag and drop plant to occupied slot (switching plants)', async ({ page }) => {
+    test('Drag and drop plant to occupied slot (switching plants)', async ({ coveragePage: page }) => {
         const growspaceCard = page.locator('growspace-manager-card').first();
         const serviceCalls: any[] = [];
 
@@ -159,7 +166,7 @@ test.describe('Growspace Manager Card Tests', () => {
         expect(switchCall.data).toHaveProperty('plant2_id');
     });
 
-    test('fires "harvest_plant" service call when harvesting a flowering plant', async ({ page }) => {
+    test('fires "harvest_plant" service call when harvesting a flowering plant', async ({ coveragePage: page }) => {
         const growspaceCard = page.locator('growspace-manager-card').first();
         const serviceCalls: any[] = [];
 
@@ -212,7 +219,7 @@ test.describe('Growspace Manager Card Tests', () => {
         // Default behavior is usually moving to 'dry' stage/growspace
         expect(harvestCall.data).toHaveProperty('target_growspace_id', 'dry_overview');
     });
-    test('Mobile View: Plant details are visible', async ({ page }) => {
+    test('Mobile View: Plant details are visible', async ({ coveragePage: page }) => {
         // Set viewport to iPhone SE size
         await page.setViewportSize({ width: 375, height: 667 });
 

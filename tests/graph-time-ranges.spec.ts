@@ -1,15 +1,15 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage-helper';
 import { createMockHass } from './mocks/hass';
 
 test.describe('Graph Time Ranges', () => {
 
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ coveragePage: page }) => {
         // Capture browser console logs for debugging
         page.on('console', msg => console.log(`BROWSER LOG: ${msg.text()}`));
         await page.goto('/');
     });
 
-    test('time range selector visibility and functionality', async ({ page }) => {
+    test('time range selector visibility and functionality', async ({ coveragePage: page }) => {
         const card = page.locator('growspace-manager-card');
 
         // Setup mock history data control
@@ -18,16 +18,14 @@ test.describe('Graph Time Ranges', () => {
             {
                 last_changed: new Date().toISOString(),
                 state: 'on',
-                attributes: { temperature: 25.0, humidity: 60, vpd: 1.2, co2: 800 }
+                attributes: { temperature: 25.0, humidity: 60, vpd: 1.2, co2: 800 },
+                entity_id: 'sensor.temp'
             }
         ];
 
-        await page.exposeFunction('mockGetHistory', (url: string) => {
-            // Parse URL to verify range if needed, for now just return current mock data
-            return [historyData]; // API returns array of arrays
-        });
+        // Mock history data (moved inside evaluate or passed as arg)
 
-        const mockHass = createMockHass();
+        const mockHass: any = createMockHass();
 
         // Add environmental attributes to optimal conditions sensor to ensure chips render
         const optimalId = 'binary_sensor.4x4_tent_optimal_conditions';
@@ -38,22 +36,26 @@ test.describe('Graph Time Ranges', () => {
                 vpd: 1.2,
                 co2: 800
             });
+            // Also set attributes on the overview entity to ensure chips rely on them
+            if (mockHass.states['sensor.4x4_tent']) {
+                mockHass.states['sensor.4x4_tent'].attributes.temperature_sensor = 'sensor.temp';
+                mockHass.states['sensor.4x4_tent'].attributes.humidity_sensor = 'sensor.hum';
+                mockHass.states['sensor.4x4_tent'].attributes.vpd_sensor = 'sensor.vpd';
+            }
         }
 
         const hassData = JSON.parse(JSON.stringify(mockHass));
 
-        await card.evaluate((node: any, { config, hassData }) => {
+        await card.evaluate((node: any, { config, hassData, historyData }) => {
             node.setConfig(config);
             node.hass = {
                 ...hassData,
                 callService: async () => Promise.resolve(),
-                callApi: async (method: string, url: string) => {
-                    return (window as any).mockGetHistory(url);
-                },
+                callApi: async () => [historyData],
                 connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
                 localize: (key: string) => `[${key}]`,
             };
-        }, { config: { type: 'custom:growspace-manager-card', entity: 'sensor.4x4_tent' }, hassData });
+        }, { config: { type: 'custom:growspace-manager-card', entity: 'sensor.4x4_tent' }, hassData, historyData });
 
         // 1. Verify selector is initially hidden
         const selector = card.locator('.time-range-selector');
@@ -105,7 +107,7 @@ test.describe('Graph Time Ranges', () => {
         await expect(selector).toBeHidden();
     });
 
-    test('square graph (step) scaling', async ({ page }) => {
+    test('square graph (step) scaling', async ({ coveragePage: page }) => {
         const card = page.locator('growspace-manager-card');
 
         // Provide history with light data

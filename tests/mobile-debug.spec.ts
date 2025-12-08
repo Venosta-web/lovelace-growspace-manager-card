@@ -1,9 +1,9 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage-helper';
 import { createMockHass } from './mocks/hass';
 
 test.describe('Mobile Debug Tests', () => {
 
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ coveragePage: page }) => {
         await page.goto('/');
         const card = page.locator('growspace-manager-card');
         await expect(card).toBeAttached();
@@ -21,11 +21,12 @@ test.describe('Mobile Debug Tests', () => {
                 },
                 connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
                 localize: (key: string) => `[${key}]`,
+                callApi: async () => Promise.resolve(),
             };
         }, { config: { type: 'custom:growspace-manager-card', entity: 'sensor.4x4_tent' }, hassData });
     });
 
-    test('Debug mobile layout - inspect computed styles', async ({ page }) => {
+    test('Debug mobile layout - inspect computed styles', async ({ coveragePage: page }) => {
         // Set mobile viewport
         await page.setViewportSize({ width: 375, height: 667 });
 

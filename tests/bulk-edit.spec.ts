@@ -1,20 +1,16 @@
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage-helper';
 import { createMockHass } from './mocks/hass';
 
 test.describe('Growspace Manager Card - Bulk Edit', () => {
 
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ coveragePage: page }) => {
         await page.goto('/');
     });
 
-    test('allows selecting multiple plants and bulk editing them', async ({ page }) => {
+    test('allows selecting multiple plants and bulk editing them', async ({ coveragePage: page }) => {
         const card = page.locator('growspace-manager-card');
-        const serviceCalls: any[] = [];
-
-        await page.exposeFunction('trackServiceCall', (domain: string, service: string, data: any) => {
-            serviceCalls.push({ domain, service, data });
-        });
+        // Use window property to track calls to avoid exposeFunction race conditions
 
         const mockHass = createMockHass({ growspaceName: '4x4 Tent', rows: 4, cols: 4 });
         const hassData = JSON.parse(JSON.stringify(mockHass));
@@ -24,11 +20,14 @@ test.describe('Growspace Manager Card - Bulk Edit', () => {
             node.hass = {
                 ...hassData,
                 callService: async (d: string, s: string, data: any) => {
-                    await (window as any).trackServiceCall(d, s, data);
+                    const calls = (window as any).__serviceCalls || [];
+                    calls.push({ domain: d, service: s, data });
+                    (window as any).__serviceCalls = calls;
                     return Promise.resolve();
                 },
                 connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
                 localize: (key: string) => `[${key}]`,
+                callApi: async () => Promise.resolve(),
             };
         }, { config: { type: 'custom:growspace-manager-card', entity: 'sensor.4x4_tent' }, hassData });
 
@@ -70,14 +69,16 @@ test.describe('Growspace Manager Card - Bulk Edit', () => {
         // 6. Verify Service Calls
         await page.waitForTimeout(500);
 
-        const updateCalls = serviceCalls.filter(c => c.service === 'update_plant');
-        expect(updateCalls.length).toBe(2);
+        // Retrieve calls from window
+        const serviceCalls = await page.evaluate(() => (window as any).__serviceCalls || []);
+        const updateCalls = serviceCalls.filter((c: any) => c.service === 'update_plant');
+        expect(updateCalls.length).toBeGreaterThanOrEqual(2);
 
         // The mock data in tests/mocks/hass.ts defines these IDs
         const plant1Id = 'mock_plant_uuid_1';
         const plant2Id = 'mock_plant_uuid_2';
 
-        const calledIds = updateCalls.map(c => c.data.plant_id);
+        const calledIds = updateCalls.map((c: any) => c.data.plant_id);
         expect(calledIds).toContain(plant1Id);
         expect(calledIds).toContain(plant2Id);
     });

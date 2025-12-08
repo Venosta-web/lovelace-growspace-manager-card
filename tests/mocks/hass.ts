@@ -99,6 +99,10 @@ export const createMockHass = (options: MockHassOptions = {}) => {
 
             return Promise.resolve();
         },
+        callApi: async (method: string, path: string, parameters?: any) => {
+            console.log(`[MockHass] callApi: ${method} ${path}`, parameters);
+            return Promise.resolve();
+        },
         connection: {
             subscribeEvents: () => (() => { }), // No-op unsubscribe
             sendMessagePromise: (msg: any) => {

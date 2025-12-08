@@ -1,14 +1,14 @@
 // tests/growspace-card.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage-helper';
 import { createMockHass } from './mocks/hass';
 
 test.describe('Growspace Manager Card', () => {
 
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ coveragePage: page }) => {
         await page.goto('/');
     });
 
-    test('renders grid layout and plant details correctly', async ({ page }) => {
+    test('renders grid layout and plant details correctly', async ({ coveragePage: page }) => {
         page.on('console', msg => console.log(`[Browser] ${msg.text()}`));
         const card = page.locator('growspace-manager-card');
         const mockHass = createMockHass({ growspaceName: '4x4 Tent', rows: 4, cols: 4 });
@@ -22,6 +22,7 @@ test.describe('Growspace Manager Card', () => {
                 callService: async () => Promise.resolve(),
                 connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
                 localize: (key: string) => `[${key}]`,
+                callApi: async () => Promise.resolve(),
             };
         }, { config: { type: 'custom:growspace-manager-card', entity: entityId }, hassData });
 
@@ -40,7 +41,7 @@ test.describe('Growspace Manager Card', () => {
         await expect(card).toContainText('12');
     });
 
-    test('displays warning indicators for binary sensors', async ({ page }) => {
+    test('displays warning indicators for binary sensors', async ({ coveragePage: page }) => {
         const card = page.locator('growspace-manager-card');
         const mockHass = createMockHass();
         const entityId = 'sensor.4x4_tent';
@@ -53,6 +54,7 @@ test.describe('Growspace Manager Card', () => {
                 callService: async () => Promise.resolve(),
                 connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
                 localize: (key: string) => `[${key}]`,
+                callApi: async () => Promise.resolve(),
             };
         }, { config: { type: 'custom:growspace-manager-card', entity: entityId }, hassData });
 
@@ -60,7 +62,7 @@ test.describe('Growspace Manager Card', () => {
         await expect(card).toContainText('Humidity High (65%)');
     });
 
-    test('fires "add_plant" service call when clicking empty slot', async ({ page }) => {
+    test('fires "add_plant" service call when clicking empty slot', async ({ coveragePage: page }) => {
         const card = page.locator('growspace-manager-card');
 
         await page.exposeFunction('trackServiceCall', (domain: string, service: string, data: any) => {
@@ -81,6 +83,7 @@ test.describe('Growspace Manager Card', () => {
                 },
                 connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
                 localize: (key: string) => `[${key}]`,
+                callApi: async () => Promise.resolve(),
             };
         }, { config: { type: 'custom:growspace-manager-card', entity: 'sensor.4x4_tent' }, hassData });
 
@@ -93,7 +96,7 @@ test.describe('Growspace Manager Card', () => {
         await expect(dialog).toBeVisible();
         await expect(dialog).toContainText('Add New Plant');
     });
-    test('fires "remove_plant" service call when deleting a plant', async ({ page }) => {
+    test('fires "remove_plant" service call when deleting a plant', async ({ coveragePage: page }) => {
         const card = page.locator('growspace-manager-card');
         const serviceCalls: any[] = [];
 
@@ -141,7 +144,7 @@ test.describe('Growspace Manager Card', () => {
         expect(removeCall.data).toHaveProperty('plant_id');
     });
 
-    test('fires "update_plant" service call when dragging a plant to an empty slot', async ({ page }) => {
+    test('fires "update_plant" service call when dragging a plant to an empty slot', async ({ coveragePage: page }) => {
         const card = page.locator('growspace-manager-card');
         const serviceCalls: any[] = [];
 
@@ -186,7 +189,7 @@ test.describe('Growspace Manager Card', () => {
         expect(updateCall.data).toHaveProperty('col');
     });
 
-    test('fires "update_plant" service call when editing plant details', async ({ page }) => {
+    test('fires "update_plant" service call when editing plant details', async ({ coveragePage: page }) => {
         const card = page.locator('growspace-manager-card');
         const serviceCalls: any[] = [];
 

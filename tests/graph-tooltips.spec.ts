@@ -1,13 +1,13 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './coverage-helper';
 import { createMockHass } from './mocks/hass';
 
 test.describe('Graph Tooltips', () => {
 
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ coveragePage: page }) => {
         await page.goto('/');
     });
 
-    test('displays correct tooltip text for dehumidifier, light, and optimal graphs', async ({ page }) => {
+    test('displays correct tooltip text for dehumidifier, light, and optimal graphs', async ({ coveragePage: page }) => {
         const card = page.locator('growspace-manager-card');
 
         // Mock History Data
@@ -23,13 +23,14 @@ test.describe('Graph Tooltips', () => {
                     humidity: 60,
                     vpd: 1.2,
                     co2: 800
-                }
+                },
+                entity_id: 'switch.dehumidifier'
             }
         ];
 
-        await page.exposeFunction('mockGetHistory', () => [historyData]);
+        // Mock history data (moved inside evaluate or passed as arg)
 
-        const mockHass = createMockHass();
+        const mockHass: any = createMockHass();
         const overviewId = 'sensor.4x4_tent';
         const optimalId = 'binary_sensor.4x4_tent_optimal_conditions';
 
@@ -37,6 +38,9 @@ test.describe('Graph Tooltips', () => {
         if (mockHass.states[overviewId]) {
             mockHass.states[overviewId].attributes.dehumidifier_entity = 'switch.dehumidifier';
             mockHass.states[overviewId].attributes.dehumidifier_state = 'on';
+            mockHass.states[overviewId].attributes.temperature_sensor = 'sensor.temp';
+            mockHass.states[overviewId].attributes.humidity_sensor = 'sensor.hum';
+            mockHass.states[overviewId].attributes.vpd_sensor = 'sensor.vpd';
         }
 
         if (mockHass.states[optimalId]) {
@@ -52,23 +56,21 @@ test.describe('Graph Tooltips', () => {
 
         const hassData = JSON.parse(JSON.stringify(mockHass));
 
-        await card.evaluate((node: any, { config, hassData }) => {
+        await card.evaluate((node: any, { config, hassData, historyData }) => {
             node.setConfig(config);
             node.hass = {
                 ...hassData,
                 callService: async () => Promise.resolve(),
                 callApi: async (method: string, url: string) => {
-                    const result = await (window as any).mockGetHistory(url);
-                    return result;
+                    return [historyData];
                 },
                 connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
                 localize: (key: string) => `[${key}]`,
             };
-        }, { config: { type: 'custom:growspace-manager-card', entity: overviewId }, hassData });
+        }, { config: { type: 'custom:growspace-manager-card', entity: overviewId }, hassData, historyData });
 
         // --- Dehumidifier Test ---
-        const chips = card.locator('.stat-chip');
-        const dehumChip = chips.nth(3); // 0: Temp, 1: Hum, 2: VPD, 3: Dehum
+        const dehumChip = card.locator('.stat-chip', { hasText: 'Dehumidifier' });
         await dehumChip.click();
 
         // Use .gs-chart-container for step graphs
@@ -133,7 +135,7 @@ test.describe('Graph Tooltips', () => {
         await expect(card.locator('.gs-light-subtitle')).toContainText('OPTIMAL 100%');
     });
 
-    test('renders graph covering full range even when history data starts late', async ({ page }) => {
+    test('renders graph covering full range even when history data starts late', async ({ coveragePage: page }) => {
         const card = page.locator('growspace-manager-card');
 
         // Mock History Data starting 12h ago (for 24h range)
@@ -145,19 +147,23 @@ test.describe('Graph Tooltips', () => {
                 state: 'on',
                 attributes: {
                     dehumidifier: true
-                }
+                },
+                entity_id: 'switch.dehumidifier'
             }
         ];
 
-        await page.exposeFunction('mockGetHistory', () => [historyData]);
+        // Mock history data (moved inside evaluate or passed as arg)
 
-        const mockHass = createMockHass();
+        const mockHass: any = createMockHass();
         const overviewId = 'sensor.4x4_tent';
 
         // Setup Attributes
         if (mockHass.states[overviewId]) {
             mockHass.states[overviewId].attributes.dehumidifier_entity = 'switch.dehumidifier';
             mockHass.states[overviewId].attributes.dehumidifier_state = 'on';
+            mockHass.states[overviewId].attributes.temperature_sensor = 'sensor.temp';
+            mockHass.states[overviewId].attributes.humidity_sensor = 'sensor.hum';
+            mockHass.states[overviewId].attributes.vpd_sensor = 'sensor.vpd';
         }
 
         const optimalId = 'binary_sensor.4x4_tent_optimal_conditions';
@@ -173,23 +179,21 @@ test.describe('Graph Tooltips', () => {
 
         const hassData = JSON.parse(JSON.stringify(mockHass));
 
-        await card.evaluate((node: any, { config, hassData }) => {
+        await card.evaluate((node: any, { config, hassData, historyData }) => {
             node.setConfig(config);
             node.hass = {
                 ...hassData,
                 callService: async () => Promise.resolve(),
                 callApi: async (method: string, url: string) => {
-                    const result = await (window as any).mockGetHistory(url);
-                    return result;
+                    return [historyData];
                 },
                 connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
                 localize: (key: string) => `[${key}]`,
             };
-        }, { config: { type: 'custom:growspace-manager-card', entity: overviewId }, hassData });
+        }, { config: { type: 'custom:growspace-manager-card', entity: overviewId }, hassData, historyData });
 
         // Open Dehumidifier Graph
-        const chips = card.locator('.stat-chip');
-        const dehumChip = chips.nth(3);
+        const dehumChip = card.locator('.stat-chip', { hasText: 'Dehumidifier' });
         await dehumChip.click();
 
         // Graph should be visible
