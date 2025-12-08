@@ -19661,7 +19661,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
           .dialog=${active.payload}
           .growspaceOptions=${growspaceOptions}
           @close=${() => this.store.closeActiveDialog()}
-          @update=${() => this.store.updatePlantFromDialog(active.payload)}
+          @update=${(e) => this.store.updatePlantFromDialog({ ...active.payload, editedAttributes: e.detail })}
           @delete=${(e) => this.store.handleDeletePlant(e.detail.plantId)}
           @harvest=${(e) => this.store.harvestPlant(e.detail.plant)}
           @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}

@@ -840,7 +840,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
           .dialog=${active.payload}
           .growspaceOptions=${growspaceOptions}
           @close=${() => this.store.closeActiveDialog()}
-          @update=${() => this.store.updatePlantFromDialog(active.payload)}
+          @update=${(e: CustomEvent) => this.store.updatePlantFromDialog({ ...active.payload, editedAttributes: e.detail })}
           @delete=${(e: CustomEvent) => this.store.handleDeletePlant(e.detail.plantId)}
           @harvest=${(e: CustomEvent) => this.store.harvestPlant(e.detail.plant)}
           @finish-drying=${(e: CustomEvent) => this.store.finishDryingPlant(e.detail.plant)}
