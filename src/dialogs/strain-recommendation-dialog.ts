@@ -4,17 +4,21 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { mdiBrain, mdiClose, mdiLoading } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 
+import { consume } from '@lit/context';
+import { hassContext } from '../context';
+
 @customElement('strain-recommendation-dialog')
 export class StrainRecommendationDialog extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ type: Boolean }) public open = false;
-  @property({ type: Boolean }) public isLoading = false;
-  @property({ attribute: false }) public response: string | null = null;
-  @property({ type: String }) public userQuery: string = '';
+   @consume({ context: hassContext, subscribe: true })
+   public hass!: HomeAssistant;
+   @property({ type: Boolean }) public open = false;
+   @property({ type: Boolean }) public isLoading = false;
+   @property({ attribute: false }) public response: string | null = null;
+   @property({ type: String }) public userQuery: string = '';
 
-  static styles = [
-    dialogStyles,
-    css`
+   static styles = [
+      dialogStyles,
+      css`
         :host {
             display: block;
         }
@@ -67,22 +71,22 @@ export class StrainRecommendationDialog extends LitElement {
         }
     `];
 
-  private _close() {
-    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-  }
+   private _close() {
+      this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+   }
 
-  private _handleGetRecommendation() {
-    this.dispatchEvent(new CustomEvent('get-recommendation', {
-      detail: { query: this.userQuery },
-      bubbles: true,
-      composed: true
-    }));
-  }
+   private _handleGetRecommendation() {
+      this.dispatchEvent(new CustomEvent('get-recommendation', {
+         detail: { query: this.userQuery },
+         bubbles: true,
+         composed: true
+      }));
+   }
 
-  render() {
-    if (!this.open) return nothing;
+   render() {
+      if (!this.open) return nothing;
 
-    return html`
+      return html`
       <ha-dialog
         open
         @closed=${this._close}
@@ -150,5 +154,5 @@ export class StrainRecommendationDialog extends LitElement {
         </div>
       </ha-dialog>
     `;
-  }
+   }
 }

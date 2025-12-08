@@ -5,9 +5,13 @@ import { GrowspaceEvent } from '../../types';
 import { GrowspaceLogbookController } from '../../controllers/growspace-logbook-controller';
 import { dialogStyles } from '../../styles/dialog.styles';
 
+import { consume } from '@lit/context';
+import { hassContext } from '../../context';
+
 @customElement('growspace-logbook')
 export class GrowspaceLogbook extends LitElement {
-  @property({ attribute: false }) hass!: HomeAssistant;
+  @consume({ context: hassContext, subscribe: true })
+  hass!: HomeAssistant;
   @property({ type: String }) growspaceId!: string;
 
   @state() private _events: GrowspaceEvent[] = [];

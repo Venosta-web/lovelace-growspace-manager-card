@@ -14,7 +14,6 @@ import '../components/ui/md3-date-input';
 @customElement('add-plant-dialog')
 export class AddPlantDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  @property({ attribute: false })
   hass!: HomeAssistant;
 
   @property({ type: Array }) strainLibrary: StrainEntry[] = [];

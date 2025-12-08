@@ -5,15 +5,19 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/growspace-logbook';
 
+import { consume } from '@lit/context';
+import { hassContext } from '../context';
+
 @customElement('logbook-dialog')
 export class LogbookDialog extends LitElement {
-    @property({ attribute: false }) public hass!: HomeAssistant;
-    @property({ type: Boolean }) public open = false;
-    @property({ type: String }) public growspaceId = '';
+  @consume({ context: hassContext, subscribe: true })
+  public hass!: HomeAssistant;
+  @property({ type: Boolean }) public open = false;
+  @property({ type: String }) public growspaceId = '';
 
-    static styles = [
-        dialogStyles,
-        css`
+  static styles = [
+    dialogStyles,
+    css`
       ha-dialog {
         --mdc-dialog-min-width: 90vw;
         --mdc-dialog-max-width: 90vw;
@@ -49,16 +53,16 @@ export class LogbookDialog extends LitElement {
         margin-top: 16px;
       }
     `
-    ];
+  ];
 
-    private _close() {
-        this.dispatchEvent(new CustomEvent('close'));
-    }
+  private _close() {
+    this.dispatchEvent(new CustomEvent('close'));
+  }
 
-    render() {
-        if (!this.open) return html``;
+  render() {
+    if (!this.open) return html``;
 
-        return html`
+    return html`
       <ha-dialog
         .open=${this.open}
         @closed=${this._close}
@@ -80,11 +84,11 @@ export class LogbookDialog extends LitElement {
         </div>
       </ha-dialog>
     `;
-    }
+  }
 }
 
 declare global {
-    interface HTMLElementTagNameMap {
-        'logbook-dialog': LogbookDialog;
-    }
+  interface HTMLElementTagNameMap {
+    'logbook-dialog': LogbookDialog;
+  }
 }

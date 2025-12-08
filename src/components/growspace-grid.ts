@@ -1,7 +1,9 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { mdiPlus } from '@mdi/js';
+import { repeat } from 'lit/directives/repeat.js';
 import { PlantEntity, StrainEntry, GrowspaceManagerCardConfig } from '../types';
+import { AddPlantClickEvent, PlantClickEvent, PlantDropEvent, SelectionChangedEvent } from '../events';
 import './plant-card';
 
 @customElement('growspace-grid')
@@ -264,35 +266,27 @@ export class GrowspaceGrid extends LitElement {
   }
 
   private _handleDrop(
-    e: DragEvent,
+    e: DragEvent | null,
     targetRow: number,
     targetCol: number,
     targetPlant: PlantEntity | null
   ) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!this._draggedPlant) return;
 
-    this.dispatchEvent(new CustomEvent('plant-drop', {
-      detail: {
-        originalEvent: e,
-        sourcePlant: this._draggedPlant,
-        targetRow,
-        targetCol,
-        targetPlant
-      },
-      bubbles: true,
-      composed: true
-    }));
+    this.dispatchEvent(new PlantDropEvent(
+      e,
+      targetRow,
+      targetCol,
+      targetPlant,
+      this._draggedPlant
+    ));
 
     this._draggedPlant = null;
   }
 
   private _handlePlantClick(plant: PlantEntity) {
-    this.dispatchEvent(new CustomEvent('plant-click', {
-      detail: { plant },
-      bubbles: true,
-      composed: true
-    }));
+    this.dispatchEvent(new PlantClickEvent(plant));
   }
 
   private _togglePlantSelection(plant: PlantEntity) {
@@ -306,11 +300,7 @@ export class GrowspaceGrid extends LitElement {
       newSet.add(plantId);
     }
 
-    this.dispatchEvent(new CustomEvent('selection-changed', {
-      detail: { selectedPlants: newSet },
-      bubbles: true,
-      composed: true
-    }));
+    this.dispatchEvent(new SelectionChangedEvent(newSet));
   }
 
   private _handleMobileDrop(e: CustomEvent) {
@@ -345,17 +335,15 @@ export class GrowspaceGrid extends LitElement {
     }
 
     if (targetRow !== null && targetCol !== null) {
-      this.dispatchEvent(new CustomEvent('plant-drop', {
-        detail: {
-          originalEvent: null,
-          sourcePlant: plant,
+      if (targetRow !== null && targetCol !== null) {
+        this.dispatchEvent(new PlantDropEvent(
+          null as any, // drag event not available in mobile drop
           targetRow,
           targetCol,
-          targetPlant
-        },
-        bubbles: true,
-        composed: true
-      }));
+          targetPlant,
+          plant
+        ));
+      }
     }
   }
 
@@ -373,33 +361,37 @@ export class GrowspaceGrid extends LitElement {
       <div class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
            style="${gridStyle}"
            @mobile-drop=${this._handleMobileDrop}>
-        ${flatGrid.map((plant, index) => {
-      // Recalculate row/col based on grid index
-      const row = Math.floor(index / this.cols) + 1;
-      const col = (index % this.cols) + 1;
+         ${repeat(
+      flatGrid,
+      (plant, index) => plant ? (plant.attributes?.plant_id || plant.entity_id) : `empty-${index}`,
+      (plant, index) => {
+        // Recalculate row/col based on grid index
+        const row = Math.floor(index / this.cols) + 1;
+        const col = (index % this.cols) + 1;
 
-      if (!plant) {
-        return this.renderEmptySlot(row, col);
+        if (!plant) {
+          return this.renderEmptySlot(row, col);
+        }
+
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        const isSelected = this.selectedPlants.has(plantId);
+
+        return html`
+               <growspace-plant-card
+                 .plant=${plant}
+                 .row=${row}
+                 .col=${col}
+                 .strainLibrary=${this.strainLibrary}
+                 .isEditMode=${this.isEditMode}
+                 .selected=${isSelected}
+                 @plant-click=${() => this._handlePlantClick(plant)}
+                 @plant-drag-start=${() => this._handleDragStart(plant)}
+                 @plant-drop=${(e: PlantDropEvent) => this._handleDrop(e.detail.originalEvent, row, col, plant)}
+                 @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
+               ></growspace-plant-card>
+             `;
       }
-
-      const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-      const isSelected = this.selectedPlants.has(plantId);
-
-      return html`
-            <growspace-plant-card
-              .plant=${plant}
-              .row=${row}
-              .col=${col}
-              .strainLibrary=${this.strainLibrary}
-              .isEditMode=${this.isEditMode}
-              .selected=${isSelected}
-              @plant-click=${() => this._handlePlantClick(plant)}
-              @plant-drag-start=${() => this._handleDragStart(plant)}
-              @plant-drop=${(e: CustomEvent) => this._handleDrop(e.detail.originalEvent, row, col, plant)}
-              @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
-            ></growspace-plant-card>
-          `;
-    })}
+    )}
       </div>
     `;
   }
@@ -411,7 +403,7 @@ export class GrowspaceGrid extends LitElement {
         data-row="${row}"
         data-col="${col}"
         style="grid-row: ${row}; grid-column: ${col}"
-        @click=${() => this.dispatchEvent(new CustomEvent('add-plant-click', { detail: { row: row - 1, col: col - 1 } }))}
+        @click=${() => this.dispatchEvent(new AddPlantClickEvent(row - 1, col - 1))}
         @dragover=${this._handleDragOver}
         @drop=${(e: DragEvent) => this._handleDrop(e, row, col, null)}
       >

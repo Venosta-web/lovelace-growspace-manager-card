@@ -2,13 +2,18 @@ import { LitElement, html, css, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice } from '../types';
+import { RangeChangeEvent } from '../events';
 import { METRIC_CONFIG, METRIC_SORT_ORDER, DEFAULT_METRIC_CONFIG } from '../constants';
 import '../growspace-env-chart';
 import { growspaceCardStyles } from '../styles/growspace-card.styles';
 
+import { consume } from '@lit/context';
+import { hassContext } from '../context';
+
 @customElement('growspace-analytics')
 export class GrowspaceAnalytics extends LitElement {
-    @property({ attribute: false }) hass!: HomeAssistant;
+    @consume({ context: hassContext, subscribe: true })
+    hass!: HomeAssistant;
     @property({ attribute: false }) device?: GrowspaceDevice;
     @property({ attribute: false }) historyData: any[] = [];
     @property({ attribute: false }) dehumidifierHistory: any[] = [];
@@ -158,11 +163,7 @@ export class GrowspaceAnalytics extends LitElement {
     }
 
     private _setGraphRange(range: '1h' | '6h' | '24h' | '7d') {
-        this.dispatchEvent(new CustomEvent('range-change', {
-            detail: { range },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new RangeChangeEvent(range));
     }
 
     private _handleToggleGraph(e: CustomEvent) {

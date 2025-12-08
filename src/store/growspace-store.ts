@@ -48,6 +48,7 @@ export class GrowspaceStore implements ReactiveController {
     constructor(host: ReactiveControllerHost) {
         this.host = host;
         host.addController(this);
+        this.dataService = new DataService();
     }
 
     hostConnected() {
@@ -60,13 +61,16 @@ export class GrowspaceStore implements ReactiveController {
 
     updateHass(hass: HomeAssistant) {
         this.hass = hass;
-        if (!this.dataService) {
-            this.dataService = new DataService(this.hass);
-        } else {
-            // Re-instantiate data service if needed or just rely on it using the hass instance?
-            // DataService constructor takes hass.
-            this.dataService = new DataService(this.hass);
+        this.dataService.updateHass(hass);
+
+        if (!this.state.selectedDevice) {
+            const devices = this.dataService.getGrowspaceDevices();
+            if (devices.length > 0) {
+                this.state.selectedDevice = devices[0].device_id;
+                this.requestUpdate();
+            }
         }
+
         this.pruneOptimisticDeletions();
     }
 
@@ -540,7 +544,9 @@ export class GrowspaceStore implements ReactiveController {
 
     updateGrid() {
         // Force refresh from HA
-        this.dataService = new DataService(this.hass);
+        if (this.hass) {
+            this.dataService.updateHass(this.hass);
+        }
         this.requestUpdate();
     }
 

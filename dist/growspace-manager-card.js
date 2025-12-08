@@ -515,7 +515,9 @@ const SERVICES = {
 
 class DataService {
     constructor(hass) {
-        this.hass = hass;
+        if (hass) {
+            this.hass = hass;
+        }
     }
     updateHass(hass) {
         this.hass = hass;
@@ -584,7 +586,6 @@ class DataService {
         console.log("[DataService:fetchStrainLibrary] Fetching strain library via API");
         try {
             const serviceResponse = await this.hass.connection.sendMessagePromise({
-                type: 'call_service',
                 type: 'call_service',
                 domain: DOMAIN,
                 service: SERVICES.GET_STRAIN_LIBRARY,
@@ -1069,52 +1070,52 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
  * Copyright 2019 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t$2=globalThis,e$4=t$2.ShadowRoot&&(void 0===t$2.ShadyCSS||t$2.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$6=Symbol(),o$4=new WeakMap;class n$5{constructor(t,e,o){if(this._$cssResult$=!0,o!==s$6)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$4&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$4.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$4.set(s,t));}return t}toString(){return this.cssText}}const r$4=t=>new n$5("string"==typeof t?t:t+"",void 0,s$6),i$4=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$5(o,t,s$6)},S$1=(s,o)=>{if(e$4)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$2.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$3=e$4?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$4(e)})(t):t;
+const t$4=globalThis,e$5=t$4.ShadowRoot&&(void 0===t$4.ShadyCSS||t$4.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$7=Symbol(),o$4=new WeakMap;class n$5{constructor(t,e,o){if(this._$cssResult$=!0,o!==s$7)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$5&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$4.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$4.set(s,t));}return t}toString(){return this.cssText}}const r$5=t=>new n$5("string"==typeof t?t:t+"",void 0,s$7),i$5=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$5(o,t,s$7)},S$1=(s,o)=>{if(e$5)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$4.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$4=e$5?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$5(e)})(t):t;
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const{is:i$3,defineProperty:e$3,getOwnPropertyDescriptor:h$1,getOwnPropertyNames:r$3,getOwnPropertySymbols:o$3,getPrototypeOf:n$4}=Object,a$1=globalThis,c$2=a$1.trustedTypes,l$2=c$2?c$2.emptyScript:"",p$1=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$1={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$1=(t,s)=>!i$3(t,s),b$1={attribute:!0,type:String,converter:u$1,reflect:!1,useDefault:!1,hasChanged:f$1};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;class y$1 extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=!0),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$3(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$1(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$4(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$3(t),...o$3(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$3(s));}else void 0!==s&&i.push(c$3(s));return i}static _$Eu(t,s){const i=s.attribute;return !1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&!0===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$1).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$1;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$1)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);}!1===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),!0!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),!0===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=!0;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];!0!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=!1;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=!1,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return !0}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}}y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$1?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const t$1=globalThis,i$2=t$1.trustedTypes,s$5=i$2?i$2.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$2="$lit$",h=`lit$${Math.random().toFixed(9).slice(2)}$`,o$2="?"+h,n$3=`<${o$2}>`,r$2=document,l$1=()=>r$2.createComment(""),c$1=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v=/-->/g,_=/>/g,m=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$2.createTreeWalker(r$2,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$5?s$5.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f?"!--"===u[1]?c=v:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m):void 0!==u[3]&&(c=m):c===m?">"===u[0]?(c=r??f,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m:'"'===u[3]?g:p):c===g||c===p?c=m:c===v||c===_?c=f:(c=m,r=void 0);const x=c===m&&t[i+1].startsWith("/>")?" ":"";l+=c===f?s+n$3:d>=0?(o.push(a),s.slice(0,d)+e$2+s.slice(d)+h+x):s+h+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e$2)){const i=v[a++],s=r.getAttribute(t).split(h),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h),s=t.length-1;if(s>0){r.textContent=i$2?i$2.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$2)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h,t+1));)d.push({type:7,index:c}),t+=h.length-1;}c++;}}static createElement(t,i){const s=r$2.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c$1(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(!1),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}class M{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$2).importNode(i,!0);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$2,e}p(t){let i=0;for(const s of this._$AV)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??!0;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c$1(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c$1(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$2.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(!1,!0,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=!1;if(void 0===h)t=S(this,t,i,0),o=!c$1(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c$1(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const j=t$1.litHtmlPolyfillSupport;j?.(N,R),(t$1.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const s$4=globalThis;class i$1 extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=B(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1);}render(){return T}}i$1._$litElement$=!0,i$1["finalized"]=!0,s$4.litElementHydrateSupport?.({LitElement:i$1});const o$1=s$4.litElementPolyfillSupport;o$1?.({LitElement:i$1});(s$4.litElementVersions??=[]).push("4.2.1");
+ */const{is:i$4,defineProperty:e$4,getOwnPropertyDescriptor:h$1,getOwnPropertyNames:r$4,getOwnPropertySymbols:o$3,getPrototypeOf:n$4}=Object,a$1=globalThis,c$3=a$1.trustedTypes,l$2=c$3?c$3.emptyScript:"",p$2=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$3={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$1=(t,s)=>!i$4(t,s),b$1={attribute:!0,type:String,converter:u$3,reflect:!1,useDefault:!1,hasChanged:f$1};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;class y$1 extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=!0),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$4(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$1(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$4(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$4(t),...o$3(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$4(s));}else void 0!==s&&i.push(c$4(s));return i}static _$Eu(t,s){const i=s.attribute;return !1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&!0===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$3).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$3;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$1)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);}!1===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),!0!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),!0===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=!0;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];!0!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=!1;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=!1,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return !0}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}}y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$2?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t=t=>(e,o)=>{void 0!==o?o.addInitializer((()=>{customElements.define(t,e);})):customElements.define(t,e);};
+const t$3=globalThis,i$3=t$3.trustedTypes,s$6=i$3?i$3.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$3="$lit$",h=`lit$${Math.random().toFixed(9).slice(2)}$`,o$2="?"+h,n$3=`<${o$2}>`,r$3=document,l$1=()=>r$3.createComment(""),c$2=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u$2=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v$1=/-->/g,_=/>/g,m$1=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p$1=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$3.createTreeWalker(r$3,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$6?s$6.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f?"!--"===u[1]?c=v$1:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m$1):void 0!==u[3]&&(c=m$1):c===m$1?">"===u[0]?(c=r??f,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m$1:'"'===u[3]?g:p$1):c===g||c===p$1?c=m$1:c===v$1||c===_?c=f:(c=m$1,r=void 0);const x=c===m$1&&t[i+1].startsWith("/>")?" ":"";l+=c===f?s+n$3:d>=0?(o.push(a),s.slice(0,d)+e$3+s.slice(d)+h+x):s+h+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e$3)){const i=v[a++],s=r.getAttribute(t).split(h),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h),s=t.length-1;if(s>0){r.textContent=i$3?i$3.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$2)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h,t+1));)d.push({type:7,index:c}),t+=h.length-1;}c++;}}static createElement(t,i){const s=r$3.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c$2(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(!1),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}class M$1{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$3).importNode(i,!0);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$3,e}p(t){let i=0;for(const s of this._$AV)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??!0;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c$2(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u$2(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c$2(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$3.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M$1(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(!1,!0,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=!1;if(void 0===h)t=S(this,t,i,0),o=!c$2(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c$2(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const Z={M:e$3,P:h,A:o$2,C:1,L:V,R:M$1,D:u$2,V:S,I:R,H:k,N:I,U:L,B:H,F:z},j=t$3.litHtmlPolyfillSupport;j?.(N,R),(t$3.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const o={attribute:!0,type:String,converter:u$1,reflect:!1,hasChanged:f$1},r$1=(t=o,e,r)=>{const{kind:n,metadata:i}=r;let s=globalThis.litPropertyMetadata.get(i);if(void 0===s&&globalThis.litPropertyMetadata.set(i,s=new Map),"setter"===n&&((t=Object.create(t)).wrapped=!0),s.set(r.name,t),"accessor"===n){const{name:o}=r;return {set(r){const n=e.get.call(this);e.set.call(this,r),this.requestUpdate(o,n,t);},init(e){return void 0!==e&&this.C(o,void 0,t,e),e}}}if("setter"===n){const{name:o}=r;return function(r){const n=this[o];e.call(this,r),this.requestUpdate(o,n,t);}}throw Error("Unsupported decorator location: "+n)};function n$2(t){return (e,o)=>"object"==typeof o?r$1(t,e,o):((t,e,o)=>{const r=e.hasOwnProperty(o);return e.constructor.createProperty(o,t),r?Object.getOwnPropertyDescriptor(e,o):void 0})(t,e,o)}
+ */const s$5=globalThis;class i$2 extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=B(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1);}render(){return T}}i$2._$litElement$=!0,i$2["finalized"]=!0,s$5.litElementHydrateSupport?.({LitElement:i$2});const o$1=s$5.litElementPolyfillSupport;o$1?.({LitElement:i$2});(s$5.litElementVersions??=[]).push("4.2.1");
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */function r(r){return n$2({...r,state:!0,attribute:!1})}
+ */
+const t$2=t=>(e,o)=>{void 0!==o?o.addInitializer((()=>{customElements.define(t,e);})):customElements.define(t,e);};
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const o={attribute:!0,type:String,converter:u$3,reflect:!1,hasChanged:f$1},r$2=(t=o,e,r)=>{const{kind:n,metadata:i}=r;let s=globalThis.litPropertyMetadata.get(i);if(void 0===s&&globalThis.litPropertyMetadata.set(i,s=new Map),"setter"===n&&((t=Object.create(t)).wrapped=!0),s.set(r.name,t),"accessor"===n){const{name:o}=r;return {set(r){const n=e.get.call(this);e.set.call(this,r),this.requestUpdate(o,n,t);},init(e){return void 0!==e&&this.C(o,void 0,t,e),e}}}if("setter"===n){const{name:o}=r;return function(r){const n=this[o];e.call(this,r),this.requestUpdate(o,n,t);}}throw Error("Unsupported decorator location: "+n)};function n$2(t){return (e,o)=>"object"==typeof o?r$2(t,e,o):((t,e,o)=>{const r=e.hasOwnProperty(o);return e.constructor.createProperty(o,t),r?Object.getOwnPropertyDescriptor(e,o):void 0})(t,e,o)}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */function r$1(r){return n$2({...r,state:!0,attribute:!1})}
 
 /**
  * @license
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-class s$3 extends Event{constructor(s,t,e,o){super("context-request",{bubbles:!0,composed:!0}),this.context=s,this.contextTarget=t,this.callback=e,this.subscribe=o??!1;}}
+class s$4 extends Event{constructor(s,t,e,o){super("context-request",{bubbles:!0,composed:!0}),this.context=s,this.contextTarget=t,this.callback=e,this.subscribe=o??!1;}}
 
 /**
  * @license
@@ -1127,32 +1128,32 @@ function n$1(n){return n}
  * @license
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */class s$2{constructor(t,s,i,h){if(this.subscribe=!1,this.provided=!1,this.value=void 0,this.t=(t,s)=>{this.unsubscribe&&(this.unsubscribe!==s&&(this.provided=!1,this.unsubscribe()),this.subscribe||this.unsubscribe()),this.value=t,this.host.requestUpdate(),this.provided&&!this.subscribe||(this.provided=!0,this.callback&&this.callback(t,s)),this.unsubscribe=s;},this.host=t,void 0!==s.context){const t=s;this.context=t.context,this.callback=t.callback,this.subscribe=t.subscribe??!1;}else this.context=s,this.callback=i,this.subscribe=h??!1;this.host.addController(this);}hostConnected(){this.dispatchRequest();}hostDisconnected(){this.unsubscribe&&(this.unsubscribe(),this.unsubscribe=void 0);}dispatchRequest(){this.host.dispatchEvent(new s$3(this.context,this.host,this.t,this.subscribe));}}
+ */class s$3{constructor(t,s,i,h){if(this.subscribe=!1,this.provided=!1,this.value=void 0,this.t=(t,s)=>{this.unsubscribe&&(this.unsubscribe!==s&&(this.provided=!1,this.unsubscribe()),this.subscribe||this.unsubscribe()),this.value=t,this.host.requestUpdate(),this.provided&&!this.subscribe||(this.provided=!0,this.callback&&this.callback(t,s)),this.unsubscribe=s;},this.host=t,void 0!==s.context){const t=s;this.context=t.context,this.callback=t.callback,this.subscribe=t.subscribe??!1;}else this.context=s,this.callback=i,this.subscribe=h??!1;this.host.addController(this);}hostConnected(){this.dispatchRequest();}hostDisconnected(){this.unsubscribe&&(this.unsubscribe(),this.unsubscribe=void 0);}dispatchRequest(){this.host.dispatchEvent(new s$4(this.context,this.host,this.t,this.subscribe));}}
 
 /**
  * @license
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-class s$1{get value(){return this.o}set value(s){this.setValue(s);}setValue(s,t=!1){const i=t||!Object.is(s,this.o);this.o=s,i&&this.updateObservers();}constructor(s){this.subscriptions=new Map,this.updateObservers=()=>{for(const[s,{disposer:t}]of this.subscriptions)s(this.o,t);},void 0!==s&&(this.value=s);}addCallback(s,t,i){if(!i)return void s(this.value);this.subscriptions.has(s)||this.subscriptions.set(s,{disposer:()=>{this.subscriptions.delete(s);},consumerHost:t});const{disposer:h}=this.subscriptions.get(s);s(this.value,h);}clearCallbacks(){this.subscriptions.clear();}}
+class s$2{get value(){return this.o}set value(s){this.setValue(s);}setValue(s,t=!1){const i=t||!Object.is(s,this.o);this.o=s,i&&this.updateObservers();}constructor(s){this.subscriptions=new Map,this.updateObservers=()=>{for(const[s,{disposer:t}]of this.subscriptions)s(this.o,t);},void 0!==s&&(this.value=s);}addCallback(s,t,i){if(!i)return void s(this.value);this.subscriptions.has(s)||this.subscriptions.set(s,{disposer:()=>{this.subscriptions.delete(s);},consumerHost:t});const{disposer:h}=this.subscriptions.get(s);s(this.value,h);}clearCallbacks(){this.subscriptions.clear();}}
 
 /**
  * @license
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */class e$1 extends Event{constructor(t,s){super("context-provider",{bubbles:!0,composed:!0}),this.context=t,this.contextTarget=s;}}class i extends s$1{constructor(s,e,i){super(void 0!==e.context?e.initialValue:i),this.onContextRequest=t=>{if(t.context!==this.context)return;const s=t.contextTarget??t.composedPath()[0];s!==this.host&&(t.stopPropagation(),this.addCallback(t.callback,s,t.subscribe));},this.onProviderRequest=s=>{if(s.context!==this.context)return;if((s.contextTarget??s.composedPath()[0])===this.host)return;const e=new Set;for(const[s,{consumerHost:i}]of this.subscriptions)e.has(s)||(e.add(s),i.dispatchEvent(new s$3(this.context,i,s,!0)));s.stopPropagation();},this.host=s,void 0!==e.context?this.context=e.context:this.context=e,this.attachListeners(),this.host.addController?.(this);}attachListeners(){this.host.addEventListener("context-request",this.onContextRequest),this.host.addEventListener("context-provider",this.onProviderRequest);}hostConnected(){this.host.dispatchEvent(new e$1(this.context,this.host));}}
+ */class e$2 extends Event{constructor(t,s){super("context-provider",{bubbles:!0,composed:!0}),this.context=t,this.contextTarget=s;}}class i$1 extends s$2{constructor(s,e,i){super(void 0!==e.context?e.initialValue:i),this.onContextRequest=t=>{if(t.context!==this.context)return;const s=t.contextTarget??t.composedPath()[0];s!==this.host&&(t.stopPropagation(),this.addCallback(t.callback,s,t.subscribe));},this.onProviderRequest=s=>{if(s.context!==this.context)return;if((s.contextTarget??s.composedPath()[0])===this.host)return;const e=new Set;for(const[s,{consumerHost:i}]of this.subscriptions)e.has(s)||(e.add(s),i.dispatchEvent(new s$4(this.context,i,s,!0)));s.stopPropagation();},this.host=s,void 0!==e.context?this.context=e.context:this.context=e,this.attachListeners(),this.host.addController?.(this);}attachListeners(){this.host.addEventListener("context-request",this.onContextRequest),this.host.addEventListener("context-provider",this.onProviderRequest);}hostConnected(){this.host.dispatchEvent(new e$2(this.context,this.host));}}
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */function e({context:e}){return (n,i$1)=>{const r=new WeakMap;if("object"==typeof i$1)return {get(){return n.get.call(this)},set(t){return r.get(this).setValue(t),n.set.call(this,t)},init(n){return r.set(this,new i(this,{context:e,initialValue:n})),n}};{n.constructor.addInitializer((n=>{r.set(n,new i(n,{context:e}));}));const o=Object.getOwnPropertyDescriptor(n,i$1);let s;if(void 0===o){const t=new WeakMap;s={get(){return t.get(this)},set(e){r.get(this).setValue(e),t.set(this,e);},configurable:!0,enumerable:!0};}else {const t=o.set;s={...o,set(e){r.get(this).setValue(e),t?.call(this,e);}};}return void Object.defineProperty(n,i$1,s)}}}
+ */function e$1({context:e}){return (n,i)=>{const r=new WeakMap;if("object"==typeof i)return {get(){return n.get.call(this)},set(t){return r.get(this).setValue(t),n.set.call(this,t)},init(n){return r.set(this,new i$1(this,{context:e,initialValue:n})),n}};{n.constructor.addInitializer((n=>{r.set(n,new i$1(n,{context:e}));}));const o=Object.getOwnPropertyDescriptor(n,i);let s;if(void 0===o){const t=new WeakMap;s={get(){return t.get(this)},set(e){r.get(this).setValue(e),t.set(this,e);},configurable:!0,enumerable:!0};}else {const t=o.set;s={...o,set(e){r.get(this).setValue(e),t?.call(this,e);}};}return void Object.defineProperty(n,i,s)}}}
 
 /**
  * @license
  * Copyright 2022 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */function c({context:c,subscribe:e}){return (o,n)=>{"object"==typeof n?n.addInitializer((function(){new s$2(this,{context:c,callback:t=>{o.set.call(this,t);},subscribe:e});})):o.constructor.addInitializer((o=>{new s$2(o,{context:c,callback:t=>{o[n]=t;},subscribe:e});}));}}
+ */function c$1({context:c,subscribe:e}){return (o,n)=>{"object"==typeof n?n.addInitializer((function(){new s$3(this,{context:c,callback:t=>{o.set.call(this,t);},subscribe:e});})):o.constructor.addInitializer((o=>{new s$3(o,{context:c,callback:t=>{o[n]=t;},subscribe:e});}));}}
 
 const hassContext = n$1('hass');
 const configContext = n$1('config');
@@ -1224,7 +1225,7 @@ class ZoneIsAbstractError extends LuxonError {
  */
 
 const n = "numeric",
-  s = "short",
+  s$1 = "short",
   l = "long";
 
 const DATE_SHORT = {
@@ -1235,15 +1236,15 @@ const DATE_SHORT = {
 
 const DATE_MED = {
   year: n,
-  month: s,
+  month: s$1,
   day: n,
 };
 
 const DATE_MED_WITH_WEEKDAY = {
   year: n,
-  month: s,
+  month: s$1,
   day: n,
-  weekday: s,
+  weekday: s$1,
 };
 
 const DATE_FULL = {
@@ -1274,7 +1275,7 @@ const TIME_WITH_SHORT_OFFSET = {
   hour: n,
   minute: n,
   second: n,
-  timeZoneName: s,
+  timeZoneName: s$1,
 };
 
 const TIME_WITH_LONG_OFFSET = {
@@ -1302,7 +1303,7 @@ const TIME_24_WITH_SHORT_OFFSET = {
   minute: n,
   second: n,
   hourCycle: "h23",
-  timeZoneName: s,
+  timeZoneName: s$1,
 };
 
 const TIME_24_WITH_LONG_OFFSET = {
@@ -1332,7 +1333,7 @@ const DATETIME_SHORT_WITH_SECONDS = {
 
 const DATETIME_MED = {
   year: n,
-  month: s,
+  month: s$1,
   day: n,
   hour: n,
   minute: n,
@@ -1340,7 +1341,7 @@ const DATETIME_MED = {
 
 const DATETIME_MED_WITH_SECONDS = {
   year: n,
-  month: s,
+  month: s$1,
   day: n,
   hour: n,
   minute: n,
@@ -1349,9 +1350,9 @@ const DATETIME_MED_WITH_SECONDS = {
 
 const DATETIME_MED_WITH_WEEKDAY = {
   year: n,
-  month: s,
+  month: s$1,
   day: n,
-  weekday: s,
+  weekday: s$1,
   hour: n,
   minute: n,
 };
@@ -1362,7 +1363,7 @@ const DATETIME_FULL = {
   day: n,
   hour: n,
   minute: n,
-  timeZoneName: s,
+  timeZoneName: s$1,
 };
 
 const DATETIME_FULL_WITH_SECONDS = {
@@ -1372,7 +1373,7 @@ const DATETIME_FULL_WITH_SECONDS = {
   hour: n,
   minute: n,
   second: n,
-  timeZoneName: s,
+  timeZoneName: s$1,
 };
 
 const DATETIME_HUGE = {
@@ -9286,7 +9287,7 @@ function friendlyDateTime(dateTimeish) {
   }
 }
 
-const variables = i$4 `
+const variables = i$5 `
   :host {
     /* MD3 Color System */
     --primary-gradient: linear-gradient(135deg, #4CAF50, #45a049);
@@ -9617,7 +9618,178 @@ class GrowspaceHistoryController {
     }
 }
 
-let GrowspaceEnvChart = class GrowspaceEnvChart extends i$1 {
+class DeviceChangeEvent extends CustomEvent {
+    constructor(deviceId) {
+        super(DeviceChangeEvent.TYPE, {
+            detail: { deviceId },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+DeviceChangeEvent.TYPE = 'growspace-changed';
+class ToggleEnvGraphEvent extends CustomEvent {
+    constructor(metric) {
+        super(ToggleEnvGraphEvent.TYPE, {
+            detail: { metric },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+ToggleEnvGraphEvent.TYPE = 'toggle-env-graph';
+class LinkGraphsEvent extends CustomEvent {
+    constructor(metric1, metric2) {
+        super(LinkGraphsEvent.TYPE, {
+            detail: { metric1, metric2 },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+LinkGraphsEvent.TYPE = 'link-graphs';
+class UnlinkGraphsEvent extends CustomEvent {
+    constructor(groupIndex) {
+        super(UnlinkGraphsEvent.TYPE, {
+            detail: { groupIndex },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+UnlinkGraphsEvent.TYPE = 'unlink-graphs';
+class TriggerActionEvent extends CustomEvent {
+    constructor(action) {
+        super(TriggerActionEvent.TYPE, {
+            detail: { action },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+TriggerActionEvent.TYPE = 'trigger-action';
+class RangeChangeEvent extends CustomEvent {
+    constructor(range) {
+        super(RangeChangeEvent.TYPE, {
+            detail: { range },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+RangeChangeEvent.TYPE = 'range-change';
+class UnlinkGraphMetricEvent extends CustomEvent {
+    constructor(metric) {
+        super(UnlinkGraphMetricEvent.TYPE, {
+            detail: { metric },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+UnlinkGraphMetricEvent.TYPE = 'unlink-graph';
+class PlantClickEvent extends CustomEvent {
+    constructor(plant) {
+        super(PlantClickEvent.TYPE, {
+            detail: { plant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+PlantClickEvent.TYPE = 'plant-click';
+class AddPlantClickEvent extends CustomEvent {
+    constructor(row, col) {
+        super(AddPlantClickEvent.TYPE, {
+            detail: { row, col },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+AddPlantClickEvent.TYPE = 'add-plant-click';
+class PlantDropEvent extends CustomEvent {
+    constructor(originalEvent, targetRow, targetCol, targetPlant, sourcePlant) {
+        super(PlantDropEvent.TYPE, {
+            detail: { originalEvent, targetRow, targetCol, targetPlant, sourcePlant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+PlantDropEvent.TYPE = 'plant-drop';
+class SelectionChangedEvent extends CustomEvent {
+    constructor(selectedPlants) {
+        super(SelectionChangedEvent.TYPE, {
+            detail: { selectedPlants },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+SelectionChangedEvent.TYPE = 'selection-changed';
+class UpdatePlantEvent extends CustomEvent {
+    constructor(updates) {
+        super(UpdatePlantEvent.TYPE, {
+            detail: updates,
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+UpdatePlantEvent.TYPE = 'update-plant';
+class DeletePlantEvent extends CustomEvent {
+    constructor(plantId) {
+        super(DeletePlantEvent.TYPE, {
+            detail: { plantId },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+DeletePlantEvent.TYPE = 'delete-plant';
+class HarvestPlantEvent extends CustomEvent {
+    constructor(plant) {
+        super(HarvestPlantEvent.TYPE, {
+            detail: { plant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+HarvestPlantEvent.TYPE = 'harvest-plant';
+class FinishDryingEvent extends CustomEvent {
+    constructor(plant) {
+        super(FinishDryingEvent.TYPE, {
+            detail: { plant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+FinishDryingEvent.TYPE = 'finish-drying';
+class TakeCloneEvent extends CustomEvent {
+    constructor(plant, numClones) {
+        super(TakeCloneEvent.TYPE, {
+            detail: { plant, numClones },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+TakeCloneEvent.TYPE = 'take-clone';
+class MoveCloneEvent extends CustomEvent {
+    constructor(plant, targetGrowspace) {
+        super(MoveCloneEvent.TYPE, {
+            detail: { plant, targetGrowspace },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+MoveCloneEvent.TYPE = 'move-clone';
+
+let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
     constructor() {
         super(...arguments);
         this.history = [];
@@ -9722,18 +9894,10 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$1 {
         };
     }
     _toggleEnvGraph() {
-        this.dispatchEvent(new CustomEvent('toggle-graph', {
-            detail: { metric: this.metricKey },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new ToggleEnvGraphEvent(this.metricKey));
     }
     _unlinkGraphs(groupIndex) {
-        this.dispatchEvent(new CustomEvent('unlink-graphs', {
-            detail: { groupIndex },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new UnlinkGraphsEvent(groupIndex));
     }
     render() {
         if (this.isCombined) {
@@ -10309,7 +10473,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$1 {
                              @click=${() => {
             // Find group index logic would be needed here or passed down
             // For now, we'll dispatch an event with the key
-            this.dispatchEvent(new CustomEvent('unlink-graph', { detail: { metric: g.key } }));
+            this.dispatchEvent(new UnlinkGraphMetricEvent(g.key));
         }}
                              title="Unlink Graph">
                              <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: #fff;"><path d="${mdiLink}"></path></svg>
@@ -10393,7 +10557,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$1 {
     `;
     }
 };
-GrowspaceEnvChart.styles = i$4 `
+GrowspaceEnvChart.styles = i$5 `
     :host { display: block; position: relative; }
     
     .gs-env-graph-card {
@@ -10534,7 +10698,7 @@ GrowspaceEnvChart.styles = i$4 `
     }
   `;
 __decorate([
-    n$2({ attribute: false }),
+    c$1({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "hass", void 0);
 __decorate([
@@ -10602,14 +10766,14 @@ __decorate([
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "metricConfig", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "_tooltip", void 0);
 GrowspaceEnvChart = __decorate([
-    t('growspace-env-chart')
+    t$2('growspace-env-chart')
 ], GrowspaceEnvChart);
 
-const dialogStyles = i$4 `
+const dialogStyles = i$5 `
   .glass-dialog-container {
     background: rgba(20, 20, 20, 0.6);
     backdrop-filter: blur(12px);
@@ -10818,7 +10982,7 @@ const dialogStyles = i$4 `
   }
 `;
 
-let Md3TextInput = class Md3TextInput extends i$1 {
+let Md3TextInput = class Md3TextInput extends i$2 {
     constructor() {
         super(...arguments);
         this.label = '';
@@ -10850,7 +11014,7 @@ let Md3TextInput = class Md3TextInput extends i$1 {
 };
 Md3TextInput.styles = [
     dialogStyles,
-    i$4 `
+    i$5 `
       :host {
         display: block;
         width: 100%;
@@ -10878,10 +11042,10 @@ __decorate([
     __metadata("design:type", Object)
 ], Md3TextInput.prototype, "list", void 0);
 Md3TextInput = __decorate([
-    t('md3-text-input')
+    t$2('md3-text-input')
 ], Md3TextInput);
 
-let Md3NumberInput = class Md3NumberInput extends i$1 {
+let Md3NumberInput = class Md3NumberInput extends i$2 {
     constructor() {
         super(...arguments);
         this.label = '';
@@ -10913,7 +11077,7 @@ let Md3NumberInput = class Md3NumberInput extends i$1 {
 };
 Md3NumberInput.styles = [
     dialogStyles,
-    i$4 `
+    i$5 `
       :host {
         display: block;
         width: 100%;
@@ -10941,10 +11105,10 @@ __decorate([
     __metadata("design:type", Object)
 ], Md3NumberInput.prototype, "placeholder", void 0);
 Md3NumberInput = __decorate([
-    t('md3-number-input')
+    t$2('md3-number-input')
 ], Md3NumberInput);
 
-let Md3Select = class Md3Select extends i$1 {
+let Md3Select = class Md3Select extends i$2 {
     constructor() {
         super(...arguments);
         this.label = '';
@@ -10978,7 +11142,7 @@ let Md3Select = class Md3Select extends i$1 {
 };
 Md3Select.styles = [
     dialogStyles,
-    i$4 `
+    i$5 `
       :host {
         display: block;
         width: 100%;
@@ -10998,10 +11162,10 @@ __decorate([
     __metadata("design:type", Array)
 ], Md3Select.prototype, "options", void 0);
 Md3Select = __decorate([
-    t('md3-select')
+    t$2('md3-select')
 ], Md3Select);
 
-let Md3DateInput = class Md3DateInput extends i$1 {
+let Md3DateInput = class Md3DateInput extends i$2 {
     constructor() {
         super(...arguments);
         this.label = '';
@@ -11037,7 +11201,7 @@ let Md3DateInput = class Md3DateInput extends i$1 {
 };
 Md3DateInput.styles = [
     dialogStyles,
-    i$4 `
+    i$5 `
       :host {
         display: block;
         width: 100%;
@@ -11057,10 +11221,10 @@ __decorate([
     __metadata("design:type", Object)
 ], Md3DateInput.prototype, "time", void 0);
 Md3DateInput = __decorate([
-    t('md3-date-input')
+    t$2('md3-date-input')
 ], Md3DateInput);
 
-let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
+let PlantOverviewDialog = class PlantOverviewDialog extends i$2 {
     constructor() {
         super(...arguments);
         this.open = false;
@@ -11094,21 +11258,21 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
         this.dispatchEvent(new CustomEvent('close'));
     }
     _update() {
-        this.dispatchEvent(new CustomEvent('update', { detail: this.editedAttributes }));
+        this.dispatchEvent(new UpdatePlantEvent(this.editedAttributes));
     }
     _delete(plantId) {
         if (!confirm('Are you sure you want to delete this plant? This action cannot be undone.'))
             return;
-        this.dispatchEvent(new CustomEvent('delete', { detail: { plantId } }));
+        this.dispatchEvent(new DeletePlantEvent(plantId));
     }
     _harvest(plant) {
-        this.dispatchEvent(new CustomEvent('harvest', { detail: { plant } }));
+        this.dispatchEvent(new HarvestPlantEvent(plant));
     }
     _finishDrying(plant) {
-        this.dispatchEvent(new CustomEvent('finish-drying', { detail: { plant } }));
+        this.dispatchEvent(new FinishDryingEvent(plant));
     }
     _takeClone(plant, numClones) {
-        this.dispatchEvent(new CustomEvent('take-clone', { detail: { plant, numClones } }));
+        this.dispatchEvent(new TakeCloneEvent(plant, numClones));
     }
     _moveClone(plant) {
         if (!this.cloneTargetId) {
@@ -11116,7 +11280,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
             alert('Select a growspace');
             return;
         }
-        this.dispatchEvent(new CustomEvent('move-clone', { detail: { plant, targetGrowspace: this.cloneTargetId } }));
+        this.dispatchEvent(new MoveCloneEvent(plant, this.cloneTargetId));
     }
     _attributeChange(key, value) {
         this.editedAttributes = { ...this.editedAttributes, [key]: value };
@@ -11376,7 +11540,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$1 {
 };
 PlantOverviewDialog.styles = [
     dialogStyles,
-    i$4 `
+    i$5 `
       :host {
         display: block;
       }
@@ -11500,7 +11664,7 @@ PlantOverviewDialog.styles = [
     `
 ];
 __decorate([
-    n$2({ attribute: false }),
+    c$1({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "hass", void 0);
 __decorate([
@@ -11520,26 +11684,26 @@ __decorate([
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "growspaceOptions", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "editedAttributes", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "isEditing", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "showAllDates", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "cloneTargetId", void 0);
 PlantOverviewDialog = __decorate([
-    t('plant-overview-dialog')
+    t$2('plant-overview-dialog')
 ], PlantOverviewDialog);
 
-let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
+let StrainLibraryDialog = class StrainLibraryDialog extends i$2 {
     constructor() {
         super(...arguments);
         this.open = false;
@@ -12234,7 +12398,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$1 {
 };
 StrainLibraryDialog.styles = [
     dialogStyles,
-    i$4 `
+    i$5 `
     :host {
       --accent-green: #4CAF50;
       /* Using dialogStyles variables where possible */
@@ -12737,46 +12901,46 @@ __decorate([
     __metadata("design:type", Array)
 ], StrainLibraryDialog.prototype, "strains", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", String)
 ], StrainLibraryDialog.prototype, "_view", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_searchQuery", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_editorState", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_isCropping", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_isImageSelectorOpen", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_importDialogOpen", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_mobileMenuOpen", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_importReplace", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_currentPage", void 0);
 StrainLibraryDialog = __decorate([
-    t('strain-library-dialog')
+    t$2('strain-library-dialog')
 ], StrainLibraryDialog);
 
-let Md3Switch = class Md3Switch extends i$1 {
+let Md3Switch = class Md3Switch extends i$2 {
     constructor() {
         super(...arguments);
         this.checked = false;
@@ -12805,7 +12969,7 @@ let Md3Switch = class Md3Switch extends i$1 {
     `;
     }
 };
-Md3Switch.styles = i$4 `
+Md3Switch.styles = i$5 `
     :host {
       display: inline-block;
       vertical-align: middle;
@@ -12861,10 +13025,10 @@ __decorate([
     __metadata("design:type", Object)
 ], Md3Switch.prototype, "disabled", void 0);
 Md3Switch = __decorate([
-    t('md3-switch')
+    t$2('md3-switch')
 ], Md3Switch);
 
-let IrrigationDialog = class IrrigationDialog extends i$1 {
+let IrrigationDialog = class IrrigationDialog extends i$2 {
     constructor() {
         super(...arguments);
         this.open = false;
@@ -12884,7 +13048,7 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
         if (changedProps.has('open') && this.open) {
             this._initializeState();
         }
-        if (changedProps.has('hass')) {
+        if (this.hass && (changedProps.has('hass') || !this._dataService)) {
             this._dataService = new DataService(this.hass);
         }
     }
@@ -13329,7 +13493,7 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
 };
 IrrigationDialog.styles = [
     dialogStyles,
-    i$4 `
+    i$5 `
         :host {
              --mdc-dialog-min-width: 400px;
              --mdc-dialog-max-width: 1000px;
@@ -13412,8 +13576,7 @@ IrrigationDialog.styles = [
     `
 ];
 __decorate([
-    c({ context: hassContext, subscribe: true }),
-    n$2({ attribute: false }),
+    c$1({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "hass", void 0);
 __decorate([
@@ -13433,50 +13596,50 @@ __decorate([
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "growspaceEntityId", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "_irrigation_pump_entity", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "_drain_pump_entity", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "_irrigation_duration", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "_drain_duration", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Array)
 ], IrrigationDialog.prototype, "_irrigation_times", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Array)
 ], IrrigationDialog.prototype, "_drain_times", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "_adding_irrigation_time", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "_adding_drain_time", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", String)
 ], IrrigationDialog.prototype, "_activeTab", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "_strategy", void 0);
 IrrigationDialog = __decorate([
-    t('irrigation-dialog')
+    t$2('irrigation-dialog')
 ], IrrigationDialog);
 
-let AddPlantDialog = class AddPlantDialog extends i$1 {
+let AddPlantDialog = class AddPlantDialog extends i$2 {
     constructor() {
         super(...arguments);
         this.strainLibrary = [];
@@ -13642,7 +13805,7 @@ let AddPlantDialog = class AddPlantDialog extends i$1 {
 };
 AddPlantDialog.styles = [
     dialogStyles,
-    i$4 `
+    i$5 `
       :host {
         display: block;
       }
@@ -13663,8 +13826,7 @@ AddPlantDialog.styles = [
     `
 ];
 __decorate([
-    c({ context: hassContext, subscribe: true }),
-    n$2({ attribute: false }),
+    c$1({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "hass", void 0);
 __decorate([
@@ -13680,11 +13842,11 @@ __decorate([
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "open", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "strain", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "phenotype", void 0);
 __decorate([
@@ -13696,38 +13858,38 @@ __decorate([
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "col", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "veg_start", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "flower_start", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "seedling_start", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "mother_start", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "clone_start", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "dry_start", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "cure_start", void 0);
 AddPlantDialog = __decorate([
-    t('add-plant-dialog')
+    t$2('add-plant-dialog')
 ], AddPlantDialog);
 
-let ConfigDialog = class ConfigDialog extends i$1 {
+let ConfigDialog = class ConfigDialog extends i$2 {
     constructor() {
         super(...arguments);
         this.open = false;
@@ -13971,7 +14133,7 @@ let ConfigDialog = class ConfigDialog extends i$1 {
 };
 ConfigDialog.styles = [
     dialogStyles,
-    i$4 `
+    i$5 `
       :host {
         display: block;
       }
@@ -14045,62 +14207,62 @@ __decorate([
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "growspaceOptions", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", String)
 ], ConfigDialog.prototype, "currentTab", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "add_name", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "add_rows", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "add_plants_per_row", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "add_notification_service", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_selectedGrowspaceId", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_temp_sensor", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_humidity_sensor", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_vpd_sensor", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_co2_sensor", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_circulation_fan", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_stress_threshold", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_mold_threshold", void 0);
 ConfigDialog = __decorate([
-    t('config-dialog')
+    t$2('config-dialog')
 ], ConfigDialog);
 
-let GrowMasterDialog = class GrowMasterDialog extends i$1 {
+let GrowMasterDialog = class GrowMasterDialog extends i$2 {
     constructor() {
         super(...arguments);
         this.open = false;
@@ -14210,7 +14372,7 @@ let GrowMasterDialog = class GrowMasterDialog extends i$1 {
 };
 GrowMasterDialog.styles = [
     dialogStyles,
-    i$4 `
+    i$5 `
         :host {
             display: block;
         }
@@ -14289,14 +14451,14 @@ __decorate([
     __metadata("design:type", Object)
 ], GrowMasterDialog.prototype, "response", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], GrowMasterDialog.prototype, "userQuery", void 0);
 GrowMasterDialog = __decorate([
-    t('grow-master-dialog')
+    t$2('grow-master-dialog')
 ], GrowMasterDialog);
 
-let StrainRecommendationDialog = class StrainRecommendationDialog extends i$1 {
+let StrainRecommendationDialog = class StrainRecommendationDialog extends i$2 {
     constructor() {
         super(...arguments);
         this.open = false;
@@ -14389,7 +14551,7 @@ let StrainRecommendationDialog = class StrainRecommendationDialog extends i$1 {
 };
 StrainRecommendationDialog.styles = [
     dialogStyles,
-    i$4 `
+    i$5 `
         :host {
             display: block;
         }
@@ -14443,7 +14605,7 @@ StrainRecommendationDialog.styles = [
     `
 ];
 __decorate([
-    n$2({ attribute: false }),
+    c$1({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], StrainRecommendationDialog.prototype, "hass", void 0);
 __decorate([
@@ -14463,7 +14625,7 @@ __decorate([
     __metadata("design:type", String)
 ], StrainRecommendationDialog.prototype, "userQuery", void 0);
 StrainRecommendationDialog = __decorate([
-    t('strain-recommendation-dialog')
+    t$2('strain-recommendation-dialog')
 ], StrainRecommendationDialog);
 
 class GrowspaceLogbookController {
@@ -14489,7 +14651,7 @@ class GrowspaceLogbookController {
     }
 }
 
-let GrowspaceLogbook = class GrowspaceLogbook extends i$1 {
+let GrowspaceLogbook = class GrowspaceLogbook extends i$2 {
     constructor() {
         super(...arguments);
         this._events = [];
@@ -14639,7 +14801,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$1 {
 };
 GrowspaceLogbook.styles = [
     dialogStyles,
-    i$4 `
+    i$5 `
       :host {
         display: block;
         height: 100%;
@@ -14762,7 +14924,7 @@ GrowspaceLogbook.styles = [
     `
 ];
 __decorate([
-    n$2({ attribute: false }),
+    c$1({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], GrowspaceLogbook.prototype, "hass", void 0);
 __decorate([
@@ -14770,22 +14932,22 @@ __decorate([
     __metadata("design:type", String)
 ], GrowspaceLogbook.prototype, "growspaceId", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Array)
 ], GrowspaceLogbook.prototype, "_events", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], GrowspaceLogbook.prototype, "_isLoading", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], GrowspaceLogbook.prototype, "_activeFilter", void 0);
 GrowspaceLogbook = __decorate([
-    t('growspace-logbook')
+    t$2('growspace-logbook')
 ], GrowspaceLogbook);
 
-let LogbookDialog = class LogbookDialog extends i$1 {
+let LogbookDialog = class LogbookDialog extends i$2 {
     constructor() {
         super(...arguments);
         this.open = false;
@@ -14823,7 +14985,7 @@ let LogbookDialog = class LogbookDialog extends i$1 {
 };
 LogbookDialog.styles = [
     dialogStyles,
-    i$4 `
+    i$5 `
       ha-dialog {
         --mdc-dialog-min-width: 90vw;
         --mdc-dialog-max-width: 90vw;
@@ -14861,7 +15023,7 @@ LogbookDialog.styles = [
     `
 ];
 __decorate([
-    n$2({ attribute: false }),
+    c$1({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], LogbookDialog.prototype, "hass", void 0);
 __decorate([
@@ -14873,10 +15035,10 @@ __decorate([
     __metadata("design:type", Object)
 ], LogbookDialog.prototype, "growspaceId", void 0);
 LogbookDialog = __decorate([
-    t('logbook-dialog')
+    t$2('logbook-dialog')
 ], LogbookDialog);
 
-let GrowspacePlantCard = class GrowspacePlantCard extends i$1 {
+let GrowspacePlantCard = class GrowspacePlantCard extends i$2 {
     constructor() {
         super(...arguments);
         this.strainLibrary = [];
@@ -15123,7 +15285,7 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$1 {
     `;
     }
 };
-GrowspacePlantCard.styles = i$4 `
+GrowspacePlantCard.styles = i$5 `
     :host {
       display: block;
       width: 100%;
@@ -15317,10 +15479,10 @@ __decorate([
     __metadata("design:type", Object)
 ], GrowspacePlantCard.prototype, "selected", void 0);
 GrowspacePlantCard = __decorate([
-    t('growspace-plant-card')
+    t$2('growspace-plant-card')
 ], GrowspacePlantCard);
 
-let GrowspaceHeader = class GrowspaceHeader extends i$1 {
+let GrowspaceHeader = class GrowspaceHeader extends i$2 {
     constructor() {
         super(...arguments);
         this.devices = [];
@@ -15340,18 +15502,10 @@ let GrowspaceHeader = class GrowspaceHeader extends i$1 {
     }
     _handleDeviceChange(e) {
         const target = e.target;
-        this.dispatchEvent(new CustomEvent('growspace-changed', {
-            detail: { deviceId: target.value },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new DeviceChangeEvent(target.value));
     }
     _toggleEnvGraph(metric) {
-        this.dispatchEvent(new CustomEvent('toggle-env-graph', {
-            detail: { metric },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new ToggleEnvGraphEvent(metric));
     }
     _handleChipDragStart(e, metric) {
         this._draggedMetric = metric;
@@ -15366,11 +15520,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$1 {
             this._draggedMetric = null;
             return;
         }
-        this.dispatchEvent(new CustomEvent('link-graphs', {
-            detail: { metric1: this._draggedMetric, metric2: targetMetric },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new LinkGraphsEvent(this._draggedMetric, targetMetric));
         this._draggedMetric = null;
     }
     _handleDragOver(e) {
@@ -15387,11 +15537,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$1 {
         };
     }
     _unlinkGraphs(groupIndex) {
-        this.dispatchEvent(new CustomEvent('unlink-graphs', {
-            detail: { groupIndex },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new UnlinkGraphsEvent(groupIndex));
     }
     connectedCallback() {
         super.connectedCallback();
@@ -15421,11 +15567,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$1 {
         return 'true';
     }
     _triggerAction(action) {
-        this.dispatchEvent(new CustomEvent('trigger-action', {
-            detail: { action },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new TriggerActionEvent(action));
         this._menuOpen = false;
     }
     render() {
@@ -15945,7 +16087,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$1 {
     `;
     }
 };
-GrowspaceHeader.styles = i$4 `
+GrowspaceHeader.styles = i$5 `
     :host {
       display: block;
     }
@@ -16360,8 +16502,7 @@ GrowspaceHeader.styles = i$4 `
     }
   `;
 __decorate([
-    c({ context: hassContext, subscribe: true }),
-    n$2({ attribute: false }),
+    c$1({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "hass", void 0);
 __decorate([
@@ -16369,7 +16510,7 @@ __decorate([
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "device", void 0);
 __decorate([
-    c({ context: configContext, subscribe: true }),
+    c$1({ context: configContext, subscribe: true }),
     n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "config", void 0);
@@ -16398,7 +16539,7 @@ __decorate([
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "historyData", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_menuOpen", void 0);
 __decorate([
@@ -16406,30 +16547,50 @@ __decorate([
     __metadata("design:type", Array)
 ], GrowspaceHeader.prototype, "linkedGraphGroups", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_draggedMetric", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_mobileLink", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_isCompact", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_isMobileCheck", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_hasTouch", void 0);
 GrowspaceHeader = __decorate([
-    t('growspace-header')
+    t$2('growspace-header')
 ], GrowspaceHeader);
 
-let GrowspaceGrid = class GrowspaceGrid extends i$1 {
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const t$1={ATTRIBUTE:1,CHILD:2,PROPERTY:3,BOOLEAN_ATTRIBUTE:4,EVENT:5,ELEMENT:6},e=t=>(...e)=>({_$litDirective$:t,values:e});class i{constructor(t){}get _$AU(){return this._$AM._$AU}_$AT(t,e,i){this._$Ct=t,this._$AM=e,this._$Ci=i;}_$AS(t,e){return this.update(t,e)}update(t,e){return this.render(...e)}}
+
+/**
+ * @license
+ * Copyright 2020 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const {I:t}=Z,r=()=>document.createComment(""),s=(o,i,n)=>{const e=o._$AA.parentNode,l=void 0===i?o._$AB:i._$AA;if(void 0===n){const i=e.insertBefore(r(),l),d=e.insertBefore(r(),l);n=new t(i,d,o,o.options);}else {const t=n._$AB.nextSibling,i=n._$AM,d=i!==o;if(d){let t;n._$AQ?.(o),n._$AM=o,void 0!==n._$AP&&(t=o._$AU)!==i._$AU&&n._$AP(t);}if(t!==l||d){let o=n._$AA;for(;o!==t;){const t=o.nextSibling;e.insertBefore(o,l),o=t;}}}return n},v=(o,t,i=o)=>(o._$AI(t,i),o),u$1={},m=(o,t=u$1)=>o._$AH=t,p=o=>o._$AH,M=o=>{o._$AR(),o._$AA.remove();};
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const u=(e,s,t)=>{const r=new Map;for(let l=s;l<=t;l++)r.set(e[l],l);return r},c=e(class extends i{constructor(e){if(super(e),e.type!==t$1.CHILD)throw Error("repeat() can only be used in text expressions")}dt(e,s,t){let r;void 0===t?t=s:void 0!==s&&(r=s);const l=[],o=[];let i=0;for(const s of e)l[i]=r?r(s,i):i,o[i]=t(s,i),i++;return {values:o,keys:l}}render(e,s,t){return this.dt(e,s,t).values}update(s$1,[t,r,c]){const d=p(s$1),{values:p$1,keys:a}=this.dt(t,r,c);if(!Array.isArray(d))return this.ut=a,p$1;const h=this.ut??=[],v$1=[];let m$1,y,x=0,j=d.length-1,k=0,w=p$1.length-1;for(;x<=j&&k<=w;)if(null===d[x])x++;else if(null===d[j])j--;else if(h[x]===a[k])v$1[k]=v(d[x],p$1[k]),x++,k++;else if(h[j]===a[w])v$1[w]=v(d[j],p$1[w]),j--,w--;else if(h[x]===a[w])v$1[w]=v(d[x],p$1[w]),s(s$1,v$1[w+1],d[x]),x++,w--;else if(h[j]===a[k])v$1[k]=v(d[j],p$1[k]),s(s$1,d[x],d[j]),j--,k++;else if(void 0===m$1&&(m$1=u(a,k,w),y=u(h,x,j)),m$1.has(h[x]))if(m$1.has(h[j])){const e=y.get(a[k]),t=void 0!==e?d[e]:null;if(null===t){const e=s(s$1,d[x]);v(e,p$1[k]),v$1[k]=e;}else v$1[k]=v(t,p$1[k]),s(s$1,d[x],t),d[e]=null;k++;}else M(d[j]),j--;else M(d[x]),x++;for(;k<=w;){const e=s(s$1,v$1[w+1]);v(e,p$1[k]),v$1[k++]=e;}for(;x<=j;){const e=d[x++];null!==e&&M(e);}return this.ut=a,m(s$1,v$1),T}});
+
+let GrowspaceGrid = class GrowspaceGrid extends i$2 {
     constructor() {
         super(...arguments);
         this.plants = [];
@@ -16448,28 +16609,15 @@ let GrowspaceGrid = class GrowspaceGrid extends i$1 {
         e.preventDefault();
     }
     _handleDrop(e, targetRow, targetCol, targetPlant) {
-        e.preventDefault();
+        if (e)
+            e.preventDefault();
         if (!this._draggedPlant)
             return;
-        this.dispatchEvent(new CustomEvent('plant-drop', {
-            detail: {
-                originalEvent: e,
-                sourcePlant: this._draggedPlant,
-                targetRow,
-                targetCol,
-                targetPlant
-            },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new PlantDropEvent(e, targetRow, targetCol, targetPlant, this._draggedPlant));
         this._draggedPlant = null;
     }
     _handlePlantClick(plant) {
-        this.dispatchEvent(new CustomEvent('plant-click', {
-            detail: { plant },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new PlantClickEvent(plant));
     }
     _togglePlantSelection(plant) {
         const plantId = plant.attributes.plant_id;
@@ -16482,11 +16630,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i$1 {
         else {
             newSet.add(plantId);
         }
-        this.dispatchEvent(new CustomEvent('selection-changed', {
-            detail: { selectedPlants: newSet },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new SelectionChangedEvent(newSet));
     }
     _handleMobileDrop(e) {
         const { x, y, plant } = e.detail;
@@ -16518,17 +16662,10 @@ let GrowspaceGrid = class GrowspaceGrid extends i$1 {
             }
         }
         if (targetRow !== null && targetCol !== null) {
-            this.dispatchEvent(new CustomEvent('plant-drop', {
-                detail: {
-                    originalEvent: null,
-                    sourcePlant: plant,
-                    targetRow,
-                    targetCol,
-                    targetPlant
-                },
-                bubbles: true,
-                composed: true
-            }));
+            if (targetRow !== null && targetCol !== null) {
+                this.dispatchEvent(new PlantDropEvent(null, // drag event not available in mobile drop
+                targetRow, targetCol, targetPlant, plant));
+            }
         }
     }
     render() {
@@ -16543,7 +16680,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i$1 {
       <div class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
            style="${gridStyle}"
            @mobile-drop=${this._handleMobileDrop}>
-        ${flatGrid.map((plant, index) => {
+         ${c(flatGrid, (plant, index) => plant ? (plant.attributes?.plant_id || plant.entity_id) : `empty-${index}`, (plant, index) => {
             // Recalculate row/col based on grid index
             const row = Math.floor(index / this.cols) + 1;
             const col = (index % this.cols) + 1;
@@ -16553,19 +16690,19 @@ let GrowspaceGrid = class GrowspaceGrid extends i$1 {
             const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
             const isSelected = this.selectedPlants.has(plantId);
             return x `
-            <growspace-plant-card
-              .plant=${plant}
-              .row=${row}
-              .col=${col}
-              .strainLibrary=${this.strainLibrary}
-              .isEditMode=${this.isEditMode}
-              .selected=${isSelected}
-              @plant-click=${() => this._handlePlantClick(plant)}
-              @plant-drag-start=${() => this._handleDragStart(plant)}
-              @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, row, col, plant)}
-              @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
-            ></growspace-plant-card>
-          `;
+               <growspace-plant-card
+                 .plant=${plant}
+                 .row=${row}
+                 .col=${col}
+                 .strainLibrary=${this.strainLibrary}
+                 .isEditMode=${this.isEditMode}
+                 .selected=${isSelected}
+                 @plant-click=${() => this._handlePlantClick(plant)}
+                 @plant-drag-start=${() => this._handleDragStart(plant)}
+                 @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, row, col, plant)}
+                 @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
+               ></growspace-plant-card>
+             `;
         })}
       </div>
     `;
@@ -16577,7 +16714,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i$1 {
         data-row="${row}"
         data-col="${col}"
         style="grid-row: ${row}; grid-column: ${col}"
-        @click=${() => this.dispatchEvent(new CustomEvent('add-plant-click', { detail: { row: row - 1, col: col - 1 } }))}
+        @click=${() => this.dispatchEvent(new AddPlantClickEvent(row - 1, col - 1))}
         @dragover=${this._handleDragOver}
         @drop=${(e) => this._handleDrop(e, row, col, null)}
       >
@@ -16591,7 +16728,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i$1 {
     `;
     }
 };
-GrowspaceGrid.styles = i$4 `
+GrowspaceGrid.styles = i$5 `
       :host {
         display: block;
       }
@@ -16858,10 +16995,10 @@ __decorate([
     __metadata("design:type", Boolean)
 ], GrowspaceGrid.prototype, "compact", void 0);
 GrowspaceGrid = __decorate([
-    t('growspace-grid')
+    t$2('growspace-grid')
 ], GrowspaceGrid);
 
-const growspaceCardStyles = i$4 `
+const growspaceCardStyles = i$5 `
       :host {
         display: block;
         font-family: 'Roboto', sans-serif;
@@ -18157,7 +18294,7 @@ const growspaceCardStyles = i$4 `
       }
 `;
 
-let GrowspaceAnalytics = class GrowspaceAnalytics extends i$1 {
+let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
     constructor() {
         super(...arguments);
         this.historyData = [];
@@ -18283,11 +18420,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$1 {
     `;
     }
     _setGraphRange(range) {
-        this.dispatchEvent(new CustomEvent('range-change', {
-            detail: { range },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new RangeChangeEvent(range));
     }
     _handleToggleGraph(e) {
         // Re-dispatch if needed, but since we use bubbles: true, it might go up automatically.
@@ -18304,7 +18437,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$1 {
 };
 GrowspaceAnalytics.styles = [
     growspaceCardStyles,
-    i$4 `
+    i$5 `
       :host {
         display: block;
       }
@@ -18316,7 +18449,7 @@ GrowspaceAnalytics.styles = [
     `
 ];
 __decorate([
-    n$2({ attribute: false }),
+    c$1({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], GrowspaceAnalytics.prototype, "hass", void 0);
 __decorate([
@@ -18356,7 +18489,7 @@ __decorate([
     __metadata("design:type", String)
 ], GrowspaceAnalytics.prototype, "range", void 0);
 GrowspaceAnalytics = __decorate([
-    t('growspace-analytics')
+    t$2('growspace-analytics')
 ], GrowspaceAnalytics);
 
 class GrowspaceStore {
@@ -18388,6 +18521,7 @@ class GrowspaceStore {
         };
         this.host = host;
         host.addController(this);
+        this.dataService = new DataService();
     }
     hostConnected() {
         // Lifecycle hook
@@ -18397,13 +18531,13 @@ class GrowspaceStore {
     }
     updateHass(hass) {
         this.hass = hass;
-        if (!this.dataService) {
-            this.dataService = new DataService(this.hass);
-        }
-        else {
-            // Re-instantiate data service if needed or just rely on it using the hass instance?
-            // DataService constructor takes hass.
-            this.dataService = new DataService(this.hass);
+        this.dataService.updateHass(hass);
+        if (!this.state.selectedDevice) {
+            const devices = this.dataService.getGrowspaceDevices();
+            if (devices.length > 0) {
+                this.state.selectedDevice = devices[0].device_id;
+                this.requestUpdate();
+            }
         }
         this.pruneOptimisticDeletions();
     }
@@ -18819,7 +18953,9 @@ class GrowspaceStore {
     }
     updateGrid() {
         // Force refresh from HA
-        this.dataService = new DataService(this.hass);
+        if (this.hass) {
+            this.dataService.updateHass(this.hass);
+        }
         this.requestUpdate();
     }
     async handleDrop(targetRow, targetCol, targetPlant, sourcePlant) {
@@ -19071,7 +19207,7 @@ class GrowspaceStore {
     }
 }
 
-let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
+let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
     constructor() {
         super(...arguments);
         this.store = new GrowspaceStore(this);
@@ -19079,7 +19215,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         this.historyController = new GrowspaceHistoryController(this);
         this._handleTakeClone = (motherPlant) => {
             const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
-            this.dataService.takeClone({
+            this.store.dataService.takeClone({
                 mother_plant_id: plantId
             }).then(() => {
                 console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
@@ -19090,6 +19226,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     }
     /* Getter for convenience/compatibility if needed, or update call sites */
     get selectedDevice() { return this.store.state.selectedDevice; }
+    // Getter to satisfy GrowspaceCardHost interface and allow external access
+    get dataService() {
+        return this.store.dataService;
+    }
     connectedCallback() {
         super.connectedCallback();
     }
@@ -19097,7 +19237,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         super.disconnectedCallback();
     }
     firstUpdated() {
-        this.dataService = new DataService(this.hass);
         this.store.updateHass(this.hass);
         this.store.initializeSelectedDevice(this._config);
         this.store.fetchStrainLibrary();
@@ -19106,9 +19245,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         super.updated(changedProps);
         if (changedProps.has('hass')) {
             this.store.updateHass(this.hass);
-            if (this.dataService) {
-                this.dataService.updateHass(this.hass);
-            }
         }
         // Handle focus update from store state
         if (this.store.state.focusedPlantIndex >= 0) {
@@ -19252,7 +19388,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         }, 'growspace_manager_strain_library_exported');
         // 4. Call the backend service to start the export
         try {
-            await this.dataService.exportStrainLibrary();
+            await this.store.dataService.exportStrainLibrary();
             // Optional: Show a "Exporting..." toast or spinner here
         }
         catch (err) {
@@ -19273,7 +19409,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         if (!file)
             return;
         try {
-            const result = await this.dataService.importStrainLibrary(file, replace);
+            const result = await this.store.dataService.importStrainLibrary(file, replace);
             this.store.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
             await this.store.fetchStrainLibrary();
         }
@@ -19284,20 +19420,21 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     }
     updateGrid() {
         // Refresh data from Home Assistant
-        if (this.hass && this.dataService) {
-            this.dataService.updateHass(this.hass);
+        if (this.hass) {
+            this.store.updateHass(this.hass);
         }
         // Force Lit to re-render
         this.requestUpdate();
         this.store.updateGrid();
     }
     async _handleDrop(e, targetRow, targetCol, targetPlant, sourcePlant) {
-        e.preventDefault();
+        if (e)
+            e.preventDefault();
         this.store.handleDrop(targetRow, targetCol, targetPlant, sourcePlant);
     }
     _moveClonePlant(plant, targetGrowspace) {
         const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-        this.dataService.moveClone(plantId, targetGrowspace)
+        this.store.dataService.moveClone(plantId, targetGrowspace)
             .then(() => {
             console.log(`Moved clone ${plant.attributes.friendly_name} to ${targetGrowspace}`);
             // Optionally refresh local state
@@ -19323,7 +19460,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
                 break;
             case 'control_dehumidifier':
                 if (this.store.state.selectedDevice) {
-                    const device = this.dataService.getGrowspaceDevices().find(d => d.device_id === this.store.state.selectedDevice);
+                    const device = this.store.dataService.getGrowspaceDevices().find(d => d.device_id === this.store.state.selectedDevice);
                     if (device && device.overview_entity_id) {
                         const stateObj = this.hass.states[device.overview_entity_id];
                         const attrs = stateObj?.attributes || {};
@@ -19331,7 +19468,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
                         // Ensure your backend GrowspaceOverviewSensor exposes this attribute!
                         const currentStatus = attrs.dehumidifier_control_enabled === true;
                         // 2. Call service with opposite state
-                        this.dataService.setDehumidifierControl(this.store.state.selectedDevice, !currentStatus)
+                        this.store.dataService.setDehumidifierControl(this.store.state.selectedDevice, !currentStatus)
                             .then(() => {
                             console.log(`Toggled dehumidifier control to ${!currentStatus} for`, this.store.state.selectedDevice);
                         }).catch(err => {
@@ -19387,7 +19524,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             return;
         }
         try {
-            await this.dataService.configureEnvironment({
+            await this.store.dataService.configureEnvironment({
                 growspace_id: selectedGrowspaceId,
                 temperature_sensor: temp_sensor,
                 humidity_sensor: humidity_sensor,
@@ -19431,10 +19568,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             let result;
             let responseText;
             if (all) {
-                result = await this.dataService.analyzeAllGrowspaces();
+                result = await this.store.dataService.analyzeAllGrowspaces();
             }
             else {
-                result = await this.dataService.askGrowAdvice(this.selectedDevice || '', query);
+                result = await this.store.dataService.askGrowAdvice(this.selectedDevice || '', query);
             }
             if (result && typeof result.response === 'object' && result.response.response) {
                 responseText = result.response.response;
@@ -19484,7 +19621,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         // Refactoring: _getStrainRecommendation(query: string)
         this.requestUpdate();
         try {
-            const response = await this.dataService.getStrainRecommendation(query || '');
+            const response = await this.store.dataService.getStrainRecommendation(query || '');
             if (this.store.state.activeDialog?.type === 'STRAIN_RECOMMENDATION') {
                 let responseText = null;
                 if (response && typeof response.response === 'string') {
@@ -19525,13 +19662,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         if (!this.hass)
             return [];
         // Ensure we have the latest HASS reference
-        if (!this.dataService) {
-            this.dataService = new DataService(this.hass);
+        if (this.hass) {
+            this.store.updateHass(this.hass);
         }
-        else {
-            this.dataService.updateHass(this.hass);
-        }
-        const devices = this.dataService.getGrowspaceDevices();
+        const devices = this.store.dataService.getGrowspaceDevices();
         // Filter out optimistically deleted plants
         devices.forEach(d => {
             d.plants = d.plants.filter(p => {
@@ -19600,7 +19734,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             @trigger-action=${this._handleHeaderAction}
           ></growspace-header>
           <growspace-analytics
-            .hass=${this.hass}
             .device=${selectedDeviceData}
             .historyData=${this.historyController.historyData || []}
             .dehumidifierHistory=${this.historyController.dehumidifierHistory || []}
@@ -19668,7 +19801,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
     `;
     }
     async _confirmAddPlant(detail) {
-        const devices = this.dataService.getGrowspaceDevices();
+        const devices = this.store.dataService.getGrowspaceDevices();
         const selectedDeviceData = devices.find(d => d.device_id === this.store.state.selectedDevice);
         if (!selectedDeviceData)
             return;
@@ -19678,7 +19811,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             return;
         }
         try {
-            await this.dataService.addPlant({
+            await this.store.dataService.addPlant({
                 growspace_id: selectedDeviceData.device_id,
                 strain,
                 phenotype: phenotype || '',
@@ -19698,43 +19831,53 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         const active = this.store.state.activeDialog;
         if (active.type === 'NONE')
             return x ``;
-        const strainLibrary = this.dataService?.getStrainLibrary() || [];
-        const devices = this.dataService.getGrowspaceDevices();
+        const strainLibrary = this.store.dataService?.getStrainLibrary() || [];
+        const devices = this.store.dataService.getGrowspaceDevices();
         const selectedDeviceData = devices.find(d => d.device_id === this.store.state.selectedDevice);
         // ADD PLANT DIALOG
         if (active.type === 'ADD_PLANT') {
             const dialogState = active.payload;
             return x `
         <add-plant-dialog
-          .hass=${this.hass}
-          .open=${true}
-          .strainLibrary=${strainLibrary}
-          .growspaceName=${selectedDeviceData?.name ?? ''}
-          .row=${dialogState.row}
-          .col=${dialogState.col}
-          @close=${() => this.store.closeActiveDialog()}
-          @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
-        ></add-plant-dialog>
+            .open=${true}
+            .strainLibrary=${strainLibrary}
+            .growspaceName=${selectedDeviceData?.name ?? ''}
+            .row=${dialogState.row}
+            .col=${dialogState.col}
+            @close=${() => this.store.closeActiveDialog()}
+            @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
+          ></add-plant-dialog>
       `;
         }
         // PLANT OVERVIEW DIALOG
         if (active.type === 'PLANT_OVERVIEW') {
+            const dialogState = active.payload;
             return x `
         <plant-overview-dialog
-          .dialog=${active.payload}
-          .growspaceOptions=${growspaceOptions}
-          @close=${() => this.store.closeActiveDialog()}
-          @update=${(e) => this.store.updatePlantFromDialog({ ...active.payload, editedAttributes: e.detail })}
-          @delete=${(e) => this.store.handleDeletePlant(e.detail.plantId)}
-          @harvest=${(e) => this.store.harvestPlant(e.detail.plant)}
-          @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
-          @take-clone=${(e) => {
-                this.store.clonePlant(e.detail.plant, e.detail.numClones);
-                this.store.closeActiveDialog();
+            .open=${true}
+            .dialog=${dialogState}
+            .plant=${dialogState.plant}
+            .growspaceOptions=${growspaceOptions}
+            @close=${() => this.store.closeActiveDialog()}
+            @update-plant=${(e) => {
+                const payload = active.payload;
+                this.store.updatePlantFromDialog({
+                    plant: payload.plant,
+                    editedAttributes: e.detail,
+                    selectedPlantIds: payload.selectedPlantIds
+                });
             }}
-          @move-clone=${(e) => {
+            @delete-plant=${(e) => this.store.handleDeletePlant(e.detail.plantId)}
+            @harvest-plant=${(e) => this.store.handleMovePlantToNextStage(e.detail.plant)}
+            @finish-drying=${(e) => this.store.handleMovePlantToNextStage(e.detail.plant)}
+            @take-clone=${(e) => {
+                const { plant, numClones } = e.detail;
+                this.store.handleTakeClone(plant, numClones);
+            }}
+            @move-clone=${(e) => {
                 const { plant, targetGrowspace } = e.detail;
-                this.dataService.moveClone(plant.attributes.plant_id, targetGrowspace)
+                const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
+                this.store.dataService.moveClone(plantId, targetGrowspace)
                     .then(() => {
                     console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
                     this.store.closeActiveDialog();
@@ -19742,17 +19885,17 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
                     console.error('Error moving clone:', err);
                 });
             }}
-          @attribute-change=${(e) => {
+            @attribute-change=${(e) => {
                 const payload = active.payload;
                 payload.editedAttributes[e.detail.key] = e.detail.value;
                 this.requestUpdate();
             }}
-          @toggle-show-all-dates=${() => {
+            @toggle-show-all-dates=${() => {
                 const payload = active.payload;
                 payload.showAllDates = !payload.showAllDates;
                 this.requestUpdate();
             }}
-        ></plant-overview-dialog>
+          ></plant-overview-dialog>
       `;
         }
         // STRAIN LIBRARY DIALOG
@@ -19836,25 +19979,23 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             const dialogState = active.payload;
             return x `
         <strain-recommendation-dialog
-          .open=${true}
-          .hass=${this.hass}
-          .isLoading=${dialogState.isLoading}
-          .response=${dialogState.response}
-          @close=${() => this.store.closeActiveDialog()}
-          @get-recommendation=${(e) => this.store.getStrainRecommendation(e.detail.query)}
-        ></strain-recommendation-dialog>
+            .open=${true}
+            .isLoading=${dialogState.isLoading}
+            .response=${dialogState.response}
+            @close=${() => this.store.closeActiveDialog()}
+            @get-recommendation=${(e) => this.store.getStrainRecommendation(e.detail.query)}
+          ></strain-recommendation-dialog>
       `;
         }
         // IRRIGATION DIALOG
         if (active.type === 'IRRIGATION') {
             return x `
          <irrigation-dialog
-           .hass=${this.hass}
-           .open=${true}
-           .growspaceId=${this.store.state.selectedDevice}
-           .growspaceName=${selectedDeviceData?.name || ''}
-           .growspaceEntityId=${selectedDeviceData?.overview_entity_id || ''}
-           @close=${() => this.store.closeActiveDialog()}
+            .open=${true}
+            .growspaceId=${selectedDeviceData?.device_id || ''}
+            .growspaceName=${selectedDeviceData?.name || ''}
+            .growspaceEntityId=${selectedDeviceData?.overview_entity_id || ''}
+            @close=${() => this.store.closeActiveDialog()}
          ></irrigation-dialog>
         `;
         }
@@ -19863,11 +20004,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
             const dialogState = active.payload;
             return x `
         <logbook-dialog
-          .hass=${this.hass}
-          .open=${true}
-          .growspaceId=${dialogState.growspaceId}
-          @close=${() => this.store.closeActiveDialog()}
-        ></logbook-dialog>
+            .open=${true}
+            .growspaceId=${dialogState.growspaceId}
+            @close=${() => this.store.closeActiveDialog()}
+          ></logbook-dialog>
       `;
         }
         return x ``;
@@ -19878,20 +20018,20 @@ GrowspaceManagerCard.styles = [
     growspaceCardStyles
 ];
 __decorate([
-    e({ context: hassContext }),
+    e$1({ context: hassContext }),
     n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCard.prototype, "hass", void 0);
 __decorate([
-    e({ context: configContext }),
+    e$1({ context: configContext }),
     n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCard.prototype, "_config", void 0);
 GrowspaceManagerCard = __decorate([
-    t('growspace-manager-card')
+    t$2('growspace-manager-card')
 ], GrowspaceManagerCard);
 
-let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$1 {
+let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$2 {
     constructor() {
         super(...arguments);
         this._growspaceOptions = [];
@@ -19972,7 +20112,7 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$1 {
         }));
     }
 };
-GrowspaceManagerCardEditor.styles = i$4 `
+GrowspaceManagerCardEditor.styles = i$5 `
     .form-group {
       margin-bottom: 12px;
     }
@@ -19996,11 +20136,11 @@ __decorate([
     __metadata("design:type", Object)
 ], GrowspaceManagerCardEditor.prototype, "_config", void 0);
 __decorate([
-    r(),
+    r$1(),
     __metadata("design:type", Array)
 ], GrowspaceManagerCardEditor.prototype, "_growspaceOptions", void 0);
 GrowspaceManagerCardEditor = __decorate([
-    t("growspace-manager-card-editor")
+    t$2("growspace-manager-card-editor")
 ], GrowspaceManagerCardEditor);
 
 var growspaceManagerCardEditor = /*#__PURE__*/Object.freeze({

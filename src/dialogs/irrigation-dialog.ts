@@ -14,7 +14,7 @@ import '../components/ui/md3-switch';
 @customElement('irrigation-dialog')
 export class IrrigationDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  @property({ attribute: false }) public hass!: HomeAssistant;
+  public hass!: HomeAssistant;
   @property({ type: Boolean }) public open = false;
   @property({ type: String }) public growspaceId = '';
   @property({ type: String }) public growspaceName = '';
@@ -123,7 +123,7 @@ export class IrrigationDialog extends LitElement {
     if (changedProps.has('open') && this.open) {
       this._initializeState();
     }
-    if (changedProps.has('hass')) {
+    if (this.hass && (changedProps.has('hass') || !this._dataService)) {
       this._dataService = new DataService(this.hass);
     }
   }

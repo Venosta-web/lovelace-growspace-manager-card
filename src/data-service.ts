@@ -5,7 +5,13 @@ import { noChange } from 'lit';
 import { DOMAIN, SERVICES } from './constants';
 
 export class DataService {
-  constructor(private hass: HomeAssistant) { }
+  public hass!: HomeAssistant;
+
+  constructor(hass?: HomeAssistant) {
+    if (hass) {
+      this.hass = hass;
+    }
+  }
 
   updateHass(hass: HomeAssistant) {
     this.hass = hass;

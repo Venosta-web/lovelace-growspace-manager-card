@@ -14,9 +14,21 @@ import '../components/ui/md3-number-input';
 import '../components/ui/md3-select';
 import '../components/ui/md3-date-input';
 
+import { consume } from '@lit/context';
+import { hassContext } from '../context';
+import {
+  UpdatePlantEvent,
+  DeletePlantEvent,
+  HarvestPlantEvent,
+  FinishDryingEvent,
+  TakeCloneEvent,
+  MoveCloneEvent
+} from '../events';
+
 @customElement('plant-overview-dialog')
 export class PlantOverviewDialog extends LitElement {
-  @property({ attribute: false }) hass!: HomeAssistant;
+  @consume({ context: hassContext, subscribe: true })
+  hass!: HomeAssistant;
   @property({ type: Boolean, reflect: true }) open = false;
   @property({ attribute: false }) dialog?: PlantOverviewDialogState;
   @property({ type: Object }) plant?: PlantEntity;
@@ -181,24 +193,24 @@ export class PlantOverviewDialog extends LitElement {
   }
 
   private _update() {
-    this.dispatchEvent(new CustomEvent('update', { detail: this.editedAttributes }));
+    this.dispatchEvent(new UpdatePlantEvent(this.editedAttributes));
   }
 
   private _delete(plantId: string) {
     if (!confirm('Are you sure you want to delete this plant? This action cannot be undone.')) return;
-    this.dispatchEvent(new CustomEvent('delete', { detail: { plantId } }));
+    this.dispatchEvent(new DeletePlantEvent(plantId));
   }
 
   private _harvest(plant: PlantEntity) {
-    this.dispatchEvent(new CustomEvent('harvest', { detail: { plant } }));
+    this.dispatchEvent(new HarvestPlantEvent(plant));
   }
 
   private _finishDrying(plant: PlantEntity) {
-    this.dispatchEvent(new CustomEvent('finish-drying', { detail: { plant } }));
+    this.dispatchEvent(new FinishDryingEvent(plant));
   }
 
   private _takeClone(plant: PlantEntity, numClones: number) {
-    this.dispatchEvent(new CustomEvent('take-clone', { detail: { plant, numClones } }));
+    this.dispatchEvent(new TakeCloneEvent(plant, numClones));
   }
 
   private _moveClone(plant: PlantEntity) {
@@ -207,7 +219,7 @@ export class PlantOverviewDialog extends LitElement {
       alert('Select a growspace');
       return;
     }
-    this.dispatchEvent(new CustomEvent('move-clone', { detail: { plant, targetGrowspace: this.cloneTargetId } }));
+    this.dispatchEvent(new MoveCloneEvent(plant, this.cloneTargetId));
   }
 
   private _attributeChange(key: string, value: any) {

@@ -4,9 +4,14 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { mdiMagnify, mdiLink, mdiChevronDown } from '@mdi/js';
 import { GrowspaceDevice } from './types';
 
+import { consume } from '@lit/context';
+import { hassContext } from './context';
+import { ToggleEnvGraphEvent, UnlinkGraphsEvent, UnlinkGraphMetricEvent } from './events';
+
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {
-    @property({ attribute: false }) hass!: HomeAssistant;
+    @consume({ context: hassContext, subscribe: true })
+    hass!: HomeAssistant;
     @property({ attribute: false }) device?: GrowspaceDevice;
     @property({ type: Array }) history: any[] = [];
     @property({ type: Array }) dehumidifierHistory: any[] = [];
@@ -257,19 +262,11 @@ export class GrowspaceEnvChart extends LitElement {
     }
 
     private _toggleEnvGraph() {
-        this.dispatchEvent(new CustomEvent('toggle-graph', {
-            detail: { metric: this.metricKey },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new ToggleEnvGraphEvent(this.metricKey));
     }
 
     private _unlinkGraphs(groupIndex: number) {
-        this.dispatchEvent(new CustomEvent('unlink-graphs', {
-            detail: { groupIndex },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new UnlinkGraphsEvent(groupIndex));
     }
 
     render() {
@@ -871,7 +868,7 @@ export class GrowspaceEnvChart extends LitElement {
                              @click=${() => {
                     // Find group index logic would be needed here or passed down
                     // For now, we'll dispatch an event with the key
-                    this.dispatchEvent(new CustomEvent('unlink-graph', { detail: { metric: g.key } }));
+                    this.dispatchEvent(new UnlinkGraphMetricEvent(g.key));
                 }}
                              title="Unlink Graph">
                              <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: #fff;"><path d="${mdiLink}"></path></svg>

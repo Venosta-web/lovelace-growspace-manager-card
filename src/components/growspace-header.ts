@@ -28,11 +28,18 @@ import { consume } from '@lit/context';
 import { hassContext, configContext } from '../context';
 import { GrowspaceDevice, GrowspaceManagerCardConfig } from '../types';
 import { PlantUtils } from '../utils';
+import {
+  DeviceChangeEvent,
+  ToggleEnvGraphEvent,
+  LinkGraphsEvent,
+  UnlinkGraphsEvent,
+  TriggerActionEvent
+} from '../events';
 
 @customElement('growspace-header')
 export class GrowspaceHeader extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  @property({ attribute: false }) public hass!: HomeAssistant;
+  public hass!: HomeAssistant;
 
   @property({ attribute: false }) public device!: GrowspaceDevice;
 
@@ -467,19 +474,11 @@ export class GrowspaceHeader extends LitElement {
 
   private _handleDeviceChange(e: Event) {
     const target = e.target as HTMLSelectElement;
-    this.dispatchEvent(new CustomEvent('growspace-changed', {
-      detail: { deviceId: target.value },
-      bubbles: true,
-      composed: true
-    }));
+    this.dispatchEvent(new DeviceChangeEvent(target.value));
   }
 
   private _toggleEnvGraph(metric: string) {
-    this.dispatchEvent(new CustomEvent('toggle-env-graph', {
-      detail: { metric },
-      bubbles: true,
-      composed: true
-    }));
+    this.dispatchEvent(new ToggleEnvGraphEvent(metric));
   }
 
   private _handleChipDragStart(e: DragEvent, metric: string) {
@@ -497,11 +496,7 @@ export class GrowspaceHeader extends LitElement {
       return;
     }
 
-    this.dispatchEvent(new CustomEvent('link-graphs', {
-      detail: { metric1: this._draggedMetric, metric2: targetMetric },
-      bubbles: true,
-      composed: true
-    }));
+    this.dispatchEvent(new LinkGraphsEvent(this._draggedMetric, targetMetric));
 
     this._draggedMetric = null;
   }
@@ -522,11 +517,7 @@ export class GrowspaceHeader extends LitElement {
   }
 
   private _unlinkGraphs(groupIndex: number) {
-    this.dispatchEvent(new CustomEvent('unlink-graphs', {
-      detail: { groupIndex },
-      bubbles: true,
-      composed: true
-    }));
+    this.dispatchEvent(new UnlinkGraphsEvent(groupIndex));
   }
 
   @state() private _mobileLink = false;
@@ -571,11 +562,7 @@ export class GrowspaceHeader extends LitElement {
 
 
   private _triggerAction(action: string) {
-    this.dispatchEvent(new CustomEvent('trigger-action', {
-      detail: { action },
-      bubbles: true,
-      composed: true
-    }));
+    this.dispatchEvent(new TriggerActionEvent(action));
     this._menuOpen = false;
   }
 
