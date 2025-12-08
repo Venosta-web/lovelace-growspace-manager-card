@@ -90,6 +90,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     super.updated(changedProps);
     if (changedProps.has('hass')) {
       this.store.updateHass(this.hass);
+      if (this.dataService) {
+        this.dataService.updateHass(this.hass);
+      }
     }
   }
 

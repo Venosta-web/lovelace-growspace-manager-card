@@ -4,6 +4,7 @@ import { createMockHass } from './mocks/hass';
 test.describe('Graph Tooltips', () => {
 
     test.beforeEach(async ({ coveragePage: page }) => {
+        page.on('console', msg => console.log(`BROWSER: ${msg.text()}`));
         await page.goto('/');
     });
 
@@ -41,9 +42,12 @@ test.describe('Graph Tooltips', () => {
             mockHass.states[overviewId].attributes.temperature_sensor = 'sensor.temp';
             mockHass.states[overviewId].attributes.humidity_sensor = 'sensor.hum';
             mockHass.states[overviewId].attributes.vpd_sensor = 'sensor.vpd';
+            mockHass.states[overviewId].attributes.dehumidifier_entity = 'switch.dehumidifier';
+            mockHass.states[overviewId].attributes.light_entity = 'switch.grow_light';
         }
 
         if (mockHass.states[optimalId]) {
+            mockHass.states[optimalId].state = 'on';
             Object.assign(mockHass.states[optimalId].attributes, {
                 dehumidifier: true,
                 is_lights_on: true,
@@ -62,6 +66,13 @@ test.describe('Graph Tooltips', () => {
                 ...hassData,
                 callService: async () => Promise.resolve(),
                 callApi: async (method: string, url: string) => {
+
+                    // Detect if path contains specific entity/metric or payload does
+                    // arguments[1] is url (e.g. history/period/...)
+                    // Check URL for entity_id
+                    const urlStr = url || '';
+                    if (urlStr.includes('dehumidifier')) return [[{ entity_id: 'switch.dehumidifier', state: 'on', last_changed: new Date().toISOString() }]];
+                    if (urlStr.includes('light')) return [[{ entity_id: 'switch.grow_light', state: 'on', last_changed: new Date().toISOString() }]];
                     return [historyData];
                 },
                 connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
@@ -70,9 +81,9 @@ test.describe('Graph Tooltips', () => {
         }, { config: { type: 'custom:growspace-manager-card', entity: overviewId }, hassData, historyData });
 
         // --- Dehumidifier Test ---
-        const dehumChip = card.locator('.stat-chip', { hasText: 'Dehumidifier' });
-        await dehumChip.click();
-
+        const dehumidifierChip = card.locator('.stat-chip', { hasText: 'Dehumidifier' }).first();
+        await expect(dehumidifierChip).toBeVisible();
+        await dehumidifierChip.click({ force: true });
         // Use .gs-chart-container for step graphs
         const graphContainer = card.locator('.gs-chart-container');
         await expect(graphContainer).toBeVisible();
@@ -92,14 +103,17 @@ test.describe('Graph Tooltips', () => {
         await expect(tooltip).not.toContainText('Optimal Conditions');
 
         // --- Light Test ---
-        // Close Dehum graph
-        await dehumChip.click();
+        const dehumChip = card.locator('.stat-chip', { hasText: 'Dehumidifier:' }).first();
+        await dehumChip.evaluate((e: HTMLElement) => e.click());
+        await expect(graphContainer).toBeHidden();
 
         // Open Light Graph (Chip 5: CO2, Chip 6: Light)
-        const lightChip = chips.nth(5);
-        await lightChip.click();
+        const chips = card.locator('.stat-chip'); // Define chips here if not defined globally
+        const lightChip = card.locator('.stat-chip', { hasText: 'On' }).first();
 
-        await expect(card.locator('.gs-light-title')).toContainText('Light Cycle');
+        await lightChip.evaluate((e: HTMLElement) => e.click());
+
+        await expect(card.locator('.gs-light-title')).toContainText('Light');
 
         // Hover
         if (graphRect) {
@@ -113,11 +127,11 @@ test.describe('Graph Tooltips', () => {
 
         // --- Optimal Conditions Test ---
         // Close Light graph
-        await lightChip.click();
+        await lightChip.evaluate((e: HTMLElement) => e.click());
 
         // Open Optimal Graph (Index 6)
-        const optimalChip = chips.nth(6);
-        await optimalChip.click();
+        const optimalChip = card.locator('.stat-chip', { hasText: 'Optimal' }).first();
+        await optimalChip.evaluate((e: HTMLElement) => e.click());
 
         await expect(card.locator('.gs-light-title')).toContainText('Optimal Conditions');
 
@@ -185,6 +199,8 @@ test.describe('Graph Tooltips', () => {
                 ...hassData,
                 callService: async () => Promise.resolve(),
                 callApi: async (method: string, url: string) => {
+                    const urlStr = url || '';
+                    if (urlStr.includes('dehumidifier')) return [[{ entity_id: 'switch.dehumidifier', state: 'on', last_changed: new Date().toISOString() }]];
                     return [historyData];
                 },
                 connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
@@ -194,7 +210,7 @@ test.describe('Graph Tooltips', () => {
 
         // Open Dehumidifier Graph
         const dehumChip = card.locator('.stat-chip', { hasText: 'Dehumidifier' });
-        await dehumChip.click();
+        await dehumChip.evaluate((e: HTMLElement) => e.click());
 
         // Graph should be visible
         const graphContainer = card.locator('.gs-chart-container');

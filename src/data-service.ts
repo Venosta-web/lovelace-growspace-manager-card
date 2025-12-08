@@ -6,6 +6,10 @@ import { noChange } from 'lit';
 export class DataService {
   constructor(private hass: HomeAssistant) { }
 
+  updateHass(hass: HomeAssistant) {
+    this.hass = hass;
+  }
+
   getGrowspaceDevices(): GrowspaceDevice[] {
     if (!this.hass) return [];
 

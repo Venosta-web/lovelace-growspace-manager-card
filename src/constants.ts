@@ -46,7 +46,7 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     drain: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: 'step' },
     exhaust: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
     humidifier: { color: '#607d8b', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
-    dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: '', icon: mdiAirHumidifierOff },
+    dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: 'state', icon: mdiAirHumidifierOff, type: 'step' },
     optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state', icon: mdiRadioboxMarked, type: 'step' }
 };
 

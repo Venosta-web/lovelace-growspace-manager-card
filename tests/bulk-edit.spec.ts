@@ -63,8 +63,8 @@ test.describe('Growspace Manager Card - Bulk Edit', () => {
         await expect(haDialog).toBeVisible();
 
         // 5. Perform Bulk Edit
-        const saveBtn = haDialog.locator('button.md3-button', { hasText: 'Save Changes' });
-        await saveBtn.click();
+        const saveBtn = haDialog.locator('button.md3-button', { hasText: 'Save' });
+        await saveBtn.click({ force: true });
 
         // 6. Verify Service Calls
         await page.waitForTimeout(500);

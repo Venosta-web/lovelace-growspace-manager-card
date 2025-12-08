@@ -41,6 +41,8 @@ test.describe('Graph Time Ranges', () => {
                 mockHass.states['sensor.4x4_tent'].attributes.temperature_sensor = 'sensor.temp';
                 mockHass.states['sensor.4x4_tent'].attributes.humidity_sensor = 'sensor.hum';
                 mockHass.states['sensor.4x4_tent'].attributes.vpd_sensor = 'sensor.vpd';
+                mockHass.states['sensor.4x4_tent'].attributes.dehumidifier_entity = 'switch.dehumidifier';
+                mockHass.states['sensor.4x4_tent'].attributes.light_entity = 'switch.grow_light';
             }
         }
 
@@ -51,7 +53,12 @@ test.describe('Graph Time Ranges', () => {
             node.hass = {
                 ...hassData,
                 callService: async () => Promise.resolve(),
-                callApi: async () => [historyData],
+                callApi: async (method: string, url: string) => {
+                    const urlStr = url || '';
+                    if (urlStr.includes('dehumidifier')) return [[{ state: 'on', last_changed: new Date().toISOString() }]];
+                    if (urlStr.includes('light')) return [[{ state: 'on', last_changed: new Date().toISOString() }]];
+                    return [historyData];
+                },
                 connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
                 localize: (key: string) => `[${key}]`,
             };
@@ -62,8 +69,8 @@ test.describe('Graph Time Ranges', () => {
         await expect(selector).toBeHidden();
 
         // 2. Open Temperature Graph
-        const tempChip = card.locator('.stat-chip').nth(0); // Assuming first chip is temp
-        await tempChip.click();
+        const tempChip = card.locator('.stat-chip', { hasText: '°C' }).first();
+        await tempChip.evaluate((e: HTMLElement) => e.click());
 
         // 3. Verify selector becomes visible
         await expect(selector).toBeVisible();
@@ -103,7 +110,7 @@ test.describe('Graph Time Ranges', () => {
         await expect(card.locator('.chart-markers span').first()).toHaveText('6h');
 
         // 7. Close graph
-        await tempChip.click();
+        await tempChip.evaluate((e: HTMLElement) => e.click());
         await expect(selector).toBeHidden();
     });
 
@@ -165,7 +172,7 @@ test.describe('Graph Time Ranges', () => {
 
         // Let's try to find the chip with the light icon path or text 'On' (from mock)
         const lightChip = card.locator('.stat-chip', { hasText: 'On' }).first();
-        await lightChip.click();
+        await lightChip.evaluate((e: HTMLElement) => e.click());
 
         const selector = card.locator('.time-range-selector');
         await expect(selector).toBeVisible();

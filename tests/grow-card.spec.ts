@@ -1,10 +1,18 @@
 import { test, expect } from './coverage-helper';
-import { Locator } from '@playwright/test';
+import { Locator, Page } from '@playwright/test';
+import { Buffer } from 'buffer';
 import { createMockHass } from './mocks/hass';
 
 test.describe('Growspace Manager Card Tests', () => {
 
     test.beforeEach(async ({ coveragePage: page }) => {
+        // Mock image requests to prevent 404s
+        await page.route('**/*.{jpg,png,jpeg,gif}', route => route.fulfill({
+            status: 200,
+            contentType: 'image/jpeg',
+            body: Buffer.from('') // Empty body is fine for mock
+        }));
+
         await page.goto('/');
         const card = page.locator('growspace-manager-card');
         await expect(card).toBeAttached();
@@ -86,10 +94,11 @@ test.describe('Growspace Manager Card Tests', () => {
         // Close it
         const closeBtn = strainDialog.locator('.sd-close-btn');
         if (await closeBtn.isVisible()) {
-            await closeBtn.click();
+            await closeBtn.click({ force: true });
         } else {
-            const genericClose = strainDialog.locator('button.md3-button').first();
-            await genericClose.click();
+            // Fallback to header close button
+            const genericClose = strainDialog.locator('.header-actions button').last();
+            await genericClose.click({ force: true });
         }
 
         await expect(strainDialog).not.toBeVisible();

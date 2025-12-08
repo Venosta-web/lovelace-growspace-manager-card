@@ -437,6 +437,9 @@ class DataService {
     constructor(hass) {
         this.hass = hass;
     }
+    updateHass(hass) {
+        this.hass = hass;
+    }
     getGrowspaceDevices() {
         if (!this.hass)
             return [];
@@ -16805,7 +16808,7 @@ const METRIC_CONFIG = {
     drain: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: 'step' },
     exhaust: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
     humidifier: { color: '#607d8b', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
-    dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: '', icon: mdiAirHumidifierOff },
+    dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: 'state', icon: mdiAirHumidifierOff, type: 'step' },
     optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state', icon: mdiRadioboxMarked, type: 'step' }
 };
 const DEFAULT_METRIC_CONFIG = {
@@ -19021,6 +19024,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$1 {
         super.updated(changedProps);
         if (changedProps.has('hass')) {
             this.store.updateHass(this.hass);
+            if (this.dataService) {
+                this.dataService.updateHass(this.hass);
+            }
         }
     }
     static async getConfigElement() {
