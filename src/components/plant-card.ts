@@ -1,7 +1,7 @@
 import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiSprout, mdiFlower, mdiHairDryer, mdiCannabis, mdiCheckboxMarked, mdiCheckboxBlankOutline } from '@mdi/js';
-import { PlantEntity, StrainEntry } from '../types';
+import { PlantEntity, StrainEntry, PlantStage } from '../types';
 import { PlantUtils } from '../utils';
 
 
@@ -335,26 +335,26 @@ export class GrowspacePlantCard extends LitElement {
 
   private renderPlantDaysRich(plant: PlantEntity): TemplateResult {
     const days = [
-      { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Seedling", stage: "seedling" },
-      { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Mother", stage: "mother" },
-      { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Clone", stage: "clone" },
-      { days: plant.attributes?.veg_days, icon: mdiSprout, title: "Veg", stage: "vegetative" },
-      { days: plant.attributes?.flower_days, icon: mdiFlower, title: "Flower", stage: "flower" },
-      { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Dry", stage: "dry" },
-      { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Cure", stage: "cure" }
+      { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Seedling", stage: PlantStage.SEEDLING },
+      { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Mother", stage: PlantStage.MOTHER },
+      { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Clone", stage: PlantStage.CLONE },
+      { days: plant.attributes?.veg_days, icon: mdiSprout, title: "Veg", stage: PlantStage.VEG },
+      { days: plant.attributes?.flower_days, icon: mdiFlower, title: "Flower", stage: PlantStage.FLOWER },
+      { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Dry", stage: PlantStage.DRY },
+      { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Cure", stage: PlantStage.CURE }
     ].filter(d => d.days !== undefined && d.days !== null);
 
     const currentStage = (plant.state || '').toLowerCase();
 
     let visibleDays = days.filter(d => d.days);
 
-    if (currentStage === 'dry') {
-      visibleDays = visibleDays.filter(d => d.stage === 'dry');
-    } else if (currentStage === 'cure') {
-      visibleDays = visibleDays.filter(d => d.stage === 'cure');
+    if (currentStage === PlantStage.DRY) {
+      visibleDays = visibleDays.filter(d => d.stage === PlantStage.DRY);
+    } else if (currentStage === PlantStage.CURE) {
+      visibleDays = visibleDays.filter(d => d.stage === PlantStage.CURE);
     }
 
-    const normalizedCurrent = currentStage === 'veg' ? 'vegetative' : currentStage;
+    const normalizedCurrent = currentStage === 'veg' || currentStage === 'vegetative' ? PlantStage.VEG : currentStage;
 
     return html`
       ${visibleDays.map(d => {

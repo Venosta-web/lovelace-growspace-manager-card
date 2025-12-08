@@ -2,40 +2,40 @@ import { mdiSprout, mdiFlower, mdiHairDryer, mdiCannabis } from "@mdi/js";
 import { PlantEntity, GrowspaceDevice, PlantStage, CropMeta } from "./types";
 
 export const PLANT_STAGES: PlantStage[] = [
-  "seedling",
-  "mother",
-  "clone",
-  "vegetative",
-  "flower",
-  "dry",
-  "cure",
+  PlantStage.SEEDLING,
+  PlantStage.MOTHER,
+  PlantStage.CLONE,
+  PlantStage.VEG,
+  PlantStage.FLOWER,
+  PlantStage.DRY,
+  PlantStage.CURE,
 ];
 
 export class PlantUtils {
   private static readonly stageColors: Record<PlantStage, string> = {
-    mother: "#E91E63",
-    clone: "#FF5722",
-    seedling: "#4CAF50",
-    vegetative: "#8BC34A",
-    flower: "#FF9800",
-    dry: "#795548",
-    cure: "#9C27B0",
+    [PlantStage.MOTHER]: "#E91E63",
+    [PlantStage.CLONE]: "#FF5722",
+    [PlantStage.SEEDLING]: "#4CAF50",
+    [PlantStage.VEG]: "#8BC34A",
+    [PlantStage.FLOWER]: "#FF9800",
+    [PlantStage.DRY]: "#795548",
+    [PlantStage.CURE]: "#9C27B0",
   };
 
   private static readonly stageIcons: Record<PlantStage, string> = {
-    mother: mdiSprout,
-    clone: mdiSprout,
-    seedling: mdiSprout,
-    vegetative: mdiSprout,
-    flower: mdiFlower,
-    dry: mdiHairDryer,
-    cure: mdiCannabis,
+    [PlantStage.MOTHER]: mdiSprout,
+    [PlantStage.CLONE]: mdiSprout,
+    [PlantStage.SEEDLING]: mdiSprout,
+    [PlantStage.VEG]: mdiSprout,
+    [PlantStage.FLOWER]: mdiFlower,
+    [PlantStage.DRY]: mdiHairDryer,
+    [PlantStage.CURE]: mdiCannabis,
   };
 
   private static normalizeStage(state: PlantStage | string): PlantStage {
     const lower = state.toLowerCase();
-    if (lower === 'veg') return 'vegetative';
-    if (lower === 'mom') return 'mother';
+    if (lower === 'veg' || lower === 'vegetative') return PlantStage.VEG;
+    if (lower === 'mom') return PlantStage.MOTHER;
     // Add other aliases if necessary
     return lower as PlantStage;
   }
@@ -54,14 +54,14 @@ export class PlantUtils {
     const attrs = plant?.attributes ?? {};
     const now = new Date();
 
-    if (attrs.cure_start) return "cure";
-    if (attrs.dry_start) return "dry";
-    if (attrs.mom_start) return "mother";
-    if (attrs.clone_start) return "clone";
-    if (attrs.flower_start && new Date(attrs.flower_start) <= now) return "flower";
-    if (attrs.veg_start && new Date(attrs.veg_start) <= now) return "vegetative";
+    if (attrs.cure_start) return PlantStage.CURE;
+    if (attrs.dry_start) return PlantStage.DRY;
+    if (attrs.mom_start) return PlantStage.MOTHER;
+    if (attrs.clone_start) return PlantStage.CLONE;
+    if (attrs.flower_start && new Date(attrs.flower_start) <= now) return PlantStage.FLOWER;
+    if (attrs.veg_start && new Date(attrs.veg_start) <= now) return PlantStage.VEG;
 
-    return "seedling";
+    return PlantStage.SEEDLING;
   }
 
   static calculatePlantAge(plant: PlantEntity): number {
@@ -71,13 +71,13 @@ export class PlantUtils {
     let startStr: string | undefined;
 
     switch (stage) {
-      case 'flower': startStr = attrs.flower_start; break;
-      case 'vegetative': startStr = attrs.veg_start; break;
-      case 'mother': startStr = attrs.mom_start; break;
-      case 'clone': startStr = attrs.clone_start; break;
-      case 'dry': startStr = attrs.dry_start; break;
-      case 'cure': startStr = attrs.cure_start; break;
-      case 'seedling': startStr = attrs.planted_date; break;
+      case PlantStage.FLOWER: startStr = attrs.flower_start; break;
+      case PlantStage.VEG: startStr = attrs.veg_start; break;
+      case PlantStage.MOTHER: startStr = attrs.mom_start; break;
+      case PlantStage.CLONE: startStr = attrs.clone_start; break;
+      case PlantStage.DRY: startStr = attrs.dry_start; break;
+      case PlantStage.CURE: startStr = attrs.cure_start; break;
+      case PlantStage.SEEDLING: startStr = attrs.planted_date; break;
     }
 
     if (!startStr) return 0;
@@ -134,6 +134,8 @@ export class PlantUtils {
   static calculateEffectiveRows(device: GrowspaceDevice): number {
     const { name, plants, plants_per_row, rows } = device;
 
+    // Check for special growspaces by name/ID logic or type if available
+    // Assuming name might match stage or ID.
     if (name === "dry" || name === "cure" || name === "mother" || name === "clone") {
       if (plants.length === 0) return 1;
 
@@ -234,13 +236,13 @@ export class PlantUtils {
     // Defined priority: Cure > Dry > Flower > Vegetative > Clone > Mother > Seedling
     // Lower index = higher priority
     const priority: PlantStage[] = [
-      "cure",
-      "dry",
-      "flower",
-      "vegetative",
-      "clone",
-      "mother",
-      "seedling"
+      PlantStage.CURE,
+      PlantStage.DRY,
+      PlantStage.FLOWER,
+      PlantStage.VEG,
+      PlantStage.CLONE,
+      PlantStage.MOTHER,
+      PlantStage.SEEDLING
     ];
 
     // Find the highest priority stage present in the plants
@@ -264,7 +266,7 @@ export class PlantUtils {
         bestStage = stage;
         // Find max days for this stage
         // Map stage to attribute key
-        const daysKey = `${stage === 'vegetative' ? 'veg' : stage}_days`;
+        const daysKey = `${stage === PlantStage.VEG ? 'veg' : stage}_days`;
 
         const daysValues = plantsByStage[stage].map(p => {
           const val = p.attributes[daysKey];

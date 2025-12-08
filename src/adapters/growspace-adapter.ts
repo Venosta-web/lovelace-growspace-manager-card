@@ -85,6 +85,7 @@ export class GrowspaceAdapter {
                 rows: attributes.rows ?? 3,
                 plants_per_row: attributes.plants_per_row ?? 3,
                 type,
+                last_updated: overview.last_updated,
             });
         });
     }

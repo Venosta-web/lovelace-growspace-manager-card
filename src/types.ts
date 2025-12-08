@@ -72,7 +72,15 @@ export interface PlantEntity {
     [key: string]: any;
   };
 }
-export type PlantStage = "seedling" | "mother" | "clone" | "vegetative" | "flower" | "dry" | "cure";
+export enum PlantStage {
+  SEEDLING = "seedling",
+  MOTHER = "mother",
+  CLONE = "clone",
+  VEG = "veg",
+  FLOWER = "flower",
+  DRY = "dry",
+  CURE = "cure"
+}
 
 export type GrowspaceType = "normal" | "mother" | "clone" | "dry" | "cure";
 export const stageInputs: Record<PlantStage, Array<{
@@ -80,24 +88,24 @@ export const stageInputs: Record<PlantStage, Array<{
   icon: string;
   key: keyof PlantEntity['attributes'];
 }>> = {
-  seedling: [],
-  mother: [
+  [PlantStage.SEEDLING]: [],
+  [PlantStage.MOTHER]: [
     { label: "Mother Start", icon: mdiSprout, key: "mother_start" },
   ],
-  clone: [
+  [PlantStage.CLONE]: [
     { label: "Clone Start", icon: mdiSprout, key: "clone_start" },
   ],
-  vegetative: [
+  [PlantStage.VEG]: [
     { label: "Vegetative Start", icon: mdiSprout, key: "veg_start" },
   ],
-  flower: [
+  [PlantStage.FLOWER]: [
     { label: "Vegetative Start", icon: mdiSprout, key: "veg_start" },
     { label: "Flower Start", icon: mdiFlower, key: "flower_start" },
   ],
-  dry: [
+  [PlantStage.DRY]: [
     { label: "Dry Start", icon: mdiHairDryer, key: "dry_start" },
   ],
-  cure: [
+  [PlantStage.CURE]: [
     { label: "Cure Start", icon: mdiCannabis, key: "cure_start" },
   ],
 };
@@ -123,6 +131,7 @@ export interface GrowspaceDevice {
   plants: PlantEntity[];
   rows: number;
   plants_per_row: number;
+  last_updated?: string;
 }
 export function createGrowspaceDevice(
   params: Omit<GrowspaceDevice, "type"> & { type?: GrowspaceType }

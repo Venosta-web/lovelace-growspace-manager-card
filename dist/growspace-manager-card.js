@@ -46,25 +46,35 @@ var mdiWeatherCloudy = "M6,19A5,5 0 0,1 1,14A5,5 0 0,1 6,9C7,6.65 9.3,5 12,5C15.
 var mdiWeatherNight = "M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z";
 var mdiWeatherSunny = "M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,6.65C6.9,7.16 6.36,7.78 5.94,8.5C5.5,9.24 5.25,10 5.11,10.79L3.34,7M3.36,17L5.12,13.23C5.26,14 5.53,14.78 5.95,15.5C6.37,16.24 6.91,16.86 7.5,17.37L3.36,17M20.65,7L18.88,10.79C18.74,10 18.47,9.23 18.05,8.5C17.63,7.78 17.1,7.15 16.5,6.64L20.65,7M20.64,17L16.5,17.36C17.09,16.85 17.62,16.22 18.04,15.5C18.46,14.77 18.73,14 18.87,13.21L20.64,17M12,22L9.59,18.56C10.33,18.83 11.14,19 12,19C12.82,19 13.63,18.83 14.37,18.56L12,22Z";
 
+var PlantStage;
+(function (PlantStage) {
+    PlantStage["SEEDLING"] = "seedling";
+    PlantStage["MOTHER"] = "mother";
+    PlantStage["CLONE"] = "clone";
+    PlantStage["VEG"] = "veg";
+    PlantStage["FLOWER"] = "flower";
+    PlantStage["DRY"] = "dry";
+    PlantStage["CURE"] = "cure";
+})(PlantStage || (PlantStage = {}));
 const stageInputs = {
-    seedling: [],
-    mother: [
+    [PlantStage.SEEDLING]: [],
+    [PlantStage.MOTHER]: [
         { label: "Mother Start", icon: mdiSprout, key: "mother_start" },
     ],
-    clone: [
+    [PlantStage.CLONE]: [
         { label: "Clone Start", icon: mdiSprout, key: "clone_start" },
     ],
-    vegetative: [
+    [PlantStage.VEG]: [
         { label: "Vegetative Start", icon: mdiSprout, key: "veg_start" },
     ],
-    flower: [
+    [PlantStage.FLOWER]: [
         { label: "Vegetative Start", icon: mdiSprout, key: "veg_start" },
         { label: "Flower Start", icon: mdiFlower, key: "flower_start" },
     ],
-    dry: [
+    [PlantStage.DRY]: [
         { label: "Dry Start", icon: mdiHairDryer, key: "dry_start" },
     ],
-    cure: [
+    [PlantStage.CURE]: [
         { label: "Cure Start", icon: mdiCannabis, key: "cure_start" },
     ],
 };
@@ -75,13 +85,22 @@ function createGrowspaceDevice(params) {
     };
 }
 
+[
+    PlantStage.SEEDLING,
+    PlantStage.MOTHER,
+    PlantStage.CLONE,
+    PlantStage.VEG,
+    PlantStage.FLOWER,
+    PlantStage.DRY,
+    PlantStage.CURE,
+];
 class PlantUtils {
     static normalizeStage(state) {
         const lower = state.toLowerCase();
-        if (lower === 'veg')
-            return 'vegetative';
+        if (lower === 'veg' || lower === 'vegetative')
+            return PlantStage.VEG;
         if (lower === 'mom')
-            return 'mother';
+            return PlantStage.MOTHER;
         // Add other aliases if necessary
         return lower;
     }
@@ -98,18 +117,18 @@ class PlantUtils {
         const attrs = plant?.attributes ?? {};
         const now = new Date();
         if (attrs.cure_start)
-            return "cure";
+            return PlantStage.CURE;
         if (attrs.dry_start)
-            return "dry";
+            return PlantStage.DRY;
         if (attrs.mom_start)
-            return "mother";
+            return PlantStage.MOTHER;
         if (attrs.clone_start)
-            return "clone";
+            return PlantStage.CLONE;
         if (attrs.flower_start && new Date(attrs.flower_start) <= now)
-            return "flower";
+            return PlantStage.FLOWER;
         if (attrs.veg_start && new Date(attrs.veg_start) <= now)
-            return "vegetative";
-        return "seedling";
+            return PlantStage.VEG;
+        return PlantStage.SEEDLING;
     }
     static calculatePlantAge(plant) {
         if (!plant || !plant.attributes)
@@ -118,25 +137,25 @@ class PlantUtils {
         const attrs = plant.attributes;
         let startStr;
         switch (stage) {
-            case 'flower':
+            case PlantStage.FLOWER:
                 startStr = attrs.flower_start;
                 break;
-            case 'vegetative':
+            case PlantStage.VEG:
                 startStr = attrs.veg_start;
                 break;
-            case 'mother':
+            case PlantStage.MOTHER:
                 startStr = attrs.mom_start;
                 break;
-            case 'clone':
+            case PlantStage.CLONE:
                 startStr = attrs.clone_start;
                 break;
-            case 'dry':
+            case PlantStage.DRY:
                 startStr = attrs.dry_start;
                 break;
-            case 'cure':
+            case PlantStage.CURE:
                 startStr = attrs.cure_start;
                 break;
-            case 'seedling':
+            case PlantStage.SEEDLING:
                 startStr = attrs.planted_date;
                 break;
         }
@@ -179,6 +198,8 @@ class PlantUtils {
     }
     static calculateEffectiveRows(device) {
         const { name, plants, plants_per_row, rows } = device;
+        // Check for special growspaces by name/ID logic or type if available
+        // Assuming name might match stage or ID.
         if (name === "dry" || name === "cure" || name === "mother" || name === "clone") {
             if (plants.length === 0)
                 return 1;
@@ -273,13 +294,13 @@ class PlantUtils {
         // Defined priority: Cure > Dry > Flower > Vegetative > Clone > Mother > Seedling
         // Lower index = higher priority
         const priority = [
-            "cure",
-            "dry",
-            "flower",
-            "vegetative",
-            "clone",
-            "mother",
-            "seedling"
+            PlantStage.CURE,
+            PlantStage.DRY,
+            PlantStage.FLOWER,
+            PlantStage.VEG,
+            PlantStage.CLONE,
+            PlantStage.MOTHER,
+            PlantStage.SEEDLING
         ];
         // Find the highest priority stage present in the plants
         let bestStage = null;
@@ -300,7 +321,7 @@ class PlantUtils {
                 bestStage = stage;
                 // Find max days for this stage
                 // Map stage to attribute key
-                const daysKey = `${stage === 'vegetative' ? 'veg' : stage}_days`;
+                const daysKey = `${stage === PlantStage.VEG ? 'veg' : stage}_days`;
                 const daysValues = plantsByStage[stage].map(p => {
                     const val = p.attributes[daysKey];
                     return typeof val === 'number' ? val : 0;
@@ -377,22 +398,22 @@ class PlantUtils {
     }
 }
 PlantUtils.stageColors = {
-    mother: "#E91E63",
-    clone: "#FF5722",
-    seedling: "#4CAF50",
-    vegetative: "#8BC34A",
-    flower: "#FF9800",
-    dry: "#795548",
-    cure: "#9C27B0",
+    [PlantStage.MOTHER]: "#E91E63",
+    [PlantStage.CLONE]: "#FF5722",
+    [PlantStage.SEEDLING]: "#4CAF50",
+    [PlantStage.VEG]: "#8BC34A",
+    [PlantStage.FLOWER]: "#FF9800",
+    [PlantStage.DRY]: "#795548",
+    [PlantStage.CURE]: "#9C27B0",
 };
 PlantUtils.stageIcons = {
-    mother: mdiSprout,
-    clone: mdiSprout,
-    seedling: mdiSprout,
-    vegetative: mdiSprout,
-    flower: mdiFlower,
-    dry: mdiHairDryer,
-    cure: mdiCannabis,
+    [PlantStage.MOTHER]: mdiSprout,
+    [PlantStage.CLONE]: mdiSprout,
+    [PlantStage.SEEDLING]: mdiSprout,
+    [PlantStage.VEG]: mdiSprout,
+    [PlantStage.FLOWER]: mdiFlower,
+    [PlantStage.DRY]: mdiHairDryer,
+    [PlantStage.CURE]: mdiCannabis,
 };
 
 class GrowspaceAdapter {
@@ -445,6 +466,7 @@ class GrowspaceAdapter {
                 rows: attributes.rows ?? 3,
                 plants_per_row: attributes.plants_per_row ?? 3,
                 type,
+                last_updated: overview.last_updated,
             });
         });
     }
@@ -11304,20 +11326,20 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$2 {
             return E;
         const currentStage = (plant.state || '').toLowerCase();
         const normalize = (s) => {
-            if (s === 'veg')
-                return 'vegetative';
+            if (s === 'veg' || s === 'vegetative')
+                return PlantStage.VEG;
             if (s === 'mom')
-                return 'mother';
+                return PlantStage.MOTHER;
             return s;
         };
         const normCurrent = normalize(currentStage);
         const stats = [
-            { label: 'Vegetative Stage', value: plant.attributes.veg_days, unit: 'days', stage: 'vegetative' },
-            { label: 'Flowering Stage', value: plant.attributes.flower_days, unit: 'days', stage: 'flower' },
-            { label: 'Mother Stage', value: plant.attributes.mom_days, unit: 'days', stage: 'mother' },
-            { label: 'Clone Stage', value: plant.attributes.clone_days, unit: 'days', stage: 'clone' },
-            { label: 'Drying Stage', value: plant.attributes.dry_days, unit: 'days', stage: 'dry' },
-            { label: 'Curing Stage', value: plant.attributes.cure_days, unit: 'days', stage: 'cure' },
+            { label: 'Vegetative Stage', value: plant.attributes.veg_days, unit: 'days', stage: PlantStage.VEG },
+            { label: 'Flowering Stage', value: plant.attributes.flower_days, unit: 'days', stage: PlantStage.FLOWER },
+            { label: 'Mother Stage', value: plant.attributes.mom_days, unit: 'days', stage: PlantStage.MOTHER },
+            { label: 'Clone Stage', value: plant.attributes.clone_days, unit: 'days', stage: PlantStage.CLONE },
+            { label: 'Drying Stage', value: plant.attributes.dry_days, unit: 'days', stage: PlantStage.DRY },
+            { label: 'Curing Stage', value: plant.attributes.cure_days, unit: 'days', stage: PlantStage.CURE },
         ].filter(s => {
             if (s.value === undefined || s.value === null)
                 return false;
@@ -11442,22 +11464,22 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$2 {
                    <md3-date-input label="Dry Start" .value=${this.editedAttributes.dry_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('dry_start', e.detail)}></md3-date-input>
                    <md3-date-input label="Cure Start" .value=${this.editedAttributes.cure_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('cure_start', e.detail)}></md3-date-input>
                 ` : x `
-                   ${this.editedAttributes.stage === 'mother' ? x `
+                   ${this.editedAttributes.stage === PlantStage.MOTHER ? x `
                        <md3-date-input label="Mother Start" .value=${this.editedAttributes.mother_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('mother_start', e.detail)}></md3-date-input>
                    ` : E}
-                   ${this.editedAttributes.stage === 'clone' ? x `
+                   ${this.editedAttributes.stage === PlantStage.CLONE ? x `
                        <md3-date-input label="Clone Start" .value=${this.editedAttributes.clone_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('clone_start', e.detail)}></md3-date-input>
                    ` : E}
-                   ${this.editedAttributes.stage === 'veg' || this.editedAttributes.stage === 'flower' ? x `
+                   ${this.editedAttributes.stage === PlantStage.VEG || this.editedAttributes.stage === PlantStage.FLOWER ? x `
                        <md3-date-input label="Vegetative Start" .value=${this.editedAttributes.veg_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('veg_start', e.detail)}></md3-date-input>
                    ` : E}
-                   ${this.editedAttributes.stage === 'flower' ? x `
+                   ${this.editedAttributes.stage === PlantStage.FLOWER ? x `
                        <md3-date-input label="Flower Start" .value=${this.editedAttributes.flower_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('flower_start', e.detail)}></md3-date-input>
                    ` : E}
-                   ${this.editedAttributes.stage === 'dry' || this.editedAttributes.stage === 'cure' ? x `
+                   ${this.editedAttributes.stage === PlantStage.DRY || this.editedAttributes.stage === PlantStage.CURE ? x `
                        <md3-date-input label="Dry Start" .value=${this.editedAttributes.dry_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('dry_start', e.detail)}></md3-date-input>
                    ` : E}
-                   ${this.editedAttributes.stage === 'cure' ? x `
+                   ${this.editedAttributes.stage === PlantStage.CURE ? x `
                        <md3-date-input label="Cure Start" .value=${this.editedAttributes.cure_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('cure_start', e.detail)}></md3-date-input>
                    ` : E}
                 `}
@@ -11478,7 +11500,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$2 {
              </button>
 
              <!-- DYNAMIC ACTIONS -->
-             ${this.plant.state.toLowerCase() === 'mother' ? x `
+             ${this.plant.state.toLowerCase() === PlantStage.MOTHER ? x `
                  <div class="take-clone-container" style="display:contents;" data-plant-id="${this.plant.entity_id}">
                     <md3-number-input
                       .min=${1}
@@ -11502,21 +11524,21 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$2 {
                  </div>
              ` : E}
 
-             ${this.plant.state.toLowerCase() === 'flower' ? x `
+             ${this.plant.state.toLowerCase() === PlantStage.FLOWER ? x `
                 <button class="md3-button primary" @click=${() => this._harvest(this.plant)}>
                   <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
                   Harvest
                 </button>
              ` : E}
 
-             ${this.plant.state.toLowerCase() === 'dry' ? x `
+             ${this.plant.state.toLowerCase() === PlantStage.DRY ? x `
                 <button class="md3-button primary" @click=${() => this._finishDrying(this.plant)}>
                   <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
                   Finish Drying
                 </button>
              ` : E}
              
-             ${this.plant.state.toLowerCase() === 'clone' ? x `
+             ${this.plant.state.toLowerCase() === PlantStage.CLONE ? x `
                 <div style="display:contents; display:flex; gap: 8px; align-items: center;">
                      <md3-select
                        .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
@@ -15174,23 +15196,23 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$2 {
     }
     renderPlantDaysRich(plant) {
         const days = [
-            { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Seedling", stage: "seedling" },
-            { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Mother", stage: "mother" },
-            { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Clone", stage: "clone" },
-            { days: plant.attributes?.veg_days, icon: mdiSprout, title: "Veg", stage: "vegetative" },
-            { days: plant.attributes?.flower_days, icon: mdiFlower, title: "Flower", stage: "flower" },
-            { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Dry", stage: "dry" },
-            { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Cure", stage: "cure" }
+            { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Seedling", stage: PlantStage.SEEDLING },
+            { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Mother", stage: PlantStage.MOTHER },
+            { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Clone", stage: PlantStage.CLONE },
+            { days: plant.attributes?.veg_days, icon: mdiSprout, title: "Veg", stage: PlantStage.VEG },
+            { days: plant.attributes?.flower_days, icon: mdiFlower, title: "Flower", stage: PlantStage.FLOWER },
+            { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Dry", stage: PlantStage.DRY },
+            { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Cure", stage: PlantStage.CURE }
         ].filter(d => d.days !== undefined && d.days !== null);
         const currentStage = (plant.state || '').toLowerCase();
         let visibleDays = days.filter(d => d.days);
-        if (currentStage === 'dry') {
-            visibleDays = visibleDays.filter(d => d.stage === 'dry');
+        if (currentStage === PlantStage.DRY) {
+            visibleDays = visibleDays.filter(d => d.stage === PlantStage.DRY);
         }
-        else if (currentStage === 'cure') {
-            visibleDays = visibleDays.filter(d => d.stage === 'cure');
+        else if (currentStage === PlantStage.CURE) {
+            visibleDays = visibleDays.filter(d => d.stage === PlantStage.CURE);
         }
-        const normalizedCurrent = currentStage === 'veg' ? 'vegetative' : currentStage;
+        const normalizedCurrent = currentStage === 'veg' || currentStage === 'vegetative' ? PlantStage.VEG : currentStage;
         return x `
       ${visibleDays.map(d => {
             const color = PlantUtils.getPlantStageColor(d.stage);
@@ -19213,6 +19235,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
         this.store = new GrowspaceStore(this);
         // History controller manages history state
         this.historyController = new GrowspaceHistoryController(this);
+        // Memoization properties
+        this._cachedGridLayout = null;
+        this._lastDeviceDataForGrid = '';
         this._handleTakeClone = (motherPlant) => {
             const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
             this.store.dataService.takeClone({
@@ -19676,8 +19701,16 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
         return devices;
     }
     _calculateCurrentGridLayout(deviceData) {
+        // Create a signature that uniquely identifies the data state for the grid
+        // Use deviceData.last_updated effectively as it changes on any attribute change (including grid)
+        const signature = `${deviceData.device_id}_${deviceData.plants_per_row}_${deviceData.last_updated}`;
+        if (this._cachedGridLayout && this._lastDeviceDataForGrid === signature) {
+            return this._cachedGridLayout;
+        }
         const effectiveRows = PlantUtils.calculateEffectiveRows(deviceData);
         const { grid } = PlantUtils.createGridLayout(deviceData.plants, effectiveRows, deviceData.plants_per_row);
+        this._cachedGridLayout = { effectiveRows, grid };
+        this._lastDeviceDataForGrid = signature;
         return { effectiveRows, grid };
     }
     render() {
@@ -19827,190 +19860,216 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
             this.store.showToast("Failed to add plant", "error");
         }
     }
+    _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
+        if (active.type !== 'ADD_PLANT')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+      <add-plant-dialog
+        .open=${true}
+        .strainLibrary=${strainLibrary}
+        .growspaceName=${selectedDeviceData?.name ?? ''}
+        .row=${dialogState.row}
+        .col=${dialogState.col}
+        @close=${() => this.store.closeActiveDialog()}
+        @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
+      ></add-plant-dialog>
+    `;
+    }
+    _renderPlantOverviewDialog(active, growspaceOptions) {
+        if (active.type !== 'PLANT_OVERVIEW')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+      <plant-overview-dialog
+        .open=${true}
+        .dialog=${dialogState}
+        .plant=${dialogState.plant}
+        .growspaceOptions=${growspaceOptions}
+        @close=${() => this.store.closeActiveDialog()}
+        @update-plant=${(e) => {
+            const payload = active.payload;
+            this.store.updatePlantFromDialog({
+                plant: payload.plant,
+                editedAttributes: e.detail,
+                selectedPlantIds: payload.selectedPlantIds
+            });
+        }}
+        @delete-plant=${(e) => this.store.handleDeletePlant(e.detail.plantId)}
+        @harvest-plant=${(e) => this.store.handleMovePlantToNextStage(e.detail.plant)}
+        @finish-drying=${(e) => this.store.handleMovePlantToNextStage(e.detail.plant)}
+        @take-clone=${(e) => {
+            const { plant, numClones } = e.detail;
+            this.store.handleTakeClone(plant, numClones);
+        }}
+        @move-clone=${(e) => {
+            const { plant, targetGrowspace } = e.detail;
+            const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
+            this.store.dataService.moveClone(plantId, targetGrowspace)
+                .then(() => {
+                console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
+                this.store.closeActiveDialog();
+            }).catch((err) => {
+                console.error('Error moving clone:', err);
+            });
+        }}
+        @attribute-change=${(e) => {
+            const payload = active.payload;
+            payload.editedAttributes[e.detail.key] = e.detail.value;
+            this.requestUpdate();
+        }}
+        @toggle-show-all-dates=${() => {
+            const payload = active.payload;
+            payload.showAllDates = !payload.showAllDates;
+            this.requestUpdate();
+        }}
+      ></plant-overview-dialog>
+    `;
+    }
+    _renderStrainLibraryDialog(active, strainLibrary) {
+        if (active.type !== 'STRAIN_LIBRARY')
+            return x ``;
+        return x `
+      <strain-library-dialog
+        .open=${true}
+        .strains=${strainLibrary}
+        @close=${() => this.store.closeActiveDialog()}
+        @save-strain=${(e) => this._addStrain(e.detail)}
+        @delete-strain=${(e) => this._removeStrain(e.detail.key)}
+        @import-library=${(e) => this.store.performImport(e.detail.file, e.detail.replace)}
+        @export-library=${() => this.store.handleExportLibrary()}
+        @get-recommendation=${() => this._openStrainRecommendationDialog()}
+      ></strain-library-dialog>
+    `;
+    }
+    _renderConfigDialog(active, growspaceOptions) {
+        if (active.type !== 'CONFIG')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+      <config-dialog
+        .open=${true}
+        .growspaceOptions=${growspaceOptions}
+        @close=${() => this.store.closeActiveDialog()}
+        @add-growspace-submit=${(e) => this._handleAddGrowspace(e.detail)}
+        @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
+        .setInitialState=${(el) => {
+            // Pass initial state if needed
+            if (el)
+                el.setInitialState(dialogState.currentTab, dialogState.environmentData);
+        }}
+      ></config-dialog>
+    `;
+    }
+    _renderGrowMasterDialog(active) {
+        if (active.type !== 'GROW_MASTER')
+            return x ``;
+        const dialogState = active.payload;
+        // Determine stress state for the dialog
+        let isStressed = false;
+        let personality = undefined;
+        // Attempt to find stress sensor
+        if (this.selectedDevice && this.hass) {
+            const id = this.selectedDevice;
+            const stressEntityIds = [
+                `binary_sensor.${id}_plants_under_stress`,
+                `binary_sensor.${id}_stress`,
+                `binary_sensor.growspace_manager_${id}_stress`
+            ];
+            for (const eid of stressEntityIds) {
+                const ent = this.hass.states[eid];
+                if (ent && ent.state === 'on') {
+                    isStressed = true;
+                    break;
+                }
+            }
+        }
+        // Personality check
+        if (this.hass) {
+            const manager = this.hass.states['sensor.growspace_manager'];
+            if (manager && manager.attributes && manager.attributes.ai_settings) {
+                personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
+            }
+        }
+        return x `
+      <grow-master-dialog
+        .open=${true}
+        .isStressed=${isStressed}
+        .personality=${personality}
+        .isLoading=${dialogState.isLoading}
+        .response=${dialogState.response}
+        @close=${() => this.store.closeActiveDialog()}
+        @analyze-growspace=${(e) => this.store.analyzeGrowspace(e.detail.query, false)}
+        @analyze-all-growspaces=${(e) => this.store.analyzeGrowspace(e.detail.query, true)}
+      ></grow-master-dialog>
+    `;
+    }
+    _renderStrainRecommendationDialog(active) {
+        if (active.type !== 'STRAIN_RECOMMENDATION')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+      <strain-recommendation-dialog
+        .open=${true}
+        .isLoading=${dialogState.isLoading}
+        .response=${dialogState.response}
+        @close=${() => this.store.closeActiveDialog()}
+        @get-recommendation=${(e) => this.store.getStrainRecommendation(e.detail.query)}
+      ></strain-recommendation-dialog>
+    `;
+    }
+    _renderIrrigationDialog(active, selectedDeviceData) {
+        if (active.type !== 'IRRIGATION')
+            return x ``;
+        return x `
+       <irrigation-dialog
+        .open=${true}
+        .growspaceId=${selectedDeviceData?.device_id || ''}
+        .growspaceName=${selectedDeviceData?.name || ''}
+        .growspaceEntityId=${selectedDeviceData?.overview_entity_id || ''}
+        @close=${() => this.store.closeActiveDialog()}
+       ></irrigation-dialog>
+    `;
+    }
+    _renderLogbookDialog(active) {
+        if (active.type !== 'LOGBOOK')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+      <logbook-dialog
+        .open=${true}
+        .growspaceId=${dialogState.growspaceId}
+        @close=${() => this.store.closeActiveDialog()}
+      ></logbook-dialog>
+    `;
+    }
     renderDialogs(growspaceOptions) {
         const active = this.store.state.activeDialog;
         if (active.type === 'NONE')
             return x ``;
-        const strainLibrary = this.store.dataService?.getStrainLibrary() || [];
+        const strainLibrary = this.store.state.strainLibrary || [];
         const devices = this.store.dataService.getGrowspaceDevices();
         const selectedDeviceData = devices.find(d => d.device_id === this.store.state.selectedDevice);
-        // ADD PLANT DIALOG
-        if (active.type === 'ADD_PLANT') {
-            const dialogState = active.payload;
-            return x `
-        <add-plant-dialog
-            .open=${true}
-            .strainLibrary=${strainLibrary}
-            .growspaceName=${selectedDeviceData?.name ?? ''}
-            .row=${dialogState.row}
-            .col=${dialogState.col}
-            @close=${() => this.store.closeActiveDialog()}
-            @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
-          ></add-plant-dialog>
-      `;
+        switch (active.type) {
+            case 'ADD_PLANT':
+                return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
+            case 'PLANT_OVERVIEW':
+                return this._renderPlantOverviewDialog(active, growspaceOptions);
+            case 'STRAIN_LIBRARY':
+                return this._renderStrainLibraryDialog(active, strainLibrary);
+            case 'CONFIG':
+                return this._renderConfigDialog(active, growspaceOptions);
+            case 'GROW_MASTER':
+                return this._renderGrowMasterDialog(active);
+            case 'STRAIN_RECOMMENDATION':
+                return this._renderStrainRecommendationDialog(active);
+            case 'IRRIGATION':
+                return this._renderIrrigationDialog(active, selectedDeviceData);
+            case 'LOGBOOK':
+                return this._renderLogbookDialog(active);
+            default:
+                return x ``;
         }
-        // PLANT OVERVIEW DIALOG
-        if (active.type === 'PLANT_OVERVIEW') {
-            const dialogState = active.payload;
-            return x `
-        <plant-overview-dialog
-            .open=${true}
-            .dialog=${dialogState}
-            .plant=${dialogState.plant}
-            .growspaceOptions=${growspaceOptions}
-            @close=${() => this.store.closeActiveDialog()}
-            @update-plant=${(e) => {
-                const payload = active.payload;
-                this.store.updatePlantFromDialog({
-                    plant: payload.plant,
-                    editedAttributes: e.detail,
-                    selectedPlantIds: payload.selectedPlantIds
-                });
-            }}
-            @delete-plant=${(e) => this.store.handleDeletePlant(e.detail.plantId)}
-            @harvest-plant=${(e) => this.store.handleMovePlantToNextStage(e.detail.plant)}
-            @finish-drying=${(e) => this.store.handleMovePlantToNextStage(e.detail.plant)}
-            @take-clone=${(e) => {
-                const { plant, numClones } = e.detail;
-                this.store.handleTakeClone(plant, numClones);
-            }}
-            @move-clone=${(e) => {
-                const { plant, targetGrowspace } = e.detail;
-                const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-                this.store.dataService.moveClone(plantId, targetGrowspace)
-                    .then(() => {
-                    console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
-                    this.store.closeActiveDialog();
-                }).catch((err) => {
-                    console.error('Error moving clone:', err);
-                });
-            }}
-            @attribute-change=${(e) => {
-                const payload = active.payload;
-                payload.editedAttributes[e.detail.key] = e.detail.value;
-                this.requestUpdate();
-            }}
-            @toggle-show-all-dates=${() => {
-                const payload = active.payload;
-                payload.showAllDates = !payload.showAllDates;
-                this.requestUpdate();
-            }}
-          ></plant-overview-dialog>
-      `;
-        }
-        // STRAIN LIBRARY DIALOG
-        if (active.type === 'STRAIN_LIBRARY') {
-            return x `
-        <strain-library-dialog
-          .open=${true}
-          .strains=${this.store.state.strainLibrary || []}
-          @close=${() => this.store.closeActiveDialog()}
-          @save-strain=${(e) => this._addStrain(e.detail)}
-          @delete-strain=${(e) => this._removeStrain(e.detail.key)}
-          @import-library=${(e) => this.store.performImport(e.detail.file, e.detail.replace)}
-          @export-library=${() => this.store.handleExportLibrary()}
-          @get-recommendation=${() => this._openStrainRecommendationDialog()}
-        ></strain-library-dialog>
-      `;
-        }
-        // CONFIG DIALOG
-        if (active.type === 'CONFIG') {
-            const dialogState = active.payload;
-            return x `
-        <config-dialog
-          .open=${true}
-          .growspaceOptions=${growspaceOptions}
-          @close=${() => this.store.closeActiveDialog()}
-          @add-growspace-submit=${(e) => this._handleAddGrowspace(e.detail)}
-          @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
-          .setInitialState=${(el) => {
-                // Pass initial state if needed
-                if (el)
-                    el.setInitialState(dialogState.currentTab, dialogState.environmentData);
-            }}
-        ></config-dialog>
-      `;
-        }
-        // GROW MASTER DIALOG
-        if (active.type === 'GROW_MASTER') {
-            const dialogState = active.payload;
-            // Determine stress state for the dialog
-            let isStressed = false;
-            let personality = undefined;
-            // Attempt to find stress sensor
-            if (this.selectedDevice && this.hass) {
-                // Pattern checking for stress sensor
-                const id = this.selectedDevice;
-                const stressEntityIds = [
-                    `binary_sensor.${id}_plants_under_stress`,
-                    `binary_sensor.${id}_stress`,
-                    `binary_sensor.growspace_manager_${id}_stress`
-                ];
-                for (const eid of stressEntityIds) {
-                    const ent = this.hass.states[eid];
-                    if (ent && ent.state === 'on') {
-                        isStressed = true;
-                        break;
-                    }
-                }
-            }
-            // Personality check
-            if (this.hass) {
-                const manager = this.hass.states['sensor.growspace_manager'];
-                if (manager && manager.attributes && manager.attributes.ai_settings) {
-                    personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
-                }
-            }
-            return x `
-        <grow-master-dialog
-          .open=${true}
-          .isStressed=${isStressed}
-          .personality=${personality}
-          .isLoading=${dialogState.isLoading}
-          .response=${dialogState.response}
-          @close=${() => this.store.closeActiveDialog()}
-          @analyze-growspace=${(e) => this.store.analyzeGrowspace(e.detail.query, false)}
-          @analyze-all-growspaces=${(e) => this.store.analyzeGrowspace(e.detail.query, true)}
-        ></grow-master-dialog>
-      `;
-        }
-        // STRAIN RECOMMENDATION DIALOG
-        if (active.type === 'STRAIN_RECOMMENDATION') {
-            const dialogState = active.payload;
-            return x `
-        <strain-recommendation-dialog
-            .open=${true}
-            .isLoading=${dialogState.isLoading}
-            .response=${dialogState.response}
-            @close=${() => this.store.closeActiveDialog()}
-            @get-recommendation=${(e) => this.store.getStrainRecommendation(e.detail.query)}
-          ></strain-recommendation-dialog>
-      `;
-        }
-        // IRRIGATION DIALOG
-        if (active.type === 'IRRIGATION') {
-            return x `
-         <irrigation-dialog
-            .open=${true}
-            .growspaceId=${selectedDeviceData?.device_id || ''}
-            .growspaceName=${selectedDeviceData?.name || ''}
-            .growspaceEntityId=${selectedDeviceData?.overview_entity_id || ''}
-            @close=${() => this.store.closeActiveDialog()}
-         ></irrigation-dialog>
-        `;
-        }
-        // LOGBOOK DIALOG
-        if (active.type === 'LOGBOOK') {
-            const dialogState = active.payload;
-            return x `
-        <logbook-dialog
-            .open=${true}
-            .growspaceId=${dialogState.growspaceId}
-            @close=${() => this.store.closeActiveDialog()}
-          ></logbook-dialog>
-      `;
-        }
-        return x ``;
     }
 };
 GrowspaceManagerCard.styles = [
@@ -20148,5 +20207,5 @@ var growspaceManagerCardEditor = /*#__PURE__*/Object.freeze({
     get GrowspaceManagerCardEditor () { return GrowspaceManagerCardEditor; }
 });
 
-export { DataService, GrowspaceManagerCard, PlantUtils, createGrowspaceDevice, stageInputs };
+export { DataService, GrowspaceManagerCard, PlantStage, PlantUtils, createGrowspaceDevice, stageInputs };
 //# sourceMappingURL=growspace-manager-card.js.map
