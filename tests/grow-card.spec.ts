@@ -1,5 +1,4 @@
 import { test, expect } from './coverage-helper';
-import { Locator, Page } from '@playwright/test';
 import { Buffer } from 'buffer';
 import { createMockHass } from './mocks/hass';
 
@@ -124,11 +123,7 @@ test.describe('Growspace Manager Card Tests', () => {
 
     test('Drag and drop plant to occupied slot (switching plants)', async ({ coveragePage: page }) => {
         const growspaceCard = page.locator('growspace-manager-card').first();
-        const serviceCalls: any[] = [];
-
-        await page.exposeFunction('trackServiceCall', (domain: string, service: string, data: any) => {
-            serviceCalls.push({ domain, service, data });
-        });
+        // Removed page.exposeFunction
 
         const mockHass = createMockHass();
         const hassData = JSON.parse(JSON.stringify(mockHass));
@@ -138,7 +133,9 @@ test.describe('Growspace Manager Card Tests', () => {
             node.hass = {
                 ...hassData,
                 callService: async (d: string, s: string, data: any) => {
-                    await (window as any).trackServiceCall(d, s, data);
+                    const calls = (window as any).__serviceCalls || [];
+                    calls.push({ domain: d, service: s, data });
+                    (window as any).__serviceCalls = calls;
                     return Promise.resolve();
                 },
                 connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
@@ -165,10 +162,13 @@ test.describe('Growspace Manager Card Tests', () => {
         // Perform the drag and drop operation (source to target)
         await sourcePlant.dragTo(targetPlant);
 
-        // Wait for network requests to complete and the UI to update
-        await page.waitForTimeout(1000);
-
         // Verify service call
+        await expect.poll(async () => {
+            const calls = await page.evaluate(() => (window as any).__serviceCalls || []);
+            return calls.some((c: any) => c.domain === 'growspace_manager' && c.service === 'switch_plants');
+        }).toBeTruthy();
+
+        const serviceCalls = await page.evaluate(() => (window as any).__serviceCalls || []);
         const switchCall = serviceCalls.find((c: any) => c.domain === 'growspace_manager' && c.service === 'switch_plants');
         expect(switchCall).toBeTruthy();
         expect(switchCall.data).toHaveProperty('plant1_id');
@@ -177,12 +177,7 @@ test.describe('Growspace Manager Card Tests', () => {
 
     test('fires "harvest_plant" service call when harvesting a flowering plant', async ({ coveragePage: page }) => {
         const growspaceCard = page.locator('growspace-manager-card').first();
-        const serviceCalls: any[] = [];
-
-        // Setup service call tracking
-        await page.exposeFunction('trackServiceCall', (domain: string, service: string, data: any) => {
-            serviceCalls.push({ domain, service, data });
-        });
+        // Removed page.exposeFunction
 
         const mockHass = createMockHass();
         const hassData = JSON.parse(JSON.stringify(mockHass));
@@ -192,7 +187,9 @@ test.describe('Growspace Manager Card Tests', () => {
             node.hass = {
                 ...hassData,
                 callService: async (d: string, s: string, data: any) => {
-                    await (window as any).trackServiceCall(d, s, data);
+                    const calls = (window as any).__serviceCalls || [];
+                    calls.push({ domain: d, service: s, data });
+                    (window as any).__serviceCalls = calls;
                     return Promise.resolve();
                 },
                 connection: { subscribeEvents: () => () => { }, sendMessagePromise: () => Promise.resolve() },
@@ -218,10 +215,13 @@ test.describe('Growspace Manager Card Tests', () => {
         // Click Harvest
         await harvestBtn.click();
 
-        // Wait for service call
-        await page.waitForTimeout(500);
-
         // Verify service call
+        await expect.poll(async () => {
+            const calls = await page.evaluate(() => (window as any).__serviceCalls || []);
+            return calls.some((c: any) => c.domain === 'growspace_manager' && c.service === 'harvest_plant');
+        }).toBeTruthy();
+
+        const serviceCalls = await page.evaluate(() => (window as any).__serviceCalls || []);
         const harvestCall = serviceCalls.find((c: any) => c.domain === 'growspace_manager' && c.service === 'harvest_plant');
         expect(harvestCall).toBeTruthy();
         expect(harvestCall.data).toHaveProperty('plant_id');

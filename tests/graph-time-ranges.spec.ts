@@ -1,5 +1,5 @@
 import { test, expect } from './coverage-helper';
-import { createMockHass } from './mocks/hass';
+import { createMockHass, addEnvironmentalSensors } from './mocks/hass';
 
 test.describe('Graph Time Ranges', () => {
 
@@ -16,6 +16,12 @@ test.describe('Graph Time Ranges', () => {
         // renderEnvGraph expects history of optimal_conditions sensor, which should have attributes for temp/hum etc.
         let historyData: any[] = [
             {
+                last_changed: new Date(new Date().getTime() - 24 * 60 * 60 * 1000).toISOString(),
+                state: 'on',
+                attributes: { temperature: 24.0, humidity: 55, vpd: 1.0, co2: 700 },
+                entity_id: 'sensor.temp'
+            },
+            {
                 last_changed: new Date().toISOString(),
                 state: 'on',
                 attributes: { temperature: 25.0, humidity: 60, vpd: 1.2, co2: 800 },
@@ -24,26 +30,14 @@ test.describe('Graph Time Ranges', () => {
         ];
 
         // Mock history data (moved inside evaluate or passed as arg)
+        const mockHass: any = addEnvironmentalSensors(createMockHass(), '4x4_tent');
+        const overviewId = 'sensor.4x4_tent';
 
-        const mockHass: any = createMockHass();
-
-        // Add environmental attributes to optimal conditions sensor to ensure chips render
-        const optimalId = 'binary_sensor.4x4_tent_optimal_conditions';
-        if (mockHass.states[optimalId]) {
-            Object.assign(mockHass.states[optimalId].attributes, {
-                temperature: 25.0,
-                humidity: 60,
-                vpd: 1.2,
-                co2: 800
-            });
-            // Also set attributes on the overview entity to ensure chips rely on them
-            if (mockHass.states['sensor.4x4_tent']) {
-                mockHass.states['sensor.4x4_tent'].attributes.temperature_sensor = 'sensor.temp';
-                mockHass.states['sensor.4x4_tent'].attributes.humidity_sensor = 'sensor.hum';
-                mockHass.states['sensor.4x4_tent'].attributes.vpd_sensor = 'sensor.vpd';
-                mockHass.states['sensor.4x4_tent'].attributes.dehumidifier_entity = 'switch.dehumidifier';
-                mockHass.states['sensor.4x4_tent'].attributes.light_entity = 'switch.grow_light';
-            }
+        // Setup Attributes (Dehumidifier is separate from standard env sensors)
+        if (mockHass.states[overviewId]) {
+            mockHass.states[overviewId].attributes.dehumidifier_entity = 'switch.dehumidifier';
+            mockHass.states[overviewId].attributes.dehumidifier_state = 'on';
+            mockHass.states[overviewId].attributes.light_entity = 'switch.grow_light';
         }
 
         const hassData = JSON.parse(JSON.stringify(mockHass));

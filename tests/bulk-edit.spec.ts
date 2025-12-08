@@ -67,12 +67,13 @@ test.describe('Growspace Manager Card - Bulk Edit', () => {
         await saveBtn.click({ force: true });
 
         // 6. Verify Service Calls
-        await page.waitForTimeout(500);
+        await expect.poll(async () => {
+            const calls = await page.evaluate(() => (window as any).__serviceCalls || []);
+            return calls.filter((c: any) => c.service === 'update_plant').length;
+        }).toBeGreaterThanOrEqual(2);
 
-        // Retrieve calls from window
         const serviceCalls = await page.evaluate(() => (window as any).__serviceCalls || []);
         const updateCalls = serviceCalls.filter((c: any) => c.service === 'update_plant');
-        expect(updateCalls.length).toBeGreaterThanOrEqual(2);
 
         // The mock data in tests/mocks/hass.ts defines these IDs
         const plant1Id = 'mock_plant_uuid_1';

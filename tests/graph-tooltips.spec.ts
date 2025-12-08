@@ -1,5 +1,5 @@
 import { test, expect } from './coverage-helper';
-import { createMockHass } from './mocks/hass';
+import { createMockHass, addEnvironmentalSensors } from './mocks/hass';
 
 test.describe('Graph Tooltips', () => {
 
@@ -14,6 +14,19 @@ test.describe('Graph Tooltips', () => {
         // Mock History Data
         const now = new Date();
         const historyData = [
+            {
+                last_changed: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+                state: 'on',
+                attributes: {
+                    dehumidifier: true,
+                    is_lights_on: true,
+                    temperature: 24,
+                    humidity: 55,
+                    vpd: 1.0,
+                    co2: 700
+                },
+                entity_id: 'switch.dehumidifier'
+            },
             {
                 last_changed: now.toISOString(),
                 state: 'on',
@@ -30,8 +43,7 @@ test.describe('Graph Tooltips', () => {
         ];
 
         // Mock history data (moved inside evaluate or passed as arg)
-
-        const mockHass: any = createMockHass();
+        const mockHass: any = addEnvironmentalSensors(createMockHass(), '4x4_tent');
         const overviewId = 'sensor.4x4_tent';
         const optimalId = 'binary_sensor.4x4_tent_optimal_conditions';
 
@@ -39,10 +51,6 @@ test.describe('Graph Tooltips', () => {
         if (mockHass.states[overviewId]) {
             mockHass.states[overviewId].attributes.dehumidifier_entity = 'switch.dehumidifier';
             mockHass.states[overviewId].attributes.dehumidifier_state = 'on';
-            mockHass.states[overviewId].attributes.temperature_sensor = 'sensor.temp';
-            mockHass.states[overviewId].attributes.humidity_sensor = 'sensor.hum';
-            mockHass.states[overviewId].attributes.vpd_sensor = 'sensor.vpd';
-            mockHass.states[overviewId].attributes.dehumidifier_entity = 'switch.dehumidifier';
             mockHass.states[overviewId].attributes.light_entity = 'switch.grow_light';
         }
 

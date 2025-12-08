@@ -223,3 +223,50 @@ const createPlantEntities = (grid: Record<string, any>, growspaceId: string) => 
     });
     return entities;
 };
+
+export const addEnvironmentalSensors = (mockHass: any, growspaceId: string) => {
+    const sensorPrefix = `sensor.${growspaceId}`;
+    const overviewId = `sensor.${growspaceId}`;
+    const optimalId = `binary_sensor.${growspaceId}_optimal_conditions`;
+
+    // 1. Link attributes in the main overview sensor
+    if (mockHass.states[overviewId]) {
+        Object.assign(mockHass.states[overviewId].attributes, {
+            temperature_sensor: `${sensorPrefix}_temp`,
+            humidity_sensor: `${sensorPrefix}_humidity`,
+            vpd_sensor: `${sensorPrefix}_vpd`,
+            co2_sensor: `${sensorPrefix}_co2`,
+        });
+    }
+
+    // 2. Add values to optimal_conditions sensor (required for Header Chips)
+    if (!mockHass.states[optimalId]) {
+        mockHass.states[optimalId] = {
+            entity_id: optimalId,
+            state: 'on',
+            attributes: {}
+        };
+    }
+    Object.assign(mockHass.states[optimalId].attributes, {
+        temperature: 24.5,
+        humidity: 60,
+        vpd: 1.2,
+        co2: 800
+    });
+
+    // 3. Create the actual sensor states
+    mockHass.states[`${sensorPrefix}_temp`] = {
+        entity_id: `${sensorPrefix}_temp`, state: '24.5', attributes: { unit_of_measurement: '°C' }
+    };
+    mockHass.states[`${sensorPrefix}_humidity`] = {
+        entity_id: `${sensorPrefix}_humidity`, state: '60', attributes: { unit_of_measurement: '%' }
+    };
+    mockHass.states[`${sensorPrefix}_vpd`] = {
+        entity_id: `${sensorPrefix}_vpd`, state: '1.2', attributes: { unit_of_measurement: 'kPa' }
+    };
+    mockHass.states[`${sensorPrefix}_co2`] = {
+        entity_id: `${sensorPrefix}_co2`, state: '800', attributes: { unit_of_measurement: 'ppm' }
+    };
+
+    return mockHass;
+};
