@@ -415,13 +415,32 @@ export class GrowspaceEnvChart extends LitElement {
             // Use History Data
             let historySource = this.history;
 
-            // if (!historySource || historySource.length === 0) return html``; // REMOVED
-
             const sortedHistory = historySource ? [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()) : [];
 
+            // 1. Find the active state exactly AT startTime
+            // We look for the latest entry that happened BEFORE or AT startTime
+            let initialState = sortedHistory.length > 0 ? sortedHistory[0] : null;
+            // Iterate to find the last one before start
+            for (const h of sortedHistory) {
+                const t = new Date(h.last_changed).getTime();
+                if (t > startTime.getTime()) break;
+                initialState = h;
+            }
+
+            // 2. If found, add it as the anchor point at startTime
+            if (initialState) {
+                const val = getValue(initialState, metricKey);
+                const meta = getMeta(initialState, metricKey);
+                if (val !== undefined && !isNaN(parseFloat(val))) {
+                    dataPoints.push({ time: startTime.getTime(), value: parseFloat(val), meta });
+                }
+            }
+
+            // 3. Add all points that happened AFTER startTime
             sortedHistory.forEach(h => {
                 const t = new Date(h.last_changed).getTime();
-                if (t < startTime.getTime()) return;
+                if (t <= startTime.getTime()) return; // Skip old points (we handled the anchor above)
+
                 const val = getValue(h, metricKey);
                 const meta = getMeta(h, metricKey);
 
@@ -465,17 +484,7 @@ export class GrowspaceEnvChart extends LitElement {
             }
         }
 
-        // If we have data but the first point is after start time, synthesize a start point
-        if (dataPoints.length > 0) {
-            const firstPoint = dataPoints[0];
-            if (firstPoint.time > startTime.getTime()) {
-                dataPoints.unshift({
-                    time: startTime.getTime(),
-                    value: firstPoint.value,
-                    meta: firstPoint.meta
-                });
-            }
-        }
+
 
         // If we have only 1 point (current state), synthesize a start point to draw a flat line
         if (dataPoints.length === 1) {
@@ -786,31 +795,51 @@ export class GrowspaceEnvChart extends LitElement {
             if (historySource && historySource.length > 0) {
                 const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
 
+                const getValue = (ent: any, key: string) => {
+                    if (!ent) return undefined;
+                    if (config.unit === 'state' && key === 'optimal') return ent.state === 'on' ? 1 : 0;
+                    if (key === 'light') {
+                        const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
+                        return isLightsOn === true ? 1 : 0;
+                    }
+                    if (key === 'dehumidifier') {
+                        if (ent.state) return (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 1 : 0;
+                        const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
+                        return (val === true || val === 'on' || val === 1) ? 1 : 0;
+                    }
+                    if (key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture') {
+                        if (ent.state && !isNaN(parseFloat(ent.state))) {
+                            return ent.state;
+                        }
+                    }
+                    if (ent.attributes && ent.attributes[key] !== undefined) return ent.attributes[key];
+                    if (ent.attributes && ent.attributes.observations && typeof ent.attributes.observations === 'object') return ent.attributes.observations[key];
+                    return undefined;
+                };
+
+                // 1. Find the active state exactly AT startTime
+                // We look for the latest entry that happened BEFORE or AT startTime
+                let initialState = sortedHistory.length > 0 ? sortedHistory[0] : null;
+                // Iterate to find the last one before start
+                for (const h of sortedHistory) {
+                    const t = new Date(h.last_changed).getTime();
+                    if (t > startTime.getTime()) break;
+                    initialState = h;
+                }
+
+                // 2. If found, add it as the anchor point at startTime
+                if (initialState) {
+                    const val = getValue(initialState, metricKey);
+                    // const meta = getMeta(initialState, metricKey); // Combined graph doesn't use detailed meta in same way but consistent logic
+                    if (val !== undefined && !isNaN(parseFloat(val))) {
+                        dataPoints.push({ time: startTime.getTime(), value: parseFloat(val) });
+                    }
+                }
+
+                // 3. Add all points that happened AFTER startTime
                 sortedHistory.forEach(h => {
                     const t = new Date(h.last_changed).getTime();
-                    if (t < startTime.getTime()) return;
-
-                    const getValue = (ent: any, key: string) => {
-                        if (!ent) return undefined;
-                        if (config.unit === 'state' && key === 'optimal') return ent.state === 'on' ? 1 : 0;
-                        if (key === 'light') {
-                            const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
-                            return isLightsOn === true ? 1 : 0;
-                        }
-                        if (key === 'dehumidifier') {
-                            if (ent.state) return (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 1 : 0;
-                            const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
-                            return (val === true || val === 'on' || val === 1) ? 1 : 0;
-                        }
-                        if (key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture') {
-                            if (ent.state && !isNaN(parseFloat(ent.state))) {
-                                return ent.state;
-                            }
-                        }
-                        if (ent.attributes && ent.attributes[key] !== undefined) return ent.attributes[key];
-                        if (ent.attributes && ent.attributes.observations && typeof ent.attributes.observations === 'object') return ent.attributes.observations[key];
-                        return undefined;
-                    };
+                    if (t <= startTime.getTime()) return; // Skip old points (we handled the anchor above)
 
                     const val = getValue(h, metricKey);
                     if (val !== undefined && !isNaN(parseFloat(val))) {
@@ -824,12 +853,7 @@ export class GrowspaceEnvChart extends LitElement {
                 }
             }
 
-            if (dataPoints.length > 0) {
-                const first = dataPoints[0];
-                if (first.time > startTime.getTime()) {
-                    dataPoints.unshift({ time: startTime.getTime(), value: first.value });
-                }
-            }
+
 
             if (dataPoints.length > 0) {
                 let min = Math.min(...dataPoints.map(d => d.value));
