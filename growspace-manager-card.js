@@ -16719,6 +16719,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i$2 {
         this.isEditMode = false;
         this.selectedPlants = new Set();
         this.compact = false;
+        this.isLoading = false;
         this._draggedPlant = null;
     }
     _handleDragStart(plant) {
@@ -16799,7 +16800,8 @@ let GrowspaceGrid = class GrowspaceGrid extends i$2 {
       <div class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
            style="${gridStyle}"
            @mobile-drop=${this._handleMobileDrop}>
-         ${c(flatGrid, (plant, index) => plant ? (plant.attributes?.plant_id || plant.entity_id) : `empty-${index}`, (plant, index) => {
+           ${this.isLoading ? this.renderSkeletonGrid() : ''}
+         ${!this.isLoading ? c(flatGrid, (plant, index) => plant ? (plant.attributes?.plant_id || plant.entity_id) : `empty-${index}`, (plant, index) => {
             // Recalculate row/col based on grid index
             const row = Math.floor(index / this.cols) + 1;
             const col = (index % this.cols) + 1;
@@ -16822,7 +16824,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i$2 {
                  @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
                ></growspace-plant-card>
              `;
-        })}
+        }) : ''}
       </div>
     `;
     }
@@ -16845,6 +16847,11 @@ let GrowspaceGrid = class GrowspaceGrid extends i$2 {
         <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
       </div>
     `;
+    }
+    renderSkeletonGrid() {
+        // Generate placeholder items matching row * col count
+        const count = this.rows * this.cols;
+        return Array(count).fill(0).map(() => x `<div class="skeleton-card"></div>`);
     }
 };
 GrowspaceGrid.styles = i$5 `
@@ -16875,6 +16882,21 @@ GrowspaceGrid.styles = i$5 `
         cursor: pointer;
         transition: all 0.2s ease;
         background: rgba(255, 255, 255, 0.02);
+      }
+
+      /* Skeleton Loading */
+      .skeleton-card {
+        height: 100%;
+        aspect-ratio: 1;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.05);
+        animation: pulse 1.5s infinite;
+      }
+      
+      @keyframes pulse {
+        0% { opacity: 0.6; }
+        50% { opacity: 0.3; }
+        100% { opacity: 0.6; }
       }
 
       .plant-card-empty:hover {
@@ -17113,6 +17135,10 @@ __decorate([
     n$2({ type: Boolean }),
     __metadata("design:type", Boolean)
 ], GrowspaceGrid.prototype, "compact", void 0);
+__decorate([
+    n$2({ type: Boolean }),
+    __metadata("design:type", Boolean)
+], GrowspaceGrid.prototype, "isLoading", void 0);
 GrowspaceGrid = __decorate([
     t$2('growspace-grid')
 ], GrowspaceGrid);
@@ -18626,6 +18652,7 @@ class GrowspaceStore {
             notification: null,
             isCompactView: false,
             defaultApplied: false,
+            isLoading: true,
             devices: []
         };
         this.wsDataCache = {};
@@ -18689,30 +18716,28 @@ class GrowspaceStore {
         if (!this.hass || this._isFetchingWS)
             return;
         this._isFetchingWS = true;
+        // Show loading spinner if we have no devices yet
+        if (this.state.devices.length === 0) {
+            this.state.isLoading = true;
+            this.requestUpdate();
+        }
         try {
-            // Find all growspace IDs from sensors
-            const overviewSensors = Object.values(this.hass.states).filter((s) => s.entity_id.startsWith('sensor.') &&
-                s.attributes.growspace_id !== undefined);
-            await Promise.all(overviewSensors.map(async (sensor) => {
-                const id = sensor.attributes.growspace_id;
-                const data = await this.dataService.fetchGrowspaceData(id);
-                if (data) {
-                    this.wsDataCache[id] = data;
-                }
-            }));
+            // fetchGrowspaceData without ID should return all data
+            const data = await this.dataService.fetchGrowspaceData();
+            this.wsDataCache = data || {};
             this._updateDevicesState();
         }
         catch (e) {
-            console.error("Error refreshing WS data", e);
+            console.error("Failed to fetch growspace data", e);
         }
         finally {
             this._isFetchingWS = false;
+            this.state.isLoading = false;
+            this.requestUpdate();
         }
     }
     _updateDevicesState() {
         const devices = this.dataService.getGrowspaceDevices(this.wsDataCache);
-        // Only update if changes? Lit handles diffing usually, but devices is deep object.
-        // We just assign it. Use careful comparison if render loops appear.
         this.state.devices = devices;
         this.requestUpdate();
     }
@@ -19971,6 +19996,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
         .isEditMode=${this.store.state.isEditMode}
         .selectedPlants=${this.store.state.selectedPlants}
         .compact=${this.store.state.isCompactView}
+        .isLoading=${this.store.state.isLoading}
         @plant-click=${(e) => this._handlePlantClick(e.detail.plant)}
         @add-plant-click=${(e) => this._openAddPlantDialog(e.detail.row, e.detail.col)}
         @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, e.detail.targetRow, e.detail.targetCol, e.detail.targetPlant, e.detail.sourcePlant)}

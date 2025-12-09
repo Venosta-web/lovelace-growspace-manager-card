@@ -23,6 +23,7 @@ export interface GrowspaceState {
     notification: { message: string, type: 'info' | 'error' | 'success' } | null;
     isCompactView: boolean;
     defaultApplied: boolean;
+    isLoading: boolean;
     devices: GrowspaceDevice[];
 }
 
@@ -44,6 +45,7 @@ export class GrowspaceStore implements ReactiveController {
         notification: null,
         isCompactView: false,
         defaultApplied: false,
+        isLoading: true,
         devices: []
     };
 
@@ -109,33 +111,28 @@ export class GrowspaceStore implements ReactiveController {
         if (!this.hass || this._isFetchingWS) return;
         this._isFetchingWS = true;
 
+        // Show loading spinner if we have no devices yet
+        if (this.state.devices.length === 0) {
+            this.state.isLoading = true;
+            this.requestUpdate();
+        }
+
         try {
-            // Find all growspace IDs from sensors
-            const overviewSensors = Object.values(this.hass.states).filter((s: any) =>
-                s.entity_id.startsWith('sensor.') &&
-                s.attributes.growspace_id !== undefined
-            );
-
-            await Promise.all(overviewSensors.map(async (sensor: any) => {
-                const id = sensor.attributes.growspace_id;
-                const data = await this.dataService.fetchGrowspaceData(id);
-                if (data) {
-                    this.wsDataCache[id] = data;
-                }
-            }));
-
+            // fetchGrowspaceData without ID should return all data
+            const data = await this.dataService.fetchGrowspaceData();
+            this.wsDataCache = data || {};
             this._updateDevicesState();
         } catch (e) {
-            console.error("Error refreshing WS data", e);
+            console.error("Failed to fetch growspace data", e);
         } finally {
             this._isFetchingWS = false;
+            this.state.isLoading = false;
+            this.requestUpdate();
         }
     }
 
     private _updateDevicesState() {
         const devices = this.dataService.getGrowspaceDevices(this.wsDataCache);
-        // Only update if changes? Lit handles diffing usually, but devices is deep object.
-        // We just assign it. Use careful comparison if render loops appear.
         this.state.devices = devices;
         this.requestUpdate();
     }

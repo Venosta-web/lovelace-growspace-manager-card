@@ -1,31 +1,12 @@
 import { HassEntity } from 'home-assistant-js-websocket';
-import { GrowspaceDevice, GrowspaceType, PlantEntity, createGrowspaceDevice, PlantStage } from '../types';
-
-export interface RawPlantData {
-    strain: string;
-    phenotype: string;
-    stage?: string;
-    [key: string]: any;
-}
-
-export interface RawGrowspaceAttributes {
-    growspace_id: string;
-    rows: number;
-    plants_per_row: number;
-    friendly_name?: string;
-    type?: string;
-    grid?: Record<string, RawPlantData | null>;
-    row?: undefined; // Explicitly ensure these are undefined for overview sensors
-    col?: undefined;
-    [key: string]: any;
-}
+import { GrowspaceDevice, GrowspaceType, PlantEntity, createGrowspaceDevice, PlantStage, GrowspaceWebSocketData, RawPlantData, RawGrowspaceAttributes } from '../types';
 
 export interface GrowspaceOverviewEntity extends HassEntity {
     attributes: RawGrowspaceAttributes;
 }
 
 export class GrowspaceAdapter {
-    static transformGrowspace(overview: GrowspaceOverviewEntity, wsData: any = null): GrowspaceDevice {
+    static transformGrowspace(overview: GrowspaceOverviewEntity, wsData: GrowspaceWebSocketData | null = null): GrowspaceDevice {
         const attributes = overview.attributes;
         const growspaceId = attributes.growspace_id;
 

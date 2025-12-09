@@ -15,6 +15,7 @@ export class GrowspaceGrid extends LitElement {
   @property({ type: Boolean }) isEditMode: boolean = false;
   @property({ type: Object }) selectedPlants: Set<string> = new Set();
   @property({ type: Boolean }) compact: boolean = false;
+  @property({ type: Boolean }) isLoading: boolean = false;
 
   private _draggedPlant: PlantEntity | null = null;
 
@@ -46,6 +47,21 @@ export class GrowspaceGrid extends LitElement {
         cursor: pointer;
         transition: all 0.2s ease;
         background: rgba(255, 255, 255, 0.02);
+      }
+
+      /* Skeleton Loading */
+      .skeleton-card {
+        height: 100%;
+        aspect-ratio: 1;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.05);
+        animation: pulse 1.5s infinite;
+      }
+      
+      @keyframes pulse {
+        0% { opacity: 0.6; }
+        50% { opacity: 0.3; }
+        100% { opacity: 0.6; }
       }
 
       .plant-card-empty:hover {
@@ -361,7 +377,8 @@ export class GrowspaceGrid extends LitElement {
       <div class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
            style="${gridStyle}"
            @mobile-drop=${this._handleMobileDrop}>
-         ${repeat(
+           ${this.isLoading ? this.renderSkeletonGrid() : ''}
+         ${!this.isLoading ? repeat(
       flatGrid,
       (plant, index) => plant ? (plant.attributes?.plant_id || plant.entity_id) : `empty-${index}`,
       (plant, index) => {
@@ -391,7 +408,7 @@ export class GrowspaceGrid extends LitElement {
                ></growspace-plant-card>
              `;
       }
-    )}
+    ) : ''}
       </div>
     `;
   }
@@ -415,5 +432,10 @@ export class GrowspaceGrid extends LitElement {
         <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
       </div>
     `;
+  }
+  private renderSkeletonGrid(): TemplateResult[] {
+    // Generate placeholder items matching row * col count
+    const count = this.rows * this.cols;
+    return Array(count).fill(0).map(() => html`<div class="skeleton-card"></div>`);
   }
 }

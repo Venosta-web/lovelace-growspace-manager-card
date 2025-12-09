@@ -744,6 +744,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         .isEditMode=${this.store.state.isEditMode}
         .selectedPlants=${this.store.state.selectedPlants}
         .compact=${this.store.state.isCompactView}
+        .isLoading=${this.store.state.isLoading}
         @plant-click=${(e: PlantClickEvent) => this._handlePlantClick(e.detail.plant)}
         @add-plant-click=${(e: AddPlantClickEvent) => this._openAddPlantDialog(e.detail.row, e.detail.col)}
         @plant-drop=${(e: PlantDropEvent) =>

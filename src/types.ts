@@ -238,4 +238,68 @@ export interface IrrigationStrategy {
   shot_interval_minutes: number;
 }
 
+export interface RawPlantData {
+  strain: string;
+  phenotype: string;
+  stage?: string;
+  [key: string]: any;
+}
 
+export interface RawGrowspaceAttributes {
+  growspace_id: string;
+  rows: number;
+  plants_per_row: number;
+  friendly_name?: string;
+  type?: string;
+  grid?: Record<string, RawPlantData | null>;
+  row?: undefined;
+  col?: undefined;
+  [key: string]: any;
+}
+
+export interface GrowspaceWebSocketData {
+  id: string;
+  name: string;
+  type: GrowspaceType;
+  rows: number;
+  plants_per_row: number;
+  grid: Record<string, RawPlantData | null>;
+  irrigation_times: IrrigationTime[];
+  drain_times: IrrigationTime[];
+  irrigation_strategy: IrrigationStrategy;
+
+  // Biological Metrics
+  vpd_status: string;
+  vpd_target_min: number;
+  vpd_target_max: number;
+  vpd_danger_min: number;
+  vpd_danger_max: number;
+  granular_stage: string;
+  is_day: boolean;
+  veg_week?: number;
+  flower_week?: number;
+
+  // Environment Sensors
+  temperature_sensor?: string;
+  humidity_sensor?: string;
+  vpd_sensor?: string;
+  co2_sensor?: string;
+
+  // Environment Controls & States
+  dehumidifier_entity?: string;
+  humidifier_entity?: string;
+  exhaust_entity?: string;
+
+  dehumidifier_control_enabled?: boolean;
+  dehumidifier_humidity?: number;
+  dehumidifier_mode?: string;
+  dehumidifier_state?: string;
+  dehumidifier_current_humidity?: number;
+
+  exhaust_state?: string;
+  humidifier_state?: string;
+  co2_state?: string;
+  light_level?: string;
+  daily_light_integral?: number;
+  heater_socket?: string;
+}
