@@ -15780,25 +15780,24 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
         const hasLightSensor = !isSpecialGrowspace && (isLightsOnValue !== undefined && isLightsOnValue !== null);
         const isLightsOn = isLightsOnValue === true;
         const getNextEvent = (times) => {
-            if (!times || times.length === 0)
-                return null;
-            const now = new Date();
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
-            const sorted = [...times].sort((a, b) => {
-                const [h1, m1] = a.time.split(':').map(Number);
-                const [h2, m2] = b.time.split(':').map(Number);
-                return (h1 * 60 + m1) - (h2 * 60 + m2);
-            });
-            const nextToday = sorted.find(t => {
+            if (!times || !times.length)
+                return undefined;
+            const now = DateTime.now();
+            const upcoming = times
+                .map(t => {
                 const [h, m] = t.time.split(':').map(Number);
-                return (h * 60 + m) > currentMinutes;
-            });
-            if (nextToday)
-                return nextToday.time.slice(0, 5);
-            return sorted[0].time.slice(0, 5);
+                let dt = now.set({ hour: h, minute: m, second: 0 });
+                if (dt < now)
+                    dt = dt.plus({ days: 1 });
+                return dt;
+            })
+                .sort((a, b) => a.toMillis() - b.toMillis())[0];
+            if (!upcoming)
+                return undefined;
+            return upcoming.toFormat('HH:mm');
         };
-        const nextIrrigation = getNextEvent(overviewEntity?.attributes?.irrigation_times);
-        const nextDrain = getNextEvent(overviewEntity?.attributes?.drain_times);
+        const nextIrrigation = getNextEvent(this.device.irrigation_times);
+        const nextDrain = getNextEvent(this.device.drain_times);
         // Fetch live states for equipment directly from their entities
         const envAttrs = this.device.environment_attributes || overviewEntity?.attributes || {};
         const exhaustId = envAttrs.exhaust_entity;
