@@ -87,8 +87,12 @@ export class GrowspaceAdapter {
             temperature_sensor: attributes.temperature_sensor,
             humidity_sensor: attributes.humidity_sensor,
             vpd_sensor: attributes.vpd_sensor,
+            co2_sensor: attributes.co2_sensor,
+            light_sensor: attributes.light_sensor,
             exhaust_entity: attributes.exhaust_entity,
-            dehumidifier_entity: attributes.dehumidifier_entity
+            humidifier_entity: attributes.humidifier_entity,
+            dehumidifier_entity: attributes.dehumidifier_entity,
+            dehumidifier_control_enabled: attributes.dehumidifier_control_enabled
         };
 
         return createGrowspaceDevice({
