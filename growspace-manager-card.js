@@ -19853,16 +19853,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
         }));
     }
     _calculateCurrentGridLayout(deviceData) {
-        // Create a signature that uniquely identifies the data state for the grid
-        // Use deviceData.last_updated effectively as it changes on any attribute change (including grid)
-        const signature = `${deviceData.device_id}_${deviceData.plants_per_row}_${deviceData.last_updated}`;
-        if (this._cachedGridLayout && this._lastDeviceDataForGrid === signature) {
-            return this._cachedGridLayout;
-        }
+        // Caching removed: last_updated refers to the sensor entity, which doesn't change
+        // when we receive new data via WebSocket. The grid calculation is cheap enough to run every time.
         const effectiveRows = PlantUtils.calculateEffectiveRows(deviceData);
         const { grid } = PlantUtils.createGridLayout(deviceData.plants, effectiveRows, deviceData.plants_per_row);
-        this._cachedGridLayout = { effectiveRows, grid };
-        this._lastDeviceDataForGrid = signature;
         return { effectiveRows, grid };
     }
     render() {
