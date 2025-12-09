@@ -40,9 +40,18 @@ export class GrowspaceAdapter {
         const grid = wsData?.grid || attributes.grid || {};
         const plants: PlantEntity[] = [];
 
-        Object.values(grid).forEach((slot: any) => {
+        Object.entries(grid).forEach(([key, slot]: [string, any]) => {
             if (slot) {
                 const entityId = `sensor.${slot.strain.toLowerCase().replace(/ /g, '_')}_${slot.phenotype.replace(/#/g, '').toLowerCase()}`;
+
+                // Extract row/col from key "position_R_C"
+                let row: number | undefined;
+                let col: number | undefined;
+                const parts = key.split('_');
+                if (parts.length === 3) {
+                    row = parseInt(parts[1]);
+                    col = parseInt(parts[2]);
+                }
 
                 plants.push({
                     entity_id: entityId,
@@ -51,7 +60,9 @@ export class GrowspaceAdapter {
                         ...slot,
                         growspace_id: growspaceId,
                         friendly_name: `${slot.strain} ${slot.phenotype}`,
-                        stage: slot.stage as PlantStage
+                        stage: slot.stage as PlantStage,
+                        row,
+                        col
                     }
                 });
             }

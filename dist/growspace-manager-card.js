@@ -427,9 +427,17 @@ class GrowspaceAdapter {
         // Prefer WS data for grid, fallback to attributes.grid (legacy/fallback)
         const grid = wsData?.grid || attributes.grid || {};
         const plants = [];
-        Object.values(grid).forEach((slot) => {
+        Object.entries(grid).forEach(([key, slot]) => {
             if (slot) {
                 const entityId = `sensor.${slot.strain.toLowerCase().replace(/ /g, '_')}_${slot.phenotype.replace(/#/g, '').toLowerCase()}`;
+                // Extract row/col from key "position_R_C"
+                let row;
+                let col;
+                const parts = key.split('_');
+                if (parts.length === 3) {
+                    row = parseInt(parts[1]);
+                    col = parseInt(parts[2]);
+                }
                 plants.push({
                     entity_id: entityId,
                     state: slot.stage || 'unknown',
@@ -437,7 +445,9 @@ class GrowspaceAdapter {
                         ...slot,
                         growspace_id: growspaceId,
                         friendly_name: `${slot.strain} ${slot.phenotype}`,
-                        stage: slot.stage
+                        stage: slot.stage,
+                        row,
+                        col
                     }
                 });
             }
