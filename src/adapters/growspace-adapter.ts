@@ -1,5 +1,5 @@
 import { HassEntity } from 'home-assistant-js-websocket';
-import { GrowspaceDevice, GrowspaceType, PlantEntity, createGrowspaceDevice, PlantStage, GrowspaceWebSocketData, RawPlantData, RawGrowspaceAttributes } from '../types';
+import { GrowspaceDevice, GrowspaceType, PlantEntity, createGrowspaceDevice, PlantStage, GrowspaceWebSocketData, RawPlantData, RawGrowspaceAttributes, IrrigationTime, IrrigationStrategy } from '../types';
 
 export interface GrowspaceOverviewEntity extends HassEntity {
     attributes: RawGrowspaceAttributes;
@@ -69,8 +69,15 @@ export class GrowspaceAdapter {
             is_day: attributes.is_day
         };
 
-        const irrigationTimes = wsData?.irrigation_times || attributes.irrigation_times || [];
-        const drainTimes = wsData?.drain_times || attributes.drain_times || [];
+        const rawIrrigation = wsData?.irrigation_times || attributes.irrigation_times || [];
+        const irrigationTimes: IrrigationTime[] = Array.isArray(rawIrrigation)
+            ? rawIrrigation.map((t: any) => typeof t === 'string' ? { time: t } : t)
+            : [];
+
+        const rawDrain = wsData?.drain_times || attributes.drain_times || [];
+        const drainTimes: IrrigationTime[] = Array.isArray(rawDrain)
+            ? rawDrain.map((t: any) => typeof t === 'string' ? { time: t } : t)
+            : [];
 
         // Environment attributes
         const envAttrs = wsData ? {
@@ -99,6 +106,14 @@ export class GrowspaceAdapter {
             dehumidifier_control_enabled: attributes.dehumidifier_control_enabled
         };
 
+        const irrigationConfig = wsData ? wsData.irrigation_config : {
+            irrigation_pump_entity: attributes.irrigation_pump_entity,
+            drain_pump_entity: attributes.drain_pump_entity,
+            irrigation_duration: attributes.irrigation_duration,
+            drain_duration: attributes.drain_duration
+        };
+        const irrigationStrategy = wsData ? wsData.irrigation_strategy : attributes.irrigation_strategy;
+
         return createGrowspaceDevice({
             device_id: growspaceId,
             overview_entity_id: overview.entity_id,
@@ -111,6 +126,8 @@ export class GrowspaceAdapter {
             biological_metrics: bioMetrics,
             irrigation_times: irrigationTimes,
             drain_times: drainTimes,
+            irrigation_config: irrigationConfig,
+            irrigation_strategy: irrigationStrategy,
             environment_attributes: envAttrs
         });
     }

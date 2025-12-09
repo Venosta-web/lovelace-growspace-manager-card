@@ -965,10 +965,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     return html`
        <irrigation-dialog
         .open=${true}
+        .device=${selectedDeviceData}
         .growspaceId=${selectedDeviceData?.device_id || ''}
         .growspaceName=${selectedDeviceData?.name || ''}
-        .growspaceEntityId=${selectedDeviceData?.overview_entity_id || ''}
         @close=${() => this.store.closeActiveDialog()}
+        @closed=${() => this.store.closeActiveDialog()}
        ></irrigation-dialog>
     `;
   }

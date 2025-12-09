@@ -147,6 +147,14 @@ export interface GrowspaceDevice {
   };
   irrigation_times?: { time: string; duration?: number }[];
   drain_times?: { time: string; duration?: number }[];
+  irrigation_config?: {
+    irrigation_pump_entity?: string;
+    drain_pump_entity?: string;
+    irrigation_duration?: number;
+    drain_duration?: number;
+    [key: string]: any;
+  };
+  irrigation_strategy?: IrrigationStrategy;
   environment_attributes?: {
     temperature_sensor?: string;
     humidity_sensor?: string;
@@ -266,6 +274,13 @@ export interface GrowspaceWebSocketData {
   grid: Record<string, RawPlantData | null>;
   irrigation_times: IrrigationTime[];
   drain_times: IrrigationTime[];
+  irrigation_config: {
+    irrigation_pump_entity?: string;
+    drain_pump_entity?: string;
+    irrigation_duration?: number;
+    drain_duration?: number;
+    [key: string]: any;
+  };
   irrigation_strategy: IrrigationStrategy;
 
   // Biological Metrics

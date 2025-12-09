@@ -4,7 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
 import { mdiWater, mdiClose, mdiPlus } from '@mdi/js';
-import { IrrigationTime, IrrigationStrategy } from '../types';
+import { IrrigationTime, IrrigationStrategy, GrowspaceDevice } from '../types';
 import { DataService } from '../data-service';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/md3-text-input';
@@ -16,9 +16,9 @@ export class IrrigationDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
   public hass!: HomeAssistant;
   @property({ type: Boolean }) public open = false;
-  @property({ type: String }) public growspaceId = '';
+  @property({ attribute: false }) public device?: GrowspaceDevice;
+  @property({ type: String }) public growspaceId = ''; // Keep for fallback or ID access if device not set? User said update save methods to use this.device.device_id. But keeping it might be useful. Actually prompt says: "Update _saveSettings, _saveStrategy, and _add/remove methods to use this.device.device_id (or this.growspaceId)". I will keep growspaceId for now but make device the primary source.
   @property({ type: String }) public growspaceName = '';
-  @property({ type: String }) public growspaceEntityId = '';
 
   @state() private _irrigation_pump_entity = '';
   @state() private _drain_pump_entity = '';
@@ -129,31 +129,29 @@ export class IrrigationDialog extends LitElement {
   }
 
   private _initializeState() {
-    if (!this.hass || !this.growspaceEntityId) return;
+    if (!this.device) return;
 
-    const stateObj = this.hass.states[this.growspaceEntityId];
-    if (!stateObj) return;
+    const config = this.device.irrigation_config || {};
 
-    const attrs = stateObj.attributes;
-    this._irrigation_pump_entity = attrs.irrigation_pump || '';
-    this._drain_pump_entity = attrs.drain_pump || '';
-    this._irrigation_duration = attrs.irrigation_duration || 60;
-    this._drain_duration = attrs.drain_duration || 60;
-    this._irrigation_times = this._parseScheduleString(attrs.irrigation_times || []);
-    this._drain_times = this._parseScheduleString(attrs.drain_times || []);
+    this._irrigation_pump_entity = config.irrigation_pump_entity || '';
+    this._drain_pump_entity = config.drain_pump_entity || '';
+    this._irrigation_duration = config.irrigation_duration || 60;
+    this._drain_duration = config.drain_duration || 60;
+
+    this._irrigation_times = this.device.irrigation_times || [];
+    this._drain_times = this.device.drain_times || [];
 
     // Initialize Strategy
-    // The backend attribute 'irrigation_strategy' might be missing on older entities
-    const strat = attrs.irrigation_strategy || {};
+    const strat = this.device.irrigation_strategy;
     this._strategy = {
-      enabled: strat.enabled || false,
-      lights_on_time: strat.lights_on_time || '06:00:00',
-      p0_duration_minutes: strat.p0_duration_minutes || 60,
-      p2_stop_before_lights_off_minutes: strat.p2_stop_before_lights_off_minutes || 120,
-      target_vwc_percent: strat.target_vwc_percent || 45.0,
-      maintenance_dryback_percent: strat.maintenance_dryback_percent || 3.0,
-      shot_duration_seconds: strat.shot_duration_seconds || 15,
-      shot_interval_minutes: strat.shot_interval_minutes || 15
+      enabled: strat?.enabled || false,
+      lights_on_time: strat?.lights_on_time || '06:00:00',
+      p0_duration_minutes: strat?.p0_duration_minutes || 60,
+      p2_stop_before_lights_off_minutes: strat?.p2_stop_before_lights_off_minutes || 120,
+      target_vwc_percent: strat?.target_vwc_percent || 45.0,
+      maintenance_dryback_percent: strat?.maintenance_dryback_percent || 3.0,
+      shot_duration_seconds: strat?.shot_duration_seconds || 15,
+      shot_interval_minutes: strat?.shot_interval_minutes || 15
     };
   }
 
@@ -172,11 +170,11 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _saveSettings() {
-    if (!this.growspaceId || !this._dataService) return;
+    if (!this.device?.device_id || !this._dataService) return;
 
     try {
       await this._dataService.setIrrigationSettings({
-        growspace_id: this.growspaceId,
+        growspace_id: this.device.device_id,
         irrigation_pump_entity: this._irrigation_pump_entity,
         drain_pump_entity: this._drain_pump_entity,
         irrigation_duration: this._irrigation_duration,
@@ -188,11 +186,11 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _addIrrigationTime(time: string, duration?: number) {
-    if (!this.growspaceId || !this._dataService) return;
+    if (!this.device?.device_id || !this._dataService) return;
 
     try {
       await this._dataService.addIrrigationTime({
-        growspace_id: this.growspaceId,
+        growspace_id: this.device.device_id,
         time,
         duration: duration || this._irrigation_duration
       });
@@ -207,11 +205,11 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _removeIrrigationTime(time: string) {
-    if (!this.growspaceId || !this._dataService) return;
+    if (!this.device?.device_id || !this._dataService) return;
 
     try {
       await this._dataService.removeIrrigationTime({
-        growspace_id: this.growspaceId,
+        growspace_id: this.device.device_id,
         time
       });
 
@@ -223,11 +221,11 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _addDrainTime(time: string, duration?: number) {
-    if (!this.growspaceId || !this._dataService) return;
+    if (!this.device?.device_id || !this._dataService) return;
 
     try {
       await this._dataService.addDrainTime({
-        growspace_id: this.growspaceId,
+        growspace_id: this.device.device_id,
         time,
         duration: duration || this._drain_duration
       });
@@ -242,11 +240,11 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _removeDrainTime(time: string) {
-    if (!this.growspaceId || !this._dataService) return;
+    if (!this.device?.device_id || !this._dataService) return;
 
     try {
       await this._dataService.removeDrainTime({
-        growspace_id: this.growspaceId,
+        growspace_id: this.device.device_id,
         time
       });
 
@@ -288,9 +286,9 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _saveStrategy() {
-    if (!this.growspaceId || !this._dataService) return;
+    if (!this.device?.device_id || !this._dataService) return;
     try {
-      await this._dataService.setIrrigationStrategy(this.growspaceId, this._strategy);
+      await this._dataService.setIrrigationStrategy(this.device.device_id, this._strategy);
     } catch (e) {
       console.error('Failed to save strategy:', e);
     }
