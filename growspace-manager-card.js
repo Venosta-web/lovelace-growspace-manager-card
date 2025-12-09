@@ -482,6 +482,8 @@ class GrowspaceAdapter {
             dehumidifier_entity: wsData.dehumidifier_entity,
             humidifier_entity: wsData.humidifier_entity,
             exhaust_entity: wsData.exhaust_entity,
+            exhaust_sensor: wsData.exhaust_sensor,
+            humidifier_sensor: wsData.humidifier_sensor,
             dehumidifier_control_enabled: wsData.dehumidifier_control_enabled
         } : {
             // Fallback
@@ -491,7 +493,9 @@ class GrowspaceAdapter {
             co2_sensor: attributes.co2_sensor,
             light_sensor: attributes.light_sensor,
             exhaust_entity: attributes.exhaust_entity,
+            exhaust_sensor: attributes.exhaust_sensor,
             humidifier_entity: attributes.humidifier_entity,
+            humidifier_sensor: attributes.humidifier_sensor,
             dehumidifier_entity: attributes.dehumidifier_entity,
             dehumidifier_control_enabled: attributes.dehumidifier_control_enabled
         };
@@ -15774,8 +15778,10 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
         // Fetch live states for equipment directly from their entities
         const envAttrs = this.device.environment_attributes || overviewEntity?.attributes || {};
         const exhaustId = envAttrs.exhaust_entity;
+        const exhaustSensor = envAttrs.exhaust_sensor;
         const exhaustState = exhaustId && this.hass.states[exhaustId] ? this.hass.states[exhaustId].state : undefined;
         const humidifierId = envAttrs.humidifier_entity;
+        const humidifierSensor = envAttrs.humidifier_sensor;
         const humidifierState = humidifierId && this.hass.states[humidifierId] ? this.hass.states[humidifierId].state : undefined;
         const dehumidifierId = envAttrs.dehumidifier_entity;
         const dehumidifierState = dehumidifierId && this.hass.states[dehumidifierId] ? this.hass.states[dehumidifierId].state : undefined;
@@ -16120,7 +16126,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
             </div>
 
             <div class="gs-device-chips ${this._mobileLink ? 'mobile-link-active' : ''}">
-              ${exhaustId ? x `
+              ${exhaustId || exhaustSensor ? x `
                 <div class="stat-chip ${this.activeEnvGraphs.has('exhaust') ? 'active' : ''}"
                      draggable="${this._chipDraggable}"
                      @dragstart=${(e) => this._handleChipDragStart(e, 'exhaust')}
@@ -16148,7 +16154,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
         })()}
                 </div>` : ''}
 
-              ${humidifierId ? x `
+              ${humidifierId || humidifierSensor ? x `
                 <div class="stat-chip ${this.activeEnvGraphs.has('humidifier') ? 'active' : ''}"
                      draggable="${this._chipDraggable}"
                      @dragstart=${(e) => this._handleChipDragStart(e, 'humidifier')}

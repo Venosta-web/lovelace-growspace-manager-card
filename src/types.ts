@@ -284,6 +284,8 @@ export interface GrowspaceWebSocketData {
   humidity_sensor?: string;
   vpd_sensor?: string;
   co2_sensor?: string;
+  exhaust_sensor?: string;
+  humidifier_sensor?: string;
 
   // Environment Controls & States
   dehumidifier_entity?: string;
