@@ -651,13 +651,15 @@ export class GrowspaceHeader extends LitElement {
     const nextDrain = getNextEvent(overviewEntity?.attributes?.drain_times);
 
     // Fetch live states for equipment directly from their entities
-    const exhaustId = overviewEntity?.attributes?.exhaust_entity;
+    const envAttrs = this.device.environment_attributes || overviewEntity?.attributes || {};
+
+    const exhaustId = envAttrs.exhaust_entity;
     const exhaustState = exhaustId && this.hass.states[exhaustId] ? this.hass.states[exhaustId].state : undefined;
 
-    const humidifierId = overviewEntity?.attributes?.humidifier_entity;
+    const humidifierId = envAttrs.humidifier_entity;
     const humidifierState = humidifierId && this.hass.states[humidifierId] ? this.hass.states[humidifierId].state : undefined;
 
-    const dehumidifierId = overviewEntity?.attributes?.dehumidifier_entity;
+    const dehumidifierId = envAttrs.dehumidifier_entity;
     const dehumidifierState = dehumidifierId && this.hass.states[dehumidifierId] ? this.hass.states[dehumidifierId].state : undefined;
 
     return html`
@@ -992,7 +994,7 @@ export class GrowspaceHeader extends LitElement {
             </div>
 
             <div class="gs-device-chips ${this._mobileLink ? 'mobile-link-active' : ''}">
-              ${overviewEntity?.attributes?.exhaust_entity ? html`
+              ${exhaustId ? html`
                 <div class="stat-chip ${this.activeEnvGraphs.has('exhaust') ? 'active' : ''}"
                      draggable="${this._chipDraggable}"
                      @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'exhaust')}
@@ -1020,7 +1022,7 @@ export class GrowspaceHeader extends LitElement {
                 </div>` : ''
       }
 
-              ${overviewEntity?.attributes?.humidifier_entity ? html`
+              ${humidifierId ? html`
                 <div class="stat-chip ${this.activeEnvGraphs.has('humidifier') ? 'active' : ''}"
                      draggable="${this._chipDraggable}"
                      @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'humidifier')}
@@ -1047,7 +1049,7 @@ export class GrowspaceHeader extends LitElement {
         })()}
                 </div>` : ''}
 
-              ${overviewEntity?.attributes?.dehumidifier_entity ? html`
+              ${dehumidifierId ? html`
                 <div class="stat-chip ${this.activeEnvGraphs.has('dehumidifier') ? 'active' : ''}"
                      draggable="${this._chipDraggable}"
                      @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'dehumidifier')}
