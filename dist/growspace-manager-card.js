@@ -9703,7 +9703,21 @@ class GrowspaceHistoryController {
         if (!device || !device.overview_entity_id)
             return { device, entityId: null };
         const overviewEntity = this.host.hass.states[device.overview_entity_id];
-        const entityId = overviewEntity?.attributes?.[attribute];
+        // 1. Try direct attribute (e.g. 'exhaust_entity')
+        let entityId = overviewEntity?.attributes?.[attribute];
+        // 2. Fallback: Try sensor attribute (e.g. 'exhaust_sensor') if the requested one was an entity and is missing
+        if (!entityId && attribute.endsWith('_entity')) {
+            const sensorAttr = attribute.replace('_entity', '_sensor');
+            entityId = overviewEntity?.attributes?.[sensorAttr];
+        }
+        // 3. Fallback: Try looking in observations (nested)
+        if (!entityId && overviewEntity?.attributes?.observations) {
+            entityId = overviewEntity.attributes.observations[attribute];
+            if (!entityId && attribute.endsWith('_entity')) {
+                const sensorAttr = attribute.replace('_entity', '_sensor');
+                entityId = overviewEntity.attributes.observations[sensorAttr];
+            }
+        }
         return { device, entityId };
     }
     calculateTimeRange(range) {
