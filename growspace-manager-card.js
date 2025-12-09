@@ -15779,10 +15779,12 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
         const envAttrs = this.device.environment_attributes || overviewEntity?.attributes || {};
         const exhaustId = envAttrs.exhaust_entity;
         const exhaustSensor = envAttrs.exhaust_sensor;
-        const exhaustState = exhaustId && this.hass.states[exhaustId] ? this.hass.states[exhaustId].state : undefined;
+        const exhaustState = (exhaustId && this.hass.states[exhaustId]) ? this.hass.states[exhaustId].state :
+            (exhaustSensor && this.hass.states[exhaustSensor]) ? this.hass.states[exhaustSensor].state : undefined;
         const humidifierId = envAttrs.humidifier_entity;
         const humidifierSensor = envAttrs.humidifier_sensor;
-        const humidifierState = humidifierId && this.hass.states[humidifierId] ? this.hass.states[humidifierId].state : undefined;
+        const humidifierState = (humidifierId && this.hass.states[humidifierId]) ? this.hass.states[humidifierId].state :
+            (humidifierSensor && this.hass.states[humidifierSensor]) ? this.hass.states[humidifierSensor].state : undefined;
         const dehumidifierId = envAttrs.dehumidifier_entity;
         const dehumidifierState = dehumidifierId && this.hass.states[dehumidifierId] ? this.hass.states[dehumidifierId].state : undefined;
         return x `
