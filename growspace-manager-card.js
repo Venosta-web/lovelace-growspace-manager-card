@@ -13199,7 +13199,7 @@ let IrrigationDialog = class IrrigationDialog extends i$2 {
         this._strategy = {};
     }
     willUpdate(changedProps) {
-        if (changedProps.has('open') && this.open) {
+        if ((changedProps.has('open') && this.open) || (changedProps.has('device') && this.device)) {
             this._initializeState();
         }
         if (this.hass && (changedProps.has('hass') || !this._dataService)) {
