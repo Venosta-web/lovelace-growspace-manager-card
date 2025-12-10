@@ -145,7 +145,9 @@ export interface GrowspaceDevice {
     flower_week?: number;
     [key: string]: any;
   };
+  /** @deprecated Use irrigation_config.irrigation_times */
   irrigation_times?: { time: string; duration?: number }[];
+  /** @deprecated Use irrigation_config.drain_times */
   drain_times?: { time: string; duration?: number }[];
   irrigation_config?: {
     irrigation_pump_entity?: string;

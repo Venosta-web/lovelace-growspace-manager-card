@@ -17,7 +17,7 @@ export class IrrigationDialog extends LitElement {
   public hass!: HomeAssistant;
   @property({ type: Boolean }) public open = false;
   @property({ attribute: false }) public device?: GrowspaceDevice;
-  @property({ type: String }) public growspaceId = ''; // Keep for fallback or ID access if device not set? User said update save methods to use this.device.device_id. But keeping it might be useful. Actually prompt says: "Update _saveSettings, _saveStrategy, and _add/remove methods to use this.device.device_id (or this.growspaceId)". I will keep growspaceId for now but make device the primary source.
+
   @property({ type: String }) public growspaceName = '';
 
   @state() private _irrigation_pump_entity = '';
