@@ -141,6 +141,13 @@ export class IrrigationDialog extends LitElement {
     this._irrigation_times = this.device.irrigation_times || [];
     this._drain_times = this.device.drain_times || [];
 
+    console.log('[IrrigationDialog] Initializing State', {
+      device: this.device,
+      irrigation_times: this._irrigation_times,
+      drain_times: this._drain_times,
+      raw_config: config
+    });
+
     // Initialize Strategy
     const strat = this.device.irrigation_strategy;
     this._strategy = {
