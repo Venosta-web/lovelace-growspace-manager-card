@@ -154,6 +154,8 @@ export interface GrowspaceDevice {
     drain_pump_entity?: string;
     irrigation_duration?: number;
     drain_duration?: number;
+    irrigation_times?: { time: string; duration?: number }[]; // Added here
+    drain_times?: { time: string; duration?: number }[];      // Added here
     [key: string]: any;
   };
   irrigation_strategy?: IrrigationStrategy;
@@ -167,6 +169,11 @@ export interface GrowspaceDevice {
     exhaust_entity?: string;
     [key: string]: any;
   };
+  // Statistics
+  max_veg_days?: number;
+  max_flower_days?: number;
+  total_plants?: number;
+  max_stage_summary?: string;
 }
 export function createGrowspaceDevice(
   params: Omit<GrowspaceDevice, "type"> & { type?: GrowspaceType }
@@ -268,22 +275,34 @@ export interface RawGrowspaceAttributes {
 }
 
 export interface GrowspaceWebSocketData {
-  id: string;
+  growspace_id: string; // Updated from 'id' to match serializer
   name: string;
   type: GrowspaceType;
   rows: number;
   plants_per_row: number;
+  total_plants: number;
+  notification_target?: string;
+
   grid: Record<string, RawPlantData | null>;
-  irrigation_times: IrrigationTime[];
-  drain_times: IrrigationTime[];
+
+  // Irrigation is now nested in config
   irrigation_config: {
     irrigation_pump_entity?: string;
     drain_pump_entity?: string;
     irrigation_duration?: number;
     drain_duration?: number;
+    irrigation_times?: IrrigationTime[];
+    drain_times?: IrrigationTime[];
     [key: string]: any;
   };
   irrigation_strategy: IrrigationStrategy;
+
+  // Statistics
+  max_veg_days: number;
+  max_flower_days: number;
+  veg_week: number;
+  flower_week: number;
+  max_stage_summary: string;
 
   // Biological Metrics
   vpd_status: string;
@@ -293,8 +312,6 @@ export interface GrowspaceWebSocketData {
   vpd_danger_max: number;
   granular_stage: string;
   is_day: boolean;
-  veg_week?: number;
-  flower_week?: number;
 
   // Environment Sensors
   temperature_sensor?: string;

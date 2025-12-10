@@ -69,12 +69,13 @@ export class GrowspaceAdapter {
             is_day: attributes.is_day
         };
 
-        const rawIrrigation = wsData?.irrigation_times || attributes.irrigation_times || [];
+        // Extract irrigation times from nested config in WS data
+        const rawIrrigation = wsData?.irrigation_config?.irrigation_times || attributes.irrigation_times || [];
         const irrigationTimes: IrrigationTime[] = Array.isArray(rawIrrigation)
             ? rawIrrigation.map((t: any) => typeof t === 'string' ? { time: t } : t)
             : [];
 
-        const rawDrain = wsData?.drain_times || attributes.drain_times || [];
+        const rawDrain = wsData?.irrigation_config?.drain_times || attributes.drain_times || [];
         const drainTimes: IrrigationTime[] = Array.isArray(rawDrain)
             ? rawDrain.map((t: any) => typeof t === 'string' ? { time: t } : t)
             : [];
@@ -128,7 +129,12 @@ export class GrowspaceAdapter {
             drain_times: drainTimes,
             irrigation_config: irrigationConfig,
             irrigation_strategy: irrigationStrategy,
-            environment_attributes: envAttrs
+            environment_attributes: envAttrs,
+            // Pass through new statistics
+            max_veg_days: wsData?.max_veg_days,
+            max_flower_days: wsData?.max_flower_days,
+            total_plants: wsData?.total_plants,
+            max_stage_summary: wsData?.max_stage_summary
         });
     }
 
