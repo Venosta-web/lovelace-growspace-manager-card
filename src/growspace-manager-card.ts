@@ -991,7 +991,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     if (active.type === 'NONE') return html``;
 
     const strainLibrary = this.store.state.strainLibrary || [];
-    const devices = this.store.dataService.getGrowspaceDevices();
+    const devices = this.store.state.devices;
     const selectedDeviceData = devices.find(d => d.device_id === this.store.state.selectedDevice);
 
     switch (active.type) {

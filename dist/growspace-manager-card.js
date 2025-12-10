@@ -20263,7 +20263,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
         if (active.type === 'NONE')
             return x ``;
         const strainLibrary = this.store.state.strainLibrary || [];
-        const devices = this.store.dataService.getGrowspaceDevices();
+        const devices = this.store.state.devices;
         const selectedDeviceData = devices.find(d => d.device_id === this.store.state.selectedDevice);
         switch (active.type) {
             case 'ADD_PLANT':
