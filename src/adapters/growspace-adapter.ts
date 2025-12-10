@@ -68,13 +68,16 @@ export class GrowspaceAdapter {
             is_day: wsData.is_day,
             veg_week: wsData.veg_week,
             flower_week: wsData.flower_week,
+            // Added per request:
+            air_exchange: wsData.air_exchange
         } : {
             // Fallback to attributes if WS failed or not used (though we removed them from backend)
             vpd_status: attributes.vpd_status,
             vpd_target_min: attributes.vpd_target_min,
             vpd_target_max: attributes.vpd_target_max,
             granular_stage: attributes.granular_stage,
-            is_day: attributes.is_day
+            is_day: attributes.is_day,
+            air_exchange: attributes.air_exchange
         };
 
         // Extract irrigation times from nested config in WS data
@@ -99,7 +102,12 @@ export class GrowspaceAdapter {
             exhaust_entity: wsData.exhaust_entity,
             exhaust_sensor: wsData.exhaust_sensor,
             humidifier_sensor: wsData.humidifier_sensor,
-            dehumidifier_control_enabled: wsData.dehumidifier_control_enabled
+            dehumidifier_control_enabled: wsData.dehumidifier_control_enabled,
+            // Added per request:
+            dehumidifier_humidity: wsData.dehumidifier_humidity,
+            dehumidifier_current_humidity: wsData.dehumidifier_current_humidity,
+            dehumidifier_mode: wsData.dehumidifier_mode,
+            vpd: wsData.vpd
         } : {
             // Fallback
             temperature_sensor: attributes.temperature_sensor,

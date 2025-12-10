@@ -312,6 +312,8 @@ export interface GrowspaceWebSocketData {
   vpd_danger_max: number;
   granular_stage: string;
   is_day: boolean;
+  air_exchange?: any;
+  vpd?: number | string;
 
   // Environment Sensors
   temperature_sensor?: string;

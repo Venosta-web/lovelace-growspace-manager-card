@@ -242,13 +242,13 @@ export class DataService {
       const payload: any = { plant_id: plantId };
       // Prefer passing a concrete growspace_id when hint is clear
       if (hint.includes("dry")) {
-        payload.target_growspace_id = "dry_overview";
+        payload.target_growspace_id = "dry"; // Was dry_overview
       } else if (hint.includes("cure")) {
-        payload.target_growspace_id = "cure_overview";
+        payload.target_growspace_id = "cure"; // Was cure_overview
       } else if (hint.includes("mother")) {
-        payload.target_growspace_id = "mother_overview";
+        payload.target_growspace_id = "mother"; // Was mother_overview
       } else if (hint.includes("clone")) {
-        payload.target_growspace_id = "clone_overview";
+        payload.target_growspace_id = "clone"; // Was clone_overview
       }
       // Note: Backend only accepts target_growspace_id. 
       // If target is a custom name, we can't send it unless we resolve it to an ID first.
