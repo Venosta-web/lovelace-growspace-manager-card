@@ -9,7 +9,9 @@ import {
     mdiAirHumidifier,
     mdiAirHumidifierOff,
     mdiRadioboxMarked,
-    mdiMagnify
+    mdiMagnify,
+    mdiCalculator,
+    mdiAirFilter
 } from '@mdi/js';
 
 export const METRIC_SORT_ORDER = [
@@ -39,7 +41,9 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     temperature: { color: '#ff5252', title: 'Temperature', unit: '°C', icon: mdiThermometer },
     humidity: { color: '#2196f3', title: 'Humidity', unit: '%', icon: mdiWaterPercent },
     vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa', icon: mdiCloudOutline },
+    calculated_vpd: { color: '#ab47bc', title: 'Calc. VPD', unit: 'kPa', icon: mdiCalculator },
     co2: { color: '#4caf50', title: 'CO2', unit: 'ppm', icon: mdiWeatherCloudy },
+    air_exchange: { color: '#8d6e63', title: 'Air Exchange', unit: 'm³/h', icon: mdiAirFilter },
     soil_moisture: { color: '#03a9f4', title: 'Soil Moisture', unit: '%', icon: mdiWaterPercent },
     light: { color: '#ffc107', title: 'Light', unit: 'state', icon: mdiLightbulbOn, type: 'step' },
     irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state', icon: mdiWater, type: 'step' },

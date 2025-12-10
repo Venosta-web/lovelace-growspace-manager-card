@@ -49,7 +49,7 @@ export class DataService {
       const growspaceId = sensor.attributes.growspace_id;
       const wsData = wsDataMap[growspaceId] || null;
       return GrowspaceAdapter.transformGrowspace(sensor, wsData);
-    });
+    }).filter((device): device is GrowspaceDevice => device !== null);
   }
 
   private getGrowspaceId(entity: any): string {

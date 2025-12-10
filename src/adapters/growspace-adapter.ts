@@ -17,13 +17,21 @@ export class GrowspaceAdapter {
             (name.toLowerCase().includes('dry') ? 'dry' :
                 name.toLowerCase().includes('cure') ? 'cure' : 'normal');
 
+        // 1. Check for missing data (empty state fix)
+        // If we have no WS data AND the attributes grid is empty/undefined, allow returning null/simulating loading
+        // We return null so the caller can filter this out and keep the previous state or show loading
+        if (!wsData && (!attributes.grid || Object.keys(attributes.grid).length === 0)) {
+            return null as any; // Cast to avoid changing return type signature broadly if strictly typed, but better handled by caller check
+        }
+
         // Prefer WS data for grid, fallback to attributes.grid (legacy/fallback)
         const grid = wsData?.grid || attributes.grid || {};
         const plants: PlantEntity[] = [];
 
         Object.entries(grid).forEach(([key, slot]: [string, any]) => {
             if (slot) {
-                const entityId = `sensor.${slot.strain.toLowerCase().replace(/ /g, '_')}_${slot.phenotype.replace(/#/g, '').toLowerCase()}`;
+                // Fix: Use the stable entity_id from backend if available, fallback to unknown (never guess)
+                const entityId = slot.entity_id || 'unknown';
 
                 // Extract row/col from key "position_R_C"
                 let row: number | undefined;
@@ -138,6 +146,9 @@ export class GrowspaceAdapter {
         });
     }
 
+    /**
+     * @deprecated Relies on attributes that are often empty. Use DataService.getGrowspaceDevices instead which uses WS data.
+     */
     static transformToDevices(allStates: HassEntity[]): GrowspaceDevice[] {
         // Legacy method - might be unused after refactor, but kept for safety if needed
         // Assuming no WS data available here, so grid comes from attributes (which might be empty now)
