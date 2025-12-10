@@ -18748,7 +18748,7 @@ class GrowspaceStore {
             return;
         try {
             this._unsubEvents = await this.hass.connection.subscribeEvents(() => this._refreshGrowspaceData(), // specific logic to handle event payload? Msg is empty usually.
-            'growspace_updated');
+            'growspace_manager_updated');
         }
         catch (err) {
             console.error("Failed to subscribe to growspace events", err);
