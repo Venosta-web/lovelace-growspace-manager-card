@@ -471,11 +471,12 @@ class GrowspaceAdapter {
             granular_stage: attributes.granular_stage,
             is_day: attributes.is_day
         };
-        const rawIrrigation = wsData?.irrigation_times || attributes.irrigation_times || [];
+        // Extract irrigation times from nested config in WS data
+        const rawIrrigation = wsData?.irrigation_config?.irrigation_times || attributes.irrigation_times || [];
         const irrigationTimes = Array.isArray(rawIrrigation)
             ? rawIrrigation.map((t) => typeof t === 'string' ? { time: t } : t)
             : [];
-        const rawDrain = wsData?.drain_times || attributes.drain_times || [];
+        const rawDrain = wsData?.irrigation_config?.drain_times || attributes.drain_times || [];
         const drainTimes = Array.isArray(rawDrain)
             ? rawDrain.map((t) => typeof t === 'string' ? { time: t } : t)
             : [];
@@ -526,7 +527,12 @@ class GrowspaceAdapter {
             drain_times: drainTimes,
             irrigation_config: irrigationConfig,
             irrigation_strategy: irrigationStrategy,
-            environment_attributes: envAttrs
+            environment_attributes: envAttrs,
+            // Pass through new statistics
+            max_veg_days: wsData?.max_veg_days,
+            max_flower_days: wsData?.max_flower_days,
+            total_plants: wsData?.total_plants,
+            max_stage_summary: wsData?.max_stage_summary
         });
     }
     static transformToDevices(allStates) {
@@ -13187,7 +13193,6 @@ let IrrigationDialog = class IrrigationDialog extends i$2 {
     constructor() {
         super(...arguments);
         this.open = false;
-        this.growspaceId = ''; // Keep for fallback or ID access if device not set? User said update save methods to use this.device.device_id. But keeping it might be useful. Actually prompt says: "Update _saveSettings, _saveStrategy, and _add/remove methods to use this.device.device_id (or this.growspaceId)". I will keep growspaceId for now but make device the primary source.
         this.growspaceName = '';
         this._irrigation_pump_entity = '';
         this._drain_pump_entity = '';
@@ -13743,10 +13748,6 @@ __decorate([
     n$2({ attribute: false }),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "device", void 0);
-__decorate([
-    n$2({ type: String }),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "growspaceId", void 0);
 __decorate([
     n$2({ type: String }),
     __metadata("design:type", Object)
@@ -20239,7 +20240,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
        <irrigation-dialog
         .open=${true}
         .device=${selectedDeviceData}
-        .growspaceId=${selectedDeviceData?.device_id || ''}
+
         .growspaceName=${selectedDeviceData?.name || ''}
         @close=${() => this.store.closeActiveDialog()}
         @closed=${() => this.store.closeActiveDialog()}
