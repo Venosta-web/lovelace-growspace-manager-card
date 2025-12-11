@@ -142,12 +142,27 @@ export class GrowspaceHistoryController implements ReactiveController {
         if (this.activeEnvGraphs.has('soil_moisture')) this._fetchSoilMoistureHistory(range);
     }
 
+    public optimalHistory: any[] | null = null;
+
     private async _fetchHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
         if (!this.host.hass || !this.host.selectedDevice) return;
         const devices = this.host.dataService.getGrowspaceDevices();
         const device = devices.find(d => d.device_id === this.host.selectedDevice);
         if (!device) return;
 
+        const { start, end } = this.calculateTimeRange(range);
+
+        // 1. Fetch Main Sensor History (Temp, Humidity, VPD, etc.)
+        if (device.overview_entity_id) {
+            try {
+                const history = await this.host.dataService.getHistory(device.overview_entity_id, start, end);
+                this.historyData = history;
+            } catch (e) {
+                console.error("Failed to fetch main sensor history", e);
+            }
+        }
+
+        // 2. Fetch Optimal Conditions Binary Sensor History
         let slug = device.name.toLowerCase().replace(/\s+/g, '_');
         if (device.overview_entity_id) {
             slug = device.overview_entity_id.replace('sensor.', '');
@@ -160,15 +175,14 @@ export class GrowspaceHistoryController implements ReactiveController {
             envEntityId = `binary_sensor.dry_optimal_drying`;
         }
 
-        const { start, end } = this.calculateTimeRange(range);
-
         try {
             const history = await this.host.dataService.getHistory(envEntityId, start, end);
-            this.historyData = history;
-            this.host.requestUpdate();
+            this.optimalHistory = history;
         } catch (e) {
-            console.error("Failed to fetch history", e);
+            console.error("Failed to fetch optimal history", e);
         }
+
+        this.host.requestUpdate();
     }
 
     private async _fetchDehumidifierHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {

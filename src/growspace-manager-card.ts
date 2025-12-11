@@ -685,6 +685,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
           <growspace-analytics
             .device=${selectedDeviceData}
             .historyData=${this.historyController.historyData || []}
+            .optimalHistory=${this.historyController.optimalHistory || []}
             .dehumidifierHistory=${this.historyController.dehumidifierHistory || []}
             .exhaustHistory=${this.historyController.exhaustHistory || []}
             .humidifierHistory=${this.historyController.humidifierHistory || []}

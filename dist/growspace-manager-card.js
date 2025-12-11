@@ -9547,6 +9547,7 @@ class GrowspaceHistoryController {
         this.linkedGraphGroups = [];
         this.graphRanges = {};
         this._prevSelectedDevice = null;
+        this.optimalHistory = null;
         (this.host = host).addController(this);
     }
     hostConnected() {
@@ -9661,6 +9662,18 @@ class GrowspaceHistoryController {
         const device = devices.find(d => d.device_id === this.host.selectedDevice);
         if (!device)
             return;
+        const { start, end } = this.calculateTimeRange(range);
+        // 1. Fetch Main Sensor History (Temp, Humidity, VPD, etc.)
+        if (device.overview_entity_id) {
+            try {
+                const history = await this.host.dataService.getHistory(device.overview_entity_id, start, end);
+                this.historyData = history;
+            }
+            catch (e) {
+                console.error("Failed to fetch main sensor history", e);
+            }
+        }
+        // 2. Fetch Optimal Conditions Binary Sensor History
         let slug = device.name.toLowerCase().replace(/\s+/g, '_');
         if (device.overview_entity_id) {
             slug = device.overview_entity_id.replace('sensor.', '');
@@ -9672,15 +9685,14 @@ class GrowspaceHistoryController {
         else if (slug === 'dry') {
             envEntityId = `binary_sensor.dry_optimal_drying`;
         }
-        const { start, end } = this.calculateTimeRange(range);
         try {
             const history = await this.host.dataService.getHistory(envEntityId, start, end);
-            this.historyData = history;
-            this.host.requestUpdate();
+            this.optimalHistory = history;
         }
         catch (e) {
-            console.error("Failed to fetch history", e);
+            console.error("Failed to fetch optimal history", e);
         }
+        this.host.requestUpdate();
     }
     async _fetchDehumidifierHistory(range = '24h') {
         const { device, entityId } = this.getRelatedEntityId('dehumidifier_entity');
@@ -9968,6 +9980,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         this.dehumidifierHistory = [];
         this.exhaustHistory = [];
         this.humidifierHistory = [];
+        this.optimalHistory = [];
         this.soilMoistureHistory = [];
         this.metricKey = '';
         this.unit = '';
@@ -10630,6 +10643,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                 historySource = this.humidifierHistory;
             else if (metricKey === 'soil_moisture')
                 historySource = this.soilMoistureHistory;
+            else if (metricKey === 'optimal')
+                historySource = this.optimalHistory;
             if (historySource && historySource.length > 0) {
                 const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
                 const getValue = (ent, key) => {
@@ -10973,6 +10988,10 @@ __decorate([
     n$2({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceEnvChart.prototype, "humidifierHistory", void 0);
+__decorate([
+    n$2({ type: Array }),
+    __metadata("design:type", Array)
+], GrowspaceEnvChart.prototype, "optimalHistory", void 0);
 __decorate([
     n$2({ type: Array }),
     __metadata("design:type", Array)
@@ -18576,6 +18595,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
     constructor() {
         super(...arguments);
         this.historyData = [];
+        this.optimalHistory = [];
         this.dehumidifierHistory = [];
         this.exhaustHistory = [];
         this.humidifierHistory = [];
@@ -18635,6 +18655,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
                   .exhaustHistory=${this.exhaustHistory || []}
                   .humidifierHistory=${this.humidifierHistory || []}
                   .soilMoistureHistory=${this.soilMoistureHistory || []}
+                  .optimalHistory=${this.optimalHistory || []}
                   .metrics=${activeMetrics}
                   .isCombined=${true}
                   .metricConfig=${METRIC_CONFIG}
@@ -18658,6 +18679,8 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
                     history = this.dehumidifierHistory || [];
                 else if (metric === 'soil_moisture')
                     history = this.soilMoistureHistory || [];
+                else if (metric === 'optimal')
+                    history = this.optimalHistory || [];
                 return x `
           <growspace-env-chart
               .hass=${this.hass}
@@ -18738,6 +18761,10 @@ __decorate([
     n$2({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "historyData", void 0);
+__decorate([
+    n$2({ attribute: false }),
+    __metadata("design:type", Array)
+], GrowspaceAnalytics.prototype, "optimalHistory", void 0);
 __decorate([
     n$2({ attribute: false }),
     __metadata("design:type", Array)
@@ -20074,6 +20101,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
           <growspace-analytics
             .device=${selectedDeviceData}
             .historyData=${this.historyController.historyData || []}
+            .optimalHistory=${this.historyController.optimalHistory || []}
             .dehumidifierHistory=${this.historyController.dehumidifierHistory || []}
             .exhaustHistory=${this.historyController.exhaustHistory || []}
             .humidifierHistory=${this.historyController.humidifierHistory || []}

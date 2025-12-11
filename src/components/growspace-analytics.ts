@@ -16,6 +16,7 @@ export class GrowspaceAnalytics extends LitElement {
     hass!: HomeAssistant;
     @property({ attribute: false }) device?: GrowspaceDevice;
     @property({ attribute: false }) historyData: any[] = [];
+    @property({ attribute: false }) optimalHistory: any[] = [];
     @property({ attribute: false }) dehumidifierHistory: any[] = [];
     @property({ attribute: false }) exhaustHistory: any[] = [];
     @property({ attribute: false }) humidifierHistory: any[] = [];
@@ -99,6 +100,7 @@ export class GrowspaceAnalytics extends LitElement {
                   .exhaustHistory=${this.exhaustHistory || []}
                   .humidifierHistory=${this.humidifierHistory || []}
                   .soilMoistureHistory=${this.soilMoistureHistory || []}
+                  .optimalHistory=${this.optimalHistory || []}
                   .metrics=${activeMetrics}
                   .isCombined=${true}
                   .metricConfig=${METRIC_CONFIG}
@@ -118,6 +120,7 @@ export class GrowspaceAnalytics extends LitElement {
                 else if (metric === 'humidifier') history = this.humidifierHistory || [];
                 else if (metric === 'dehumidifier') history = this.dehumidifierHistory || [];
                 else if (metric === 'soil_moisture') history = this.soilMoistureHistory || [];
+                else if (metric === 'optimal') history = this.optimalHistory || [];
 
                 return html`
           <growspace-env-chart

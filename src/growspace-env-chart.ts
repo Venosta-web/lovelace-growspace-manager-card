@@ -17,6 +17,7 @@ export class GrowspaceEnvChart extends LitElement {
     @property({ type: Array }) dehumidifierHistory: any[] = [];
     @property({ type: Array }) exhaustHistory: any[] = [];
     @property({ type: Array }) humidifierHistory: any[] = [];
+    @property({ type: Array }) optimalHistory: any[] = [];
     @property({ type: Array }) soilMoistureHistory: any[] = [];
     @property({ type: String }) metricKey = '';
     @property({ type: String }) unit = '';
@@ -832,6 +833,7 @@ export class GrowspaceEnvChart extends LitElement {
             else if (metricKey === 'exhaust') historySource = this.exhaustHistory;
             else if (metricKey === 'humidifier') historySource = this.humidifierHistory;
             else if (metricKey === 'soil_moisture') historySource = this.soilMoistureHistory;
+            else if (metricKey === 'optimal') historySource = this.optimalHistory;
 
             if (historySource && historySource.length > 0) {
                 const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
