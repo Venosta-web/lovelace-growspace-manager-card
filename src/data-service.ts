@@ -128,10 +128,13 @@ export class DataService {
         return_response: true,
       });
 
-      const rawStrains = serviceResponse?.response || {};
+      const rawStrains = serviceResponse?.response || serviceResponse || {};
       const currentStrains: StrainEntry[] = [];
 
+      console.log("[DataService:fetchStrainLibrary] Raw response:", rawStrains);
+
       Object.entries(rawStrains).forEach(([strainName, data]: [string, any]) => {
+        if (strainName === 'response') return; // unexpected wrapper?
         const meta = data.meta || {};
         const phenotypes = data.phenotypes || {};
 

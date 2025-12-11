@@ -741,9 +741,12 @@ class DataService {
                 service_data: {},
                 return_response: true,
             });
-            const rawStrains = serviceResponse?.response || {};
+            const rawStrains = serviceResponse?.response || serviceResponse || {};
             const currentStrains = [];
+            console.log("[DataService:fetchStrainLibrary] Raw response:", rawStrains);
             Object.entries(rawStrains).forEach(([strainName, data]) => {
+                if (strainName === 'response')
+                    return; // unexpected wrapper?
                 const meta = data.meta || {};
                 const phenotypes = data.phenotypes || {};
                 Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
@@ -12495,12 +12498,21 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$2 {
         </div>
       </div>
 
-      <div class="sd-footer">
-        <button class="md3-button tonal" @click=${() => this._view = 'browse'}>Cancel</button>
-        <button class="md3-button primary" @click=${() => this._handleSave()}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
-          Save Strain
-        </button>
+      <div class="sd-footer" style="justify-content: space-between;">
+        ${s.key ? x `
+          <button class="md3-button text" style="color: var(--error-color, #f44336);" @click=${() => this._handleDelete(s.key)}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+            Delete
+          </button>
+        ` : x `<div></div>`}
+        
+        <div style="display:flex; gap:12px;">
+          <button class="md3-button tonal" @click=${() => this._view = 'browse'}>Cancel</button>
+          <button class="md3-button primary" @click=${() => this._handleSave()}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
+            Save Strain
+          </button>
+        </div>
       </div>
     `;
     }
@@ -12788,6 +12800,11 @@ StrainLibraryDialog.styles = [
     }
     .strain-card:hover .sc-actions {
         opacity: 1;
+    }
+    @media (hover: none) {
+      .sc-actions {
+        opacity: 1;
+      }
     }
     .sc-action-btn {
         background: rgba(0,0,0,0.6);
@@ -18830,6 +18847,7 @@ class GrowspaceStore {
         };
         this.host = host;
         host.addController(this);
+        console.log("GrowspaceStore Authenticated v2025-12-11-FIX-DATA-SERVICE-PARSING");
         this.dataService = new DataService();
     }
     hostConnected() {
@@ -18946,10 +18964,10 @@ class GrowspaceStore {
         this.state.selectedDevice = devices[0].device_id;
         this.requestUpdate();
     }
-    fetchStrainLibrary() {
-        return this._fetchStrainLibraryImpl();
+    fetchStrainLibrary(force = false) {
+        return this._fetchStrainLibraryImpl(force);
     }
-    async _fetchStrainLibraryImpl() {
+    async _fetchStrainLibraryImpl(force) {
         // ... existing logic ...
         if (!this.hass)
             return;
@@ -18958,7 +18976,7 @@ class GrowspaceStore {
         // 1. Try to load from cache
         const cachedRaw = localStorage.getItem(CACHE_KEY);
         let usedCache = false;
-        if (cachedRaw) {
+        if (!force && cachedRaw) {
             try {
                 const cache = JSON.parse(cachedRaw);
                 const age = Date.now() - (cache.timestamp || 0);
@@ -19289,7 +19307,7 @@ class GrowspaceStore {
         };
         try {
             await this.dataService.addStrain(payload);
-            await this.fetchStrainLibrary();
+            await this.fetchStrainLibrary(true);
         }
         catch (err) {
             console.error("Error adding strain:", err);
@@ -19305,7 +19323,7 @@ class GrowspaceStore {
                 this.state.strainLibrary = this.state.strainLibrary.filter(s => s.key !== strainKey);
                 this.requestUpdate();
             }
-            await this.fetchStrainLibrary();
+            await this.fetchStrainLibrary(true);
         }
         catch (err) {
             console.error("Error removing strain:", err);
@@ -19560,7 +19578,7 @@ class GrowspaceStore {
         try {
             const result = await this.dataService.importStrainLibrary(file, replace);
             this.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
-            await this.fetchStrainLibrary();
+            await this.fetchStrainLibrary(true);
         }
         catch (err) {
             console.error("Import failed:", err);

@@ -1,0 +1,69 @@
+name: E2E Frontend Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Card
+        run: npm run build
+
+      - name: Start Test Environment
+        run: docker compose -f tests/e2e/docker-compose.test.yml up -d
+
+      - name: Wait for Home Assistant
+        run: |
+          echo "Waiting for Home Assistant to be ready..."
+          timeout=120
+          elapsed=0
+          interval=5
+          while [ $elapsed -lt $timeout ]; do
+            status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8123 || echo "000")
+            if [ "$status_code" -eq 200 ] || [ "$status_code" -eq 401 ]; then
+              echo "Home Assistant is ready (Status: $status_code)!"
+              exit 0
+            fi
+            echo "Waiting... (Status: $status_code, Elapsed: ${elapsed}s)"
+            sleep $interval
+            elapsed=$((elapsed + interval))
+          done
+          echo "Timed out waiting for Home Assistant."
+          
+          # Print container logs for debugging
+          echo "::group::Home Assistant Logs"
+          docker compose -f tests/e2e/docker-compose.test.yml logs
+          echo "::endgroup::"
+          exit 1
+
+      - name: Run Playwright Tests
+        run: npx playwright test
+
+      - name: Upload Test Report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

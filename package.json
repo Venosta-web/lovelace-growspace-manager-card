@@ -7,6 +7,7 @@
     "build": "rollup -c && cp dist/growspace-manager-card.js growspace-manager-card.js",
     "build:coverage": "COVERAGE=true rollup -c",
     "test": "playwright test",
+    "test:e2e": "npm run build && playwright test --config=playwright.e2e.config.ts",
     "test:e2e:coverage": "playwright test --reporter=html,line && node scripts/coverage-report.js",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",

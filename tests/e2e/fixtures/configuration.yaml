@@ -1,0 +1,19 @@
+
+# Minimal E2E Configuration
+default_config:
+
+homeassistant:
+  time_zone: UTC
+  elevation: 0
+  unit_system: metric
+  currency: EUR
+
+# Enable Lovelace in YAML mode for deterministic testing
+lovelace:
+  mode: yaml
+  resources:
+    - url: /local/community/lovelace-growspace-manager-card/growspace-manager-card.js
+      type: module
+
+# Frontend config to ensure we can access it
+frontend:

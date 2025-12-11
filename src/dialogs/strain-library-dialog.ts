@@ -154,6 +154,11 @@ export class StrainLibraryDialog extends LitElement {
     .strain-card:hover .sc-actions {
         opacity: 1;
     }
+    @media (hover: none) {
+      .sc-actions {
+        opacity: 1;
+      }
+    }
     .sc-action-btn {
         background: rgba(0,0,0,0.6);
         border: none;
@@ -1039,12 +1044,21 @@ export class StrainLibraryDialog extends LitElement {
         </div>
       </div>
 
-      <div class="sd-footer">
-        <button class="md3-button tonal" @click=${() => this._view = 'browse'}>Cancel</button>
-        <button class="md3-button primary" @click=${() => this._handleSave()}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
-          Save Strain
-        </button>
+      <div class="sd-footer" style="justify-content: space-between;">
+        ${s.key ? html`
+          <button class="md3-button text" style="color: var(--error-color, #f44336);" @click=${() => this._handleDelete(s.key!)}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+            Delete
+          </button>
+        ` : html`<div></div>`}
+        
+        <div style="display:flex; gap:12px;">
+          <button class="md3-button tonal" @click=${() => this._view = 'browse'}>Cancel</button>
+          <button class="md3-button primary" @click=${() => this._handleSave()}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
+            Save Strain
+          </button>
+        </div>
       </div>
     `;
   }

@@ -1,0 +1,68 @@
+
+# Default Config
+default_config:
+
+# Frontend & API
+frontend:
+api:
+
+homeassistant:
+  time_zone: UTC
+  elevation: 0
+  unit_system: metric
+  currency: EUR
+
+# Lovelace (Test Dashboard)
+lovelace:
+  mode: yaml
+  resources:
+    - url: /local/community/lovelace-growspace-manager-card/growspace-manager-card.js?v=2
+      type: module
+
+# Fake Hardware Controls
+input_number:
+  sim_temp:
+    name: "Simulated Temp"
+    min: 10
+    max: 40
+    step: 0.5
+    unit_of_measurement: "°C"
+    icon: mdi:thermometer
+  
+  sim_humidity:
+    name: "Simulated Humidity"
+    min: 0
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+    icon: mdi:water-percent
+
+  sim_co2:
+    name: "Simulated CO2"
+    min: 400
+    max: 2000
+    step: 10
+    unit_of_measurement: "ppm"
+    icon: mdi:molecule-co2
+
+# Fake Hardware Sensors
+template:
+  - sensor:
+      - name: "Test Temperature"
+        unique_id: test_temperature
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state: "{{ states('input_number.sim_temp') }}"
+      
+      - name: "Test Humidity"
+        unique_id: test_humidity
+        unit_of_measurement: "%"
+        device_class: humidity
+        state: "{{ states('input_number.sim_humidity') }}"
+
+      - name: "Test CO2"
+        unique_id: test_co2
+        unit_of_measurement: "ppm"
+        device_class: carbon_dioxide
+        state: "{{ states('input_number.sim_co2') }}"
+

@@ -56,6 +56,7 @@ export class GrowspaceStore implements ReactiveController {
     constructor(host: ReactiveControllerHost) {
         this.host = host;
         host.addController(this);
+        console.log("GrowspaceStore Authenticated v2025-12-11-FIX-DATA-SERVICE-PARSING");
         this.dataService = new DataService();
     }
 
@@ -192,11 +193,11 @@ export class GrowspaceStore implements ReactiveController {
         this.requestUpdate();
     }
 
-    fetchStrainLibrary() {
-        return this._fetchStrainLibraryImpl();
+    fetchStrainLibrary(force: boolean = false) {
+        return this._fetchStrainLibraryImpl(force);
     }
 
-    private async _fetchStrainLibraryImpl() {
+    private async _fetchStrainLibraryImpl(force: boolean) {
         // ... existing logic ...
         if (!this.hass) return;
 
@@ -207,7 +208,7 @@ export class GrowspaceStore implements ReactiveController {
         const cachedRaw = localStorage.getItem(CACHE_KEY);
         let usedCache = false;
 
-        if (cachedRaw) {
+        if (!force && cachedRaw) {
             try {
                 const cache = JSON.parse(cachedRaw);
                 const age = Date.now() - (cache.timestamp || 0);
@@ -581,7 +582,7 @@ export class GrowspaceStore implements ReactiveController {
 
         try {
             await this.dataService.addStrain(payload);
-            await this.fetchStrainLibrary();
+            await this.fetchStrainLibrary(true);
         } catch (err) {
             console.error("Error adding strain:", err);
         }
@@ -599,7 +600,7 @@ export class GrowspaceStore implements ReactiveController {
                 this.state.strainLibrary = this.state.strainLibrary.filter(s => s.key !== strainKey);
                 this.requestUpdate();
             }
-            await this.fetchStrainLibrary();
+            await this.fetchStrainLibrary(true);
         } catch (err) {
             console.error("Error removing strain:", err);
         }
@@ -886,7 +887,7 @@ export class GrowspaceStore implements ReactiveController {
         try {
             const result = await this.dataService.importStrainLibrary(file, replace);
             this.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
-            await this.fetchStrainLibrary();
+            await this.fetchStrainLibrary(true);
         } catch (err: any) {
             console.error("Import failed:", err);
             this.showToast(`Import failed: ${err.message}`, 'error');
