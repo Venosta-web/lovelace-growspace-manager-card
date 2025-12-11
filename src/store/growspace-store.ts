@@ -463,7 +463,6 @@ export class GrowspaceStore implements ReactiveController {
     async handleDeletePlant(plantId: string | string[]) {
         const ids = Array.isArray(plantId) ? plantId : [plantId];
 
-        if (!confirm(`Are you sure you want to delete ${ids.length} plant(s)?`)) return;
 
         ids.forEach(id => this.state.optimisticDeletedPlantIds.add(id));
         this.requestUpdate();

@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import {
   mdiClose, mdiPencil,
@@ -38,6 +38,7 @@ export class PlantOverviewDialog extends LitElement {
   @state() private isEditing = true;
   @state() private showAllDates = false;
   @state() private cloneTargetId = '';
+  @state() private _showDeleteConfirmation = false;
 
   willUpdate(changedProps: Map<string, any>) {
     if (changedProps.has('dialog') && this.dialog) {
@@ -197,8 +198,20 @@ export class PlantOverviewDialog extends LitElement {
   }
 
   private _delete(plantId: string) {
-    if (!confirm('Are you sure you want to delete this plant? This action cannot be undone.')) return;
-    this.dispatchEvent(new DeletePlantEvent(plantId));
+    this._showDeleteConfirmation = true;
+  }
+
+  private _confirmDelete() {
+    if (this.plant) {
+      const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+      this.dispatchEvent(new DeletePlantEvent(plantId));
+      this._showDeleteConfirmation = false;
+      this._close();
+    }
+  }
+
+  private _cancelDelete() {
+    this._showDeleteConfirmation = false;
   }
 
   private _harvest(plant: PlantEntity) {
@@ -279,6 +292,24 @@ export class PlantOverviewDialog extends LitElement {
       `;
   }
 
+  private _renderDeleteOverlay(): TemplateResult {
+    return html`
+      <div class="dialog-overlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:100; display:flex; align-items:center; justify-content:center;">
+        <div class="glass-dialog-container" style="width: 350px; height: auto; padding: 24px;">
+          <h2 class="dialog-title" style="margin-bottom:12px">Confirm Deletion</h2>
+          <p style="color:rgba(255,255,255,0.7); margin-bottom:24px; font-size: 1rem; line-height: 1.5;">Are you sure you want to delete this plant? This action cannot be undone.</p>
+          <div style="display:flex; justify-content:flex-end; gap:12px">
+            <button class="md3-button tonal" @click=${this._cancelDelete}>Cancel</button>
+            <button class="md3-button danger" @click=${this._confirmDelete}>
+               <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+               Delete
+            </button>
+          </div>
+        </div>
+      </div>
+     `;
+  }
+
   render() {
     if (!this.plant) return html``;
 
@@ -296,6 +327,7 @@ export class PlantOverviewDialog extends LitElement {
         .escapeKeyAction=${''}
       >
         <div class="glass-dialog-container" style="--stage-color: ${stageColor}">
+          ${this._showDeleteConfirmation ? this._renderDeleteOverlay() : nothing}
         
           <!-- HEADER -->
           <div class="dialog-header">

@@ -11507,6 +11507,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$2 {
         this.isEditing = true;
         this.showAllDates = false;
         this.cloneTargetId = '';
+        this._showDeleteConfirmation = false;
     }
     willUpdate(changedProps) {
         if (changedProps.has('dialog') && this.dialog) {
@@ -11535,9 +11536,18 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$2 {
         this.dispatchEvent(new UpdatePlantEvent(this.editedAttributes));
     }
     _delete(plantId) {
-        if (!confirm('Are you sure you want to delete this plant? This action cannot be undone.'))
-            return;
-        this.dispatchEvent(new DeletePlantEvent(plantId));
+        this._showDeleteConfirmation = true;
+    }
+    _confirmDelete() {
+        if (this.plant) {
+            const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+            this.dispatchEvent(new DeletePlantEvent(plantId));
+            this._showDeleteConfirmation = false;
+            this._close();
+        }
+    }
+    _cancelDelete() {
+        this._showDeleteConfirmation = false;
     }
     _harvest(plant) {
         this.dispatchEvent(new HarvestPlantEvent(plant));
@@ -11612,6 +11622,23 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$2 {
         </div>
       `;
     }
+    _renderDeleteOverlay() {
+        return x `
+      <div class="dialog-overlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:100; display:flex; align-items:center; justify-content:center;">
+        <div class="glass-dialog-container" style="width: 350px; height: auto; padding: 24px;">
+          <h2 class="dialog-title" style="margin-bottom:12px">Confirm Deletion</h2>
+          <p style="color:rgba(255,255,255,0.7); margin-bottom:24px; font-size: 1rem; line-height: 1.5;">Are you sure you want to delete this plant? This action cannot be undone.</p>
+          <div style="display:flex; justify-content:flex-end; gap:12px">
+            <button class="md3-button tonal" @click=${this._cancelDelete}>Cancel</button>
+            <button class="md3-button danger" @click=${this._confirmDelete}>
+               <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+               Delete
+            </button>
+          </div>
+        </div>
+      </div>
+     `;
+    }
     render() {
         if (!this.plant)
             return x ``;
@@ -11627,6 +11654,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$2 {
         .escapeKeyAction=${''}
       >
         <div class="glass-dialog-container" style="--stage-color: ${stageColor}">
+          ${this._showDeleteConfirmation ? this._renderDeleteOverlay() : E}
         
           <!-- HEADER -->
           <div class="dialog-header">
@@ -11973,6 +12001,10 @@ __decorate([
     r$1(),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "cloneTargetId", void 0);
+__decorate([
+    r$1(),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "_showDeleteConfirmation", void 0);
 PlantOverviewDialog = __decorate([
     t$2('plant-overview-dialog')
 ], PlantOverviewDialog);
@@ -19244,8 +19276,6 @@ class GrowspaceStore {
     }
     async handleDeletePlant(plantId) {
         const ids = Array.isArray(plantId) ? plantId : [plantId];
-        if (!confirm(`Are you sure you want to delete ${ids.length} plant(s)?`))
-            return;
         ids.forEach(id => this.state.optimisticDeletedPlantIds.add(id));
         this.requestUpdate();
         try {
