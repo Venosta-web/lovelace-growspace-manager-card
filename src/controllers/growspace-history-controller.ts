@@ -187,7 +187,7 @@ export class GrowspaceHistoryController implements ReactiveController {
     }
 
     private async _fetchExhaustHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
-        const { device, entityId } = this.getRelatedEntityId('exhaust_entity');
+        const { device, entityId } = this.getRelatedEntityId('exhaust_sensor');
         if (!device || !entityId) return;
         const { start, end } = this.calculateTimeRange(range);
         try {
@@ -200,7 +200,7 @@ export class GrowspaceHistoryController implements ReactiveController {
     }
 
     private async _fetchHumidifierHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
-        const { device, entityId } = this.getRelatedEntityId('humidifier_entity');
+        const { device, entityId } = this.getRelatedEntityId('humidifier_sensor');
         if (!device || !entityId) return;
         const { start, end } = this.calculateTimeRange(range);
         try {

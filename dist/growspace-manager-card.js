@@ -9697,7 +9697,7 @@ class GrowspaceHistoryController {
         }
     }
     async _fetchExhaustHistory(range = '24h') {
-        const { device, entityId } = this.getRelatedEntityId('exhaust_entity');
+        const { device, entityId } = this.getRelatedEntityId('exhaust_sensor');
         if (!device || !entityId)
             return;
         const { start, end } = this.calculateTimeRange(range);
@@ -9711,7 +9711,7 @@ class GrowspaceHistoryController {
         }
     }
     async _fetchHumidifierHistory(range = '24h') {
-        const { device, entityId } = this.getRelatedEntityId('humidifier_entity');
+        const { device, entityId } = this.getRelatedEntityId('humidifier_sensor');
         if (!device || !entityId)
             return;
         const { start, end } = this.calculateTimeRange(range);
