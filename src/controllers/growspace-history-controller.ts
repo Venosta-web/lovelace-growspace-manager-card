@@ -236,10 +236,16 @@ export class GrowspaceHistoryController implements ReactiveController {
         // 1. Try direct attribute (e.g. 'exhaust_entity')
         let entityId = overviewEntity?.attributes?.[attribute];
 
-        // 2. Fallback: Try sensor attribute (e.g. 'exhaust_sensor') if the requested one was an entity and is missing
+        // 2a. Fallback: Try sensor attribute (e.g. 'exhaust_sensor') if the requested one was an entity and is missing
         if (!entityId && attribute.endsWith('_entity')) {
             const sensorAttr = attribute.replace('_entity', '_sensor');
             entityId = overviewEntity?.attributes?.[sensorAttr];
+        }
+
+        // 2b. Fallback: Try entity attribute (e.g. 'exhaust_entity') if the requested one was a sensor and is missing
+        if (!entityId && attribute.endsWith('_sensor')) {
+            const entityAttr = attribute.replace('_sensor', '_entity');
+            entityId = overviewEntity?.attributes?.[entityAttr];
         }
 
         // 3. Fallback: Try looking in observations (nested)
@@ -248,6 +254,10 @@ export class GrowspaceHistoryController implements ReactiveController {
             if (!entityId && attribute.endsWith('_entity')) {
                 const sensorAttr = attribute.replace('_entity', '_sensor');
                 entityId = overviewEntity.attributes.observations[sensorAttr];
+            }
+            if (!entityId && attribute.endsWith('_sensor')) {
+                const entityAttr = attribute.replace('_sensor', '_entity');
+                entityId = overviewEntity.attributes.observations[entityAttr];
             }
         }
 

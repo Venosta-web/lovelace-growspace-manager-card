@@ -9748,10 +9748,15 @@ class GrowspaceHistoryController {
         const overviewEntity = this.host.hass.states[device.overview_entity_id];
         // 1. Try direct attribute (e.g. 'exhaust_entity')
         let entityId = overviewEntity?.attributes?.[attribute];
-        // 2. Fallback: Try sensor attribute (e.g. 'exhaust_sensor') if the requested one was an entity and is missing
+        // 2a. Fallback: Try sensor attribute (e.g. 'exhaust_sensor') if the requested one was an entity and is missing
         if (!entityId && attribute.endsWith('_entity')) {
             const sensorAttr = attribute.replace('_entity', '_sensor');
             entityId = overviewEntity?.attributes?.[sensorAttr];
+        }
+        // 2b. Fallback: Try entity attribute (e.g. 'exhaust_entity') if the requested one was a sensor and is missing
+        if (!entityId && attribute.endsWith('_sensor')) {
+            const entityAttr = attribute.replace('_sensor', '_entity');
+            entityId = overviewEntity?.attributes?.[entityAttr];
         }
         // 3. Fallback: Try looking in observations (nested)
         if (!entityId && overviewEntity?.attributes?.observations) {
@@ -9759,6 +9764,10 @@ class GrowspaceHistoryController {
             if (!entityId && attribute.endsWith('_entity')) {
                 const sensorAttr = attribute.replace('_entity', '_sensor');
                 entityId = overviewEntity.attributes.observations[sensorAttr];
+            }
+            if (!entityId && attribute.endsWith('_sensor')) {
+                const entityAttr = attribute.replace('_sensor', '_entity');
+                entityId = overviewEntity.attributes.observations[entityAttr];
             }
         }
         return { device, entityId };
@@ -10025,6 +10034,9 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                 valStr = closest.meta || 'Not Optimal';
             }
         }
+        else if ((metricKey === 'exhaust' || metricKey === 'humidifier') && closest.meta?.state) {
+            valStr = closest.meta.state;
+        }
         this._tooltip = {
             id: metricKey,
             x: x,
@@ -10172,6 +10184,10 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                     if (ent.state && !isNaN(parseFloat(ent.state))) {
                         return ent.state;
                     }
+                    if (ent.state === 'on' || ent.state === 'active')
+                        return 1;
+                    if (ent.state === 'off' || ent.state === 'idle')
+                        return 0;
                 }
                 if (ent.attributes && ent.attributes[key] !== undefined)
                     return ent.attributes[key];
@@ -10191,6 +10207,11 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                 if (key === 'dehumidifier') {
                     if (ent.entity_id && ent.state) {
                         return { state: (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 'ON' : 'OFF' };
+                    }
+                }
+                if (key === 'exhaust' || key === 'humidifier') {
+                    if (ent.state && (ent.state === 'on' || ent.state === 'off' || ent.state === 'active' || ent.state === 'idle')) {
+                        return { state: (ent.state === 'on' || ent.state === 'active') ? 'ON' : 'OFF' };
                     }
                 }
                 return undefined;
@@ -10240,9 +10261,33 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                 }
             }
             else if (metricKey === 'exhaust') {
-                if (overviewEntity && overviewEntity.attributes.exhaust_value !== undefined) {
-                    const val = overviewEntity.attributes.exhaust_value;
-                    dataPoints.push({ time: now.getTime(), value: parseFloat(val) });
+                let val = overviewEntity?.attributes?.exhaust_value;
+                if (val === undefined && this.device.environment_attributes?.exhaust_entity) {
+                    const entId = this.device.environment_attributes.exhaust_entity;
+                    if (this.hass.states[entId])
+                        val = this.hass.states[entId].state;
+                }
+                else if (val === undefined && this.device.environment_attributes?.exhaust_sensor) {
+                    const entId = this.device.environment_attributes.exhaust_sensor;
+                    if (this.hass.states[entId])
+                        val = this.hass.states[entId].state;
+                }
+                if (val !== undefined) {
+                    let numVal = parseFloat(val);
+                    let meta = undefined;
+                    if (isNaN(numVal)) {
+                        if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') {
+                            numVal = 1;
+                            meta = { state: 'ON' };
+                        }
+                        else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') {
+                            numVal = 0;
+                            meta = { state: 'OFF' };
+                        }
+                    }
+                    if (!isNaN(numVal)) {
+                        dataPoints.push({ time: now.getTime(), value: numVal, meta });
+                    }
                 }
                 else if (dataPoints.length > 0) {
                     const last = dataPoints[dataPoints.length - 1];
@@ -10250,9 +10295,33 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                 }
             }
             else if (metricKey === 'humidifier') {
-                if (overviewEntity && overviewEntity.attributes.humidifier_value !== undefined) {
-                    const val = overviewEntity.attributes.humidifier_value;
-                    dataPoints.push({ time: now.getTime(), value: parseFloat(val) });
+                let val = overviewEntity?.attributes?.humidifier_value;
+                if (val === undefined && this.device.environment_attributes?.humidifier_entity) {
+                    const entId = this.device.environment_attributes.humidifier_entity;
+                    if (this.hass.states[entId])
+                        val = this.hass.states[entId].state;
+                }
+                else if (val === undefined && this.device.environment_attributes?.humidifier_sensor) {
+                    const entId = this.device.environment_attributes.humidifier_sensor;
+                    if (this.hass.states[entId])
+                        val = this.hass.states[entId].state;
+                }
+                if (val !== undefined) {
+                    let numVal = parseFloat(val);
+                    let meta = undefined;
+                    if (isNaN(numVal)) {
+                        if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') {
+                            numVal = 1;
+                            meta = { state: 'ON' };
+                        }
+                        else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') {
+                            numVal = 0;
+                            meta = { state: 'OFF' };
+                        }
+                    }
+                    if (!isNaN(numVal)) {
+                        dataPoints.push({ time: now.getTime(), value: numVal, meta });
+                    }
                 }
                 else if (dataPoints.length > 0) {
                     const last = dataPoints[dataPoints.length - 1];

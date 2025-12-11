@@ -227,6 +227,8 @@ export class GrowspaceEnvChart extends LitElement {
             } else {
                 valStr = closest.meta || 'Not Optimal';
             }
+        } else if ((metricKey === 'exhaust' || metricKey === 'humidifier') && closest.meta?.state) {
+            valStr = closest.meta.state;
         }
 
         this._tooltip = {
@@ -388,6 +390,8 @@ export class GrowspaceEnvChart extends LitElement {
                     if (ent.state && !isNaN(parseFloat(ent.state))) {
                         return ent.state;
                     }
+                    if (ent.state === 'on' || ent.state === 'active') return 1;
+                    if (ent.state === 'off' || ent.state === 'idle') return 0;
                 }
                 if (ent.attributes && ent.attributes[key] !== undefined) return ent.attributes[key];
                 if (ent.attributes && ent.attributes.observations && typeof ent.attributes.observations === 'object') {
@@ -407,6 +411,11 @@ export class GrowspaceEnvChart extends LitElement {
                 if (key === 'dehumidifier') {
                     if (ent.entity_id && ent.state) {
                         return { state: (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 'ON' : 'OFF' };
+                    }
+                }
+                if (key === 'exhaust' || key === 'humidifier') {
+                    if (ent.state && (ent.state === 'on' || ent.state === 'off' || ent.state === 'active' || ent.state === 'idle')) {
+                        return { state: (ent.state === 'on' || ent.state === 'active') ? 'ON' : 'OFF' };
                     }
                 }
                 return undefined;
@@ -460,17 +469,49 @@ export class GrowspaceEnvChart extends LitElement {
                     dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
                 }
             } else if (metricKey === 'exhaust') {
-                if (overviewEntity && overviewEntity.attributes.exhaust_value !== undefined) {
-                    const val = overviewEntity.attributes.exhaust_value;
-                    dataPoints.push({ time: now.getTime(), value: parseFloat(val) });
+                let val = overviewEntity?.attributes?.exhaust_value;
+                if (val === undefined && this.device.environment_attributes?.exhaust_entity) {
+                    const entId = this.device.environment_attributes.exhaust_entity;
+                    if (this.hass.states[entId]) val = this.hass.states[entId].state;
+                } else if (val === undefined && this.device.environment_attributes?.exhaust_sensor) {
+                    const entId = this.device.environment_attributes.exhaust_sensor;
+                    if (this.hass.states[entId]) val = this.hass.states[entId].state;
+                }
+
+                if (val !== undefined) {
+                    let numVal = parseFloat(val);
+                    let meta: any = undefined;
+                    if (isNaN(numVal)) {
+                        if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') { numVal = 1; meta = { state: 'ON' }; }
+                        else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') { numVal = 0; meta = { state: 'OFF' }; }
+                    }
+                    if (!isNaN(numVal)) {
+                        dataPoints.push({ time: now.getTime(), value: numVal, meta });
+                    }
                 } else if (dataPoints.length > 0) {
                     const last = dataPoints[dataPoints.length - 1];
                     dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
                 }
             } else if (metricKey === 'humidifier') {
-                if (overviewEntity && overviewEntity.attributes.humidifier_value !== undefined) {
-                    const val = overviewEntity.attributes.humidifier_value;
-                    dataPoints.push({ time: now.getTime(), value: parseFloat(val) });
+                let val = overviewEntity?.attributes?.humidifier_value;
+                if (val === undefined && this.device.environment_attributes?.humidifier_entity) {
+                    const entId = this.device.environment_attributes.humidifier_entity;
+                    if (this.hass.states[entId]) val = this.hass.states[entId].state;
+                } else if (val === undefined && this.device.environment_attributes?.humidifier_sensor) {
+                    const entId = this.device.environment_attributes.humidifier_sensor;
+                    if (this.hass.states[entId]) val = this.hass.states[entId].state;
+                }
+
+                if (val !== undefined) {
+                    let numVal = parseFloat(val);
+                    let meta: any = undefined;
+                    if (isNaN(numVal)) {
+                        if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') { numVal = 1; meta = { state: 'ON' }; }
+                        else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') { numVal = 0; meta = { state: 'OFF' }; }
+                    }
+                    if (!isNaN(numVal)) {
+                        dataPoints.push({ time: now.getTime(), value: numVal, meta });
+                    }
                 } else if (dataPoints.length > 0) {
                     const last = dataPoints[dataPoints.length - 1];
                     dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
