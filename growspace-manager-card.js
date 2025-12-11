@@ -11989,6 +11989,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$2 {
         this._isImageSelectorOpen = false;
         this._importDialogOpen = false;
         this._mobileMenuOpen = false;
+        this._pendingDeleteKey = null;
         this._importReplace = false;
         // Pagination State
         this._currentPage = 1;
@@ -12023,9 +12024,16 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$2 {
         this._view = 'browse';
     }
     _handleDelete(key) {
-        if (confirm('Are you sure you want to delete this strain?')) {
-            this.dispatchEvent(new CustomEvent('delete-strain', { detail: { key } }));
+        this._pendingDeleteKey = key;
+    }
+    _confirmDelete() {
+        if (this._pendingDeleteKey) {
+            this.dispatchEvent(new CustomEvent('delete-strain', { detail: { key: this._pendingDeleteKey } }));
+            this._pendingDeleteKey = null;
         }
+    }
+    _cancelDelete() {
+        this._pendingDeleteKey = null;
     }
     _handleEditorChange(field, value) {
         this._editorState = { ...this._editorState, [field]: value };
@@ -12095,6 +12103,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$2 {
         ${this._isCropping ? this.renderCropOverlay() : E}
         ${this._isImageSelectorOpen ? this.renderImageSelector() : E}
         ${this._importDialogOpen ? this.renderImportDialog() : E}
+        ${this._pendingDeleteKey ? this.renderDeleteConfirmation() : E}
       </ha-dialog>
     `;
     }
@@ -12678,6 +12687,25 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$2 {
       </div>
     `;
     }
+    renderDeleteConfirmation() {
+        return x `
+      <div class="crop-overlay">
+        <div class="glass-dialog-container" style="width: 400px; height: auto; padding: 24px; display: flex; flex-direction: column;">
+          <h2 class="dialog-title">Delete Strain?</h2>
+          <p style="color: var(--secondary-text-color); margin: 16px 0; font-size: 1rem; line-height: 1.5;">
+            Are you sure you want to delete this strain? This action cannot be undone.
+          </p>
+          <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
+            <button class="md3-button tonal" @click=${this._cancelDelete}>Cancel</button>
+            <button class="md3-button text" style="color: #f44336;" @click=${this._confirmDelete}>
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
 };
 StrainLibraryDialog.styles = [
     dialogStyles,
@@ -13216,6 +13244,10 @@ __decorate([
     r$1(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_mobileMenuOpen", void 0);
+__decorate([
+    r$1(),
+    __metadata("design:type", Object)
+], StrainLibraryDialog.prototype, "_pendingDeleteKey", void 0);
 __decorate([
     r$1(),
     __metadata("design:type", Object)

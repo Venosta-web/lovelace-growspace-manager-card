@@ -35,6 +35,7 @@ growspace-manager-card.js
 # Playwright
 playwright-report/
 coverage/tmp
+user.json
 
 # Logs and Debug output
 *_log.txt
@@ -46,4 +47,5 @@ verification_*.png
 
 # Ignore coverage
 coverage/
+
 
