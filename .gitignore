@@ -44,3 +44,6 @@ debug_output.txt
 debug_*.png
 verification_*.png
 
+# Ignore coverage
+coverage/
+
