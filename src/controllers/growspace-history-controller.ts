@@ -1,12 +1,14 @@
 import { ReactiveController, ReactiveControllerHost } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { DataService } from '../data-service';
+import { GrowspaceDevice } from '../types';
 
 // Interface for the host to ensure it has the required properties
 export interface GrowspaceCardHost extends ReactiveControllerHost {
     hass: HomeAssistant;
     selectedDevice: string | null;
     dataService: DataService;
+    devices: GrowspaceDevice[];  // Pre-loaded devices from store
 }
 
 export class GrowspaceHistoryController implements ReactiveController {
@@ -17,6 +19,11 @@ export class GrowspaceHistoryController implements ReactiveController {
     public exhaustHistory: any[] | null = null;
     public humidifierHistory: any[] | null = null;
     public soilMoistureHistory: any[] | null = null;
+    // Individual environment sensor histories (since env data moved to WebSocket)
+    public temperatureHistory: any[] | null = null;
+    public humidityHistory: any[] | null = null;
+    public vpdHistory: any[] | null = null;
+    public co2History: any[] | null = null;
 
     public activeEnvGraphs: Set<string> = new Set();
     public linkedGraphGroups: string[][] = [];
@@ -112,6 +119,13 @@ export class GrowspaceHistoryController implements ReactiveController {
         }
 
         this.linkedGraphGroups = newGroups;
+
+        // Auto-activate both metrics so the linked graph displays immediately
+        const newActive = new Set(this.activeEnvGraphs);
+        newActive.add(metric1);
+        newActive.add(metric2);
+        this.activeEnvGraphs = newActive;
+
         this.host.requestUpdate();
     }
 
@@ -145,21 +159,34 @@ export class GrowspaceHistoryController implements ReactiveController {
     public optimalHistory: any[] | null = null;
 
     private async _fetchHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
-        if (!this.host.hass || !this.host.selectedDevice) return;
-        const devices = this.host.dataService.getGrowspaceDevices();
+        console.log('[HistoryController] _fetchHistory called with range:', range);
+        if (!this.host.hass || !this.host.selectedDevice) {
+            console.log('[HistoryController] Aborting: no hass or selectedDevice', { hasHass: !!this.host.hass, selectedDevice: this.host.selectedDevice });
+            return;
+        }
+        // Use pre-loaded devices from store instead of fetching independently
+        const devices = this.host.devices;
+        console.log('[HistoryController] selectedDevice:', this.host.selectedDevice, 'available devices:', devices.map(d => ({ device_id: d.device_id, name: d.name })));
         const device = devices.find(d => d.device_id === this.host.selectedDevice);
-        if (!device) return;
+        if (!device) {
+            console.log('[HistoryController] Aborting: device not found. Looking for:', this.host.selectedDevice);
+            return;
+        }
 
         const { start, end } = this.calculateTimeRange(range);
+        console.log('[HistoryController] Fetching history for device:', device.name, 'entity:', device.overview_entity_id);
 
         // 1. Fetch Main Sensor History (Temp, Humidity, VPD, etc.)
         if (device.overview_entity_id) {
             try {
                 const history = await this.host.dataService.getHistory(device.overview_entity_id, start, end);
+                console.log('[HistoryController] History fetched, length:', history?.length || 0, 'sample:', history?.[0] ? JSON.stringify(history[0]).slice(0, 300) : 'empty');
                 this.historyData = history;
             } catch (e) {
                 console.error("Failed to fetch main sensor history", e);
             }
+        } else {
+            console.log('[HistoryController] No overview_entity_id on device');
         }
 
         // 2. Fetch Optimal Conditions Binary Sensor History
@@ -180,6 +207,53 @@ export class GrowspaceHistoryController implements ReactiveController {
             this.optimalHistory = history;
         } catch (e) {
             console.error("Failed to fetch optimal history", e);
+        }
+
+        // 3. Fetch individual environment sensor histories (since env data moved to WebSocket)
+        const envAttrs = device.environment_attributes || {};
+
+        // Temperature
+        if (envAttrs.temperature_sensor) {
+            try {
+                const history = await this.host.dataService.getHistory(envAttrs.temperature_sensor, start, end);
+                console.log('[HistoryController] Temperature history fetched from', envAttrs.temperature_sensor, 'length:', history?.length || 0);
+                this.temperatureHistory = history;
+            } catch (e) {
+                console.error("Failed to fetch temperature history", e);
+            }
+        }
+
+        // Humidity
+        if (envAttrs.humidity_sensor) {
+            try {
+                const history = await this.host.dataService.getHistory(envAttrs.humidity_sensor, start, end);
+                console.log('[HistoryController] Humidity history fetched from', envAttrs.humidity_sensor, 'length:', history?.length || 0);
+                this.humidityHistory = history;
+            } catch (e) {
+                console.error("Failed to fetch humidity history", e);
+            }
+        }
+
+        // VPD
+        if (envAttrs.vpd_sensor) {
+            try {
+                const history = await this.host.dataService.getHistory(envAttrs.vpd_sensor, start, end);
+                console.log('[HistoryController] VPD history fetched from', envAttrs.vpd_sensor, 'length:', history?.length || 0);
+                this.vpdHistory = history;
+            } catch (e) {
+                console.error("Failed to fetch VPD history", e);
+            }
+        }
+
+        // CO2
+        if (envAttrs.co2_sensor) {
+            try {
+                const history = await this.host.dataService.getHistory(envAttrs.co2_sensor, start, end);
+                console.log('[HistoryController] CO2 history fetched from', envAttrs.co2_sensor, 'length:', history?.length || 0);
+                this.co2History = history;
+            } catch (e) {
+                console.error("Failed to fetch CO2 history", e);
+            }
         }
 
         this.host.requestUpdate();
@@ -241,7 +315,8 @@ export class GrowspaceHistoryController implements ReactiveController {
 
     private getRelatedEntityId(attribute: string) {
         if (!this.host.hass || !this.host.selectedDevice) return { device: null, entityId: null };
-        const devices = this.host.dataService.getGrowspaceDevices();
+        // Use pre-loaded devices from store
+        const devices = this.host.devices;
         const device = devices.find(d => d.device_id === this.host.selectedDevice);
         if (!device || !device.overview_entity_id) return { device, entityId: null };
 

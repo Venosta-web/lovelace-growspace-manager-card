@@ -17,7 +17,11 @@ export class ConfigDialog extends LitElement {
   @property({ type: Object }) growspaceOptions: Record<string, string> = {};
   @property({ type: Array }) devices: GrowspaceDevice[] = [];
 
+  // Allow parent to set initial tab declaratively
+  @property({ type: String }) initialTab: 'add_growspace' | 'edit_growspace' | 'environment' = 'environment';
+
   @state() private currentTab: 'add_growspace' | 'edit_growspace' | 'environment' = 'environment';
+  private _initialStateApplied = false;
 
   // Add Growspace Data
   @state() private add_name = '';
@@ -118,6 +122,21 @@ export class ConfigDialog extends LitElement {
       }
     `
   ];
+
+  protected updated(changedProperties: Map<string, unknown>) {
+    super.updated(changedProperties);
+
+    // Apply initial tab state only once when dialog opens
+    if (changedProperties.has('open')) {
+      if (this.open && !this._initialStateApplied) {
+        this.currentTab = this.initialTab;
+        this._initialStateApplied = true;
+      } else if (!this.open) {
+        // Reset flag when dialog closes so next open respects initialTab again
+        this._initialStateApplied = false;
+      }
+    }
+  }
 
   // Provide initial state setting from parent
   public setInitialState(

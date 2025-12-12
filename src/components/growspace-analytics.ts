@@ -21,6 +21,11 @@ export class GrowspaceAnalytics extends LitElement {
     @property({ attribute: false }) exhaustHistory: any[] = [];
     @property({ attribute: false }) humidifierHistory: any[] = [];
     @property({ attribute: false }) soilMoistureHistory: any[] = [];
+    // Individual environment sensor histories (since env data moved to WebSocket)
+    @property({ attribute: false }) temperatureHistory: any[] = [];
+    @property({ attribute: false }) humidityHistory: any[] = [];
+    @property({ attribute: false }) vpdHistory: any[] = [];
+    @property({ attribute: false }) co2History: any[] = [];
 
     @property({ attribute: false }) activeEnvGraphs: Set<string> = new Set();
     @property({ attribute: false }) linkedGraphGroups: string[][] = [];
@@ -90,6 +95,11 @@ export class GrowspaceAnalytics extends LitElement {
         const graphs: TemplateResult[] = itemsToRender.map(item => {
             if (item.type === 'group') {
                 const activeMetrics = item.metrics;
+                console.log('[GrowspaceAnalytics] Creating combined graph with:', {
+                    activeMetrics,
+                    historyDataLength: this.historyData?.length || 0,
+                    historyDataSample: this.historyData?.[0] ? JSON.stringify(this.historyData[0]).slice(0, 300) : 'empty'
+                });
                 // Pass the METRIC_CONFIG down for the combined graph to pick colors/titles
                 return html`
               <growspace-env-chart
@@ -101,6 +111,10 @@ export class GrowspaceAnalytics extends LitElement {
                   .humidifierHistory=${this.humidifierHistory || []}
                   .soilMoistureHistory=${this.soilMoistureHistory || []}
                   .optimalHistory=${this.optimalHistory || []}
+                  .temperatureHistory=${this.temperatureHistory || []}
+                  .humidityHistory=${this.humidityHistory || []}
+                  .vpdHistory=${this.vpdHistory || []}
+                  .co2History=${this.co2History || []}
                   .metrics=${activeMetrics}
                   .isCombined=${true}
                   .metricConfig=${METRIC_CONFIG}
@@ -116,7 +130,11 @@ export class GrowspaceAnalytics extends LitElement {
 
                 // Determine correct history array based on metric
                 let history = this.historyData || [];
-                if (metric === 'exhaust') history = this.exhaustHistory || [];
+                if (metric === 'temperature') history = this.temperatureHistory || [];
+                else if (metric === 'humidity') history = this.humidityHistory || [];
+                else if (metric === 'vpd') history = this.vpdHistory || [];
+                else if (metric === 'co2') history = this.co2History || [];
+                else if (metric === 'exhaust') history = this.exhaustHistory || [];
                 else if (metric === 'humidifier') history = this.humidifierHistory || [];
                 else if (metric === 'dehumidifier') history = this.dehumidifierHistory || [];
                 else if (metric === 'soil_moisture') history = this.soilMoistureHistory || [];

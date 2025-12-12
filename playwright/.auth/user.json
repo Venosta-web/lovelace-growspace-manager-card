@@ -6,11 +6,15 @@
       "localStorage": [
         {
           "name": "hassTokens",
-          "value": "{\"access_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3YTNlYjg5ZmQ0ZWU0OWI1ODMzNzVmZDI5Yjg0ZTAxMyIsImlhdCI6MTc2NTU2OTQ5NywiZXhwIjoxNzY1NTcxMjk3fQ.5AKKsnmhhi1FHGTKBZyydTKtBUNMn_24GAijH9I0Rww\",\"token_type\":\"Bearer\",\"refresh_token\":\"d231bf2974a9e96f7043a984c1dfe38dcd2835306e4dabf7e56019a4366de8452d45cbade703cb46547bf83429f8b01dfd574c1961aac2fc3db7e7189f3a96bf\",\"expires_in\":1800,\"ha_auth_provider\":\"homeassistant\",\"hassUrl\":\"http://127.0.0.1:8123\",\"clientId\":\"http://127.0.0.1:8123/\",\"expires\":1765571297418}"
+          "value": "{\"access_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI2NWYyYzI2ZjcxNzI0M2MxODhlNzhkMDE1MjcwMWIyNyIsImlhdCI6MTc2NTU3MjM0NCwiZXhwIjoxNzY1NTc0MTQ0fQ.SdDhp3M8Z1MITi7c5F3TBRy35bXO-kZeEzaA3RDegS0\",\"token_type\":\"Bearer\",\"refresh_token\":\"1149d4c945ed62b13008c1a60cb6ee9047b5b467fb47b1d5abf30431dd912753178c3054605cd37b5a4e5366f231d349302c569f3d2c7a784eeeece4ad633a6e\",\"expires_in\":1800,\"ha_auth_provider\":\"homeassistant\",\"hassUrl\":\"http://127.0.0.1:8123\",\"clientId\":\"http://127.0.0.1:8123/\",\"expires\":1765574144086}"
         },
         {
           "name": "ha-version",
           "value": "\"2025.12.2\""
+        },
+        {
+          "name": "growspace_strain_library_v2",
+          "value": "{\"version\":2,\"timestamp\":1765572344284,\"data\":[{\"strain\":\"Test Strain 1765572136619\",\"phenotype\":\"default\",\"key\":\"Test Strain 1765572136619|default\",\"breeder\":\"Test Breeder\",\"type\":\"Hybrid\",\"lineage\":\"\",\"sex\":\"Feminized\",\"sativa_percentage\":50,\"indica_percentage\":50,\"description\":\"\",\"flowering_days_min\":60,\"flowering_days_max\":70},{\"strain\":\"Delete Me 1765572138756\",\"phenotype\":\"default\",\"key\":\"Delete Me 1765572138756|default\",\"breeder\":\"\",\"type\":\"Hybrid\",\"lineage\":\"\",\"sex\":\"Feminized\",\"sativa_percentage\":50,\"indica_percentage\":50,\"description\":\"\",\"flowering_days_min\":60,\"flowering_days_max\":70},{\"strain\":\"Editor Delete 1765572151937\",\"phenotype\":\"default\",\"key\":\"Editor Delete 1765572151937|default\",\"breeder\":\"\",\"type\":\"Hybrid\",\"lineage\":\"\",\"sex\":\"Feminized\",\"sativa_percentage\":50,\"indica_percentage\":50,\"description\":\"\",\"flowering_days_min\":60,\"flowering_days_max\":70}]}"
         }
       ]
     }

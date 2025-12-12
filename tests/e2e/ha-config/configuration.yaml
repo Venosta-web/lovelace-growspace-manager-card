@@ -19,7 +19,7 @@ lovelace:
     - url: /local/community/lovelace-growspace-manager-card/growspace-manager-card.js?v=2
       type: module
 
-# Fake Hardware Controls
+# Fake Hardware Controls (for manual override if needed)
 input_number:
   sim_temp:
     name: "Simulated Temp"
@@ -45,24 +45,78 @@ input_number:
     unit_of_measurement: "ppm"
     icon: mdi:molecule-co2
 
-# Fake Hardware Sensors
+# Dynamic Test Sensors - oscillate using sine wave based on time
+# These create realistic varying values with history over time
 template:
   - sensor:
+      # Temperature oscillates 20-25°C using sine wave (period ~5 minutes)
       - name: "Test Temperature"
         unique_id: test_temperature
         unit_of_measurement: "°C"
         device_class: temperature
-        state: "{{ states('input_number.sim_temp') }}"
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 22.5 %}
+          {% set amplitude = 2.5 %}
+          {{ (base + amplitude * sin(minutes / 2.5 * 3.14159)) | round(1) }}
       
+      # Humidity oscillates 55-65% (inverse of temperature for realism)
       - name: "Test Humidity"
         unique_id: test_humidity
         unit_of_measurement: "%"
         device_class: humidity
-        state: "{{ states('input_number.sim_humidity') }}"
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 60 %}
+          {% set amplitude = 5 %}
+          {{ (base - amplitude * sin(minutes / 2.5 * 3.14159)) | round(0) | int }}
 
+      # CO2 oscillates 800-1200 ppm (period ~10 minutes)
       - name: "Test CO2"
         unique_id: test_co2
         unit_of_measurement: "ppm"
         device_class: carbon_dioxide
-        state: "{{ states('input_number.sim_co2') }}"
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 1000 %}
+          {% set amplitude = 200 %}
+          {{ (base + amplitude * sin(minutes / 5 * 3.14159)) | round(0) | int }}
 
+      # Soil Moisture oscillates 40-60% (period ~15 minutes)
+      - name: "Test Soil Moisture"
+        unique_id: test_soil_moisture
+        unit_of_measurement: "%"
+        device_class: moisture
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 50 %}
+          {% set amplitude = 10 %}
+          {{ (base + amplitude * sin(minutes / 7.5 * 3.14159)) | round(0) | int }}
+
+      # Exhaust fan speed oscillates 0-10 (period ~3 minutes)
+      - name: "Test Exhaust"
+        unique_id: test_exhaust
+        unit_of_measurement: ""
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 5 %}
+          {% set amplitude = 5 %}
+          {{ (base + amplitude * sin(minutes / 1.5 * 3.14159)) | round(0) | int }}
+
+      # Humidifier oscillates 0-10 (period ~4 minutes, offset phase)
+      - name: "Test Humidifier"
+        unique_id: test_humidifier
+        unit_of_measurement: ""
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 5 %}
+          {% set amplitude = 5 %}
+          {{ (base + amplitude * sin((minutes + 2) / 2 * 3.14159)) | round(0) | int }}
+
+  # Dehumidifier as binary sensor (toggles every 2 minutes)
+  - binary_sensor:
+      - name: "Test Dehumidifier"
+        unique_id: test_dehumidifier
+        device_class: running
+        state: >
+          {{ (now().minute // 2) % 2 == 0 }}

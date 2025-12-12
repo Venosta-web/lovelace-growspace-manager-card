@@ -1,6 +1,7 @@
 import { LitElement, html, CSSResultGroup, TemplateResult, PropertyValues, ReactiveControllerHost } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
+import { ref } from 'lit/directives/ref.js';
 import { hassContext, configContext } from './context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 import { mdiCheckboxMarked } from '@mdi/js';
@@ -68,6 +69,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   // Getter to satisfy GrowspaceCardHost interface and allow external access
   get dataService() {
     return this.store.dataService;
+  }
+
+  // Getter to provide pre-loaded devices to the history controller
+  get devices() {
+    return this.store.state.devices;
   }
 
   @provide({ context: hassContext })
@@ -694,6 +700,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
             .exhaustHistory=${this.historyController.exhaustHistory || []}
             .humidifierHistory=${this.historyController.humidifierHistory || []}
             .soilMoistureHistory=${this.historyController.soilMoistureHistory || []}
+            .temperatureHistory=${this.historyController.temperatureHistory || []}
+            .humidityHistory=${this.historyController.humidityHistory || []}
+            .vpdHistory=${this.historyController.vpdHistory || []}
+            .co2History=${this.historyController.co2History || []}
             .activeEnvGraphs=${this.historyController.activeEnvGraphs}
             .linkedGraphGroups=${this.historyController.linkedGraphGroups}
             .range=${this.historyController.getRange()}
@@ -919,15 +929,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         .hass=${this.hass}
         .devices=${this.store.state.devices}
         .growspaceOptions=${growspaceOptions}
+        .initialTab=${dialogState.currentTab || 'environment'}
         @close=${() => this.store.closeActiveDialog()}
         @add-growspace-submit=${(e: CustomEvent) => this._handleAddGrowspace(e.detail)}
         @edit-growspace-submit=${(e: CustomEvent) => this._handleEditGrowspace(e.detail)}
         @delete-growspace-submit=${(e: CustomEvent) => this._handleDeleteGrowspace(e.detail)}
         @configure-environment-submit=${(e: CustomEvent) => this._handleEnvironmentConfig(e.detail)}
-        .setInitialState=${(el: any) => {
-        // Pass initial state if needed
-        if (el) el.setInitialState(dialogState.currentTab, dialogState.environmentData);
-      }}
       ></config-dialog>
     `;
   }

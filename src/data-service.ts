@@ -33,7 +33,10 @@ export class DataService {
   }
 
   getGrowspaceDevices(wsDataMap: Record<string, any> = {}): GrowspaceDevice[] {
-    if (!this.hass) return [];
+    if (!this.hass) {
+      console.log('[DataService] getGrowspaceDevices: no hass');
+      return [];
+    }
 
     const allStates = Object.values(this.hass.states);
 
@@ -44,6 +47,8 @@ export class DataService {
       s.attributes.row === undefined &&
       s.attributes.col === undefined
     );
+
+    console.log('[DataService] getGrowspaceDevices: found', overviewSensors.length, 'sensors, total states:', allStates.length);
 
     return overviewSensors.map((sensor: any) => {
       const growspaceId = sensor.attributes.growspace_id;
