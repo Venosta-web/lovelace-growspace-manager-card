@@ -7,4 +7,3 @@ views:
     panel: true
     cards:
       - type: custom:growspace-manager-card
-        default_growspace: test

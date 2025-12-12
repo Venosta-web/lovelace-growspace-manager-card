@@ -591,6 +591,9 @@ export class GrowspaceHeader extends LitElement {
     const envEntity = this.hass.states[envEntityId];
     const overviewEntity = this.device.overview_entity_id ? this.hass.states[this.device.overview_entity_id] : undefined;
 
+    // Fetch live states for equipment directly from their entities
+    const envAttrs = this.device.environment_attributes || overviewEntity?.attributes || {};
+
     // Helper to get attribute from either top-level or nested 'observations'
     const getValue = (ent: any, key: string) => {
       if (!ent || !ent.attributes) return undefined;
@@ -603,7 +606,41 @@ export class GrowspaceHeader extends LitElement {
 
     const temp = getValue(envEntity, 'temperature');
     const hum = getValue(envEntity, 'humidity');
-    const vpd = getValue(envEntity, 'vpd');
+    let vpd = getValue(envEntity, 'vpd');
+
+    // Fallback: If VPD is not in the binary sensor, try to get it from the sensor entity directly
+    if (vpd === undefined || vpd === null) {
+      if (envAttrs.vpd_sensor) {
+        const vpdState = this.hass.states[envAttrs.vpd_sensor];
+        if (vpdState && vpdState.state !== 'unknown' && vpdState.state !== 'unavailable') {
+          const val = parseFloat(vpdState.state);
+          if (!isNaN(val)) vpd = val;
+        }
+      }
+
+      // If still undefined, try the calculated sensor path (Name Based)
+      if (vpd === undefined || vpd === null) {
+        const slugify = (text: string) => text
+          .toString()
+          .toLowerCase()
+          .replace(/\s+/g, '_')           // Replace spaces with -
+          .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+          .replace(/\-\-+/g, '_')         // Replace multiple - with single -
+          .replace(/^-+/, '')             // Trim - from start of text
+          .replace(/-+$/, '');            // Trim - from end of text
+
+        const calcName = `${this.device.name} Calculated VPD`;
+        const calculatedId = `sensor.${slugify(calcName)}`;
+
+        const vpdState = this.hass.states[calculatedId];
+
+        if (vpdState && vpdState.state !== 'unknown' && vpdState.state !== 'unavailable') {
+          const val = parseFloat(vpdState.state);
+          if (!isNaN(val)) vpd = val;
+        }
+      }
+    }
+
     let vpdStatus = overviewEntity?.attributes?.vpd_status;
     const vpdTargetMin = overviewEntity?.attributes?.vpd_target_min;
     const vpdTargetMax = overviewEntity?.attributes?.vpd_target_max;
@@ -649,9 +686,6 @@ export class GrowspaceHeader extends LitElement {
 
     const nextIrrigation = getNextEvent(this.device.irrigation_times);
     const nextDrain = getNextEvent(this.device.drain_times);
-
-    // Fetch live states for equipment directly from their entities
-    const envAttrs = this.device.environment_attributes || overviewEntity?.attributes || {};
 
     const exhaustId = envAttrs.exhaust_entity;
     const exhaustSensor = envAttrs.exhaust_sensor;

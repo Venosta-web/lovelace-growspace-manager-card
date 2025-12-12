@@ -86,6 +86,8 @@ export const SERVICES = {
     REMOVE_STRAIN: 'remove_strain',
     CLEAR_STRAIN_LIBRARY: 'clear_strain_library',
     ADD_GROWSPACE: 'add_growspace',
+    UPDATE_GROWSPACE: 'update_growspace',
+    REMOVE_GROWSPACE: 'remove_growspace',
     CONFIGURE_ENVIRONMENT: 'configure_environment',
     ASK_GROW_ADVICE: 'ask_grow_advice',
     ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',

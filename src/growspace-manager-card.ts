@@ -441,23 +441,27 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       co2_sensor, circulation_fan, stress_threshold, mold_threshold
     } = detail;
 
-    if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor || !vpd_sensor) {
-      this.store.showToast('Growspace and required sensors (Temp, Hum, VPD) are mandatory', 'error');
+    if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
+      console.error("Missing mandatory fields", { selectedGrowspaceId, temp_sensor, humidity_sensor });
+      this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
       return;
     }
+
+    console.log("Submitting environment config", detail);
 
     try {
       await this.store.dataService.configureEnvironment({
         growspace_id: selectedGrowspaceId,
         temperature_sensor: temp_sensor,
         humidity_sensor: humidity_sensor,
-        vpd_sensor: vpd_sensor,
+        vpd_sensor: vpd_sensor || undefined,
         co2_sensor: co2_sensor || undefined,
         circulation_fan: circulation_fan || undefined,
         stress_threshold: stress_threshold,
         mold_threshold: mold_threshold
       });
       this.store.showToast('Environment configured successfully!', 'success');
+      await this.store.refreshData();
       this.store.closeActiveDialog();
     } catch (e: any) {
       this.store.showToast(`Error: ${e.message}`, 'error');
@@ -793,9 +797,34 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       });
       this.store.showToast("Plant added successfully", "success");
       this.store.closeActiveDialog();
+      await this.store.refreshData(); // Force refresh to show new sensor
     } catch (e: any) {
       console.error(e);
       this.store.showToast("Failed to add plant", "error");
+    }
+  }
+
+  private async _handleEditGrowspace(detail: any) {
+    try {
+      await this.store.dataService.updateGrowspace(detail);
+      this.store.showToast(`Growspace '${detail.name}' updated`, 'success');
+      this.store.closeActiveDialog();
+      await this.store.refreshData();
+    } catch (e: any) {
+      console.error(e);
+      this.store.showToast("Failed to update growspace", "error");
+    }
+  }
+
+  private async _handleDeleteGrowspace(detail: any) {
+    try {
+      await this.store.dataService.removeGrowspace(detail.growspace_id);
+      this.store.showToast("Growspace deleted", "success");
+      this.store.closeActiveDialog();
+      await this.store.refreshData();
+    } catch (e: any) {
+      console.error(e);
+      this.store.showToast("Failed to delete growspace", "error");
     }
   }
 
@@ -887,9 +916,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     return html`
       <config-dialog
         .open=${true}
+        .hass=${this.hass}
+        .devices=${this.store.state.devices}
         .growspaceOptions=${growspaceOptions}
         @close=${() => this.store.closeActiveDialog()}
         @add-growspace-submit=${(e: CustomEvent) => this._handleAddGrowspace(e.detail)}
+        @edit-growspace-submit=${(e: CustomEvent) => this._handleEditGrowspace(e.detail)}
+        @delete-growspace-submit=${(e: CustomEvent) => this._handleDeleteGrowspace(e.detail)}
         @configure-environment-submit=${(e: CustomEvent) => this._handleEnvironmentConfig(e.detail)}
         .setInitialState=${(el: any) => {
         // Pass initial state if needed

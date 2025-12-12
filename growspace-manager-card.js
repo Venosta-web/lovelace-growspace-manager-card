@@ -631,6 +631,8 @@ const SERVICES = {
     REMOVE_STRAIN: 'remove_strain',
     CLEAR_STRAIN_LIBRARY: 'clear_strain_library',
     ADD_GROWSPACE: 'add_growspace',
+    UPDATE_GROWSPACE: 'update_growspace',
+    REMOVE_GROWSPACE: 'remove_growspace',
     CONFIGURE_ENVIRONMENT: 'configure_environment',
     ASK_GROW_ADVICE: 'ask_grow_advice',
     ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
@@ -1115,6 +1117,43 @@ class DataService {
         }
         catch (err) {
             console.error("[DataService:addGrowspace] Error:", err);
+            throw err;
+        }
+    }
+    async updateGrowspace(data) {
+        console.log("[DataService:updateGrowspace] Updating growspace:", data);
+        try {
+            const payload = {
+                growspace_id: data.growspace_id,
+            };
+            if (data.name)
+                payload.name = data.name;
+            if (data.rows)
+                payload.rows = data.rows;
+            if (data.plants_per_row)
+                payload.plants_per_row = data.plants_per_row;
+            if (data.notification_service)
+                payload.notification_target = data.notification_service;
+            const res = await this.hass.callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
+            console.log("[DataService:updateGrowspace] Response:", res);
+            return res;
+        }
+        catch (err) {
+            console.error("[DataService:updateGrowspace] Error:", err);
+            throw err;
+        }
+    }
+    async removeGrowspace(growspaceId) {
+        console.log("[DataService:removeGrowspace] Removing growspace:", growspaceId);
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
+                growspace_id: growspaceId
+            });
+            console.log("[DataService:removeGrowspace] Response:", res);
+            return res;
+        }
+        catch (err) {
+            console.error("[DataService:removeGrowspace] Error:", err);
             throw err;
         }
     }
@@ -14241,14 +14280,19 @@ let ConfigDialog = class ConfigDialog extends i$2 {
     constructor() {
         super(...arguments);
         this.open = false;
-        // Growspace options for the environment tab select
         this.growspaceOptions = {};
+        this.devices = [];
         this.currentTab = 'environment';
         // Add Growspace Data
         this.add_name = '';
         this.add_rows = 4;
         this.add_plants_per_row = 4;
         this.add_notification_service = 'mobile_app_notify';
+        // Edit Growspace Data
+        this.edit_selectedId = '';
+        this.edit_name = '';
+        this.edit_rows = 0;
+        this.edit_plants_per_row = 0;
         // Environment Data
         this.env_selectedGrowspaceId = '';
         this.env_temp_sensor = '';
@@ -14258,6 +14302,7 @@ let ConfigDialog = class ConfigDialog extends i$2 {
         this.env_circulation_fan = '';
         this.env_stress_threshold = 0.8;
         this.env_mold_threshold = 0.8;
+        this._showDeleteConfirm = false;
     }
     // Provide initial state setting from parent
     setInitialState(currentTab = 'environment', environmentData) {
@@ -14308,6 +14353,55 @@ let ConfigDialog = class ConfigDialog extends i$2 {
             composed: true
         }));
     }
+    _submitEditGrowspace() {
+        if (!this.edit_selectedId)
+            return;
+        this.dispatchEvent(new CustomEvent('edit-growspace-submit', {
+            detail: {
+                growspace_id: this.edit_selectedId,
+                name: this.edit_name,
+                rows: this.edit_rows,
+                plants_per_row: this.edit_plants_per_row
+            },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _submitDeleteGrowspace() {
+        if (!this.edit_selectedId)
+            return;
+        this._showDeleteConfirm = true;
+    }
+    _confirmDeleteGrowspace() {
+        this.dispatchEvent(new CustomEvent('delete-growspace-submit', {
+            detail: {
+                growspace_id: this.edit_selectedId
+            },
+            bubbles: true,
+            composed: true
+        }));
+        // Reset selection after delete
+        this.edit_selectedId = '';
+        this.edit_name = '';
+        this.edit_rows = 0;
+        this.edit_plants_per_row = 0;
+        this._showDeleteConfirm = false;
+    }
+    _cancelDeleteGrowspace() {
+        this._showDeleteConfirm = false;
+    }
+    _handleEditSelection(e) {
+        const growspaceId = e.target.value;
+        this.edit_selectedId = growspaceId;
+        if (growspaceId && this.devices) {
+            const device = this.devices.find(d => d.device_id === growspaceId);
+            if (device) {
+                this.edit_name = device.name;
+                this.edit_rows = device.rows || 4;
+                this.edit_plants_per_row = device.plants_per_row || 4;
+            }
+        }
+    }
     render() {
         if (!this.open)
             return x ``;
@@ -14341,6 +14435,11 @@ let ConfigDialog = class ConfigDialog extends i$2 {
                  <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
                  Add Growspace
               </div>
+              <div class="config-tab ${this.currentTab === 'edit_growspace' ? 'active' : ''}"
+                    @click=${() => this._switchTab('edit_growspace')}>
+                  <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                  Edit Growspace
+               </div>
                <div class="config-tab ${this.currentTab === 'environment' ? 'active' : ''}"
                     @click=${() => this._switchTab('environment')}>
                   <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
@@ -14351,6 +14450,7 @@ let ConfigDialog = class ConfigDialog extends i$2 {
            <!-- Content -->
             <div class="config-content">
                ${this.currentTab === 'add_growspace' ? this.renderAddGrowspaceTab() : E}
+               ${this.currentTab === 'edit_growspace' ? this.renderEditGrowspaceTab() : E}
                ${this.currentTab === 'environment' ? this.renderEnvironmentTab() : E}
             </div>
 
@@ -14363,7 +14463,14 @@ let ConfigDialog = class ConfigDialog extends i$2 {
                ${this.currentTab === 'environment' ? x `
                   <button class="md3-button primary" @click=${this._submitEnvironment}>Save Sensors</button>
                ` : E}
-            </div>
+                ${this.currentTab === 'edit_growspace' && !this._showDeleteConfirm ? x `
+                   <button class="md3-button tonal error" @click=${this._submitDeleteGrowspace} ?disabled=${!this.edit_selectedId}>
+                      <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+                      Delete
+                   </button>
+                   <button class="md3-button primary" @click=${this._submitEditGrowspace} ?disabled=${!this.edit_selectedId}>Save Changes</button>
+                ` : E}
+             </div>
         </div>
       </ha-dialog>
     `;
@@ -14399,19 +14506,104 @@ let ConfigDialog = class ConfigDialog extends i$2 {
       </div>
    `;
     }
+    // Add helper to filter entities
+    _getEntities(domains, deviceClass) {
+        if (!this.hass)
+            return [];
+        return Object.values(this.hass.states).filter(stateObj => {
+            const domain = stateObj.entity_id.split('.')[0];
+            if (!domains.includes(domain))
+                return false;
+            // If deviceClass is provided, match strictly. If null, match any (or no) device class.
+            if (deviceClass !== null) {
+                return stateObj.attributes.device_class === deviceClass;
+            }
+            return true;
+        }).sort((a, b) => (a.attributes.friendly_name || a.entity_id).localeCompare(b.attributes.friendly_name || b.entity_id));
+    }
+    // Add helper to render selects
+    _renderEntitySelect(label, value, domains, deviceClass, changeHandler) {
+        const entities = this._getEntities(domains, deviceClass);
+        return x `
+        <div class="md3-input-group">
+           <label class="md3-label">${label}</label>
+           <select
+             class="md3-input"
+             .value=${value}
+             @change=${changeHandler}
+           >
+              <option value="">Select Entity...</option>
+              ${entities.map(e => x `<option value="${e.entity_id}" ?selected=${e.entity_id === value}>${e.attributes.friendly_name || e.entity_id} (${e.entity_id})</option>`)}
+           </select>
+        </div>
+    `;
+    }
+    renderEditGrowspaceTab() {
+        if (this._showDeleteConfirm) {
+            return x `
+        <div class="detail-card" style="text-align: center; padding: 40px 20px;">
+          <h3 style="color: var(--error-color, #ff5252);">Delete Growspace?</h3>
+          <p style="margin-bottom: 30px; color: rgba(255,255,255,0.7);">
+            Are you sure you want to delete "<strong>${this.edit_name}</strong>"?<br>
+            This will remove all associated plants and history.<br>
+            This action cannot be undone.
+          </p>
+          <div class="button-group" style="justify-content: center; gap: 16px;">
+            <button class="md3-button tonal" @click=${this._cancelDeleteGrowspace}>Cancel</button>
+            <button class="md3-button primary error" @click=${this._confirmDeleteGrowspace}>
+              Confirm Delete
+            </button>
+          </div>
+        </div>
+      `;
+        }
+        return x `
+      <div style="display:flex; flex-direction:column; gap:20px;">
+         <div class="detail-card">
+            <h3>Select Growspace to Edit</h3>
+             <div class="md3-input-group">
+                <label class="md3-label">Growspace</label>
+                <select
+                  class="md3-input"
+                  .value=${this.edit_selectedId}
+                  @change=${this._handleEditSelection}
+                >
+                   <option value="">Select...</option>
+                   ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
+                </select>
+             </div>
+         </div>
+
+         ${this.edit_selectedId ? x `
+         <div class="detail-card">
+            <h3>Edit Details</h3>
+            <md3-text-input
+              label="Growspace Name"
+              .value=${this.edit_name}
+              @change=${(e) => this.edit_name = e.detail}
+            ></md3-text-input>
+            <div class="row-col-grid">
+               <md3-number-input
+                 label="Rows"
+                 .value=${this.edit_rows}
+                 @change=${(e) => this.edit_rows = parseInt(e.detail)}
+               ></md3-number-input>
+               <md3-number-input
+                 label="Plants per Row"
+                 .value=${this.edit_plants_per_row}
+                 @change=${(e) => this.edit_plants_per_row = parseInt(e.detail)}
+               ></md3-number-input>
+            </div>
+         </div>
+         ` : x `
+           <div style="text-align:center; padding: 20px; color: rgba(255,255,255,0.5);">
+             Please select a growspace to edit.
+           </div>
+         `}
+      </div>
+    `;
+    }
     renderEnvironmentTab() {
-        Object.entries(this.growspaceOptions).map(([id, name]) => id); // Md3Select expects plain strings for now, or I need to update it?
-        // Wait, md3-select expects string[]. So I need to adapt or update md3-select to support objects/keys.
-        // The current md3-select component (step 326) takes options: string[]. It uses <option value="opt">opt</option>. So label=value.
-        // That's a limitation. I should have made it support {label, value}.
-        // For now, I'll update Md3Select or workaround?
-        // The previous implementation utilized IDs vs Names.
-        // I should probably update Md3Select to support objects, or just pass IDs but that's ugly.
-        // I'll stick to the plan: use the components I created. If they are insufficient, I should fix them.
-        // Let's check md3-select again. It renders `value="${opt}"` and content `${opt}`.
-        // This is definitely a regression if I use it as is.
-        // I'll use the manual render for the select here for now (using the new classes), and use the components for the text inputs.
-        // Or, I can define the select manually.
         return x `
       <div style="display:flex; flex-direction:column; gap:20px;">
          <div class="detail-card">
@@ -14431,35 +14623,15 @@ let ConfigDialog = class ConfigDialog extends i$2 {
 
          <div class="detail-card">
             <h3>Sensors</h3>
-            <md3-text-input
-              label="Temperature Sensor ID"
-              .value=${this.env_temp_sensor}
-              @change=${(e) => this.env_temp_sensor = e.detail}
-            ></md3-text-input>
-            <md3-text-input
-              label="Humidity Sensor ID"
-              .value=${this.env_humidity_sensor}
-              @change=${(e) => this.env_humidity_sensor = e.detail}
-            ></md3-text-input>
-            <md3-text-input
-              label="VPD Sensor ID"
-              .value=${this.env_vpd_sensor}
-              @change=${(e) => this.env_vpd_sensor = e.detail}
-            ></md3-text-input>
+            ${this._renderEntitySelect("Temperature Sensor", this.env_temp_sensor, ["sensor", "input_number"], "temperature", (e) => this.env_temp_sensor = e.target.value)}
+            ${this._renderEntitySelect("Humidity Sensor", this.env_humidity_sensor, ["sensor", "input_number"], "humidity", (e) => this.env_humidity_sensor = e.target.value)}
+            ${this._renderEntitySelect("VPD Sensor (Optional)", this.env_vpd_sensor, ["sensor", "input_number"], "pressure", (e) => this.env_vpd_sensor = e.target.value)}
          </div>
 
          <div class="detail-card">
             <h3>Optional</h3>
-            <md3-text-input
-              label="CO2 Sensor ID"
-              .value=${this.env_co2_sensor}
-              @change=${(e) => this.env_co2_sensor = e.detail}
-            ></md3-text-input>
-            <md3-text-input
-              label="Circulation Fan ID"
-              .value=${this.env_circulation_fan}
-              @change=${(e) => this.env_circulation_fan = e.detail}
-            ></md3-text-input>
+            ${this._renderEntitySelect("CO2 Sensor", this.env_co2_sensor, ["sensor", "input_number"], "carbon_dioxide", (e) => this.env_co2_sensor = e.target.value)}
+            ${this._renderEntitySelect("Circulation Fan / Switch", this.env_circulation_fan, ["fan", "switch", "input_boolean", "sensor", "input_number"], null, (e) => this.env_circulation_fan = e.target.value)}
          </div>
 
          <div class="detail-card">
@@ -14487,6 +14659,12 @@ ConfigDialog.styles = [
       }
       
       /* Config Tabs Specific */
+      .glass-dialog-container {
+        min-width: 30vw;
+        max-width: 95vw;
+        height: 700px;
+        max-height: 90vh;
+      }
       .config-tabs {
         display: flex;
         padding: 0 16px;
@@ -14494,7 +14672,9 @@ ConfigDialog.styles = [
         background: transparent;
       }
       .config-tab {
-        flex: 1;
+        flex: 1 1 0px; 
+        width: 0;
+        min-width: 0;
         padding: 16px 8px;
         text-align: center;
         cursor: pointer;
@@ -14508,6 +14688,7 @@ ConfigDialog.styles = [
         font-size: 0.8rem;
         font-weight: 500;
         background: transparent;
+        flex-shrink: 0;
       }
       .config-tab svg {
         width: 24px;
@@ -14531,6 +14712,7 @@ ConfigDialog.styles = [
         display: flex;
         flex-direction: column;
         gap: 16px;
+        min-height: 0; 
       }
       
       @media (max-width: 450px) {
@@ -14551,9 +14733,17 @@ __decorate([
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "open", void 0);
 __decorate([
+    n$2({ attribute: false }),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "hass", void 0);
+__decorate([
     n$2({ type: Object }),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "growspaceOptions", void 0);
+__decorate([
+    n$2({ type: Array }),
+    __metadata("design:type", Array)
+], ConfigDialog.prototype, "devices", void 0);
 __decorate([
     r$1(),
     __metadata("design:type", String)
@@ -14574,6 +14764,22 @@ __decorate([
     r$1(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "add_notification_service", void 0);
+__decorate([
+    r$1(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "edit_selectedId", void 0);
+__decorate([
+    r$1(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "edit_name", void 0);
+__decorate([
+    r$1(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "edit_rows", void 0);
+__decorate([
+    r$1(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "edit_plants_per_row", void 0);
 __decorate([
     r$1(),
     __metadata("design:type", Object)
@@ -14606,6 +14812,10 @@ __decorate([
     r$1(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_mold_threshold", void 0);
+__decorate([
+    r$1(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "_showDeleteConfirm", void 0);
 ConfigDialog = __decorate([
     t$2('config-dialog')
 ], ConfigDialog);
@@ -15938,6 +16148,8 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
         }
         const envEntity = this.hass.states[envEntityId];
         const overviewEntity = this.device.overview_entity_id ? this.hass.states[this.device.overview_entity_id] : undefined;
+        // Fetch live states for equipment directly from their entities
+        const envAttrs = this.device.environment_attributes || overviewEntity?.attributes || {};
         // Helper to get attribute from either top-level or nested 'observations'
         const getValue = (ent, key) => {
             if (!ent || !ent.attributes)
@@ -15951,7 +16163,37 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
         };
         const temp = getValue(envEntity, 'temperature');
         const hum = getValue(envEntity, 'humidity');
-        const vpd = getValue(envEntity, 'vpd');
+        let vpd = getValue(envEntity, 'vpd');
+        // Fallback: If VPD is not in the binary sensor, try to get it from the sensor entity directly
+        if (vpd === undefined || vpd === null) {
+            if (envAttrs.vpd_sensor) {
+                const vpdState = this.hass.states[envAttrs.vpd_sensor];
+                if (vpdState && vpdState.state !== 'unknown' && vpdState.state !== 'unavailable') {
+                    const val = parseFloat(vpdState.state);
+                    if (!isNaN(val))
+                        vpd = val;
+                }
+            }
+            // If still undefined, try the calculated sensor path (Name Based)
+            if (vpd === undefined || vpd === null) {
+                const slugify = (text) => text
+                    .toString()
+                    .toLowerCase()
+                    .replace(/\s+/g, '_') // Replace spaces with -
+                    .replace(/[^\w\-]+/g, '') // Remove all non-word chars
+                    .replace(/\-\-+/g, '_') // Replace multiple - with single -
+                    .replace(/^-+/, '') // Trim - from start of text
+                    .replace(/-+$/, ''); // Trim - from end of text
+                const calcName = `${this.device.name} Calculated VPD`;
+                const calculatedId = `sensor.${slugify(calcName)}`;
+                const vpdState = this.hass.states[calculatedId];
+                if (vpdState && vpdState.state !== 'unknown' && vpdState.state !== 'unavailable') {
+                    const val = parseFloat(vpdState.state);
+                    if (!isNaN(val))
+                        vpd = val;
+                }
+            }
+        }
         let vpdStatus = overviewEntity?.attributes?.vpd_status;
         const vpdTargetMin = overviewEntity?.attributes?.vpd_target_min;
         const vpdTargetMax = overviewEntity?.attributes?.vpd_target_max;
@@ -15996,8 +16238,6 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
         };
         const nextIrrigation = getNextEvent(this.device.irrigation_times);
         const nextDrain = getNextEvent(this.device.drain_times);
-        // Fetch live states for equipment directly from their entities
-        const envAttrs = this.device.environment_attributes || overviewEntity?.attributes || {};
         const exhaustId = envAttrs.exhaust_entity;
         const exhaustSensor = envAttrs.exhaust_sensor;
         const exhaustState = (exhaustId && this.hass.states[exhaustId]) ? this.hass.states[exhaustId].state :
@@ -18954,6 +19194,9 @@ class GrowspaceStore {
             console.error("Failed to subscribe to growspace events", err);
         }
     }
+    async refreshData() {
+        await this._refreshGrowspaceData();
+    }
     async _refreshGrowspaceData() {
         if (!this.hass || this._isFetchingWS)
             return;
@@ -19448,6 +19691,7 @@ class GrowspaceStore {
                 notification_service: notification_service || 'mobile_app_notify'
             });
             this.showToast('Growspace added successfully!', 'success');
+            await this.refreshData();
             this.closeActiveDialog();
         }
         catch (e) {
@@ -19964,22 +20208,25 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
         if (this.store.state.activeDialog?.type !== 'CONFIG')
             return;
         const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold } = detail;
-        if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor || !vpd_sensor) {
-            this.store.showToast('Growspace and required sensors (Temp, Hum, VPD) are mandatory', 'error');
+        if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
+            console.error("Missing mandatory fields", { selectedGrowspaceId, temp_sensor, humidity_sensor });
+            this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
             return;
         }
+        console.log("Submitting environment config", detail);
         try {
             await this.store.dataService.configureEnvironment({
                 growspace_id: selectedGrowspaceId,
                 temperature_sensor: temp_sensor,
                 humidity_sensor: humidity_sensor,
-                vpd_sensor: vpd_sensor,
+                vpd_sensor: vpd_sensor || undefined,
                 co2_sensor: co2_sensor || undefined,
                 circulation_fan: circulation_fan || undefined,
                 stress_threshold: stress_threshold,
                 mold_threshold: mold_threshold
             });
             this.store.showToast('Environment configured successfully!', 'success');
+            await this.store.refreshData();
             this.store.closeActiveDialog();
         }
         catch (e) {
@@ -20268,10 +20515,35 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
             });
             this.store.showToast("Plant added successfully", "success");
             this.store.closeActiveDialog();
+            await this.store.refreshData(); // Force refresh to show new sensor
         }
         catch (e) {
             console.error(e);
             this.store.showToast("Failed to add plant", "error");
+        }
+    }
+    async _handleEditGrowspace(detail) {
+        try {
+            await this.store.dataService.updateGrowspace(detail);
+            this.store.showToast(`Growspace '${detail.name}' updated`, 'success');
+            this.store.closeActiveDialog();
+            await this.store.refreshData();
+        }
+        catch (e) {
+            console.error(e);
+            this.store.showToast("Failed to update growspace", "error");
+        }
+    }
+    async _handleDeleteGrowspace(detail) {
+        try {
+            await this.store.dataService.removeGrowspace(detail.growspace_id);
+            this.store.showToast("Growspace deleted", "success");
+            this.store.closeActiveDialog();
+            await this.store.refreshData();
+        }
+        catch (e) {
+            console.error(e);
+            this.store.showToast("Failed to delete growspace", "error");
         }
     }
     _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
@@ -20363,9 +20635,13 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
         return x `
       <config-dialog
         .open=${true}
+        .hass=${this.hass}
+        .devices=${this.store.state.devices}
         .growspaceOptions=${growspaceOptions}
         @close=${() => this.store.closeActiveDialog()}
         @add-growspace-submit=${(e) => this._handleAddGrowspace(e.detail)}
+        @edit-growspace-submit=${(e) => this._handleEditGrowspace(e.detail)}
+        @delete-growspace-submit=${(e) => this._handleDeleteGrowspace(e.detail)}
         @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
         .setInitialState=${(el) => {
             // Pass initial state if needed

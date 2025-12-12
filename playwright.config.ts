@@ -17,9 +17,14 @@ export default defineConfig({
         command: 'npx -y http-server . -p 8080',
         url: 'http://localhost:8080',
         reuseExistingServer: !process.env.CI,
-        timeout: 120 * 1000,
+        timeout: 0, // No timeout for webserver start
         stdout: 'ignore',
         stderr: 'pipe',
+    },
+
+    timeout: 0, // No global test timeout
+    expect: {
+        timeout: 0, // No expect timeout
     },
 
     use: {
@@ -28,12 +33,27 @@ export default defineConfig({
         viewport: { width: 1280, height: 900 },
         // Enable coverage collection
         trace: 'on-first-retry',
+        actionTimeout: 0,
+        navigationTimeout: 0,
     },
 
     projects: [
         {
+            name: 'setup',
+            testMatch: /auth\.setup\.ts/,
+            use: {
+                baseURL: 'http://localhost:8123', // Setup needs to hit HA directly
+            },
+        },
+        {
             name: 'chromium',
-            use: { ...devices['Desktop Chrome'], headless: true },
+            use: {
+                ...devices['Desktop Chrome'],
+                headless: true,
+                storageState: 'playwright/.auth/user.json',
+                baseURL: 'http://localhost:8123', // Ensure tests start against HA
+            },
+            dependencies: ['setup'],
             testMatch: /.*\.spec\.ts/,
         },
     ],

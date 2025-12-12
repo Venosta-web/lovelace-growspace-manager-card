@@ -108,6 +108,10 @@ export class GrowspaceStore implements ReactiveController {
         }
     }
 
+    async refreshData() {
+        await this._refreshGrowspaceData();
+    }
+
     private async _refreshGrowspaceData() {
         if (!this.hass || this._isFetchingWS) return;
         this._isFetchingWS = true;
@@ -666,6 +670,7 @@ export class GrowspaceStore implements ReactiveController {
                 notification_service: notification_service || 'mobile_app_notify'
             });
             this.showToast('Growspace added successfully!', 'success');
+            await this.refreshData();
             this.closeActiveDialog();
         } catch (e: any) {
             this.showToast(`Error: ${e.message}`, 'error');

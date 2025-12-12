@@ -1,25 +1,35 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { mdiClose, mdiCog, mdiViewDashboard, mdiThermometer } from '@mdi/js';
+import { mdiClose, mdiCog, mdiViewDashboard, mdiThermometer, mdiPencil, mdiDelete } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
+import { HomeAssistant } from 'custom-card-helpers';
+import { HassEntity } from 'home-assistant-js-websocket';
 import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
 import '../components/ui/md3-select';
+import { GrowspaceDevice } from '../types';
 
 
 @customElement('config-dialog')
 export class ConfigDialog extends LitElement {
   @property({ type: Boolean, reflect: true }) open = false;
-  // Growspace options for the environment tab select
+  @property({ attribute: false }) hass!: HomeAssistant;
   @property({ type: Object }) growspaceOptions: Record<string, string> = {};
+  @property({ type: Array }) devices: GrowspaceDevice[] = [];
 
-  @state() private currentTab: 'add_growspace' | 'environment' = 'environment';
+  @state() private currentTab: 'add_growspace' | 'edit_growspace' | 'environment' = 'environment';
 
   // Add Growspace Data
   @state() private add_name = '';
   @state() private add_rows = 4;
   @state() private add_plants_per_row = 4;
   @state() private add_notification_service = 'mobile_app_notify';
+
+  // Edit Growspace Data
+  @state() private edit_selectedId = '';
+  @state() private edit_name = '';
+  @state() private edit_rows = 0;
+  @state() private edit_plants_per_row = 0;
 
   // Environment Data
   @state() private env_selectedGrowspaceId = '';
@@ -39,6 +49,12 @@ export class ConfigDialog extends LitElement {
       }
       
       /* Config Tabs Specific */
+      .glass-dialog-container {
+        min-width: 30vw;
+        max-width: 95vw;
+        height: 700px;
+        max-height: 90vh;
+      }
       .config-tabs {
         display: flex;
         padding: 0 16px;
@@ -46,7 +62,9 @@ export class ConfigDialog extends LitElement {
         background: transparent;
       }
       .config-tab {
-        flex: 1;
+        flex: 1 1 0px; 
+        width: 0;
+        min-width: 0;
         padding: 16px 8px;
         text-align: center;
         cursor: pointer;
@@ -60,6 +78,7 @@ export class ConfigDialog extends LitElement {
         font-size: 0.8rem;
         font-weight: 500;
         background: transparent;
+        flex-shrink: 0;
       }
       .config-tab svg {
         width: 24px;
@@ -83,6 +102,7 @@ export class ConfigDialog extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 16px;
+        min-height: 0; 
       }
       
       @media (max-width: 450px) {
@@ -101,7 +121,7 @@ export class ConfigDialog extends LitElement {
 
   // Provide initial state setting from parent
   public setInitialState(
-    currentTab: 'add_growspace' | 'environment' = 'environment',
+    currentTab: 'add_growspace' | 'edit_growspace' | 'environment' = 'environment',
     environmentData?: {
       selectedGrowspaceId: string;
       temp_sensor: string;
@@ -130,7 +150,7 @@ export class ConfigDialog extends LitElement {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
-  private _switchTab(tab: 'add_growspace' | 'environment') {
+  private _switchTab(tab: 'add_growspace' | 'edit_growspace' | 'environment') {
     this.currentTab = tab;
   }
 
@@ -167,6 +187,62 @@ export class ConfigDialog extends LitElement {
   }
 
 
+  @state() private _showDeleteConfirm = false;
+
+  private _submitEditGrowspace() {
+    if (!this.edit_selectedId) return;
+    this.dispatchEvent(new CustomEvent('edit-growspace-submit', {
+      detail: {
+        growspace_id: this.edit_selectedId,
+        name: this.edit_name,
+        rows: this.edit_rows,
+        plants_per_row: this.edit_plants_per_row
+      },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
+  private _submitDeleteGrowspace() {
+    if (!this.edit_selectedId) return;
+    this._showDeleteConfirm = true;
+  }
+
+  private _confirmDeleteGrowspace() {
+    this.dispatchEvent(new CustomEvent('delete-growspace-submit', {
+      detail: {
+        growspace_id: this.edit_selectedId
+      },
+      bubbles: true,
+      composed: true
+    }));
+
+    // Reset selection after delete
+    this.edit_selectedId = '';
+    this.edit_name = '';
+    this.edit_rows = 0;
+    this.edit_plants_per_row = 0;
+    this._showDeleteConfirm = false;
+  }
+
+  private _cancelDeleteGrowspace() {
+    this._showDeleteConfirm = false;
+  }
+
+  private _handleEditSelection(e: Event) {
+    const growspaceId = (e.target as HTMLSelectElement).value;
+    this.edit_selectedId = growspaceId;
+
+    if (growspaceId && this.devices) {
+      const device = this.devices.find(d => d.device_id === growspaceId);
+      if (device) {
+        this.edit_name = device.name;
+        this.edit_rows = (device as any).rows || 4;
+        this.edit_plants_per_row = (device as any).plants_per_row || 4;
+      }
+    }
+  }
+
   render() {
     if (!this.open) return html``;
 
@@ -200,6 +276,11 @@ export class ConfigDialog extends LitElement {
                  <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
                  Add Growspace
               </div>
+              <div class="config-tab ${this.currentTab === 'edit_growspace' ? 'active' : ''}"
+                    @click=${() => this._switchTab('edit_growspace')}>
+                  <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                  Edit Growspace
+               </div>
                <div class="config-tab ${this.currentTab === 'environment' ? 'active' : ''}"
                     @click=${() => this._switchTab('environment')}>
                   <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
@@ -210,6 +291,7 @@ export class ConfigDialog extends LitElement {
            <!-- Content -->
             <div class="config-content">
                ${this.currentTab === 'add_growspace' ? this.renderAddGrowspaceTab() : nothing}
+               ${this.currentTab === 'edit_growspace' ? this.renderEditGrowspaceTab() : nothing}
                ${this.currentTab === 'environment' ? this.renderEnvironmentTab() : nothing}
             </div>
 
@@ -222,7 +304,14 @@ export class ConfigDialog extends LitElement {
                ${this.currentTab === 'environment' ? html`
                   <button class="md3-button primary" @click=${this._submitEnvironment}>Save Sensors</button>
                ` : nothing}
-            </div>
+                ${this.currentTab === 'edit_growspace' && !this._showDeleteConfirm ? html`
+                   <button class="md3-button tonal error" @click=${this._submitDeleteGrowspace} ?disabled=${!this.edit_selectedId}>
+                      <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+                      Delete
+                   </button>
+                   <button class="md3-button primary" @click=${this._submitEditGrowspace} ?disabled=${!this.edit_selectedId}>Save Changes</button>
+                ` : nothing}
+             </div>
         </div>
       </ha-dialog>
     `;
@@ -260,20 +349,107 @@ export class ConfigDialog extends LitElement {
    `;
   }
 
-  private renderEnvironmentTab() {
-    const options = Object.entries(this.growspaceOptions).map(([id, name]) => id); // Md3Select expects plain strings for now, or I need to update it?
-    // Wait, md3-select expects string[]. So I need to adapt or update md3-select to support objects/keys.
-    // The current md3-select component (step 326) takes options: string[]. It uses <option value="opt">opt</option>. So label=value.
-    // That's a limitation. I should have made it support {label, value}.
-    // For now, I'll update Md3Select or workaround?
-    // The previous implementation utilized IDs vs Names.
-    // I should probably update Md3Select to support objects, or just pass IDs but that's ugly.
-    // I'll stick to the plan: use the components I created. If they are insufficient, I should fix them.
-    // Let's check md3-select again. It renders `value="${opt}"` and content `${opt}`.
-    // This is definitely a regression if I use it as is.
-    // I'll use the manual render for the select here for now (using the new classes), and use the components for the text inputs.
-    // Or, I can define the select manually.
+  // Add helper to filter entities
+  private _getEntities(domains: string[], deviceClass: string | null) {
+    if (!this.hass) return [];
+    return Object.values(this.hass.states).filter(stateObj => {
+      const domain = stateObj.entity_id.split('.')[0];
+      if (!domains.includes(domain)) return false;
 
+      // If deviceClass is provided, match strictly. If null, match any (or no) device class.
+      if (deviceClass !== null) {
+        return stateObj.attributes.device_class === deviceClass;
+      }
+      return true;
+    }).sort((a, b) => (a.attributes.friendly_name || a.entity_id).localeCompare(b.attributes.friendly_name || b.entity_id));
+  }
+
+  // Add helper to render selects
+  private _renderEntitySelect(label: string, value: string, domains: string[], deviceClass: string | null, changeHandler: (e: Event) => void) {
+    const entities = this._getEntities(domains, deviceClass);
+    return html`
+        <div class="md3-input-group">
+           <label class="md3-label">${label}</label>
+           <select
+             class="md3-input"
+             .value=${value}
+             @change=${changeHandler}
+           >
+              <option value="">Select Entity...</option>
+              ${entities.map(e => html`<option value="${e.entity_id}" ?selected=${e.entity_id === value}>${e.attributes.friendly_name || e.entity_id} (${e.entity_id})</option>`)}
+           </select>
+        </div>
+    `;
+  }
+
+  private renderEditGrowspaceTab() {
+    if (this._showDeleteConfirm) {
+      return html`
+        <div class="detail-card" style="text-align: center; padding: 40px 20px;">
+          <h3 style="color: var(--error-color, #ff5252);">Delete Growspace?</h3>
+          <p style="margin-bottom: 30px; color: rgba(255,255,255,0.7);">
+            Are you sure you want to delete "<strong>${this.edit_name}</strong>"?<br>
+            This will remove all associated plants and history.<br>
+            This action cannot be undone.
+          </p>
+          <div class="button-group" style="justify-content: center; gap: 16px;">
+            <button class="md3-button tonal" @click=${this._cancelDeleteGrowspace}>Cancel</button>
+            <button class="md3-button primary error" @click=${this._confirmDeleteGrowspace}>
+              Confirm Delete
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    return html`
+      <div style="display:flex; flex-direction:column; gap:20px;">
+         <div class="detail-card">
+            <h3>Select Growspace to Edit</h3>
+             <div class="md3-input-group">
+                <label class="md3-label">Growspace</label>
+                <select
+                  class="md3-input"
+                  .value=${this.edit_selectedId}
+                  @change=${this._handleEditSelection}
+                >
+                   <option value="">Select...</option>
+                   ${Object.entries(this.growspaceOptions).map(([id, name]) => html`<option value="${id}">${name}</option>`)}
+                </select>
+             </div>
+         </div>
+
+         ${this.edit_selectedId ? html`
+         <div class="detail-card">
+            <h3>Edit Details</h3>
+            <md3-text-input
+              label="Growspace Name"
+              .value=${this.edit_name}
+              @change=${(e: CustomEvent) => this.edit_name = e.detail}
+            ></md3-text-input>
+            <div class="row-col-grid">
+               <md3-number-input
+                 label="Rows"
+                 .value=${this.edit_rows}
+                 @change=${(e: CustomEvent) => this.edit_rows = parseInt(e.detail)}
+               ></md3-number-input>
+               <md3-number-input
+                 label="Plants per Row"
+                 .value=${this.edit_plants_per_row}
+                 @change=${(e: CustomEvent) => this.edit_plants_per_row = parseInt(e.detail)}
+               ></md3-number-input>
+            </div>
+         </div>
+         ` : html`
+           <div style="text-align:center; padding: 20px; color: rgba(255,255,255,0.5);">
+             Please select a growspace to edit.
+           </div>
+         `}
+      </div>
+    `;
+  }
+
+  private renderEnvironmentTab() {
     return html`
       <div style="display:flex; flex-direction:column; gap:20px;">
          <div class="detail-card">
@@ -293,35 +469,45 @@ export class ConfigDialog extends LitElement {
 
          <div class="detail-card">
             <h3>Sensors</h3>
-            <md3-text-input
-              label="Temperature Sensor ID"
-              .value=${this.env_temp_sensor}
-              @change=${(e: CustomEvent) => this.env_temp_sensor = e.detail}
-            ></md3-text-input>
-            <md3-text-input
-              label="Humidity Sensor ID"
-              .value=${this.env_humidity_sensor}
-              @change=${(e: CustomEvent) => this.env_humidity_sensor = e.detail}
-            ></md3-text-input>
-            <md3-text-input
-              label="VPD Sensor ID"
-              .value=${this.env_vpd_sensor}
-              @change=${(e: CustomEvent) => this.env_vpd_sensor = e.detail}
-            ></md3-text-input>
+            ${this._renderEntitySelect(
+      "Temperature Sensor",
+      this.env_temp_sensor,
+      ["sensor", "input_number"],
+      "temperature",
+      (e: Event) => this.env_temp_sensor = (e.target as HTMLSelectElement).value
+    )}
+            ${this._renderEntitySelect(
+      "Humidity Sensor",
+      this.env_humidity_sensor,
+      ["sensor", "input_number"],
+      "humidity",
+      (e: Event) => this.env_humidity_sensor = (e.target as HTMLSelectElement).value
+    )}
+            ${this._renderEntitySelect(
+      "VPD Sensor (Optional)",
+      this.env_vpd_sensor,
+      ["sensor", "input_number"],
+      "pressure",
+      (e: Event) => this.env_vpd_sensor = (e.target as HTMLSelectElement).value
+    )}
          </div>
 
          <div class="detail-card">
             <h3>Optional</h3>
-            <md3-text-input
-              label="CO2 Sensor ID"
-              .value=${this.env_co2_sensor}
-              @change=${(e: CustomEvent) => this.env_co2_sensor = e.detail}
-            ></md3-text-input>
-            <md3-text-input
-              label="Circulation Fan ID"
-              .value=${this.env_circulation_fan}
-              @change=${(e: CustomEvent) => this.env_circulation_fan = e.detail}
-            ></md3-text-input>
+            ${this._renderEntitySelect(
+      "CO2 Sensor",
+      this.env_co2_sensor,
+      ["sensor", "input_number"],
+      "carbon_dioxide",
+      (e: Event) => this.env_co2_sensor = (e.target as HTMLSelectElement).value
+    )}
+            ${this._renderEntitySelect(
+      "Circulation Fan / Switch",
+      this.env_circulation_fan,
+      ["fan", "switch", "input_boolean", "sensor", "input_number"],
+      null,
+      (e: Event) => this.env_circulation_fan = (e.target as HTMLSelectElement).value
+    )}
          </div>
 
          <div class="detail-card">

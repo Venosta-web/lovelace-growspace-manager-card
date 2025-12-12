@@ -551,6 +551,46 @@ export class DataService {
     }
   }
 
+  async updateGrowspace(data: {
+    growspace_id: string;
+    name?: string;
+    rows?: number;
+    plants_per_row?: number;
+    notification_service?: string;
+  }) {
+    console.log("[DataService:updateGrowspace] Updating growspace:", data);
+    try {
+      const payload: any = {
+        growspace_id: data.growspace_id,
+      };
+      if (data.name) payload.name = data.name;
+      if (data.rows) payload.rows = data.rows;
+      if (data.plants_per_row) payload.plants_per_row = data.plants_per_row;
+      if (data.notification_service) payload.notification_target = data.notification_service;
+
+      const res = await this.hass.callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
+      console.log("[DataService:updateGrowspace] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:updateGrowspace] Error:", err);
+      throw err;
+    }
+  }
+
+  async removeGrowspace(growspaceId: string) {
+    console.log("[DataService:removeGrowspace] Removing growspace:", growspaceId);
+    try {
+      const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
+        growspace_id: growspaceId
+      });
+      console.log("[DataService:removeGrowspace] Response:", res);
+      return res;
+    } catch (err) {
+      console.error("[DataService:removeGrowspace] Error:", err);
+      throw err;
+    }
+  }
+
   async configureEnvironment(data: {
     growspace_id: string;
     temperature_sensor: string;

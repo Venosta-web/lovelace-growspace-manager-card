@@ -5,164 +5,85 @@ import path from 'path';
 const authFile = path.join(__dirname, '../../playwright/.auth/user.json');
 
 setup('authenticate', async ({ page }) => {
-    // 1. Navigate to Home Assistant
-    await page.goto('http://localhost:8123');
+    // 1. Navigate
+    await page.goto('http://127.0.0.1:8123');
 
-    // 2. Check if we are on the onboarding page
-    // Wait for redirects and load
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000); // Give HA time to redirect to onboarding if needed
+    // 2. Intelligent Wait: Race between Login and Onboarding
+    console.log('Waiting for Login or Onboarding...');
+    // We wait for EITHER the username input OR the onboarding header/buttons
+    const loginInput = page.locator('input[name="username"]');
+    const createHomeBtn = page.getByRole('button', { name: 'Create my smart home' });
+    const onboardingStep = page.locator('onboarding-welcome-link, .onboarding-step');
 
-    const isOnboarding = page.url().includes('onboarding');
+    // Wait up to 10s for the app to settle on one of these states
+    await expect(async () => {
+        const isLogin = await loginInput.isVisible();
+        const isOnboarding = await createHomeBtn.isVisible() || page.url().includes('onboarding');
+        console.log(`Check state: Login=${isLogin}, Onboarding=${isOnboarding}, URL=${page.url()}`);
+        expect(isLogin || isOnboarding).toBeTruthy();
+    }).toPass({ timeout: 15000 });
 
-    if (isOnboarding) {
-        console.log('Onboarding detected. Creating admin user...');
+    if (page.url().includes('onboarding')) {
+        console.log('Onboarding flow detected...');
 
-        // Step 1: Create Account
-        // We are on /onboarding.html
-        // Check if we need to click "Create my smart home" first
-        const createHomeBtn = page.getByRole('button', { name: 'Create my smart home' });
+        // Click Start if visible
         if (await createHomeBtn.isVisible()) {
             console.log('Clicking "Create my smart home"...');
             await createHomeBtn.click();
         }
 
-        // Wait for the form
-        await expect(page.locator('input[name="name"]')).toBeVisible({ timeout: 10000 });
-
+        // Fill User Data
+        // Playwright will auto-wait for this input to appear, no need for sleep
+        console.log('Filling user data...');
         await page.fill('input[name="name"]', 'E2E User');
         await page.fill('input[name="username"]', 'admin');
         await page.fill('input[name="password"]', 'password');
         await page.fill('input[name="password_confirm"]', 'password');
-
         await page.getByRole('button', { name: 'Create account' }).click();
 
-        // Step 2+: Handle variable steps (Location, Analytics, Integrations)
-        // We loop until we leave the onboarding page
-        let attempts = 0;
-        while (page.url().includes('onboarding') && attempts < 10) {
-            attempts++;
-            console.log(`Onboarding step ${attempts}, checking for buttons...`);
-            await page.waitForTimeout(1000); // Wait for animations/transitions
+        // Rapidly handle the "Next" wizard steps
+        // We use a simpler loop that breaks immediately when we leave onboarding
+        console.log('Handling wizard steps...');
+        while (page.url().includes('onboarding')) {
+            // Check for any of the progression buttons
+            const buttons = page.getByRole('button').filter({ hasText: /Next|Finish|Open Home Assistant|Detect/ });
 
-            const nextBtn = page.getByRole('button', { name: 'Next' });
-            const finishBtn = page.getByRole('button', { name: 'Finish' });
-            const openBtn = page.getByRole('button', { name: 'Open Home Assistant' }); // Sometimes this
-            const detectBtn = page.getByRole('button', { name: 'Detect' }); // Location step
-
-            if (await finishBtn.isVisible()) {
-                console.log('Clicking "Finish"...');
-                await finishBtn.click();
-            } else if (await openBtn.isVisible()) {
-                console.log('Clicking "Open Home Assistant"...');
-                await openBtn.click();
-            } else if (await nextBtn.isVisible()) {
-                console.log('Clicking "Next"...');
-                await nextBtn.click();
-            } else if (await detectBtn.isVisible()) {
-                // Location detection specific
-                console.log('Clicking "Detect"...');
-                await detectBtn.click();
-                await page.waitForTimeout(2000); // Wait for location detection
+            const count = await buttons.count();
+            if (count > 0 && await buttons.first().isVisible()) {
+                const text = await buttons.first().innerText();
+                console.log(`Clicking wizard button: ${text}`);
+                await buttons.first().click();
+                // specific wait for location detection if we clicked "Detect"
+                // otherwise just a small tick to let the UI update
+                await page.waitForTimeout(500);
             } else {
-                console.log('No obvious button found, waiting...');
-                await page.waitForTimeout(2000);
-            }
-        }
-
-        console.log('Onboarding complete (loop finished).');
-    } else {
-        console.log('No onboarding detected (URL does not contain "onboarding"). checking for login...');
-
-        const isLogin = await page.locator('input[name="username"]').isVisible();
-        if (isLogin) {
-            console.log('Login screen detected. Logging in...');
-            await page.fill('input[name="username"]', 'admin');
-            await page.fill('input[name="password"]', 'password');
-            await page.keyboard.press('Enter');
-
-            // Wait for login to complete OR error
-            console.log('Waiting for login response...');
-
-            // Check for error message
-            try {
-                const errorMsg = page.locator('text=Invalid username or password');
-                if (await errorMsg.isVisible({ timeout: 2000 })) {
-                    throw new Error('Login failed: Invalid username or password');
-                }
-            } catch (e) {
-                // Ignore timeout, just means no error visible
-            }
-
-            // Wait for main app element instead of specific URL which might change (e.g. loace/0 vs lovelace/default_view)
-            try {
-                await expect(page.locator('home-assistant-main')).toBeVisible({ timeout: 60000 });
-                console.log('Login successful: home-assistant-main is visible');
-            } catch (e) {
-                console.error(`Login timed out. Current URL: ${page.url()}`);
-                throw e;
+                // If no button is visible yet, wait briefly before checking again
+                // to avoid slamming the CPU, but keep it tight.
+                console.log('Waiting for wizard button...');
+                await page.waitForTimeout(500);
             }
         }
     }
-    console.log(`Onboarding complete using URL: ${page.url()}`);
 
-    // Checks for login form in case we were logged out or redirect happened
-    try {
-        const isLogin = await page.locator('input[name="username"]').isVisible({ timeout: 5000 });
-        if (isLogin) {
-            console.log('Login screen detected after onboarding/initial check. Logging in...');
-            await page.fill('input[name="username"]', 'admin');
-            await page.fill('input[name="password"]', 'password');
-            await page.keyboard.press('Enter');
-
-            // Wait for login to complete
-            try {
-                await expect(page.locator('home-assistant-main')).toBeVisible({ timeout: 30000 });
-                console.log('Login successful: home-assistant-main is visible');
-            } catch (e) {
-                console.log('Login might have failed or timed out waiting for main element');
-            }
-        }
-    } catch (e) {
-        // Ignore checks if timeout etc
+    // Login Flow (or re-login after onboarding)
+    // Check if we are dropped back to login screen
+    console.log('Checking for login screen...');
+    if (await loginInput.isVisible()) {
+        console.log('Logging in...');
+        await page.fill('input[name="username"]', 'admin');
+        await page.fill('input[name="password"]', 'password');
+        await page.keyboard.press('Enter');
     }
 
-    try {
-        await expect(page.locator('home-assistant-main')).toBeVisible({ timeout: 10000 });
-    } catch (e) {
-        console.log('Main element not found immediately. Navigating to home...');
-        console.log(`Current URL: ${page.url()}`);
-        await page.waitForTimeout(5000);
-        if (page.url().startsWith('chrome-error://')) {
-            console.log('Chrome error page detected. Forcing navigation to /');
-            await page.goto('/', { timeout: 60000 });
-        } else {
-            try {
-                await page.goto('/', { timeout: 60000 });
-            } catch (e) {
-                console.log('Retry navigation...');
-                await page.waitForTimeout(5000);
-                await page.goto('/', { timeout: 60000 });
-            }
-        }
+    // 3. Final Verification
+    // Give HA plenty of time to load the dashboard (it can be slow on first boot)
+    // Do NOT reload; just wait.
+    await expect(page.locator('home-assistant-main')).toBeVisible({ timeout: 30000 });
 
-        // Check for login again after recovery navigation
-        const isLogin = await page.locator('input[name="username"]').isVisible({ timeout: 5000 });
-        if (isLogin) {
-            console.log('Login screen detected after recovery. Logging in...');
-            await page.fill('input[name="username"]', 'admin');
-            await page.fill('input[name="password"]', 'password');
-            await page.keyboard.press('Enter');
-        }
-
-        await expect(page.locator('home-assistant-main')).toBeVisible({ timeout: 30000 });
-    }
-
-    // 3. Save storage state
+    // 4. Save Storage
     const authDir = path.dirname(authFile);
     if (!fs.existsSync(authDir)) {
         fs.mkdirSync(authDir, { recursive: true });
     }
-
     await page.context().storageState({ path: authFile });
 });

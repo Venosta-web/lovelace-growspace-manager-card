@@ -2,19 +2,15 @@
   "cookies": [],
   "origins": [
     {
-      "origin": "http://localhost:8123",
+      "origin": "http://127.0.0.1:8123",
       "localStorage": [
         {
           "name": "hassTokens",
-          "value": "{\"access_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIwMTg2NTQ2MTg1Mzc0ZmVjODJlNTRkYWJjODUyODIwOSIsImlhdCI6MTc2NTQ4MDk5MCwiZXhwIjoxNzY1NDgyNzkwfQ.7jdS69V8nGIH3vpyjjZTYcDsQkzghM4ocWlnjLCb1u8\",\"token_type\":\"Bearer\",\"refresh_token\":\"25966bc8fd91bbfcb3ceb3559b4b1af2354369d5c80b6e0c4089dff3dae61f17760ec1900c35b926a21c40241253d668e7601b7e9e854007caec227e58eec38e\",\"expires_in\":1800,\"ha_auth_provider\":\"homeassistant\",\"hassUrl\":\"http://localhost:8123\",\"clientId\":\"http://localhost:8123/\",\"expires\":1765482791025}"
+          "value": "{\"access_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3YTNlYjg5ZmQ0ZWU0OWI1ODMzNzVmZDI5Yjg0ZTAxMyIsImlhdCI6MTc2NTU2OTQ5NywiZXhwIjoxNzY1NTcxMjk3fQ.5AKKsnmhhi1FHGTKBZyydTKtBUNMn_24GAijH9I0Rww\",\"token_type\":\"Bearer\",\"refresh_token\":\"d231bf2974a9e96f7043a984c1dfe38dcd2835306e4dabf7e56019a4366de8452d45cbade703cb46547bf83429f8b01dfd574c1961aac2fc3db7e7189f3a96bf\",\"expires_in\":1800,\"ha_auth_provider\":\"homeassistant\",\"hassUrl\":\"http://127.0.0.1:8123\",\"clientId\":\"http://127.0.0.1:8123/\",\"expires\":1765571297418}"
         },
         {
           "name": "ha-version",
           "value": "\"2025.12.2\""
-        },
-        {
-          "name": "growspace_strain_library_v2",
-          "value": "{\"version\":2,\"timestamp\":1765480991223,\"data\":[{\"strain\":\"Test Strain\",\"phenotype\":\"default\",\"key\":\"Test Strain|default\",\"breeder\":\"Test Breeder\",\"type\":\"Hybrid\",\"lineage\":\"\",\"sex\":\"Feminized\",\"sativa_percentage\":50,\"indica_percentage\":50,\"description\":\"\",\"flowering_days_min\":60,\"flowering_days_max\":70},{\"strain\":\"fadsfdas\",\"phenotype\":\"adsfasdf\",\"key\":\"fadsfdas|adsfasdf\",\"breeder\":\"fdasfdassdfa\",\"type\":\"Hybrid\",\"lineage\":\"\",\"sex\":\"Feminized\",\"sativa_percentage\":50,\"indica_percentage\":50,\"description\":\"\",\"flowering_days_min\":60,\"flowering_days_max\":70},{\"strain\":\"sdaDSA\",\"phenotype\":\"dsADSAD\",\"key\":\"sdaDSA|dsADSAD\",\"breeder\":\"dDASSDa\",\"type\":\"Hybrid\",\"lineage\":\"dfsafsda\",\"sex\":\"Feminized\",\"sativa_percentage\":50,\"indica_percentage\":50,\"description\":\"\",\"flowering_days_min\":60,\"flowering_days_max\":70},{\"strain\":\"adsfdafs\",\"phenotype\":\"adsdsfadfsa\",\"key\":\"adsfdafs|adsdsfadfsa\",\"breeder\":\"asdffdasfdasdsf\",\"type\":\"Hybrid\",\"lineage\":\"\",\"sex\":\"Feminized\",\"sativa_percentage\":50,\"indica_percentage\":50,\"description\":\"\",\"flowering_days_min\":60,\"flowering_days_max\":70},{\"strain\":\"rafsdfds\",\"phenotype\":\"dasffdsdfas\",\"key\":\"rafsdfds|dasffdsdfas\",\"breeder\":\"dsfadsfafaddafs\",\"type\":\"Hybrid\",\"lineage\":\"fdasdsfafdsa\",\"sex\":\"Feminized\",\"sativa_percentage\":50,\"indica_percentage\":50,\"description\":\"dsaffdassfda\",\"flowering_days_min\":60,\"flowering_days_max\":70},{\"strain\":\"asdfasdf\",\"phenotype\":\"fasdfasd\",\"key\":\"asdfasdf|fasdfasd\",\"breeder\":\"fdasfdsafdsafdas\",\"type\":\"Hybrid\",\"lineage\":\"fdsafdsafdas\",\"sex\":\"Feminized\",\"sativa_percentage\":50,\"indica_percentage\":50,\"description\":\"\",\"flowering_days_min\":60,\"flowering_days_max\":70}]}"
         }
       ]
     }
