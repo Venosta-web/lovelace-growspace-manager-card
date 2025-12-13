@@ -52,6 +52,8 @@ export class GrowspaceEnvChart extends LitElement {
     @state() private _hoverTime: number | null = null;
     @state() private _canScrollLeft = false;
     @state() private _canScrollRight = false;
+    @state() private _computedSeries: GraphSeries[] = []; // Cached series
+
 
     private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
 
@@ -243,15 +245,15 @@ export class GrowspaceEnvChart extends LitElement {
     render() {
         if (!this.device) return html``;
 
-        const durationMillis = this._getDurationMillis(this.range);
-        const now = new Date();
-        const startTime = new Date(now.getTime() - durationMillis);
-
         // Dimensions (internal SVG coords)
         const width = 800;
         const height = 200;
+        const durationMillis = this._getDurationMillis(this.range);
+        const now = new Date(); // Only for display math if needed, but series are cached
+        const startTime = new Date(now.getTime() - durationMillis);
 
-        const series = this._computeGraphSeries(width, height, startTime, durationMillis, now);
+        // Use cached series
+        const series = this._computedSeries;
 
         if (series.length === 0) {
             return html`
@@ -440,18 +442,55 @@ export class GrowspaceEnvChart extends LitElement {
         const hoverTime = this._hoverTime;
 
         const items = seriesList.map(s => {
-            // Find closest point
-            // Optimization: Binary search or assume sorted
-            // Simple linear scan for now (small datasets usually < 1000 points)
+            // Find closest point using binary search
+            const searchTime = hoverTime;
             let closest = s.points[0];
             let minDiff = Number.MAX_VALUE;
 
-            for (const p of s.points) {
-                const diff = Math.abs(p.time - hoverTime);
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    closest = p;
+            // Binary search
+            let low = 0;
+            let high = s.points.length - 1;
+
+            if (s.points.length > 0) {
+                while (low <= high) {
+                    const mid = Math.floor((low + high) / 2);
+                    const p = s.points[mid];
+                    const diff = Math.abs(p.time - searchTime);
+
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = p;
+                    }
+
+                    if (p.time < searchTime) {
+                        low = mid + 1;
+                    } else {
+                        high = mid - 1;
+                    }
                 }
+                // After binary search, check headers to ensure we got the absolute closest (since we return strictly on range but nearest neighbor is better)
+                // Or simple approach: Binary search to find insertion point, then check neighbors.
+                // Re-implementation of nearest neighbor binary search:
+                let lo = 0;
+                let hi = s.points.length - 1;
+                while (lo < hi) {
+                    const mid = Math.floor((lo + hi) / 2);
+                    if (s.points[mid].time < searchTime) {
+                        lo = mid + 1;
+                    } else {
+                        hi = mid;
+                    }
+                }
+                // lo is the candidate index >= searchTime. check lo and lo-1
+                const candidates = [lo, lo - 1, lo + 1].filter(i => i >= 0 && i < s.points.length);
+                candidates.forEach(i => {
+                    const p = s.points[i];
+                    const diff = Math.abs(p.time - searchTime);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = p;
+                    }
+                });
             }
 
             return { series: s, point: closest };
@@ -572,30 +611,18 @@ export class GrowspaceEnvChart extends LitElement {
     }
 
     protected willUpdate(changedProperties: PropertyValues) {
-        // Invalidate memoized data if relevant inputs change
-        // We only persist cache if ONLY _tooltip changed (hover interaction)
-        // If hass, history, or config changes, we recalculate.
-        // Optimization: We could be more granular with hass (only if relevant entities change), 
-        // but checking specific entity changes is complex. 
-        // The main goal is to avoid recalc during Tooltip hover loop.
+        if (changedProperties.has('device') || changedProperties.has('sensorHistory') || changedProperties.has('range') ||
+            changedProperties.has('metricKey') || changedProperties.has('metrics') || changedProperties.has('isCombined') ||
+            changedProperties.has('metricConfig') || changedProperties.has('type') || changedProperties.has('color') ||
+            changedProperties.has('unit') || changedProperties.has('title') || changedProperties.has('icon')) {
 
-        let needsRecalc = false;
-        if (changedProperties.has('_tooltip') || changedProperties.has('_hoverTime')) {
-            // Tooltip change alone doesn't require recalc
-            // But if other things changed too, we fall through
-        }
+            const durationMillis = this._getDurationMillis(this.range);
+            const now = new Date();
+            const startTime = new Date(now.getTime() - durationMillis);
+            const width = 800;
+            const height = 200;
 
-        // Check if any property OTHER than _tooltip or _hoverTime changed
-        for (const [key] of changedProperties) {
-            if (key !== '_tooltip' && key !== '_hoverTime') {
-                needsRecalc = true;
-                break;
-            }
-        }
-
-        if (changedProperties.has('_tooltip') || changedProperties.has('_hoverTime')) {
-            // Tooltip change alone doesn't require recalc
-            // But if other things changed too, we fall through
+            this._computedSeries = this._computeGraphSeries(width, height, startTime, durationMillis, now);
         }
     }
 

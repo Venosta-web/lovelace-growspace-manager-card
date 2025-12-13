@@ -10318,6 +10318,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         this._hoverTime = null;
         this._canScrollLeft = false;
         this._canScrollRight = false;
+        this._computedSeries = []; // Cached series
         this._chipsContainerRef = e();
     }
     _scrollChips(direction) {
@@ -10495,13 +10496,14 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
     render() {
         if (!this.device)
             return x ``;
-        const durationMillis = this._getDurationMillis(this.range);
-        const now = new Date();
-        const startTime = new Date(now.getTime() - durationMillis);
         // Dimensions (internal SVG coords)
         const width = 800;
         const height = 200;
-        const series = this._computeGraphSeries(width, height, startTime, durationMillis, now);
+        const durationMillis = this._getDurationMillis(this.range);
+        const now = new Date(); // Only for display math if needed, but series are cached
+        const startTime = new Date(now.getTime() - durationMillis);
+        // Use cached series
+        const series = this._computedSeries;
         if (series.length === 0) {
             return x `
                 <div class="gs-env-graph-card">
@@ -10677,17 +10679,53 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             return x ``;
         const hoverTime = this._hoverTime;
         const items = seriesList.map(s => {
-            // Find closest point
-            // Optimization: Binary search or assume sorted
-            // Simple linear scan for now (small datasets usually < 1000 points)
+            // Find closest point using binary search
+            const searchTime = hoverTime;
             let closest = s.points[0];
             let minDiff = Number.MAX_VALUE;
-            for (const p of s.points) {
-                const diff = Math.abs(p.time - hoverTime);
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    closest = p;
+            // Binary search
+            let low = 0;
+            let high = s.points.length - 1;
+            if (s.points.length > 0) {
+                while (low <= high) {
+                    const mid = Math.floor((low + high) / 2);
+                    const p = s.points[mid];
+                    const diff = Math.abs(p.time - searchTime);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = p;
+                    }
+                    if (p.time < searchTime) {
+                        low = mid + 1;
+                    }
+                    else {
+                        high = mid - 1;
+                    }
                 }
+                // After binary search, check headers to ensure we got the absolute closest (since we return strictly on range but nearest neighbor is better)
+                // Or simple approach: Binary search to find insertion point, then check neighbors.
+                // Re-implementation of nearest neighbor binary search:
+                let lo = 0;
+                let hi = s.points.length - 1;
+                while (lo < hi) {
+                    const mid = Math.floor((lo + hi) / 2);
+                    if (s.points[mid].time < searchTime) {
+                        lo = mid + 1;
+                    }
+                    else {
+                        hi = mid;
+                    }
+                }
+                // lo is the candidate index >= searchTime. check lo and lo-1
+                const candidates = [lo, lo - 1, lo + 1].filter(i => i >= 0 && i < s.points.length);
+                candidates.forEach(i => {
+                    const p = s.points[i];
+                    const diff = Math.abs(p.time - searchTime);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = p;
+                    }
+                });
             }
             return { series: s, point: closest };
         });
@@ -10798,14 +10836,17 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         this.dispatchEvent(new UnlinkGraphsEvent(groupIndex));
     }
     willUpdate(changedProperties) {
-        if (changedProperties.has('_tooltip') || changedProperties.has('_hoverTime')) ;
-        // Check if any property OTHER than _tooltip or _hoverTime changed
-        for (const [key] of changedProperties) {
-            if (key !== '_tooltip' && key !== '_hoverTime') {
-                break;
-            }
+        if (changedProperties.has('device') || changedProperties.has('sensorHistory') || changedProperties.has('range') ||
+            changedProperties.has('metricKey') || changedProperties.has('metrics') || changedProperties.has('isCombined') ||
+            changedProperties.has('metricConfig') || changedProperties.has('type') || changedProperties.has('color') ||
+            changedProperties.has('unit') || changedProperties.has('title') || changedProperties.has('icon')) {
+            const durationMillis = this._getDurationMillis(this.range);
+            const now = new Date();
+            const startTime = new Date(now.getTime() - durationMillis);
+            const width = 800;
+            const height = 200;
+            this._computedSeries = this._computeGraphSeries(width, height, startTime, durationMillis, now);
         }
-        if (changedProperties.has('_tooltip') || changedProperties.has('_hoverTime')) ;
     }
     _formatTime(date) {
         const locale = this.hass?.locale?.language || undefined;
@@ -11026,6 +11067,10 @@ __decorate([
     r$2(),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "_canScrollRight", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Array)
+], GrowspaceEnvChart.prototype, "_computedSeries", void 0);
 GrowspaceEnvChart = __decorate([
     t$2('growspace-env-chart')
 ], GrowspaceEnvChart);
@@ -16005,6 +16050,176 @@ GrowspacePlantCard = __decorate([
     t$2('growspace-plant-card')
 ], GrowspacePlantCard);
 
+let GrowspaceChip = class GrowspaceChip extends i$2 {
+    constructor() {
+        super(...arguments);
+        this.icon = '';
+        this.label = '';
+        this.value = undefined;
+        this.status = '';
+        this.active = false;
+        this.linked = false;
+        this.tooltip = '';
+    }
+    render() {
+        // Determine classes based on meaningful status string
+        const statusClass = this.status ? `status-${this.status}` : '';
+        return x `
+      <div 
+        class="stat-chip ${statusClass}"
+        title="${this.tooltip}"
+      >
+        <div class="icon">
+          <svg viewBox="0 0 24 24"><path d="${this.icon}"></path></svg>
+        </div>
+        ${this.label ? x `${this.label}: ` : ''}${this.value}
+        
+        ${this.linked ? x `
+          <div class="link-icon" 
+               @click=${this._handleLinkClick}
+               title="Unlink Graph">
+            <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    }
+    _handleLinkClick(e) {
+        e.stopPropagation();
+        this.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
+    }
+};
+GrowspaceChip.styles = i$5 `
+    :host {
+      display: inline-flex;
+      vertical-align: middle;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 8px 16px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      user-select: none;
+      flex-shrink: 0;
+      white-space: nowrap;
+      touch-action: auto;
+    }
+
+    /* Status Colors */
+    @keyframes pulse-red {
+      0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+    }
+
+    .stat-chip.status-optimal {
+      color: #2e7d32 !important;
+      background: rgba(46, 125, 50, 0.1) !important;
+    }
+
+    .stat-chip.status-warning {
+      color: #ffa726 !important;
+      border-color: rgba(255, 167, 38, 0.5) !important;
+      background: rgba(255, 167, 38, 0.1) !important;
+    }
+
+    .stat-chip.status-danger {
+      color: #ef5350 !important;
+      border-color: rgba(239, 83, 80, 0.5) !important;
+      background: rgba(239, 83, 80, 0.1) !important;
+      animation: pulse-red 2s infinite;
+    }
+
+    .stat-chip:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    :host([active]) .stat-chip {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      color: #fff;
+    }
+    
+    .icon {
+      width: 18px;
+      height: 18px;
+      display: flex;
+    }
+
+    .icon svg {
+      width: 100%;
+      height: 100%;
+      fill: currentColor;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .link-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      margin-left: -8px;
+      margin-right: -8px;
+      opacity: 0.8;
+      cursor: pointer;
+    }
+    
+    .link-icon svg {
+        width: 100%;
+        height: 100%;
+        fill: var(--primary-color, #03a9f4);
+    }
+  `;
+__decorate([
+    n$4({ type: String }),
+    __metadata("design:type", Object)
+], GrowspaceChip.prototype, "icon", void 0);
+__decorate([
+    n$4({ type: String }),
+    __metadata("design:type", Object)
+], GrowspaceChip.prototype, "label", void 0);
+__decorate([
+    n$4({ type: String }),
+    __metadata("design:type", Object)
+], GrowspaceChip.prototype, "value", void 0);
+__decorate([
+    n$4({ type: String }),
+    __metadata("design:type", String)
+], GrowspaceChip.prototype, "status", void 0);
+__decorate([
+    n$4({ type: Boolean, reflect: true }),
+    __metadata("design:type", Object)
+], GrowspaceChip.prototype, "active", void 0);
+__decorate([
+    n$4({ type: Boolean }),
+    __metadata("design:type", Object)
+], GrowspaceChip.prototype, "linked", void 0);
+__decorate([
+    n$4({ type: String }),
+    __metadata("design:type", Object)
+], GrowspaceChip.prototype, "tooltip", void 0);
+GrowspaceChip = __decorate([
+    t$2('growspace-chip')
+], GrowspaceChip);
+
 let GrowspaceHeader = class GrowspaceHeader extends i$2 {
     constructor() {
         super(...arguments);
@@ -16029,35 +16244,143 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
     /**
      * Configuration for a single header metric chip
      */
-    _renderChip(config) {
-        if (config.value === undefined)
-            return x ``;
-        const { linked, groupIndex } = this._isMetricLinked(config.key);
-        const isActive = this.activeEnvGraphs.has(config.key);
-        return x `
-      <div class="stat-chip ${isActive ? 'active' : ''} ${config.statusClass || ''}"
-           draggable="${this._chipDraggable}"
-           title="${config.tooltip || ''}"
-           @dragstart=${(e) => this._handleChipDragStart(e, config.key)}
-           @drop=${(e) => this._handleChipDrop(e, config.key)}
-           @dragover=${(e) => this._handleDragOver(e)}
-           @click=${(e) => {
-            const target = e.target;
-            if (target.closest('.link-icon'))
-                return;
-            this._toggleEnvGraph(config.key);
-        }}>
-        <svg viewBox="0 0 24 24"><path d="${config.icon}"></path></svg>
-        ${config.label ? `${config.label}: ` : ''}${config.value}
-        ${linked ? x `
-          <div class="link-icon" style="opacity: 0.8; cursor: pointer;"
-               @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-               title="Unlink Graph">
-            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-          </div>
-        ` : ''}
-      </div>
-    `;
+    _getAttributeValue(ent, key) {
+        if (!ent || !ent.attributes)
+            return undefined;
+        if (ent.attributes[key] !== undefined)
+            return ent.attributes[key];
+        if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
+            return ent.attributes.observations[key];
+        }
+        return undefined;
+    }
+    _computeMetrics() {
+        if (!this.device || !this.hass)
+            return { mainChips: [], deviceChips: [], dominant: undefined, growspaceOptions: this.growspaceOptions, envAttrs: {} };
+        const dominant = PlantUtils.getDominantStage(this.device.plants);
+        // Fetch Environmental Data
+        let slug = this.device.name.toLowerCase().replace(/\s+/g, '_');
+        if (this.device.overview_entity_id) {
+            slug = this.device.overview_entity_id.replace('sensor.', '');
+        }
+        let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+        const isCure = slug === 'cure';
+        const isDry = slug === 'dry';
+        if (isCure) {
+            envEntityId = `binary_sensor.cure_optimal_curing`;
+        }
+        else if (isDry) {
+            envEntityId = `binary_sensor.dry_optimal_drying`;
+        }
+        const envEntity = this.hass.states[envEntityId];
+        const overviewEntity = this.device.overview_entity_id ? this.hass.states[this.device.overview_entity_id] : undefined;
+        const envAttrs = this.device.environment_attributes || overviewEntity?.attributes || {};
+        const temp = this._getAttributeValue(envEntity, 'temperature');
+        const hum = this._getAttributeValue(envEntity, 'humidity');
+        let vpd = this._getAttributeValue(envEntity, 'vpd');
+        // VPD Fallback Logic
+        if (vpd === undefined || vpd === null) {
+            if (envAttrs.vpd_sensor) {
+                const vpdState = this.hass.states[envAttrs.vpd_sensor];
+                if (vpdState && vpdState.state !== 'unknown' && vpdState.state !== 'unavailable') {
+                    const val = parseFloat(vpdState.state);
+                    if (!isNaN(val))
+                        vpd = val;
+                }
+            }
+            if (vpd === undefined || vpd === null) {
+                // Calculated VPD fallback
+                const slugify = (text) => text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '_').replace(/^-+/, '').replace(/-+$/, '');
+                const calcName = `${this.device.name} Calculated VPD`;
+                const calculatedId = `sensor.${slugify(calcName)}`;
+                const vpdState = this.hass.states[calculatedId];
+                if (vpdState && vpdState.state !== 'unknown' && vpdState.state !== 'unavailable') {
+                    const val = parseFloat(vpdState.state);
+                    if (!isNaN(val))
+                        vpd = val;
+                }
+            }
+        }
+        let vpdStatus = overviewEntity?.attributes?.vpd_status;
+        const vpdTargetMin = overviewEntity?.attributes?.vpd_target_min;
+        const vpdTargetMax = overviewEntity?.attributes?.vpd_target_max;
+        const vpdDangerMin = overviewEntity?.attributes?.vpd_danger_min;
+        const vpdDangerMax = overviewEntity?.attributes?.vpd_danger_max;
+        if ((!vpdStatus || vpdStatus === 'unknown') && vpd !== undefined &&
+            vpdTargetMin !== undefined && vpdTargetMax !== undefined &&
+            vpdDangerMin !== undefined && vpdDangerMax !== undefined) {
+            if (vpd < vpdDangerMin || vpd > vpdDangerMax) {
+                vpdStatus = 'danger';
+            }
+            else if (vpd < vpdTargetMin || vpd > vpdTargetMax) {
+                vpdStatus = 'warning';
+            }
+            else {
+                vpdStatus = 'optimal';
+            }
+        }
+        const isSpecialGrowspace = isCure || isDry;
+        const co2Value = this._getAttributeValue(envEntity, 'co2');
+        const co2 = (isSpecialGrowspace || co2Value === undefined || co2Value === null) ? undefined : co2Value;
+        const isLightsOnValue = this._getAttributeValue(envEntity, 'is_lights_on');
+        const hasLightSensor = !isSpecialGrowspace && (isLightsOnValue !== undefined && isLightsOnValue !== null);
+        const isLightsOn = isLightsOnValue === true;
+        const getNextEvent = (times) => {
+            if (!times || !times.length)
+                return undefined;
+            const now = DateTime.now();
+            const upcoming = times
+                .map(t => {
+                const [h, m] = t.time.split(':').map(Number);
+                let dt = now.set({ hour: h, minute: m, second: 0 });
+                if (dt < now)
+                    dt = dt.plus({ days: 1 });
+                return dt;
+            })
+                .sort((a, b) => a.toMillis() - b.toMillis())[0];
+            return upcoming ? upcoming.toFormat('HH:mm') : undefined;
+        };
+        const nextIrrigation = getNextEvent(this.device.irrigation_times);
+        const nextDrain = getNextEvent(this.device.drain_times);
+        // Build Chips
+        const createChipData = (key, icon, value, label, status, tooltip) => {
+            if (value === undefined)
+                return null;
+            const { linked, groupIndex } = this._isMetricLinked(key);
+            const active = this.activeEnvGraphs.has(key);
+            return { key, icon, value, label, status, tooltip, active, linked, groupIndex };
+        };
+        const mainChips = [
+            createChipData('temperature', mdiThermometer, temp !== undefined ? `${temp}°C` : undefined),
+            createChipData('humidity', mdiWaterPercent, hum !== undefined ? `${hum}%` : undefined),
+            createChipData('vpd', mdiCloudOutline, vpd !== undefined ? `${vpd} kPa` : undefined, undefined, vpdStatus, vpdTargetMin !== undefined && vpdTargetMax !== undefined ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})` : ''),
+            createChipData('co2', mdiWeatherCloudy, co2 !== undefined ? `${co2} ppm` : undefined),
+            createChipData('light', isLightsOn ? mdiLightbulbOn : mdiLightbulbOff, hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined),
+            createChipData('soil_moisture', mdiWaterPercent, this._getAttributeValue(overviewEntity, 'soil_moisture_value') !== undefined ? `${this._getAttributeValue(overviewEntity, 'soil_moisture_value')}%` : undefined, 'Moisture'),
+            createChipData('irrigation', mdiWater, nextIrrigation, 'Next'),
+            createChipData('drain', mdiWater, nextDrain, 'Next'),
+            envEntity ? createChipData('optimal', envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank, envEntity.state === 'on' ? 'Optimal Conditions' : (envEntity.attributes.reasons || 'Not Optimal'), undefined, envEntity.state === 'on' ? 'optimal' : 'warning') : null
+        ].filter((c) => c !== null);
+        // Device Chips
+        const exhaustId = envAttrs.exhaust_entity;
+        const exhaustSensor = envAttrs.exhaust_sensor;
+        const exhaustState = (exhaustId && this.hass.states[exhaustId]) ? this.hass.states[exhaustId].state :
+            (exhaustSensor && this.hass.states[exhaustSensor]) ? this.hass.states[exhaustSensor].state : undefined;
+        const humidifierId = envAttrs.humidifier_entity;
+        const humidifierSensor = envAttrs.humidifier_sensor;
+        const humidifierState = (humidifierId && this.hass.states[humidifierId]) ? this.hass.states[humidifierId].state :
+            (humidifierSensor && this.hass.states[humidifierSensor]) ? this.hass.states[humidifierSensor].state : undefined;
+        const dehumidifierId = envAttrs.dehumidifier_entity;
+        const dehumidifierState = dehumidifierId && this.hass.states[dehumidifierId] ? this.hass.states[dehumidifierId].state : undefined;
+        const circulationFanId = envAttrs.circulation_fan_entity;
+        const circulationFanState = circulationFanId && this.hass.states[circulationFanId] ? this.hass.states[circulationFanId].state : undefined;
+        const deviceChips = [
+            createChipData('exhaust', mdiFan, (exhaustId || exhaustSensor) ? `${exhaustState ?? '-'}` : undefined, 'Exhaust'),
+            createChipData('circulation_fan', mdiFan, circulationFanId ? `${circulationFanState ?? '-'}` : undefined, 'Fan'),
+            createChipData('humidifier', mdiAirHumidifier, (humidifierId || humidifierSensor) ? `${humidifierState ?? '-'}` : undefined, 'Humidifier'),
+            createChipData('dehumidifier', mdiAirHumidifierOff, dehumidifierId ? `${dehumidifierState ?? '-'}` : undefined, 'Dehumidifier')
+        ].filter((c) => c !== null);
+        return { mainChips, deviceChips, dominant, envAttrs };
     }
     _scrollChips(direction) {
         const container = this._chipsContainerRef.value;
@@ -16165,131 +16488,13 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
     render() {
         if (!this.device || !this.hass)
             return x ``;
-        const dominant = PlantUtils.getDominantStage(this.device.plants);
-        // Fetch Environmental Data
-        let slug = this.device.name.toLowerCase().replace(/\s+/g, '_');
-        if (this.device.overview_entity_id) {
-            slug = this.device.overview_entity_id.replace('sensor.', '');
-        }
-        let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
-        const isCure = slug === 'cure';
-        const isDry = slug === 'dry';
-        if (isCure) {
-            envEntityId = `binary_sensor.cure_optimal_curing`;
-        }
-        else if (isDry) {
-            envEntityId = `binary_sensor.dry_optimal_drying`;
-        }
-        const envEntity = this.hass.states[envEntityId];
-        const overviewEntity = this.device.overview_entity_id ? this.hass.states[this.device.overview_entity_id] : undefined;
-        // Fetch live states for equipment directly from their entities
-        const envAttrs = this.device.environment_attributes || overviewEntity?.attributes || {};
-        // Helper to get attribute from either top-level or nested 'observations'
-        const getValue = (ent, key) => {
-            if (!ent || !ent.attributes)
-                return undefined;
-            if (ent.attributes[key] !== undefined)
-                return ent.attributes[key];
-            if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
-                return ent.attributes.observations[key];
-            }
-            return undefined;
-        };
-        const temp = getValue(envEntity, 'temperature');
-        const hum = getValue(envEntity, 'humidity');
-        let vpd = getValue(envEntity, 'vpd');
-        // Fallback: If VPD is not in the binary sensor, try to get it from the sensor entity directly
-        if (vpd === undefined || vpd === null) {
-            if (envAttrs.vpd_sensor) {
-                const vpdState = this.hass.states[envAttrs.vpd_sensor];
-                if (vpdState && vpdState.state !== 'unknown' && vpdState.state !== 'unavailable') {
-                    const val = parseFloat(vpdState.state);
-                    if (!isNaN(val))
-                        vpd = val;
-                }
-            }
-            // If still undefined, try the calculated sensor path (Name Based)
-            if (vpd === undefined || vpd === null) {
-                const slugify = (text) => text
-                    .toString()
-                    .toLowerCase()
-                    .replace(/\s+/g, '_') // Replace spaces with -
-                    .replace(/[^\w\-]+/g, '') // Remove all non-word chars
-                    .replace(/\-\-+/g, '_') // Replace multiple - with single -
-                    .replace(/^-+/, '') // Trim - from start of text
-                    .replace(/-+$/, ''); // Trim - from end of text
-                const calcName = `${this.device.name} Calculated VPD`;
-                const calculatedId = `sensor.${slugify(calcName)}`;
-                const vpdState = this.hass.states[calculatedId];
-                if (vpdState && vpdState.state !== 'unknown' && vpdState.state !== 'unavailable') {
-                    const val = parseFloat(vpdState.state);
-                    if (!isNaN(val))
-                        vpd = val;
-                }
-            }
-        }
-        let vpdStatus = overviewEntity?.attributes?.vpd_status;
-        const vpdTargetMin = overviewEntity?.attributes?.vpd_target_min;
-        const vpdTargetMax = overviewEntity?.attributes?.vpd_target_max;
-        const vpdDangerMin = overviewEntity?.attributes?.vpd_danger_min;
-        const vpdDangerMax = overviewEntity?.attributes?.vpd_danger_max;
-        // Fallback: If status is unknown but we have values, calculate it locally
-        if ((!vpdStatus || vpdStatus === 'unknown') && vpd !== undefined &&
-            vpdTargetMin !== undefined && vpdTargetMax !== undefined &&
-            vpdDangerMin !== undefined && vpdDangerMax !== undefined) {
-            if (vpd < vpdDangerMin || vpd > vpdDangerMax) {
-                vpdStatus = 'danger';
-            }
-            else if (vpd < vpdTargetMin || vpd > vpdTargetMax) {
-                vpdStatus = 'warning';
-            }
-            else {
-                vpdStatus = 'optimal';
-            }
-        }
-        const isSpecialGrowspace = isCure || isDry;
-        const co2Value = getValue(envEntity, 'co2');
-        const co2 = (isSpecialGrowspace || co2Value === undefined || co2Value === null) ? undefined : co2Value;
-        const isLightsOnValue = getValue(envEntity, 'is_lights_on');
-        const hasLightSensor = !isSpecialGrowspace && (isLightsOnValue !== undefined && isLightsOnValue !== null);
-        const isLightsOn = isLightsOnValue === true;
-        const getNextEvent = (times) => {
-            if (!times || !times.length)
-                return undefined;
-            const now = DateTime.now();
-            const upcoming = times
-                .map(t => {
-                const [h, m] = t.time.split(':').map(Number);
-                let dt = now.set({ hour: h, minute: m, second: 0 });
-                if (dt < now)
-                    dt = dt.plus({ days: 1 });
-                return dt;
-            })
-                .sort((a, b) => a.toMillis() - b.toMillis())[0];
-            if (!upcoming)
-                return undefined;
-            return upcoming.toFormat('HH:mm');
-        };
-        const nextIrrigation = getNextEvent(this.device.irrigation_times);
-        const nextDrain = getNextEvent(this.device.drain_times);
-        const exhaustId = envAttrs.exhaust_entity;
-        const exhaustSensor = envAttrs.exhaust_sensor;
-        const exhaustState = (exhaustId && this.hass.states[exhaustId]) ? this.hass.states[exhaustId].state :
-            (exhaustSensor && this.hass.states[exhaustSensor]) ? this.hass.states[exhaustSensor].state : undefined;
-        const humidifierId = envAttrs.humidifier_entity;
-        const humidifierSensor = envAttrs.humidifier_sensor;
-        const humidifierState = (humidifierId && this.hass.states[humidifierId]) ? this.hass.states[humidifierId].state :
-            (humidifierSensor && this.hass.states[humidifierSensor]) ? this.hass.states[humidifierSensor].state : undefined;
-        const dehumidifierId = envAttrs.dehumidifier_entity;
-        const dehumidifierState = dehumidifierId && this.hass.states[dehumidifierId] ? this.hass.states[dehumidifierId].state : undefined;
-        const circulationFanId = envAttrs.circulation_fan_entity;
-        const circulationFanState = circulationFanId && this.hass.states[circulationFanId] ? this.hass.states[circulationFanId].state : undefined;
+        const { mainChips, deviceChips, dominant, envAttrs } = this._computeMetrics();
         return x `
       <div class="gs-stats-container">
         <div class="gs-header-top">
           <div class="gs-title-group">
             ${!this.config?.default_growspace ? x `
-        <select class="growspace-select-header" value=${this.device.device_id} @change=${this._handleDeviceChange}>
+        <select class="growspace-select-header" .value=${this.device.device_id} @change=${this._handleDeviceChange}>
           ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
         </select>
           ` : x `
@@ -16324,27 +16529,27 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
                 ` : ''}
                 
                 <div class="gs-stats-chips ${this._mobileLink ? 'mobile-link-active' : ''} ${this._canScrollLeft ? 'mask-left' : ''} ${this._canScrollRight ? 'mask-right' : ''}" ${n(this._chipsContainerRef)}>
-
-                ${this._renderChip({ key: 'temperature', value: temp !== undefined ? `${temp}°C` : undefined, icon: mdiThermometer })}
-                ${this._renderChip({ key: 'humidity', value: hum !== undefined ? `${hum}%` : undefined, icon: mdiWaterPercent })}
-                ${this._renderChip({
-            key: 'vpd',
-            value: vpd !== undefined ? `${vpd} kPa` : undefined,
-            icon: mdiCloudOutline,
-            statusClass: vpdStatus ? `status-${vpdStatus}` : '',
-            tooltip: vpdTargetMin !== undefined && vpdTargetMax !== undefined ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})` : ''
-        })}
-                ${this._renderChip({ key: 'co2', value: co2 !== undefined ? `${co2} ppm` : undefined, icon: mdiWeatherCloudy })}
-                ${this._renderChip({ key: 'light', value: hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined, icon: isLightsOn ? mdiLightbulbOn : mdiLightbulbOff })}
-                ${this._renderChip({ key: 'soil_moisture', value: getValue(overviewEntity, 'soil_moisture_value') !== undefined ? `Moisture: ${getValue(overviewEntity, 'soil_moisture_value')}%` : undefined, icon: mdiWaterPercent })}
-                ${this._renderChip({ key: 'irrigation', value: nextIrrigation ? `Next: ${nextIrrigation}` : undefined, icon: mdiWater })}
-                ${this._renderChip({ key: 'drain', value: nextDrain ? `Next: ${nextDrain}` : undefined, icon: mdiWater })}
-                ${envEntity ? this._renderChip({
-            key: 'optimal',
-            value: envEntity.state === 'on' ? 'Optimal Conditions' : (envEntity.attributes.reasons || 'Not Optimal'),
-            icon: envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank,
-            statusClass: envEntity.state === 'on' ? 'status-optimal' : 'status-warning'
-        }) : ''}
+                  ${mainChips.map(chip => x `
+                    <growspace-chip
+                        .icon=${chip.icon}
+                        .label=${chip.label || ''}
+                        .value=${chip.value}
+                        .status=${chip.status || ''}
+                        .active=${chip.active}
+                        .linked=${chip.linked}
+                        .tooltip=${chip.tooltip || ''}
+                        draggable="${this._chipDraggable}"
+                        @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
+                        @drop=${(e) => this._handleChipDrop(e, chip.key)}
+                        @dragover=${(e) => this._handleDragOver(e)}
+                        @click=${(e) => {
+            if (e.target.closest('.link-icon'))
+                return;
+            this._toggleEnvGraph(chip.key);
+        }}
+                        @unlink=${() => chip.groupIndex !== undefined && this._unlinkGraphs(chip.groupIndex)}
+                    ></growspace-chip>
+                  `)}
               </div>
 
                 ${this._canScrollRight && !this._mobileLink ? x `
@@ -16399,10 +16604,27 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
             </div>
 
             <div class="gs-device-chips ${this._mobileLink ? 'mobile-link-active' : ''}">
-              ${this._renderChip({ key: 'exhaust', value: (exhaustId || exhaustSensor) ? `Exhaust: ${exhaustState ?? '-'}` : undefined, icon: mdiFan })}
-              ${this._renderChip({ key: 'circulation_fan', value: circulationFanId ? `Fan: ${circulationFanState ?? '-'}` : undefined, icon: mdiFan })}
-              ${this._renderChip({ key: 'humidifier', value: (humidifierId || humidifierSensor) ? `Humidifier: ${humidifierState ?? '-'}` : undefined, icon: mdiAirHumidifier })}
-              ${this._renderChip({ key: 'dehumidifier', value: dehumidifierId ? `Dehumidifier: ${dehumidifierState ?? '-'}` : undefined, icon: mdiAirHumidifierOff })}
+              ${deviceChips.map(chip => x `
+                    <growspace-chip
+                        .icon=${chip.icon}
+                        .label=${chip.label || ''}
+                        .value=${chip.value}
+                        .status=${chip.status || ''}
+                        .active=${chip.active}
+                        .linked=${chip.linked}
+                        .tooltip=${chip.tooltip || ''}
+                        draggable="${this._chipDraggable}"
+                        @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
+                        @drop=${(e) => this._handleChipDrop(e, chip.key)}
+                        @dragover=${(e) => this._handleDragOver(e)}
+                        @click=${(e) => {
+            if (e.target.closest('.link-icon'))
+                return;
+            this._toggleEnvGraph(chip.key);
+        }}
+                         @unlink=${() => chip.groupIndex !== undefined && this._unlinkGraphs(chip.groupIndex)}
+                    ></growspace-chip>
+                  `)}
             </div>
           </div>
         </div>
