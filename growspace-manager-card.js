@@ -16888,6 +16888,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
             </div>
 
             <div class="gs-device-chips ${this._mobileLink ? 'mobile-link-active' : ''}">
+
               ${exhaustId || exhaustSensor ? x `
                 <div class="stat-chip ${this.activeEnvGraphs.has('exhaust') ? 'active' : ''}"
                      draggable="${this._chipDraggable}"
@@ -16903,6 +16904,34 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
                   <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg> Exhaust: ${exhaustState ?? '-'}
                   ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('exhaust');
+            if (linked) {
+                return x `
+                        <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                             @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                             title="Unlink Graph">
+                          <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                        </div>
+                      `;
+            }
+            return '';
+        })()}
+                </div>` : ''}
+
+              ${circulationFanId ? x `
+                <div class="stat-chip ${this.activeEnvGraphs.has('circulation_fan') ? 'active' : ''}"
+                     draggable="${this._chipDraggable}"
+                     @dragstart=${(e) => this._handleChipDragStart(e, 'circulation_fan')}
+                     @drop=${(e) => this._handleChipDrop(e, 'circulation_fan')}
+                     @dragover=${(e) => this._handleDragOver(e)}
+                     @click=${(e) => {
+            const target = e.target;
+            if (target.closest('.link-icon'))
+                return;
+            this._toggleEnvGraph('circulation_fan');
+        }}>
+                  <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg> Fan: ${circulationFanState ?? '-'}
+                  ${(() => {
+            const { linked, groupIndex } = this._isMetricLinked('circulation_fan');
             if (linked) {
                 return x `
                         <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
@@ -16959,34 +16988,6 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
                   <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg> Dehumidifier: ${dehumidifierState ?? '-'}
                   ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('dehumidifier');
-            if (linked) {
-                return x `
-                        <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                             @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                             title="Unlink Graph">
-                          <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                        </div>
-                      `;
-            }
-            return '';
-        })()}
-                </div>` : ''}
-
-              ${circulationFanId ? x `
-                <div class="stat-chip ${this.activeEnvGraphs.has('circulation_fan') ? 'active' : ''}"
-                     draggable="${this._chipDraggable}"
-                     @dragstart=${(e) => this._handleChipDragStart(e, 'circulation_fan')}
-                     @drop=${(e) => this._handleChipDrop(e, 'circulation_fan')}
-                     @dragover=${(e) => this._handleDragOver(e)}
-                     @click=${(e) => {
-            const target = e.target;
-            if (target.closest('.link-icon'))
-                return;
-            this._toggleEnvGraph('circulation_fan');
-        }}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg> Fan: ${circulationFanState ?? '-'}
-                  ${(() => {
-            const { linked, groupIndex } = this._isMetricLinked('circulation_fan');
             if (linked) {
                 return x `
                         <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 

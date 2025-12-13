@@ -1035,6 +1035,7 @@ export class GrowspaceHeader extends LitElement {
             </div>
 
             <div class="gs-device-chips ${this._mobileLink ? 'mobile-link-active' : ''}">
+
               ${exhaustId || exhaustSensor ? html`
                 <div class="stat-chip ${this.activeEnvGraphs.has('exhaust') ? 'active' : ''}"
                      draggable="${this._chipDraggable}"
@@ -1062,6 +1063,33 @@ export class GrowspaceHeader extends LitElement {
         })()}
                 </div>` : ''
       }
+
+              ${circulationFanId ? html`
+                <div class="stat-chip ${this.activeEnvGraphs.has('circulation_fan') ? 'active' : ''}"
+                     draggable="${this._chipDraggable}"
+                     @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'circulation_fan')}
+                     @drop=${(e: DragEvent) => this._handleChipDrop(e, 'circulation_fan')}
+                     @dragover=${(e: DragEvent) => this._handleDragOver(e)}
+                     @click=${(e: Event) => {
+          const target = e.target as HTMLElement;
+          if (target.closest('.link-icon')) return;
+          this._toggleEnvGraph('circulation_fan');
+        }}>
+                  <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg> Fan: ${circulationFanState ?? '-'}
+                  ${(() => {
+          const { linked, groupIndex } = this._isMetricLinked('circulation_fan');
+          if (linked) {
+            return html`
+                        <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                             @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                             title="Unlink Graph">
+                          <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                        </div>
+                      `;
+          }
+          return '';
+        })()}
+                </div>` : ''}
 
               ${humidifierId || humidifierSensor ? html`
                 <div class="stat-chip ${this.activeEnvGraphs.has('humidifier') ? 'active' : ''}"
@@ -1104,33 +1132,6 @@ export class GrowspaceHeader extends LitElement {
                   <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg> Dehumidifier: ${dehumidifierState ?? '-'}
                   ${(() => {
           const { linked, groupIndex } = this._isMetricLinked('dehumidifier');
-          if (linked) {
-            return html`
-                        <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
-                             @click=${(e: Event) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
-                             title="Unlink Graph">
-                          <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
-                        </div>
-                      `;
-          }
-          return '';
-        })()}
-                </div>` : ''}
-
-              ${circulationFanId ? html`
-                <div class="stat-chip ${this.activeEnvGraphs.has('circulation_fan') ? 'active' : ''}"
-                     draggable="${this._chipDraggable}"
-                     @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, 'circulation_fan')}
-                     @drop=${(e: DragEvent) => this._handleChipDrop(e, 'circulation_fan')}
-                     @dragover=${(e: DragEvent) => this._handleDragOver(e)}
-                     @click=${(e: Event) => {
-          const target = e.target as HTMLElement;
-          if (target.closest('.link-icon')) return;
-          this._toggleEnvGraph('circulation_fan');
-        }}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg> Fan: ${circulationFanState ?? '-'}
-                  ${(() => {
-          const { linked, groupIndex } = this._isMetricLinked('circulation_fan');
           if (linked) {
             return html`
                         <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
