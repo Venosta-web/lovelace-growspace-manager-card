@@ -18,6 +18,7 @@ export class GrowspaceHistoryController implements ReactiveController {
     public dehumidifierHistory: any[] | null = null;
     public exhaustHistory: any[] | null = null;
     public humidifierHistory: any[] | null = null;
+    public circulationFanHistory: any[] | null = null;
     public soilMoistureHistory: any[] | null = null;
     // Individual environment sensor histories (since env data moved to WebSocket)
     public temperatureHistory: any[] | null = null;
@@ -93,6 +94,7 @@ export class GrowspaceHistoryController implements ReactiveController {
             if (metric === 'dehumidifier') this._fetchDehumidifierHistory(range);
             if (metric === 'exhaust') this._fetchExhaustHistory(range);
             if (metric === 'humidifier') this._fetchHumidifierHistory(range);
+            if (metric === 'circulation_fan') this._fetchCirculationFanHistory(range);
             if (metric === 'soil_moisture') this._fetchSoilMoistureHistory(range);
         }
         this.activeEnvGraphs = newSet;
@@ -153,6 +155,7 @@ export class GrowspaceHistoryController implements ReactiveController {
         if (this.activeEnvGraphs.has('dehumidifier')) this._fetchDehumidifierHistory(range);
         if (this.activeEnvGraphs.has('exhaust')) this._fetchExhaustHistory(range);
         if (this.activeEnvGraphs.has('humidifier')) this._fetchHumidifierHistory(range);
+        if (this.activeEnvGraphs.has('circulation_fan')) this._fetchCirculationFanHistory(range);
         if (this.activeEnvGraphs.has('soil_moisture')) this._fetchSoilMoistureHistory(range);
     }
 
@@ -300,6 +303,19 @@ export class GrowspaceHistoryController implements ReactiveController {
         }
     }
 
+    private async _fetchCirculationFanHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
+        const { device, entityId } = this.getRelatedEntityId('circulation_fan_entity');
+        if (!device || !entityId) return;
+        const { start, end } = this.calculateTimeRange(range);
+        try {
+            const history = await this.host.dataService.getHistory(entityId, start, end);
+            this.circulationFanHistory = history;
+            this.host.requestUpdate();
+        } catch (e) {
+            console.error("Failed to fetch circulation fan history", e);
+        }
+    }
+
     private async _fetchSoilMoistureHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
         const { device, entityId } = this.getRelatedEntityId('soil_moisture_sensor');
         if (!device || !entityId) return;
@@ -318,40 +334,49 @@ export class GrowspaceHistoryController implements ReactiveController {
         // Use pre-loaded devices from store
         const devices = this.host.devices;
         const device = devices.find(d => d.device_id === this.host.selectedDevice);
-        if (!device || !device.overview_entity_id) return { device, entityId: null };
+        if (!device) return { device: null, entityId: null };
 
-        const overviewEntity = this.host.hass.states[device.overview_entity_id];
+        // 0. Use environment_attributes from device (populated via WebSocket)
+        let entityId = device.environment_attributes?.[attribute as keyof typeof device.environment_attributes];
 
-        // 1. Try direct attribute (e.g. 'exhaust_entity')
-        let entityId = overviewEntity?.attributes?.[attribute];
+        if (entityId) return { device, entityId };
 
-        // 2a. Fallback: Try sensor attribute (e.g. 'exhaust_sensor') if the requested one was an entity and is missing
+        // Fallback: check other variants in environment_attributes
+        if (attribute.endsWith('_entity')) {
+            const sensorAttr = attribute.replace('_entity', '_sensor');
+            entityId = device.environment_attributes?.[sensorAttr as keyof typeof device.environment_attributes];
+        } else if (attribute.endsWith('_sensor')) {
+            const entityAttr = attribute.replace('_sensor', '_entity');
+            entityId = device.environment_attributes?.[entityAttr as keyof typeof device.environment_attributes];
+        }
+
+        if (entityId) return { device, entityId };
+
+        // Legacy access via overview entity attributes
+        const overviewEntity = device.overview_entity_id ? this.host.hass.states[device.overview_entity_id] : null;
+        entityId = overviewEntity?.attributes?.[attribute];
+
         if (!entityId && attribute.endsWith('_entity')) {
             const sensorAttr = attribute.replace('_entity', '_sensor');
             entityId = overviewEntity?.attributes?.[sensorAttr];
         }
 
-        // 2b. Fallback: Try entity attribute (e.g. 'exhaust_entity') if the requested one was a sensor and is missing
         if (!entityId && attribute.endsWith('_sensor')) {
             const entityAttr = attribute.replace('_sensor', '_entity');
             entityId = overviewEntity?.attributes?.[entityAttr];
         }
 
-        // 3. Fallback: Try looking in observations (nested)
         if (!entityId && overviewEntity?.attributes?.observations) {
             entityId = overviewEntity.attributes.observations[attribute];
             if (!entityId && attribute.endsWith('_entity')) {
                 const sensorAttr = attribute.replace('_entity', '_sensor');
                 entityId = overviewEntity.attributes.observations[sensorAttr];
             }
-            if (!entityId && attribute.endsWith('_sensor')) {
-                const entityAttr = attribute.replace('_sensor', '_entity');
-                entityId = overviewEntity.attributes.observations[entityAttr];
-            }
         }
 
         return { device, entityId };
     }
+
 
     private calculateTimeRange(range: '1h' | '6h' | '24h' | '7d') {
         const now = new Date();

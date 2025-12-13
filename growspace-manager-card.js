@@ -503,6 +503,8 @@ class GrowspaceAdapter {
             exhaust_entity: wsData.exhaust_entity,
             exhaust_sensor: wsData.exhaust_sensor,
             humidifier_sensor: wsData.humidifier_sensor,
+            circulation_fan_entity: wsData.circulation_fan_entity,
+            light_sensor: wsData.light_sensor,
             dehumidifier_control_enabled: wsData.dehumidifier_control_enabled,
             // Added per request:
             dehumidifier_humidity: wsData.dehumidifier_humidity,
@@ -520,6 +522,7 @@ class GrowspaceAdapter {
             exhaust_sensor: attributes.exhaust_sensor,
             humidifier_entity: attributes.humidifier_entity,
             humidifier_sensor: attributes.humidifier_sensor,
+            circulation_fan_entity: attributes.circulation_fan_entity,
             dehumidifier_entity: attributes.dehumidifier_entity,
             dehumidifier_control_enabled: attributes.dehumidifier_control_enabled
         };
@@ -582,6 +585,7 @@ const METRIC_SORT_ORDER = [
     'drain',
     'optimal',
     'exhaust',
+    'circulation_fan',
     'humidifier',
     'dehumidifier'
 ];
@@ -597,6 +601,12 @@ const METRIC_CONFIG = {
     irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state', icon: mdiWater, type: 'step' },
     drain: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: 'step' },
     exhaust: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
+    circulation_fan: {
+        color: '#607d8b',
+        title: 'Circulation Fan',
+        unit: '',
+        icon: mdiFan
+    },
     humidifier: { color: '#607d8b', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
     dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: 'state', icon: mdiAirHumidifierOff, type: 'step' },
     optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state', icon: mdiRadioboxMarked, type: 'step' }
@@ -9587,6 +9597,7 @@ class GrowspaceHistoryController {
         this.dehumidifierHistory = null;
         this.exhaustHistory = null;
         this.humidifierHistory = null;
+        this.circulationFanHistory = null;
         this.soilMoistureHistory = null;
         // Individual environment sensor histories (since env data moved to WebSocket)
         this.temperatureHistory = null;
@@ -9655,6 +9666,8 @@ class GrowspaceHistoryController {
                 this._fetchExhaustHistory(range);
             if (metric === 'humidifier')
                 this._fetchHumidifierHistory(range);
+            if (metric === 'circulation_fan')
+                this._fetchCirculationFanHistory(range);
             if (metric === 'soil_moisture')
                 this._fetchSoilMoistureHistory(range);
         }
@@ -9707,6 +9720,8 @@ class GrowspaceHistoryController {
             this._fetchExhaustHistory(range);
         if (this.activeEnvGraphs.has('humidifier'))
             this._fetchHumidifierHistory(range);
+        if (this.activeEnvGraphs.has('circulation_fan'))
+            this._fetchCirculationFanHistory(range);
         if (this.activeEnvGraphs.has('soil_moisture'))
             this._fetchSoilMoistureHistory(range);
     }
@@ -9849,6 +9864,20 @@ class GrowspaceHistoryController {
             console.error("Failed to fetch humidifier history", e);
         }
     }
+    async _fetchCirculationFanHistory(range = '24h') {
+        const { device, entityId } = this.getRelatedEntityId('circulation_fan_entity');
+        if (!device || !entityId)
+            return;
+        const { start, end } = this.calculateTimeRange(range);
+        try {
+            const history = await this.host.dataService.getHistory(entityId, start, end);
+            this.circulationFanHistory = history;
+            this.host.requestUpdate();
+        }
+        catch (e) {
+            console.error("Failed to fetch circulation fan history", e);
+        }
+    }
     async _fetchSoilMoistureHistory(range = '24h') {
         const { device, entityId } = this.getRelatedEntityId('soil_moisture_sensor');
         if (!device || !entityId)
@@ -9869,31 +9898,39 @@ class GrowspaceHistoryController {
         // Use pre-loaded devices from store
         const devices = this.host.devices;
         const device = devices.find(d => d.device_id === this.host.selectedDevice);
-        if (!device || !device.overview_entity_id)
-            return { device, entityId: null };
-        const overviewEntity = this.host.hass.states[device.overview_entity_id];
-        // 1. Try direct attribute (e.g. 'exhaust_entity')
-        let entityId = overviewEntity?.attributes?.[attribute];
-        // 2a. Fallback: Try sensor attribute (e.g. 'exhaust_sensor') if the requested one was an entity and is missing
+        if (!device)
+            return { device: null, entityId: null };
+        // 0. Use environment_attributes from device (populated via WebSocket)
+        let entityId = device.environment_attributes?.[attribute];
+        if (entityId)
+            return { device, entityId };
+        // Fallback: check other variants in environment_attributes
+        if (attribute.endsWith('_entity')) {
+            const sensorAttr = attribute.replace('_entity', '_sensor');
+            entityId = device.environment_attributes?.[sensorAttr];
+        }
+        else if (attribute.endsWith('_sensor')) {
+            const entityAttr = attribute.replace('_sensor', '_entity');
+            entityId = device.environment_attributes?.[entityAttr];
+        }
+        if (entityId)
+            return { device, entityId };
+        // Legacy access via overview entity attributes
+        const overviewEntity = device.overview_entity_id ? this.host.hass.states[device.overview_entity_id] : null;
+        entityId = overviewEntity?.attributes?.[attribute];
         if (!entityId && attribute.endsWith('_entity')) {
             const sensorAttr = attribute.replace('_entity', '_sensor');
             entityId = overviewEntity?.attributes?.[sensorAttr];
         }
-        // 2b. Fallback: Try entity attribute (e.g. 'exhaust_entity') if the requested one was a sensor and is missing
         if (!entityId && attribute.endsWith('_sensor')) {
             const entityAttr = attribute.replace('_sensor', '_entity');
             entityId = overviewEntity?.attributes?.[entityAttr];
         }
-        // 3. Fallback: Try looking in observations (nested)
         if (!entityId && overviewEntity?.attributes?.observations) {
             entityId = overviewEntity.attributes.observations[attribute];
             if (!entityId && attribute.endsWith('_entity')) {
                 const sensorAttr = attribute.replace('_entity', '_sensor');
                 entityId = overviewEntity.attributes.observations[sensorAttr];
-            }
-            if (!entityId && attribute.endsWith('_sensor')) {
-                const entityAttr = attribute.replace('_sensor', '_entity');
-                entityId = overviewEntity.attributes.observations[entityAttr];
             }
         }
         return { device, entityId };
@@ -10094,6 +10131,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         this.dehumidifierHistory = [];
         this.exhaustHistory = [];
         this.humidifierHistory = [];
+        this.circulationFanHistory = [];
         this.optimalHistory = [];
         this.soilMoistureHistory = [];
         // Individual environment sensor histories (since env data moved to WebSocket)
@@ -10313,7 +10351,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                     return (val === true || val === 'on' || val === 1) ? 1 : 0;
                 }
                 // For individual sensor history, value is in state
-                if (key === 'temperature' || key === 'humidity' || key === 'vpd' || key === 'co2' || key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture') {
+                if (key === 'temperature' || key === 'humidity' || key === 'vpd' || key === 'co2' || key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture' || key === 'circulation_fan') {
                     if (ent.state && !isNaN(parseFloat(ent.state))) {
                         return ent.state;
                     }
@@ -10484,7 +10522,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         let minVal = 0;
         let maxVal = 1;
         if (unit !== 'state' && metricKey !== 'irrigation' && metricKey !== 'drain') {
-            if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+            if (metricKey === 'exhaust' || metricKey === 'humidifier' || metricKey === 'circulation_fan') {
                 minVal = 0;
                 maxVal = 10;
             }
@@ -10770,6 +10808,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                 historySource = this.exhaustHistory;
             else if (metricKey === 'humidifier')
                 historySource = this.humidifierHistory;
+            else if (metricKey === 'circulation_fan')
+                historySource = this.circulationFanHistory;
             else if (metricKey === 'soil_moisture')
                 historySource = this.soilMoistureHistory;
             else if (metricKey === 'optimal')
@@ -10796,7 +10836,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                         return (val === true || val === 'on' || val === 1) ? 1 : 0;
                     }
                     // For individual sensor history entries, value is in state
-                    if (key === 'temperature' || key === 'humidity' || key === 'vpd' || key === 'co2' || key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture') {
+                    if (key === 'temperature' || key === 'humidity' || key === 'vpd' || key === 'co2' || key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture' || key === 'circulation_fan') {
                         if (ent.state && !isNaN(parseFloat(ent.state))) {
                             return ent.state;
                         }
@@ -11122,6 +11162,10 @@ __decorate([
     n$2({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceEnvChart.prototype, "humidifierHistory", void 0);
+__decorate([
+    n$2({ type: Array }),
+    __metadata("design:type", Array)
+], GrowspaceEnvChart.prototype, "circulationFanHistory", void 0);
 __decorate([
     n$2({ type: Array }),
     __metadata("design:type", Array)
@@ -16377,6 +16421,8 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
             (humidifierSensor && this.hass.states[humidifierSensor]) ? this.hass.states[humidifierSensor].state : undefined;
         const dehumidifierId = envAttrs.dehumidifier_entity;
         const dehumidifierState = dehumidifierId && this.hass.states[dehumidifierId] ? this.hass.states[dehumidifierId].state : undefined;
+        const circulationFanId = envAttrs.circulation_fan_entity;
+        const circulationFanState = circulationFanId && this.hass.states[circulationFanId] ? this.hass.states[circulationFanId].state : undefined;
         return x `
       <div class="gs-stats-container">
         <div class="gs-header-top">
@@ -16789,6 +16835,34 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
                   <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg> Dehumidifier: ${dehumidifierState ?? '-'}
                   ${(() => {
             const { linked, groupIndex } = this._isMetricLinked('dehumidifier');
+            if (linked) {
+                return x `
+                        <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
+                             @click=${(e) => { e.stopPropagation(); this._unlinkGraphs(groupIndex); }}
+                             title="Unlink Graph">
+                          <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary-color);"><path d="${mdiLink}"></path></svg>
+                        </div>
+                      `;
+            }
+            return '';
+        })()}
+                </div>` : ''}
+
+              ${circulationFanId ? x `
+                <div class="stat-chip ${this.activeEnvGraphs.has('circulation_fan') ? 'active' : ''}"
+                     draggable="${this._chipDraggable}"
+                     @dragstart=${(e) => this._handleChipDragStart(e, 'circulation_fan')}
+                     @drop=${(e) => this._handleChipDrop(e, 'circulation_fan')}
+                     @dragover=${(e) => this._handleDragOver(e)}
+                     @click=${(e) => {
+            const target = e.target;
+            if (target.closest('.link-icon'))
+                return;
+            this._toggleEnvGraph('circulation_fan');
+        }}>
+                  <svg viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg> Fan: ${circulationFanState ?? '-'}
+                  ${(() => {
+            const { linked, groupIndex } = this._isMetricLinked('circulation_fan');
             if (linked) {
                 return x `
                         <div class="link-icon" style="margin-left: 4px; opacity: 0.8; cursor: pointer;" 
@@ -19049,6 +19123,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
         this.dehumidifierHistory = [];
         this.exhaustHistory = [];
         this.humidifierHistory = [];
+        this.circulationFanHistory = [];
         this.soilMoistureHistory = [];
         // Individual environment sensor histories (since env data moved to WebSocket)
         this.temperatureHistory = [];
@@ -19114,6 +19189,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
                   .dehumidifierHistory=${this.dehumidifierHistory || []}
                   .exhaustHistory=${this.exhaustHistory || []}
                   .humidifierHistory=${this.humidifierHistory || []}
+                  .circulationFanHistory=${this.circulationFanHistory || []}
                   .soilMoistureHistory=${this.soilMoistureHistory || []}
                   .optimalHistory=${this.optimalHistory || []}
                   .temperatureHistory=${this.temperatureHistory || []}
@@ -19147,6 +19223,8 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
                     history = this.exhaustHistory || [];
                 else if (metric === 'humidifier')
                     history = this.humidifierHistory || [];
+                else if (metric === 'circulation_fan')
+                    history = this.circulationFanHistory || [];
                 else if (metric === 'dehumidifier')
                     history = this.dehumidifierHistory || [];
                 else if (metric === 'soil_moisture')
@@ -19249,6 +19327,10 @@ __decorate([
     n$2({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "humidifierHistory", void 0);
+__decorate([
+    n$2({ attribute: false }),
+    __metadata("design:type", Array)
+], GrowspaceAnalytics.prototype, "circulationFanHistory", void 0);
 __decorate([
     n$2({ attribute: false }),
     __metadata("design:type", Array)
@@ -20603,6 +20685,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
             .dehumidifierHistory=${this.historyController.dehumidifierHistory || []}
             .exhaustHistory=${this.historyController.exhaustHistory || []}
             .humidifierHistory=${this.historyController.humidifierHistory || []}
+            .circulationFanHistory=${this.historyController.circulationFanHistory || []}
             .soilMoistureHistory=${this.historyController.soilMoistureHistory || []}
             .temperatureHistory=${this.historyController.temperatureHistory || []}
             .humidityHistory=${this.historyController.humidityHistory || []}

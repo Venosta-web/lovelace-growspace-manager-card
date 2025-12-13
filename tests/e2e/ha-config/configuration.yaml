@@ -94,9 +94,11 @@ template:
           {{ (base + amplitude * sin(minutes / 7.5 * 3.14159)) | round(0) | int }}
 
       # Exhaust fan speed oscillates 0-10 (period ~3 minutes)
+      # Domain: sensor (allowed for exhaust_entity)
       - name: "Test Exhaust"
         unique_id: test_exhaust
-        unit_of_measurement: ""
+        state_class: measurement
+        device_class: power_factor
         state: >
           {% set minutes = now().minute + (now().second / 60) %}
           {% set base = 5 %}
@@ -104,17 +106,51 @@ template:
           {{ (base + amplitude * sin(minutes / 1.5 * 3.14159)) | round(0) | int }}
 
       # Humidifier oscillates 0-10 (period ~4 minutes, offset phase)
+      # Domain: sensor (allowed for humidifier_entity)
       - name: "Test Humidifier"
         unique_id: test_humidifier
-        unit_of_measurement: ""
+        state_class: measurement
+        device_class: power_factor
         state: >
           {% set minutes = now().minute + (now().second / 60) %}
           {% set base = 5 %}
           {% set amplitude = 5 %}
           {{ (base + amplitude * sin((minutes + 2) / 2 * 3.14159)) | round(0) | int }}
 
-  # Dehumidifier as binary sensor (toggles every 2 minutes)
+      # Circulation Fan speed oscillates 0-10 (period ~6 minutes)
+      # Domain: sensor (allowed for circulation_fan)
+      - name: "Test Circulation Fan"
+        unique_id: test_circulation_fan
+        state_class: measurement
+        device_class: power_factor
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 5 %}
+          {% set amplitude = 5 %}
+          {{ (base + amplitude * sin(minutes / 3 * 3.14159)) | round(0) | int }}
+
+      # Light sensor - oscillates 0-100% based on 12h cycle
+      # Domain: sensor (allowed for light_sensor)
+      # Full brightness during day (6:00-18:00), 0 at night
+      - name: "Test Light"
+        unique_id: test_light
+        state_class: measurement
+        unit_of_measurement: "%"
+        device_class: power_factor
+        icon: mdi:lightbulb-on-outline
+        state: >
+          {% set hour = now().hour %}
+          {% if hour >= 6 and hour < 18 %}
+            {% set minutes = now().minute + (now().second / 60) %}
+            {{ (50 + 50 * sin(minutes / 30 * 3.14159)) | round(1) }}
+          {% else %}
+            0.0
+          {% endif %}
+
+  # Binary sensors for on/off devices
   - binary_sensor:
+      # Dehumidifier toggles every 2 minutes
+      # Domain: binary_sensor (allowed for dehumidifier_entity)
       - name: "Test Dehumidifier"
         unique_id: test_dehumidifier
         device_class: running

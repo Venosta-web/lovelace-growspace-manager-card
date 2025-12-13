@@ -20,6 +20,7 @@ export class GrowspaceAnalytics extends LitElement {
     @property({ attribute: false }) dehumidifierHistory: any[] = [];
     @property({ attribute: false }) exhaustHistory: any[] = [];
     @property({ attribute: false }) humidifierHistory: any[] = [];
+    @property({ attribute: false }) circulationFanHistory: any[] = [];
     @property({ attribute: false }) soilMoistureHistory: any[] = [];
     // Individual environment sensor histories (since env data moved to WebSocket)
     @property({ attribute: false }) temperatureHistory: any[] = [];
@@ -109,6 +110,7 @@ export class GrowspaceAnalytics extends LitElement {
                   .dehumidifierHistory=${this.dehumidifierHistory || []}
                   .exhaustHistory=${this.exhaustHistory || []}
                   .humidifierHistory=${this.humidifierHistory || []}
+                  .circulationFanHistory=${this.circulationFanHistory || []}
                   .soilMoistureHistory=${this.soilMoistureHistory || []}
                   .optimalHistory=${this.optimalHistory || []}
                   .temperatureHistory=${this.temperatureHistory || []}
@@ -136,6 +138,7 @@ export class GrowspaceAnalytics extends LitElement {
                 else if (metric === 'co2') history = this.co2History || [];
                 else if (metric === 'exhaust') history = this.exhaustHistory || [];
                 else if (metric === 'humidifier') history = this.humidifierHistory || [];
+                else if (metric === 'circulation_fan') history = this.circulationFanHistory || [];
                 else if (metric === 'dehumidifier') history = this.dehumidifierHistory || [];
                 else if (metric === 'soil_moisture') history = this.soilMoistureHistory || [];
                 else if (metric === 'optimal') history = this.optimalHistory || [];

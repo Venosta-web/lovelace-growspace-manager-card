@@ -17,6 +17,7 @@ export class GrowspaceEnvChart extends LitElement {
     @property({ type: Array }) dehumidifierHistory: any[] = [];
     @property({ type: Array }) exhaustHistory: any[] = [];
     @property({ type: Array }) humidifierHistory: any[] = [];
+    @property({ type: Array }) circulationFanHistory: any[] = [];
     @property({ type: Array }) optimalHistory: any[] = [];
     @property({ type: Array }) soilMoistureHistory: any[] = [];
     // Individual environment sensor histories (since env data moved to WebSocket)
@@ -393,7 +394,7 @@ export class GrowspaceEnvChart extends LitElement {
                     return (val === true || val === 'on' || val === 1) ? 1 : 0;
                 }
                 // For individual sensor history, value is in state
-                if (key === 'temperature' || key === 'humidity' || key === 'vpd' || key === 'co2' || key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture') {
+                if (key === 'temperature' || key === 'humidity' || key === 'vpd' || key === 'co2' || key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture' || key === 'circulation_fan') {
                     if (ent.state && !isNaN(parseFloat(ent.state))) {
                         return ent.state;
                     }
@@ -552,7 +553,7 @@ export class GrowspaceEnvChart extends LitElement {
         let maxVal = 1;
 
         if (unit !== 'state' && metricKey !== 'irrigation' && metricKey !== 'drain') {
-            if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+            if (metricKey === 'exhaust' || metricKey === 'humidifier' || metricKey === 'circulation_fan') {
                 minVal = 0;
                 maxVal = 10;
             } else if (metricKey === 'dehumidifier') {
@@ -844,6 +845,7 @@ export class GrowspaceEnvChart extends LitElement {
             else if (metricKey === 'dehumidifier') historySource = this.dehumidifierHistory;
             else if (metricKey === 'exhaust') historySource = this.exhaustHistory;
             else if (metricKey === 'humidifier') historySource = this.humidifierHistory;
+            else if (metricKey === 'circulation_fan') historySource = this.circulationFanHistory;
             else if (metricKey === 'soil_moisture') historySource = this.soilMoistureHistory;
             else if (metricKey === 'optimal') historySource = this.optimalHistory;
 
@@ -868,7 +870,7 @@ export class GrowspaceEnvChart extends LitElement {
                         return (val === true || val === 'on' || val === 1) ? 1 : 0;
                     }
                     // For individual sensor history entries, value is in state
-                    if (key === 'temperature' || key === 'humidity' || key === 'vpd' || key === 'co2' || key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture') {
+                    if (key === 'temperature' || key === 'humidity' || key === 'vpd' || key === 'co2' || key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture' || key === 'circulation_fan') {
                         if (ent.state && !isNaN(parseFloat(ent.state))) {
                             return ent.state;
                         }

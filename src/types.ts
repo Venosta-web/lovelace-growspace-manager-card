@@ -327,6 +327,8 @@ export interface GrowspaceWebSocketData {
   dehumidifier_entity?: string;
   humidifier_entity?: string;
   exhaust_entity?: string;
+  circulation_fan_entity?: string;
+  light_sensor?: string;
 
   dehumidifier_control_enabled?: boolean;
   dehumidifier_humidity?: number;

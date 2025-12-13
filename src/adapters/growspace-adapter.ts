@@ -102,6 +102,8 @@ export class GrowspaceAdapter {
             exhaust_entity: wsData.exhaust_entity,
             exhaust_sensor: wsData.exhaust_sensor,
             humidifier_sensor: wsData.humidifier_sensor,
+            circulation_fan_entity: wsData.circulation_fan_entity,
+            light_sensor: wsData.light_sensor,
             dehumidifier_control_enabled: wsData.dehumidifier_control_enabled,
             // Added per request:
             dehumidifier_humidity: wsData.dehumidifier_humidity,
@@ -119,6 +121,7 @@ export class GrowspaceAdapter {
             exhaust_sensor: attributes.exhaust_sensor,
             humidifier_entity: attributes.humidifier_entity,
             humidifier_sensor: attributes.humidifier_sensor,
+            circulation_fan_entity: attributes.circulation_fan_entity,
             dehumidifier_entity: attributes.dehumidifier_entity,
             dehumidifier_control_enabled: attributes.dehumidifier_control_enabled
         };

@@ -699,6 +699,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
             .dehumidifierHistory=${this.historyController.dehumidifierHistory || []}
             .exhaustHistory=${this.historyController.exhaustHistory || []}
             .humidifierHistory=${this.historyController.humidifierHistory || []}
+            .circulationFanHistory=${this.historyController.circulationFanHistory || []}
             .soilMoistureHistory=${this.historyController.soilMoistureHistory || []}
             .temperatureHistory=${this.historyController.temperatureHistory || []}
             .humidityHistory=${this.historyController.humidityHistory || []}

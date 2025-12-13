@@ -25,6 +25,7 @@ export const METRIC_SORT_ORDER = [
     'drain',
     'optimal',
     'exhaust',
+    'circulation_fan',
     'humidifier',
     'dehumidifier'
 ];
@@ -49,6 +50,12 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state', icon: mdiWater, type: 'step' },
     drain: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: 'step' },
     exhaust: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
+    circulation_fan: {
+        color: '#607d8b',
+        title: 'Circulation Fan',
+        unit: '',
+        icon: mdiFan
+    },
     humidifier: { color: '#607d8b', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
     dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: 'state', icon: mdiAirHumidifierOff, type: 'step' },
     optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state', icon: mdiRadioboxMarked, type: 'step' }
