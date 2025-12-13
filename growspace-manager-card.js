@@ -11,7 +11,6 @@ var mdiCannabis = "M11.5,22V17.35C11,18.13 10,19.09 8.03,19.81C8.03,19.81 8.53,1
 var mdiCheck = "M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z";
 var mdiCheckboxBlankOutline = "M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z";
 var mdiCheckboxMarked = "M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z";
-var mdiChevronDown = "M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z";
 var mdiChevronLeft = "M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z";
 var mdiChevronRight = "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z";
 var mdiClipboardTextClock = "M21 11.11V5C21 3.9 20.11 3 19 3H14.82C14.4 1.84 13.3 1 12 1S9.6 1.84 9.18 3H5C3.9 3 3 3.9 3 5V19C3 20.11 3.9 21 5 21H11.11C12.37 22.24 14.09 23 16 23C19.87 23 23 19.87 23 16C23 14.09 22.24 12.37 21 11.11M12 3C12.55 3 13 3.45 13 4S12.55 5 12 5 11 4.55 11 4 11.45 3 12 3M6 7H18V9H6V7M9.08 17H6V15H9.08C9.03 15.33 9 15.66 9 16S9.03 16.67 9.08 17M6 13V11H11.11C10.5 11.57 10.04 12.25 9.68 13H6M16 21C13.24 21 11 18.76 11 16S13.24 11 16 11 21 13.24 21 16 18.76 21 16 21M16.5 16.25L19.36 17.94L18.61 19.16L15 17V12H16.5V16.25Z";
@@ -10630,7 +10629,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         if (dataPoints.length < 2 && type !== 'step')
             return null;
         const width = 1000;
-        const height = type === 'step' ? 100 : 180;
+        // Standardize height for all graph types to unified card size
+        const height = 180;
         let minVal = 0;
         let maxVal = 1;
         if (unit !== 'state' && metricKey !== 'irrigation' && metricKey !== 'drain') {
@@ -10695,7 +10695,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             durationMillis = 6 * 60 * 60 * 1000;
         else if (range === '7d')
             durationMillis = 7 * 24 * 60 * 60 * 1000;
-        const startTime = new Date(now.getTime() - durationMillis);
+        new Date(now.getTime() - durationMillis);
         const graphData = this._getGraphData();
         if (!graphData)
             return x ``;
@@ -10704,7 +10704,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         // Storing in memo avoids recalc. But I didn't return them in interface.
         // I'll re-derive locally, it's cheap arithmetic compared to loop/path.
         const width = 1000;
-        const height = type === 'step' ? 100 : 180;
+        const height = 180; // Standardized height
         const rangeVal = maxVal - minVal || 1;
         let paddedMin = minVal - (rangeVal * 0.1);
         let paddedMax = maxVal + (rangeVal * 0.1);
@@ -10713,123 +10713,21 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             paddedMax = maxVal;
         }
         const paddedRange = paddedMax - paddedMin;
-        // For step graphs, use compact design
-        if (type === 'step') {
-            return x `
-        <div class="gs-light-cycle-card" style="border: 1px solid ${color}40;">
-           <div class="gs-light-header-row">
-               <div class="gs-light-title" style="font-size: 1.2rem; flex: 1; cursor: pointer;" @click=${this._toggleEnvGraph}>
-                   <div class="gs-icon-box" style="color: ${color}; background: ${color}10; border-color: ${color}30; width: 36px; height: 36px;">
-                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-                   </div>
-                   <div>
-                      <div>${title}</div>
-                      <div class="gs-light-subtitle">${range.toUpperCase()} HISTORY • ${(() => {
-                if (metricKey === 'light') {
-                    // Get the light schedule sensor for this device
-                    if (this.device) {
-                        const lightScheduleSensorId = `binary_sensor.${this.device.device_id}_light_schedule_correct`;
-                        const lightScheduleSensor = this.hass.states[lightScheduleSensorId];
-                        if (lightScheduleSensor?.attributes['Expected schedule']) {
-                            return lightScheduleSensor.attributes['Expected schedule'];
-                        }
-                    }
-                    return dataPoints[dataPoints.length - 1]?.value === 1 ? 'ON' : 'OFF';
-                }
-                else if (unit === 'state') {
-                    if (metricKey === 'optimal' && dataPoints.length > 0) {
-                        let optimalDuration = 0;
-                        let currentTime = startTime.getTime();
-                        let currentValue = dataPoints[0].value;
-                        for (let i = 0; i < dataPoints.length; i++) {
-                            const point = dataPoints[i];
-                            const duration = point.time - currentTime;
-                            if (duration > 0 && currentValue === 1) {
-                                optimalDuration += duration;
-                            }
-                            currentTime = point.time;
-                            currentValue = point.value;
-                        }
-                        const totalDuration = now.getTime() - startTime.getTime();
-                        const percentage = totalDuration > 0 ? Math.round((optimalDuration / totalDuration) * 100) : 0;
-                        return `OPTIMAL ${percentage}%`;
-                    }
-                    return dataPoints[dataPoints.length - 1]?.value === 1 ? 'OPTIMAL' : 'NOT OPTIMAL';
-                }
-                else if (metricKey === 'irrigation' || metricKey === 'drain') {
-                    return dataPoints[dataPoints.length - 1]?.value === 1 ? 'ACTIVE' : 'INACTIVE';
-                }
-                else {
-                    return `${minVal.toFixed(1)} - ${maxVal.toFixed(1)} ${unit}`;
-                }
-            })()}</div>
-                   </div>
-               </div>
-               
-               <div style="opacity: 0.7; cursor: pointer;" @click=${this._toggleEnvGraph}>
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronDown}"></path></svg>
-               </div>
-           </div>
-
-           <div class="gs-chart-container" style="height: 100px;"
-                @mousemove=${(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
-            }}
-                @touchmove=${(e) => {
-                if (e.cancelable)
-                    e.preventDefault();
-                const rect = e.currentTarget.getBoundingClientRect();
-                this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
-            }}
-                @touchstart=${(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
-            }}
-                @touchend=${() => this._tooltip = null}
-                @mouseleave=${() => this._tooltip = null}>
-
-               ${this._tooltip && this._tooltip.id === metricKey ? x `
-                   <div class="gs-cursor-line" style="left: ${this._tooltip.x}px;"></div>
-                   <div class="gs-tooltip" style="left: ${this._tooltip.x}px;">
-                      <div class="time">${this._tooltip.time}</div>
-                      <div>${this._tooltip.value}</div>
-                   </div>
-               ` : ''}
-
-               <svg class="gs-chart-svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
-                   <defs>
-                       <linearGradient id="grad-${metricKey}" x1="0%" y1="0%" x2="0%" y2="100%">
-                           <stop offset="0%" style="stop-color:${color};stop-opacity:0.5" />
-                           <stop offset="100%" style="stop-color:${color};stop-opacity:0" />
-                       </linearGradient>
-                   </defs>
-                   <path class="chart-line" d="${svgPath}" style="stroke: ${color};" />
-                   <path class="chart-gradient-fill" d="${svgPath} V 100 H 0 Z" style="fill: url(#grad-${metricKey});" />
-               </svg>
-               <div class="chart-markers">
-                ${(() => {
-                if (range === '1h')
-                    return x `<span>-60m</span><span>NOW</span>`;
-                if (range === '6h')
-                    return x `<span>-6h</span><span>NOW</span>`;
-                if (range === '7d')
-                    return x `<span>-7d</span><span>NOW</span>`;
-                return x `<span>-24H</span><span>NOW</span>`;
-            })()}
-               </div>
-           </div>
-        </div>
-      `;
+        // Determine Y-Axis Labels
+        let yLabels = [];
+        if (type === 'step' || unit === 'state' || metricKey === 'dehumidifier' || metricKey === 'exhaust') {
+            // Smart labels for binary/step data
+            yLabels = ['ON', 'OFF'];
         }
-        // For line graphs, use new rectangular design
-        const yLabels = [
-            paddedMax,
-            paddedMax - paddedRange * 0.25,
-            paddedMax - paddedRange * 0.5,
-            paddedMax - paddedRange * 0.75,
-            paddedMin
-        ];
+        else {
+            yLabels = [
+                paddedMax,
+                paddedMax - paddedRange * 0.25,
+                paddedMax - paddedRange * 0.5,
+                paddedMax - paddedRange * 0.75,
+                paddedMin
+            ];
+        }
         return x `
       <div class="gs-env-graph-card">
          <div class="gs-env-graph-header" @click=${this._toggleEnvGraph}>
@@ -10869,10 +10767,10 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
 
              <!-- Y-axis labels -->
              <div style="position: absolute; left: 0; top: 20px; bottom: 30px; width: 45px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; color: #666; text-align: right; padding-right: 8px; pointer-events: none;">
-                ${yLabels.map(val => x `<div>${val.toFixed(1)} ${unit}</div>`)}
+                ${yLabels.map(val => x `<div>${typeof val === 'number' ? val.toFixed(1) : val} ${typeof val === 'number' ? unit : ''}</div>`)}
              </div>
 
-             <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
+             <svg class="gs-chart-svg" style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
                  <defs>
                      <linearGradient id="grad-${metricKey}" x1="0%" y1="0%" x2="0%" y2="100%">
                          <stop offset="0%" style="stop-color:${color};stop-opacity:0.3" />
@@ -10887,8 +10785,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                  <line x1="${width * 0.75}" y1="0" x2="${width * 0.75}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
                  <line x1="${width}" y1="0" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
                  
-                 <!-- Target/average line -->
-                 ${avgValue ? x `
+                 <!-- Target/average line - Only for line graphs or non-binary -->
+                 ${(type !== 'step' && avgValue) ? x `
                    <line x1="0" y1="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
                          x2="${width}" y2="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
                          stroke="${color}" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.5" />
@@ -11184,53 +11082,8 @@ GrowspaceEnvChart.styles = i$5 `
       border-left: 1px dashed rgba(255, 255, 255, 0.5);
     }
 
-    /* Step Graph Styles */
-    .gs-light-cycle-card {
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 16px;
-      padding: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      transition: all 0.3s ease;
-      margin-top: 12px;
-    }
 
-    .gs-light-header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 4px;
-      cursor: pointer;
-    }
-
-    .gs-light-title {
-       font-size: 1.5rem;
-       font-weight: 600;
-       display: flex;
-       align-items: center;
-       gap: 12px;
-       color: #fff;
-    }
-
-    .gs-icon-box {
-      border-radius: 14px;
-      width: 48px;
-      height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .gs-light-subtitle {
-      font-size: 0.75rem;
-      opacity: 0.5;
-      font-weight: 500;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      margin-top: 4px;
-    }
+    /* Step Graph Styles - REMOVED (Unified Template) */
     
     .gs-chart-container {
        margin-top: 8px;
@@ -11239,6 +11092,8 @@ GrowspaceEnvChart.styles = i$5 `
        width: 100%;
        cursor: crosshair;
     }
+    
+
     
     .gs-chart-svg {
       width: 100%;
