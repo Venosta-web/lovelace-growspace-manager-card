@@ -121,7 +121,16 @@ export class GraphDataTransformer {
             return (s === 'on' || s === 'true' || s === '1' || s === 'heating' || s === 'drying') ? 1 : 0;
         }
         if (key === 'light') {
-            return (s === 'on' || s === 'true' || s === '1') ? 1 : 0;
+            // Text based check
+            if (s === 'on' || s === 'true') return 1;
+            if (s === 'off' || s === 'false') return 0;
+
+            // Numeric check for dimmers/percentages (0 = off, >0 = on)
+            const val = parseFloat(s);
+            if (!isNaN(val)) {
+                return val > 0 ? 1 : 0;
+            }
+            return 0;
         }
 
         const val = parseFloat(s);
