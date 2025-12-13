@@ -146,16 +146,6 @@ template:
             0.0
           {% endif %}
 
-  # Binary sensors for on/off devices
-  - binary_sensor:
-      # Dehumidifier toggles every 2 minutes
-      # Domain: binary_sensor (allowed for dehumidifier_entity)
-      - name: "Test Dehumidifier"
-        unique_id: test_dehumidifier
-        device_class: running
-        state: >
-          {{ (now().minute // 2) % 2 == 0 }}
-
 input_boolean:
   test_irrigation_state:
     name: "Test Irrigation State"
@@ -163,6 +153,9 @@ input_boolean:
   test_drain_state:
     name: "Test Drain State"
     icon: mdi:water-pump
+  test_dehumidifier_state:
+    name: "Test Dehumidifier State"
+    icon: mdi:air-humidifier-off
 
 switch:
   - platform: template
@@ -192,3 +185,16 @@ switch:
           service: input_boolean.turn_off
           target:
             entity_id: input_boolean.test_drain_state
+      
+      test_dehumidifier:
+        friendly_name: "Test Dehumidifier"
+        unique_id: test_dehumidifier
+        value_template: "{{ is_state('input_boolean.test_dehumidifier_state', 'on') }}"
+        turn_on:
+          service: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.test_dehumidifier_state
+        turn_off:
+          service: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.test_dehumidifier_state

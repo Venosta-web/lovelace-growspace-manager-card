@@ -10437,18 +10437,18 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                     min = 0;
                     max = 1;
                 }
-                else if (key === 'optimal') {
+                else if (config.type === 'step') {
                     min = 0;
                     max = 1;
-                } // Optimal is binary 0-1
+                } // Step graphs (optimal, irrigation, drain, light) are binary
                 // Add padding for single graphs only
-                if (!this.isCombined && max === min) {
+                if (!this.isCombined && max === min && config.type !== 'step') {
                     max += 1;
                     min -= 1;
                 }
                 const paddedRange = max - min || 1;
                 let pathStr = '';
-                if (key === 'optimal') {
+                if (config.type === 'step') {
                     // Step Path
                     const stepPoints = [];
                     if (dataPoints.length > 0) {

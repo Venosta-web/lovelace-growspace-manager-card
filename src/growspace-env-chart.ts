@@ -182,10 +182,10 @@ export class GrowspaceEnvChart extends LitElement {
                 // Enforce specific ranges
                 if (key === 'exhaust' || key === 'humidifier' || key === 'circulation_fan') { min = 0; max = 10; }
                 else if (key === 'dehumidifier') { min = 0; max = 1; }
-                else if (key === 'optimal') { min = 0; max = 1; } // Optimal is binary 0-1
+                else if ((config as any).type === 'step') { min = 0; max = 1; } // Step graphs (optimal, irrigation, drain, light) are binary
 
                 // Add padding for single graphs only
-                if (!this.isCombined && max === min) {
+                if (!this.isCombined && max === min && (config as any).type !== 'step') {
                     max += 1;
                     min -= 1;
                 }
@@ -193,7 +193,7 @@ export class GrowspaceEnvChart extends LitElement {
                 const paddedRange = max - min || 1;
                 let pathStr = '';
 
-                if (key === 'optimal') {
+                if ((config as any).type === 'step') {
                     // Step Path
                     const stepPoints: [number, number][] = [];
                     if (dataPoints.length > 0) {
