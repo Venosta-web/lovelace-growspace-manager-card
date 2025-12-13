@@ -347,7 +347,8 @@ export class GrowspaceHistoryController implements ReactiveController {
         // Check based on source type
         if (mapping.source === 'irrigation') {
             const entityId = device.irrigation_config?.[mapping.primary as keyof typeof device.irrigation_config];
-            return entityId as string || null;
+            if (entityId) return entityId as string;
+            // Fallback: If not found in irrigation_config, continue to check environment_attributes/etc below
         }
 
         // Default: environment_attributes
