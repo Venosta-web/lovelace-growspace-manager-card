@@ -2,7 +2,7 @@ import { LitElement, html, css, PropertyValues, TemplateResult } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { GrowspaceDevice } from '../types';
+import { GrowspaceDevice, HistorySensorState, SensorHistories } from '../types';
 import { RangeChangeEvent } from '../events';
 import { METRIC_CONFIG, METRIC_SORT_ORDER, DEFAULT_METRIC_CONFIG } from '../constants';
 import '../growspace-env-chart';
@@ -16,21 +16,21 @@ export class GrowspaceAnalytics extends LitElement {
     @consume({ context: hassContext, subscribe: true })
     hass!: HomeAssistant;
     @property({ attribute: false }) device?: GrowspaceDevice;
-    @property({ attribute: false }) historyData: any[] = [];
-    @property({ attribute: false }) optimalHistory: any[] = [];
-    @property({ attribute: false }) dehumidifierHistory: any[] = [];
-    @property({ attribute: false }) exhaustHistory: any[] = [];
-    @property({ attribute: false }) humidifierHistory: any[] = [];
-    @property({ attribute: false }) circulationFanHistory: any[] = [];
-    @property({ attribute: false }) soilMoistureHistory: any[] = [];
-    @property({ attribute: false }) lightHistory: any[] = [];
-    @property({ attribute: false }) irrigationHistory: any[] = [];
-    @property({ attribute: false }) drainHistory: any[] = [];
+    @property({ attribute: false }) historyData: HistorySensorState[] = []; // Generic bucket if needed
+    @property({ attribute: false }) optimalHistory: HistorySensorState[] = [];
+    @property({ attribute: false }) dehumidifierHistory: HistorySensorState[] = [];
+    @property({ attribute: false }) exhaustHistory: HistorySensorState[] = [];
+    @property({ attribute: false }) humidifierHistory: HistorySensorState[] = [];
+    @property({ attribute: false }) circulationFanHistory: HistorySensorState[] = [];
+    @property({ attribute: false }) soilMoistureHistory: HistorySensorState[] = [];
+    @property({ attribute: false }) lightHistory: HistorySensorState[] = [];
+    @property({ attribute: false }) irrigationHistory: HistorySensorState[] = [];
+    @property({ attribute: false }) drainHistory: HistorySensorState[] = [];
     // Individual environment sensor histories (since env data moved to WebSocket)
-    @property({ attribute: false }) temperatureHistory: any[] = [];
-    @property({ attribute: false }) humidityHistory: any[] = [];
-    @property({ attribute: false }) vpdHistory: any[] = [];
-    @property({ attribute: false }) co2History: any[] = [];
+    @property({ attribute: false }) temperatureHistory: HistorySensorState[] = [];
+    @property({ attribute: false }) humidityHistory: HistorySensorState[] = [];
+    @property({ attribute: false }) vpdHistory: HistorySensorState[] = [];
+    @property({ attribute: false }) co2History: HistorySensorState[] = [];
 
     @property({ attribute: false }) activeEnvGraphs: Set<string> = new Set();
     @property({ attribute: false }) linkedGraphGroups: string[][] = [];
@@ -56,7 +56,7 @@ export class GrowspaceAnalytics extends LitElement {
         sortIndex: number;
     }[] = [];
 
-    @state() private _sensorHistory: any = {};
+    @state() private _sensorHistory: SensorHistories = {};
 
     protected willUpdate(changedProperties: PropertyValues) {
         if (changedProperties.has('activeEnvGraphs') || changedProperties.has('linkedGraphGroups')) {
@@ -210,10 +210,7 @@ export class GrowspaceAnalytics extends LitElement {
     }
 
     private _handleToggleGraph(e: CustomEvent) {
-        // Re-dispatch if needed, but since we use bubbles: true, it might go up automatically.
-        // However, if the event was stopped or we want to be explicit:
-        // The original event bubbles, so it should reach the top.
-        // But let's monitor if any processing is needed.
+        // Original event bubbles
     }
 
     private _handleUnlinkGraphs(e: CustomEvent) {

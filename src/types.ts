@@ -362,6 +362,8 @@ export interface HistorySensorState {
   last_changed: string;
 }
 
+export type SensorHistories = Record<string, HistorySensorState[]>;
+
 export interface GraphSeries {
   id: string; // metricKey
   title: string;
@@ -374,4 +376,17 @@ export interface GraphSeries {
   avg?: number;
   path: string;
   fillType: 'gradient' | 'flat' | 'none';
+}
+
+export interface TooltipItem {
+  title: string;
+  value: string;
+  color: string;
+}
+
+export interface TooltipData {
+  id: string;
+  x: number;
+  time: string;
+  items: TooltipItem[];
 }

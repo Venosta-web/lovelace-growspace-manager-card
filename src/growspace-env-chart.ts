@@ -4,7 +4,8 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { mdiMagnify, mdiLink, mdiChevronLeft, mdiChevronRight } from '@mdi/js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
-import { GrowspaceDevice, GraphSeries } from './types';
+import { styleMap } from 'lit/directives/style-map.js';
+import { GrowspaceDevice, GraphSeries, TooltipData, GraphDataPoint, HistorySensorState, SensorHistories } from './types';
 import { GraphDataTransformer } from './graph-data-transformer';
 import { SENSOR_CHART_DEFAULTS, METRIC_CONFIG } from './constants';
 
@@ -14,28 +15,13 @@ import { ToggleEnvGraphEvent, UnlinkGraphsEvent, UnlinkGraphMetricEvent } from '
 
 import { PropertyValues } from 'lit';
 
-export interface GraphDataPoint {
-    time: number;
-    value: number;
-    meta?: any;
-}
-
-export interface HistorySensorState {
-    entity_id: string;
-    state: string;
-    attributes: any;
-    last_changed: string;
-}
-
-export type SensorHistories = Record<string, HistorySensorState[]>;
-
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {
     @consume({ context: hassContext, subscribe: true })
     hass!: HomeAssistant;
     @property({ attribute: false }) device?: GrowspaceDevice;
     @property({ attribute: false }) sensorHistory: SensorHistories = {};
-    // Removed individual props: history, dehumidifierHistory, etc.
+
     @property({ type: String }) metricKey = '';
     @property({ type: String }) unit = '';
     @property({ type: String }) color = '#ffffff';
@@ -49,11 +35,11 @@ export class GrowspaceEnvChart extends LitElement {
     @property({ type: Boolean }) isCombined = false;
     @property({ type: Object }) metricConfig: Record<string, { color: string, title: string, unit: string, icon?: string }> = {};
 
-    @state() private _tooltip: { id: string; x: number; time: string; items: { title: string; value: string; color: string }[] } | null = null;
+    @state() private _activeTooltip: TooltipData | null = null;
     @state() private _hoverTime: number | null = null;
     @state() private _canScrollLeft = false;
     @state() private _canScrollRight = false;
-    @state() private _computedSeries: GraphSeries[] = []; // Cached series
+    @state() private _renderSeries: GraphSeries[] = []; // Cached series renamed for clarity
 
 
     private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
@@ -253,8 +239,8 @@ export class GrowspaceEnvChart extends LitElement {
         const now = new Date(); // Only for display math if needed, but series are cached
         const startTime = new Date(now.getTime() - durationMillis);
 
-        // Use cached series
-        const series = this._computedSeries;
+        // Use cached render series
+        const series = this._renderSeries;
 
         if (series.length === 0) {
             return html`
@@ -279,16 +265,16 @@ export class GrowspaceEnvChart extends LitElement {
                 
                 <div class="gs-env-chart-container" 
                      @mousemove=${(e: MouseEvent) => this._handleGraphHover(e, series, startTime, durationMillis, width)}
-                     @mouseleave=${() => { this._tooltip = null; this._hoverTime = null; }}>
+                     @mouseleave=${() => { this._activeTooltip = null; this._hoverTime = null; }}>
                     
                     ${this._renderTooltip()}
                     ${!this.isCombined ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit) : ''}
                     ${this._renderXAxisHTML(this.range)}
                     
-                    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="width: 100%; height: 100%; overflow: visible;">
+                    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="width: 100%; height: 100%; overflow: visible; display: block;">
                         ${this._renderGrid(width, height)}
                         
-                        ${series.map(s => {
+                        ${series.map((s: GraphSeries) => {
             if (s.fillType === 'gradient') {
                 return svg`
                                     <defs>
@@ -393,102 +379,19 @@ export class GrowspaceEnvChart extends LitElement {
         `;
     }
 
-    private _handleGraphHover(e: MouseEvent, seriesList: GraphSeries[], startTime: Date, durationMillis: number, width: number) {
-        const rect = (e.currentTarget as Element).getBoundingClientRect();
-        // Note: Logic depends on accurate rect. If padding changed in CSS, need to update this.
-        // Current CSS: padding: 20px 40px 30px 50px;
-        // The SVG is inside the container, but container has padding.
-        // The event listener is on container. 
-        // Mouse X relative to SVG drawing area (0 to width)
-        // width = containerWidth - 50 - 40? 
-        // We defined SVG width as fixed 800 for coordinate calc, but it scales via viewBox.
-        // We need to map mouse X -> time.
 
-        // This is tricky with responsive SVG. 
-        // Better approach: Get relative X % in the content box.
-        // 50px left padding, 40px right padding. Total H padding 90px.
-        // contentWidth = rect.width - 90.
-        // relX = (e.clientX - rect.left - 50) / contentWidth
-
-        const contentWidth = rect.width - 90;
-        const relX = Math.max(0, Math.min(1, (e.clientX - rect.left - 50) / contentWidth));
-
-        const hoverTime = startTime.getTime() + relX * durationMillis;
-
-        // Find closest points and format values here
-        const items = seriesList.map(s => {
-            // Binary search (nearest neighbor)
-            const searchTime = hoverTime;
-            let closest = s.points[0];
-            let minDiff = Number.MAX_VALUE;
-
-            let lo = 0;
-            let hi = s.points.length - 1;
-
-            if (s.points.length > 0) {
-                while (lo < hi) {
-                    const mid = Math.floor((lo + hi) / 2);
-                    if (s.points[mid].time < searchTime) {
-                        lo = mid + 1;
-                    } else {
-                        hi = mid;
-                    }
-                }
-                const candidates = [lo, lo - 1, lo + 1].filter(i => i >= 0 && i < s.points.length);
-                candidates.forEach(i => {
-                    const p = s.points[i];
-                    const diff = Math.abs(p.time - searchTime);
-                    if (diff < minDiff) {
-                        minDiff = diff;
-                        closest = p;
-                    }
-                });
-            }
-
-            // Format Value
-            const defaults = SENSOR_CHART_DEFAULTS[s.id];
-            const isBinary = defaults?.binary === true || (s.unit === 'state' && defaults?.max === undefined) || s.id === 'optimal' || s.id === 'dehumidifier';
-
-            let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
-
-            if (isBinary) {
-                if (s.id === 'optimal') {
-                    if (closest.value === 1) valStr = 'Optimal';
-                    else valStr = closest.meta?.reasons || 'Not Optimal';
-                } else if (s.id === 'dehumidifier') {
-                    valStr = closest.value === 1 ? 'ON' : 'OFF';
-                } else {
-                    valStr = closest.value === 1 ? 'ON' : 'OFF';
-                }
-            } else if ((s.id === 'exhaust' || s.id === 'humidifier') && closest.meta?.state) {
-                valStr = closest.meta.state;
-            }
-
-            return { title: s.title, value: valStr, color: s.color };
-        });
-
-
-        const locale = this.hass?.locale?.language || undefined;
-        const timeStr = new Date(hoverTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-
-        this._tooltip = {
-            id: 'hover',
-            x: e.clientX - rect.left,
-            time: timeStr,
-            items: items
-        };
-        this._hoverTime = hoverTime;
-    }
 
     private _renderTooltip() {
-        if (!this._tooltip) return html``;
+        if (!this._activeTooltip) return html``;
+
+        const { x, time, items } = this._activeTooltip;
 
         return html`
-            <div class="gs-tooltip" style="left: ${this._tooltip.x}px; top: 0;">
+            <div class="gs-tooltip" style=${styleMap({ left: `${x}px`, top: '0' })}>
                 <div style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 2px;">
-                    ${this._tooltip.time}
+                    ${time}
                 </div>
-                ${this._tooltip.items.map(i => html`
+                ${items.map(i => html`
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px;">
                             <span style="color: ${i.color};">${i.title}:</span>
                             <span style="font-family: monospace; font-weight: bold;">${i.value}</span>
@@ -496,7 +399,7 @@ export class GrowspaceEnvChart extends LitElement {
                 `)}
             </div>
             <!-- Cursor Line -->
-             <div class="gs-cursor-line" style="left: ${this._tooltip.x}px; height: 100%; top: 0; position: absolute; border-left: 1px dashed rgba(255,255,255,0.3); pointer-events: none;"></div>
+             <div class="gs-cursor-line" style=${styleMap({ left: `${x}px`, height: '100%', top: '0', position: 'absolute', borderLeft: '1px dashed rgba(255,255,255,0.3)', pointerEvents: 'none' })}></div>
         `;
     }
 
@@ -589,28 +492,84 @@ export class GrowspaceEnvChart extends LitElement {
             const width = 800;
             const height = 200;
 
-            this._computedSeries = this._computeGraphSeries(width, height, startTime, durationMillis, now);
+            this._renderSeries = this._computeGraphSeries(width, height, startTime, durationMillis, now);
         }
+    }
+
+    private _handleGraphHover(e: MouseEvent, seriesList: GraphSeries[], startTime: Date, durationMillis: number, width: number) {
+        const rect = (e.currentTarget as Element).getBoundingClientRect();
+        const contentWidth = rect.width - 90; // 50px left + 40px right padding
+        const relX = Math.max(0, Math.min(1, (e.clientX - rect.left - 50) / contentWidth));
+
+        const hoverTime = startTime.getTime() + relX * durationMillis;
+
+        // Find closest points and format values
+        const items = seriesList.map(s => {
+            // Binary search (nearest neighbor)
+            const searchTime = hoverTime;
+            let closest = s.points[0];
+            let minDiff = Number.MAX_VALUE;
+
+            let lo = 0;
+            let hi = s.points.length - 1;
+
+            if (s.points.length > 0) {
+                while (lo < hi) {
+                    const mid = Math.floor((lo + hi) / 2);
+                    if (s.points[mid].time < searchTime) {
+                        lo = mid + 1;
+                    } else {
+                        hi = mid;
+                    }
+                }
+                const candidates = [lo, lo - 1, lo + 1].filter(i => i >= 0 && i < s.points.length);
+                candidates.forEach(i => {
+                    const p = s.points[i];
+                    const diff = Math.abs(p.time - searchTime);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = p;
+                    }
+                });
+            }
+
+            // Format Value
+            const defaults = SENSOR_CHART_DEFAULTS[s.id];
+            const isBinary = defaults?.binary === true || (s.unit === 'state' && defaults?.max === undefined) || s.id === 'optimal' || s.id === 'dehumidifier';
+
+            let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
+
+            if (isBinary) {
+                if (s.id === 'optimal') {
+                    if (closest.value === 1) valStr = 'Optimal';
+                    else valStr = closest.meta?.reasons || 'Not Optimal';
+                } else if (s.id === 'dehumidifier') {
+                    valStr = closest.value === 1 ? 'ON' : 'OFF';
+                } else {
+                    valStr = closest.value === 1 ? 'ON' : 'OFF';
+                }
+            } else if ((s.id === 'exhaust' || s.id === 'humidifier') && closest.meta?.state) {
+                valStr = closest.meta.state;
+            }
+
+            return { title: s.title, value: valStr, color: s.color };
+        });
+
+        const locale = this.hass?.locale?.language || undefined;
+        const timeStr = new Date(hoverTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+
+        this._activeTooltip = {
+            id: 'hover',
+            x: e.clientX - rect.left,
+            time: timeStr,
+            items: items
+        };
+        this._hoverTime = hoverTime;
     }
 
     private _formatTime(date: Date): string {
         const locale = this.hass?.locale?.language || undefined;
         return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-    }
-
-    private _findClosestDataPoint(points: GraphDataPoint[], time: number): GraphDataPoint {
-        if (points.length === 0) return { time: time, value: 0 };
-        let closest = points[0];
-        let minDiff = Number.MAX_VALUE;
-
-        for (const p of points) {
-            const diff = Math.abs(p.time - time);
-            if (diff < minDiff) {
-                minDiff = diff;
-                closest = p;
-            }
-        }
-        return closest;
     }
 
     static styles = css`
