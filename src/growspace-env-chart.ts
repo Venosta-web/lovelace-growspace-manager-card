@@ -10,10 +10,17 @@ import { ToggleEnvGraphEvent, UnlinkGraphsEvent, UnlinkGraphMetricEvent } from '
 
 import { PropertyValues } from 'lit';
 
-export interface DataPoint {
+export interface GraphDataPoint {
     time: number;
     value: number;
     meta?: any;
+}
+
+export interface HistorySensorState {
+    entity_id: string;
+    state: string;
+    attributes: any;
+    last_changed: string;
 }
 
 @customElement('growspace-env-chart')
@@ -21,18 +28,18 @@ export class GrowspaceEnvChart extends LitElement {
     @consume({ context: hassContext, subscribe: true })
     hass!: HomeAssistant;
     @property({ attribute: false }) device?: GrowspaceDevice;
-    @property({ type: Array }) history: any[] = [];
-    @property({ type: Array }) dehumidifierHistory: any[] = [];
-    @property({ type: Array }) exhaustHistory: any[] = [];
-    @property({ type: Array }) humidifierHistory: any[] = [];
-    @property({ type: Array }) circulationFanHistory: any[] = [];
-    @property({ type: Array }) optimalHistory: any[] = [];
-    @property({ type: Array }) soilMoistureHistory: any[] = [];
+    @property({ type: Array }) history: HistorySensorState[] = [];
+    @property({ type: Array }) dehumidifierHistory: HistorySensorState[] = [];
+    @property({ type: Array }) exhaustHistory: HistorySensorState[] = [];
+    @property({ type: Array }) humidifierHistory: HistorySensorState[] = [];
+    @property({ type: Array }) circulationFanHistory: HistorySensorState[] = [];
+    @property({ type: Array }) optimalHistory: HistorySensorState[] = [];
+    @property({ type: Array }) soilMoistureHistory: HistorySensorState[] = [];
     // Individual environment sensor histories (since env data moved to WebSocket)
-    @property({ type: Array }) temperatureHistory: any[] = [];
-    @property({ type: Array }) humidityHistory: any[] = [];
-    @property({ type: Array }) vpdHistory: any[] = [];
-    @property({ type: Array }) co2History: any[] = [];
+    @property({ type: Array }) temperatureHistory: HistorySensorState[] = [];
+    @property({ type: Array }) humidityHistory: HistorySensorState[] = [];
+    @property({ type: Array }) vpdHistory: HistorySensorState[] = [];
+    @property({ type: Array }) co2History: HistorySensorState[] = [];
     @property({ type: String }) metricKey = '';
     @property({ type: String }) unit = '';
     @property({ type: String }) color = '#ffffff';
@@ -51,7 +58,7 @@ export class GrowspaceEnvChart extends LitElement {
     // Performance: Cache layout to avoid thrashing
     private _resizeObserver: ResizeObserver | null = null;
     private _cachedRect: DOMRect | null = null;
-    private _memoizedGraphData: { path: string; dataPoints: DataPoint[]; minVal: number; maxVal: number; avgValue: number } | null = null;
+    private _memoizedGraphData: { path: string; dataPoints: GraphDataPoint[]; minVal: number; maxVal: number; avgValue: number } | null = null;
 
     connectedCallback() {
         super.connectedCallback();
@@ -141,6 +148,7 @@ export class GrowspaceEnvChart extends LitElement {
       justify-content: space-between;
       font-size: 0.65rem;
       color: #666;
+      pointer-events: none; /* Ensure events pass to container */
     }
 
     .gs-tooltip {
@@ -251,7 +259,81 @@ export class GrowspaceEnvChart extends LitElement {
     }
   `;
 
-    private _findClosestDataPoint(dataPoints: DataPoint[], targetTime: number): DataPoint {
+
+    // Helper: Normalize Sensor Value
+    private _normalizeSensorValue(ent: HistorySensorState, metricKey: string, unit: string): number | undefined {
+        if (!ent) return undefined;
+
+        // Special case: 'optimal' with unit 'state'
+        if (unit === 'state' && metricKey === 'optimal') {
+            return ent.state === 'on' ? 1 : 0;
+        }
+
+        // Special case: 'light'
+        if (metricKey === 'light') {
+            const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
+            return isLightsOn === true ? 1 : 0;
+        }
+
+        // Special case: 'dehumidifier'
+        if (metricKey === 'dehumidifier') {
+            if (ent.entity_id && ent.state) {
+                const onStates = ['on', 'true', '1'];
+                return onStates.includes(String(ent.state).toLowerCase()) ? 1 : 0;
+            }
+            const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
+            const onValues = [true, 'on', 1];
+            return onValues.includes(val) ? 1 : 0;
+        }
+
+        // Standard numeric sensors
+        const numericKeys = ['temperature', 'humidity', 'vpd', 'co2', 'exhaust', 'humidifier', 'soil_moisture', 'circulation_fan'];
+        if (numericKeys.includes(metricKey)) {
+            if (ent.state && !isNaN(parseFloat(ent.state))) {
+                return parseFloat(ent.state);
+            }
+            // Handle binary-like states for these devices if they appear
+            if (ent.state === 'on' || ent.state === 'active') return 1;
+            if (ent.state === 'off' || ent.state === 'idle') return 0;
+        }
+
+        // Fallback to attributes
+        if (ent.attributes) {
+            if (ent.attributes[metricKey] !== undefined) return ent.attributes[metricKey];
+            if (typeof ent.attributes.observations === 'object' && ent.attributes.observations[metricKey] !== undefined) {
+                return ent.attributes.observations[metricKey];
+            }
+        }
+        return undefined;
+    }
+
+    // Helper: Get Sensor Meta
+    private _getSensorMeta(ent: HistorySensorState, metricKey: string, unit: string): any {
+        if (unit === 'state' && metricKey === 'optimal') return ent.attributes?.reasons;
+
+        if (metricKey === 'light') {
+            const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
+            return { state: isLightsOn ? 'ON' : 'OFF' };
+        }
+
+        if (metricKey === 'dehumidifier') {
+            if (ent.entity_id && ent.state) {
+                const onStates = ['on', 'true', '1'];
+                return { state: onStates.includes(String(ent.state).toLowerCase()) ? 'ON' : 'OFF' };
+            }
+        }
+
+        if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+            const binaryStates = ['on', 'off', 'active', 'idle'];
+            if (ent.state && binaryStates.includes(String(ent.state).toLowerCase())) {
+                const isActive = ['on', 'active'].includes(String(ent.state).toLowerCase());
+                return { state: isActive ? 'ON' : 'OFF' };
+            }
+        }
+        return undefined;
+    }
+
+    private _findClosestDataPoint(dataPoints: GraphDataPoint[], targetTime: number): GraphDataPoint {
         if (!dataPoints || dataPoints.length === 0) return { time: targetTime, value: 0 };
         if (dataPoints.length === 1) return dataPoints[0];
 
@@ -279,7 +361,7 @@ export class GrowspaceEnvChart extends LitElement {
 
     private _rafId: number | null = null;
 
-    private _handleGraphHover(e: MouseEvent | TouchEvent, metricKey: string, dataPoints: DataPoint[], _rect: DOMRect | null, unit: string) {
+    private _handleGraphHover(e: MouseEvent | TouchEvent, metricKey: string, dataPoints: GraphDataPoint[], _rect: DOMRect | null, unit: string) {
         // Capture x coordinate
         let x: number;
         let width: number;
@@ -310,7 +392,14 @@ export class GrowspaceEnvChart extends LitElement {
         });
     }
 
-    private _updateTooltipState(x: number, width: number, metricKey: string, dataPoints: DataPoint[], unit: string) {
+
+    // Helper: Format Time respecting locale
+    private _formatTime(date: Date): string {
+        const locale = this.hass?.locale?.language || undefined;
+        return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    }
+
+    private _updateTooltipState(x: number, width: number, metricKey: string, dataPoints: GraphDataPoint[], unit: string) {
         const rangeKey = this.range;
         const durationMillis = rangeKey === '1h' ? 60 * 60 * 1000 :
             rangeKey === '6h' ? 6 * 60 * 60 * 1000 :
@@ -340,7 +429,7 @@ export class GrowspaceEnvChart extends LitElement {
 
         const closest = this._findClosestDataPoint(dataPoints, time);
         const date = new Date(closest.time);
-        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const timeStr = this._formatTime(date);
 
         let valStr = `${closest.value} ${unit}`;
         if (unit === 'state') {
@@ -389,7 +478,7 @@ export class GrowspaceEnvChart extends LitElement {
         effectiveX = Math.max(0, Math.min(effectiveX, effectiveWidth));
 
         const time = startTime.getTime() + (effectiveX / effectiveWidth) * durationMillis;
-        const timeStr = new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const timeStr = this._formatTime(new Date(time));
 
         const values = graphData.map(g => {
             // Use binary search helper
@@ -475,7 +564,7 @@ export class GrowspaceEnvChart extends LitElement {
         const now = new Date();
         const startTime = new Date(now.getTime() - durationMillis);
 
-        let dataPoints: DataPoint[] = [];
+        let dataPoints: GraphDataPoint[] = [];
 
         if (metricKey === 'irrigation' || metricKey === 'drain') {
             const times = metricKey === 'irrigation'
@@ -523,44 +612,11 @@ export class GrowspaceEnvChart extends LitElement {
             // No, getValue was defined inside renderEnvGraph. I need to move it or duplicate locally.
             // Best to duplicate locally for now as it captures 'unit' and 'key' from scope.
 
-            const getValue = (ent: any, key: string) => {
-                if (!ent) return undefined;
-                if (unit === 'state' && key === 'optimal') return ent.state === 'on' ? 1 : 0;
-                if (key === 'light') {
-                    const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
-                    return isLightsOn === true ? 1 : 0;
-                }
-                if (key === 'dehumidifier') {
-                    if (ent.entity_id && ent.state) return (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 1 : 0;
-                    const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
-                    return (val === true || val === 'on' || val === 1) ? 1 : 0;
-                }
-                if (key === 'temperature' || key === 'humidity' || key === 'vpd' || key === 'co2' || key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture' || key === 'circulation_fan') {
-                    if (ent.state && !isNaN(parseFloat(ent.state))) return ent.state;
-                    if (ent.state === 'on' || ent.state === 'active') return 1;
-                    if (ent.state === 'off' || ent.state === 'idle') return 0;
-                }
-                if (ent.attributes && ent.attributes[key] !== undefined) return ent.attributes[key];
-                if (ent.attributes && ent.attributes.observations && typeof ent.attributes.observations === 'object') return ent.attributes.observations[key];
-                return undefined;
-            };
 
-            const getMeta = (ent: any, key: string) => {
-                if (unit === 'state' && key === 'optimal') return ent.attributes?.reasons;
-                if (key === 'light') {
-                    const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
-                    return { state: isLightsOn ? 'ON' : 'OFF' };
-                }
-                if (key === 'dehumidifier') {
-                    if (ent.entity_id && ent.state) return { state: (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 'ON' : 'OFF' };
-                }
-                if (key === 'exhaust' || key === 'humidifier') {
-                    if (ent.state && (ent.state === 'on' || ent.state === 'off' || ent.state === 'active' || ent.state === 'idle')) {
-                        return { state: (ent.state === 'on' || ent.state === 'active') ? 'ON' : 'OFF' };
-                    }
-                }
-                return undefined;
-            };
+            // Refactored to use class helper methods
+            const getValue = (ent: HistorySensorState, key: string) => this._normalizeSensorValue(ent, key, unit);
+            const getMeta = (ent: HistorySensorState, key: string) => this._getSensorMeta(ent, key, unit);
+
 
             let historySource = this.history;
             const sortedHistory = historySource ? [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()) : [];
@@ -574,8 +630,9 @@ export class GrowspaceEnvChart extends LitElement {
             if (initialState) {
                 const val = getValue(initialState, metricKey);
                 const meta = getMeta(initialState, metricKey);
-                if (val !== undefined && !isNaN(parseFloat(val))) {
-                    dataPoints.push({ time: startTime.getTime(), value: parseFloat(val), meta });
+                // val is already number | undefined from _normalizeSensorValue
+                if (val !== undefined && !isNaN(val)) {
+                    dataPoints.push({ time: startTime.getTime(), value: val, meta });
                 }
             }
 
@@ -584,8 +641,9 @@ export class GrowspaceEnvChart extends LitElement {
                 if (t <= startTime.getTime()) return;
                 const val = getValue(h, metricKey);
                 const meta = getMeta(h, metricKey);
-                if (val !== undefined && !isNaN(parseFloat(val))) {
-                    dataPoints.push({ time: t, value: parseFloat(val), meta });
+                // val is already number | undefined from _normalizeSensorValue
+                if (val !== undefined && !isNaN(val)) {
+                    dataPoints.push({ time: t, value: val, meta });
                 }
             });
 
@@ -628,10 +686,12 @@ export class GrowspaceEnvChart extends LitElement {
                     if (!isNaN(numVal)) dataPoints.push({ time: now.getTime(), value: numVal, meta });
                 } else if (dataPoints.length > 0) { const last = dataPoints[dataPoints.length - 1]; dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta }); }
             } else if (envEntity) {
-                const currentVal = getValue(envEntity, metricKey);
-                const currentMeta = getMeta(envEntity, metricKey);
-                if (currentVal !== undefined && !isNaN(parseFloat(currentVal))) {
-                    dataPoints.push({ time: now.getTime(), value: parseFloat(currentVal), meta: currentMeta });
+                // Ensure type safety - getValue returns number | undefined
+                const currentVal = getValue(envEntity as unknown as HistorySensorState, metricKey);
+                const currentMeta = getMeta(envEntity as unknown as HistorySensorState, metricKey);
+
+                if (currentVal !== undefined && !isNaN(currentVal)) {
+                    dataPoints.push({ time: now.getTime(), value: currentVal, meta: currentMeta });
                 }
             }
         }
@@ -986,28 +1046,8 @@ export class GrowspaceEnvChart extends LitElement {
             if (historySource && historySource.length > 0) {
                 const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
 
-                const getValue = (ent: any, key: string) => {
-                    if (!ent) return undefined;
-                    if (config.unit === 'state' && key === 'optimal') return ent.state === 'on' ? 1 : 0;
-                    if (key === 'light') {
-                        const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
-                        return isLightsOn === true ? 1 : 0;
-                    }
-                    if (key === 'dehumidifier') {
-                        if (ent.state) return (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 1 : 0;
-                        const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
-                        return (val === true || val === 'on' || val === 1) ? 1 : 0;
-                    }
-                    // For individual sensor history entries, value is in state
-                    if (key === 'temperature' || key === 'humidity' || key === 'vpd' || key === 'co2' || key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture' || key === 'circulation_fan') {
-                        if (ent.state && !isNaN(parseFloat(ent.state))) {
-                            return ent.state;
-                        }
-                    }
-                    if (ent.attributes && ent.attributes[key] !== undefined) return ent.attributes[key];
-                    if (ent.attributes && ent.attributes.observations && typeof ent.attributes.observations === 'object') return ent.attributes.observations[key];
-                    return undefined;
-                };
+                // Refactored to use class helper methods
+                const getValue = (ent: HistorySensorState, key: string) => this._normalizeSensorValue(ent, key, config.unit || ''); // Combined graph uses config unit
 
                 // 1. Find the active state exactly AT startTime
                 // We look for the latest entry that happened BEFORE or AT startTime
@@ -1023,8 +1063,8 @@ export class GrowspaceEnvChart extends LitElement {
                 if (initialState) {
                     const val = getValue(initialState, metricKey);
                     // const meta = getMeta(initialState, metricKey); // Combined graph doesn't use detailed meta in same way but consistent logic
-                    if (val !== undefined && !isNaN(parseFloat(val))) {
-                        dataPoints.push({ time: startTime.getTime(), value: parseFloat(val) });
+                    if (val !== undefined && !isNaN(val)) {
+                        dataPoints.push({ time: startTime.getTime(), value: val });
                     }
                 }
 
@@ -1034,8 +1074,8 @@ export class GrowspaceEnvChart extends LitElement {
                     if (t <= startTime.getTime()) return; // Skip old points (we handled the anchor above)
 
                     const val = getValue(h, metricKey);
-                    if (val !== undefined && !isNaN(parseFloat(val))) {
-                        dataPoints.push({ time: t, value: parseFloat(val) });
+                    if (val !== undefined && !isNaN(val)) {
+                        dataPoints.push({ time: t, value: val });
                     }
                 });
 

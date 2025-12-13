@@ -10202,6 +10202,74 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
     _updateCachedRect(element) {
         this._cachedRect = element.getBoundingClientRect();
     }
+    // Helper: Normalize Sensor Value
+    _normalizeSensorValue(ent, metricKey, unit) {
+        if (!ent)
+            return undefined;
+        // Special case: 'optimal' with unit 'state'
+        if (unit === 'state' && metricKey === 'optimal') {
+            return ent.state === 'on' ? 1 : 0;
+        }
+        // Special case: 'light'
+        if (metricKey === 'light') {
+            const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
+            return isLightsOn === true ? 1 : 0;
+        }
+        // Special case: 'dehumidifier'
+        if (metricKey === 'dehumidifier') {
+            if (ent.entity_id && ent.state) {
+                const onStates = ['on', 'true', '1'];
+                return onStates.includes(String(ent.state).toLowerCase()) ? 1 : 0;
+            }
+            const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
+            const onValues = [true, 'on', 1];
+            return onValues.includes(val) ? 1 : 0;
+        }
+        // Standard numeric sensors
+        const numericKeys = ['temperature', 'humidity', 'vpd', 'co2', 'exhaust', 'humidifier', 'soil_moisture', 'circulation_fan'];
+        if (numericKeys.includes(metricKey)) {
+            if (ent.state && !isNaN(parseFloat(ent.state))) {
+                return parseFloat(ent.state);
+            }
+            // Handle binary-like states for these devices if they appear
+            if (ent.state === 'on' || ent.state === 'active')
+                return 1;
+            if (ent.state === 'off' || ent.state === 'idle')
+                return 0;
+        }
+        // Fallback to attributes
+        if (ent.attributes) {
+            if (ent.attributes[metricKey] !== undefined)
+                return ent.attributes[metricKey];
+            if (typeof ent.attributes.observations === 'object' && ent.attributes.observations[metricKey] !== undefined) {
+                return ent.attributes.observations[metricKey];
+            }
+        }
+        return undefined;
+    }
+    // Helper: Get Sensor Meta
+    _getSensorMeta(ent, metricKey, unit) {
+        if (unit === 'state' && metricKey === 'optimal')
+            return ent.attributes?.reasons;
+        if (metricKey === 'light') {
+            const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
+            return { state: isLightsOn ? 'ON' : 'OFF' };
+        }
+        if (metricKey === 'dehumidifier') {
+            if (ent.entity_id && ent.state) {
+                const onStates = ['on', 'true', '1'];
+                return { state: onStates.includes(String(ent.state).toLowerCase()) ? 'ON' : 'OFF' };
+            }
+        }
+        if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+            const binaryStates = ['on', 'off', 'active', 'idle'];
+            if (ent.state && binaryStates.includes(String(ent.state).toLowerCase())) {
+                const isActive = ['on', 'active'].includes(String(ent.state).toLowerCase());
+                return { state: isActive ? 'ON' : 'OFF' };
+            }
+        }
+        return undefined;
+    }
     _findClosestDataPoint(dataPoints, targetTime) {
         if (!dataPoints || dataPoints.length === 0)
             return { time: targetTime, value: 0 };
@@ -10256,6 +10324,11 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             this._updateTooltipState(x, width, metricKey, dataPoints, unit);
         });
     }
+    // Helper: Format Time respecting locale
+    _formatTime(date) {
+        const locale = this.hass?.locale?.language || undefined;
+        return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    }
     _updateTooltipState(x, width, metricKey, dataPoints, unit) {
         const rangeKey = this.range;
         const durationMillis = rangeKey === '1h' ? 60 * 60 * 1000 :
@@ -10280,7 +10353,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         const time = startTime + (effectiveX / effectiveWidth) * durationMillis;
         const closest = this._findClosestDataPoint(dataPoints, time);
         const date = new Date(closest.time);
-        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const timeStr = this._formatTime(date);
         let valStr = `${closest.value} ${unit}`;
         if (unit === 'state') {
             if (metricKey === 'irrigation' || metricKey === 'drain') {
@@ -10326,7 +10399,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         // Clamp
         effectiveX = Math.max(0, Math.min(effectiveX, effectiveWidth));
         const time = startTime.getTime() + (effectiveX / effectiveWidth) * durationMillis;
-        const timeStr = new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const timeStr = this._formatTime(new Date(time));
         const values = graphData.map(g => {
             // Use binary search helper
             const closest = this._findClosestDataPoint(g.points, time);
@@ -10441,53 +10514,9 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             // I'll inline specific logic or rely on the fact that I'm inside the class scope? 
             // No, getValue was defined inside renderEnvGraph. I need to move it or duplicate locally.
             // Best to duplicate locally for now as it captures 'unit' and 'key' from scope.
-            const getValue = (ent, key) => {
-                if (!ent)
-                    return undefined;
-                if (unit === 'state' && key === 'optimal')
-                    return ent.state === 'on' ? 1 : 0;
-                if (key === 'light') {
-                    const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
-                    return isLightsOn === true ? 1 : 0;
-                }
-                if (key === 'dehumidifier') {
-                    if (ent.entity_id && ent.state)
-                        return (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 1 : 0;
-                    const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
-                    return (val === true || val === 'on' || val === 1) ? 1 : 0;
-                }
-                if (key === 'temperature' || key === 'humidity' || key === 'vpd' || key === 'co2' || key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture' || key === 'circulation_fan') {
-                    if (ent.state && !isNaN(parseFloat(ent.state)))
-                        return ent.state;
-                    if (ent.state === 'on' || ent.state === 'active')
-                        return 1;
-                    if (ent.state === 'off' || ent.state === 'idle')
-                        return 0;
-                }
-                if (ent.attributes && ent.attributes[key] !== undefined)
-                    return ent.attributes[key];
-                if (ent.attributes && ent.attributes.observations && typeof ent.attributes.observations === 'object')
-                    return ent.attributes.observations[key];
-                return undefined;
-            };
-            const getMeta = (ent, key) => {
-                if (unit === 'state' && key === 'optimal')
-                    return ent.attributes?.reasons;
-                if (key === 'light') {
-                    const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
-                    return { state: isLightsOn ? 'ON' : 'OFF' };
-                }
-                if (key === 'dehumidifier') {
-                    if (ent.entity_id && ent.state)
-                        return { state: (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 'ON' : 'OFF' };
-                }
-                if (key === 'exhaust' || key === 'humidifier') {
-                    if (ent.state && (ent.state === 'on' || ent.state === 'off' || ent.state === 'active' || ent.state === 'idle')) {
-                        return { state: (ent.state === 'on' || ent.state === 'active') ? 'ON' : 'OFF' };
-                    }
-                }
-                return undefined;
-            };
+            // Refactored to use class helper methods
+            const getValue = (ent, key) => this._normalizeSensorValue(ent, key, unit);
+            const getMeta = (ent, key) => this._getSensorMeta(ent, key, unit);
             let historySource = this.history;
             const sortedHistory = historySource ? [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()) : [];
             let initialState = sortedHistory.length > 0 ? sortedHistory[0] : null;
@@ -10500,8 +10529,9 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             if (initialState) {
                 const val = getValue(initialState, metricKey);
                 const meta = getMeta(initialState, metricKey);
-                if (val !== undefined && !isNaN(parseFloat(val))) {
-                    dataPoints.push({ time: startTime.getTime(), value: parseFloat(val), meta });
+                // val is already number | undefined from _normalizeSensorValue
+                if (val !== undefined && !isNaN(val)) {
+                    dataPoints.push({ time: startTime.getTime(), value: val, meta });
                 }
             }
             sortedHistory.forEach(h => {
@@ -10510,8 +10540,9 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                     return;
                 const val = getValue(h, metricKey);
                 const meta = getMeta(h, metricKey);
-                if (val !== undefined && !isNaN(parseFloat(val))) {
-                    dataPoints.push({ time: t, value: parseFloat(val), meta });
+                // val is already number | undefined from _normalizeSensorValue
+                if (val !== undefined && !isNaN(val)) {
+                    dataPoints.push({ time: t, value: val, meta });
                 }
             });
             // Current point synthesized logic
@@ -10581,10 +10612,11 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                 }
             }
             else if (envEntity) {
+                // Ensure type safety - getValue returns number | undefined
                 const currentVal = getValue(envEntity, metricKey);
                 const currentMeta = getMeta(envEntity, metricKey);
-                if (currentVal !== undefined && !isNaN(parseFloat(currentVal))) {
-                    dataPoints.push({ time: now.getTime(), value: parseFloat(currentVal), meta: currentMeta });
+                if (currentVal !== undefined && !isNaN(currentVal)) {
+                    dataPoints.push({ time: now.getTime(), value: currentVal, meta: currentMeta });
                 }
             }
         }
@@ -10931,33 +10963,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             }
             if (historySource && historySource.length > 0) {
                 const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
-                const getValue = (ent, key) => {
-                    if (!ent)
-                        return undefined;
-                    if (config.unit === 'state' && key === 'optimal')
-                        return ent.state === 'on' ? 1 : 0;
-                    if (key === 'light') {
-                        const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
-                        return isLightsOn === true ? 1 : 0;
-                    }
-                    if (key === 'dehumidifier') {
-                        if (ent.state)
-                            return (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 1 : 0;
-                        const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
-                        return (val === true || val === 'on' || val === 1) ? 1 : 0;
-                    }
-                    // For individual sensor history entries, value is in state
-                    if (key === 'temperature' || key === 'humidity' || key === 'vpd' || key === 'co2' || key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture' || key === 'circulation_fan') {
-                        if (ent.state && !isNaN(parseFloat(ent.state))) {
-                            return ent.state;
-                        }
-                    }
-                    if (ent.attributes && ent.attributes[key] !== undefined)
-                        return ent.attributes[key];
-                    if (ent.attributes && ent.attributes.observations && typeof ent.attributes.observations === 'object')
-                        return ent.attributes.observations[key];
-                    return undefined;
-                };
+                // Refactored to use class helper methods
+                const getValue = (ent, key) => this._normalizeSensorValue(ent, key, config.unit || ''); // Combined graph uses config unit
                 // 1. Find the active state exactly AT startTime
                 // We look for the latest entry that happened BEFORE or AT startTime
                 let initialState = sortedHistory.length > 0 ? sortedHistory[0] : null;
@@ -10972,8 +10979,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                 if (initialState) {
                     const val = getValue(initialState, metricKey);
                     // const meta = getMeta(initialState, metricKey); // Combined graph doesn't use detailed meta in same way but consistent logic
-                    if (val !== undefined && !isNaN(parseFloat(val))) {
-                        dataPoints.push({ time: startTime.getTime(), value: parseFloat(val) });
+                    if (val !== undefined && !isNaN(val)) {
+                        dataPoints.push({ time: startTime.getTime(), value: val });
                     }
                 }
                 // 3. Add all points that happened AFTER startTime
@@ -10982,8 +10989,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                     if (t <= startTime.getTime())
                         return; // Skip old points (we handled the anchor above)
                     const val = getValue(h, metricKey);
-                    if (val !== undefined && !isNaN(parseFloat(val))) {
-                        dataPoints.push({ time: t, value: parseFloat(val) });
+                    if (val !== undefined && !isNaN(val)) {
+                        dataPoints.push({ time: t, value: val });
                     }
                 });
                 if (dataPoints.length > 0) {
@@ -11145,6 +11152,7 @@ GrowspaceEnvChart.styles = i$5 `
       justify-content: space-between;
       font-size: 0.65rem;
       color: #666;
+      pointer-events: none; /* Ensure events pass to container */
     }
 
     .gs-tooltip {
