@@ -57,7 +57,7 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
         icon: mdiFan
     },
     humidifier: { color: '#607d8b', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
-    dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: 'state', icon: mdiAirHumidifierOff, type: 'step' },
+    dehumidifier: { color: '#009688', title: 'Dehumidifier', unit: 'state', icon: mdiAirHumidifierOff, type: 'step' },
     optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state', icon: mdiRadioboxMarked, type: 'step' }
 };
 

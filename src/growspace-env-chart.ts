@@ -25,22 +25,15 @@ export interface HistorySensorState {
     last_changed: string;
 }
 
+export type SensorHistories = Record<string, HistorySensorState[]>;
+
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {
     @consume({ context: hassContext, subscribe: true })
     hass!: HomeAssistant;
     @property({ attribute: false }) device?: GrowspaceDevice;
-    @property({ type: Array }) history: HistorySensorState[] = [];
-    @property({ type: Array }) dehumidifierHistory: HistorySensorState[] = [];
-    @property({ type: Array }) exhaustHistory: HistorySensorState[] = [];
-    @property({ type: Array }) humidifierHistory: HistorySensorState[] = [];
-    @property({ type: Array }) circulationFanHistory: HistorySensorState[] = [];
-    @property({ type: Array }) optimalHistory: HistorySensorState[] = [];
-    @property({ type: Array }) soilMoistureHistory: HistorySensorState[] = [];
-    @property({ type: Array }) temperatureHistory: HistorySensorState[] = [];
-    @property({ type: Array }) humidityHistory: HistorySensorState[] = [];
-    @property({ type: Array }) vpdHistory: HistorySensorState[] = [];
-    @property({ type: Array }) co2History: HistorySensorState[] = [];
+    @property({ attribute: false }) sensorHistory: SensorHistories = {};
+    // Removed individual props: history, dehumidifierHistory, etc.
     @property({ type: String }) metricKey = '';
     @property({ type: String }) unit = '';
     @property({ type: String }) color = '#ffffff';
@@ -524,8 +517,19 @@ export class GrowspaceEnvChart extends LitElement {
             const getValue = (ent: HistorySensorState, key: string) => this._normalizeSensorValue(ent, key, unit);
             const getMeta = (ent: HistorySensorState, key: string) => this._getSensorMeta(ent, key, unit);
 
+            let historySource = this.sensorHistory[metricKey] || [];
 
-            let historySource = this.history;
+            // For irrigation/drain, we might look specifically or rely on the passed key. 
+            // In the old code 'history' prop was generic, now we access by key.
+            // If the parent didn't pass it under the key, we might need fallback.
+            // But analytics will map it. 
+            // Special case logic for metricKey 'irrigation'/'drain' which use events might need the raw array if transformed inside?
+            // Actually _getGraphData handles transforms.
+
+            if (!historySource) historySource = [];
+
+
+
             const sortedHistory = historySource ? [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()) : [];
             let initialState = sortedHistory.length > 0 ? sortedHistory[0] : null;
             for (const h of sortedHistory) {
@@ -708,28 +712,18 @@ export class GrowspaceEnvChart extends LitElement {
 
     renderEnvGraph(): TemplateResult {
         const { metricKey, color, title, unit, type, icon, range } = this;
-
-        // Restore time calculation for template usage
         const now = new Date();
-        let durationMillis = 24 * 60 * 60 * 1000;
-        if (range === '1h') durationMillis = 60 * 60 * 1000;
-        else if (range === '6h') durationMillis = 6 * 60 * 60 * 1000;
-        else if (range === '7d') durationMillis = 7 * 24 * 60 * 60 * 1000;
+        const durationMillis = this._getDurationMillis(range);
         const startTime = new Date(now.getTime() - durationMillis);
 
         const graphData = this._getGraphData();
         if (!graphData) return html``;
 
         const { path: svgPath, dataPoints, minVal, maxVal, avgValue } = graphData;
-
-        // Recalculate paddedMin/Max for labels - simpler to just re-derive or store in memo? 
-        // Storing in memo avoids recalc. But I didn't return them in interface.
-        // I'll re-derive locally, it's cheap arithmetic compared to loop/path.
-
         const defaults = SENSOR_CHART_DEFAULTS[metricKey];
 
         const width = 1000;
-        const height = 180; // Standardized height
+        const height = 180;
         const rangeVal = maxVal - minVal || 1;
         let paddedMin = minVal - (rangeVal * 0.1);
         let paddedMax = maxVal + (rangeVal * 0.1);
@@ -740,11 +734,9 @@ export class GrowspaceEnvChart extends LitElement {
         }
         const paddedRange = paddedMax - paddedMin;
 
-
+        // Y-Axis Labels
         let yLabels: (string | number)[] = [];
-        // Only use ON/OFF labels if it's strictly binary or unit is state without range
         if (type === 'step' || (unit === 'state' && !defaults?.max) || metricKey === 'dehumidifier') {
-            // Smart labels for binary/step data
             yLabels = ['ON', 'OFF'];
         } else {
             yLabels = [
@@ -757,91 +749,52 @@ export class GrowspaceEnvChart extends LitElement {
         }
 
         return html`
-            <div class="gs-env-graph-card" >
+            <div class="gs-env-graph-card">
                 <div class="gs-env-graph-header" @click=${this._toggleEnvGraph}>
-                    <div style="display: flex; align-items: center; gap: 12px;" >
-                        <svg style="width:24px;height:24px;fill:${color};" viewBox = "0 0 24 24" > <path d="${icon}" > </path></svg >
-                            <div>
-                            <div style="font-size: 0.9rem; font-weight: 600; color: #fff;" > ${title} </div>
-                                </div>
-                                </div>
-                                </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <svg style="width:24px;height:24px;fill:${color};" viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+                        <div>
+                            <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${title}</div>
+                        </div>
+                    </div>
+                </div>
 
-                                <div class="gs-env-chart-container"
-@mousemove=${(e: MouseEvent) => {
+                <div class="gs-env-chart-container"
+                    role="img"
+                    aria-label="Line chart for ${title}, current value ${dataPoints[dataPoints.length - 1]?.value} ${unit}"
+                    @mousemove=${(e: MouseEvent) => {
                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                 this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
-            }
-            }
-@touchmove=${(e: TouchEvent) => {
+            }}
+                    @touchmove=${(e: TouchEvent) => {
                 if (e.cancelable) e.preventDefault();
                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                 this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
-            }
-            }
-@touchstart=${(e: TouchEvent) => {
+            }}
+                    @touchstart=${(e: TouchEvent) => {
                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                 this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
-            }
-            }
-@touchend=${() => this._tooltip = null}
-@mouseleave=${() => this._tooltip = null}>
+            }}
+                    @touchend=${() => this._tooltip = null}
+                    @mouseleave=${() => this._tooltip = null}>
 
-    ${this._tooltip && this._tooltip.id === metricKey ? html`
-                 <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: ${color}80; pointer-events: none;"></div>
-                 <div style="position: absolute; left: ${this._tooltip.x + 10}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid ${color}; pointer-events: none; z-index: 1000;">
-                    <div style="color: ${color}; font-weight: 600;">${this._tooltip.time}</div>
-                    <div style="margin-top: 4px;">${this._tooltip.value}</div>
-                 </div>
-             ` : ''
-            }
+                    ${this._renderTooltip(metricKey, color)}
+                    ${this._renderYLabels(yLabels, unit)}
 
-<!--Y-axis labels-->
-    <div style="position: absolute; left: 0; top: 20px; bottom: 30px; width: 45px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; color: #666; text-align: right; padding-right: 8px; pointer-events: none;" >
-        ${yLabels.map(val => html`<div>${typeof val === 'number' ? val.toFixed(1) : val} ${typeof val === 'number' ? unit : ''}</div>`)}
-</div>
+                    <svg class="gs-chart-svg" style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
+                        <defs>
+                            ${this._renderGradient(metricKey, color)}
+                        </defs>
+                        
+                        ${this._renderGrid(width, height, type !== 'step' ? avgValue : undefined, paddedMin, paddedRange, color)}
 
-    <svg class="gs-chart-svg" style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox = "0 0 1000 ${height}" preserveAspectRatio = "none" >
-        <defs>
-        <linearGradient id="grad-${metricKey}" x1 = "0%" y1 = "0%" x2 = "0%" y2 = "100%" >
-            <stop offset="0%" style = "stop-color:${color};stop-opacity:0.3" />
-                <stop offset="100%" style = "stop-color:${color};stop-opacity:0" />
-                    </linearGradient>
-                    </defs>
+                        <path d="${svgPath} V ${height} H 0 Z" fill="url(#grad-${metricKey})" />
+                        <path d="${svgPath}" fill="none" stroke="${color}" stroke-width="2.5" />
+                    </svg>
 
-                    <!--Vertical grid lines-->
-                        <line x1="0" y1 = "0" x2 = "0" y2 = "${height}" stroke = "#333" stroke - width="1" />
-                            <line x1="${width * 0.25}" y1 = "0" x2 = "${width * 0.25}" y2 = "${height}" stroke = "#222" stroke - width="1" stroke - dasharray="2,2" />
-                                <line x1="${width * 0.5}" y1 = "0" x2 = "${width * 0.5}" y2 = "${height}" stroke = "#222" stroke - width="1" stroke - dasharray="2,2" />
-                                    <line x1="${width * 0.75}" y1 = "0" x2 = "${width * 0.75}" y2 = "${height}" stroke = "#222" stroke - width="1" stroke - dasharray="2,2" />
-                                        <line x1="${width}" y1 = "0" x2 = "${width}" y2 = "${height}" stroke = "#333" stroke - width="1" />
-
-                                            <!--Target / average line - Only for line graphs or non - binary-->
-                                                ${(type !== 'step' && avgValue) ? html`
-                   <line x1="0" y1="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
-                         x2="${width}" y2="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
-                         stroke="${color}" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.5" />
-                 ` : ''
-            }
-
-<!--Data line and fill-->
-    <path d="${svgPath} V ${height} H 0 Z" fill = "url(#grad-${metricKey})" />
-        <path d="${svgPath}" fill = "none" stroke = "${color}" stroke-width="2.5" />
-            </svg>
-
-            <!--X-axis markers-->
-                <div class="chart-markers">
-                    ${(() => {
-                if (range === '1h') return html`<span>60m</span><span>45m</span><span>30m</span><span>15m</span>`;
-                if (range === '6h') return html`<span>6h</span><span>4.5h</span><span>3h</span><span>1.5h</span>`;
-                if (range === '7d') return html`<span>7d</span><span>5d</span><span>3d</span><span>1d</span>`;
-                return html`<span>24h</span><span>18h</span><span>12h</span><span>6h</span>`;
-            })()
-            }
-<span style="color: ${color};" > NOW </span>
-    </div>
-    </div>
-    </div>
+                    ${this._renderXLabels(range, color)}
+                </div>
+            </div>
         `;
     }
 
@@ -849,79 +802,115 @@ export class GrowspaceEnvChart extends LitElement {
         const { metrics, metricConfig, range } = this;
         if (!this.device) return html``;
 
-        // Determine Time Range (use range of first metric or default)
-        let durationMillis = 24 * 60 * 60 * 1000;
-        if (range === '1h') durationMillis = 60 * 60 * 1000;
-        else if (range === '6h') durationMillis = 6 * 60 * 60 * 1000;
-        else if (range === '7d') durationMillis = 7 * 24 * 60 * 60 * 1000;
+        const durationMillis = this._getDurationMillis(range);
         const now = new Date();
         const startTime = new Date(now.getTime() - durationMillis);
 
-        // Prepare data for all metrics
-        const graphData: {
-            key: string,
-            color: string,
-            unit: string,
-            title: string,
-            points: { time: number, value: number, meta?: any }[],
-            min: number,
-            max: number
-        }[] = [];
+        const graphData = this._prepareCombinedGraphData(metrics, metricConfig, startTime, durationMillis, now);
+        if (graphData.length === 0) return html``;
 
+        const width = 1000;
+        const height = 180;
+
+        return html`
+            <div class="gs-env-graph-card">
+                <div class="gs-env-graph-header">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        ${graphData.map((g, i) => html`
+                            ${i > 0 ? html`
+                                <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
+                                        @click=${() => this.dispatchEvent(new UnlinkGraphMetricEvent(g.key))}
+                                        title="Unlink Graph">
+                                        <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: #fff;"><path d="${mdiLink}"></path></svg>
+                                </div>
+                            ` : ''}
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background: ${g.color};"></div>
+                                <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${g.title}</div>
+                            </div>
+                        `)}
+                    </div>
+                </div>
+
+                <div class="gs-env-chart-container"
+                     role="img"
+                     aria-label="Combined chart for ${metrics.join(', ')}"
+                     @mousemove=${(e: MouseEvent) => this._handleCombinedGraphHover(e, startTime, durationMillis, graphData, width)}
+                     @mouseleave=${() => this._tooltip = null}>
+
+                    ${this._renderCombinedTooltip(metrics, width)}
+
+                    <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
+                         ${this._renderGrid(width, height)}
+
+                         ${graphData.map(g => {
+            const defaults = SENSOR_CHART_DEFAULTS[g.key];
+            const range = g.max - g.min || 1;
+            let paddedMin = g.min - (range * 0.1);
+            let paddedMax = g.max + (range * 0.1);
+
+            if (defaults?.disablePadding) {
+                paddedMin = g.min;
+                paddedMax = g.max;
+            }
+            const paddedRange = paddedMax - paddedMin;
+
+            const points = g.points.map((p: { time: number, value: number }) => {
+                const x = ((p.time - startTime.getTime()) / durationMillis) * width;
+                const y = height - ((p.value - paddedMin) / paddedRange) * height;
+                return [x, y];
+            });
+
+            const path = `M ${points.map((p: number[]) => `${p[0]},${p[1]}`).join(' L ')}`;
+            // Combined uses flat opacity fill instead of gradient
+            return svg`
+                                <path d="${path}" fill="none" stroke="${g.color}" stroke-width="2" />
+                                <path d="${path} V ${height} H ${points[0][0]} Z" fill="${g.color}" fill-opacity="0.1" stroke="none" />
+                            `;
+        })}
+                    </svg>
+
+                    ${this._renderXLabels(range, '#fff')}
+                </div>
+            </div>
+        `;
+    }
+
+    private _getDurationMillis(range: string): number {
+        if (range === '1h') return 60 * 60 * 1000;
+        if (range === '6h') return 6 * 60 * 60 * 1000;
+        if (range === '7d') return 7 * 24 * 60 * 60 * 1000;
+        return 24 * 60 * 60 * 1000;
+    }
+
+    private _prepareCombinedGraphData(metrics: string[], metricConfig: any, startTime: Date, durationMillis: number, now: Date) {
+        const graphData: any[] = [];
         metrics.forEach(metricKey => {
             const config = metricConfig[metricKey] || { color: '#fff', title: metricKey, unit: '' };
-
             let dataPoints: { time: number, value: number, meta?: any }[] = [];
-
-
-            let historySource = this.history;
-            // Use individual sensor histories for environment metrics
-            if (metricKey === 'temperature') historySource = this.temperatureHistory;
-            else if (metricKey === 'humidity') historySource = this.humidityHistory;
-            else if (metricKey === 'vpd') historySource = this.vpdHistory;
-            else if (metricKey === 'co2') historySource = this.co2History;
-            else if (metricKey === 'dehumidifier') historySource = this.dehumidifierHistory;
-            else if (metricKey === 'exhaust') historySource = this.exhaustHistory;
-            else if (metricKey === 'humidifier') historySource = this.humidifierHistory;
-            else if (metricKey === 'circulation_fan') historySource = this.circulationFanHistory;
-            else if (metricKey === 'soil_moisture') historySource = this.soilMoistureHistory;
-            else if (metricKey === 'optimal') historySource = this.optimalHistory;
-
-            console.log(`[CombinedGraph] Metric: ${metricKey}, historySource length: ${historySource?.length || 0} `);
-            if (historySource && historySource.length > 0) {
-                console.log(`[CombinedGraph] First history entry for ${metricKey}: `, JSON.stringify(historySource[0]).slice(0, 500));
-            }
+            let historySource = this.sensorHistory[metricKey] || [];
 
             if (historySource && historySource.length > 0) {
                 const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+                const getValue = (ent: HistorySensorState, key: string) => this._normalizeSensorValue(ent, key, config.unit || '');
 
-                // Refactored to use class helper methods
-                const getValue = (ent: HistorySensorState, key: string) => this._normalizeSensorValue(ent, key, config.unit || ''); // Combined graph uses config unit
-
-                // 1. Find the active state exactly AT startTime
-                // We look for the latest entry that happened BEFORE or AT startTime
                 let initialState = sortedHistory.length > 0 ? sortedHistory[0] : null;
-                // Iterate to find the last one before start
                 for (const h of sortedHistory) {
                     const t = new Date(h.last_changed).getTime();
                     if (t > startTime.getTime()) break;
                     initialState = h;
                 }
 
-                // 2. If found, add it as the anchor point at startTime
                 if (initialState) {
                     const val = getValue(initialState, metricKey);
-                    // const meta = getMeta(initialState, metricKey); // Combined graph doesn't use detailed meta in same way but consistent logic
                     if (val !== undefined && !isNaN(val)) {
                         dataPoints.push({ time: startTime.getTime(), value: val });
                     }
                 }
 
-                // 3. Add all points that happened AFTER startTime
                 sortedHistory.forEach(h => {
                     const t = new Date(h.last_changed).getTime();
-                    if (t <= startTime.getTime()) return; // Skip old points (we handled the anchor above)
-
+                    if (t <= startTime.getTime()) return;
                     const val = getValue(h, metricKey);
                     if (val !== undefined && !isNaN(val)) {
                         dataPoints.push({ time: t, value: val });
@@ -934,129 +923,96 @@ export class GrowspaceEnvChart extends LitElement {
                 }
             }
 
-
-
             if (dataPoints.length > 0) {
                 let min = Math.min(...dataPoints.map(d => d.value));
                 let max = Math.max(...dataPoints.map(d => d.value));
 
-                if (metricKey === 'exhaust' || metricKey === 'humidifier') {
-                    min = 0;
-                    max = 10;
-                } else if (metricKey === 'dehumidifier') {
-                    min = 0;
-                    max = 1;
-                }
+                if (metricKey === 'exhaust' || metricKey === 'humidifier') { min = 0; max = 10; }
+                else if (metricKey === 'dehumidifier') { min = 0; max = 1; }
 
-                graphData.push({
-                    key: metricKey,
-                    ...config,
-                    points: dataPoints,
-                    min,
-                    max
-                });
+                graphData.push({ key: metricKey, ...config, points: dataPoints, min, max });
             }
         });
+        return graphData;
+    }
 
-        if (graphData.length === 0) return html``;
+    private _renderTooltip(metricKey: string, color: string) {
+        if (!this._tooltip || this._tooltip.id !== metricKey) return html``;
+        return html`
+             <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: ${color}80; pointer-events: none;"></div>
+             <div style="position: absolute; left: ${this._tooltip.x + 10}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid ${color}; pointer-events: none; z-index: 1000;">
+                <div style="color: ${color}; font-weight: 600;">${this._tooltip.time}</div>
+                <div style="margin-top: 4px;">${this._tooltip.value}</div>
+             </div>
+        `;
+    }
 
-        const width = 1000;
-        const height = 180;
+    private _renderCombinedTooltip(metrics: string[], width: number) {
+        if (!this._tooltip || this._tooltip.id !== 'combined-' + metrics.join('-')) return html``;
+        return html`
+             <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.2); pointer-events: none;"></div>
+             <div style="position: absolute; left: ${Math.min(this._tooltip.x + 10, width - 150)}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid rgba(255,255,255,0.1); pointer-events: none; z-index: 1000;">
+                <div style="font-weight: 600; margin-bottom: 4px;">${this._tooltip.time}</div>
+                ${(() => {
+                try {
+                    const values = JSON.parse(this._tooltip.value);
+                    return values.map((v: any) => html`
+                            <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                                <div style="width: 8px; height: 8px; border-radius: 50%; background: ${v.color};"></div>
+                                <span style="color: rgba(255,255,255,0.7);">${v.title}:</span>
+                                <span style="font-weight: 500;">${v.value} ${v.unit}</span>
+                            </div>
+                        `);
+                } catch { return html``; }
+            })()}
+             </div>
+        `;
+    }
+
+    private _renderYLabels(yLabels: (string | number)[], unit: string) {
+        return html`
+            <div style="position: absolute; left: 0; top: 20px; bottom: 30px; width: 45px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; color: #666; text-align: right; padding-right: 8px; pointer-events: none;" >
+                ${yLabels.map(val => html`<div>${typeof val === 'number' ? val.toFixed(1) : val} ${typeof val === 'number' ? unit : ''}</div>`)}
+            </div>
+        `;
+    }
+
+    private _renderXLabels(range: string, color: string) {
+        let labels = html`<span>24h</span><span>18h</span><span>12h</span><span>6h</span>`;
+        if (range === '1h') labels = html`<span>60m</span><span>45m</span><span>30m</span><span>15m</span>`;
+        else if (range === '6h') labels = html`<span>6h</span><span>4.5h</span><span>3h</span><span>1.5h</span>`;
+        else if (range === '7d') labels = html`<span>7d</span><span>5d</span><span>3d</span><span>1d</span>`;
 
         return html`
-    <div class="gs-env-graph-card">
-        <div class="gs-env-graph-header">
-            <div style="display: flex; align-items: center; gap: 12px;" >
-                ${graphData.map((g, i) => html`
-                    ${i > 0 ? html`
-                        <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
-                             @click=${() => {
-                    // Find group index logic would be needed here or passed down
-                    // For now, we'll dispatch an event with the key
-                    this.dispatchEvent(new UnlinkGraphMetricEvent(g.key));
-                }}
-                             title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: #fff;"><path d="${mdiLink}"></path></svg>
-                        </div>
-                    ` : ''}
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <div style="width: 12px; height: 12px; border-radius: 50%; background: ${g.color};"></div>
-                        <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${g.title}</div>
-                    </div>
-                 `)
-            }
-</div>
-    </div>
+            <div class="chart-markers">
+                ${labels}
+                <span style="color: ${color};" > NOW </span>
+            </div>
+        `;
+    }
 
-    <div class="gs-env-chart-container"
-@mousemove=${(e: MouseEvent) => this._handleCombinedGraphHover(e, startTime, durationMillis, graphData, width)}
-@mouseleave=${() => this._tooltip = null}>
+    private _renderGrid(width: number, height: number, avgValue?: number, min?: number, range?: number, color?: string): TemplateResult {
+        return svg`
+            <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
+            <line x1="${width * 0.25}" y1="0" x2="${width * 0.25}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
+            <line x1="${width * 0.5}" y1="0" x2="${width * 0.5}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
+            <line x1="${width * 0.75}" y1="0" x2="${width * 0.75}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
+            <line x1="${width}" y1="0" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
+            
+            ${(avgValue !== undefined && min !== undefined && range !== undefined && color) ? svg`
+               <line x1="0" y1="${height - ((avgValue - min) / range) * height}" 
+                     x2="${width}" y2="${height - ((avgValue - min) / range) * height}" 
+                     stroke="${color}" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.5" />
+             ` : ''}
+        `;
+    }
 
-    ${this._tooltip && this._tooltip.id === 'combined-' + metrics.join('-') ? html`
-                 <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.2); pointer-events: none;"></div>
-                 <div style="position: absolute; left: ${Math.min(this._tooltip.x + 10, width - 150)}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid rgba(255,255,255,0.1); pointer-events: none; z-index: 1000;">
-                    <div style="font-weight: 600; margin-bottom: 4px;">${this._tooltip.time}</div>
-                    ${(() => {
-                    try {
-                        const values = JSON.parse(this._tooltip.value);
-                        return values.map((v: any) => html`
-                                <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-                                    <div style="width: 8px; height: 8px; border-radius: 50%; background: ${v.color};"></div>
-                                    <span style="color: rgba(255,255,255,0.7);">${v.title}:</span>
-                                    <span style="font-weight: 500;">${v.value} ${v.unit}</span>
-                                </div>
-                            `);
-                    } catch { return html``; }
-                })()}
-                 </div>
-             ` : ''
-            }
-
-<svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox = "0 0 1000 ${height}" preserveAspectRatio = "none" >
-    <line x1="0" y1 = "0" x2 = "0" y2 = "${height}" stroke = "#333" stroke-width="1" />
-        <line x1="${width}" y1 = "0" x2 = "${width}" y2 = "${height}" stroke = "#333" stroke-width="1" />
-            <line x1="0" y1 = "${height}" x2 = "${width}" y2 = "${height}" stroke = "#333" stroke-width="1" />
-
-                ${graphData.map(g => {
-                const defaults = SENSOR_CHART_DEFAULTS[g.key];
-                const range = g.max - g.min || 1;
-                let paddedMin = g.min - (range * 0.1);
-                let paddedMax = g.max + (range * 0.1);
-
-                if (defaults?.disablePadding) {
-                    paddedMin = g.min;
-                    paddedMax = g.max;
-                }
-
-                const paddedRange = paddedMax - paddedMin;
-
-                const points = g.points.map(p => {
-                    const x = ((p.time - startTime.getTime()) / durationMillis) * width;
-                    const y = height - ((p.value - paddedMin) / paddedRange) * height;
-                    return [x, y];
-                });
-
-                const path = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
-                return svg`
-                         <path d="${path}" fill="none" stroke="${g.color}" stroke-width="2" />
-                         <path d="${path} V ${height} H ${points[0][0]} Z" fill="${g.color}" fill-opacity="0.1" stroke="none" />
-                     `;
-            })
-            }
-</svg>
-
-    <div class="chart-markers">
-        ${(() => {
-                if (range === '1h') return html`<span>60m</span><span>45m</span><span>30m</span><span>15m</span>`;
-                if (range === '6h') return html`<span>6h</span><span>4.5h</span><span>3h</span><span>1.5h</span>`;
-                if (range === '7d') return html`<span>7d</span><span>5d</span><span>3d</span><span>1d</span>`;
-                return html`<span>24h</span><span>18h</span><span>12h</span><span>6h</span>`;
-            })()
-            }
-<span style="color: #fff;" > NOW </span>
-    </div>
-    </div>
-    </div>
+    private _renderGradient(key: string, color: string): TemplateResult {
+        return svg`
+            <linearGradient id="grad-${key}" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:${color};stop-opacity:0.3" />
+                <stop offset="100%" style="stop-color:${color};stop-opacity:0" />
+            </linearGradient>
         `;
     }
 }

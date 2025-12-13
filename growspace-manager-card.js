@@ -607,7 +607,7 @@ const METRIC_CONFIG = {
         icon: mdiFan
     },
     humidifier: { color: '#607d8b', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
-    dehumidifier: { color: '#546e7a', title: 'Dehumidifier', unit: 'state', icon: mdiAirHumidifierOff, type: 'step' },
+    dehumidifier: { color: '#009688', title: 'Dehumidifier', unit: 'state', icon: mdiAirHumidifierOff, type: 'step' },
     optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state', icon: mdiRadioboxMarked, type: 'step' }
 };
 const DEFAULT_METRIC_CONFIG = {
@@ -10197,17 +10197,8 @@ MoveCloneEvent.TYPE = 'move-clone';
 let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
     constructor() {
         super(...arguments);
-        this.history = [];
-        this.dehumidifierHistory = [];
-        this.exhaustHistory = [];
-        this.humidifierHistory = [];
-        this.circulationFanHistory = [];
-        this.optimalHistory = [];
-        this.soilMoistureHistory = [];
-        this.temperatureHistory = [];
-        this.humidityHistory = [];
-        this.vpdHistory = [];
-        this.co2History = [];
+        this.sensorHistory = {};
+        // Removed individual props: history, dehumidifierHistory, etc.
         this.metricKey = '';
         this.unit = '';
         this.color = '#ffffff';
@@ -10543,7 +10534,15 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             // Refactored to use class helper methods
             const getValue = (ent, key) => this._normalizeSensorValue(ent, key, unit);
             const getMeta = (ent, key) => this._getSensorMeta(ent, key, unit);
-            let historySource = this.history;
+            let historySource = this.sensorHistory[metricKey] || [];
+            // For irrigation/drain, we might look specifically or rely on the passed key. 
+            // In the old code 'history' prop was generic, now we access by key.
+            // If the parent didn't pass it under the key, we might need fallback.
+            // But analytics will map it. 
+            // Special case logic for metricKey 'irrigation'/'drain' which use events might need the raw array if transformed inside?
+            // Actually _getGraphData handles transforms.
+            if (!historySource)
+                historySource = [];
             const sortedHistory = historySource ? [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()) : [];
             let initialState = sortedHistory.length > 0 ? sortedHistory[0] : null;
             for (const h of sortedHistory) {
@@ -10713,26 +10712,16 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
     }
     renderEnvGraph() {
         const { metricKey, color, title, unit, type, icon, range } = this;
-        // Restore time calculation for template usage
         const now = new Date();
-        let durationMillis = 24 * 60 * 60 * 1000;
-        if (range === '1h')
-            durationMillis = 60 * 60 * 1000;
-        else if (range === '6h')
-            durationMillis = 6 * 60 * 60 * 1000;
-        else if (range === '7d')
-            durationMillis = 7 * 24 * 60 * 60 * 1000;
+        const durationMillis = this._getDurationMillis(range);
         new Date(now.getTime() - durationMillis);
         const graphData = this._getGraphData();
         if (!graphData)
             return x ``;
         const { path: svgPath, dataPoints, minVal, maxVal, avgValue } = graphData;
-        // Recalculate paddedMin/Max for labels - simpler to just re-derive or store in memo? 
-        // Storing in memo avoids recalc. But I didn't return them in interface.
-        // I'll re-derive locally, it's cheap arithmetic compared to loop/path.
         const defaults = SENSOR_CHART_DEFAULTS[metricKey];
         const width = 1000;
-        const height = 180; // Standardized height
+        const height = 180;
         const rangeVal = maxVal - minVal || 1;
         let paddedMin = minVal - (rangeVal * 0.1);
         let paddedMax = maxVal + (rangeVal * 0.1);
@@ -10741,10 +10730,9 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             paddedMax = maxVal;
         }
         const paddedRange = paddedMax - paddedMin;
+        // Y-Axis Labels
         let yLabels = [];
-        // Only use ON/OFF labels if it's strictly binary or unit is state without range
         if (type === 'step' || (unit === 'state' && !defaults?.max) || metricKey === 'dehumidifier') {
-            // Smart labels for binary/step data
             yLabels = ['ON', 'OFF'];
         }
         else {
@@ -10757,163 +10745,162 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             ];
         }
         return x `
-            <div class="gs-env-graph-card" >
+            <div class="gs-env-graph-card">
                 <div class="gs-env-graph-header" @click=${this._toggleEnvGraph}>
-                    <div style="display: flex; align-items: center; gap: 12px;" >
-                        <svg style="width:24px;height:24px;fill:${color};" viewBox = "0 0 24 24" > <path d="${icon}" > </path></svg >
-                            <div>
-                            <div style="font-size: 0.9rem; font-weight: 600; color: #fff;" > ${title} </div>
-                                </div>
-                                </div>
-                                </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <svg style="width:24px;height:24px;fill:${color};" viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+                        <div>
+                            <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${title}</div>
+                        </div>
+                    </div>
+                </div>
 
-                                <div class="gs-env-chart-container"
-@mousemove=${(e) => {
+                <div class="gs-env-chart-container"
+                    role="img"
+                    aria-label="Line chart for ${title}, current value ${dataPoints[dataPoints.length - 1]?.value} ${unit}"
+                    @mousemove=${(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
         }}
-@touchmove=${(e) => {
+                    @touchmove=${(e) => {
             if (e.cancelable)
                 e.preventDefault();
             const rect = e.currentTarget.getBoundingClientRect();
             this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
         }}
-@touchstart=${(e) => {
+                    @touchstart=${(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
         }}
-@touchend=${() => this._tooltip = null}
-@mouseleave=${() => this._tooltip = null}>
+                    @touchend=${() => this._tooltip = null}
+                    @mouseleave=${() => this._tooltip = null}>
 
-    ${this._tooltip && this._tooltip.id === metricKey ? x `
-                 <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: ${color}80; pointer-events: none;"></div>
-                 <div style="position: absolute; left: ${this._tooltip.x + 10}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid ${color}; pointer-events: none; z-index: 1000;">
-                    <div style="color: ${color}; font-weight: 600;">${this._tooltip.time}</div>
-                    <div style="margin-top: 4px;">${this._tooltip.value}</div>
-                 </div>
-             ` : ''}
+                    ${this._renderTooltip(metricKey, color)}
+                    ${this._renderYLabels(yLabels, unit)}
 
-<!--Y-axis labels-->
-    <div style="position: absolute; left: 0; top: 20px; bottom: 30px; width: 45px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; color: #666; text-align: right; padding-right: 8px; pointer-events: none;" >
-        ${yLabels.map(val => x `<div>${typeof val === 'number' ? val.toFixed(1) : val} ${typeof val === 'number' ? unit : ''}</div>`)}
-</div>
+                    <svg class="gs-chart-svg" style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
+                        <defs>
+                            ${this._renderGradient(metricKey, color)}
+                        </defs>
+                        
+                        ${this._renderGrid(width, height, type !== 'step' ? avgValue : undefined, paddedMin, paddedRange, color)}
 
-    <svg class="gs-chart-svg" style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox = "0 0 1000 ${height}" preserveAspectRatio = "none" >
-        <defs>
-        <linearGradient id="grad-${metricKey}" x1 = "0%" y1 = "0%" x2 = "0%" y2 = "100%" >
-            <stop offset="0%" style = "stop-color:${color};stop-opacity:0.3" />
-                <stop offset="100%" style = "stop-color:${color};stop-opacity:0" />
-                    </linearGradient>
-                    </defs>
+                        <path d="${svgPath} V ${height} H 0 Z" fill="url(#grad-${metricKey})" />
+                        <path d="${svgPath}" fill="none" stroke="${color}" stroke-width="2.5" />
+                    </svg>
 
-                    <!--Vertical grid lines-->
-                        <line x1="0" y1 = "0" x2 = "0" y2 = "${height}" stroke = "#333" stroke - width="1" />
-                            <line x1="${width * 0.25}" y1 = "0" x2 = "${width * 0.25}" y2 = "${height}" stroke = "#222" stroke - width="1" stroke - dasharray="2,2" />
-                                <line x1="${width * 0.5}" y1 = "0" x2 = "${width * 0.5}" y2 = "${height}" stroke = "#222" stroke - width="1" stroke - dasharray="2,2" />
-                                    <line x1="${width * 0.75}" y1 = "0" x2 = "${width * 0.75}" y2 = "${height}" stroke = "#222" stroke - width="1" stroke - dasharray="2,2" />
-                                        <line x1="${width}" y1 = "0" x2 = "${width}" y2 = "${height}" stroke = "#333" stroke - width="1" />
-
-                                            <!--Target / average line - Only for line graphs or non - binary-->
-                                                ${(type !== 'step' && avgValue) ? x `
-                   <line x1="0" y1="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
-                         x2="${width}" y2="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
-                         stroke="${color}" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.5" />
-                 ` : ''}
-
-<!--Data line and fill-->
-    <path d="${svgPath} V ${height} H 0 Z" fill = "url(#grad-${metricKey})" />
-        <path d="${svgPath}" fill = "none" stroke = "${color}" stroke-width="2.5" />
-            </svg>
-
-            <!--X-axis markers-->
-                <div class="chart-markers">
-                    ${(() => {
-            if (range === '1h')
-                return x `<span>60m</span><span>45m</span><span>30m</span><span>15m</span>`;
-            if (range === '6h')
-                return x `<span>6h</span><span>4.5h</span><span>3h</span><span>1.5h</span>`;
-            if (range === '7d')
-                return x `<span>7d</span><span>5d</span><span>3d</span><span>1d</span>`;
-            return x `<span>24h</span><span>18h</span><span>12h</span><span>6h</span>`;
-        })()}
-<span style="color: ${color};" > NOW </span>
-    </div>
-    </div>
-    </div>
+                    ${this._renderXLabels(range, color)}
+                </div>
+            </div>
         `;
     }
     renderCombinedEnvGraph() {
         const { metrics, metricConfig, range } = this;
         if (!this.device)
             return x ``;
-        // Determine Time Range (use range of first metric or default)
-        let durationMillis = 24 * 60 * 60 * 1000;
-        if (range === '1h')
-            durationMillis = 60 * 60 * 1000;
-        else if (range === '6h')
-            durationMillis = 6 * 60 * 60 * 1000;
-        else if (range === '7d')
-            durationMillis = 7 * 24 * 60 * 60 * 1000;
+        const durationMillis = this._getDurationMillis(range);
         const now = new Date();
         const startTime = new Date(now.getTime() - durationMillis);
-        // Prepare data for all metrics
+        const graphData = this._prepareCombinedGraphData(metrics, metricConfig, startTime, durationMillis, now);
+        if (graphData.length === 0)
+            return x ``;
+        const width = 1000;
+        const height = 180;
+        return x `
+            <div class="gs-env-graph-card">
+                <div class="gs-env-graph-header">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        ${graphData.map((g, i) => x `
+                            ${i > 0 ? x `
+                                <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
+                                        @click=${() => this.dispatchEvent(new UnlinkGraphMetricEvent(g.key))}
+                                        title="Unlink Graph">
+                                        <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: #fff;"><path d="${mdiLink}"></path></svg>
+                                </div>
+                            ` : ''}
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <div style="width: 12px; height: 12px; border-radius: 50%; background: ${g.color};"></div>
+                                <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${g.title}</div>
+                            </div>
+                        `)}
+                    </div>
+                </div>
+
+                <div class="gs-env-chart-container"
+                     role="img"
+                     aria-label="Combined chart for ${metrics.join(', ')}"
+                     @mousemove=${(e) => this._handleCombinedGraphHover(e, startTime, durationMillis, graphData, width)}
+                     @mouseleave=${() => this._tooltip = null}>
+
+                    ${this._renderCombinedTooltip(metrics, width)}
+
+                    <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
+                         ${this._renderGrid(width, height)}
+
+                         ${graphData.map(g => {
+            const defaults = SENSOR_CHART_DEFAULTS[g.key];
+            const range = g.max - g.min || 1;
+            let paddedMin = g.min - (range * 0.1);
+            let paddedMax = g.max + (range * 0.1);
+            if (defaults?.disablePadding) {
+                paddedMin = g.min;
+                paddedMax = g.max;
+            }
+            const paddedRange = paddedMax - paddedMin;
+            const points = g.points.map((p) => {
+                const x = ((p.time - startTime.getTime()) / durationMillis) * width;
+                const y = height - ((p.value - paddedMin) / paddedRange) * height;
+                return [x, y];
+            });
+            const path = `M ${points.map((p) => `${p[0]},${p[1]}`).join(' L ')}`;
+            // Combined uses flat opacity fill instead of gradient
+            return b `
+                                <path d="${path}" fill="none" stroke="${g.color}" stroke-width="2" />
+                                <path d="${path} V ${height} H ${points[0][0]} Z" fill="${g.color}" fill-opacity="0.1" stroke="none" />
+                            `;
+        })}
+                    </svg>
+
+                    ${this._renderXLabels(range, '#fff')}
+                </div>
+            </div>
+        `;
+    }
+    _getDurationMillis(range) {
+        if (range === '1h')
+            return 60 * 60 * 1000;
+        if (range === '6h')
+            return 6 * 60 * 60 * 1000;
+        if (range === '7d')
+            return 7 * 24 * 60 * 60 * 1000;
+        return 24 * 60 * 60 * 1000;
+    }
+    _prepareCombinedGraphData(metrics, metricConfig, startTime, durationMillis, now) {
         const graphData = [];
         metrics.forEach(metricKey => {
             const config = metricConfig[metricKey] || { color: '#fff', title: metricKey, unit: '' };
             let dataPoints = [];
-            let historySource = this.history;
-            // Use individual sensor histories for environment metrics
-            if (metricKey === 'temperature')
-                historySource = this.temperatureHistory;
-            else if (metricKey === 'humidity')
-                historySource = this.humidityHistory;
-            else if (metricKey === 'vpd')
-                historySource = this.vpdHistory;
-            else if (metricKey === 'co2')
-                historySource = this.co2History;
-            else if (metricKey === 'dehumidifier')
-                historySource = this.dehumidifierHistory;
-            else if (metricKey === 'exhaust')
-                historySource = this.exhaustHistory;
-            else if (metricKey === 'humidifier')
-                historySource = this.humidifierHistory;
-            else if (metricKey === 'circulation_fan')
-                historySource = this.circulationFanHistory;
-            else if (metricKey === 'soil_moisture')
-                historySource = this.soilMoistureHistory;
-            else if (metricKey === 'optimal')
-                historySource = this.optimalHistory;
-            console.log(`[CombinedGraph] Metric: ${metricKey}, historySource length: ${historySource?.length || 0} `);
-            if (historySource && historySource.length > 0) {
-                console.log(`[CombinedGraph] First history entry for ${metricKey}: `, JSON.stringify(historySource[0]).slice(0, 500));
-            }
+            let historySource = this.sensorHistory[metricKey] || [];
             if (historySource && historySource.length > 0) {
                 const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
-                // Refactored to use class helper methods
-                const getValue = (ent, key) => this._normalizeSensorValue(ent, key, config.unit || ''); // Combined graph uses config unit
-                // 1. Find the active state exactly AT startTime
-                // We look for the latest entry that happened BEFORE or AT startTime
+                const getValue = (ent, key) => this._normalizeSensorValue(ent, key, config.unit || '');
                 let initialState = sortedHistory.length > 0 ? sortedHistory[0] : null;
-                // Iterate to find the last one before start
                 for (const h of sortedHistory) {
                     const t = new Date(h.last_changed).getTime();
                     if (t > startTime.getTime())
                         break;
                     initialState = h;
                 }
-                // 2. If found, add it as the anchor point at startTime
                 if (initialState) {
                     const val = getValue(initialState, metricKey);
-                    // const meta = getMeta(initialState, metricKey); // Combined graph doesn't use detailed meta in same way but consistent logic
                     if (val !== undefined && !isNaN(val)) {
                         dataPoints.push({ time: startTime.getTime(), value: val });
                     }
                 }
-                // 3. Add all points that happened AFTER startTime
                 sortedHistory.forEach(h => {
                     const t = new Date(h.last_changed).getTime();
                     if (t <= startTime.getTime())
-                        return; // Skip old points (we handled the anchor above)
+                        return;
                     const val = getValue(h, metricKey);
                     if (val !== undefined && !isNaN(val)) {
                         dataPoints.push({ time: t, value: val });
@@ -10935,111 +10922,90 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                     min = 0;
                     max = 1;
                 }
-                graphData.push({
-                    key: metricKey,
-                    ...config,
-                    points: dataPoints,
-                    min,
-                    max
-                });
+                graphData.push({ key: metricKey, ...config, points: dataPoints, min, max });
             }
         });
-        if (graphData.length === 0)
+        return graphData;
+    }
+    _renderTooltip(metricKey, color) {
+        if (!this._tooltip || this._tooltip.id !== metricKey)
             return x ``;
-        const width = 1000;
-        const height = 180;
         return x `
-    <div class="gs-env-graph-card">
-        <div class="gs-env-graph-header">
-            <div style="display: flex; align-items: center; gap: 12px;" >
-                ${graphData.map((g, i) => x `
-                    ${i > 0 ? x `
-                        <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
-                             @click=${() => {
-            // Find group index logic would be needed here or passed down
-            // For now, we'll dispatch an event with the key
-            this.dispatchEvent(new UnlinkGraphMetricEvent(g.key));
-        }}
-                             title="Unlink Graph">
-                             <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: #fff;"><path d="${mdiLink}"></path></svg>
-                        </div>
-                    ` : ''}
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <div style="width: 12px; height: 12px; border-radius: 50%; background: ${g.color};"></div>
-                        <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${g.title}</div>
-                    </div>
-                 `)}
-</div>
-    </div>
-
-    <div class="gs-env-chart-container"
-@mousemove=${(e) => this._handleCombinedGraphHover(e, startTime, durationMillis, graphData, width)}
-@mouseleave=${() => this._tooltip = null}>
-
-    ${this._tooltip && this._tooltip.id === 'combined-' + metrics.join('-') ? x `
-                 <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.2); pointer-events: none;"></div>
-                 <div style="position: absolute; left: ${Math.min(this._tooltip.x + 10, width - 150)}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid rgba(255,255,255,0.1); pointer-events: none; z-index: 1000;">
-                    <div style="font-weight: 600; margin-bottom: 4px;">${this._tooltip.time}</div>
-                    ${(() => {
+             <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: ${color}80; pointer-events: none;"></div>
+             <div style="position: absolute; left: ${this._tooltip.x + 10}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid ${color}; pointer-events: none; z-index: 1000;">
+                <div style="color: ${color}; font-weight: 600;">${this._tooltip.time}</div>
+                <div style="margin-top: 4px;">${this._tooltip.value}</div>
+             </div>
+        `;
+    }
+    _renderCombinedTooltip(metrics, width) {
+        if (!this._tooltip || this._tooltip.id !== 'combined-' + metrics.join('-'))
+            return x ``;
+        return x `
+             <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.2); pointer-events: none;"></div>
+             <div style="position: absolute; left: ${Math.min(this._tooltip.x + 10, width - 150)}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid rgba(255,255,255,0.1); pointer-events: none; z-index: 1000;">
+                <div style="font-weight: 600; margin-bottom: 4px;">${this._tooltip.time}</div>
+                ${(() => {
             try {
                 const values = JSON.parse(this._tooltip.value);
                 return values.map((v) => x `
-                                <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-                                    <div style="width: 8px; height: 8px; border-radius: 50%; background: ${v.color};"></div>
-                                    <span style="color: rgba(255,255,255,0.7);">${v.title}:</span>
-                                    <span style="font-weight: 500;">${v.value} ${v.unit}</span>
-                                </div>
-                            `);
+                            <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                                <div style="width: 8px; height: 8px; border-radius: 50%; background: ${v.color};"></div>
+                                <span style="color: rgba(255,255,255,0.7);">${v.title}:</span>
+                                <span style="font-weight: 500;">${v.value} ${v.unit}</span>
+                            </div>
+                        `);
             }
             catch {
                 return x ``;
             }
         })()}
-                 </div>
+             </div>
+        `;
+    }
+    _renderYLabels(yLabels, unit) {
+        return x `
+            <div style="position: absolute; left: 0; top: 20px; bottom: 30px; width: 45px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; color: #666; text-align: right; padding-right: 8px; pointer-events: none;" >
+                ${yLabels.map(val => x `<div>${typeof val === 'number' ? val.toFixed(1) : val} ${typeof val === 'number' ? unit : ''}</div>`)}
+            </div>
+        `;
+    }
+    _renderXLabels(range, color) {
+        let labels = x `<span>24h</span><span>18h</span><span>12h</span><span>6h</span>`;
+        if (range === '1h')
+            labels = x `<span>60m</span><span>45m</span><span>30m</span><span>15m</span>`;
+        else if (range === '6h')
+            labels = x `<span>6h</span><span>4.5h</span><span>3h</span><span>1.5h</span>`;
+        else if (range === '7d')
+            labels = x `<span>7d</span><span>5d</span><span>3d</span><span>1d</span>`;
+        return x `
+            <div class="chart-markers">
+                ${labels}
+                <span style="color: ${color};" > NOW </span>
+            </div>
+        `;
+    }
+    _renderGrid(width, height, avgValue, min, range, color) {
+        return b `
+            <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
+            <line x1="${width * 0.25}" y1="0" x2="${width * 0.25}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
+            <line x1="${width * 0.5}" y1="0" x2="${width * 0.5}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
+            <line x1="${width * 0.75}" y1="0" x2="${width * 0.75}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
+            <line x1="${width}" y1="0" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
+            
+            ${(avgValue !== undefined && min !== undefined && range !== undefined && color) ? b `
+               <line x1="0" y1="${height - ((avgValue - min) / range) * height}" 
+                     x2="${width}" y2="${height - ((avgValue - min) / range) * height}" 
+                     stroke="${color}" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.5" />
              ` : ''}
-
-<svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox = "0 0 1000 ${height}" preserveAspectRatio = "none" >
-    <line x1="0" y1 = "0" x2 = "0" y2 = "${height}" stroke = "#333" stroke-width="1" />
-        <line x1="${width}" y1 = "0" x2 = "${width}" y2 = "${height}" stroke = "#333" stroke-width="1" />
-            <line x1="0" y1 = "${height}" x2 = "${width}" y2 = "${height}" stroke = "#333" stroke-width="1" />
-
-                ${graphData.map(g => {
-            const defaults = SENSOR_CHART_DEFAULTS[g.key];
-            const range = g.max - g.min || 1;
-            let paddedMin = g.min - (range * 0.1);
-            let paddedMax = g.max + (range * 0.1);
-            if (defaults?.disablePadding) {
-                paddedMin = g.min;
-                paddedMax = g.max;
-            }
-            const paddedRange = paddedMax - paddedMin;
-            const points = g.points.map(p => {
-                const x = ((p.time - startTime.getTime()) / durationMillis) * width;
-                const y = height - ((p.value - paddedMin) / paddedRange) * height;
-                return [x, y];
-            });
-            const path = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
-            return b `
-                         <path d="${path}" fill="none" stroke="${g.color}" stroke-width="2" />
-                         <path d="${path} V ${height} H ${points[0][0]} Z" fill="${g.color}" fill-opacity="0.1" stroke="none" />
-                     `;
-        })}
-</svg>
-
-    <div class="chart-markers">
-        ${(() => {
-            if (range === '1h')
-                return x `<span>60m</span><span>45m</span><span>30m</span><span>15m</span>`;
-            if (range === '6h')
-                return x `<span>6h</span><span>4.5h</span><span>3h</span><span>1.5h</span>`;
-            if (range === '7d')
-                return x `<span>7d</span><span>5d</span><span>3d</span><span>1d</span>`;
-            return x `<span>24h</span><span>18h</span><span>12h</span><span>6h</span>`;
-        })()}
-<span style="color: #fff;" > NOW </span>
-    </div>
-    </div>
-    </div>
+        `;
+    }
+    _renderGradient(key, color) {
+        return b `
+            <linearGradient id="grad-${key}" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:${color};stop-opacity:0.3" />
+                <stop offset="100%" style="stop-color:${color};stop-opacity:0" />
+            </linearGradient>
         `;
     }
 };
@@ -11149,49 +11115,9 @@ __decorate([
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "device", void 0);
 __decorate([
-    n$2({ type: Array }),
-    __metadata("design:type", Array)
-], GrowspaceEnvChart.prototype, "history", void 0);
-__decorate([
-    n$2({ type: Array }),
-    __metadata("design:type", Array)
-], GrowspaceEnvChart.prototype, "dehumidifierHistory", void 0);
-__decorate([
-    n$2({ type: Array }),
-    __metadata("design:type", Array)
-], GrowspaceEnvChart.prototype, "exhaustHistory", void 0);
-__decorate([
-    n$2({ type: Array }),
-    __metadata("design:type", Array)
-], GrowspaceEnvChart.prototype, "humidifierHistory", void 0);
-__decorate([
-    n$2({ type: Array }),
-    __metadata("design:type", Array)
-], GrowspaceEnvChart.prototype, "circulationFanHistory", void 0);
-__decorate([
-    n$2({ type: Array }),
-    __metadata("design:type", Array)
-], GrowspaceEnvChart.prototype, "optimalHistory", void 0);
-__decorate([
-    n$2({ type: Array }),
-    __metadata("design:type", Array)
-], GrowspaceEnvChart.prototype, "soilMoistureHistory", void 0);
-__decorate([
-    n$2({ type: Array }),
-    __metadata("design:type", Array)
-], GrowspaceEnvChart.prototype, "temperatureHistory", void 0);
-__decorate([
-    n$2({ type: Array }),
-    __metadata("design:type", Array)
-], GrowspaceEnvChart.prototype, "humidityHistory", void 0);
-__decorate([
-    n$2({ type: Array }),
-    __metadata("design:type", Array)
-], GrowspaceEnvChart.prototype, "vpdHistory", void 0);
-__decorate([
-    n$2({ type: Array }),
-    __metadata("design:type", Array)
-], GrowspaceEnvChart.prototype, "co2History", void 0);
+    n$2({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "sensorHistory", void 0);
 __decorate([
     n$2({ type: String }),
     __metadata("design:type", Object)
@@ -19175,30 +19101,32 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
             }
         });
         itemsToRender.sort((a, b) => a.sortIndex - b.sortIndex);
-        const graphs = itemsToRender.map(item => {
+        const sensorHistory = {
+            temperature: this.temperatureHistory || [],
+            humidity: this.humidityHistory || [],
+            vpd: this.vpdHistory || [],
+            co2: this.co2History || [],
+            dehumidifier: this.dehumidifierHistory || [],
+            exhaust: this.exhaustHistory || [],
+            humidifier: this.humidifierHistory || [],
+            circulation_fan: this.circulationFanHistory || [],
+            soilMoisture: this.soilMoistureHistory || [],
+            optimal: this.optimalHistory || []
+        };
+        // Add raw history data as fallback if needed or mapped
+        // Use repeat directive for efficient DOM updates when sorting/filtering changes
+        const graphs = c(itemsToRender, 
+        // Key function: Unique ID for the item
+        (item) => item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`, 
+        // Render function
+        (item) => {
             if (item.type === 'group') {
                 const activeMetrics = item.metrics;
-                console.log('[GrowspaceAnalytics] Creating combined graph with:', {
-                    activeMetrics,
-                    historyDataLength: this.historyData?.length || 0,
-                    historyDataSample: this.historyData?.[0] ? JSON.stringify(this.historyData[0]).slice(0, 300) : 'empty'
-                });
-                // Pass the METRIC_CONFIG down for the combined graph to pick colors/titles
                 return x `
               <growspace-env-chart
                   .hass=${this.hass}
                   .device=${this.device}
-                  .history=${this.historyData || []}
-                  .dehumidifierHistory=${this.dehumidifierHistory || []}
-                  .exhaustHistory=${this.exhaustHistory || []}
-                  .humidifierHistory=${this.humidifierHistory || []}
-                  .circulationFanHistory=${this.circulationFanHistory || []}
-                  .soilMoistureHistory=${this.soilMoistureHistory || []}
-                  .optimalHistory=${this.optimalHistory || []}
-                  .temperatureHistory=${this.temperatureHistory || []}
-                  .humidityHistory=${this.humidityHistory || []}
-                  .vpdHistory=${this.vpdHistory || []}
-                  .co2History=${this.co2History || []}
+                  .sensorHistory=${sensorHistory}
                   .metrics=${activeMetrics}
                   .isCombined=${true}
                   .metricConfig=${METRIC_CONFIG}
@@ -19212,33 +19140,11 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
             else {
                 const metric = item.metrics[0];
                 const config = METRIC_CONFIG[metric] || DEFAULT_METRIC_CONFIG;
-                // Determine correct history array based on metric
-                let history = this.historyData || [];
-                if (metric === 'temperature')
-                    history = this.temperatureHistory || [];
-                else if (metric === 'humidity')
-                    history = this.humidityHistory || [];
-                else if (metric === 'vpd')
-                    history = this.vpdHistory || [];
-                else if (metric === 'co2')
-                    history = this.co2History || [];
-                else if (metric === 'exhaust')
-                    history = this.exhaustHistory || [];
-                else if (metric === 'humidifier')
-                    history = this.humidifierHistory || [];
-                else if (metric === 'circulation_fan')
-                    history = this.circulationFanHistory || [];
-                else if (metric === 'dehumidifier')
-                    history = this.dehumidifierHistory || [];
-                else if (metric === 'soil_moisture')
-                    history = this.soilMoistureHistory || [];
-                else if (metric === 'optimal')
-                    history = this.optimalHistory || [];
                 return x `
           <growspace-env-chart
               .hass=${this.hass}
               .device=${this.device}
-              .history=${history}
+              .sensorHistory=${sensorHistory}
               .metricKey=${metric}
               .unit=${config.unit}
               .color=${config.color}

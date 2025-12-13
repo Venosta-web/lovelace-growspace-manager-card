@@ -1,4 +1,5 @@
 import { LitElement, html, css, PropertyValues, TemplateResult } from 'lit';
+import { repeat } from 'lit/directives/repeat.js';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice } from '../types';
@@ -93,30 +94,33 @@ export class GrowspaceAnalytics extends LitElement {
 
         itemsToRender.sort((a, b) => a.sortIndex - b.sortIndex);
 
-        const graphs: TemplateResult[] = itemsToRender.map(item => {
-            if (item.type === 'group') {
-                const activeMetrics = item.metrics;
-                console.log('[GrowspaceAnalytics] Creating combined graph with:', {
-                    activeMetrics,
-                    historyDataLength: this.historyData?.length || 0,
-                    historyDataSample: this.historyData?.[0] ? JSON.stringify(this.historyData[0]).slice(0, 300) : 'empty'
-                });
-                // Pass the METRIC_CONFIG down for the combined graph to pick colors/titles
-                return html`
+        const sensorHistory = {
+            temperature: this.temperatureHistory || [],
+            humidity: this.humidityHistory || [],
+            vpd: this.vpdHistory || [],
+            co2: this.co2History || [],
+            dehumidifier: this.dehumidifierHistory || [],
+            exhaust: this.exhaustHistory || [],
+            humidifier: this.humidifierHistory || [],
+            circulation_fan: this.circulationFanHistory || [],
+            soilMoisture: this.soilMoistureHistory || [],
+            optimal: this.optimalHistory || []
+        };
+        // Add raw history data as fallback if needed or mapped
+        // Use repeat directive for efficient DOM updates when sorting/filtering changes
+        const graphs = repeat(
+            itemsToRender,
+            // Key function: Unique ID for the item
+            (item) => item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`,
+            // Render function
+            (item) => {
+                if (item.type === 'group') {
+                    const activeMetrics = item.metrics;
+                    return html`
               <growspace-env-chart
                   .hass=${this.hass}
                   .device=${this.device}
-                  .history=${this.historyData || []}
-                  .dehumidifierHistory=${this.dehumidifierHistory || []}
-                  .exhaustHistory=${this.exhaustHistory || []}
-                  .humidifierHistory=${this.humidifierHistory || []}
-                  .circulationFanHistory=${this.circulationFanHistory || []}
-                  .soilMoistureHistory=${this.soilMoistureHistory || []}
-                  .optimalHistory=${this.optimalHistory || []}
-                  .temperatureHistory=${this.temperatureHistory || []}
-                  .humidityHistory=${this.humidityHistory || []}
-                  .vpdHistory=${this.vpdHistory || []}
-                  .co2History=${this.co2History || []}
+                  .sensorHistory=${sensorHistory}
                   .metrics=${activeMetrics}
                   .isCombined=${true}
                   .metricConfig=${METRIC_CONFIG}
@@ -126,28 +130,15 @@ export class GrowspaceAnalytics extends LitElement {
                   @unlink-graph=${this._handleUnlinkGraphMetric}
               ></growspace-env-chart>
           `;
-            } else {
-                const metric = item.metrics[0];
-                const config = METRIC_CONFIG[metric] || DEFAULT_METRIC_CONFIG;
+                } else {
+                    const metric = item.metrics[0];
+                    const config = METRIC_CONFIG[metric] || DEFAULT_METRIC_CONFIG;
 
-                // Determine correct history array based on metric
-                let history = this.historyData || [];
-                if (metric === 'temperature') history = this.temperatureHistory || [];
-                else if (metric === 'humidity') history = this.humidityHistory || [];
-                else if (metric === 'vpd') history = this.vpdHistory || [];
-                else if (metric === 'co2') history = this.co2History || [];
-                else if (metric === 'exhaust') history = this.exhaustHistory || [];
-                else if (metric === 'humidifier') history = this.humidifierHistory || [];
-                else if (metric === 'circulation_fan') history = this.circulationFanHistory || [];
-                else if (metric === 'dehumidifier') history = this.dehumidifierHistory || [];
-                else if (metric === 'soil_moisture') history = this.soilMoistureHistory || [];
-                else if (metric === 'optimal') history = this.optimalHistory || [];
-
-                return html`
+                    return html`
           <growspace-env-chart
               .hass=${this.hass}
               .device=${this.device}
-              .history=${history}
+              .sensorHistory=${sensorHistory}
               .metricKey=${metric}
               .unit=${config.unit}
               .color=${config.color}
@@ -158,8 +149,9 @@ export class GrowspaceAnalytics extends LitElement {
               @toggle-graph=${this._handleToggleGraph}
           ></growspace-env-chart>
         `;
+                }
             }
-        });
+        );
 
         return html`
         <div class="graphs-container">
