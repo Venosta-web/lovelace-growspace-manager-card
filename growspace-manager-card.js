@@ -10151,18 +10151,112 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         this.isCombined = false;
         this.metricConfig = {};
         this._tooltip = null;
+        // Performance: Cache layout to avoid thrashing
+        this._resizeObserver = null;
+        this._cachedRect = null;
+        this._memoizedGraphData = null;
+        this._rafId = null;
     }
-    _handleGraphHover(e, metricKey, dataPoints, rect, unit) {
-        let clientX;
+    connectedCallback() {
+        super.connectedCallback();
+        this._setupResizeObserver();
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+            this._resizeObserver = null;
+        }
+    }
+    firstUpdated(_changedProperties) {
+        super.firstUpdated(_changedProperties);
+        this._setupResizeObserver();
+    }
+    _setupResizeObserver() {
+        // Observer is set up in firstUpdated to ensure DOM exists, 
+        // fallback in connectedCallback if elements already exist (e.g. moving in DOM)
+        const container = this.shadowRoot?.querySelector('.gs-chart-container');
+        if (container && !this._resizeObserver) {
+            this._resizeObserver = new ResizeObserver((entries) => {
+                for (const entry of entries) {
+                    this._cachedRect = entry.contentRect;
+                    // Note: contentRect is relative to element padding, 
+                    // but usually we need getBoundingClientRect for screen coords in mouse events.
+                    // Actually, for mouse events we compare clientX against cached BoundingClientRect.
+                    // ResizeObserver entry provides contentRect. 
+                    // To get screen position (left/top), we still need BoundingClientRect but ONLY when it moves, not every hover.
+                    // However, ResizeObserver doesn't give absolute position.
+                    // Optimization: We can just use the observer to invalidate cache, OR update cache.
+                    // Better approach for absolute rect: call getBoundingClientRect() ONLY when resizing/scrolling or once per frame if needed.
+                    // But standard optimization is to cache it and update on scroll/resize.
+                    // Simplest robust way is to just cache it here, but `entry.contentRect` doesn't have `left`/`top` relative to viewport.
+                    // So we update the cache from the element itself
+                    this._updateCachedRect(entry.target);
+                }
+            });
+            this._resizeObserver.observe(container);
+            // Initial measuring
+            this._updateCachedRect(container);
+        }
+    }
+    _updateCachedRect(element) {
+        this._cachedRect = element.getBoundingClientRect();
+    }
+    _findClosestDataPoint(dataPoints, targetTime) {
+        if (!dataPoints || dataPoints.length === 0)
+            return { time: targetTime, value: 0 };
+        if (dataPoints.length === 1)
+            return dataPoints[0];
+        let low = 0;
+        let high = dataPoints.length - 1;
+        while (low < high) {
+            const mid = Math.floor((low + high) / 2);
+            if (dataPoints[mid].time < targetTime) {
+                low = mid + 1;
+            }
+            else {
+                high = mid;
+            }
+        }
+        if (low > 0) {
+            const prev = dataPoints[low - 1];
+            const curr = dataPoints[low];
+            if (Math.abs(prev.time - targetTime) < Math.abs(curr.time - targetTime)) {
+                return prev;
+            }
+        }
+        return dataPoints[low];
+    }
+    _handleGraphHover(e, metricKey, dataPoints, _rect, unit) {
+        // Capture x coordinate
+        let x;
+        let width;
         if (window.TouchEvent && e instanceof TouchEvent) {
-            clientX = e.touches[0].clientX;
+            // For touch, we must measure because there is no offsetX
+            // Touch scrolling invalidates layout anyway, so measuring is acceptable.
+            const rect = e.currentTarget.getBoundingClientRect();
+            x = e.touches[0].clientX - rect.left;
+            width = rect.width;
         }
         else {
-            clientX = e.clientX;
+            // For mouse, use offsetX for maximum performance and scroll stability
+            // Requires pointer-events: none on children
+            x = e.offsetX;
+            // Width can change on resize, but constant during scroll.
+            // We can use clientWidth which triggers reflow or cached width.
+            // For simplicity and scroll-safety, clientWidth is cheap enough if not writing layout.
+            // Or fallback to cached rect width if available?
+            width = e.currentTarget.clientWidth;
         }
-        const x = clientX - rect.left;
-        const width = rect.width;
-        // Determine range
+        // Cancel previous pending frame
+        if (this._rafId)
+            cancelAnimationFrame(this._rafId);
+        this._rafId = requestAnimationFrame(() => {
+            this._rafId = null;
+            this._updateTooltipState(x, width, metricKey, dataPoints, unit);
+        });
+    }
+    _updateTooltipState(x, width, metricKey, dataPoints, unit) {
         const rangeKey = this.range;
         const durationMillis = rangeKey === '1h' ? 60 * 60 * 1000 :
             rangeKey === '6h' ? 6 * 60 * 60 * 1000 :
@@ -10170,18 +10264,21 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                     24 * 60 * 60 * 1000;
         const now = new Date();
         const startTime = now.getTime() - durationMillis;
-        // Calculate time from x position
-        const time = startTime + (x / width) * durationMillis;
-        // Find closest data point
-        let closest = dataPoints[0];
-        let minDiff = Math.abs(dataPoints[0].time - time);
-        for (let i = 1; i < dataPoints.length; i++) {
-            const diff = Math.abs(dataPoints[i].time - time);
-            if (diff < minDiff) {
-                minDiff = diff;
-                closest = dataPoints[i];
-            }
+        // Apply offset for line graphs which have padding INSIDE the container
+        let effectiveX = x;
+        let effectiveWidth = width;
+        // CSS for .gs-env-chart-container has padding: 20px 40px 30px 50px
+        // SVG is positioned at left: 50px with width: calc(100% - 90px)
+        if (this.type !== 'step') {
+            const paddingLeft = 50;
+            const paddingRight = 40;
+            effectiveX = x - paddingLeft;
+            effectiveWidth = width - (paddingLeft + paddingRight);
+            // Clamp to ensure we don't seek outside bounds
+            effectiveX = Math.max(0, Math.min(effectiveX, effectiveWidth));
         }
+        const time = startTime + (effectiveX / effectiveWidth) * durationMillis;
+        const closest = this._findClosestDataPoint(dataPoints, time);
         const date = new Date(closest.time);
         const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         let valStr = `${closest.value} ${unit}`;
@@ -10207,6 +10304,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         else if ((metricKey === 'exhaust' || metricKey === 'humidifier') && closest.meta?.state) {
             valStr = closest.meta.state;
         }
+        // Throttle tooltip updates via RequestAnimationFrame (implemented in next step, 
+        // for now directly updating state to maintain functionality)
         this._tooltip = {
             id: metricKey,
             x: x,
@@ -10214,26 +10313,28 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             value: valStr
         };
     }
-    _handleCombinedGraphHover(e, startTime, durationMillis, graphData, width) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const time = startTime.getTime() + (x / rect.width) * durationMillis;
+    _handleCombinedGraphHover(e, startTime, durationMillis, graphData, _width) {
+        // Assume mouse event only (touch handled elsewhere or same logic if event passed)
+        // Combined graph logic mirrors single graph logic
+        const x = e.offsetX;
+        const totalWidth = e.currentTarget.clientWidth;
+        // CSS for .gs-env-chart-container has padding: 20px 40px 30px 50px
+        const paddingLeft = 50;
+        const paddingRight = 40;
+        let effectiveX = x - paddingLeft;
+        let effectiveWidth = totalWidth - (paddingLeft + paddingRight);
+        // Clamp
+        effectiveX = Math.max(0, Math.min(effectiveX, effectiveWidth));
+        const time = startTime.getTime() + (effectiveX / effectiveWidth) * durationMillis;
         const timeStr = new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const values = graphData.map(g => {
-            let closest = g.points[0];
-            let minDiff = Math.abs(g.points[0].time - time);
-            for (let i = 1; i < g.points.length; i++) {
-                const diff = Math.abs(g.points[i].time - time);
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    closest = g.points[i];
-                }
-            }
+            // Use binary search helper
+            const closest = this._findClosestDataPoint(g.points, time);
             return { ...g, value: closest.value };
         });
         this._tooltip = {
             id: 'combined-' + this.metrics.join('-'),
-            x: x,
+            x: x, // Keep tooltip visual position relative to container
             time: timeStr,
             value: JSON.stringify(values)
         };
@@ -10250,11 +10351,33 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         }
         return this.renderEnvGraph();
     }
-    renderEnvGraph() {
-        const { metricKey, color, title, unit, type, icon, range } = this;
+    willUpdate(changedProperties) {
+        // Invalidate memoized data if relevant inputs change
+        // We only persist cache if ONLY _tooltip changed (hover interaction)
+        // If hass, history, or config changes, we recalculate.
+        // Optimization: We could be more granular with hass (only if relevant entities change), 
+        // but checking specific entity changes is complex. 
+        // The main goal is to avoid recalc during Tooltip hover loop.
+        let needsRecalc = false;
+        if (changedProperties.has('_tooltip')) ;
+        // Check if any property OTHER than _tooltip changed
+        for (const [key] of changedProperties) {
+            if (key !== '_tooltip') {
+                needsRecalc = true;
+                break;
+            }
+        }
+        if (needsRecalc) {
+            this._memoizedGraphData = null;
+        }
+    }
+    _getGraphData() {
+        if (this._memoizedGraphData)
+            return this._memoizedGraphData;
+        const { metricKey, unit, type, range } = this;
+        // Logic extracted from renderEnvGraph
         if (!this.device)
-            return x ``;
-        // Determine Env Entity ID (replicated logic)
+            return null;
         let slug = this.device.name.toLowerCase().replace(/\s+/g, '_');
         if (this.device.overview_entity_id) {
             slug = this.device.overview_entity_id.replace('sensor.', '');
@@ -10266,7 +10389,6 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             envEntityId = `binary_sensor.dry_optimal_drying`;
         const envEntity = this.hass.states[envEntityId];
         const overviewEntity = this.device.overview_entity_id ? this.hass.states[this.device.overview_entity_id] : undefined;
-        // Determine Time Range
         let durationMillis = 24 * 60 * 60 * 1000;
         if (range === '1h')
             durationMillis = 60 * 60 * 1000;
@@ -10276,27 +10398,21 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             durationMillis = 7 * 24 * 60 * 60 * 1000;
         const now = new Date();
         const startTime = new Date(now.getTime() - durationMillis);
-        // Data Generation
         let dataPoints = [];
         if (metricKey === 'irrigation' || metricKey === 'drain') {
-            // Generate from Schedule
             const times = metricKey === 'irrigation'
                 ? overviewEntity?.attributes?.irrigation_times
                 : overviewEntity?.attributes?.drain_times;
             if (times && Array.isArray(times)) {
-                // Create a timeline for the selected range
                 const events = [];
-                // Check today and yesterday to cover the window
-                // For 1h, we might need to check just today, but checking both is safe
                 const referenceDays = [new Date(now), new Date(startTime)];
                 times.forEach((t) => {
                     const [h, m] = t.time.split(':').map(Number);
-                    const duration = (t.duration || 60) * 1000; // default 60s if missing
+                    const duration = (t.duration || 60) * 1000;
                     referenceDays.forEach(refDay => {
                         const start = new Date(refDay);
                         start.setHours(h, m, 0, 0);
                         const end = new Date(start.getTime() + duration);
-                        // Check overlap with window [startTime, now]
                         if (end.getTime() > startTime.getTime() && start.getTime() < now.getTime()) {
                             events.push({
                                 start: Math.max(start.getTime(), startTime.getTime()),
@@ -10305,56 +10421,44 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                         }
                     });
                 });
-                // Sort events
                 events.sort((a, b) => a.start - b.start);
-                // Convert to points
-                // Start with 0
                 dataPoints.push({ time: startTime.getTime(), value: 0 });
                 events.forEach(ev => {
                     const durationSeconds = (ev.end - ev.start) / 1000;
                     let durationStr = `${durationSeconds}s`;
-                    if (durationSeconds >= 60) {
+                    if (durationSeconds >= 60)
                         durationStr = `${Math.round(durationSeconds / 60)}m`;
-                    }
-                    // Add point before start (0)
                     dataPoints.push({ time: ev.start - 1, value: 0 });
-                    // Add start point (1)
                     dataPoints.push({ time: ev.start, value: 1, meta: { duration: durationStr } });
-                    // Add end point (1)
                     dataPoints.push({ time: ev.end, value: 1, meta: { duration: durationStr } });
-                    // Add point after end (0)
                     dataPoints.push({ time: ev.end + 1, value: 0 });
                 });
-                // End with 0 at 'now'
                 dataPoints.push({ time: now.getTime(), value: 0 });
             }
         }
         else {
+            // Re-using the getValue/getMeta logic (scoping issues: helper functions need to be inside or class methods)
+            // I'll inline specific logic or rely on the fact that I'm inside the class scope? 
+            // No, getValue was defined inside renderEnvGraph. I need to move it or duplicate locally.
+            // Best to duplicate locally for now as it captures 'unit' and 'key' from scope.
             const getValue = (ent, key) => {
                 if (!ent)
                     return undefined;
-                // Special case for 'state' unit (optimal conditions)
-                if (unit === 'state' && key === 'optimal') {
+                if (unit === 'state' && key === 'optimal')
                     return ent.state === 'on' ? 1 : 0;
-                }
-                // Special case for light cycle
                 if (key === 'light') {
                     const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
                     return isLightsOn === true ? 1 : 0;
                 }
-                // Special case for dehumidifier
                 if (key === 'dehumidifier') {
-                    if (ent.entity_id && ent.state) {
+                    if (ent.entity_id && ent.state)
                         return (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 1 : 0;
-                    }
                     const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
                     return (val === true || val === 'on' || val === 1) ? 1 : 0;
                 }
-                // For individual sensor history, value is in state
                 if (key === 'temperature' || key === 'humidity' || key === 'vpd' || key === 'co2' || key === 'exhaust' || key === 'humidifier' || key === 'soil_moisture' || key === 'circulation_fan') {
-                    if (ent.state && !isNaN(parseFloat(ent.state))) {
+                    if (ent.state && !isNaN(parseFloat(ent.state)))
                         return ent.state;
-                    }
                     if (ent.state === 'on' || ent.state === 'active')
                         return 1;
                     if (ent.state === 'off' || ent.state === 'idle')
@@ -10362,23 +10466,20 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                 }
                 if (ent.attributes && ent.attributes[key] !== undefined)
                     return ent.attributes[key];
-                if (ent.attributes && ent.attributes.observations && typeof ent.attributes.observations === 'object') {
+                if (ent.attributes && ent.attributes.observations && typeof ent.attributes.observations === 'object')
                     return ent.attributes.observations[key];
-                }
                 return undefined;
             };
             const getMeta = (ent, key) => {
-                if (unit === 'state' && key === 'optimal') {
+                if (unit === 'state' && key === 'optimal')
                     return ent.attributes?.reasons;
-                }
                 if (key === 'light') {
                     const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
                     return { state: isLightsOn ? 'ON' : 'OFF' };
                 }
                 if (key === 'dehumidifier') {
-                    if (ent.entity_id && ent.state) {
+                    if (ent.entity_id && ent.state)
                         return { state: (ent.state === 'on' || ent.state === 'true' || ent.state === '1') ? 'ON' : 'OFF' };
-                    }
                 }
                 if (key === 'exhaust' || key === 'humidifier') {
                     if (ent.state && (ent.state === 'on' || ent.state === 'off' || ent.state === 'active' || ent.state === 'idle')) {
@@ -10387,20 +10488,15 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                 }
                 return undefined;
             };
-            // Use History Data
             let historySource = this.history;
             const sortedHistory = historySource ? [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()) : [];
-            // 1. Find the active state exactly AT startTime
-            // We look for the latest entry that happened BEFORE or AT startTime
             let initialState = sortedHistory.length > 0 ? sortedHistory[0] : null;
-            // Iterate to find the last one before start
             for (const h of sortedHistory) {
                 const t = new Date(h.last_changed).getTime();
                 if (t > startTime.getTime())
                     break;
                 initialState = h;
             }
-            // 2. If found, add it as the anchor point at startTime
             if (initialState) {
                 const val = getValue(initialState, metricKey);
                 const meta = getMeta(initialState, metricKey);
@@ -10408,18 +10504,17 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                     dataPoints.push({ time: startTime.getTime(), value: parseFloat(val), meta });
                 }
             }
-            // 3. Add all points that happened AFTER startTime
             sortedHistory.forEach(h => {
                 const t = new Date(h.last_changed).getTime();
                 if (t <= startTime.getTime())
-                    return; // Skip old points (we handled the anchor above)
+                    return;
                 const val = getValue(h, metricKey);
                 const meta = getMeta(h, metricKey);
                 if (val !== undefined && !isNaN(parseFloat(val))) {
                     dataPoints.push({ time: t, value: parseFloat(val), meta });
                 }
             });
-            // Add current point to extend graph to 'now'
+            // Current point synthesized logic
             if (metricKey === 'dehumidifier') {
                 if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
                     const state = overviewEntity.attributes.dehumidifier_state;
@@ -10433,16 +10528,10 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             }
             else if (metricKey === 'exhaust') {
                 let val = overviewEntity?.attributes?.exhaust_value;
-                if (val === undefined && this.device.environment_attributes?.exhaust_entity) {
-                    const entId = this.device.environment_attributes.exhaust_entity;
-                    if (this.hass.states[entId])
-                        val = this.hass.states[entId].state;
-                }
-                else if (val === undefined && this.device.environment_attributes?.exhaust_sensor) {
-                    const entId = this.device.environment_attributes.exhaust_sensor;
-                    if (this.hass.states[entId])
-                        val = this.hass.states[entId].state;
-                }
+                if (val === undefined && this.device.environment_attributes?.exhaust_entity && this.hass.states[this.device.environment_attributes.exhaust_entity])
+                    val = this.hass.states[this.device.environment_attributes.exhaust_entity].state;
+                else if (val === undefined && this.device.environment_attributes?.exhaust_sensor && this.hass.states[this.device.environment_attributes.exhaust_sensor])
+                    val = this.hass.states[this.device.environment_attributes.exhaust_sensor].state;
                 if (val !== undefined) {
                     let numVal = parseFloat(val);
                     let meta = undefined;
@@ -10456,9 +10545,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                             meta = { state: 'OFF' };
                         }
                     }
-                    if (!isNaN(numVal)) {
+                    if (!isNaN(numVal))
                         dataPoints.push({ time: now.getTime(), value: numVal, meta });
-                    }
                 }
                 else if (dataPoints.length > 0) {
                     const last = dataPoints[dataPoints.length - 1];
@@ -10467,16 +10555,10 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             }
             else if (metricKey === 'humidifier') {
                 let val = overviewEntity?.attributes?.humidifier_value;
-                if (val === undefined && this.device.environment_attributes?.humidifier_entity) {
-                    const entId = this.device.environment_attributes.humidifier_entity;
-                    if (this.hass.states[entId])
-                        val = this.hass.states[entId].state;
-                }
-                else if (val === undefined && this.device.environment_attributes?.humidifier_sensor) {
-                    const entId = this.device.environment_attributes.humidifier_sensor;
-                    if (this.hass.states[entId])
-                        val = this.hass.states[entId].state;
-                }
+                if (val === undefined && this.device.environment_attributes?.humidifier_entity && this.hass.states[this.device.environment_attributes.humidifier_entity])
+                    val = this.hass.states[this.device.environment_attributes.humidifier_entity].state;
+                else if (val === undefined && this.device.environment_attributes?.humidifier_sensor && this.hass.states[this.device.environment_attributes.humidifier_sensor])
+                    val = this.hass.states[this.device.environment_attributes.humidifier_sensor].state;
                 if (val !== undefined) {
                     let numVal = parseFloat(val);
                     let meta = undefined;
@@ -10490,9 +10572,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                             meta = { state: 'OFF' };
                         }
                     }
-                    if (!isNaN(numVal)) {
+                    if (!isNaN(numVal))
                         dataPoints.push({ time: now.getTime(), value: numVal, meta });
-                    }
                 }
                 else if (dataPoints.length > 0) {
                     const last = dataPoints[dataPoints.length - 1];
@@ -10507,7 +10588,6 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                 }
             }
         }
-        // If we have only 1 point (current state), synthesize a start point to draw a flat line
         if (dataPoints.length === 1) {
             dataPoints.unshift({
                 time: startTime.getTime(),
@@ -10516,9 +10596,9 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             });
         }
         if (dataPoints.length < 2 && type !== 'step')
-            return x ``;
+            return null;
         const width = 1000;
-        const height = type === 'step' ? 100 : 180; // Taller for line graphs
+        const height = type === 'step' ? 100 : 180;
         let minVal = 0;
         let maxVal = 1;
         if (unit !== 'state' && metricKey !== 'irrigation' && metricKey !== 'drain') {
@@ -10543,7 +10623,6 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             paddedMax = maxVal;
         }
         const paddedRange = paddedMax - paddedMin;
-        // Calculate average for target line
         const avgValue = dataPoints.length > 0
             ? dataPoints.reduce((sum, d) => sum + d.value, 0) / dataPoints.length
             : (minVal + maxVal) / 2;
@@ -10570,6 +10649,38 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             });
             svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
         }
+        this._memoizedGraphData = { path: svgPath, dataPoints, minVal, maxVal, avgValue };
+        return this._memoizedGraphData;
+    }
+    renderEnvGraph() {
+        const { metricKey, color, title, unit, type, icon, range } = this;
+        // Restore time calculation for template usage
+        const now = new Date();
+        let durationMillis = 24 * 60 * 60 * 1000;
+        if (range === '1h')
+            durationMillis = 60 * 60 * 1000;
+        else if (range === '6h')
+            durationMillis = 6 * 60 * 60 * 1000;
+        else if (range === '7d')
+            durationMillis = 7 * 24 * 60 * 60 * 1000;
+        const startTime = new Date(now.getTime() - durationMillis);
+        const graphData = this._getGraphData();
+        if (!graphData)
+            return x ``;
+        const { path: svgPath, dataPoints, minVal, maxVal, avgValue } = graphData;
+        // Recalculate paddedMin/Max for labels - simpler to just re-derive or store in memo? 
+        // Storing in memo avoids recalc. But I didn't return them in interface.
+        // I'll re-derive locally, it's cheap arithmetic compared to loop/path.
+        const width = 1000;
+        const height = type === 'step' ? 100 : 180;
+        const rangeVal = maxVal - minVal || 1;
+        let paddedMin = minVal - (rangeVal * 0.1);
+        let paddedMax = maxVal + (rangeVal * 0.1);
+        if (metricKey === 'exhaust' || metricKey === 'humidifier' || metricKey === 'dehumidifier') {
+            paddedMin = minVal;
+            paddedMax = maxVal;
+        }
+        const paddedRange = paddedMax - paddedMin;
         // For step graphs, use compact design
         if (type === 'step') {
             return x `
@@ -10725,11 +10836,11 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
              ` : ''}
 
              <!-- Y-axis labels -->
-             <div style="position: absolute; left: 0; top: 20px; bottom: 30px; width: 45px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; color: #666; text-align: right; padding-right: 8px;">
+             <div style="position: absolute; left: 0; top: 20px; bottom: 30px; width: 45px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; color: #666; text-align: right; padding-right: 8px; pointer-events: none;">
                 ${yLabels.map(val => x `<div>${val.toFixed(1)} ${unit}</div>`)}
              </div>
 
-             <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px);" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
+             <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
                  <defs>
                      <linearGradient id="grad-${metricKey}" x1="0%" y1="0%" x2="0%" y2="100%">
                          <stop offset="0%" style="stop-color:${color};stop-opacity:0.3" />
@@ -10954,7 +11065,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                  </div>
              ` : ''}
 
-             <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px);" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
+             <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
                  <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
                  <line x1="${width}" y1="0" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
                  <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
@@ -11125,6 +11236,7 @@ GrowspaceEnvChart.styles = i$5 `
       width: 100%;
       height: 100%;
       filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.2));
+      pointer-events: none; /* Ensure events pass to container for offsetX accuracy */
     }
     
     .chart-line {
@@ -11136,6 +11248,10 @@ GrowspaceEnvChart.styles = i$5 `
     
     .chart-gradient-fill {
       opacity: 0.2;
+    }
+    
+    .chart-markers {
+       pointer-events: none; /* Ensure events pass to container */
     }
   `;
 __decorate([
