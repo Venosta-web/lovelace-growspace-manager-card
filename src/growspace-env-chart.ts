@@ -94,6 +94,61 @@ export class GrowspaceEnvChart extends LitElement {
         this._cachedRect = element.getBoundingClientRect();
     }
 
+    private _synthesizeLiveDataPoint(dataPoints: GraphDataPoint[], metricKey: string, overviewEntity: any, now: Date) {
+        if (metricKey === 'dehumidifier') {
+            if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
+                const state = overviewEntity.attributes.dehumidifier_state;
+                const val = (state === 'on' || state === 'true' || state === '1') ? 1 : 0;
+                dataPoints.push({ time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } });
+            } else if (dataPoints.length > 0) {
+                const last = dataPoints[dataPoints.length - 1];
+                dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
+            }
+        } else if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+            let val = metricKey === 'exhaust' ? overviewEntity?.attributes?.exhaust_value : overviewEntity?.attributes?.humidifier_value;
+            if (val !== undefined) {
+                let numVal = parseFloat(val);
+                let meta: any = undefined;
+                if (isNaN(numVal)) {
+                    if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') { numVal = 1; meta = { state: 'ON' }; }
+                    else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') { numVal = 0; meta = { state: 'OFF' }; }
+                }
+                if (!isNaN(numVal)) dataPoints.push({ time: now.getTime(), value: numVal, meta });
+            } else if (dataPoints.length > 0) {
+                // Generic fallback for all other sensors (temperature, vpd, soil_moisture, etc.)
+                // Extend the last known value to "now" to fill the graph
+                const last = dataPoints[dataPoints.length - 1];
+                dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
+            }
+        }
+    }
+
+    private _renderGraphPaths(paths: Array<{ path: string, color: string, fill?: 'gradient' | 'flat', key?: string, height: number, points?: number[][] }>): TemplateResult {
+        return svg`
+            ${paths.map(p => {
+            if (p.fill === 'gradient' && p.key) {
+                return svg`
+                       <path d="${p.path} V ${p.height} H 0 Z" fill="url(#grad-${p.key})" />
+                       <path d="${p.path}" fill="none" stroke="${p.color}" stroke-width="2.5" />
+                   `;
+            } else if (p.fill === 'flat' && p.points && p.points.length > 0) {
+                // Combined graph style
+                return svg`
+                        <path d="${p.path}" fill="none" stroke="${p.color}" stroke-width="2" />
+                        <path d="${p.path} V ${p.height} H ${p.points[0][0]} Z" fill="${p.color}" fill-opacity="0.1" stroke="none" />
+                    `;
+            }
+            // Default line only
+            return svg`<path d="${p.path}" fill="none" stroke="${p.color}" stroke-width="2.5" />`;
+        })}
+        `;
+    }
+
+
+
+
+
+
 
     static styles = css`
     :host { display: block; position: relative; }
@@ -375,7 +430,7 @@ export class GrowspaceEnvChart extends LitElement {
         let valStr = `${closest.value} ${unit} `;
 
         const defaults = SENSOR_CHART_DEFAULTS[metricKey];
-        const isBinary = defaults?.binary || defaults?.unit === 'state' || unit === 'state';
+        const isBinary = defaults?.binary === true || (unit === 'state' && defaults?.max === undefined);
 
         if (isBinary) {
             if (metricKey === 'irrigation' || metricKey === 'drain') {
@@ -558,31 +613,8 @@ export class GrowspaceEnvChart extends LitElement {
                 }
             });
 
-            // Current point synthesized logic-reduced to essential lookups
-            if (metricKey === 'dehumidifier') {
-                if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
-                    const state = overviewEntity.attributes.dehumidifier_state;
-                    const val = (state === 'on' || state === 'true' || state === '1') ? 1 : 0;
-                    dataPoints.push({ time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } });
-                } else if (dataPoints.length > 0) {
-                    // Carry forward last known state
-                    const last = dataPoints[dataPoints.length - 1];
-                    dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
-                }
-            } else if (metricKey === 'exhaust' || metricKey === 'humidifier') {
-                // Simplified current value lookup
-                let val = metricKey === 'exhaust' ? overviewEntity?.attributes?.exhaust_value : overviewEntity?.attributes?.humidifier_value;
-
-                if (val !== undefined) {
-                    let numVal = parseFloat(val);
-                    let meta: any = undefined;
-                    if (isNaN(numVal)) {
-                        if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') { numVal = 1; meta = { state: 'ON' }; }
-                        else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') { numVal = 0; meta = { state: 'OFF' }; }
-                    }
-                    if (!isNaN(numVal)) dataPoints.push({ time: now.getTime(), value: numVal, meta });
-                } else if (dataPoints.length > 0) { const last = dataPoints[dataPoints.length - 1]; dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta }); }
-            }
+            // Current point synthesized logic extracted to helper
+            this._synthesizeLiveDataPoint(dataPoints, metricKey, overviewEntity, now);
         }
 
         if (dataPoints.length === 1) {
@@ -594,7 +626,6 @@ export class GrowspaceEnvChart extends LitElement {
         }
 
         if (dataPoints.length < 2 && type !== 'step') return null;
-
 
         const width = 1000;
         // Standardize height for all graph types to unified card size
@@ -665,49 +696,6 @@ export class GrowspaceEnvChart extends LitElement {
 
         this._memoizedGraphData = { path: svgPath, dataPoints, minVal, maxVal, avgValue };
         return this._memoizedGraphData;
-    }
-
-    private _renderChartSvg(
-        metricKey: string,
-        color: string,
-        height: number,
-        width: number,
-        paddedMin: number,
-        paddedRange: number,
-        avgValue: number,
-        svgPath: string,
-        unit: string,
-        type: string
-    ) {
-        return html`
-    <svg class="gs-chart-svg" style = "position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox = "0 0 ${width} ${height}" preserveAspectRatio = "none" >
-        <defs>
-        <linearGradient id="grad-${metricKey}" x1 = "0%" y1 = "0%" x2 = "0%" y2 = "100%" >
-            <stop offset="0%" style = "stop-color:${color};stop-opacity:0.3" />
-                <stop offset="100%" style = "stop-color:${color};stop-opacity:0" />
-                    </linearGradient>
-                    </defs>
-
-                    <!--Vertical grid lines-->
-                        <line x1="0" y1 = "0" x2 = "0" y2 = "${height}" stroke = "#333" stroke-width="1" />
-                            <line x1="${width * 0.25}" y1 = "0" x2 = "${width * 0.25}" y2 = "${height}" stroke = "#222" stroke-width="1" stroke-dasharray="2,2" />
-                                <line x1="${width * 0.5}" y1 = "0" x2 = "${width * 0.5}" y2 = "${height}" stroke = "#222" stroke-width="1" stroke-dasharray="2,2" />
-                                    <line x1="${width * 0.75}" y1 = "0" x2 = "${width * 0.75}" y2 = "${height}" stroke = "#222" stroke-width="1" stroke-dasharray="2,2" />
-                                        <line x1="${width}" y1 = "0" x2 = "${width}" y2 = "${height}" stroke = "#333" stroke-width="1" />
-
-                                            <!--Target / average line- Only for line graphs or non- binary-->
-                                                ${(type !== 'step' && avgValue) ? html`
-                   <line x1="0" y1="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
-                         x2="${width}" y2="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
-                         stroke="${color}" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.5" />
-                 ` : ''
-            }
-
-<!--Data line and fill-->
-    <path d="${svgPath} V ${height} H 0 Z" fill = "url(#grad-${metricKey})" />
-        <path d="${svgPath}" fill = "none" stroke = "${color}" stroke-width="2.5" />
-            </svg>
-                `;
     }
 
     renderEnvGraph(): TemplateResult {
@@ -788,8 +776,7 @@ export class GrowspaceEnvChart extends LitElement {
                         
                         ${this._renderGrid(width, height, type !== 'step' ? avgValue : undefined, paddedMin, paddedRange, color)}
 
-                        <path d="${svgPath} V ${height} H 0 Z" fill="url(#grad-${metricKey})" />
-                        <path d="${svgPath}" fill="none" stroke="${color}" stroke-width="2.5" />
+                        ${this._renderGraphPaths([{ path: svgPath, color, fill: 'gradient', key: metricKey, height }])}
                     </svg>
 
                     ${this._renderXLabels(range, color)}
@@ -843,7 +830,7 @@ export class GrowspaceEnvChart extends LitElement {
                     <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
                          ${this._renderGrid(width, height)}
 
-                         ${graphData.map(g => {
+                         ${this._renderGraphPaths(graphData.map(g => {
             const defaults = SENSOR_CHART_DEFAULTS[g.key];
             const range = g.max - g.min || 1;
             let paddedMin = g.min - (range * 0.1);
@@ -862,12 +849,8 @@ export class GrowspaceEnvChart extends LitElement {
             });
 
             const path = `M ${points.map((p: number[]) => `${p[0]},${p[1]}`).join(' L ')}`;
-            // Combined uses flat opacity fill instead of gradient
-            return svg`
-                                <path d="${path}" fill="none" stroke="${g.color}" stroke-width="2" />
-                                <path d="${path} V ${height} H ${points[0][0]} Z" fill="${g.color}" fill-opacity="0.1" stroke="none" />
-                            `;
-        })}
+            return { path, color: g.color, fill: 'flat', points, height };
+        }))}
                     </svg>
 
                     ${this._renderXLabels(range, '#fff')}
@@ -938,33 +921,42 @@ export class GrowspaceEnvChart extends LitElement {
 
     private _renderTooltip(metricKey: string, color: string) {
         if (!this._tooltip || this._tooltip.id !== metricKey) return html``;
-        return html`
-             <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: ${color}80; pointer-events: none;"></div>
-             <div style="position: absolute; left: ${this._tooltip.x + 10}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid ${color}; pointer-events: none; z-index: 1000;">
-                <div style="color: ${color}; font-weight: 600;">${this._tooltip.time}</div>
-                <div style="margin-top: 4px;">${this._tooltip.value}</div>
-             </div>
+        const content = html`
+            <div style="color: ${color}; font-weight: 600;">${this._tooltip.time}</div>
+            <div style="margin-top: 4px;">${this._tooltip.value}</div>
         `;
+        return this._renderTooltipContainer(this._tooltip.x, content, color);
     }
 
     private _renderCombinedTooltip(metrics: string[], width: number) {
         if (!this._tooltip || this._tooltip.id !== 'combined-' + metrics.join('-')) return html``;
-        return html`
-             <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.2); pointer-events: none;"></div>
-             <div style="position: absolute; left: ${Math.min(this._tooltip.x + 10, width - 150)}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid rgba(255,255,255,0.1); pointer-events: none; z-index: 1000;">
-                <div style="font-weight: 600; margin-bottom: 4px;">${this._tooltip.time}</div>
-                ${(() => {
+        const content = html`
+            <div style="font-weight: 600; margin-bottom: 4px;">${this._tooltip.time}</div>
+            ${(() => {
                 try {
                     const values = JSON.parse(this._tooltip.value);
                     return values.map((v: any) => html`
-                            <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-                                <div style="width: 8px; height: 8px; border-radius: 50%; background: ${v.color};"></div>
-                                <span style="color: rgba(255,255,255,0.7);">${v.title}:</span>
-                                <span style="font-weight: 500;">${v.value} ${v.unit}</span>
-                            </div>
-                        `);
+                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${v.color};"></div>
+                            <span style="color: rgba(255,255,255,0.7);">${v.title}:</span>
+                            <span style="font-weight: 500;">${v.value} ${v.unit}</span>
+                        </div>
+                    `);
                 } catch { return html``; }
             })()}
+        `;
+        return this._renderTooltipContainer(this._tooltip.x, content, '#fff', width);
+    }
+
+    private _renderTooltipContainer(x: number, content: TemplateResult, borderColor: string, containerWidth?: number) {
+        const tooltipX = containerWidth ? Math.min(x + 10, containerWidth - 150) : x + 10;
+        const background = borderColor === '#fff' ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.9)';
+        const border = borderColor === '#fff' ? '1px solid rgba(255,255,255,0.1)' : `1px solid ${borderColor}`;
+
+        return html`
+             <div style="position: absolute; left: ${x}px; top: 0; bottom: 0; width: 1px; background: ${borderColor === '#fff' ? 'rgba(255,255,255,0.2)' : `${borderColor}80`}; pointer-events: none;"></div>
+             <div style="position: absolute; left: ${tooltipX}px; top: 20px; background: ${background}; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: ${border}; pointer-events: none; z-index: 1000;">
+                ${content}
              </div>
         `;
     }

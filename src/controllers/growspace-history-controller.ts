@@ -259,6 +259,17 @@ export class GrowspaceHistoryController implements ReactiveController {
             }
         }
 
+        // Soil Moisture
+        if (envAttrs.soil_moisture_sensor) {
+            try {
+                const history = await this.host.dataService.getHistory(envAttrs.soil_moisture_sensor, start, end);
+                console.log('[HistoryController] Soil Moisture history fetched from', envAttrs.soil_moisture_sensor, 'length:', history?.length || 0);
+                this.soilMoistureHistory = history;
+            } catch (e) {
+                console.error("Failed to fetch soil moisture history", e);
+            }
+        }
+
         this.host.requestUpdate();
     }
 

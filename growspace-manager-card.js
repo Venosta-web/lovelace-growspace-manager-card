@@ -497,6 +497,7 @@ class GrowspaceAdapter {
             humidity_sensor: wsData.humidity_sensor,
             vpd_sensor: wsData.vpd_sensor,
             co2_sensor: wsData.co2_sensor,
+            soil_moisture_sensor: wsData.soil_moisture_sensor,
             dehumidifier_entity: wsData.dehumidifier_entity,
             humidifier_entity: wsData.humidifier_entity,
             exhaust_entity: wsData.exhaust_entity,
@@ -516,6 +517,7 @@ class GrowspaceAdapter {
             humidity_sensor: attributes.humidity_sensor,
             vpd_sensor: attributes.vpd_sensor,
             co2_sensor: attributes.co2_sensor,
+            soil_moisture_sensor: attributes.soil_moisture_sensor,
             light_sensor: attributes.light_sensor,
             exhaust_entity: attributes.exhaust_entity,
             exhaust_sensor: attributes.exhaust_sensor,
@@ -9826,6 +9828,17 @@ class GrowspaceHistoryController {
                 console.error("Failed to fetch CO2 history", e);
             }
         }
+        // Soil Moisture
+        if (envAttrs.soil_moisture_sensor) {
+            try {
+                const history = await this.host.dataService.getHistory(envAttrs.soil_moisture_sensor, start, end);
+                console.log('[HistoryController] Soil Moisture history fetched from', envAttrs.soil_moisture_sensor, 'length:', history?.length || 0);
+                this.soilMoistureHistory = history;
+            }
+            catch (e) {
+                console.error("Failed to fetch soil moisture history", e);
+            }
+        }
         this.host.requestUpdate();
     }
     async _fetchDehumidifierHistory(range = '24h') {
@@ -10252,6 +10265,65 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
     _updateCachedRect(element) {
         this._cachedRect = element.getBoundingClientRect();
     }
+    _synthesizeLiveDataPoint(dataPoints, metricKey, overviewEntity, now) {
+        if (metricKey === 'dehumidifier') {
+            if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
+                const state = overviewEntity.attributes.dehumidifier_state;
+                const val = (state === 'on' || state === 'true' || state === '1') ? 1 : 0;
+                dataPoints.push({ time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } });
+            }
+            else if (dataPoints.length > 0) {
+                const last = dataPoints[dataPoints.length - 1];
+                dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
+            }
+        }
+        else if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+            let val = metricKey === 'exhaust' ? overviewEntity?.attributes?.exhaust_value : overviewEntity?.attributes?.humidifier_value;
+            if (val !== undefined) {
+                let numVal = parseFloat(val);
+                let meta = undefined;
+                if (isNaN(numVal)) {
+                    if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') {
+                        numVal = 1;
+                        meta = { state: 'ON' };
+                    }
+                    else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') {
+                        numVal = 0;
+                        meta = { state: 'OFF' };
+                    }
+                }
+                if (!isNaN(numVal))
+                    dataPoints.push({ time: now.getTime(), value: numVal, meta });
+            }
+            else if (dataPoints.length > 0) {
+                // Generic fallback for all other sensors (temperature, vpd, soil_moisture, etc.)
+                // Extend the last known value to "now" to fill the graph
+                const last = dataPoints[dataPoints.length - 1];
+                dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
+            }
+        }
+    }
+    _renderGraphPaths(paths) {
+        return b `
+            ${paths.map(p => {
+            if (p.fill === 'gradient' && p.key) {
+                return b `
+                       <path d="${p.path} V ${p.height} H 0 Z" fill="url(#grad-${p.key})" />
+                       <path d="${p.path}" fill="none" stroke="${p.color}" stroke-width="2.5" />
+                   `;
+            }
+            else if (p.fill === 'flat' && p.points && p.points.length > 0) {
+                // Combined graph style
+                return b `
+                        <path d="${p.path}" fill="none" stroke="${p.color}" stroke-width="2" />
+                        <path d="${p.path} V ${p.height} H ${p.points[0][0]} Z" fill="${p.color}" fill-opacity="0.1" stroke="none" />
+                    `;
+            }
+            // Default line only
+            return b `<path d="${p.path}" fill="none" stroke="${p.color}" stroke-width="2.5" />`;
+        })}
+        `;
+    }
     // Helper: Normalize Sensor Value
     _normalizeSensorValue(ent, metricKey, unit) {
         if (!ent)
@@ -10412,7 +10484,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         const timeStr = this._formatTime(date);
         let valStr = `${closest.value} ${unit} `;
         const defaults = SENSOR_CHART_DEFAULTS[metricKey];
-        const isBinary = defaults?.binary || defaults?.unit === 'state' || unit === 'state';
+        const isBinary = defaults?.binary === true || (unit === 'state' && defaults?.max === undefined);
         if (isBinary) {
             if (metricKey === 'irrigation' || metricKey === 'drain') {
                 if (closest.value === 1) {
@@ -10570,43 +10642,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                     dataPoints.push({ time: t, value: val, meta });
                 }
             });
-            // Current point synthesized logic-reduced to essential lookups
-            if (metricKey === 'dehumidifier') {
-                if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
-                    const state = overviewEntity.attributes.dehumidifier_state;
-                    const val = (state === 'on' || state === 'true' || state === '1') ? 1 : 0;
-                    dataPoints.push({ time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } });
-                }
-                else if (dataPoints.length > 0) {
-                    // Carry forward last known state
-                    const last = dataPoints[dataPoints.length - 1];
-                    dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
-                }
-            }
-            else if (metricKey === 'exhaust' || metricKey === 'humidifier') {
-                // Simplified current value lookup
-                let val = metricKey === 'exhaust' ? overviewEntity?.attributes?.exhaust_value : overviewEntity?.attributes?.humidifier_value;
-                if (val !== undefined) {
-                    let numVal = parseFloat(val);
-                    let meta = undefined;
-                    if (isNaN(numVal)) {
-                        if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') {
-                            numVal = 1;
-                            meta = { state: 'ON' };
-                        }
-                        else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') {
-                            numVal = 0;
-                            meta = { state: 'OFF' };
-                        }
-                    }
-                    if (!isNaN(numVal))
-                        dataPoints.push({ time: now.getTime(), value: numVal, meta });
-                }
-                else if (dataPoints.length > 0) {
-                    const last = dataPoints[dataPoints.length - 1];
-                    dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
-                }
-            }
+            // Current point synthesized logic extracted to helper
+            this._synthesizeLiveDataPoint(dataPoints, metricKey, overviewEntity, now);
         }
         if (dataPoints.length === 1) {
             dataPoints.unshift({
@@ -10679,36 +10716,6 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         }
         this._memoizedGraphData = { path: svgPath, dataPoints, minVal, maxVal, avgValue };
         return this._memoizedGraphData;
-    }
-    _renderChartSvg(metricKey, color, height, width, paddedMin, paddedRange, avgValue, svgPath, unit, type) {
-        return x `
-    <svg class="gs-chart-svg" style = "position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox = "0 0 ${width} ${height}" preserveAspectRatio = "none" >
-        <defs>
-        <linearGradient id="grad-${metricKey}" x1 = "0%" y1 = "0%" x2 = "0%" y2 = "100%" >
-            <stop offset="0%" style = "stop-color:${color};stop-opacity:0.3" />
-                <stop offset="100%" style = "stop-color:${color};stop-opacity:0" />
-                    </linearGradient>
-                    </defs>
-
-                    <!--Vertical grid lines-->
-                        <line x1="0" y1 = "0" x2 = "0" y2 = "${height}" stroke = "#333" stroke-width="1" />
-                            <line x1="${width * 0.25}" y1 = "0" x2 = "${width * 0.25}" y2 = "${height}" stroke = "#222" stroke-width="1" stroke-dasharray="2,2" />
-                                <line x1="${width * 0.5}" y1 = "0" x2 = "${width * 0.5}" y2 = "${height}" stroke = "#222" stroke-width="1" stroke-dasharray="2,2" />
-                                    <line x1="${width * 0.75}" y1 = "0" x2 = "${width * 0.75}" y2 = "${height}" stroke = "#222" stroke-width="1" stroke-dasharray="2,2" />
-                                        <line x1="${width}" y1 = "0" x2 = "${width}" y2 = "${height}" stroke = "#333" stroke-width="1" />
-
-                                            <!--Target / average line- Only for line graphs or non- binary-->
-                                                ${(type !== 'step' && avgValue) ? x `
-                   <line x1="0" y1="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
-                         x2="${width}" y2="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
-                         stroke="${color}" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.5" />
-                 ` : ''}
-
-<!--Data line and fill-->
-    <path d="${svgPath} V ${height} H 0 Z" fill = "url(#grad-${metricKey})" />
-        <path d="${svgPath}" fill = "none" stroke = "${color}" stroke-width="2.5" />
-            </svg>
-                `;
     }
     renderEnvGraph() {
         const { metricKey, color, title, unit, type, icon, range } = this;
@@ -10785,8 +10792,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                         
                         ${this._renderGrid(width, height, type !== 'step' ? avgValue : undefined, paddedMin, paddedRange, color)}
 
-                        <path d="${svgPath} V ${height} H 0 Z" fill="url(#grad-${metricKey})" />
-                        <path d="${svgPath}" fill="none" stroke="${color}" stroke-width="2.5" />
+                        ${this._renderGraphPaths([{ path: svgPath, color, fill: 'gradient', key: metricKey, height }])}
                     </svg>
 
                     ${this._renderXLabels(range, color)}
@@ -10837,7 +10843,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                     <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
                          ${this._renderGrid(width, height)}
 
-                         ${graphData.map(g => {
+                         ${this._renderGraphPaths(graphData.map(g => {
             const defaults = SENSOR_CHART_DEFAULTS[g.key];
             const range = g.max - g.min || 1;
             let paddedMin = g.min - (range * 0.1);
@@ -10853,12 +10859,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                 return [x, y];
             });
             const path = `M ${points.map((p) => `${p[0]},${p[1]}`).join(' L ')}`;
-            // Combined uses flat opacity fill instead of gradient
-            return b `
-                                <path d="${path}" fill="none" stroke="${g.color}" stroke-width="2" />
-                                <path d="${path} V ${height} H ${points[0][0]} Z" fill="${g.color}" fill-opacity="0.1" stroke="none" />
-                            `;
-        })}
+            return { path, color: g.color, fill: 'flat', points, height };
+        }))}
                     </svg>
 
                     ${this._renderXLabels(range, '#fff')}
@@ -10930,36 +10932,43 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
     _renderTooltip(metricKey, color) {
         if (!this._tooltip || this._tooltip.id !== metricKey)
             return x ``;
-        return x `
-             <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: ${color}80; pointer-events: none;"></div>
-             <div style="position: absolute; left: ${this._tooltip.x + 10}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid ${color}; pointer-events: none; z-index: 1000;">
-                <div style="color: ${color}; font-weight: 600;">${this._tooltip.time}</div>
-                <div style="margin-top: 4px;">${this._tooltip.value}</div>
-             </div>
+        const content = x `
+            <div style="color: ${color}; font-weight: 600;">${this._tooltip.time}</div>
+            <div style="margin-top: 4px;">${this._tooltip.value}</div>
         `;
+        return this._renderTooltipContainer(this._tooltip.x, content, color);
     }
     _renderCombinedTooltip(metrics, width) {
         if (!this._tooltip || this._tooltip.id !== 'combined-' + metrics.join('-'))
             return x ``;
-        return x `
-             <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.2); pointer-events: none;"></div>
-             <div style="position: absolute; left: ${Math.min(this._tooltip.x + 10, width - 150)}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid rgba(255,255,255,0.1); pointer-events: none; z-index: 1000;">
-                <div style="font-weight: 600; margin-bottom: 4px;">${this._tooltip.time}</div>
-                ${(() => {
+        const content = x `
+            <div style="font-weight: 600; margin-bottom: 4px;">${this._tooltip.time}</div>
+            ${(() => {
             try {
                 const values = JSON.parse(this._tooltip.value);
                 return values.map((v) => x `
-                            <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-                                <div style="width: 8px; height: 8px; border-radius: 50%; background: ${v.color};"></div>
-                                <span style="color: rgba(255,255,255,0.7);">${v.title}:</span>
-                                <span style="font-weight: 500;">${v.value} ${v.unit}</span>
-                            </div>
-                        `);
+                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${v.color};"></div>
+                            <span style="color: rgba(255,255,255,0.7);">${v.title}:</span>
+                            <span style="font-weight: 500;">${v.value} ${v.unit}</span>
+                        </div>
+                    `);
             }
             catch {
                 return x ``;
             }
         })()}
+        `;
+        return this._renderTooltipContainer(this._tooltip.x, content, '#fff', width);
+    }
+    _renderTooltipContainer(x$1, content, borderColor, containerWidth) {
+        const tooltipX = containerWidth ? Math.min(x$1 + 10, containerWidth - 150) : x$1 + 10;
+        const background = borderColor === '#fff' ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.9)';
+        const border = borderColor === '#fff' ? '1px solid rgba(255,255,255,0.1)' : `1px solid ${borderColor}`;
+        return x `
+             <div style="position: absolute; left: ${x$1}px; top: 0; bottom: 0; width: 1px; background: ${borderColor === '#fff' ? 'rgba(255,255,255,0.2)' : `${borderColor}80`}; pointer-events: none;"></div>
+             <div style="position: absolute; left: ${tooltipX}px; top: 20px; background: ${background}; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: ${border}; pointer-events: none; z-index: 1000;">
+                ${content}
              </div>
         `;
     }
@@ -19110,7 +19119,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
             exhaust: this.exhaustHistory || [],
             humidifier: this.humidifierHistory || [],
             circulation_fan: this.circulationFanHistory || [],
-            soilMoisture: this.soilMoistureHistory || [],
+            soil_moisture: this.soilMoistureHistory || [],
             optimal: this.optimalHistory || []
         };
         // Add raw history data as fallback if needed or mapped

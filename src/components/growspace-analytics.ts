@@ -103,7 +103,7 @@ export class GrowspaceAnalytics extends LitElement {
             exhaust: this.exhaustHistory || [],
             humidifier: this.humidifierHistory || [],
             circulation_fan: this.circulationFanHistory || [],
-            soilMoisture: this.soilMoistureHistory || [],
+            soil_moisture: this.soilMoistureHistory || [],
             optimal: this.optimalHistory || []
         };
         // Add raw history data as fallback if needed or mapped

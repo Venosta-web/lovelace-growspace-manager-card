@@ -164,6 +164,7 @@ export interface GrowspaceDevice {
     humidity_sensor?: string;
     vpd_sensor?: string;
     co2_sensor?: string;
+    soil_moisture_sensor?: string;
     dehumidifier_entity?: string;
     humidifier_entity?: string;
     exhaust_entity?: string;
@@ -320,6 +321,7 @@ export interface GrowspaceWebSocketData {
   humidity_sensor?: string;
   vpd_sensor?: string;
   co2_sensor?: string;
+  soil_moisture_sensor?: string;
   exhaust_sensor?: string;
   humidifier_sensor?: string;
 
