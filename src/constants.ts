@@ -69,6 +69,14 @@ export const DEFAULT_METRIC_CONFIG: MetricConfigItem = {
     type: 'line'
 };
 
+export const SENSOR_CHART_DEFAULTS: Record<string, { min?: number; max?: number; disablePadding?: boolean; unit?: string; binary?: boolean }> = {
+    exhaust: { min: 0, max: 10, disablePadding: true, unit: 'state' },
+    dehumidifier: { min: 0, max: 1, disablePadding: true, binary: true },
+    humidifier: { min: 0, max: 10, disablePadding: true, unit: 'state' },
+    circulation_fan: { min: 0, max: 10, disablePadding: true, unit: 'state' },
+    optimizer: { min: 0, max: 1, disablePadding: true, binary: true, unit: 'state' }
+};
+
 export const DOMAIN = 'growspace_manager';
 export const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
 

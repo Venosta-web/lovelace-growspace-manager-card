@@ -3,6 +3,8 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { mdiMagnify, mdiLink, mdiChevronDown } from '@mdi/js';
 import { GrowspaceDevice } from './types';
+import { GraphDataTransformer } from './graph-data-transformer';
+import { SENSOR_CHART_DEFAULTS } from './constants';
 
 import { consume } from '@lit/context';
 import { hassContext } from './context';
@@ -35,7 +37,6 @@ export class GrowspaceEnvChart extends LitElement {
     @property({ type: Array }) circulationFanHistory: HistorySensorState[] = [];
     @property({ type: Array }) optimalHistory: HistorySensorState[] = [];
     @property({ type: Array }) soilMoistureHistory: HistorySensorState[] = [];
-    // Individual environment sensor histories (since env data moved to WebSocket)
     @property({ type: Array }) temperatureHistory: HistorySensorState[] = [];
     @property({ type: Array }) humidityHistory: HistorySensorState[] = [];
     @property({ type: Array }) vpdHistory: HistorySensorState[] = [];
@@ -88,17 +89,6 @@ export class GrowspaceEnvChart extends LitElement {
                     this._cachedRect = entry.contentRect as DOMRect;
                     // Note: contentRect is relative to element padding, 
                     // but usually we need getBoundingClientRect for screen coords in mouse events.
-                    // Actually, for mouse events we compare clientX against cached BoundingClientRect.
-                    // ResizeObserver entry provides contentRect. 
-                    // To get screen position (left/top), we still need BoundingClientRect but ONLY when it moves, not every hover.
-                    // However, ResizeObserver doesn't give absolute position.
-                    // Optimization: We can just use the observer to invalidate cache, OR update cache.
-                    // Better approach for absolute rect: call getBoundingClientRect() ONLY when resizing/scrolling or once per frame if needed.
-                    // But standard optimization is to cache it and update on scroll/resize.
-                    // Simplest robust way is to just cache it here, but `entry.contentRect` doesn't have `left`/`top` relative to viewport.
-
-                    // So we update the cache from the element itself
-                    this._updateCachedRect(entry.target);
                 }
             });
             this._resizeObserver.observe(container);
@@ -116,110 +106,107 @@ export class GrowspaceEnvChart extends LitElement {
     :host { display: block; position: relative; }
     
     .gs-env-graph-card {
-      margin-top: 12px;
-      background: #1a1a1a;
-      border-radius: 12px;
-      padding: 16px;
+        margin-top: 12px;
+        background: #1a1a1a;
+        border-radius: 12px;
+        padding: 16px;
     }
 
     .gs-env-graph-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        cursor: pointer;
     }
 
     .gs-env-chart-container {
-      position: relative;
-      height: 180px;
-      background: #0d0d0d;
-      border-radius: 8px;
-      padding: 20px 40px 30px 50px;
-      cursor: crosshair;
-    }
-
-    .chart-markers {
-      position: absolute;
-      left: 50px;
-      right: 40px;
-      bottom: 5px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.65rem;
-      color: #666;
-      pointer-events: none; /* Ensure events pass to container */
+        position: relative;
+        height: 180px;
+        background: #0d0d0d;
+        border-radius: 8px;
+        padding: 20px 40px 30px 50px;
+        cursor: crosshair;
     }
 
     .gs-tooltip {
-      position: absolute;
-      background: rgba(30, 30, 35, 0.9);
-      color: #fff;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 0.75rem;
-      pointer-events: none;
-      transform: translate(-50%, 0);
-      z-index: 1000;
-      white-space: nowrap;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-      line-height: 1.4;
-      text-align: center;
+        position: absolute;
+        background: rgba(30, 30, 35, 0.9);
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        pointer-events: none;
+        transform: translate(-50%, 0);
+        z-index: 1000;
+        white-space: nowrap;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        line-height: 1.4;
+        text-align: center;
     }
     
     .gs-cursor-line {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 1px;
-      background: rgba(255, 255, 255, 0.3);
-      pointer-events: none;
-      z-index: 5;
-      border-left: 1px dashed rgba(255, 255, 255, 0.5);
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: rgba(255, 255, 255, 0.3);
+        pointer-events: none;
+        z-index: 5;
+        border-left: 1px dashed rgba(255, 255, 255, 0.5);
     }
 
 
-    /* Step Graph Styles - REMOVED (Unified Template) */
+    /* Step Graph Styles-REMOVED (Unified Template) */
     
     .gs-chart-container {
-       margin-top: 8px;
-       height: 150px;
-       position: relative;
-       width: 100%;
-       cursor: crosshair;
+        margin-top: 8px;
+        height: 150px;
+        position: relative;
+        width: 100%;
+        cursor: crosshair;
     }
     
-
-    
     .gs-chart-svg {
-      width: 100%;
-      height: 100%;
-      filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.2));
-      pointer-events: none; /* Ensure events pass to container for offsetX accuracy */
+        width: 100%;
+        height: 100%;
+        filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.2));
+        pointer-events: none; /* Ensure events pass to container for offsetX accuracy */
     }
     
     .chart-line {
-      fill: none;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
     }
     
     .chart-gradient-fill {
-      opacity: 0.2;
+        opacity: 0.2;
     }
     
     .chart-markers {
-       pointer-events: none; /* Ensure events pass to container */
+        position: absolute;
+        left: 50px;
+        right: 40px;
+        bottom: 5px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.65rem;
+        color: #666;
+        pointer-events: none; /* Ensure events pass to container */
     }
-  `;
+`;
 
 
     // Helper: Normalize Sensor Value
     private _normalizeSensorValue(ent: HistorySensorState, metricKey: string, unit: string): number | undefined {
         if (!ent) return undefined;
+
+        // Use defaults if available
+        const defaults = SENSOR_CHART_DEFAULTS[metricKey];
 
         // Special case: 'optimal' with unit 'state'
         if (unit === 'state' && metricKey === 'optimal') {
@@ -232,16 +219,22 @@ export class GrowspaceEnvChart extends LitElement {
             return isLightsOn === true ? 1 : 0;
         }
 
-        // Special case: 'dehumidifier'
-        if (metricKey === 'dehumidifier') {
+        // Handle configured binary sensors
+        // Only treat as binary if explicitly binary OR unit is state AND no min/max range defined (e.g. exhaust is 0-10)
+        if (defaults?.binary === true || (defaults?.unit === 'state' && defaults?.max === undefined)) {
             if (ent.entity_id && ent.state) {
-                const onStates = ['on', 'true', '1'];
+                const onStates = ['on', 'true', '1', 'active'];
                 return onStates.includes(String(ent.state).toLowerCase()) ? 1 : 0;
             }
+        }
+
+        // Special case: 'dehumidifier' legacy check
+        if (metricKey === 'dehumidifier') {
             const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
             const onValues = [true, 'on', 1];
-            return onValues.includes(val) ? 1 : 0;
+            if (val !== undefined && onValues.includes(val)) return 1;
         }
+
 
         // Standard numeric sensors
         const numericKeys = ['temperature', 'humidity', 'vpd', 'co2', 'exhaust', 'humidifier', 'soil_moisture', 'circulation_fan'];
@@ -268,22 +261,23 @@ export class GrowspaceEnvChart extends LitElement {
     private _getSensorMeta(ent: HistorySensorState, metricKey: string, unit: string): any {
         if (unit === 'state' && metricKey === 'optimal') return ent.attributes?.reasons;
 
-        if (metricKey === 'light') {
-            const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
-            return { state: isLightsOn ? 'ON' : 'OFF' };
-        }
+        const defaults = SENSOR_CHART_DEFAULTS[metricKey];
+        if (defaults?.binary === true || (defaults?.unit === 'state' && defaults?.max === undefined) || metricKey === 'light') {
+            // For binary sensors, we might want to return 'ON'/'OFF' as meta state
+            // But actually _normalizeValue returns 0/1. The render logic handles 'ON'/'OFF' label if needed.
+            // If we need specific text (like "Active"), we can return it here.
 
-        if (metricKey === 'dehumidifier') {
-            if (ent.entity_id && ent.state) {
-                const onStates = ['on', 'true', '1'];
-                return { state: onStates.includes(String(ent.state).toLowerCase()) ? 'ON' : 'OFF' };
+            // Replicating old logic partially for safety
+            if (metricKey === 'light') {
+                const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
+                return { state: isLightsOn ? 'ON' : 'OFF' };
             }
-        }
-
-        if (metricKey === 'exhaust' || metricKey === 'humidifier') {
-            const binaryStates = ['on', 'off', 'active', 'idle'];
-            if (ent.state && binaryStates.includes(String(ent.state).toLowerCase())) {
-                const isActive = ['on', 'active'].includes(String(ent.state).toLowerCase());
+            if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+                const isActive = ['on', 'active', 'true', '1'].includes(String(ent.state).toLowerCase());
+                return { state: isActive ? 'ON' : 'OFF' };
+            }
+            if (metricKey === 'dehumidifier') {
+                const isActive = ['on', 'active', 'true', '1'].includes(String(ent.state).toLowerCase());
                 return { state: isActive ? 'ON' : 'OFF' };
             }
         }
@@ -371,16 +365,13 @@ export class GrowspaceEnvChart extends LitElement {
         let effectiveWidth = width;
 
         // CSS for .gs-env-chart-container has padding: 20px 40px 30px 50px
-        // SVG is positioned at left: 50px with width: calc(100% - 90px)
-        if (this.type !== 'step') {
-            const paddingLeft = 50;
-            const paddingRight = 40;
-            effectiveX = x - paddingLeft;
-            effectiveWidth = width - (paddingLeft + paddingRight);
+        const paddingLeft = 50;
+        const paddingRight = 40;
+        effectiveX = x - paddingLeft;
+        effectiveWidth = width - (paddingLeft + paddingRight);
 
-            // Clamp to ensure we don't seek outside bounds
-            effectiveX = Math.max(0, Math.min(effectiveX, effectiveWidth));
-        }
+        // Clamp to ensure we don't seek outside bounds
+        effectiveX = Math.max(0, Math.min(effectiveX, effectiveWidth));
 
         const time = startTime + (effectiveX / effectiveWidth) * durationMillis;
 
@@ -388,20 +379,26 @@ export class GrowspaceEnvChart extends LitElement {
         const date = new Date(closest.time);
         const timeStr = this._formatTime(date);
 
-        let valStr = `${closest.value} ${unit}`;
-        if (unit === 'state') {
+        let valStr = `${closest.value} ${unit} `;
+
+        const defaults = SENSOR_CHART_DEFAULTS[metricKey];
+        const isBinary = defaults?.binary || defaults?.unit === 'state' || unit === 'state';
+
+        if (isBinary) {
             if (metricKey === 'irrigation' || metricKey === 'drain') {
                 if (closest.value === 1) {
-                    valStr = `ON (${closest.meta?.duration || 'Unknown'})`;
+                    valStr = `ON(${closest.meta?.duration || 'Unknown'})`;
                 } else {
                     valStr = 'OFF';
                 }
             } else if (metricKey === 'dehumidifier' || metricKey === 'light') {
                 valStr = closest.value === 1 ? 'ON' : 'OFF';
-            } else if (closest.value === 1) {
+            } else if (closest.value === 1 && metricKey === 'optimal') {
                 valStr = 'Optimal Conditions';
-            } else {
+            } else if (closest.value === 0 && metricKey === 'optimal') {
                 valStr = closest.meta || 'Not Optimal';
+            } else {
+                valStr = closest.value === 1 ? 'ON' : 'OFF';
             }
         } else if ((metricKey === 'exhaust' || metricKey === 'humidifier') && closest.meta?.state) {
             valStr = closest.meta.state;
@@ -503,15 +500,6 @@ export class GrowspaceEnvChart extends LitElement {
 
         if (!this.device) return null;
 
-        let slug = this.device.name.toLowerCase().replace(/\s+/g, '_');
-        if (this.device.overview_entity_id) {
-            slug = this.device.overview_entity_id.replace('sensor.', '');
-        }
-        let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
-        if (slug === 'cure') envEntityId = `binary_sensor.cure_optimal_curing`;
-        else if (slug === 'dry') envEntityId = `binary_sensor.dry_optimal_drying`;
-
-        const envEntity = this.hass.states[envEntityId];
         const overviewEntity = this.device.overview_entity_id ? this.hass.states[this.device.overview_entity_id] : undefined;
 
         let durationMillis = 24 * 60 * 60 * 1000;
@@ -528,48 +516,10 @@ export class GrowspaceEnvChart extends LitElement {
                 ? overviewEntity?.attributes?.irrigation_times
                 : overviewEntity?.attributes?.drain_times;
 
-            if (times && Array.isArray(times)) {
-                const events: { start: number, end: number }[] = [];
-                const referenceDays = [new Date(now), new Date(startTime)];
+            // Use Transformer
+            dataPoints = GraphDataTransformer.transformEventsToTimeSeries(times, startTime.getTime(), now.getTime());
 
-                times.forEach((t: any) => {
-                    const [h, m] = t.time.split(':').map(Number);
-                    const duration = (t.duration || 60) * 1000;
-                    referenceDays.forEach(refDay => {
-                        const start = new Date(refDay);
-                        start.setHours(h, m, 0, 0);
-                        const end = new Date(start.getTime() + duration);
-                        if (end.getTime() > startTime.getTime() && start.getTime() < now.getTime()) {
-                            events.push({
-                                start: Math.max(start.getTime(), startTime.getTime()),
-                                end: Math.min(end.getTime(), now.getTime())
-                            });
-                        }
-                    });
-                });
-
-                events.sort((a, b) => a.start - b.start);
-                dataPoints.push({ time: startTime.getTime(), value: 0 });
-
-                events.forEach(ev => {
-                    const durationSeconds = (ev.end - ev.start) / 1000;
-                    let durationStr = `${durationSeconds}s`;
-                    if (durationSeconds >= 60) durationStr = `${Math.round(durationSeconds / 60)}m`;
-
-                    dataPoints.push({ time: ev.start - 1, value: 0 });
-                    dataPoints.push({ time: ev.start, value: 1, meta: { duration: durationStr } });
-                    dataPoints.push({ time: ev.end, value: 1, meta: { duration: durationStr } });
-                    dataPoints.push({ time: ev.end + 1, value: 0 });
-                });
-                dataPoints.push({ time: now.getTime(), value: 0 });
-            }
         } else {
-            // Re-using the getValue/getMeta logic (scoping issues: helper functions need to be inside or class methods)
-            // I'll inline specific logic or rely on the fact that I'm inside the class scope? 
-            // No, getValue was defined inside renderEnvGraph. I need to move it or duplicate locally.
-            // Best to duplicate locally for now as it captures 'unit' and 'key' from scope.
-
-
             // Refactored to use class helper methods
             const getValue = (ent: HistorySensorState, key: string) => this._normalizeSensorValue(ent, key, unit);
             const getMeta = (ent: HistorySensorState, key: string) => this._getSensorMeta(ent, key, unit);
@@ -604,20 +554,20 @@ export class GrowspaceEnvChart extends LitElement {
                 }
             });
 
-            // Current point synthesized logic
+            // Current point synthesized logic-reduced to essential lookups
             if (metricKey === 'dehumidifier') {
                 if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
                     const state = overviewEntity.attributes.dehumidifier_state;
                     const val = (state === 'on' || state === 'true' || state === '1') ? 1 : 0;
                     dataPoints.push({ time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } });
                 } else if (dataPoints.length > 0) {
+                    // Carry forward last known state
                     const last = dataPoints[dataPoints.length - 1];
                     dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
                 }
-            } else if (metricKey === 'exhaust') {
-                let val = overviewEntity?.attributes?.exhaust_value;
-                if (val === undefined && this.device.environment_attributes?.exhaust_entity && this.hass.states[this.device.environment_attributes.exhaust_entity]) val = this.hass.states[this.device.environment_attributes.exhaust_entity].state;
-                else if (val === undefined && this.device.environment_attributes?.exhaust_sensor && this.hass.states[this.device.environment_attributes.exhaust_sensor]) val = this.hass.states[this.device.environment_attributes.exhaust_sensor].state;
+            } else if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+                // Simplified current value lookup
+                let val = metricKey === 'exhaust' ? overviewEntity?.attributes?.exhaust_value : overviewEntity?.attributes?.humidifier_value;
 
                 if (val !== undefined) {
                     let numVal = parseFloat(val);
@@ -628,28 +578,6 @@ export class GrowspaceEnvChart extends LitElement {
                     }
                     if (!isNaN(numVal)) dataPoints.push({ time: now.getTime(), value: numVal, meta });
                 } else if (dataPoints.length > 0) { const last = dataPoints[dataPoints.length - 1]; dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta }); }
-            } else if (metricKey === 'humidifier') {
-                let val = overviewEntity?.attributes?.humidifier_value;
-                if (val === undefined && this.device.environment_attributes?.humidifier_entity && this.hass.states[this.device.environment_attributes.humidifier_entity]) val = this.hass.states[this.device.environment_attributes.humidifier_entity].state;
-                else if (val === undefined && this.device.environment_attributes?.humidifier_sensor && this.hass.states[this.device.environment_attributes.humidifier_sensor]) val = this.hass.states[this.device.environment_attributes.humidifier_sensor].state;
-
-                if (val !== undefined) {
-                    let numVal = parseFloat(val);
-                    let meta: any = undefined;
-                    if (isNaN(numVal)) {
-                        if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') { numVal = 1; meta = { state: 'ON' }; }
-                        else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') { numVal = 0; meta = { state: 'OFF' }; }
-                    }
-                    if (!isNaN(numVal)) dataPoints.push({ time: now.getTime(), value: numVal, meta });
-                } else if (dataPoints.length > 0) { const last = dataPoints[dataPoints.length - 1]; dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta }); }
-            } else if (envEntity) {
-                // Ensure type safety - getValue returns number | undefined
-                const currentVal = getValue(envEntity as unknown as HistorySensorState, metricKey);
-                const currentMeta = getMeta(envEntity as unknown as HistorySensorState, metricKey);
-
-                if (currentVal !== undefined && !isNaN(currentVal)) {
-                    dataPoints.push({ time: now.getTime(), value: currentVal, meta: currentMeta });
-                }
             }
         }
 
@@ -671,16 +599,21 @@ export class GrowspaceEnvChart extends LitElement {
         let minVal = 0;
         let maxVal = 1;
 
+        const defaults = SENSOR_CHART_DEFAULTS[metricKey];
+
         if (unit !== 'state' && metricKey !== 'irrigation' && metricKey !== 'drain') {
-            if (metricKey === 'exhaust' || metricKey === 'humidifier' || metricKey === 'circulation_fan') {
-                minVal = 0;
-                maxVal = 10;
-            } else if (metricKey === 'dehumidifier') {
+            if (defaults && defaults.min !== undefined && defaults.max !== undefined) {
+                minVal = defaults.min;
+                maxVal = defaults.max;
+            } else if (defaults && defaults.binary) {
                 minVal = 0;
                 maxVal = 1;
             } else {
-                minVal = Math.min(...dataPoints.map(d => d.value));
-                maxVal = Math.max(...dataPoints.map(d => d.value));
+                // Auto-scale
+                if (dataPoints.length > 0) {
+                    minVal = Math.min(...dataPoints.map(d => d.value));
+                    maxVal = Math.max(...dataPoints.map(d => d.value));
+                }
             }
         }
 
@@ -688,7 +621,7 @@ export class GrowspaceEnvChart extends LitElement {
         let paddedMin = minVal - (rangeVal * 0.1);
         let paddedMax = maxVal + (rangeVal * 0.1);
 
-        if (metricKey === 'exhaust' || metricKey === 'humidifier' || metricKey === 'dehumidifier') {
+        if (defaults?.disablePadding) {
             paddedMin = minVal;
             paddedMax = maxVal;
         }
@@ -702,28 +635,75 @@ export class GrowspaceEnvChart extends LitElement {
         if (type === 'step') {
             const points: [number, number][] = [];
             let currentState = dataPoints.length > 0 ? dataPoints[0].value : 0;
-            points.push([0, height - ((currentState - paddedMin) / paddedRange) * height]);
+            // Guard against divide by zero if paddedRange is 0 (should use fallback 1)
+            const safeRange = paddedRange === 0 ? 1 : paddedRange;
+
+            points.push([0, height - ((currentState - paddedMin) / safeRange) * height]);
 
             dataPoints.forEach(d => {
                 const x = ((d.time - startTime.getTime()) / durationMillis) * width;
-                const y = height - ((d.value - paddedMin) / paddedRange) * height;
+                const y = height - ((d.value - paddedMin) / safeRange) * height;
                 points.push([x, points[points.length - 1][1]]);
                 points.push([x, y]);
                 currentState = d.value;
             });
-            points.push([width, height - ((currentState - paddedMin) / paddedRange) * height]);
-            svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+            points.push([width, height - ((currentState - paddedMin) / safeRange) * height]);
+            svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')} `;
         } else {
+            const safeRange = paddedRange === 0 ? 1 : paddedRange;
             const points: [number, number][] = dataPoints.map(d => {
                 const x = ((d.time - startTime.getTime()) / durationMillis) * width;
-                const y = height - ((d.value - paddedMin) / paddedRange) * height;
+                const y = height - ((d.value - paddedMin) / safeRange) * height;
                 return [x, y];
             });
-            svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+            svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')} `;
         }
 
         this._memoizedGraphData = { path: svgPath, dataPoints, minVal, maxVal, avgValue };
         return this._memoizedGraphData;
+    }
+
+    private _renderChartSvg(
+        metricKey: string,
+        color: string,
+        height: number,
+        width: number,
+        paddedMin: number,
+        paddedRange: number,
+        avgValue: number,
+        svgPath: string,
+        unit: string,
+        type: string
+    ) {
+        return html`
+    <svg class="gs-chart-svg" style = "position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox = "0 0 ${width} ${height}" preserveAspectRatio = "none" >
+        <defs>
+        <linearGradient id="grad-${metricKey}" x1 = "0%" y1 = "0%" x2 = "0%" y2 = "100%" >
+            <stop offset="0%" style = "stop-color:${color};stop-opacity:0.3" />
+                <stop offset="100%" style = "stop-color:${color};stop-opacity:0" />
+                    </linearGradient>
+                    </defs>
+
+                    <!--Vertical grid lines-->
+                        <line x1="0" y1 = "0" x2 = "0" y2 = "${height}" stroke = "#333" stroke-width="1" />
+                            <line x1="${width * 0.25}" y1 = "0" x2 = "${width * 0.25}" y2 = "${height}" stroke = "#222" stroke-width="1" stroke-dasharray="2,2" />
+                                <line x1="${width * 0.5}" y1 = "0" x2 = "${width * 0.5}" y2 = "${height}" stroke = "#222" stroke-width="1" stroke-dasharray="2,2" />
+                                    <line x1="${width * 0.75}" y1 = "0" x2 = "${width * 0.75}" y2 = "${height}" stroke = "#222" stroke-width="1" stroke-dasharray="2,2" />
+                                        <line x1="${width}" y1 = "0" x2 = "${width}" y2 = "${height}" stroke = "#333" stroke-width="1" />
+
+                                            <!--Target / average line- Only for line graphs or non- binary-->
+                                                ${(type !== 'step' && avgValue) ? html`
+                   <line x1="0" y1="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
+                         x2="${width}" y2="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
+                         stroke="${color}" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.5" />
+                 ` : ''
+            }
+
+<!--Data line and fill-->
+    <path d="${svgPath} V ${height} H 0 Z" fill = "url(#grad-${metricKey})" />
+        <path d="${svgPath}" fill = "none" stroke = "${color}" stroke-width="2.5" />
+            </svg>
+                `;
     }
 
     renderEnvGraph(): TemplateResult {
@@ -746,20 +726,24 @@ export class GrowspaceEnvChart extends LitElement {
         // Storing in memo avoids recalc. But I didn't return them in interface.
         // I'll re-derive locally, it's cheap arithmetic compared to loop/path.
 
+        const defaults = SENSOR_CHART_DEFAULTS[metricKey];
+
         const width = 1000;
         const height = 180; // Standardized height
         const rangeVal = maxVal - minVal || 1;
         let paddedMin = minVal - (rangeVal * 0.1);
         let paddedMax = maxVal + (rangeVal * 0.1);
-        if (metricKey === 'exhaust' || metricKey === 'humidifier' || metricKey === 'dehumidifier') {
+
+        if (defaults?.disablePadding) {
             paddedMin = minVal;
             paddedMax = maxVal;
         }
         const paddedRange = paddedMax - paddedMin;
 
-        // Determine Y-Axis Labels
+
         let yLabels: (string | number)[] = [];
-        if (type === 'step' || unit === 'state' || metricKey === 'dehumidifier' || metricKey === 'exhaust') {
+        // Only use ON/OFF labels if it's strictly binary or unit is state without range
+        if (type === 'step' || (unit === 'state' && !defaults?.max) || metricKey === 'dehumidifier') {
             // Smart labels for binary/step data
             yLabels = ['ON', 'OFF'];
         } else {
@@ -773,86 +757,92 @@ export class GrowspaceEnvChart extends LitElement {
         }
 
         return html`
-      <div class="gs-env-graph-card">
-         <div class="gs-env-graph-header" @click=${this._toggleEnvGraph}>
-             <div style="display: flex; align-items: center; gap: 12px;">
-                 <svg style="width:24px;height:24px;fill:${color};" viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-                 <div>
-                    <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${title}</div>
-                 </div>
-             </div>
-         </div>
+            <div class="gs-env-graph-card" >
+                <div class="gs-env-graph-header" @click=${this._toggleEnvGraph}>
+                    <div style="display: flex; align-items: center; gap: 12px;" >
+                        <svg style="width:24px;height:24px;fill:${color};" viewBox = "0 0 24 24" > <path d="${icon}" > </path></svg >
+                            <div>
+                            <div style="font-size: 0.9rem; font-weight: 600; color: #fff;" > ${title} </div>
+                                </div>
+                                </div>
+                                </div>
 
-         <div class="gs-env-chart-container"
-              @mousemove=${(e: MouseEvent) => {
+                                <div class="gs-env-chart-container"
+@mousemove=${(e: MouseEvent) => {
                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                 this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
-            }}
-              @touchmove=${(e: TouchEvent) => {
+            }
+            }
+@touchmove=${(e: TouchEvent) => {
                 if (e.cancelable) e.preventDefault();
                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                 this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
-            }}
-              @touchstart=${(e: TouchEvent) => {
+            }
+            }
+@touchstart=${(e: TouchEvent) => {
                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                 this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
-            }}
-              @touchend=${() => this._tooltip = null}
-              @mouseleave=${() => this._tooltip = null}>
+            }
+            }
+@touchend=${() => this._tooltip = null}
+@mouseleave=${() => this._tooltip = null}>
 
-             ${this._tooltip && this._tooltip.id === metricKey ? html`
+    ${this._tooltip && this._tooltip.id === metricKey ? html`
                  <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: ${color}80; pointer-events: none;"></div>
                  <div style="position: absolute; left: ${this._tooltip.x + 10}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid ${color}; pointer-events: none; z-index: 1000;">
                     <div style="color: ${color}; font-weight: 600;">${this._tooltip.time}</div>
                     <div style="margin-top: 4px;">${this._tooltip.value}</div>
                  </div>
-             ` : ''}
+             ` : ''
+            }
 
-             <!-- Y-axis labels -->
-             <div style="position: absolute; left: 0; top: 20px; bottom: 30px; width: 45px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; color: #666; text-align: right; padding-right: 8px; pointer-events: none;">
-                ${yLabels.map(val => html`<div>${typeof val === 'number' ? val.toFixed(1) : val} ${typeof val === 'number' ? unit : ''}</div>`)}
-             </div>
+<!--Y-axis labels-->
+    <div style="position: absolute; left: 0; top: 20px; bottom: 30px; width: 45px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; color: #666; text-align: right; padding-right: 8px; pointer-events: none;" >
+        ${yLabels.map(val => html`<div>${typeof val === 'number' ? val.toFixed(1) : val} ${typeof val === 'number' ? unit : ''}</div>`)}
+</div>
 
-             <svg class="gs-chart-svg" style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
-                 <defs>
-                     <linearGradient id="grad-${metricKey}" x1="0%" y1="0%" x2="0%" y2="100%">
-                         <stop offset="0%" style="stop-color:${color};stop-opacity:0.3" />
-                         <stop offset="100%" style="stop-color:${color};stop-opacity:0" />
-                     </linearGradient>
-                 </defs>
-                 
-                 <!-- Vertical grid lines -->
-                 <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
-                 <line x1="${width * 0.25}" y1="0" x2="${width * 0.25}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
-                 <line x1="${width * 0.5}" y1="0" x2="${width * 0.5}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
-                 <line x1="${width * 0.75}" y1="0" x2="${width * 0.75}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
-                 <line x1="${width}" y1="0" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
-                 
-                 <!-- Target/average line - Only for line graphs or non-binary -->
-                 ${(type !== 'step' && avgValue) ? html`
+    <svg class="gs-chart-svg" style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox = "0 0 1000 ${height}" preserveAspectRatio = "none" >
+        <defs>
+        <linearGradient id="grad-${metricKey}" x1 = "0%" y1 = "0%" x2 = "0%" y2 = "100%" >
+            <stop offset="0%" style = "stop-color:${color};stop-opacity:0.3" />
+                <stop offset="100%" style = "stop-color:${color};stop-opacity:0" />
+                    </linearGradient>
+                    </defs>
+
+                    <!--Vertical grid lines-->
+                        <line x1="0" y1 = "0" x2 = "0" y2 = "${height}" stroke = "#333" stroke - width="1" />
+                            <line x1="${width * 0.25}" y1 = "0" x2 = "${width * 0.25}" y2 = "${height}" stroke = "#222" stroke - width="1" stroke - dasharray="2,2" />
+                                <line x1="${width * 0.5}" y1 = "0" x2 = "${width * 0.5}" y2 = "${height}" stroke = "#222" stroke - width="1" stroke - dasharray="2,2" />
+                                    <line x1="${width * 0.75}" y1 = "0" x2 = "${width * 0.75}" y2 = "${height}" stroke = "#222" stroke - width="1" stroke - dasharray="2,2" />
+                                        <line x1="${width}" y1 = "0" x2 = "${width}" y2 = "${height}" stroke = "#333" stroke - width="1" />
+
+                                            <!--Target / average line - Only for line graphs or non - binary-->
+                                                ${(type !== 'step' && avgValue) ? html`
                    <line x1="0" y1="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
                          x2="${width}" y2="${height - ((avgValue - paddedMin) / paddedRange) * height}" 
                          stroke="${color}" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.5" />
-                 ` : ''}
-                 
-                 <!-- Data line and fill -->
-                 <path d="${svgPath} V ${height} H 0 Z" fill="url(#grad-${metricKey})" />
-                 <path d="${svgPath}" fill="none" stroke="${color}" stroke-width="2.5" />
-             </svg>
-             
-             <!-- X-axis markers -->
-             <div class="chart-markers">
-                ${(() => {
+                 ` : ''
+            }
+
+<!--Data line and fill-->
+    <path d="${svgPath} V ${height} H 0 Z" fill = "url(#grad-${metricKey})" />
+        <path d="${svgPath}" fill = "none" stroke = "${color}" stroke-width="2.5" />
+            </svg>
+
+            <!--X-axis markers-->
+                <div class="chart-markers">
+                    ${(() => {
                 if (range === '1h') return html`<span>60m</span><span>45m</span><span>30m</span><span>15m</span>`;
                 if (range === '6h') return html`<span>6h</span><span>4.5h</span><span>3h</span><span>1.5h</span>`;
                 if (range === '7d') return html`<span>7d</span><span>5d</span><span>3d</span><span>1d</span>`;
                 return html`<span>24h</span><span>18h</span><span>12h</span><span>6h</span>`;
-            })()}
-                <span style="color: ${color};">NOW</span>
-             </div>
-         </div>
-      </div>
-    `;
+            })()
+            }
+<span style="color: ${color};" > NOW </span>
+    </div>
+    </div>
+    </div>
+        `;
     }
 
     renderCombinedEnvGraph(): TemplateResult {
@@ -897,9 +887,9 @@ export class GrowspaceEnvChart extends LitElement {
             else if (metricKey === 'soil_moisture') historySource = this.soilMoistureHistory;
             else if (metricKey === 'optimal') historySource = this.optimalHistory;
 
-            console.log(`[CombinedGraph] Metric: ${metricKey}, historySource length: ${historySource?.length || 0}`);
+            console.log(`[CombinedGraph] Metric: ${metricKey}, historySource length: ${historySource?.length || 0} `);
             if (historySource && historySource.length > 0) {
-                console.log(`[CombinedGraph] First history entry for ${metricKey}:`, JSON.stringify(historySource[0]).slice(0, 500));
+                console.log(`[CombinedGraph] First history entry for ${metricKey}: `, JSON.stringify(historySource[0]).slice(0, 500));
             }
 
             if (historySource && historySource.length > 0) {
@@ -974,10 +964,10 @@ export class GrowspaceEnvChart extends LitElement {
         const height = 180;
 
         return html`
-      <div class="gs-env-graph-card">
-         <div class="gs-env-graph-header">
-             <div style="display: flex; align-items: center; gap: 12px;">
-                 ${graphData.map((g, i) => html`
+    <div class="gs-env-graph-card">
+        <div class="gs-env-graph-header">
+            <div style="display: flex; align-items: center; gap: 12px;" >
+                ${graphData.map((g, i) => html`
                     ${i > 0 ? html`
                         <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
                              @click=${() => {
@@ -993,15 +983,16 @@ export class GrowspaceEnvChart extends LitElement {
                         <div style="width: 12px; height: 12px; border-radius: 50%; background: ${g.color};"></div>
                         <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${g.title}</div>
                     </div>
-                 `)}
-             </div>
-         </div>
+                 `)
+            }
+</div>
+    </div>
 
-         <div class="gs-env-chart-container"
-              @mousemove=${(e: MouseEvent) => this._handleCombinedGraphHover(e, startTime, durationMillis, graphData, width)}
-              @mouseleave=${() => this._tooltip = null}>
+    <div class="gs-env-chart-container"
+@mousemove=${(e: MouseEvent) => this._handleCombinedGraphHover(e, startTime, durationMillis, graphData, width)}
+@mouseleave=${() => this._tooltip = null}>
 
-             ${this._tooltip && this._tooltip.id === 'combined-' + metrics.join('-') ? html`
+    ${this._tooltip && this._tooltip.id === 'combined-' + metrics.join('-') ? html`
                  <div style="position: absolute; left: ${this._tooltip.x}px; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.2); pointer-events: none;"></div>
                  <div style="position: absolute; left: ${Math.min(this._tooltip.x + 10, width - 150)}px; top: 20px; background: rgba(0,0,0,0.9); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid rgba(255,255,255,0.1); pointer-events: none; z-index: 1000;">
                     <div style="font-weight: 600; margin-bottom: 4px;">${this._tooltip.time}</div>
@@ -1018,50 +1009,54 @@ export class GrowspaceEnvChart extends LitElement {
                     } catch { return html``; }
                 })()}
                  </div>
-             ` : ''}
+             ` : ''
+            }
 
-             <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
-                 <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
-                 <line x1="${width}" y1="0" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
-                 <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
+<svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox = "0 0 1000 ${height}" preserveAspectRatio = "none" >
+    <line x1="0" y1 = "0" x2 = "0" y2 = "${height}" stroke = "#333" stroke-width="1" />
+        <line x1="${width}" y1 = "0" x2 = "${width}" y2 = "${height}" stroke = "#333" stroke-width="1" />
+            <line x1="0" y1 = "${height}" x2 = "${width}" y2 = "${height}" stroke = "#333" stroke-width="1" />
 
-                 ${graphData.map(g => {
-                    const range = g.max - g.min || 1;
-                    let paddedMin = g.min - (range * 0.1);
-                    let paddedMax = g.max + (range * 0.1);
+                ${graphData.map(g => {
+                const defaults = SENSOR_CHART_DEFAULTS[g.key];
+                const range = g.max - g.min || 1;
+                let paddedMin = g.min - (range * 0.1);
+                let paddedMax = g.max + (range * 0.1);
 
-                    if (g.key === 'exhaust' || g.key === 'humidifier' || g.key === 'dehumidifier') {
-                        paddedMin = g.min;
-                        paddedMax = g.max;
-                    }
+                if (defaults?.disablePadding) {
+                    paddedMin = g.min;
+                    paddedMax = g.max;
+                }
 
-                    const paddedRange = paddedMax - paddedMin;
+                const paddedRange = paddedMax - paddedMin;
 
-                    const points = g.points.map(p => {
-                        const x = ((p.time - startTime.getTime()) / durationMillis) * width;
-                        const y = height - ((p.value - paddedMin) / paddedRange) * height;
-                        return [x, y];
-                    });
+                const points = g.points.map(p => {
+                    const x = ((p.time - startTime.getTime()) / durationMillis) * width;
+                    const y = height - ((p.value - paddedMin) / paddedRange) * height;
+                    return [x, y];
+                });
 
-                    const path = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
-                    return svg`
+                const path = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+                return svg`
                          <path d="${path}" fill="none" stroke="${g.color}" stroke-width="2" />
                          <path d="${path} V ${height} H ${points[0][0]} Z" fill="${g.color}" fill-opacity="0.1" stroke="none" />
                      `;
-                })}
-             </svg>
-             
-              <div class="chart-markers">
-                 ${(() => {
+            })
+            }
+</svg>
+
+    <div class="chart-markers">
+        ${(() => {
                 if (range === '1h') return html`<span>60m</span><span>45m</span><span>30m</span><span>15m</span>`;
                 if (range === '6h') return html`<span>6h</span><span>4.5h</span><span>3h</span><span>1.5h</span>`;
                 if (range === '7d') return html`<span>7d</span><span>5d</span><span>3d</span><span>1d</span>`;
                 return html`<span>24h</span><span>18h</span><span>12h</span><span>6h</span>`;
-            })()}
-                 <span style="color: #fff;">NOW</span>
-              </div>
-         </div>
-      </div>
-    `;
+            })()
+            }
+<span style="color: #fff;" > NOW </span>
+    </div>
+    </div>
+    </div>
+        `;
     }
 }
