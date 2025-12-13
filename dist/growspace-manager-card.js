@@ -1300,20 +1300,20 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
  * Copyright 2019 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t$4=globalThis,e$6=t$4.ShadowRoot&&(void 0===t$4.ShadyCSS||t$4.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$8=Symbol(),o$6=new WeakMap;class n$7{constructor(t,e,o){if(this._$cssResult$=!0,o!==s$8)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$6&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$6.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$6.set(s,t));}return t}toString(){return this.cssText}}const r$6=t=>new n$7("string"==typeof t?t:t+"",void 0,s$8),i$5=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$7(o,t,s$8)},S$1=(s,o)=>{if(e$6)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$4.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$5=e$6?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$6(e)})(t):t;
+const t$4=globalThis,e$7=t$4.ShadowRoot&&(void 0===t$4.ShadyCSS||t$4.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$8=Symbol(),o$6=new WeakMap;class n$7{constructor(t,e,o){if(this._$cssResult$=!0,o!==s$8)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$7&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$6.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$6.set(s,t));}return t}toString(){return this.cssText}}const r$6=t=>new n$7("string"==typeof t?t:t+"",void 0,s$8),i$5=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$7(o,t,s$8)},S$1=(s,o)=>{if(e$7)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$4.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$5=e$7?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$6(e)})(t):t;
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const{is:i$4,defineProperty:e$5,getOwnPropertyDescriptor:h$3,getOwnPropertyNames:r$5,getOwnPropertySymbols:o$5,getPrototypeOf:n$6}=Object,a$1=globalThis,c$4=a$1.trustedTypes,l$2=c$4?c$4.emptyScript:"",p$2=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$3={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$3=(t,s)=>!i$4(t,s),b$1={attribute:!0,type:String,converter:u$3,reflect:!1,useDefault:!1,hasChanged:f$3};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;class y$1 extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=!0),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$5(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$3(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$6(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$5(t),...o$5(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$5(s));}else void 0!==s&&i.push(c$5(s));return i}static _$Eu(t,s){const i=s.attribute;return !1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&!0===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$3).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$3;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$3)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);}!1===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),!0!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),!0===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=!0;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];!0!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=!1;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=!1,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return !0}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}}y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$2?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
+ */const{is:i$4,defineProperty:e$6,getOwnPropertyDescriptor:h$3,getOwnPropertyNames:r$5,getOwnPropertySymbols:o$5,getPrototypeOf:n$6}=Object,a$1=globalThis,c$4=a$1.trustedTypes,l$2=c$4?c$4.emptyScript:"",p$2=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$3={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$3=(t,s)=>!i$4(t,s),b$1={attribute:!0,type:String,converter:u$3,reflect:!1,useDefault:!1,hasChanged:f$3};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;class y$1 extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=!0),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$6(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$3(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$6(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$5(t),...o$5(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$5(s));}else void 0!==s&&i.push(c$5(s));return i}static _$Eu(t,s){const i=s.attribute;return !1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&!0===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$3).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$3;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$3)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);}!1===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),!0!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),!0===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=!0;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];!0!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=!1;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=!1,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return !0}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}}y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$2?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t$3=globalThis,i$3=t$3.trustedTypes,s$7=i$3?i$3.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$4="$lit$",h$2=`lit$${Math.random().toFixed(9).slice(2)}$`,o$4="?"+h$2,n$5=`<${o$4}>`,r$4=document,l$1=()=>r$4.createComment(""),c$3=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u$2=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f$2=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v$1=/-->/g,_=/>/g,m$1=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p$1=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$4.createTreeWalker(r$4,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$7?s$7.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f$2;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f$2?"!--"===u[1]?c=v$1:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m$1):void 0!==u[3]&&(c=m$1):c===m$1?">"===u[0]?(c=r??f$2,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m$1:'"'===u[3]?g:p$1):c===g||c===p$1?c=m$1:c===v$1||c===_?c=f$2:(c=m$1,r=void 0);const x=c===m$1&&t[i+1].startsWith("/>")?" ":"";l+=c===f$2?s+n$5:d>=0?(o.push(a),s.slice(0,d)+e$4+s.slice(d)+h$2+x):s+h$2+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e$4)){const i=v[a++],s=r.getAttribute(t).split(h$2),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h$2)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h$2),s=t.length-1;if(s>0){r.textContent=i$3?i$3.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$4)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h$2,t+1));)d.push({type:7,index:c}),t+=h$2.length-1;}c++;}}static createElement(t,i){const s=r$4.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c$3(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(!1),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}class M$1{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$4).importNode(i,!0);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$4,e}p(t){let i=0;for(const s of this._$AV)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??!0;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c$3(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u$2(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c$3(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$4.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M$1(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(!1,!0,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=!1;if(void 0===h)t=S(this,t,i,0),o=!c$3(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c$3(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const Z={M:e$4,P:h$2,A:o$4,C:1,L:V,R:M$1,D:u$2,V:S,I:R,H:k,N:I,U:L,B:H,F:z},j=t$3.litHtmlPolyfillSupport;j?.(N,R),(t$3.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
+const t$3=globalThis,i$3=t$3.trustedTypes,s$7=i$3?i$3.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$5="$lit$",h$2=`lit$${Math.random().toFixed(9).slice(2)}$`,o$4="?"+h$2,n$5=`<${o$4}>`,r$4=document,l$1=()=>r$4.createComment(""),c$3=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u$2=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f$2=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v$1=/-->/g,_=/>/g,m$1=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p$1=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$4.createTreeWalker(r$4,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$7?s$7.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f$2;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f$2?"!--"===u[1]?c=v$1:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m$1):void 0!==u[3]&&(c=m$1):c===m$1?">"===u[0]?(c=r??f$2,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m$1:'"'===u[3]?g:p$1):c===g||c===p$1?c=m$1:c===v$1||c===_?c=f$2:(c=m$1,r=void 0);const x=c===m$1&&t[i+1].startsWith("/>")?" ":"";l+=c===f$2?s+n$5:d>=0?(o.push(a),s.slice(0,d)+e$5+s.slice(d)+h$2+x):s+h$2+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e$5)){const i=v[a++],s=r.getAttribute(t).split(h$2),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h$2)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h$2),s=t.length-1;if(s>0){r.textContent=i$3?i$3.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$4)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h$2,t+1));)d.push({type:7,index:c}),t+=h$2.length-1;}c++;}}static createElement(t,i){const s=r$4.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c$3(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(!1),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}class M$1{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$4).importNode(i,!0);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$4,e}p(t){let i=0;for(const s of this._$AV)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??!0;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c$3(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u$2(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c$3(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$4.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M$1(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(!1,!0,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=!1;if(void 0===h)t=S(this,t,i,0),o=!c$3(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c$3(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const Z={M:e$5,P:h$2,A:o$4,C:1,L:V,R:M$1,D:u$2,V:S,I:R,H:k,N:I,U:L,B:H,F:z},j=t$3.litHtmlPolyfillSupport;j?.(N,R),(t$3.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
 
 /**
  * @license
@@ -1371,13 +1371,13 @@ class s$3{get value(){return this.o}set value(s){this.setValue(s);}setValue(s,t=
  * @license
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */class e$3 extends Event{constructor(t,s){super("context-provider",{bubbles:!0,composed:!0}),this.context=t,this.contextTarget=s;}}class i$1 extends s$3{constructor(s,e,i){super(void 0!==e.context?e.initialValue:i),this.onContextRequest=t=>{if(t.context!==this.context)return;const s=t.contextTarget??t.composedPath()[0];s!==this.host&&(t.stopPropagation(),this.addCallback(t.callback,s,t.subscribe));},this.onProviderRequest=s=>{if(s.context!==this.context)return;if((s.contextTarget??s.composedPath()[0])===this.host)return;const e=new Set;for(const[s,{consumerHost:i}]of this.subscriptions)e.has(s)||(e.add(s),i.dispatchEvent(new s$5(this.context,i,s,!0)));s.stopPropagation();},this.host=s,void 0!==e.context?this.context=e.context:this.context=e,this.attachListeners(),this.host.addController?.(this);}attachListeners(){this.host.addEventListener("context-request",this.onContextRequest),this.host.addEventListener("context-provider",this.onProviderRequest);}hostConnected(){this.host.dispatchEvent(new e$3(this.context,this.host));}}
+ */class e$4 extends Event{constructor(t,s){super("context-provider",{bubbles:!0,composed:!0}),this.context=t,this.contextTarget=s;}}class i$1 extends s$3{constructor(s,e,i){super(void 0!==e.context?e.initialValue:i),this.onContextRequest=t=>{if(t.context!==this.context)return;const s=t.contextTarget??t.composedPath()[0];s!==this.host&&(t.stopPropagation(),this.addCallback(t.callback,s,t.subscribe));},this.onProviderRequest=s=>{if(s.context!==this.context)return;if((s.contextTarget??s.composedPath()[0])===this.host)return;const e=new Set;for(const[s,{consumerHost:i}]of this.subscriptions)e.has(s)||(e.add(s),i.dispatchEvent(new s$5(this.context,i,s,!0)));s.stopPropagation();},this.host=s,void 0!==e.context?this.context=e.context:this.context=e,this.attachListeners(),this.host.addController?.(this);}attachListeners(){this.host.addEventListener("context-request",this.onContextRequest),this.host.addEventListener("context-provider",this.onProviderRequest);}hostConnected(){this.host.dispatchEvent(new e$4(this.context,this.host));}}
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */function e$2({context:e}){return (n,i)=>{const r=new WeakMap;if("object"==typeof i)return {get(){return n.get.call(this)},set(t){return r.get(this).setValue(t),n.set.call(this,t)},init(n){return r.set(this,new i$1(this,{context:e,initialValue:n})),n}};{n.constructor.addInitializer((n=>{r.set(n,new i$1(n,{context:e}));}));const o=Object.getOwnPropertyDescriptor(n,i);let s;if(void 0===o){const t=new WeakMap;s={get(){return t.get(this)},set(e){r.get(this).setValue(e),t.set(this,e);},configurable:!0,enumerable:!0};}else {const t=o.set;s={...o,set(e){r.get(this).setValue(e),t?.call(this,e);}};}return void Object.defineProperty(n,i,s)}}}
+ */function e$3({context:e}){return (n,i)=>{const r=new WeakMap;if("object"==typeof i)return {get(){return n.get.call(this)},set(t){return r.get(this).setValue(t),n.set.call(this,t)},init(n){return r.set(this,new i$1(this,{context:e,initialValue:n})),n}};{n.constructor.addInitializer((n=>{r.set(n,new i$1(n,{context:e}));}));const o=Object.getOwnPropertyDescriptor(n,i);let s;if(void 0===o){const t=new WeakMap;s={get(){return t.get(this)},set(e){r.get(this).setValue(e),t.set(this,e);},configurable:!0,enumerable:!0};}else {const t=o.set;s={...o,set(e){r.get(this).setValue(e),t?.call(this,e);}};}return void Object.defineProperty(n,i,s)}}}
 
 /**
  * @license
@@ -9983,7 +9983,7 @@ class GrowspaceHistoryController {
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t={ATTRIBUTE:1,CHILD:2,PROPERTY:3,BOOLEAN_ATTRIBUTE:4,EVENT:5,ELEMENT:6},e$1=t=>(...e)=>({_$litDirective$:t,values:e});class i{constructor(t){}get _$AU(){return this._$AM._$AU}_$AT(t,e,i){this._$Ct=t,this._$AM=e,this._$Ci=i;}_$AS(t,e){return this.update(t,e)}update(t,e){return this.render(...e)}}
+const t={ATTRIBUTE:1,CHILD:2,PROPERTY:3,BOOLEAN_ATTRIBUTE:4,EVENT:5,ELEMENT:6},e$2=t=>(...e)=>({_$litDirective$:t,values:e});class i{constructor(t){}get _$AU(){return this._$AM._$AU}_$AT(t,e,i){this._$Ct=t,this._$AM=e,this._$Ci=i;}_$AS(t,e){return this.update(t,e)}update(t,e){return this.render(...e)}}
 
 /**
  * @license
@@ -9995,7 +9995,13 @@ const t={ATTRIBUTE:1,CHILD:2,PROPERTY:3,BOOLEAN_ATTRIBUTE:4,EVENT:5,ELEMENT:6},e
  * @license
  * Copyright 2020 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const e=()=>new h;class h{}const o=new WeakMap,n=e$1(class extends f{render(i){return E}update(i,[s]){const e=s!==this.G;return e&&void 0!==this.G&&this.rt(void 0),(e||this.lt!==this.ct)&&(this.G=s,this.ht=i.options?.host,this.rt(this.ct=i.element)),E}rt(t){if(this.isConnected||(t=void 0),"function"==typeof this.G){const i=this.ht??globalThis;let s=o.get(i);void 0===s&&(s=new WeakMap,o.set(i,s)),void 0!==s.get(this.G)&&this.G.call(this.ht,void 0),s.set(this.G,t),void 0!==t&&this.G.call(this.ht,t);}else this.G.value=t;}get lt(){return "function"==typeof this.G?o.get(this.ht??globalThis)?.get(this.G):this.G?.value}disconnected(){this.lt===this.ct&&this.rt(void 0);}reconnected(){this.rt(this.ct);}});
+ */const e$1=()=>new h;class h{}const o=new WeakMap,n=e$2(class extends f{render(i){return E}update(i,[s]){const e=s!==this.G;return e&&void 0!==this.G&&this.rt(void 0),(e||this.lt!==this.ct)&&(this.G=s,this.ht=i.options?.host,this.rt(this.ct=i.element)),E}rt(t){if(this.isConnected||(t=void 0),"function"==typeof this.G){const i=this.ht??globalThis;let s=o.get(i);void 0===s&&(s=new WeakMap,o.set(i,s)),void 0!==s.get(this.G)&&this.G.call(this.ht,void 0),s.set(this.G,t),void 0!==t&&this.G.call(this.ht,t);}else this.G.value=t;}get lt(){return "function"==typeof this.G?o.get(this.ht??globalThis)?.get(this.G):this.G?.value}disconnected(){this.lt===this.ct&&this.rt(void 0);}reconnected(){this.rt(this.ct);}});
+
+/**
+ * @license
+ * Copyright 2018 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const e=e$2(class extends i{constructor(t$1){if(super(t$1),t$1.type!==t.ATTRIBUTE||"class"!==t$1.name||t$1.strings?.length>2)throw Error("`classMap()` can only be used in the `class` attribute and must be the only part in the attribute.")}render(t){return " "+Object.keys(t).filter((s=>t[s])).join(" ")+" "}update(s,[i]){if(void 0===this.st){this.st=new Set,void 0!==s.strings&&(this.nt=new Set(s.strings.join(" ").split(/\s/).filter((t=>""!==t))));for(const t in i)i[t]&&!this.nt?.has(t)&&this.st.add(t);return this.render(i)}const r=s.element.classList;for(const t of this.st)t in i||(r.remove(t),this.st.delete(t));for(const t in i){const s=!!i[t];s===this.st.has(t)||this.nt?.has(t)||(s?(r.add(t),this.st.add(t)):(r.remove(t),this.st.delete(t)));}return T}});
 
 class GraphDataTransformer {
     /**
@@ -10319,7 +10325,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         this._canScrollLeft = false;
         this._canScrollRight = false;
         this._computedSeries = []; // Cached series
-        this._chipsContainerRef = e();
+        this._chipsContainerRef = e$1();
     }
     _scrollChips(direction) {
         const container = this._chipsContainerRef.value;
@@ -10528,7 +10534,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                      @mousemove=${(e) => this._handleGraphHover(e, series, startTime, durationMillis, width)}
                      @mouseleave=${() => { this._tooltip = null; this._hoverTime = null; }}>
                     
-                    ${this._renderTooltip(series)}
+                    ${this._renderTooltip()}
                     ${!this.isCombined ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit) : ''}
                     ${this._renderXAxisHTML(this.range)}
                     
@@ -10608,9 +10614,13 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                     </div>
                     ` : ''}
                     
-                    <div class="chips-scroll-container" ${n(this._chipsContainerRef)} @click=${(e) => e.stopPropagation()}>
+                        <div class="chips-scroll-container" ${n(this._chipsContainerRef)} @click=${(e) => e.stopPropagation()}>
                         ${seriesList.map(s => x `
-                            <div class="gs-legend-item ${this._canScrollLeft ? 'mask-left' : ''} ${this._canScrollRight ? 'mask-right' : ''}" @click=${(e) => { e.stopPropagation(); this.dispatchEvent(new UnlinkGraphMetricEvent(s.id)); }}>
+                            <div class=${e({
+            'gs-legend-item': true,
+            'mask-left': this._canScrollLeft,
+            'mask-right': this._canScrollRight
+        })} @click=${(e) => { e.stopPropagation(); this.dispatchEvent(new UnlinkGraphMetricEvent(s.id)); }}>
                                 <span style="display:inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${s.color}; margin-right: 6px; flex-shrink: 0;"></span>
                                 ${s.icon ? x `
                                 <div style="width: 16px; height: 16px; color: ${s.color}; margin-right: 4px; display: inline-flex;">
@@ -10653,60 +10663,15 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         const contentWidth = rect.width - 90;
         const relX = Math.max(0, Math.min(1, (e.clientX - rect.left - 50) / contentWidth));
         const hoverTime = startTime.getTime() + relX * durationMillis;
-        // Find closest points
-        // For tooltip, we just need to reconstruct the "Value at this time"
-        // Since we have multiple series, we show them all.
-        // Construct simple tooltip state
-        // We can just store raw data and let renderTooltip handle format
-        // Reusing _tooltip state object structure:
-        // Find closest point for primary series or just generic time
-        const locale = this.hass?.locale?.language || undefined;
-        const timeStr = new Date(hoverTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-        this._tooltip = {
-            id: 'hover',
-            x: e.clientX - rect.left, // Relative to container for positioning
-            time: timeStr,
-            value: '' // Will be generated in render
-        };
-        // Attach ephemeral data for render loop?
-        // Lit state update triggers render.
-        // We'll pass the 'hoverTime' to _renderTooltip via a property or just re-calculate it?
-        // Ideally we store 'hoverIndex' or 'hoverTime' in state.
-        this._hoverTime = hoverTime; // Use the new state property
-    }
-    _renderTooltip(seriesList) {
-        if (!this._tooltip || this._hoverTime === null)
-            return x ``;
-        const hoverTime = this._hoverTime;
+        // Find closest points and format values here
         const items = seriesList.map(s => {
-            // Find closest point using binary search
+            // Binary search (nearest neighbor)
             const searchTime = hoverTime;
             let closest = s.points[0];
             let minDiff = Number.MAX_VALUE;
-            // Binary search
-            let low = 0;
-            let high = s.points.length - 1;
+            let lo = 0;
+            let hi = s.points.length - 1;
             if (s.points.length > 0) {
-                while (low <= high) {
-                    const mid = Math.floor((low + high) / 2);
-                    const p = s.points[mid];
-                    const diff = Math.abs(p.time - searchTime);
-                    if (diff < minDiff) {
-                        minDiff = diff;
-                        closest = p;
-                    }
-                    if (p.time < searchTime) {
-                        low = mid + 1;
-                    }
-                    else {
-                        high = mid - 1;
-                    }
-                }
-                // After binary search, check headers to ensure we got the absolute closest (since we return strictly on range but nearest neighbor is better)
-                // Or simple approach: Binary search to find insertion point, then check neighbors.
-                // Re-implementation of nearest neighbor binary search:
-                let lo = 0;
-                let hi = s.points.length - 1;
                 while (lo < hi) {
                     const mid = Math.floor((lo + hi) / 2);
                     if (s.points[mid].time < searchTime) {
@@ -10716,7 +10681,6 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                         hi = mid;
                     }
                 }
-                // lo is the candidate index >= searchTime. check lo and lo-1
                 const candidates = [lo, lo - 1, lo + 1].filter(i => i >= 0 && i < s.points.length);
                 candidates.forEach(i => {
                     const p = s.points[i];
@@ -10727,41 +10691,53 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                     }
                 });
             }
-            return { series: s, point: closest };
+            // Format Value
+            const defaults = SENSOR_CHART_DEFAULTS[s.id];
+            const isBinary = defaults?.binary === true || (s.unit === 'state' && defaults?.max === undefined) || s.id === 'optimal' || s.id === 'dehumidifier';
+            let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
+            if (isBinary) {
+                if (s.id === 'optimal') {
+                    if (closest.value === 1)
+                        valStr = 'Optimal';
+                    else
+                        valStr = closest.meta?.reasons || 'Not Optimal';
+                }
+                else if (s.id === 'dehumidifier') {
+                    valStr = closest.value === 1 ? 'ON' : 'OFF';
+                }
+                else {
+                    valStr = closest.value === 1 ? 'ON' : 'OFF';
+                }
+            }
+            else if ((s.id === 'exhaust' || s.id === 'humidifier') && closest.meta?.state) {
+                valStr = closest.meta.state;
+            }
+            return { title: s.title, value: valStr, color: s.color };
         });
+        const locale = this.hass?.locale?.language || undefined;
+        const timeStr = new Date(hoverTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+        this._tooltip = {
+            id: 'hover',
+            x: e.clientX - rect.left,
+            time: timeStr,
+            items: items
+        };
+        this._hoverTime = hoverTime;
+    }
+    _renderTooltip() {
+        if (!this._tooltip)
+            return x ``;
         return x `
             <div class="gs-tooltip" style="left: ${this._tooltip.x}px; top: 0;">
                 <div style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 2px;">
                     ${this._tooltip.time}
                 </div>
-                ${items.map(i => {
-            const defaults = SENSOR_CHART_DEFAULTS[i.series.id];
-            const isBinary = defaults?.binary === true || (i.series.unit === 'state' && defaults?.max === undefined) || i.series.id === 'optimal' || i.series.id === 'dehumidifier';
-            let valStr = `${i.point.value.toFixed(1)} ${i.series.unit}`;
-            if (isBinary) {
-                if (i.series.id === 'optimal') {
-                    if (i.point.value === 1)
-                        valStr = 'Optimal';
-                    else
-                        valStr = i.point.meta?.reasons || 'Not Optimal';
-                }
-                else if (i.series.id === 'dehumidifier') {
-                    valStr = i.point.value === 1 ? 'ON' : 'OFF';
-                }
-                else {
-                    valStr = i.point.value === 1 ? 'ON' : 'OFF';
-                }
-            }
-            else if ((i.series.id === 'exhaust' || i.series.id === 'humidifier') && i.point.meta?.state) {
-                valStr = i.point.meta.state;
-            }
-            return x `
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px;">
-                             <span style="color: ${i.series.color};">${i.series.title}:</span>
-                             <span style="font-family: monospace; font-weight: bold;">${valStr}</span>
-                        </div>
-                    `;
-        })}
+                ${this._tooltip.items.map(i => x `
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px;">
+                            <span style="color: ${i.color};">${i.title}:</span>
+                            <span style="font-family: monospace; font-weight: bold;">${i.value}</span>
+                    </div>
+                `)}
             </div>
             <!-- Cursor Line -->
              <div class="gs-cursor-line" style="left: ${this._tooltip.x}px; height: 100%; top: 0; position: absolute; border-left: 1px dashed rgba(255,255,255,0.3); pointer-events: none;"></div>
@@ -16232,9 +16208,14 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
         this._menuOpen = false;
         this.linkedGraphGroups = [];
         this._draggedMetric = null;
+        // Cached Metric Data
+        this._mainChips = [];
+        this._deviceChips = [];
+        this._dominant = undefined;
+        this._envAttrs = {};
         this._canScrollLeft = false;
         this._canScrollRight = false;
-        this._chipsContainerRef = e();
+        this._chipsContainerRef = e$1();
         this._mobileLink = false;
         this._isCompact = false;
         this._isMobileCheck = false;
@@ -16256,7 +16237,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
     }
     _computeMetrics() {
         if (!this.device || !this.hass)
-            return { mainChips: [], deviceChips: [], dominant: undefined, growspaceOptions: this.growspaceOptions, envAttrs: {} };
+            return { mainChips: [], deviceChips: [], dominant: undefined, envAttrs: {} };
         const dominant = PlantUtils.getDominantStage(this.device.plants);
         // Fetch Environmental Data
         let slug = this.device.name.toLowerCase().replace(/\s+/g, '_');
@@ -16396,19 +16377,28 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
             this._canScrollRight = container.scrollLeft < (container.scrollWidth - container.clientWidth - 1);
         }
     }
+    willUpdate(changedProperties) {
+        if (changedProperties.has('device') || changedProperties.has('hass') || changedProperties.has('activeEnvGraphs') || changedProperties.has('linkedGraphGroups')) {
+            const { mainChips, deviceChips, dominant, envAttrs } = this._computeMetrics();
+            this._mainChips = mainChips;
+            this._deviceChips = deviceChips;
+            this._dominant = dominant;
+            this._envAttrs = envAttrs;
+        }
+    }
+    updated(changedProps) {
+        if (changedProps.has('activeEnvGraphs') || changedProps.has('linkedGraphGroups') || changedProps.has('device')) {
+            // Content might change size
+            setTimeout(() => this._checkScroll(), 0);
+        }
+    }
     firstUpdated() {
         const container = this._chipsContainerRef.value;
         if (container) {
             container.addEventListener('scroll', () => this._checkScroll());
             this._resizeObserver = new ResizeObserver(() => this._checkScroll());
             this._resizeObserver.observe(container);
-            // Also observe children changes if possible, or just re-check on update
-            setTimeout(() => this._checkScroll(), 100);
-        }
-    }
-    updated(changedProps) {
-        if (changedProps.has('activeEnvGraphs') || changedProps.has('linkedGraphGroups') || changedProps.has('device')) {
-            // Content might change size
+            // Initial check
             setTimeout(() => this._checkScroll(), 0);
         }
     }
@@ -16488,7 +16478,8 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
     render() {
         if (!this.device || !this.hass)
             return x ``;
-        const { mainChips, deviceChips, dominant, envAttrs } = this._computeMetrics();
+        const dominant = this._dominant;
+        const envAttrs = this._envAttrs;
         return x `
       <div class="gs-stats-container">
         <div class="gs-header-top">
@@ -16518,7 +16509,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
           <div class="header-controls-container" style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
             <div class="header-controls">
               
-              <div class="mobile-link-btn ${this._mobileLink ? 'active' : ''}"
+              <div class=${e({ 'mobile-link-btn': true, 'active': this._mobileLink })}
                    @click=${() => this._mobileLink = !this._mobileLink}>
                  <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
               </div>
@@ -16528,8 +16519,13 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
                     <div class="scroll-nav left" @click=${() => this._scrollChips('left')}><svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg></div>
                 ` : ''}
                 
-                <div class="gs-stats-chips ${this._mobileLink ? 'mobile-link-active' : ''} ${this._canScrollLeft ? 'mask-left' : ''} ${this._canScrollRight ? 'mask-right' : ''}" ${n(this._chipsContainerRef)}>
-                  ${mainChips.map(chip => x `
+                <div class=${e({
+            'gs-stats-chips': true,
+            'mobile-link-active': this._mobileLink,
+            'mask-left': this._canScrollLeft,
+            'mask-right': this._canScrollRight
+        })} ${n(this._chipsContainerRef)}>
+                  ${this._mainChips.map(chip => x `
                     <growspace-chip
                         .icon=${chip.icon}
                         .label=${chip.label || ''}
@@ -16570,17 +16566,17 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
                     <div class="menu-item" @click=${() => this._triggerAction('edit')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
                       <span class="menu-item-label">Edit</span>
-                      <div class="menu-toggle-switch ${this.isEditMode ? 'active' : ''}"></div>
+                      <div class=${e({ 'menu-toggle-switch': true, 'active': this.isEditMode })}></div>
                     </div>
                     <div class="menu-item" @click=${() => this._triggerAction('compact')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
                       <span class="menu-item-label">Compact View</span>
-                      <div class="menu-toggle-switch ${this.compact ? 'active' : ''}"></div>
+                      <div class=${e({ 'menu-toggle-switch': true, 'active': this.compact })}></div>
                     </div>
                     <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
                       <span class="menu-item-label">Control Dehumidifier</span>
-                      <div class="menu-toggle-switch ${envAttrs.dehumidifier_control_enabled ? 'active' : ''}"></div>
+                      <div class=${e({ 'menu-toggle-switch': true, 'active': !!envAttrs.dehumidifier_control_enabled })}></div>
                     </div>
                     <div class="menu-item" @click=${() => this._triggerAction('strains')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
@@ -16603,8 +16599,8 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
               </div>
             </div>
 
-            <div class="gs-device-chips ${this._mobileLink ? 'mobile-link-active' : ''}">
-              ${deviceChips.map(chip => x `
+            <div class=${e({ 'gs-device-chips': true, 'mobile-link-active': this._mobileLink })}>
+              ${this._deviceChips.map(chip => x `
                     <growspace-chip
                         .icon=${chip.icon}
                         .label=${chip.label || ''}
@@ -17145,6 +17141,22 @@ __decorate([
 ], GrowspaceHeader.prototype, "_draggedMetric", void 0);
 __decorate([
     r$2(),
+    __metadata("design:type", Array)
+], GrowspaceHeader.prototype, "_mainChips", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Array)
+], GrowspaceHeader.prototype, "_deviceChips", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "_dominant", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "_envAttrs", void 0);
+__decorate([
+    r$2(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_canScrollLeft", void 0);
 __decorate([
@@ -17176,7 +17188,7 @@ GrowspaceHeader = __decorate([
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const u=(e,s,t)=>{const r=new Map;for(let l=s;l<=t;l++)r.set(e[l],l);return r},c=e$1(class extends i{constructor(e){if(super(e),e.type!==t.CHILD)throw Error("repeat() can only be used in text expressions")}dt(e,s,t){let r;void 0===t?t=s:void 0!==s&&(r=s);const l=[],o=[];let i=0;for(const s of e)l[i]=r?r(s,i):i,o[i]=t(s,i),i++;return {values:o,keys:l}}render(e,s,t){return this.dt(e,s,t).values}update(s,[t,r,c]){const d=p(s),{values:p$1,keys:a}=this.dt(t,r,c);if(!Array.isArray(d))return this.ut=a,p$1;const h=this.ut??=[],v$1=[];let m$1,y,x=0,j=d.length-1,k=0,w=p$1.length-1;for(;x<=j&&k<=w;)if(null===d[x])x++;else if(null===d[j])j--;else if(h[x]===a[k])v$1[k]=v(d[x],p$1[k]),x++,k++;else if(h[j]===a[w])v$1[w]=v(d[j],p$1[w]),j--,w--;else if(h[x]===a[w])v$1[w]=v(d[x],p$1[w]),s$1(s,v$1[w+1],d[x]),x++,w--;else if(h[j]===a[k])v$1[k]=v(d[j],p$1[k]),s$1(s,d[x],d[j]),j--,k++;else if(void 0===m$1&&(m$1=u(a,k,w),y=u(h,x,j)),m$1.has(h[x]))if(m$1.has(h[j])){const e=y.get(a[k]),t=void 0!==e?d[e]:null;if(null===t){const e=s$1(s,d[x]);v(e,p$1[k]),v$1[k]=e;}else v$1[k]=v(t,p$1[k]),s$1(s,d[x],t),d[e]=null;k++;}else M(d[j]),j--;else M(d[x]),x++;for(;k<=w;){const e=s$1(s,v$1[w+1]);v(e,p$1[k]),v$1[k++]=e;}for(;x<=j;){const e=d[x++];null!==e&&M(e);}return this.ut=a,m(s,v$1),T}});
+const u=(e,s,t)=>{const r=new Map;for(let l=s;l<=t;l++)r.set(e[l],l);return r},c=e$2(class extends i{constructor(e){if(super(e),e.type!==t.CHILD)throw Error("repeat() can only be used in text expressions")}dt(e,s,t){let r;void 0===t?t=s:void 0!==s&&(r=s);const l=[],o=[];let i=0;for(const s of e)l[i]=r?r(s,i):i,o[i]=t(s,i),i++;return {values:o,keys:l}}render(e,s,t){return this.dt(e,s,t).values}update(s,[t,r,c]){const d=p(s),{values:p$1,keys:a}=this.dt(t,r,c);if(!Array.isArray(d))return this.ut=a,p$1;const h=this.ut??=[],v$1=[];let m$1,y,x=0,j=d.length-1,k=0,w=p$1.length-1;for(;x<=j&&k<=w;)if(null===d[x])x++;else if(null===d[j])j--;else if(h[x]===a[k])v$1[k]=v(d[x],p$1[k]),x++,k++;else if(h[j]===a[w])v$1[w]=v(d[j],p$1[w]),j--,w--;else if(h[x]===a[w])v$1[w]=v(d[x],p$1[w]),s$1(s,v$1[w+1],d[x]),x++,w--;else if(h[j]===a[k])v$1[k]=v(d[j],p$1[k]),s$1(s,d[x],d[j]),j--,k++;else if(void 0===m$1&&(m$1=u(a,k,w),y=u(h,x,j)),m$1.has(h[x]))if(m$1.has(h[j])){const e=y.get(a[k]),t=void 0!==e?d[e]:null;if(null===t){const e=s$1(s,d[x]);v(e,p$1[k]),v$1[k]=e;}else v$1[k]=v(t,p$1[k]),s$1(s,d[x],t),d[e]=null;k++;}else M(d[j]),j--;else M(d[x]),x++;for(;k<=w;){const e=s$1(s,v$1[w+1]);v(e,p$1[k]),v$1[k++]=e;}for(;x<=j;){const e=d[x++];null!==e&&M(e);}return this.ut=a,m(s,v$1),T}});
 
 let GrowspaceGrid = class GrowspaceGrid extends i$2 {
     constructor() {
@@ -18929,27 +18941,50 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
         this.activeEnvGraphs = new Set();
         this.linkedGraphGroups = [];
         this.range = '24h';
+        this._itemsToRender = [];
+        this._sensorHistory = {};
     }
-    render() {
-        if (this.activeEnvGraphs.size === 0)
-            return x ``;
-        if (!this.device)
-            return x ``;
-        // Helper to get sort index for a metric
+    willUpdate(changedProperties) {
+        if (changedProperties.has('activeEnvGraphs') || changedProperties.has('linkedGraphGroups')) {
+            this._computeItemsToRender();
+        }
+        if (changedProperties.has('temperatureHistory') || changedProperties.has('humidityHistory') ||
+            changedProperties.has('vpdHistory') || changedProperties.has('co2History') ||
+            changedProperties.has('dehumidifierHistory') || changedProperties.has('exhaustHistory') ||
+            changedProperties.has('humidifierHistory') || changedProperties.has('circulationFanHistory') ||
+            changedProperties.has('soilMoistureHistory') || changedProperties.has('lightHistory') ||
+            changedProperties.has('irrigationHistory') || changedProperties.has('drainHistory') ||
+            changedProperties.has('optimalHistory')) {
+            this._sensorHistory = {
+                temperature: this.temperatureHistory || [],
+                humidity: this.humidityHistory || [],
+                vpd: this.vpdHistory || [],
+                co2: this.co2History || [],
+                dehumidifier: this.dehumidifierHistory || [],
+                exhaust: this.exhaustHistory || [],
+                humidifier: this.humidifierHistory || [],
+                circulation_fan: this.circulationFanHistory || [],
+                soil_moisture: this.soilMoistureHistory || [],
+                light: this.lightHistory || [],
+                irrigation: this.irrigationHistory || [],
+                drain: this.drainHistory || [],
+                optimal: this.optimalHistory || []
+            };
+        }
+    }
+    _computeItemsToRender() {
         const getSortIndex = (metric) => {
             const index = METRIC_SORT_ORDER.indexOf(metric);
             return index !== -1 ? index : 999;
         };
-        // 1. Collect all items to render
-        const itemsToRender = [];
+        const items = [];
         const processedMetrics = new Set();
         // Process Linked Groups
         this.linkedGraphGroups.forEach(group => {
             const activeMetricsInGroup = group.filter(m => this.activeEnvGraphs.has(m));
             if (activeMetricsInGroup.length > 0) {
-                // Sort index based on highest priority (lowest index) metric
                 const minIndex = Math.min(...activeMetricsInGroup.map(getSortIndex));
-                itemsToRender.push({
+                items.push({
                     type: 'group',
                     metrics: activeMetricsInGroup,
                     sortIndex: minIndex
@@ -18960,44 +18995,33 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
         // Process Individual Metrics
         this.activeEnvGraphs.forEach(metric => {
             if (!processedMetrics.has(metric)) {
-                itemsToRender.push({
+                items.push({
                     type: 'single',
                     metrics: [metric],
                     sortIndex: getSortIndex(metric)
                 });
             }
         });
-        itemsToRender.sort((a, b) => a.sortIndex - b.sortIndex);
-        const sensorHistory = {
-            temperature: this.temperatureHistory || [],
-            humidity: this.humidityHistory || [],
-            vpd: this.vpdHistory || [],
-            co2: this.co2History || [],
-            dehumidifier: this.dehumidifierHistory || [],
-            exhaust: this.exhaustHistory || [],
-            humidifier: this.humidifierHistory || [],
-            circulation_fan: this.circulationFanHistory || [],
-            soil_moisture: this.soilMoistureHistory || [],
-            light: this.lightHistory || [],
-            irrigation: this.irrigationHistory || [],
-            drain: this.drainHistory || [],
-            optimal: this.optimalHistory || []
-        };
-        // Add raw history data as fallback if needed or mapped
-        // Use repeat directive for efficient DOM updates when sorting/filtering changes
-        const graphs = c(itemsToRender, 
+        items.sort((a, b) => a.sortIndex - b.sortIndex);
+        this._itemsToRender = items;
+    }
+    render() {
+        if (this.activeEnvGraphs.size === 0)
+            return x ``;
+        if (!this.device)
+            return x ``;
+        const graphs = c(this._itemsToRender, 
         // Key function: Unique ID for the item
         (item) => item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`, 
         // Render function
         (item) => {
             if (item.type === 'group') {
-                const activeMetrics = item.metrics;
                 return x `
               <growspace-env-chart
                   .hass=${this.hass}
                   .device=${this.device}
-                  .sensorHistory=${sensorHistory}
-                  .metrics=${activeMetrics}
+                  .sensorHistory=${this._sensorHistory}
+                  .metrics=${item.metrics}
                   .isCombined=${true}
                   .metricConfig=${METRIC_CONFIG}
                   .range=${this.range}
@@ -19014,7 +19038,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
           <growspace-env-chart
               .hass=${this.hass}
               .device=${this.device}
-              .sensorHistory=${sensorHistory}
+              .sensorHistory=${this._sensorHistory}
               .metricKey=${metric}
               .unit=${config.unit}
               .color=${config.color}
@@ -19154,6 +19178,14 @@ __decorate([
     n$4({ type: String }),
     __metadata("design:type", String)
 ], GrowspaceAnalytics.prototype, "range", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Array)
+], GrowspaceAnalytics.prototype, "_itemsToRender", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspaceAnalytics.prototype, "_sensorHistory", void 0);
 GrowspaceAnalytics = __decorate([
     t$2('growspace-analytics')
 ], GrowspaceAnalytics);
@@ -20816,12 +20848,12 @@ GrowspaceManagerCard.styles = [
     growspaceCardStyles
 ];
 __decorate([
-    e$2({ context: hassContext }),
+    e$3({ context: hassContext }),
     n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCard.prototype, "hass", void 0);
 __decorate([
-    e$2({ context: configContext }),
+    e$3({ context: configContext }),
     n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCard.prototype, "_config", void 0);

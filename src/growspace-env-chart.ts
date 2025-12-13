@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { mdiMagnify, mdiLink, mdiChevronLeft, mdiChevronRight } from '@mdi/js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
+import { classMap } from 'lit/directives/class-map.js';
 import { GrowspaceDevice, GraphSeries } from './types';
 import { GraphDataTransformer } from './graph-data-transformer';
 import { SENSOR_CHART_DEFAULTS, METRIC_CONFIG } from './constants';
@@ -48,7 +49,7 @@ export class GrowspaceEnvChart extends LitElement {
     @property({ type: Boolean }) isCombined = false;
     @property({ type: Object }) metricConfig: Record<string, { color: string, title: string, unit: string, icon?: string }> = {};
 
-    @state() private _tooltip: { id: string; x: number; time: string; value: string } | null = null;
+    @state() private _tooltip: { id: string; x: number; time: string; items: { title: string; value: string; color: string }[] } | null = null;
     @state() private _hoverTime: number | null = null;
     @state() private _canScrollLeft = false;
     @state() private _canScrollRight = false;
@@ -280,7 +281,7 @@ export class GrowspaceEnvChart extends LitElement {
                      @mousemove=${(e: MouseEvent) => this._handleGraphHover(e, series, startTime, durationMillis, width)}
                      @mouseleave=${() => { this._tooltip = null; this._hoverTime = null; }}>
                     
-                    ${this._renderTooltip(series)}
+                    ${this._renderTooltip()}
                     ${!this.isCombined ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit) : ''}
                     ${this._renderXAxisHTML(this.range)}
                     
@@ -360,9 +361,13 @@ export class GrowspaceEnvChart extends LitElement {
                     </div>
                     ` : ''}
                     
-                    <div class="chips-scroll-container" ${ref(this._chipsContainerRef)} @click=${(e: Event) => e.stopPropagation()}>
+                        <div class="chips-scroll-container" ${ref(this._chipsContainerRef)} @click=${(e: Event) => e.stopPropagation()}>
                         ${seriesList.map(s => html`
-                            <div class="gs-legend-item ${this._canScrollLeft ? 'mask-left' : ''} ${this._canScrollRight ? 'mask-right' : ''}" @click=${(e: Event) => { e.stopPropagation(); this.dispatchEvent(new UnlinkGraphMetricEvent(s.id)); }}>
+                            <div class=${classMap({
+            'gs-legend-item': true,
+            'mask-left': this._canScrollLeft,
+            'mask-right': this._canScrollRight
+        })} @click=${(e: Event) => { e.stopPropagation(); this.dispatchEvent(new UnlinkGraphMetricEvent(s.id)); }}>
                                 <span style="display:inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${s.color}; margin-right: 6px; flex-shrink: 0;"></span>
                                 ${s.icon ? html`
                                 <div style="width: 16px; height: 16px; color: ${s.color}; margin-right: 4px; display: inline-flex;">
@@ -410,69 +415,17 @@ export class GrowspaceEnvChart extends LitElement {
 
         const hoverTime = startTime.getTime() + relX * durationMillis;
 
-        // Find closest points
-        // For tooltip, we just need to reconstruct the "Value at this time"
-        // Since we have multiple series, we show them all.
-
-        // Construct simple tooltip state
-        // We can just store raw data and let renderTooltip handle format
-        // Reusing _tooltip state object structure:
-
-        // Find closest point for primary series or just generic time
-        const locale = this.hass?.locale?.language || undefined;
-        const timeStr = new Date(hoverTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-
-        this._tooltip = {
-            id: 'hover',
-            x: e.clientX - rect.left, // Relative to container for positioning
-            time: timeStr,
-            value: '' // Will be generated in render
-        };
-
-        // Attach ephemeral data for render loop?
-        // Lit state update triggers render.
-        // We'll pass the 'hoverTime' to _renderTooltip via a property or just re-calculate it?
-        // Ideally we store 'hoverIndex' or 'hoverTime' in state.
-        this._hoverTime = hoverTime; // Use the new state property
-    }
-
-    private _renderTooltip(seriesList: GraphSeries[]) {
-        if (!this._tooltip || this._hoverTime === null) return html``;
-
-        const hoverTime = this._hoverTime;
-
+        // Find closest points and format values here
         const items = seriesList.map(s => {
-            // Find closest point using binary search
+            // Binary search (nearest neighbor)
             const searchTime = hoverTime;
             let closest = s.points[0];
             let minDiff = Number.MAX_VALUE;
 
-            // Binary search
-            let low = 0;
-            let high = s.points.length - 1;
+            let lo = 0;
+            let hi = s.points.length - 1;
 
             if (s.points.length > 0) {
-                while (low <= high) {
-                    const mid = Math.floor((low + high) / 2);
-                    const p = s.points[mid];
-                    const diff = Math.abs(p.time - searchTime);
-
-                    if (diff < minDiff) {
-                        minDiff = diff;
-                        closest = p;
-                    }
-
-                    if (p.time < searchTime) {
-                        low = mid + 1;
-                    } else {
-                        high = mid - 1;
-                    }
-                }
-                // After binary search, check headers to ensure we got the absolute closest (since we return strictly on range but nearest neighbor is better)
-                // Or simple approach: Binary search to find insertion point, then check neighbors.
-                // Re-implementation of nearest neighbor binary search:
-                let lo = 0;
-                let hi = s.points.length - 1;
                 while (lo < hi) {
                     const mid = Math.floor((lo + hi) / 2);
                     if (s.points[mid].time < searchTime) {
@@ -481,7 +434,6 @@ export class GrowspaceEnvChart extends LitElement {
                         hi = mid;
                     }
                 }
-                // lo is the candidate index >= searchTime. check lo and lo-1
                 const candidates = [lo, lo - 1, lo + 1].filter(i => i >= 0 && i < s.points.length);
                 candidates.forEach(i => {
                     const p = s.points[i];
@@ -493,40 +445,55 @@ export class GrowspaceEnvChart extends LitElement {
                 });
             }
 
-            return { series: s, point: closest };
+            // Format Value
+            const defaults = SENSOR_CHART_DEFAULTS[s.id];
+            const isBinary = defaults?.binary === true || (s.unit === 'state' && defaults?.max === undefined) || s.id === 'optimal' || s.id === 'dehumidifier';
+
+            let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
+
+            if (isBinary) {
+                if (s.id === 'optimal') {
+                    if (closest.value === 1) valStr = 'Optimal';
+                    else valStr = closest.meta?.reasons || 'Not Optimal';
+                } else if (s.id === 'dehumidifier') {
+                    valStr = closest.value === 1 ? 'ON' : 'OFF';
+                } else {
+                    valStr = closest.value === 1 ? 'ON' : 'OFF';
+                }
+            } else if ((s.id === 'exhaust' || s.id === 'humidifier') && closest.meta?.state) {
+                valStr = closest.meta.state;
+            }
+
+            return { title: s.title, value: valStr, color: s.color };
         });
+
+
+        const locale = this.hass?.locale?.language || undefined;
+        const timeStr = new Date(hoverTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+
+        this._tooltip = {
+            id: 'hover',
+            x: e.clientX - rect.left,
+            time: timeStr,
+            items: items
+        };
+        this._hoverTime = hoverTime;
+    }
+
+    private _renderTooltip() {
+        if (!this._tooltip) return html``;
 
         return html`
             <div class="gs-tooltip" style="left: ${this._tooltip.x}px; top: 0;">
                 <div style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 2px;">
                     ${this._tooltip.time}
                 </div>
-                ${items.map(i => {
-            const defaults = SENSOR_CHART_DEFAULTS[i.series.id];
-            const isBinary = defaults?.binary === true || (i.series.unit === 'state' && defaults?.max === undefined) || i.series.id === 'optimal' || i.series.id === 'dehumidifier';
-
-            let valStr = `${i.point.value.toFixed(1)} ${i.series.unit}`;
-
-            if (isBinary) {
-                if (i.series.id === 'optimal') {
-                    if (i.point.value === 1) valStr = 'Optimal';
-                    else valStr = i.point.meta?.reasons || 'Not Optimal';
-                } else if (i.series.id === 'dehumidifier') {
-                    valStr = i.point.value === 1 ? 'ON' : 'OFF';
-                } else {
-                    valStr = i.point.value === 1 ? 'ON' : 'OFF';
-                }
-            } else if ((i.series.id === 'exhaust' || i.series.id === 'humidifier') && i.point.meta?.state) {
-                valStr = i.point.meta.state;
-            }
-
-            return html`
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px;">
-                             <span style="color: ${i.series.color};">${i.series.title}:</span>
-                             <span style="font-family: monospace; font-weight: bold;">${valStr}</span>
-                        </div>
-                    `;
-        })}
+                ${this._tooltip.items.map(i => html`
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px;">
+                            <span style="color: ${i.color};">${i.title}:</span>
+                            <span style="font-family: monospace; font-weight: bold;">${i.value}</span>
+                    </div>
+                `)}
             </div>
             <!-- Cursor Line -->
              <div class="gs-cursor-line" style="left: ${this._tooltip.x}px; height: 100%; top: 0; position: absolute; border-left: 1px dashed rgba(255,255,255,0.3); pointer-events: none;"></div>

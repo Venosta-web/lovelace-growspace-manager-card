@@ -28,6 +28,7 @@ import {
   mdiChevronRight,
 } from '@mdi/js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
+import { classMap } from 'lit/directives/class-map.js';
 import './growspace-chip'; // Import the new component
 import { consume } from '@lit/context';
 import { hassContext, configContext } from '../context';
@@ -63,6 +64,13 @@ export class GrowspaceHeader extends LitElement {
   @property({ attribute: false }) public linkedGraphGroups: string[][] = [];
   @state() private _draggedMetric: string | null = null;
 
+  // Cached Metric Data
+  @state() private _mainChips: any[] = [];
+  @state() private _deviceChips: any[] = [];
+  @state() private _dominant: any = undefined;
+  @state() private _envAttrs: any = {};
+
+
 
   @state() private _canScrollLeft = false;
   @state() private _canScrollRight = false;
@@ -82,8 +90,8 @@ export class GrowspaceHeader extends LitElement {
     return undefined;
   }
 
-  private _computeMetrics() {
-    if (!this.device || !this.hass) return { mainChips: [], deviceChips: [], dominant: undefined, growspaceOptions: this.growspaceOptions, envAttrs: {} };
+  private _computeMetrics(): { mainChips: any[]; deviceChips: any[]; dominant: any; envAttrs: any } {
+    if (!this.device || !this.hass) return { mainChips: [], deviceChips: [], dominant: undefined, envAttrs: {} };
 
     const dominant = PlantUtils.getDominantStage(this.device.plants);
 
@@ -241,6 +249,22 @@ export class GrowspaceHeader extends LitElement {
       this._canScrollRight = container.scrollLeft < (container.scrollWidth - container.clientWidth - 1);
     }
   }
+  protected willUpdate(changedProperties: Map<string, any>) {
+    if (changedProperties.has('device') || changedProperties.has('hass') || changedProperties.has('activeEnvGraphs') || changedProperties.has('linkedGraphGroups')) {
+      const { mainChips, deviceChips, dominant, envAttrs } = this._computeMetrics();
+      this._mainChips = mainChips;
+      this._deviceChips = deviceChips;
+      this._dominant = dominant;
+      this._envAttrs = envAttrs;
+    }
+  }
+
+  updated(changedProps: Map<string, any>) {
+    if (changedProps.has('activeEnvGraphs') || changedProps.has('linkedGraphGroups') || changedProps.has('device')) {
+      // Content might change size
+      setTimeout(() => this._checkScroll(), 0);
+    }
+  }
 
   firstUpdated() {
     const container = this._chipsContainerRef.value;
@@ -248,14 +272,8 @@ export class GrowspaceHeader extends LitElement {
       container.addEventListener('scroll', () => this._checkScroll());
       this._resizeObserver = new ResizeObserver(() => this._checkScroll());
       this._resizeObserver.observe(container);
-      // Also observe children changes if possible, or just re-check on update
-      setTimeout(() => this._checkScroll(), 100);
-    }
-  }
 
-  updated(changedProps: Map<string, any>) {
-    if (changedProps.has('activeEnvGraphs') || changedProps.has('linkedGraphGroups') || changedProps.has('device')) {
-      // Content might change size
+      // Initial check
       setTimeout(() => this._checkScroll(), 0);
     }
   }
@@ -825,7 +843,8 @@ export class GrowspaceHeader extends LitElement {
   render() {
     if (!this.device || !this.hass) return html``;
 
-    const { mainChips, deviceChips, dominant, envAttrs } = this._computeMetrics();
+    const dominant = this._dominant;
+    const envAttrs = this._envAttrs;
 
     return html`
       <div class="gs-stats-container">
@@ -856,7 +875,7 @@ export class GrowspaceHeader extends LitElement {
           <div class="header-controls-container" style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
             <div class="header-controls">
               
-              <div class="mobile-link-btn ${this._mobileLink ? 'active' : ''}"
+              <div class=${classMap({ 'mobile-link-btn': true, 'active': this._mobileLink })}
                    @click=${() => this._mobileLink = !this._mobileLink}>
                  <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
               </div>
@@ -866,8 +885,13 @@ export class GrowspaceHeader extends LitElement {
                     <div class="scroll-nav left" @click=${() => this._scrollChips('left')}><svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg></div>
                 ` : ''}
                 
-                <div class="gs-stats-chips ${this._mobileLink ? 'mobile-link-active' : ''} ${this._canScrollLeft ? 'mask-left' : ''} ${this._canScrollRight ? 'mask-right' : ''}" ${ref(this._chipsContainerRef)}>
-                  ${mainChips.map(chip => html`
+                <div class=${classMap({
+      'gs-stats-chips': true,
+      'mobile-link-active': this._mobileLink,
+      'mask-left': this._canScrollLeft,
+      'mask-right': this._canScrollRight
+    })} ${ref(this._chipsContainerRef)}>
+                  ${this._mainChips.map(chip => html`
                     <growspace-chip
                         .icon=${chip.icon}
                         .label=${chip.label || ''}
@@ -907,17 +931,17 @@ export class GrowspaceHeader extends LitElement {
                     <div class="menu-item" @click=${() => this._triggerAction('edit')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
                       <span class="menu-item-label">Edit</span>
-                      <div class="menu-toggle-switch ${this.isEditMode ? 'active' : ''}"></div>
+                      <div class=${classMap({ 'menu-toggle-switch': true, 'active': this.isEditMode })}></div>
                     </div>
                     <div class="menu-item" @click=${() => this._triggerAction('compact')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
                       <span class="menu-item-label">Compact View</span>
-                      <div class="menu-toggle-switch ${this.compact ? 'active' : ''}"></div>
+                      <div class=${classMap({ 'menu-toggle-switch': true, 'active': this.compact })}></div>
                     </div>
                     <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
                       <span class="menu-item-label">Control Dehumidifier</span>
-                      <div class="menu-toggle-switch ${envAttrs.dehumidifier_control_enabled ? 'active' : ''}"></div>
+                      <div class=${classMap({ 'menu-toggle-switch': true, 'active': !!envAttrs.dehumidifier_control_enabled })}></div>
                     </div>
                     <div class="menu-item" @click=${() => this._triggerAction('strains')}>
                       <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
@@ -940,8 +964,8 @@ export class GrowspaceHeader extends LitElement {
               </div>
             </div>
 
-            <div class="gs-device-chips ${this._mobileLink ? 'mobile-link-active' : ''}">
-              ${deviceChips.map(chip => html`
+            <div class=${classMap({ 'gs-device-chips': true, 'mobile-link-active': this._mobileLink })}>
+              ${this._deviceChips.map(chip => html`
                     <growspace-chip
                         .icon=${chip.icon}
                         .label=${chip.label || ''}

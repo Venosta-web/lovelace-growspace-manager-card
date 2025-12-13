@@ -1,6 +1,6 @@
 import { LitElement, html, css, PropertyValues, TemplateResult } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice } from '../types';
 import { RangeChangeEvent } from '../events';
@@ -50,18 +50,52 @@ export class GrowspaceAnalytics extends LitElement {
     `
     ];
 
-    protected render(): TemplateResult {
-        if (this.activeEnvGraphs.size === 0) return html``;
-        if (!this.device) return html``;
+    @state() private _itemsToRender: {
+        type: 'group' | 'single';
+        metrics: string[];
+        sortIndex: number;
+    }[] = [];
 
-        // Helper to get sort index for a metric
+    @state() private _sensorHistory: any = {};
+
+    protected willUpdate(changedProperties: PropertyValues) {
+        if (changedProperties.has('activeEnvGraphs') || changedProperties.has('linkedGraphGroups')) {
+            this._computeItemsToRender();
+        }
+
+        if (changedProperties.has('temperatureHistory') || changedProperties.has('humidityHistory') ||
+            changedProperties.has('vpdHistory') || changedProperties.has('co2History') ||
+            changedProperties.has('dehumidifierHistory') || changedProperties.has('exhaustHistory') ||
+            changedProperties.has('humidifierHistory') || changedProperties.has('circulationFanHistory') ||
+            changedProperties.has('soilMoistureHistory') || changedProperties.has('lightHistory') ||
+            changedProperties.has('irrigationHistory') || changedProperties.has('drainHistory') ||
+            changedProperties.has('optimalHistory')) {
+
+            this._sensorHistory = {
+                temperature: this.temperatureHistory || [],
+                humidity: this.humidityHistory || [],
+                vpd: this.vpdHistory || [],
+                co2: this.co2History || [],
+                dehumidifier: this.dehumidifierHistory || [],
+                exhaust: this.exhaustHistory || [],
+                humidifier: this.humidifierHistory || [],
+                circulation_fan: this.circulationFanHistory || [],
+                soil_moisture: this.soilMoistureHistory || [],
+                light: this.lightHistory || [],
+                irrigation: this.irrigationHistory || [],
+                drain: this.drainHistory || [],
+                optimal: this.optimalHistory || []
+            };
+        }
+    }
+
+    private _computeItemsToRender() {
         const getSortIndex = (metric: string): number => {
             const index = METRIC_SORT_ORDER.indexOf(metric);
             return index !== -1 ? index : 999;
         };
 
-        // 1. Collect all items to render
-        const itemsToRender: {
+        const items: {
             type: 'group' | 'single';
             metrics: string[];
             sortIndex: number;
@@ -73,9 +107,8 @@ export class GrowspaceAnalytics extends LitElement {
         this.linkedGraphGroups.forEach(group => {
             const activeMetricsInGroup = group.filter(m => this.activeEnvGraphs.has(m));
             if (activeMetricsInGroup.length > 0) {
-                // Sort index based on highest priority (lowest index) metric
                 const minIndex = Math.min(...activeMetricsInGroup.map(getSortIndex));
-                itemsToRender.push({
+                items.push({
                     type: 'group',
                     metrics: activeMetricsInGroup,
                     sortIndex: minIndex
@@ -87,7 +120,7 @@ export class GrowspaceAnalytics extends LitElement {
         // Process Individual Metrics
         this.activeEnvGraphs.forEach(metric => {
             if (!processedMetrics.has(metric)) {
-                itemsToRender.push({
+                items.push({
                     type: 'single',
                     metrics: [metric],
                     sortIndex: getSortIndex(metric)
@@ -95,39 +128,27 @@ export class GrowspaceAnalytics extends LitElement {
             }
         });
 
-        itemsToRender.sort((a, b) => a.sortIndex - b.sortIndex);
+        items.sort((a, b) => a.sortIndex - b.sortIndex);
+        this._itemsToRender = items;
+    }
 
-        const sensorHistory = {
-            temperature: this.temperatureHistory || [],
-            humidity: this.humidityHistory || [],
-            vpd: this.vpdHistory || [],
-            co2: this.co2History || [],
-            dehumidifier: this.dehumidifierHistory || [],
-            exhaust: this.exhaustHistory || [],
-            humidifier: this.humidifierHistory || [],
-            circulation_fan: this.circulationFanHistory || [],
-            soil_moisture: this.soilMoistureHistory || [],
-            light: this.lightHistory || [],
-            irrigation: this.irrigationHistory || [],
-            drain: this.drainHistory || [],
-            optimal: this.optimalHistory || []
-        };
-        // Add raw history data as fallback if needed or mapped
-        // Use repeat directive for efficient DOM updates when sorting/filtering changes
+    protected render(): TemplateResult {
+        if (this.activeEnvGraphs.size === 0) return html``;
+        if (!this.device) return html``;
+
         const graphs = repeat(
-            itemsToRender,
+            this._itemsToRender,
             // Key function: Unique ID for the item
             (item) => item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`,
             // Render function
             (item) => {
                 if (item.type === 'group') {
-                    const activeMetrics = item.metrics;
                     return html`
               <growspace-env-chart
                   .hass=${this.hass}
                   .device=${this.device}
-                  .sensorHistory=${sensorHistory}
-                  .metrics=${activeMetrics}
+                  .sensorHistory=${this._sensorHistory}
+                  .metrics=${item.metrics}
                   .isCombined=${true}
                   .metricConfig=${METRIC_CONFIG}
                   .range=${this.range}
@@ -144,7 +165,7 @@ export class GrowspaceAnalytics extends LitElement {
           <growspace-env-chart
               .hass=${this.hass}
               .device=${this.device}
-              .sensorHistory=${sensorHistory}
+              .sensorHistory=${this._sensorHistory}
               .metricKey=${metric}
               .unit=${config.unit}
               .color=${config.color}
