@@ -1282,26 +1282,26 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
  * Copyright 2019 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t$4=globalThis,e$5=t$4.ShadowRoot&&(void 0===t$4.ShadyCSS||t$4.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$7=Symbol(),o$4=new WeakMap;class n$5{constructor(t,e,o){if(this._$cssResult$=!0,o!==s$7)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$5&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$4.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$4.set(s,t));}return t}toString(){return this.cssText}}const r$5=t=>new n$5("string"==typeof t?t:t+"",void 0,s$7),i$5=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$5(o,t,s$7)},S$1=(s,o)=>{if(e$5)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$4.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$4=e$5?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$5(e)})(t):t;
+const t$4=globalThis,e$6=t$4.ShadowRoot&&(void 0===t$4.ShadyCSS||t$4.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$8=Symbol(),o$6=new WeakMap;class n$7{constructor(t,e,o){if(this._$cssResult$=!0,o!==s$8)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$6&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$6.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$6.set(s,t));}return t}toString(){return this.cssText}}const r$6=t=>new n$7("string"==typeof t?t:t+"",void 0,s$8),i$5=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$7(o,t,s$8)},S$1=(s,o)=>{if(e$6)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$4.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$5=e$6?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$6(e)})(t):t;
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const{is:i$4,defineProperty:e$4,getOwnPropertyDescriptor:h$1,getOwnPropertyNames:r$4,getOwnPropertySymbols:o$3,getPrototypeOf:n$4}=Object,a$1=globalThis,c$3=a$1.trustedTypes,l$2=c$3?c$3.emptyScript:"",p$2=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$3={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$1=(t,s)=>!i$4(t,s),b$1={attribute:!0,type:String,converter:u$3,reflect:!1,useDefault:!1,hasChanged:f$1};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;class y$1 extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=!0),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$4(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$1(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$4(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$4(t),...o$3(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$4(s));}else void 0!==s&&i.push(c$4(s));return i}static _$Eu(t,s){const i=s.attribute;return !1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&!0===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$3).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$3;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$1)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);}!1===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),!0!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),!0===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=!0;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];!0!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=!1;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=!1,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return !0}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}}y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$2?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
+ */const{is:i$4,defineProperty:e$5,getOwnPropertyDescriptor:h$3,getOwnPropertyNames:r$5,getOwnPropertySymbols:o$5,getPrototypeOf:n$6}=Object,a$1=globalThis,c$4=a$1.trustedTypes,l$2=c$4?c$4.emptyScript:"",p$2=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$3={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$3=(t,s)=>!i$4(t,s),b$1={attribute:!0,type:String,converter:u$3,reflect:!1,useDefault:!1,hasChanged:f$3};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;class y$1 extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=!0),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$5(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$3(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$6(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$5(t),...o$5(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$5(s));}else void 0!==s&&i.push(c$5(s));return i}static _$Eu(t,s){const i=s.attribute;return !1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&!0===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$3).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$3;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$3)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);}!1===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),!0!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),!0===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=!0;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];!0!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=!1;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=!1,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return !0}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}}y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$2?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t$3=globalThis,i$3=t$3.trustedTypes,s$6=i$3?i$3.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$3="$lit$",h=`lit$${Math.random().toFixed(9).slice(2)}$`,o$2="?"+h,n$3=`<${o$2}>`,r$3=document,l$1=()=>r$3.createComment(""),c$2=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u$2=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v$1=/-->/g,_=/>/g,m$1=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p$1=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$3.createTreeWalker(r$3,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$6?s$6.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f?"!--"===u[1]?c=v$1:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m$1):void 0!==u[3]&&(c=m$1):c===m$1?">"===u[0]?(c=r??f,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m$1:'"'===u[3]?g:p$1):c===g||c===p$1?c=m$1:c===v$1||c===_?c=f:(c=m$1,r=void 0);const x=c===m$1&&t[i+1].startsWith("/>")?" ":"";l+=c===f?s+n$3:d>=0?(o.push(a),s.slice(0,d)+e$3+s.slice(d)+h+x):s+h+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e$3)){const i=v[a++],s=r.getAttribute(t).split(h),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h),s=t.length-1;if(s>0){r.textContent=i$3?i$3.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$2)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h,t+1));)d.push({type:7,index:c}),t+=h.length-1;}c++;}}static createElement(t,i){const s=r$3.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c$2(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(!1),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}class M$1{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$3).importNode(i,!0);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$3,e}p(t){let i=0;for(const s of this._$AV)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??!0;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c$2(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u$2(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c$2(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$3.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M$1(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(!1,!0,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=!1;if(void 0===h)t=S(this,t,i,0),o=!c$2(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c$2(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const Z={M:e$3,P:h,A:o$2,C:1,L:V,R:M$1,D:u$2,V:S,I:R,H:k,N:I,U:L,B:H,F:z},j=t$3.litHtmlPolyfillSupport;j?.(N,R),(t$3.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
+const t$3=globalThis,i$3=t$3.trustedTypes,s$7=i$3?i$3.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$4="$lit$",h$2=`lit$${Math.random().toFixed(9).slice(2)}$`,o$4="?"+h$2,n$5=`<${o$4}>`,r$4=document,l$1=()=>r$4.createComment(""),c$3=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u$2=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f$2=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v$1=/-->/g,_=/>/g,m$1=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p$1=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$4.createTreeWalker(r$4,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$7?s$7.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f$2;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f$2?"!--"===u[1]?c=v$1:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m$1):void 0!==u[3]&&(c=m$1):c===m$1?">"===u[0]?(c=r??f$2,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m$1:'"'===u[3]?g:p$1):c===g||c===p$1?c=m$1:c===v$1||c===_?c=f$2:(c=m$1,r=void 0);const x=c===m$1&&t[i+1].startsWith("/>")?" ":"";l+=c===f$2?s+n$5:d>=0?(o.push(a),s.slice(0,d)+e$4+s.slice(d)+h$2+x):s+h$2+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e$4)){const i=v[a++],s=r.getAttribute(t).split(h$2),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h$2)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h$2),s=t.length-1;if(s>0){r.textContent=i$3?i$3.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$4)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h$2,t+1));)d.push({type:7,index:c}),t+=h$2.length-1;}c++;}}static createElement(t,i){const s=r$4.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c$3(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(!1),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}class M$1{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$4).importNode(i,!0);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$4,e}p(t){let i=0;for(const s of this._$AV)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??!0;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c$3(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u$2(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c$3(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$4.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M$1(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(!1,!0,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=!1;if(void 0===h)t=S(this,t,i,0),o=!c$3(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c$3(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const Z={M:e$4,P:h$2,A:o$4,C:1,L:V,R:M$1,D:u$2,V:S,I:R,H:k,N:I,U:L,B:H,F:z},j=t$3.litHtmlPolyfillSupport;j?.(N,R),(t$3.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const s$5=globalThis;class i$2 extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=B(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1);}render(){return T}}i$2._$litElement$=!0,i$2["finalized"]=!0,s$5.litElementHydrateSupport?.({LitElement:i$2});const o$1=s$5.litElementPolyfillSupport;o$1?.({LitElement:i$2});(s$5.litElementVersions??=[]).push("4.2.1");
+ */const s$6=globalThis;class i$2 extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=B(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1);}render(){return T}}i$2._$litElement$=!0,i$2["finalized"]=!0,s$6.litElementHydrateSupport?.({LitElement:i$2});const o$3=s$6.litElementPolyfillSupport;o$3?.({LitElement:i$2});(s$6.litElementVersions??=[]).push("4.2.1");
 
 /**
  * @license
@@ -1314,61 +1314,61 @@ const t$2=t=>(e,o)=>{void 0!==o?o.addInitializer((()=>{customElements.define(t,e
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const o={attribute:!0,type:String,converter:u$3,reflect:!1,hasChanged:f$1},r$2=(t=o,e,r)=>{const{kind:n,metadata:i}=r;let s=globalThis.litPropertyMetadata.get(i);if(void 0===s&&globalThis.litPropertyMetadata.set(i,s=new Map),"setter"===n&&((t=Object.create(t)).wrapped=!0),s.set(r.name,t),"accessor"===n){const{name:o}=r;return {set(r){const n=e.get.call(this);e.set.call(this,r),this.requestUpdate(o,n,t);},init(e){return void 0!==e&&this.C(o,void 0,t,e),e}}}if("setter"===n){const{name:o}=r;return function(r){const n=this[o];e.call(this,r),this.requestUpdate(o,n,t);}}throw Error("Unsupported decorator location: "+n)};function n$2(t){return (e,o)=>"object"==typeof o?r$2(t,e,o):((t,e,o)=>{const r=e.hasOwnProperty(o);return e.constructor.createProperty(o,t),r?Object.getOwnPropertyDescriptor(e,o):void 0})(t,e,o)}
+ */const o$2={attribute:!0,type:String,converter:u$3,reflect:!1,hasChanged:f$3},r$3=(t=o$2,e,r)=>{const{kind:n,metadata:i}=r;let s=globalThis.litPropertyMetadata.get(i);if(void 0===s&&globalThis.litPropertyMetadata.set(i,s=new Map),"setter"===n&&((t=Object.create(t)).wrapped=!0),s.set(r.name,t),"accessor"===n){const{name:o}=r;return {set(r){const n=e.get.call(this);e.set.call(this,r),this.requestUpdate(o,n,t);},init(e){return void 0!==e&&this.C(o,void 0,t,e),e}}}if("setter"===n){const{name:o}=r;return function(r){const n=this[o];e.call(this,r),this.requestUpdate(o,n,t);}}throw Error("Unsupported decorator location: "+n)};function n$4(t){return (e,o)=>"object"==typeof o?r$3(t,e,o):((t,e,o)=>{const r=e.hasOwnProperty(o);return e.constructor.createProperty(o,t),r?Object.getOwnPropertyDescriptor(e,o):void 0})(t,e,o)}
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */function r$1(r){return n$2({...r,state:!0,attribute:!1})}
+ */function r$2(r){return n$4({...r,state:!0,attribute:!1})}
 
 /**
  * @license
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-class s$4 extends Event{constructor(s,t,e,o){super("context-request",{bubbles:!0,composed:!0}),this.context=s,this.contextTarget=t,this.callback=e,this.subscribe=o??!1;}}
+class s$5 extends Event{constructor(s,t,e,o){super("context-request",{bubbles:!0,composed:!0}),this.context=s,this.contextTarget=t,this.callback=e,this.subscribe=o??!1;}}
 
 /**
  * @license
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-function n$1(n){return n}
+function n$3(n){return n}
 
 /**
  * @license
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */class s$3{constructor(t,s,i,h){if(this.subscribe=!1,this.provided=!1,this.value=void 0,this.t=(t,s)=>{this.unsubscribe&&(this.unsubscribe!==s&&(this.provided=!1,this.unsubscribe()),this.subscribe||this.unsubscribe()),this.value=t,this.host.requestUpdate(),this.provided&&!this.subscribe||(this.provided=!0,this.callback&&this.callback(t,s)),this.unsubscribe=s;},this.host=t,void 0!==s.context){const t=s;this.context=t.context,this.callback=t.callback,this.subscribe=t.subscribe??!1;}else this.context=s,this.callback=i,this.subscribe=h??!1;this.host.addController(this);}hostConnected(){this.dispatchRequest();}hostDisconnected(){this.unsubscribe&&(this.unsubscribe(),this.unsubscribe=void 0);}dispatchRequest(){this.host.dispatchEvent(new s$4(this.context,this.host,this.t,this.subscribe));}}
+ */class s$4{constructor(t,s,i,h){if(this.subscribe=!1,this.provided=!1,this.value=void 0,this.t=(t,s)=>{this.unsubscribe&&(this.unsubscribe!==s&&(this.provided=!1,this.unsubscribe()),this.subscribe||this.unsubscribe()),this.value=t,this.host.requestUpdate(),this.provided&&!this.subscribe||(this.provided=!0,this.callback&&this.callback(t,s)),this.unsubscribe=s;},this.host=t,void 0!==s.context){const t=s;this.context=t.context,this.callback=t.callback,this.subscribe=t.subscribe??!1;}else this.context=s,this.callback=i,this.subscribe=h??!1;this.host.addController(this);}hostConnected(){this.dispatchRequest();}hostDisconnected(){this.unsubscribe&&(this.unsubscribe(),this.unsubscribe=void 0);}dispatchRequest(){this.host.dispatchEvent(new s$5(this.context,this.host,this.t,this.subscribe));}}
 
 /**
  * @license
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-class s$2{get value(){return this.o}set value(s){this.setValue(s);}setValue(s,t=!1){const i=t||!Object.is(s,this.o);this.o=s,i&&this.updateObservers();}constructor(s){this.subscriptions=new Map,this.updateObservers=()=>{for(const[s,{disposer:t}]of this.subscriptions)s(this.o,t);},void 0!==s&&(this.value=s);}addCallback(s,t,i){if(!i)return void s(this.value);this.subscriptions.has(s)||this.subscriptions.set(s,{disposer:()=>{this.subscriptions.delete(s);},consumerHost:t});const{disposer:h}=this.subscriptions.get(s);s(this.value,h);}clearCallbacks(){this.subscriptions.clear();}}
+class s$3{get value(){return this.o}set value(s){this.setValue(s);}setValue(s,t=!1){const i=t||!Object.is(s,this.o);this.o=s,i&&this.updateObservers();}constructor(s){this.subscriptions=new Map,this.updateObservers=()=>{for(const[s,{disposer:t}]of this.subscriptions)s(this.o,t);},void 0!==s&&(this.value=s);}addCallback(s,t,i){if(!i)return void s(this.value);this.subscriptions.has(s)||this.subscriptions.set(s,{disposer:()=>{this.subscriptions.delete(s);},consumerHost:t});const{disposer:h}=this.subscriptions.get(s);s(this.value,h);}clearCallbacks(){this.subscriptions.clear();}}
 
 /**
  * @license
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */class e$2 extends Event{constructor(t,s){super("context-provider",{bubbles:!0,composed:!0}),this.context=t,this.contextTarget=s;}}class i$1 extends s$2{constructor(s,e,i){super(void 0!==e.context?e.initialValue:i),this.onContextRequest=t=>{if(t.context!==this.context)return;const s=t.contextTarget??t.composedPath()[0];s!==this.host&&(t.stopPropagation(),this.addCallback(t.callback,s,t.subscribe));},this.onProviderRequest=s=>{if(s.context!==this.context)return;if((s.contextTarget??s.composedPath()[0])===this.host)return;const e=new Set;for(const[s,{consumerHost:i}]of this.subscriptions)e.has(s)||(e.add(s),i.dispatchEvent(new s$4(this.context,i,s,!0)));s.stopPropagation();},this.host=s,void 0!==e.context?this.context=e.context:this.context=e,this.attachListeners(),this.host.addController?.(this);}attachListeners(){this.host.addEventListener("context-request",this.onContextRequest),this.host.addEventListener("context-provider",this.onProviderRequest);}hostConnected(){this.host.dispatchEvent(new e$2(this.context,this.host));}}
+ */class e$3 extends Event{constructor(t,s){super("context-provider",{bubbles:!0,composed:!0}),this.context=t,this.contextTarget=s;}}class i$1 extends s$3{constructor(s,e,i){super(void 0!==e.context?e.initialValue:i),this.onContextRequest=t=>{if(t.context!==this.context)return;const s=t.contextTarget??t.composedPath()[0];s!==this.host&&(t.stopPropagation(),this.addCallback(t.callback,s,t.subscribe));},this.onProviderRequest=s=>{if(s.context!==this.context)return;if((s.contextTarget??s.composedPath()[0])===this.host)return;const e=new Set;for(const[s,{consumerHost:i}]of this.subscriptions)e.has(s)||(e.add(s),i.dispatchEvent(new s$5(this.context,i,s,!0)));s.stopPropagation();},this.host=s,void 0!==e.context?this.context=e.context:this.context=e,this.attachListeners(),this.host.addController?.(this);}attachListeners(){this.host.addEventListener("context-request",this.onContextRequest),this.host.addEventListener("context-provider",this.onProviderRequest);}hostConnected(){this.host.dispatchEvent(new e$3(this.context,this.host));}}
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */function e$1({context:e}){return (n,i)=>{const r=new WeakMap;if("object"==typeof i)return {get(){return n.get.call(this)},set(t){return r.get(this).setValue(t),n.set.call(this,t)},init(n){return r.set(this,new i$1(this,{context:e,initialValue:n})),n}};{n.constructor.addInitializer((n=>{r.set(n,new i$1(n,{context:e}));}));const o=Object.getOwnPropertyDescriptor(n,i);let s;if(void 0===o){const t=new WeakMap;s={get(){return t.get(this)},set(e){r.get(this).setValue(e),t.set(this,e);},configurable:!0,enumerable:!0};}else {const t=o.set;s={...o,set(e){r.get(this).setValue(e),t?.call(this,e);}};}return void Object.defineProperty(n,i,s)}}}
+ */function e$2({context:e}){return (n,i)=>{const r=new WeakMap;if("object"==typeof i)return {get(){return n.get.call(this)},set(t){return r.get(this).setValue(t),n.set.call(this,t)},init(n){return r.set(this,new i$1(this,{context:e,initialValue:n})),n}};{n.constructor.addInitializer((n=>{r.set(n,new i$1(n,{context:e}));}));const o=Object.getOwnPropertyDescriptor(n,i);let s;if(void 0===o){const t=new WeakMap;s={get(){return t.get(this)},set(e){r.get(this).setValue(e),t.set(this,e);},configurable:!0,enumerable:!0};}else {const t=o.set;s={...o,set(e){r.get(this).setValue(e),t?.call(this,e);}};}return void Object.defineProperty(n,i,s)}}}
 
 /**
  * @license
  * Copyright 2022 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */function c$1({context:c,subscribe:e}){return (o,n)=>{"object"==typeof n?n.addInitializer((function(){new s$3(this,{context:c,callback:t=>{o.set.call(this,t);},subscribe:e});})):o.constructor.addInitializer((o=>{new s$3(o,{context:c,callback:t=>{o[n]=t;},subscribe:e});}));}}
+ */function c$2({context:c,subscribe:e}){return (o,n)=>{"object"==typeof n?n.addInitializer((function(){new s$4(this,{context:c,callback:t=>{o.set.call(this,t);},subscribe:e});})):o.constructor.addInitializer((o=>{new s$4(o,{context:c,callback:t=>{o[n]=t;},subscribe:e});}));}}
 
-const hassContext = n$1('hass');
-const configContext = n$1('config');
+const hassContext = n$3('hass');
+const configContext = n$3('config');
 
 // these aren't really private, but nor are they really useful to document
 
@@ -1436,176 +1436,176 @@ class ZoneIsAbstractError extends LuxonError {
  * @private
  */
 
-const n = "numeric",
-  s$1 = "short",
+const n$2 = "numeric",
+  s$2 = "short",
   l = "long";
 
 const DATE_SHORT = {
-  year: n,
-  month: n,
-  day: n,
+  year: n$2,
+  month: n$2,
+  day: n$2,
 };
 
 const DATE_MED = {
-  year: n,
-  month: s$1,
-  day: n,
+  year: n$2,
+  month: s$2,
+  day: n$2,
 };
 
 const DATE_MED_WITH_WEEKDAY = {
-  year: n,
-  month: s$1,
-  day: n,
-  weekday: s$1,
+  year: n$2,
+  month: s$2,
+  day: n$2,
+  weekday: s$2,
 };
 
 const DATE_FULL = {
-  year: n,
+  year: n$2,
   month: l,
-  day: n,
+  day: n$2,
 };
 
 const DATE_HUGE = {
-  year: n,
+  year: n$2,
   month: l,
-  day: n,
+  day: n$2,
   weekday: l,
 };
 
 const TIME_SIMPLE = {
-  hour: n,
-  minute: n,
+  hour: n$2,
+  minute: n$2,
 };
 
 const TIME_WITH_SECONDS = {
-  hour: n,
-  minute: n,
-  second: n,
+  hour: n$2,
+  minute: n$2,
+  second: n$2,
 };
 
 const TIME_WITH_SHORT_OFFSET = {
-  hour: n,
-  minute: n,
-  second: n,
-  timeZoneName: s$1,
+  hour: n$2,
+  minute: n$2,
+  second: n$2,
+  timeZoneName: s$2,
 };
 
 const TIME_WITH_LONG_OFFSET = {
-  hour: n,
-  minute: n,
-  second: n,
+  hour: n$2,
+  minute: n$2,
+  second: n$2,
   timeZoneName: l,
 };
 
 const TIME_24_SIMPLE = {
-  hour: n,
-  minute: n,
+  hour: n$2,
+  minute: n$2,
   hourCycle: "h23",
 };
 
 const TIME_24_WITH_SECONDS = {
-  hour: n,
-  minute: n,
-  second: n,
+  hour: n$2,
+  minute: n$2,
+  second: n$2,
   hourCycle: "h23",
 };
 
 const TIME_24_WITH_SHORT_OFFSET = {
-  hour: n,
-  minute: n,
-  second: n,
+  hour: n$2,
+  minute: n$2,
+  second: n$2,
   hourCycle: "h23",
-  timeZoneName: s$1,
+  timeZoneName: s$2,
 };
 
 const TIME_24_WITH_LONG_OFFSET = {
-  hour: n,
-  minute: n,
-  second: n,
+  hour: n$2,
+  minute: n$2,
+  second: n$2,
   hourCycle: "h23",
   timeZoneName: l,
 };
 
 const DATETIME_SHORT = {
-  year: n,
-  month: n,
-  day: n,
-  hour: n,
-  minute: n,
+  year: n$2,
+  month: n$2,
+  day: n$2,
+  hour: n$2,
+  minute: n$2,
 };
 
 const DATETIME_SHORT_WITH_SECONDS = {
-  year: n,
-  month: n,
-  day: n,
-  hour: n,
-  minute: n,
-  second: n,
+  year: n$2,
+  month: n$2,
+  day: n$2,
+  hour: n$2,
+  minute: n$2,
+  second: n$2,
 };
 
 const DATETIME_MED = {
-  year: n,
-  month: s$1,
-  day: n,
-  hour: n,
-  minute: n,
+  year: n$2,
+  month: s$2,
+  day: n$2,
+  hour: n$2,
+  minute: n$2,
 };
 
 const DATETIME_MED_WITH_SECONDS = {
-  year: n,
-  month: s$1,
-  day: n,
-  hour: n,
-  minute: n,
-  second: n,
+  year: n$2,
+  month: s$2,
+  day: n$2,
+  hour: n$2,
+  minute: n$2,
+  second: n$2,
 };
 
 const DATETIME_MED_WITH_WEEKDAY = {
-  year: n,
-  month: s$1,
-  day: n,
-  weekday: s$1,
-  hour: n,
-  minute: n,
+  year: n$2,
+  month: s$2,
+  day: n$2,
+  weekday: s$2,
+  hour: n$2,
+  minute: n$2,
 };
 
 const DATETIME_FULL = {
-  year: n,
+  year: n$2,
   month: l,
-  day: n,
-  hour: n,
-  minute: n,
-  timeZoneName: s$1,
+  day: n$2,
+  hour: n$2,
+  minute: n$2,
+  timeZoneName: s$2,
 };
 
 const DATETIME_FULL_WITH_SECONDS = {
-  year: n,
+  year: n$2,
   month: l,
-  day: n,
-  hour: n,
-  minute: n,
-  second: n,
-  timeZoneName: s$1,
+  day: n$2,
+  hour: n$2,
+  minute: n$2,
+  second: n$2,
+  timeZoneName: s$2,
 };
 
 const DATETIME_HUGE = {
-  year: n,
+  year: n$2,
   month: l,
-  day: n,
+  day: n$2,
   weekday: l,
-  hour: n,
-  minute: n,
+  hour: n$2,
+  minute: n$2,
   timeZoneName: l,
 };
 
 const DATETIME_HUGE_WITH_SECONDS = {
-  year: n,
+  year: n$2,
   month: l,
-  day: n,
+  day: n$2,
   weekday: l,
-  hour: n,
-  minute: n,
-  second: n,
+  hour: n$2,
+  minute: n$2,
+  second: n$2,
   timeZoneName: l,
 };
 
@@ -9612,6 +9612,7 @@ class GrowspaceHistoryController {
         this.humidityHistory = null;
         this.vpdHistory = null;
         this.co2History = null;
+        this.lightHistory = null;
         this.activeEnvGraphs = new Set();
         this.linkedGraphGroups = [];
         this.graphRanges = {};
@@ -9678,6 +9679,8 @@ class GrowspaceHistoryController {
                 this._fetchCirculationFanHistory(range);
             if (metric === 'soil_moisture')
                 this._fetchSoilMoistureHistory(range);
+            if (metric === 'light')
+                this._fetchLightHistory(range);
         }
         this.activeEnvGraphs = newSet;
         this.host.requestUpdate();
@@ -9732,6 +9735,8 @@ class GrowspaceHistoryController {
             this._fetchCirculationFanHistory(range);
         if (this.activeEnvGraphs.has('soil_moisture'))
             this._fetchSoilMoistureHistory(range);
+        if (this.activeEnvGraphs.has('light'))
+            this._fetchLightHistory(range);
     }
     async _fetchHistory(range = '24h') {
         console.log('[HistoryController] _fetchHistory called with range:', range);
@@ -9828,6 +9833,17 @@ class GrowspaceHistoryController {
                 console.error("Failed to fetch CO2 history", e);
             }
         }
+        // Light
+        if (envAttrs.light_sensor) {
+            try {
+                const history = await this.host.dataService.getHistory(envAttrs.light_sensor, start, end);
+                console.log('[HistoryController] Light history fetched from', envAttrs.light_sensor, 'length:', history?.length || 0);
+                this.lightHistory = history;
+            }
+            catch (e) {
+                console.error("Failed to fetch Light history", e);
+            }
+        }
         // Soil Moisture
         if (envAttrs.soil_moisture_sensor) {
             try {
@@ -9897,18 +9913,30 @@ class GrowspaceHistoryController {
             console.error("Failed to fetch circulation fan history", e);
         }
     }
-    async _fetchSoilMoistureHistory(range = '24h') {
-        const { device, entityId } = this.getRelatedEntityId('soil_moisture_sensor');
-        if (!device || !entityId)
+    async _fetchSoilMoistureHistory(range) {
+        const device = this.host.devices.find(d => d.device_id === this.host.selectedDevice);
+        if (!device?.environment_attributes?.soil_moisture_sensor)
             return;
         const { start, end } = this.calculateTimeRange(range);
         try {
-            const history = await this.host.dataService.getHistory(entityId, start, end);
-            this.soilMoistureHistory = history;
+            this.soilMoistureHistory = await this.host.dataService.getHistory(device.environment_attributes.soil_moisture_sensor, start, end);
             this.host.requestUpdate();
         }
         catch (e) {
-            console.error("Failed to fetch soil moisture history", e);
+            console.error(e);
+        }
+    }
+    async _fetchLightHistory(range) {
+        const device = this.host.devices.find(d => d.device_id === this.host.selectedDevice);
+        if (!device?.environment_attributes?.light_sensor)
+            return;
+        const { start, end } = this.calculateTimeRange(range);
+        try {
+            this.lightHistory = await this.host.dataService.getHistory(device.environment_attributes.light_sensor, start, end);
+            this.host.requestUpdate();
+        }
+        catch (e) {
+            console.error(e);
         }
     }
     getRelatedEntityId(attribute) {
@@ -9972,6 +10000,31 @@ class GrowspaceHistoryController {
     }
 }
 
+/**
+ * @license
+ * Copyright 2020 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const {I:t$1}=Z,f$1=o=>void 0===o.strings,r$1=()=>document.createComment(""),s$1=(o,i,n)=>{const e=o._$AA.parentNode,l=void 0===i?o._$AB:i._$AA;if(void 0===n){const i=e.insertBefore(r$1(),l),d=e.insertBefore(r$1(),l);n=new t$1(i,d,o,o.options);}else {const t=n._$AB.nextSibling,i=n._$AM,d=i!==o;if(d){let t;n._$AQ?.(o),n._$AM=o,void 0!==n._$AP&&(t=o._$AU)!==i._$AU&&n._$AP(t);}if(t!==l||d){let o=n._$AA;for(;o!==t;){const t=o.nextSibling;e.insertBefore(o,l),o=t;}}}return n},v=(o,t,i=o)=>(o._$AI(t,i),o),u$1={},m=(o,t=u$1)=>o._$AH=t,p=o=>o._$AH,M=o=>{o._$AR(),o._$AA.remove();};
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const t={ATTRIBUTE:1,CHILD:2,PROPERTY:3,BOOLEAN_ATTRIBUTE:4,EVENT:5,ELEMENT:6},e$1=t=>(...e)=>({_$litDirective$:t,values:e});class i{constructor(t){}get _$AU(){return this._$AM._$AU}_$AT(t,e,i){this._$Ct=t,this._$AM=e,this._$Ci=i;}_$AS(t,e){return this.update(t,e)}update(t,e){return this.render(...e)}}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const s=(i,t)=>{const e=i._$AN;if(void 0===e)return !1;for(const i of e)i._$AO?.(t,!1),s(i,t);return !0},o$1=i=>{let t,e;do{if(void 0===(t=i._$AM))break;e=t._$AN,e.delete(i),i=t;}while(0===e?.size)},r=i=>{for(let t;t=i._$AM;i=t){let e=t._$AN;if(void 0===e)t._$AN=e=new Set;else if(e.has(i))break;e.add(i),c$1(t);}};function h$1(i){void 0!==this._$AN?(o$1(this),this._$AM=i,r(this)):this._$AM=i;}function n$1(i,t=!1,e=0){const r=this._$AH,h=this._$AN;if(void 0!==h&&0!==h.size)if(t)if(Array.isArray(r))for(let i=e;i<r.length;i++)s(r[i],!1),o$1(r[i]);else null!=r&&(s(r,!1),o$1(r));else s(this,i);}const c$1=i=>{i.type==t.CHILD&&(i._$AP??=n$1,i._$AQ??=h$1);};class f extends i{constructor(){super(...arguments),this._$AN=void 0;}_$AT(i,t,e){super._$AT(i,t,e),r(this),this.isConnected=i._$AU;}_$AO(i,t=!0){i!==this.isConnected&&(this.isConnected=i,i?this.reconnected?.():this.disconnected?.()),t&&(s(this,i),o$1(this));}setValue(t){if(f$1(this._$Ct))this._$Ct._$AI(t,this);else {const i=[...this._$Ct._$AH];i[this._$Ci]=t,this._$Ct._$AI(i,this,0);}}disconnected(){}reconnected(){}}
+
+/**
+ * @license
+ * Copyright 2020 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const e=()=>new h;class h{}const o=new WeakMap,n=e$1(class extends f{render(i){return E}update(i,[s]){const e=s!==this.G;return e&&void 0!==this.G&&this.rt(void 0),(e||this.lt!==this.ct)&&(this.G=s,this.ht=i.options?.host,this.rt(this.ct=i.element)),E}rt(t){if(this.isConnected||(t=void 0),"function"==typeof this.G){const i=this.ht??globalThis;let s=o.get(i);void 0===s&&(s=new WeakMap,o.set(i,s)),void 0!==s.get(this.G)&&this.G.call(this.ht,void 0),s.set(this.G,t),void 0!==t&&this.G.call(this.ht,t);}else this.G.value=t;}get lt(){return "function"==typeof this.G?o.get(this.ht??globalThis)?.get(this.G):this.G?.value}disconnected(){this.lt===this.ct&&this.rt(void 0);}reconnected(){this.rt(this.ct);}});
+
 class GraphDataTransformer {
     /**
      * Transforms start/end time events into a time-series of 0/1 data points for a step graph.
@@ -10033,6 +10086,62 @@ class GraphDataTransformer {
         // Final point
         dataPoints.push({ time: endTime, value: 0 });
         return dataPoints;
+    }
+    static synthesizeLiveDataPoint(metricKey, overviewEntity, now, lastDataPoint) {
+        if (metricKey === 'dehumidifier') {
+            if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
+                const state = overviewEntity.attributes.dehumidifier_state;
+                const val = (state === 'on' || state === 'true' || state === '1') ? 1 : 0;
+                return { time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } };
+            }
+        }
+        else if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+            let val = metricKey === 'exhaust' ? overviewEntity?.attributes?.exhaust_value : overviewEntity?.attributes?.humidifier_value;
+            if (val !== undefined) {
+                let numVal = parseFloat(val);
+                let meta = undefined;
+                if (isNaN(numVal)) {
+                    if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') {
+                        numVal = 1;
+                        meta = { state: 'ON' };
+                    }
+                    else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') {
+                        numVal = 0;
+                        meta = { state: 'OFF' };
+                    }
+                }
+                if (!isNaN(numVal)) {
+                    return { time: now.getTime(), value: numVal, meta };
+                }
+            }
+        }
+        // Generic fallback: extend last value
+        if (lastDataPoint) {
+            return { time: now.getTime(), value: lastDataPoint.value, meta: lastDataPoint.meta };
+        }
+        return null;
+    }
+    static normalizeSensorValue(ent, key) {
+        const s = ent.state;
+        if (s === 'unavailable' || s === 'unknown')
+            return undefined;
+        if (key === 'dehumidifier') {
+            return (s === 'on' || s === 'true' || s === '1' || s === 'heating' || s === 'drying') ? 1 : 0;
+        }
+        if (key === 'light') {
+            return (s === 'on' || s === 'true' || s === '1') ? 1 : 0;
+        }
+        const val = parseFloat(s);
+        if (isNaN(val)) {
+            // Try to handle ON/OFF for 0-10 sensors if state comes as text?
+            // Usually they are numbers, but just in case
+            if (s === 'on')
+                return 1;
+            if (s === 'off')
+                return 0;
+            return undefined;
+        }
+        return val;
     }
 }
 
@@ -10224,648 +10333,445 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         this.isCombined = false;
         this.metricConfig = {};
         this._tooltip = null;
-        // Performance: Cache layout to avoid thrashing
-        this._resizeObserver = null;
-        this._cachedRect = null;
-        this._memoizedGraphData = null;
-        this._rafId = null;
+        this._hoverTime = null;
+        this._canScrollLeft = false;
+        this._canScrollRight = false;
+        this._chipsContainerRef = e();
     }
-    connectedCallback() {
-        super.connectedCallback();
-        this._setupResizeObserver();
+    _scrollChips(direction) {
+        const container = this._chipsContainerRef.value;
+        if (container) {
+            container.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
+        }
+    }
+    _checkScroll() {
+        const container = this._chipsContainerRef.value;
+        if (container) {
+            this._canScrollLeft = container.scrollLeft > 1;
+            this._canScrollRight = container.scrollLeft < (container.scrollWidth - container.clientWidth - 1);
+        }
+    }
+    firstUpdated() {
+        const container = this._chipsContainerRef.value;
+        if (container) {
+            container.addEventListener('scroll', () => this._checkScroll());
+            this._resizeObserver = new ResizeObserver(() => this._checkScroll());
+            this._resizeObserver.observe(container);
+            setTimeout(() => this._checkScroll(), 100);
+        }
     }
     disconnectedCallback() {
         super.disconnectedCallback();
         if (this._resizeObserver) {
             this._resizeObserver.disconnect();
-            this._resizeObserver = null;
         }
     }
-    firstUpdated(_changedProperties) {
-        super.firstUpdated(_changedProperties);
-        this._setupResizeObserver();
-    }
-    _setupResizeObserver() {
-        // Observer is set up in firstUpdated to ensure DOM exists, 
-        // fallback in connectedCallback if elements already exist (e.g. moving in DOM)
-        const container = this.shadowRoot?.querySelector('.gs-chart-container');
-        if (container && !this._resizeObserver) {
-            this._resizeObserver = new ResizeObserver((entries) => {
-                for (const entry of entries) {
-                    this._cachedRect = entry.contentRect;
-                    // Note: contentRect is relative to element padding, 
-                    // but usually we need getBoundingClientRect for screen coords in mouse events.
+    _computeGraphSeries(width, height, startTime, durationMillis, now) {
+        const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
+        const seriesList = [];
+        metricKeys.forEach(key => {
+            const config = this.metricConfig[key] || {
+                color: this.isCombined ? (METRIC_CONFIG[key]?.color || '#ffffff') : this.color,
+                title: this.isCombined ? (METRIC_CONFIG[key]?.title || key) : this.title,
+                unit: this.isCombined ? (METRIC_CONFIG[key]?.unit || '') : this.unit
+            };
+            const historySource = this.sensorHistory[key] || [];
+            let dataPoints = [];
+            if (key === 'optimal' && historySource.length > 0) {
+                // Optimal logic (Step Graph for Binary Sensor)
+                const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+                let initialState = sortedHistory[0];
+                for (const h of sortedHistory) {
+                    const t = new Date(h.last_changed).getTime();
+                    if (t > startTime.getTime())
+                        break;
+                    initialState = h;
                 }
-            });
-            this._resizeObserver.observe(container);
-            // Initial measuring
-            this._updateCachedRect(container);
-        }
-    }
-    _updateCachedRect(element) {
-        this._cachedRect = element.getBoundingClientRect();
-    }
-    _synthesizeLiveDataPoint(dataPoints, metricKey, overviewEntity, now) {
-        if (metricKey === 'dehumidifier') {
-            if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
-                const state = overviewEntity.attributes.dehumidifier_state;
-                const val = (state === 'on' || state === 'true' || state === '1') ? 1 : 0;
-                dataPoints.push({ time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } });
+                if (initialState) {
+                    const val = initialState.state === 'on' ? 1 : 0;
+                    dataPoints.push({ time: startTime.getTime(), value: val });
+                }
+                sortedHistory.forEach(h => {
+                    const t = new Date(h.last_changed).getTime();
+                    if (t <= startTime.getTime())
+                        return;
+                    const val = h.state === 'on' ? 1 : 0;
+                    const reasons = h.attributes?.reasons;
+                    dataPoints.push({ time: t, value: val, meta: reasons ? { reasons } : undefined });
+                });
+                // Extend to NOW
+                if (dataPoints.length > 0) {
+                    const last = dataPoints[dataPoints.length - 1];
+                    dataPoints.push({ time: now.getTime(), value: last.value });
+                }
             }
-            else if (dataPoints.length > 0) {
-                const last = dataPoints[dataPoints.length - 1];
-                dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
-            }
-        }
-        else if (metricKey === 'exhaust' || metricKey === 'humidifier') {
-            let val = metricKey === 'exhaust' ? overviewEntity?.attributes?.exhaust_value : overviewEntity?.attributes?.humidifier_value;
-            if (val !== undefined) {
-                let numVal = parseFloat(val);
-                let meta = undefined;
-                if (isNaN(numVal)) {
-                    if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') {
-                        numVal = 1;
-                        meta = { state: 'ON' };
-                    }
-                    else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') {
-                        numVal = 0;
-                        meta = { state: 'OFF' };
+            else if (historySource.length > 0) {
+                // Standard Sensor Logic
+                const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+                let initialState = sortedHistory[0];
+                for (const h of sortedHistory) {
+                    const t = new Date(h.last_changed).getTime();
+                    if (t > startTime.getTime())
+                        break;
+                    initialState = h;
+                }
+                if (initialState) {
+                    const val = GraphDataTransformer.normalizeSensorValue(initialState, key);
+                    if (val !== undefined) {
+                        dataPoints.push({ time: startTime.getTime(), value: val });
                     }
                 }
-                if (!isNaN(numVal))
-                    dataPoints.push({ time: now.getTime(), value: numVal, meta });
+                sortedHistory.forEach(h => {
+                    const t = new Date(h.last_changed).getTime();
+                    if (t <= startTime.getTime())
+                        return;
+                    const val = GraphDataTransformer.normalizeSensorValue(h, key);
+                    if (val !== undefined) {
+                        dataPoints.push({ time: t, value: val });
+                    }
+                });
+                // Synthesize live point
+                const livePoint = GraphDataTransformer.synthesizeLiveDataPoint(key, this.device?.overview_entity_id ? { attributes: this.device } : null, now, dataPoints[dataPoints.length - 1]);
+                if (livePoint) {
+                    dataPoints.push(livePoint);
+                }
+                else if (dataPoints.length > 0) {
+                    const last = dataPoints[dataPoints.length - 1];
+                    dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
+                }
             }
-            else if (dataPoints.length > 0) {
-                // Generic fallback for all other sensors (temperature, vpd, soil_moisture, etc.)
-                // Extend the last known value to "now" to fill the graph
-                const last = dataPoints[dataPoints.length - 1];
-                dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
-            }
-        }
-    }
-    _renderGraphPaths(paths) {
-        return b `
-            ${paths.map(p => {
-            if (p.fill === 'gradient' && p.key) {
-                return b `
-                       <path d="${p.path} V ${p.height} H 0 Z" fill="url(#grad-${p.key})" />
-                       <path d="${p.path}" fill="none" stroke="${p.color}" stroke-width="2.5" />
-                   `;
-            }
-            else if (p.fill === 'flat' && p.points && p.points.length > 0) {
-                // Combined graph style
-                return b `
-                        <path d="${p.path}" fill="none" stroke="${p.color}" stroke-width="2" />
-                        <path d="${p.path} V ${p.height} H ${p.points[0][0]} Z" fill="${p.color}" fill-opacity="0.1" stroke="none" />
-                    `;
-            }
-            // Default line only
-            return b `<path d="${p.path}" fill="none" stroke="${p.color}" stroke-width="2.5" />`;
-        })}
-        `;
-    }
-    // Helper: Normalize Sensor Value
-    _normalizeSensorValue(ent, metricKey, unit) {
-        if (!ent)
-            return undefined;
-        // Use defaults if available
-        const defaults = SENSOR_CHART_DEFAULTS[metricKey];
-        // Special case: 'optimal' with unit 'state'
-        if (unit === 'state' && metricKey === 'optimal') {
-            return ent.state === 'on' ? 1 : 0;
-        }
-        // Special case: 'light'
-        if (metricKey === 'light') {
-            const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
-            return isLightsOn === true ? 1 : 0;
-        }
-        // Handle configured binary sensors
-        // Only treat as binary if explicitly binary OR unit is state AND no min/max range defined (e.g. exhaust is 0-10)
-        if (defaults?.binary === true || (defaults?.unit === 'state' && defaults?.max === undefined)) {
-            if (ent.entity_id && ent.state) {
-                const onStates = ['on', 'true', '1', 'active'];
-                return onStates.includes(String(ent.state).toLowerCase()) ? 1 : 0;
-            }
-        }
-        // Special case: 'dehumidifier' legacy check
-        if (metricKey === 'dehumidifier') {
-            const val = ent.attributes?.dehumidifier ?? ent.attributes?.observations?.dehumidifier;
-            const onValues = [true, 'on', 1];
-            if (val !== undefined && onValues.includes(val))
-                return 1;
-        }
-        // Standard numeric sensors
-        const numericKeys = ['temperature', 'humidity', 'vpd', 'co2', 'exhaust', 'humidifier', 'soil_moisture', 'circulation_fan'];
-        if (numericKeys.includes(metricKey)) {
-            if (ent.state && !isNaN(parseFloat(ent.state))) {
-                return parseFloat(ent.state);
-            }
-            // Handle binary-like states for these devices if they appear
-            if (ent.state === 'on' || ent.state === 'active')
-                return 1;
-            if (ent.state === 'off' || ent.state === 'idle')
-                return 0;
-        }
-        // Fallback to attributes
-        if (ent.attributes) {
-            if (ent.attributes[metricKey] !== undefined)
-                return ent.attributes[metricKey];
-            if (typeof ent.attributes.observations === 'object' && ent.attributes.observations[metricKey] !== undefined) {
-                return ent.attributes.observations[metricKey];
-            }
-        }
-        return undefined;
-    }
-    // Helper: Get Sensor Meta
-    _getSensorMeta(ent, metricKey, unit) {
-        if (unit === 'state' && metricKey === 'optimal')
-            return ent.attributes?.reasons;
-        const defaults = SENSOR_CHART_DEFAULTS[metricKey];
-        if (defaults?.binary === true || (defaults?.unit === 'state' && defaults?.max === undefined) || metricKey === 'light') {
-            // For binary sensors, we might want to return 'ON'/'OFF' as meta state
-            // But actually _normalizeValue returns 0/1. The render logic handles 'ON'/'OFF' label if needed.
-            // If we need specific text (like "Active"), we can return it here.
-            // Replicating old logic partially for safety
-            if (metricKey === 'light') {
-                const isLightsOn = ent.attributes?.is_lights_on ?? ent.attributes?.observations?.is_lights_on;
-                return { state: isLightsOn ? 'ON' : 'OFF' };
-            }
-            if (metricKey === 'exhaust' || metricKey === 'humidifier') {
-                const isActive = ['on', 'active', 'true', '1'].includes(String(ent.state).toLowerCase());
-                return { state: isActive ? 'ON' : 'OFF' };
-            }
-            if (metricKey === 'dehumidifier') {
-                const isActive = ['on', 'active', 'true', '1'].includes(String(ent.state).toLowerCase());
-                return { state: isActive ? 'ON' : 'OFF' };
-            }
-        }
-        return undefined;
-    }
-    _findClosestDataPoint(dataPoints, targetTime) {
-        if (!dataPoints || dataPoints.length === 0)
-            return { time: targetTime, value: 0 };
-        if (dataPoints.length === 1)
-            return dataPoints[0];
-        let low = 0;
-        let high = dataPoints.length - 1;
-        while (low < high) {
-            const mid = Math.floor((low + high) / 2);
-            if (dataPoints[mid].time < targetTime) {
-                low = mid + 1;
-            }
-            else {
-                high = mid;
-            }
-        }
-        if (low > 0) {
-            const prev = dataPoints[low - 1];
-            const curr = dataPoints[low];
-            if (Math.abs(prev.time - targetTime) < Math.abs(curr.time - targetTime)) {
-                return prev;
-            }
-        }
-        return dataPoints[low];
-    }
-    _handleGraphHover(e, metricKey, dataPoints, _rect, unit) {
-        // Capture x coordinate
-        let x;
-        let width;
-        if (window.TouchEvent && e instanceof TouchEvent) {
-            // For touch, we must measure because there is no offsetX
-            // Touch scrolling invalidates layout anyway, so measuring is acceptable.
-            const rect = e.currentTarget.getBoundingClientRect();
-            x = e.touches[0].clientX - rect.left;
-            width = rect.width;
-        }
-        else {
-            // For mouse, use offsetX for maximum performance and scroll stability
-            // Requires pointer-events: none on children
-            x = e.offsetX;
-            // Width can change on resize, but constant during scroll.
-            // We can use clientWidth which triggers reflow or cached width.
-            // For simplicity and scroll-safety, clientWidth is cheap enough if not writing layout.
-            // Or fallback to cached rect width if available?
-            width = e.currentTarget.clientWidth;
-        }
-        // Cancel previous pending frame
-        if (this._rafId)
-            cancelAnimationFrame(this._rafId);
-        this._rafId = requestAnimationFrame(() => {
-            this._rafId = null;
-            this._updateTooltipState(x, width, metricKey, dataPoints, unit);
-        });
-    }
-    // Helper: Format Time respecting locale
-    _formatTime(date) {
-        const locale = this.hass?.locale?.language || undefined;
-        return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-    }
-    _updateTooltipState(x, width, metricKey, dataPoints, unit) {
-        const rangeKey = this.range;
-        const durationMillis = rangeKey === '1h' ? 60 * 60 * 1000 :
-            rangeKey === '6h' ? 6 * 60 * 60 * 1000 :
-                rangeKey === '7d' ? 7 * 24 * 60 * 60 * 1000 :
-                    24 * 60 * 60 * 1000;
-        const now = new Date();
-        const startTime = now.getTime() - durationMillis;
-        // Apply offset for line graphs which have padding INSIDE the container
-        let effectiveX = x;
-        let effectiveWidth = width;
-        // CSS for .gs-env-chart-container has padding: 20px 40px 30px 50px
-        const paddingLeft = 50;
-        const paddingRight = 40;
-        effectiveX = x - paddingLeft;
-        effectiveWidth = width - (paddingLeft + paddingRight);
-        // Clamp to ensure we don't seek outside bounds
-        effectiveX = Math.max(0, Math.min(effectiveX, effectiveWidth));
-        const time = startTime + (effectiveX / effectiveWidth) * durationMillis;
-        const closest = this._findClosestDataPoint(dataPoints, time);
-        const date = new Date(closest.time);
-        const timeStr = this._formatTime(date);
-        let valStr = `${closest.value} ${unit} `;
-        const defaults = SENSOR_CHART_DEFAULTS[metricKey];
-        const isBinary = defaults?.binary === true || (unit === 'state' && defaults?.max === undefined);
-        if (isBinary) {
-            if (metricKey === 'irrigation' || metricKey === 'drain') {
-                if (closest.value === 1) {
-                    valStr = `ON(${closest.meta?.duration || 'Unknown'})`;
+            if (dataPoints.length > 0) {
+                let min = Math.min(...dataPoints.map(d => d.value));
+                let max = Math.max(...dataPoints.map(d => d.value));
+                const sum = dataPoints.reduce((acc, curr) => acc + curr.value, 0);
+                const avg = sum / dataPoints.length;
+                // Enforce specific ranges
+                if (key === 'exhaust' || key === 'humidifier' || key === 'circulation_fan') {
+                    min = 0;
+                    max = 10;
+                }
+                else if (key === 'dehumidifier') {
+                    min = 0;
+                    max = 1;
+                }
+                else if (key === 'optimal') {
+                    min = 0;
+                    max = 1;
+                } // Optimal is binary 0-1
+                // Add padding for single graphs only
+                if (!this.isCombined && max === min) {
+                    max += 1;
+                    min -= 1;
+                }
+                const paddedRange = max - min || 1;
+                let pathStr = '';
+                if (key === 'optimal') {
+                    // Step Path
+                    const stepPoints = [];
+                    if (dataPoints.length > 0) {
+                        const startX = ((dataPoints[0].time - startTime.getTime()) / durationMillis) * width;
+                        const startY = height - ((dataPoints[0].value - min) / paddedRange) * height;
+                        stepPoints.push([startX, startY]);
+                        for (let i = 1; i < dataPoints.length; i++) {
+                            const p = dataPoints[i];
+                            const x = ((p.time - startTime.getTime()) / durationMillis) * width;
+                            const y = height - ((p.value - min) / paddedRange) * height;
+                            // Step: H then V
+                            stepPoints.push([x, stepPoints[stepPoints.length - 1][1]]);
+                            stepPoints.push([x, y]);
+                        }
+                    }
+                    pathStr = `M ${stepPoints.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
                 }
                 else {
-                    valStr = 'OFF';
+                    // Line Path
+                    const points = dataPoints.map(p => {
+                        const x = ((p.time - startTime.getTime()) / durationMillis) * width;
+                        const y = height - ((p.value - min) / paddedRange) * height;
+                        return [x, y];
+                    });
+                    pathStr = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
                 }
+                seriesList.push({
+                    id: key,
+                    title: config.title || key,
+                    color: config.color || '#fff',
+                    unit: config.unit || '',
+                    points: dataPoints,
+                    min,
+                    max,
+                    avg,
+                    path: pathStr,
+                    fillType: this.isCombined ? 'flat' : 'gradient'
+                });
             }
-            else if (metricKey === 'dehumidifier' || metricKey === 'light') {
-                valStr = closest.value === 1 ? 'ON' : 'OFF';
-            }
-            else if (closest.value === 1 && metricKey === 'optimal') {
-                valStr = 'Optimal Conditions';
-            }
-            else if (closest.value === 0 && metricKey === 'optimal') {
-                valStr = closest.meta || 'Not Optimal';
-            }
-            else {
-                valStr = closest.value === 1 ? 'ON' : 'OFF';
-            }
-        }
-        else if ((metricKey === 'exhaust' || metricKey === 'humidifier') && closest.meta?.state) {
-            valStr = closest.meta.state;
-        }
-        // Throttle tooltip updates via RequestAnimationFrame (implemented in next step, 
-        // for now directly updating state to maintain functionality)
-        this._tooltip = {
-            id: metricKey,
-            x: x,
-            time: timeStr,
-            value: valStr
-        };
-    }
-    _handleCombinedGraphHover(e, startTime, durationMillis, graphData, _width) {
-        // Assume mouse event only (touch handled elsewhere or same logic if event passed)
-        // Combined graph logic mirrors single graph logic
-        const x = e.offsetX;
-        const totalWidth = e.currentTarget.clientWidth;
-        // CSS for .gs-env-chart-container has padding: 20px 40px 30px 50px
-        const paddingLeft = 50;
-        const paddingRight = 40;
-        let effectiveX = x - paddingLeft;
-        let effectiveWidth = totalWidth - (paddingLeft + paddingRight);
-        // Clamp
-        effectiveX = Math.max(0, Math.min(effectiveX, effectiveWidth));
-        const time = startTime.getTime() + (effectiveX / effectiveWidth) * durationMillis;
-        const timeStr = this._formatTime(new Date(time));
-        const values = graphData.map(g => {
-            // Use binary search helper
-            const closest = this._findClosestDataPoint(g.points, time);
-            return { ...g, value: closest.value };
         });
-        this._tooltip = {
-            id: 'combined-' + this.metrics.join('-'),
-            x: x, // Keep tooltip visual position relative to container
-            time: timeStr,
-            value: JSON.stringify(values)
-        };
-    }
-    _toggleEnvGraph() {
-        this.dispatchEvent(new ToggleEnvGraphEvent(this.metricKey));
-    }
-    _unlinkGraphs(groupIndex) {
-        this.dispatchEvent(new UnlinkGraphsEvent(groupIndex));
+        return seriesList;
     }
     render() {
-        if (this.isCombined) {
-            return this.renderCombinedEnvGraph();
-        }
-        return this.renderEnvGraph();
-    }
-    willUpdate(changedProperties) {
-        // Invalidate memoized data if relevant inputs change
-        // We only persist cache if ONLY _tooltip changed (hover interaction)
-        // If hass, history, or config changes, we recalculate.
-        // Optimization: We could be more granular with hass (only if relevant entities change), 
-        // but checking specific entity changes is complex. 
-        // The main goal is to avoid recalc during Tooltip hover loop.
-        let needsRecalc = false;
-        if (changedProperties.has('_tooltip')) ;
-        // Check if any property OTHER than _tooltip changed
-        for (const [key] of changedProperties) {
-            if (key !== '_tooltip') {
-                needsRecalc = true;
-                break;
-            }
-        }
-        if (needsRecalc) {
-            this._memoizedGraphData = null;
-        }
-    }
-    _getGraphData() {
-        if (this._memoizedGraphData)
-            return this._memoizedGraphData;
-        const { metricKey, unit, type, range } = this;
-        // Logic extracted from renderEnvGraph
         if (!this.device)
-            return null;
-        const overviewEntity = this.device.overview_entity_id ? this.hass.states[this.device.overview_entity_id] : undefined;
-        let durationMillis = 24 * 60 * 60 * 1000;
-        if (range === '1h')
-            durationMillis = 60 * 60 * 1000;
-        else if (range === '6h')
-            durationMillis = 6 * 60 * 60 * 1000;
-        else if (range === '7d')
-            durationMillis = 7 * 24 * 60 * 60 * 1000;
+            return x ``;
+        const durationMillis = this._getDurationMillis(this.range);
         const now = new Date();
         const startTime = new Date(now.getTime() - durationMillis);
-        let dataPoints = [];
-        if (metricKey === 'irrigation' || metricKey === 'drain') {
-            const times = metricKey === 'irrigation'
-                ? overviewEntity?.attributes?.irrigation_times
-                : overviewEntity?.attributes?.drain_times;
-            // Use Transformer
-            dataPoints = GraphDataTransformer.transformEventsToTimeSeries(times, startTime.getTime(), now.getTime());
-        }
-        else {
-            // Refactored to use class helper methods
-            const getValue = (ent, key) => this._normalizeSensorValue(ent, key, unit);
-            const getMeta = (ent, key) => this._getSensorMeta(ent, key, unit);
-            let historySource = this.sensorHistory[metricKey] || [];
-            // For irrigation/drain, we might look specifically or rely on the passed key. 
-            // In the old code 'history' prop was generic, now we access by key.
-            // If the parent didn't pass it under the key, we might need fallback.
-            // But analytics will map it. 
-            // Special case logic for metricKey 'irrigation'/'drain' which use events might need the raw array if transformed inside?
-            // Actually _getGraphData handles transforms.
-            if (!historySource)
-                historySource = [];
-            const sortedHistory = historySource ? [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()) : [];
-            let initialState = sortedHistory.length > 0 ? sortedHistory[0] : null;
-            for (const h of sortedHistory) {
-                const t = new Date(h.last_changed).getTime();
-                if (t > startTime.getTime())
-                    break;
-                initialState = h;
-            }
-            if (initialState) {
-                const val = getValue(initialState, metricKey);
-                const meta = getMeta(initialState, metricKey);
-                // val is already number | undefined from _normalizeSensorValue
-                if (val !== undefined && !isNaN(val)) {
-                    dataPoints.push({ time: startTime.getTime(), value: val, meta });
-                }
-            }
-            sortedHistory.forEach(h => {
-                const t = new Date(h.last_changed).getTime();
-                if (t <= startTime.getTime())
-                    return;
-                const val = getValue(h, metricKey);
-                const meta = getMeta(h, metricKey);
-                // val is already number | undefined from _normalizeSensorValue
-                if (val !== undefined && !isNaN(val)) {
-                    dataPoints.push({ time: t, value: val, meta });
-                }
-            });
-            // Current point synthesized logic extracted to helper
-            this._synthesizeLiveDataPoint(dataPoints, metricKey, overviewEntity, now);
-        }
-        if (dataPoints.length === 1) {
-            dataPoints.unshift({
-                time: startTime.getTime(),
-                value: dataPoints[0].value,
-                meta: dataPoints[0].meta
-            });
-        }
-        if (dataPoints.length < 2 && type !== 'step')
-            return null;
-        const width = 1000;
-        // Standardize height for all graph types to unified card size
-        const height = 180;
-        let minVal = 0;
-        let maxVal = 1;
-        const defaults = SENSOR_CHART_DEFAULTS[metricKey];
-        if (unit !== 'state' && metricKey !== 'irrigation' && metricKey !== 'drain') {
-            if (defaults && defaults.min !== undefined && defaults.max !== undefined) {
-                minVal = defaults.min;
-                maxVal = defaults.max;
-            }
-            else if (defaults && defaults.binary) {
-                minVal = 0;
-                maxVal = 1;
-            }
-            else {
-                // Auto-scale
-                if (dataPoints.length > 0) {
-                    minVal = Math.min(...dataPoints.map(d => d.value));
-                    maxVal = Math.max(...dataPoints.map(d => d.value));
-                }
-            }
-        }
-        const rangeVal = maxVal - minVal || 1;
-        let paddedMin = minVal - (rangeVal * 0.1);
-        let paddedMax = maxVal + (rangeVal * 0.1);
-        if (defaults?.disablePadding) {
-            paddedMin = minVal;
-            paddedMax = maxVal;
-        }
-        const paddedRange = paddedMax - paddedMin;
-        const avgValue = dataPoints.length > 0
-            ? dataPoints.reduce((sum, d) => sum + d.value, 0) / dataPoints.length
-            : (minVal + maxVal) / 2;
-        let svgPath = "";
-        if (type === 'step') {
-            const points = [];
-            let currentState = dataPoints.length > 0 ? dataPoints[0].value : 0;
-            // Guard against divide by zero if paddedRange is 0 (should use fallback 1)
-            const safeRange = paddedRange === 0 ? 1 : paddedRange;
-            points.push([0, height - ((currentState - paddedMin) / safeRange) * height]);
-            dataPoints.forEach(d => {
-                const x = ((d.time - startTime.getTime()) / durationMillis) * width;
-                const y = height - ((d.value - paddedMin) / safeRange) * height;
-                points.push([x, points[points.length - 1][1]]);
-                points.push([x, y]);
-                currentState = d.value;
-            });
-            points.push([width, height - ((currentState - paddedMin) / safeRange) * height]);
-            svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')} `;
-        }
-        else {
-            const safeRange = paddedRange === 0 ? 1 : paddedRange;
-            const points = dataPoints.map(d => {
-                const x = ((d.time - startTime.getTime()) / durationMillis) * width;
-                const y = height - ((d.value - paddedMin) / safeRange) * height;
-                return [x, y];
-            });
-            svgPath = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')} `;
-        }
-        this._memoizedGraphData = { path: svgPath, dataPoints, minVal, maxVal, avgValue };
-        return this._memoizedGraphData;
-    }
-    renderEnvGraph() {
-        const { metricKey, color, title, unit, type, icon, range } = this;
-        const now = new Date();
-        const durationMillis = this._getDurationMillis(range);
-        new Date(now.getTime() - durationMillis);
-        const graphData = this._getGraphData();
-        if (!graphData)
-            return x ``;
-        const { path: svgPath, dataPoints, minVal, maxVal, avgValue } = graphData;
-        const defaults = SENSOR_CHART_DEFAULTS[metricKey];
-        const width = 1000;
-        const height = 180;
-        const rangeVal = maxVal - minVal || 1;
-        let paddedMin = minVal - (rangeVal * 0.1);
-        let paddedMax = maxVal + (rangeVal * 0.1);
-        if (defaults?.disablePadding) {
-            paddedMin = minVal;
-            paddedMax = maxVal;
-        }
-        const paddedRange = paddedMax - paddedMin;
-        // Y-Axis Labels
-        let yLabels = [];
-        if (type === 'step' || (unit === 'state' && !defaults?.max) || metricKey === 'dehumidifier') {
-            yLabels = ['ON', 'OFF'];
-        }
-        else {
-            yLabels = [
-                paddedMax,
-                paddedMax - paddedRange * 0.25,
-                paddedMax - paddedRange * 0.5,
-                paddedMax - paddedRange * 0.75,
-                paddedMin
-            ];
+        // Dimensions (internal SVG coords)
+        const width = 800;
+        const height = 200;
+        const series = this._computeGraphSeries(width, height, startTime, durationMillis, now);
+        if (series.length === 0) {
+            return x `
+                <div class="gs-env-graph-card">
+                    <div class="gs-env-graph-header">
+                         <div style="display:flex; align-items:center; gap:8px;">
+                            ${this.icon ? x `<ha-icon .icon=${this.icon}></ha-icon>` : ''}
+                            <span>${this.title || 'Graph'}</span>
+                        </div>
+                        <span style="color: #666; font-size: 0.9em;">No Data</span>
+                    </div>
+                    <div class="gs-env-chart-container" style="display: flex; align-items: center; justify-content: center; color: #444;">
+                        No history data available for ${this.range}
+                    </div>
+                </div>
+            `;
         }
         return x `
             <div class="gs-env-graph-card">
-                <div class="gs-env-graph-header" @click=${this._toggleEnvGraph}>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <svg style="width:24px;height:24px;fill:${color};" viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-                        <div>
-                            <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${title}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="gs-env-chart-container"
-                    role="img"
-                    aria-label="Line chart for ${title}, current value ${dataPoints[dataPoints.length - 1]?.value} ${unit}"
-                    @mousemove=${(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
-        }}
-                    @touchmove=${(e) => {
-            if (e.cancelable)
-                e.preventDefault();
-            const rect = e.currentTarget.getBoundingClientRect();
-            this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
-        }}
-                    @touchstart=${(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            this._handleGraphHover(e, metricKey, dataPoints, rect, unit);
-        }}
-                    @touchend=${() => this._tooltip = null}
-                    @mouseleave=${() => this._tooltip = null}>
-
-                    ${this._renderTooltip(metricKey, color)}
-                    ${this._renderYLabels(yLabels, unit)}
-
-                    <svg class="gs-chart-svg" style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
-                        <defs>
-                            ${this._renderGradient(metricKey, color)}
-                        </defs>
+                 ${this.isCombined ? this._renderCombinedHeader(series) : this._renderSingleHeader(series[0])}
+                
+                <div class="gs-env-chart-container" 
+                     @mousemove=${(e) => this._handleGraphHover(e, series, startTime, durationMillis, width)}
+                     @mouseleave=${() => { this._tooltip = null; this._hoverTime = null; }}>
+                    
+                    ${this._renderTooltip(series)}
+                    
+                    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="width: 100%; height: 100%; overflow: visible;">
+                        ${this._renderGrid(width, height)}
+                        ${this._renderXLabels(this.range, '#666')}
+                        ${!this.isCombined ? this._renderYLabels(series[0].min, series[0].max, series[0].unit) : ''}
                         
-                        ${this._renderGrid(width, height, type !== 'step' ? avgValue : undefined, paddedMin, paddedRange, color)}
-
-                        ${this._renderGraphPaths([{ path: svgPath, color, fill: 'gradient', key: metricKey, height }])}
+                        ${series.map(s => {
+            if (s.fillType === 'gradient') {
+                return b `
+                                    <defs>
+                                        ${this._renderGradient(s.id, s.color)}
+                                    </defs>
+                                    <path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />
+                                    <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2.5" />
+                                `;
+            }
+            else {
+                return b `
+                                     <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" />
+                                     <!-- Optional: light fill for combined -->
+                                     <path d="${s.path} V ${height} H ${s.points.length > 0 ? ((s.points[0].time - startTime.getTime()) / durationMillis * width) : 0} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />
+                                `;
+            }
+        })}
                     </svg>
-
-                    ${this._renderXLabels(range, color)}
                 </div>
             </div>
         `;
     }
-    renderCombinedEnvGraph() {
-        const { metrics, metricConfig, range } = this;
-        if (!this.device)
-            return x ``;
-        const durationMillis = this._getDurationMillis(range);
-        const now = new Date();
-        const startTime = new Date(now.getTime() - durationMillis);
-        const graphData = this._prepareCombinedGraphData(metrics, metricConfig, startTime, durationMillis, now);
-        if (graphData.length === 0)
-            return x ``;
-        const width = 1000;
-        const height = 180;
+    _renderSingleHeader(series) {
+        let valStr = '-';
+        if (series.points.length > 0) {
+            const lastPoint = series.points[series.points.length - 1];
+            const val = lastPoint.value;
+            const defaults = SENSOR_CHART_DEFAULTS[series.id];
+            const isBinary = defaults?.binary === true || (series.unit === 'state' && defaults?.max === undefined) || series.id === 'optimal' || series.id === 'dehumidifier';
+            if (isBinary) {
+                if (series.id === 'optimal') {
+                    valStr = val === 1 ? 'Optimal' : (lastPoint.meta?.reasons || 'Not Optimal');
+                }
+                else {
+                    valStr = val === 1 ? 'ON' : 'OFF';
+                }
+            }
+            else if ((series.id === 'exhaust' || series.id === 'humidifier') && lastPoint.meta?.state) {
+                valStr = lastPoint.meta.state;
+            }
+            else {
+                valStr = `${val.toFixed(1)} ${series.unit}`;
+            }
+        }
         return x `
-            <div class="gs-env-graph-card">
-                <div class="gs-env-graph-header">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        ${graphData.map((g, i) => x `
-                            ${i > 0 ? x `
-                                <div class="link-icon" style="opacity: 0.8; cursor: pointer;" 
-                                        @click=${() => this.dispatchEvent(new UnlinkGraphMetricEvent(g.key))}
-                                        title="Unlink Graph">
-                                        <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: #fff;"><path d="${mdiLink}"></path></svg>
-                                </div>
-                            ` : ''}
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <div style="width: 12px; height: 12px; border-radius: 50%; background: ${g.color};"></div>
-                                <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">${g.title}</div>
+            <div class="gs-env-graph-header" @click=${() => this.dispatchEvent(new ToggleEnvGraphEvent(series.id))}>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <ha-icon .icon=${this.icon} style="color: ${series.color};"></ha-icon>
+                    <span style="color: ${series.color}; font-weight: 500;">${series.title}</span>
+                </div>
+                <div style="text-align: right;">
+                     <div style="font-size: 1.2em; font-weight: bold; color: ${series.color};">
+                        ${valStr}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    _renderCombinedHeader(seriesList) {
+        return x `
+             <div class="gs-env-graph-header">
+                <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
+                     ${this._canScrollLeft ? x `
+                    <div class="scroll-nav left" @click=${(e) => { e.stopPropagation(); this._scrollChips('left'); }}>
+                         <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="chips-scroll-container" ${n(this._chipsContainerRef)} @click=${(e) => e.stopPropagation()}>
+                        ${seriesList.map(s => x `
+                            <div class="gs-legend-item ${this._canScrollLeft ? 'mask-left' : ''} ${this._canScrollRight ? 'mask-right' : ''}" @click=${(e) => { e.stopPropagation(); this.dispatchEvent(new UnlinkGraphMetricEvent(s.id)); }}>
+                                <span style="display:inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${s.color}; margin-right: 4px; flex-shrink: 0;"></span>
+                                <span style="color: ${s.color}; font-weight: 500;">${s.title}</span>
                             </div>
                         `)}
                     </div>
+
+                    ${this._canScrollRight ? x `
+                    <div class="scroll-nav right" @click=${(e) => { e.stopPropagation(); this._scrollChips('right'); }}>
+                         <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                    </div>
+                    ` : ''}
                 </div>
 
-                <div class="gs-env-chart-container"
-                     role="img"
-                     aria-label="Combined chart for ${metrics.join(', ')}"
-                     @mousemove=${(e) => this._handleCombinedGraphHover(e, startTime, durationMillis, graphData, width)}
-                     @mouseleave=${() => this._tooltip = null}>
-
-                    ${this._renderCombinedTooltip(metrics, width)}
-
-                    <svg style="position: absolute; left: 50px; top: 20px; right: 40px; bottom: 30px; width: calc(100% - 90px); height: calc(100% - 50px); pointer-events: none;" viewBox="0 0 1000 ${height}" preserveAspectRatio="none">
-                         ${this._renderGrid(width, height)}
-
-                         ${this._renderGraphPaths(graphData.map(g => {
-            const defaults = SENSOR_CHART_DEFAULTS[g.key];
-            const range = g.max - g.min || 1;
-            let paddedMin = g.min - (range * 0.1);
-            let paddedMax = g.max + (range * 0.1);
-            if (defaults?.disablePadding) {
-                paddedMin = g.min;
-                paddedMax = g.max;
+                <div style="display:flex; gap: 8px; margin-left: 8px; flex-shrink: 0;">
+                    <ha-icon-button .path=${mdiLink} @click=${() => this.dispatchEvent(new UnlinkGraphsEvent(-1))} title="Unlink Graphs"></ha-icon-button>
+                </div>
+             </div>
+        `;
+    }
+    _handleGraphHover(e, seriesList, startTime, durationMillis, width) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        // Note: Logic depends on accurate rect. If padding changed in CSS, need to update this.
+        // Current CSS: padding: 20px 40px 30px 50px;
+        // The SVG is inside the container, but container has padding.
+        // The event listener is on container. 
+        // Mouse X relative to SVG drawing area (0 to width)
+        // width = containerWidth - 50 - 40? 
+        // We defined SVG width as fixed 800 for coordinate calc, but it scales via viewBox.
+        // We need to map mouse X -> time.
+        // This is tricky with responsive SVG. 
+        // Better approach: Get relative X % in the content box.
+        // 50px left padding, 40px right padding. Total H padding 90px.
+        // contentWidth = rect.width - 90.
+        // relX = (e.clientX - rect.left - 50) / contentWidth
+        const contentWidth = rect.width - 90;
+        const relX = Math.max(0, Math.min(1, (e.clientX - rect.left - 50) / contentWidth));
+        const hoverTime = startTime.getTime() + relX * durationMillis;
+        // Find closest points
+        // For tooltip, we just need to reconstruct the "Value at this time"
+        // Since we have multiple series, we show them all.
+        // Construct simple tooltip state
+        // We can just store raw data and let renderTooltip handle format
+        // Reusing _tooltip state object structure:
+        // Find closest point for primary series or just generic time
+        const locale = this.hass?.locale?.language || undefined;
+        const timeStr = new Date(hoverTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+        this._tooltip = {
+            id: 'hover',
+            x: e.clientX - rect.left, // Relative to container for positioning
+            time: timeStr,
+            value: '' // Will be generated in render
+        };
+        // Attach ephemeral data for render loop?
+        // Lit state update triggers render.
+        // We'll pass the 'hoverTime' to _renderTooltip via a property or just re-calculate it?
+        // Ideally we store 'hoverIndex' or 'hoverTime' in state.
+        this._hoverTime = hoverTime; // Use the new state property
+    }
+    _renderTooltip(seriesList) {
+        if (!this._tooltip || this._hoverTime === null)
+            return x ``;
+        const hoverTime = this._hoverTime;
+        const items = seriesList.map(s => {
+            // Find closest point
+            // Optimization: Binary search or assume sorted
+            // Simple linear scan for now (small datasets usually < 1000 points)
+            let closest = s.points[0];
+            let minDiff = Number.MAX_VALUE;
+            for (const p of s.points) {
+                const diff = Math.abs(p.time - hoverTime);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closest = p;
+                }
             }
-            const paddedRange = paddedMax - paddedMin;
-            const points = g.points.map((p) => {
-                const x = ((p.time - startTime.getTime()) / durationMillis) * width;
-                const y = height - ((p.value - paddedMin) / paddedRange) * height;
-                return [x, y];
-            });
-            const path = `M ${points.map((p) => `${p[0]},${p[1]}`).join(' L ')}`;
-            return { path, color: g.color, fill: 'flat', points, height };
-        }))}
-                    </svg>
-
-                    ${this._renderXLabels(range, '#fff')}
+            return { series: s, point: closest };
+        });
+        return x `
+            <div class="gs-tooltip" style="left: ${this._tooltip.x}px; top: 0;">
+                <div style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 2px;">
+                    ${this._tooltip.time}
                 </div>
+                ${items.map(i => {
+            const defaults = SENSOR_CHART_DEFAULTS[i.series.id];
+            const isBinary = defaults?.binary === true || (i.series.unit === 'state' && defaults?.max === undefined) || i.series.id === 'optimal' || i.series.id === 'dehumidifier';
+            let valStr = `${i.point.value.toFixed(1)} ${i.series.unit}`;
+            if (isBinary) {
+                if (i.series.id === 'optimal') {
+                    if (i.point.value === 1)
+                        valStr = 'Optimal';
+                    else
+                        valStr = i.point.meta?.reasons || 'Not Optimal';
+                }
+                else if (i.series.id === 'dehumidifier') {
+                    valStr = i.point.value === 1 ? 'ON' : 'OFF';
+                }
+                else {
+                    valStr = i.point.value === 1 ? 'ON' : 'OFF';
+                }
+            }
+            else if ((i.series.id === 'exhaust' || i.series.id === 'humidifier') && i.point.meta?.state) {
+                valStr = i.point.meta.state;
+            }
+            return x `
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px;">
+                             <span style="color: ${i.series.color};">${i.series.title}:</span>
+                             <span style="font-family: monospace; font-weight: bold;">${valStr}</span>
+                        </div>
+                    `;
+        })}
             </div>
+            <!-- Cursor Line -->
+             <div class="gs-cursor-line" style="left: ${this._tooltip.x}px; height: 100%; top: 0; position: absolute; border-left: 1px dashed rgba(255,255,255,0.3); pointer-events: none;"></div>
+        `;
+    }
+    _renderGrid(width, height) {
+        return b `
+            <!-- Simple Grid -->
+            <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
+            <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
+            <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="#333" stroke-width="0.5" stroke-dasharray="4 4" />
+        `;
+    }
+    _renderGradient(key, color) {
+        return b `
+            <linearGradient id="grad-${key}" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="${color}" stop-opacity="0.4" />
+                <stop offset="100%" stop-color="${color}" stop-opacity="0" />
+            </linearGradient>
+        `;
+    }
+    _renderXLabels(range, color) {
+        // Simplified X-Axis labels based on range
+        // Just visual approximation
+        return b `
+            <text x="0" y="215" fill="${color}" font-size="10" text-anchor="start">Now</text>
+            <text x="800" y="215" fill="${color}" font-size="10" text-anchor="end">-${range}</text>
+        `;
+    }
+    _renderYLabels(min, max, unit) {
+        // Render Y-Axis labels on the left (SVG coords < 0) - needs overflow visible
+        if (unit === 'state' || (max === 1 && min === 0)) {
+            return b `
+                <text x="-10" y="10" fill="#aaa" font-size="10" text-anchor="end">ON</text>
+                <text x="-10" y="190" fill="#aaa" font-size="10" text-anchor="end">OFF</text>
+            `;
+        }
+        return b `
+            <text x="-10" y="10" fill="#aaa" font-size="10" text-anchor="end">${max}${unit}</text>
+            <text x="-10" y="100" fill="#aaa" font-size="10" text-anchor="end">${((max + min) / 2).toFixed(1)}</text>
+            <text x="-10" y="190" fill="#aaa" font-size="10" text-anchor="end">${min}${unit}</text>
         `;
     }
     _getDurationMillis(range) {
@@ -10877,145 +10783,39 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             return 7 * 24 * 60 * 60 * 1000;
         return 24 * 60 * 60 * 1000;
     }
-    _prepareCombinedGraphData(metrics, metricConfig, startTime, durationMillis, now) {
-        const graphData = [];
-        metrics.forEach(metricKey => {
-            const config = metricConfig[metricKey] || { color: '#fff', title: metricKey, unit: '' };
-            let dataPoints = [];
-            let historySource = this.sensorHistory[metricKey] || [];
-            if (historySource && historySource.length > 0) {
-                const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
-                const getValue = (ent, key) => this._normalizeSensorValue(ent, key, config.unit || '');
-                let initialState = sortedHistory.length > 0 ? sortedHistory[0] : null;
-                for (const h of sortedHistory) {
-                    const t = new Date(h.last_changed).getTime();
-                    if (t > startTime.getTime())
-                        break;
-                    initialState = h;
-                }
-                if (initialState) {
-                    const val = getValue(initialState, metricKey);
-                    if (val !== undefined && !isNaN(val)) {
-                        dataPoints.push({ time: startTime.getTime(), value: val });
-                    }
-                }
-                sortedHistory.forEach(h => {
-                    const t = new Date(h.last_changed).getTime();
-                    if (t <= startTime.getTime())
-                        return;
-                    const val = getValue(h, metricKey);
-                    if (val !== undefined && !isNaN(val)) {
-                        dataPoints.push({ time: t, value: val });
-                    }
-                });
-                if (dataPoints.length > 0) {
-                    const last = dataPoints[dataPoints.length - 1];
-                    dataPoints.push({ time: now.getTime(), value: last.value });
-                }
+    _toggleEnvGraph() {
+        this.dispatchEvent(new ToggleEnvGraphEvent(this.metricKey));
+    }
+    _unlinkGraphs(groupIndex) {
+        this.dispatchEvent(new UnlinkGraphsEvent(groupIndex));
+    }
+    willUpdate(changedProperties) {
+        if (changedProperties.has('_tooltip') || changedProperties.has('_hoverTime')) ;
+        // Check if any property OTHER than _tooltip or _hoverTime changed
+        for (const [key] of changedProperties) {
+            if (key !== '_tooltip' && key !== '_hoverTime') {
+                break;
             }
-            if (dataPoints.length > 0) {
-                let min = Math.min(...dataPoints.map(d => d.value));
-                let max = Math.max(...dataPoints.map(d => d.value));
-                if (metricKey === 'exhaust' || metricKey === 'humidifier') {
-                    min = 0;
-                    max = 10;
-                }
-                else if (metricKey === 'dehumidifier') {
-                    min = 0;
-                    max = 1;
-                }
-                graphData.push({ key: metricKey, ...config, points: dataPoints, min, max });
+        }
+        if (changedProperties.has('_tooltip') || changedProperties.has('_hoverTime')) ;
+    }
+    _formatTime(date) {
+        const locale = this.hass?.locale?.language || undefined;
+        return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    }
+    _findClosestDataPoint(points, time) {
+        if (points.length === 0)
+            return { time: time, value: 0 };
+        let closest = points[0];
+        let minDiff = Number.MAX_VALUE;
+        for (const p of points) {
+            const diff = Math.abs(p.time - time);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closest = p;
             }
-        });
-        return graphData;
-    }
-    _renderTooltip(metricKey, color) {
-        if (!this._tooltip || this._tooltip.id !== metricKey)
-            return x ``;
-        const content = x `
-            <div style="color: ${color}; font-weight: 600;">${this._tooltip.time}</div>
-            <div style="margin-top: 4px;">${this._tooltip.value}</div>
-        `;
-        return this._renderTooltipContainer(this._tooltip.x, content, color);
-    }
-    _renderCombinedTooltip(metrics, width) {
-        if (!this._tooltip || this._tooltip.id !== 'combined-' + metrics.join('-'))
-            return x ``;
-        const content = x `
-            <div style="font-weight: 600; margin-bottom: 4px;">${this._tooltip.time}</div>
-            ${(() => {
-            try {
-                const values = JSON.parse(this._tooltip.value);
-                return values.map((v) => x `
-                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-                            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${v.color};"></div>
-                            <span style="color: rgba(255,255,255,0.7);">${v.title}:</span>
-                            <span style="font-weight: 500;">${v.value} ${v.unit}</span>
-                        </div>
-                    `);
-            }
-            catch {
-                return x ``;
-            }
-        })()}
-        `;
-        return this._renderTooltipContainer(this._tooltip.x, content, '#fff', width);
-    }
-    _renderTooltipContainer(x$1, content, borderColor, containerWidth) {
-        const tooltipX = containerWidth ? Math.min(x$1 + 10, containerWidth - 150) : x$1 + 10;
-        const background = borderColor === '#fff' ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.9)';
-        const border = borderColor === '#fff' ? '1px solid rgba(255,255,255,0.1)' : `1px solid ${borderColor}`;
-        return x `
-             <div style="position: absolute; left: ${x$1}px; top: 0; bottom: 0; width: 1px; background: ${borderColor === '#fff' ? 'rgba(255,255,255,0.2)' : `${borderColor}80`}; pointer-events: none;"></div>
-             <div style="position: absolute; left: ${tooltipX}px; top: 20px; background: ${background}; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: ${border}; pointer-events: none; z-index: 1000;">
-                ${content}
-             </div>
-        `;
-    }
-    _renderYLabels(yLabels, unit) {
-        return x `
-            <div style="position: absolute; left: 0; top: 20px; bottom: 30px; width: 45px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.65rem; color: #666; text-align: right; padding-right: 8px; pointer-events: none;" >
-                ${yLabels.map(val => x `<div>${typeof val === 'number' ? val.toFixed(1) : val} ${typeof val === 'number' ? unit : ''}</div>`)}
-            </div>
-        `;
-    }
-    _renderXLabels(range, color) {
-        let labels = x `<span>24h</span><span>18h</span><span>12h</span><span>6h</span>`;
-        if (range === '1h')
-            labels = x `<span>60m</span><span>45m</span><span>30m</span><span>15m</span>`;
-        else if (range === '6h')
-            labels = x `<span>6h</span><span>4.5h</span><span>3h</span><span>1.5h</span>`;
-        else if (range === '7d')
-            labels = x `<span>7d</span><span>5d</span><span>3d</span><span>1d</span>`;
-        return x `
-            <div class="chart-markers">
-                ${labels}
-                <span style="color: ${color};" > NOW </span>
-            </div>
-        `;
-    }
-    _renderGrid(width, height, avgValue, min, range, color) {
-        return b `
-            <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
-            <line x1="${width * 0.25}" y1="0" x2="${width * 0.25}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
-            <line x1="${width * 0.5}" y1="0" x2="${width * 0.5}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
-            <line x1="${width * 0.75}" y1="0" x2="${width * 0.75}" y2="${height}" stroke="#222" stroke-width="1" stroke-dasharray="2,2" />
-            <line x1="${width}" y1="0" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
-            
-            ${(avgValue !== undefined && min !== undefined && range !== undefined && color) ? b `
-               <line x1="0" y1="${height - ((avgValue - min) / range) * height}" 
-                     x2="${width}" y2="${height - ((avgValue - min) / range) * height}" 
-                     stroke="${color}" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.5" />
-             ` : ''}
-        `;
-    }
-    _renderGradient(key, color) {
-        return b `
-            <linearGradient id="grad-${key}" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:${color};stop-opacity:0.3" />
-                <stop offset="100%" style="stop-color:${color};stop-opacity:0" />
-            </linearGradient>
-        `;
+        }
+        return closest;
     }
 };
 GrowspaceEnvChart.styles = i$5 `
@@ -11074,103 +10874,150 @@ GrowspaceEnvChart.styles = i$5 `
         border-left: 1px dashed rgba(255, 255, 255, 0.5);
     }
 
-
-    /* Step Graph Styles-REMOVED (Unified Template) */
-    
-    .gs-chart-container {
-        margin-top: 8px;
-        height: 150px;
-        position: relative;
-        width: 100%;
-        cursor: crosshair;
-    }
-    
-    .gs-chart-svg {
-        width: 100%;
-        height: 100%;
-        filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.2));
-        pointer-events: none; /* Ensure events pass to container for offsetX accuracy */
-    }
-    
-    .chart-line {
-        fill: none;
-        stroke-width: 2;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-    }
-    
-    .chart-gradient-fill {
-        opacity: 0.2;
-    }
-    
-    .chart-markers {
-        position: absolute;
-        left: 50px;
-        right: 40px;
-        bottom: 5px;
+    .gs-legend-item {
         display: flex;
-        justify-content: space-between;
-        font-size: 0.65rem;
-        color: #666;
-        pointer-events: none; /* Ensure events pass to container */
+        align-items: center;
+        margin-right: 12px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        opacity: 0.8;
+        transition: opacity 0.2s;
     }
-`;
+    
+    .gs-legend-item:hover {
+        opacity: 1;
+    }
+
+    .chips-scroll-container {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE/Edge */
+        scroll-behavior: smooth;
+        flex: 1;
+        min-width: 0;
+        /* Removed static mask */
+        padding: 0 10px;
+        transition: mask-image 0.3s;
+    }
+    
+    .chips-scroll-container.mask-right {
+        mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%);
+    }
+
+    .chips-scroll-container.mask-left {
+        mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%);
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%);
+    }
+
+    .chips-scroll-container.mask-left.mask-right {
+        mask-image: linear-gradient(to right, transparent 0%, black 30px, black calc(100% - 30px), transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 30px, black calc(100% - 30px), transparent 100%);
+    }
+    
+    .chips-scroll-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    .scroll-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0.5;
+        transition: opacity 0.2s;
+        min-width: 24px;
+        color: #fff;
+    }
+
+    .scroll-nav:hover {
+        opacity: 1;
+    }
+
+    .scroll-nav svg {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+    }
+
+    @media (pointer: coarse) {
+        .scroll-nav {
+            display: none;
+        }
+    }
+    `;
 __decorate([
-    c$1({ context: hassContext, subscribe: true }),
+    c$2({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "hass", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "device", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "sensorHistory", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "metricKey", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "unit", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "color", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "title", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "icon", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", String)
 ], GrowspaceEnvChart.prototype, "range", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", String)
 ], GrowspaceEnvChart.prototype, "type", void 0);
 __decorate([
-    n$2({ type: Array }),
+    n$4({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceEnvChart.prototype, "metrics", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "isCombined", void 0);
 __decorate([
-    n$2({ type: Object }),
+    n$4({ type: Object }),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "metricConfig", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], GrowspaceEnvChart.prototype, "_tooltip", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "_hoverTime", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "_canScrollLeft", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "_canScrollRight", void 0);
 GrowspaceEnvChart = __decorate([
     t$2('growspace-env-chart')
 ], GrowspaceEnvChart);
@@ -11424,23 +11271,23 @@ Md3TextInput.styles = [
     `
 ];
 __decorate([
-    n$2(),
+    n$4(),
     __metadata("design:type", Object)
 ], Md3TextInput.prototype, "label", void 0);
 __decorate([
-    n$2(),
+    n$4(),
     __metadata("design:type", Object)
 ], Md3TextInput.prototype, "value", void 0);
 __decorate([
-    n$2(),
+    n$4(),
     __metadata("design:type", Object)
 ], Md3TextInput.prototype, "type", void 0);
 __decorate([
-    n$2(),
+    n$4(),
     __metadata("design:type", Object)
 ], Md3TextInput.prototype, "placeholder", void 0);
 __decorate([
-    n$2(),
+    n$4(),
     __metadata("design:type", Object)
 ], Md3TextInput.prototype, "list", void 0);
 Md3TextInput = __decorate([
@@ -11487,23 +11334,23 @@ Md3NumberInput.styles = [
     `
 ];
 __decorate([
-    n$2(),
+    n$4(),
     __metadata("design:type", Object)
 ], Md3NumberInput.prototype, "label", void 0);
 __decorate([
-    n$2({ type: Number }),
+    n$4({ type: Number }),
     __metadata("design:type", Object)
 ], Md3NumberInput.prototype, "value", void 0);
 __decorate([
-    n$2({ type: Number }),
+    n$4({ type: Number }),
     __metadata("design:type", Object)
 ], Md3NumberInput.prototype, "min", void 0);
 __decorate([
-    n$2({ type: Number }),
+    n$4({ type: Number }),
     __metadata("design:type", Number)
 ], Md3NumberInput.prototype, "max", void 0);
 __decorate([
-    n$2(),
+    n$4(),
     __metadata("design:type", Object)
 ], Md3NumberInput.prototype, "placeholder", void 0);
 Md3NumberInput = __decorate([
@@ -11552,15 +11399,15 @@ Md3Select.styles = [
     `
 ];
 __decorate([
-    n$2(),
+    n$4(),
     __metadata("design:type", Object)
 ], Md3Select.prototype, "label", void 0);
 __decorate([
-    n$2(),
+    n$4(),
     __metadata("design:type", Object)
 ], Md3Select.prototype, "value", void 0);
 __decorate([
-    n$2({ type: Array }),
+    n$4({ type: Array }),
     __metadata("design:type", Array)
 ], Md3Select.prototype, "options", void 0);
 Md3Select = __decorate([
@@ -11611,15 +11458,15 @@ Md3DateInput.styles = [
     `
 ];
 __decorate([
-    n$2(),
+    n$4(),
     __metadata("design:type", Object)
 ], Md3DateInput.prototype, "label", void 0);
 __decorate([
-    n$2(),
+    n$4(),
     __metadata("design:type", Object)
 ], Md3DateInput.prototype, "value", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Object)
 ], Md3DateInput.prototype, "time", void 0);
 Md3DateInput = __decorate([
@@ -12094,43 +11941,43 @@ PlantOverviewDialog.styles = [
     `
 ];
 __decorate([
-    c$1({ context: hassContext, subscribe: true }),
+    c$2({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "hass", void 0);
 __decorate([
-    n$2({ type: Boolean, reflect: true }),
+    n$4({ type: Boolean, reflect: true }),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "open", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "dialog", void 0);
 __decorate([
-    n$2({ type: Object }),
+    n$4({ type: Object }),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "plant", void 0);
 __decorate([
-    n$2({ type: Object }),
+    n$4({ type: Object }),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "growspaceOptions", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "editedAttributes", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "isEditing", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "showAllDates", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "cloneTargetId", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "_showDeleteConfirmation", void 0);
 PlantOverviewDialog = __decorate([
@@ -13369,51 +13216,51 @@ StrainLibraryDialog.styles = [
     `
 ];
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "open", void 0);
 __decorate([
-    n$2({ type: Array }),
+    n$4({ type: Array }),
     __metadata("design:type", Array)
 ], StrainLibraryDialog.prototype, "strains", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", String)
 ], StrainLibraryDialog.prototype, "_view", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_searchQuery", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_editorState", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_isCropping", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_isImageSelectorOpen", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_importDialogOpen", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_mobileMenuOpen", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_pendingDeleteKey", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_importReplace", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], StrainLibraryDialog.prototype, "_currentPage", void 0);
 StrainLibraryDialog = __decorate([
@@ -13497,11 +13344,11 @@ Md3Switch.styles = i$5 `
     }
   `;
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Object)
 ], Md3Switch.prototype, "checked", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Object)
 ], Md3Switch.prototype, "disabled", void 0);
 Md3Switch = __decorate([
@@ -14056,59 +13903,59 @@ IrrigationDialog.styles = [
     `
 ];
 __decorate([
-    c$1({ context: hassContext, subscribe: true }),
+    c$2({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "hass", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "open", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "device", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "growspaceName", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "_irrigation_pump_entity", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "_drain_pump_entity", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "_irrigation_duration", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "_drain_duration", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Array)
 ], IrrigationDialog.prototype, "_irrigation_times", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Array)
 ], IrrigationDialog.prototype, "_drain_times", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "_adding_irrigation_time", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "_adding_drain_time", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", String)
 ], IrrigationDialog.prototype, "_activeTab", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], IrrigationDialog.prototype, "_strategy", void 0);
 IrrigationDialog = __decorate([
@@ -14302,63 +14149,63 @@ AddPlantDialog.styles = [
     `
 ];
 __decorate([
-    c$1({ context: hassContext, subscribe: true }),
+    c$2({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "hass", void 0);
 __decorate([
-    n$2({ type: Array }),
+    n$4({ type: Array }),
     __metadata("design:type", Array)
 ], AddPlantDialog.prototype, "strainLibrary", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "growspaceName", void 0);
 __decorate([
-    n$2({ type: Boolean, reflect: true }),
+    n$4({ type: Boolean, reflect: true }),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "open", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "strain", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "phenotype", void 0);
 __decorate([
-    n$2({ type: Number }),
+    n$4({ type: Number }),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "row", void 0);
 __decorate([
-    n$2({ type: Number }),
+    n$4({ type: Number }),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "col", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "veg_start", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "flower_start", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "seedling_start", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "mother_start", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "clone_start", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "dry_start", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], AddPlantDialog.prototype, "cure_start", void 0);
 AddPlantDialog = __decorate([
@@ -14835,95 +14682,95 @@ ConfigDialog.styles = [
     `
 ];
 __decorate([
-    n$2({ type: Boolean, reflect: true }),
+    n$4({ type: Boolean, reflect: true }),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "open", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "hass", void 0);
 __decorate([
-    n$2({ type: Object }),
+    n$4({ type: Object }),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "growspaceOptions", void 0);
 __decorate([
-    n$2({ type: Array }),
+    n$4({ type: Array }),
     __metadata("design:type", Array)
 ], ConfigDialog.prototype, "devices", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", String)
 ], ConfigDialog.prototype, "initialTab", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", String)
 ], ConfigDialog.prototype, "currentTab", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "add_name", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "add_rows", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "add_plants_per_row", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "add_notification_service", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "edit_selectedId", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "edit_name", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "edit_rows", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "edit_plants_per_row", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_selectedGrowspaceId", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_temp_sensor", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_humidity_sensor", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_vpd_sensor", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_co2_sensor", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_circulation_fan", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_stress_threshold", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "env_mold_threshold", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "_showDeleteConfirm", void 0);
 ConfigDialog = __decorate([
@@ -15099,27 +14946,27 @@ GrowMasterDialog.styles = [
     `
 ];
 __decorate([
-    n$2({ type: Boolean, reflect: true }),
+    n$4({ type: Boolean, reflect: true }),
     __metadata("design:type", Object)
 ], GrowMasterDialog.prototype, "open", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowMasterDialog.prototype, "isStressed", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", String)
 ], GrowMasterDialog.prototype, "personality", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowMasterDialog.prototype, "isLoading", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", Object)
 ], GrowMasterDialog.prototype, "response", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], GrowMasterDialog.prototype, "userQuery", void 0);
 GrowMasterDialog = __decorate([
@@ -15273,23 +15120,23 @@ StrainRecommendationDialog.styles = [
     `
 ];
 __decorate([
-    c$1({ context: hassContext, subscribe: true }),
+    c$2({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], StrainRecommendationDialog.prototype, "hass", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Object)
 ], StrainRecommendationDialog.prototype, "open", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Object)
 ], StrainRecommendationDialog.prototype, "isLoading", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], StrainRecommendationDialog.prototype, "response", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", String)
 ], StrainRecommendationDialog.prototype, "userQuery", void 0);
 StrainRecommendationDialog = __decorate([
@@ -15592,23 +15439,23 @@ GrowspaceLogbook.styles = [
     `
 ];
 __decorate([
-    c$1({ context: hassContext, subscribe: true }),
+    c$2({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], GrowspaceLogbook.prototype, "hass", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", String)
 ], GrowspaceLogbook.prototype, "growspaceId", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Array)
 ], GrowspaceLogbook.prototype, "_events", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], GrowspaceLogbook.prototype, "_isLoading", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], GrowspaceLogbook.prototype, "_activeFilter", void 0);
 GrowspaceLogbook = __decorate([
@@ -15691,15 +15538,15 @@ LogbookDialog.styles = [
     `
 ];
 __decorate([
-    c$1({ context: hassContext, subscribe: true }),
+    c$2({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], LogbookDialog.prototype, "hass", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Object)
 ], LogbookDialog.prototype, "open", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", Object)
 ], LogbookDialog.prototype, "growspaceId", void 0);
 LogbookDialog = __decorate([
@@ -16123,27 +15970,27 @@ GrowspacePlantCard.styles = i$5 `
     }
   `;
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspacePlantCard.prototype, "plant", void 0);
 __decorate([
-    n$2({ type: Number }),
+    n$4({ type: Number }),
     __metadata("design:type", Number)
 ], GrowspacePlantCard.prototype, "row", void 0);
 __decorate([
-    n$2({ type: Number }),
+    n$4({ type: Number }),
     __metadata("design:type", Number)
 ], GrowspacePlantCard.prototype, "col", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspacePlantCard.prototype, "strainLibrary", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowspacePlantCard.prototype, "isEditMode", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowspacePlantCard.prototype, "selected", void 0);
 GrowspacePlantCard = __decorate([
@@ -16162,11 +16009,51 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
         this._menuOpen = false;
         this.linkedGraphGroups = [];
         this._draggedMetric = null;
+        this._canScrollLeft = false;
+        this._canScrollRight = false;
+        this._chipsContainerRef = e();
         this._mobileLink = false;
         this._isCompact = false;
         this._isMobileCheck = false;
         this._hasTouch = false;
         this._checkMobileBound = () => this._checkMobile();
+    }
+    _scrollChips(direction) {
+        const container = this._chipsContainerRef.value;
+        if (container) {
+            container.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
+        }
+    }
+    _checkScroll() {
+        const container = this._chipsContainerRef.value;
+        if (container) {
+            // 1px buffer to handle subpixels
+            this._canScrollLeft = container.scrollLeft > 1;
+            this._canScrollRight = container.scrollLeft < (container.scrollWidth - container.clientWidth - 1);
+        }
+    }
+    firstUpdated() {
+        const container = this._chipsContainerRef.value;
+        if (container) {
+            container.addEventListener('scroll', () => this._checkScroll());
+            this._resizeObserver = new ResizeObserver(() => this._checkScroll());
+            this._resizeObserver.observe(container);
+            // Also observe children changes if possible, or just re-check on update
+            setTimeout(() => this._checkScroll(), 100);
+        }
+    }
+    updated(changedProps) {
+        if (changedProps.has('activeEnvGraphs') || changedProps.has('linkedGraphGroups') || changedProps.has('device')) {
+            // Content might change size
+            setTimeout(() => this._checkScroll(), 0);
+        }
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        window.removeEventListener('resize', this._checkMobileBound);
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+        }
     }
     _handleDeviceChange(e) {
         const target = e.target;
@@ -16211,10 +16098,6 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
         super.connectedCallback();
         this._checkMobile();
         window.addEventListener('resize', this._checkMobileBound);
-    }
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        window.removeEventListener('resize', this._checkMobileBound);
     }
     _checkMobile() {
         const isMobile = window.matchMedia('(max-width: 768px)').matches;
@@ -16394,7 +16277,12 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
                  <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
               </div>
 
-              <div class="gs-stats-chips ${this._mobileLink ? 'mobile-link-active' : ''}">
+              <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px; overflow: hidden;">
+                ${this._canScrollLeft && !this._mobileLink ? x `
+                    <div class="scroll-nav left" @click=${() => this._scrollChips('left')}><svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg></div>
+                ` : ''}
+                
+                <div class="gs-stats-chips ${this._mobileLink ? 'mobile-link-active' : ''} ${this._canScrollLeft ? 'mask-left' : ''} ${this._canScrollRight ? 'mask-right' : ''}" ${n(this._chipsContainerRef)}>
 
                 ${temp !== undefined ? x `
                   <div class="stat-chip ${this.activeEnvGraphs.has('temperature') ? 'active' : ''}"
@@ -16654,6 +16542,11 @@ let GrowspaceHeader = class GrowspaceHeader extends i$2 {
                   </div>` : ''}
               </div>
 
+                ${this._canScrollRight && !this._mobileLink ? x `
+                    <div class="scroll-nav right" @click=${() => this._scrollChips('right')}><svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg></div>
+                ` : ''}
+              </div>
+
               <div class="menu-container">
                 <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
                   <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
@@ -16911,7 +16804,7 @@ GrowspaceHeader.styles = i$5 `
        display: flex;
        flex-wrap: nowrap;
        gap: 8px;
-       justify-content: flex-end;
+       justify-content: flex-start;
        align-items: center;
        overflow-x: auto;
        overflow-y: hidden;
@@ -16919,9 +16812,11 @@ GrowspaceHeader.styles = i$5 `
        min-width: 0;
        scrollbar-width: none;
        -ms-overflow-style: none;
-       mask-image: linear-gradient(to right, black 85%, transparent 100%);
-       -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+       /* Remove static mask */
+       /* mask-image: linear-gradient(to right, black 85%, transparent 100%); */
+       /* -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%); */
        padding: 4px 2px;
+       transition: mask-image 0.3s;
 
        touch-action: manipulation;
        max-width: 100%;
@@ -16929,6 +16824,10 @@ GrowspaceHeader.styles = i$5 `
     }
     .gs-stats-chips::-webkit-scrollbar {
       display: none;
+    }
+
+    .gs-stats-chips > :first-child {
+      margin-left: auto;
     }
 
     .stat-chip {
@@ -17233,70 +17132,120 @@ GrowspaceHeader.styles = i$5 `
         width: 90%;
       }
     }
+
+    .scroll-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0.5;
+        transition: opacity 0.2s;
+        min-width: 24px;
+        color: #fff;
+    }
+
+    .scroll-nav:hover {
+        opacity: 1;
+    }
+
+    .scroll-nav svg {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+    }
+
+    @media (pointer: coarse) {
+        .scroll-nav {
+            display: none;
+        }
+    }
+
+    .gs-stats-chips.mask-right {
+        mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
+    }
+
+    .gs-stats-chips.mask-left {
+        mask-image: linear-gradient(to right, transparent 0%, black 40px, black 100%);
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 40px, black 100%);
+    }
+    
+    .gs-stats-chips.mask-left.mask-right {
+        mask-image: linear-gradient(to right, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%);
+    }
   `;
 __decorate([
-    c$1({ context: hassContext, subscribe: true }),
+    c$2({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "hass", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "device", void 0);
 __decorate([
-    c$1({ context: configContext, subscribe: true }),
-    n$2({ attribute: false }),
+    c$2({ context: configContext, subscribe: true }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "config", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceHeader.prototype, "devices", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "compact", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "isEditMode", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "activeEnvGraphs", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "growspaceOptions", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "historyData", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_menuOpen", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceHeader.prototype, "linkedGraphGroups", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_draggedMetric", void 0);
 __decorate([
-    r$1(),
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "_canScrollLeft", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "_canScrollRight", void 0);
+__decorate([
+    r$2(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_mobileLink", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_isCompact", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_isMobileCheck", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_hasTouch", void 0);
 GrowspaceHeader = __decorate([
@@ -17308,20 +17257,7 @@ GrowspaceHeader = __decorate([
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t$1={ATTRIBUTE:1,CHILD:2,PROPERTY:3,BOOLEAN_ATTRIBUTE:4,EVENT:5,ELEMENT:6},e=t=>(...e)=>({_$litDirective$:t,values:e});class i{constructor(t){}get _$AU(){return this._$AM._$AU}_$AT(t,e,i){this._$Ct=t,this._$AM=e,this._$Ci=i;}_$AS(t,e){return this.update(t,e)}update(t,e){return this.render(...e)}}
-
-/**
- * @license
- * Copyright 2020 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const {I:t}=Z,r=()=>document.createComment(""),s=(o,i,n)=>{const e=o._$AA.parentNode,l=void 0===i?o._$AB:i._$AA;if(void 0===n){const i=e.insertBefore(r(),l),d=e.insertBefore(r(),l);n=new t(i,d,o,o.options);}else {const t=n._$AB.nextSibling,i=n._$AM,d=i!==o;if(d){let t;n._$AQ?.(o),n._$AM=o,void 0!==n._$AP&&(t=o._$AU)!==i._$AU&&n._$AP(t);}if(t!==l||d){let o=n._$AA;for(;o!==t;){const t=o.nextSibling;e.insertBefore(o,l),o=t;}}}return n},v=(o,t,i=o)=>(o._$AI(t,i),o),u$1={},m=(o,t=u$1)=>o._$AH=t,p=o=>o._$AH,M=o=>{o._$AR(),o._$AA.remove();};
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const u=(e,s,t)=>{const r=new Map;for(let l=s;l<=t;l++)r.set(e[l],l);return r},c=e(class extends i{constructor(e){if(super(e),e.type!==t$1.CHILD)throw Error("repeat() can only be used in text expressions")}dt(e,s,t){let r;void 0===t?t=s:void 0!==s&&(r=s);const l=[],o=[];let i=0;for(const s of e)l[i]=r?r(s,i):i,o[i]=t(s,i),i++;return {values:o,keys:l}}render(e,s,t){return this.dt(e,s,t).values}update(s$1,[t,r,c]){const d=p(s$1),{values:p$1,keys:a}=this.dt(t,r,c);if(!Array.isArray(d))return this.ut=a,p$1;const h=this.ut??=[],v$1=[];let m$1,y,x=0,j=d.length-1,k=0,w=p$1.length-1;for(;x<=j&&k<=w;)if(null===d[x])x++;else if(null===d[j])j--;else if(h[x]===a[k])v$1[k]=v(d[x],p$1[k]),x++,k++;else if(h[j]===a[w])v$1[w]=v(d[j],p$1[w]),j--,w--;else if(h[x]===a[w])v$1[w]=v(d[x],p$1[w]),s(s$1,v$1[w+1],d[x]),x++,w--;else if(h[j]===a[k])v$1[k]=v(d[j],p$1[k]),s(s$1,d[x],d[j]),j--,k++;else if(void 0===m$1&&(m$1=u(a,k,w),y=u(h,x,j)),m$1.has(h[x]))if(m$1.has(h[j])){const e=y.get(a[k]),t=void 0!==e?d[e]:null;if(null===t){const e=s(s$1,d[x]);v(e,p$1[k]),v$1[k]=e;}else v$1[k]=v(t,p$1[k]),s(s$1,d[x],t),d[e]=null;k++;}else M(d[j]),j--;else M(d[x]),x++;for(;k<=w;){const e=s(s$1,v$1[w+1]);v(e,p$1[k]),v$1[k++]=e;}for(;x<=j;){const e=d[x++];null!==e&&M(e);}return this.ut=a,m(s$1,v$1),T}});
+const u=(e,s,t)=>{const r=new Map;for(let l=s;l<=t;l++)r.set(e[l],l);return r},c=e$1(class extends i{constructor(e){if(super(e),e.type!==t.CHILD)throw Error("repeat() can only be used in text expressions")}dt(e,s,t){let r;void 0===t?t=s:void 0!==s&&(r=s);const l=[],o=[];let i=0;for(const s of e)l[i]=r?r(s,i):i,o[i]=t(s,i),i++;return {values:o,keys:l}}render(e,s,t){return this.dt(e,s,t).values}update(s,[t,r,c]){const d=p(s),{values:p$1,keys:a}=this.dt(t,r,c);if(!Array.isArray(d))return this.ut=a,p$1;const h=this.ut??=[],v$1=[];let m$1,y,x=0,j=d.length-1,k=0,w=p$1.length-1;for(;x<=j&&k<=w;)if(null===d[x])x++;else if(null===d[j])j--;else if(h[x]===a[k])v$1[k]=v(d[x],p$1[k]),x++,k++;else if(h[j]===a[w])v$1[w]=v(d[j],p$1[w]),j--,w--;else if(h[x]===a[w])v$1[w]=v(d[x],p$1[w]),s$1(s,v$1[w+1],d[x]),x++,w--;else if(h[j]===a[k])v$1[k]=v(d[j],p$1[k]),s$1(s,d[x],d[j]),j--,k++;else if(void 0===m$1&&(m$1=u(a,k,w),y=u(h,x,j)),m$1.has(h[x]))if(m$1.has(h[j])){const e=y.get(a[k]),t=void 0!==e?d[e]:null;if(null===t){const e=s$1(s,d[x]);v(e,p$1[k]),v$1[k]=e;}else v$1[k]=v(t,p$1[k]),s$1(s,d[x],t),d[e]=null;k++;}else M(d[j]),j--;else M(d[x]),x++;for(;k<=w;){const e=s$1(s,v$1[w+1]);v(e,p$1[k]),v$1[k++]=e;}for(;x<=j;){const e=d[x++];null!==e&&M(e);}return this.ut=a,m(s,v$1),T}});
 
 let GrowspaceGrid = class GrowspaceGrid extends i$2 {
     constructor() {
@@ -17722,35 +17658,35 @@ GrowspaceGrid.styles = i$5 `
       }
   `;
 __decorate([
-    n$2({ type: Array }),
+    n$4({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceGrid.prototype, "plants", void 0);
 __decorate([
-    n$2({ type: Number }),
+    n$4({ type: Number }),
     __metadata("design:type", Number)
 ], GrowspaceGrid.prototype, "rows", void 0);
 __decorate([
-    n$2({ type: Number }),
+    n$4({ type: Number }),
     __metadata("design:type", Number)
 ], GrowspaceGrid.prototype, "cols", void 0);
 __decorate([
-    n$2({ type: Array }),
+    n$4({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceGrid.prototype, "strainLibrary", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Boolean)
 ], GrowspaceGrid.prototype, "isEditMode", void 0);
 __decorate([
-    n$2({ type: Object }),
+    n$4({ type: Object }),
     __metadata("design:type", Set)
 ], GrowspaceGrid.prototype, "selectedPlants", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Boolean)
 ], GrowspaceGrid.prototype, "compact", void 0);
 __decorate([
-    n$2({ type: Boolean }),
+    n$4({ type: Boolean }),
     __metadata("design:type", Boolean)
 ], GrowspaceGrid.prototype, "isLoading", void 0);
 GrowspaceGrid = __decorate([
@@ -19063,6 +18999,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
         this.humidifierHistory = [];
         this.circulationFanHistory = [];
         this.soilMoistureHistory = [];
+        this.lightHistory = [];
         // Individual environment sensor histories (since env data moved to WebSocket)
         this.temperatureHistory = [];
         this.humidityHistory = [];
@@ -19120,6 +19057,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
             humidifier: this.humidifierHistory || [],
             circulation_fan: this.circulationFanHistory || [],
             soil_moisture: this.soilMoistureHistory || [],
+            light: this.lightHistory || [],
             optimal: this.optimalHistory || []
         };
         // Add raw history data as fallback if needed or mapped
@@ -19218,67 +19156,71 @@ GrowspaceAnalytics.styles = [
     `
 ];
 __decorate([
-    c$1({ context: hassContext, subscribe: true }),
+    c$2({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
 ], GrowspaceAnalytics.prototype, "hass", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceAnalytics.prototype, "device", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "historyData", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "optimalHistory", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "dehumidifierHistory", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "exhaustHistory", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "humidifierHistory", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "circulationFanHistory", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "soilMoistureHistory", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
+    __metadata("design:type", Array)
+], GrowspaceAnalytics.prototype, "lightHistory", void 0);
+__decorate([
+    n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "temperatureHistory", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "humidityHistory", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "vpdHistory", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "co2History", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Set)
 ], GrowspaceAnalytics.prototype, "activeEnvGraphs", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "linkedGraphGroups", void 0);
 __decorate([
-    n$2({ type: String }),
+    n$4({ type: String }),
     __metadata("design:type", String)
 ], GrowspaceAnalytics.prototype, "range", void 0);
 GrowspaceAnalytics = __decorate([
@@ -20940,13 +20882,13 @@ GrowspaceManagerCard.styles = [
     growspaceCardStyles
 ];
 __decorate([
-    e$1({ context: hassContext }),
-    n$2({ attribute: false }),
+    e$2({ context: hassContext }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCard.prototype, "hass", void 0);
 __decorate([
-    e$1({ context: configContext }),
-    n$2({ attribute: false }),
+    e$2({ context: configContext }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCard.prototype, "_config", void 0);
 GrowspaceManagerCard = __decorate([
@@ -21050,15 +20992,15 @@ GrowspaceManagerCardEditor.styles = i$5 `
     }
   `;
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCardEditor.prototype, "hass", void 0);
 __decorate([
-    n$2({ attribute: false }),
+    n$4({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCardEditor.prototype, "_config", void 0);
 __decorate([
-    r$1(),
+    r$2(),
     __metadata("design:type", Array)
 ], GrowspaceManagerCardEditor.prototype, "_growspaceOptions", void 0);
 GrowspaceManagerCardEditor = __decorate([

@@ -24,7 +24,10 @@ import {
   mdiAirHumidifierOff,
   mdiIdCard,
   mdiClipboardTextClock,
+  mdiChevronLeft,
+  mdiChevronRight,
 } from '@mdi/js';
+import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { consume } from '@lit/context';
 import { hassContext, configContext } from '../context';
 import { GrowspaceDevice, GrowspaceManagerCardConfig, IrrigationTime } from '../types';
@@ -57,6 +60,55 @@ export class GrowspaceHeader extends LitElement {
 
   @property({ attribute: false }) public linkedGraphGroups: string[][] = [];
   @state() private _draggedMetric: string | null = null;
+
+
+  @state() private _canScrollLeft = false;
+  @state() private _canScrollRight = false;
+
+  private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
+  private _resizeObserver: ResizeObserver | undefined;
+
+  private _scrollChips(direction: 'left' | 'right') {
+    const container = this._chipsContainerRef.value;
+    if (container) {
+      container.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
+    }
+  }
+
+  private _checkScroll() {
+    const container = this._chipsContainerRef.value;
+    if (container) {
+      // 1px buffer to handle subpixels
+      this._canScrollLeft = container.scrollLeft > 1;
+      this._canScrollRight = container.scrollLeft < (container.scrollWidth - container.clientWidth - 1);
+    }
+  }
+
+  firstUpdated() {
+    const container = this._chipsContainerRef.value;
+    if (container) {
+      container.addEventListener('scroll', () => this._checkScroll());
+      this._resizeObserver = new ResizeObserver(() => this._checkScroll());
+      this._resizeObserver.observe(container);
+      // Also observe children changes if possible, or just re-check on update
+      setTimeout(() => this._checkScroll(), 100);
+    }
+  }
+
+  updated(changedProps: Map<string, any>) {
+    if (changedProps.has('activeEnvGraphs') || changedProps.has('linkedGraphGroups') || changedProps.has('device')) {
+      // Content might change size
+      setTimeout(() => this._checkScroll(), 0);
+    }
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener('resize', this._checkMobileBound);
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
+    }
+  }
 
   static styles = css`
     :host {
@@ -149,7 +201,7 @@ export class GrowspaceHeader extends LitElement {
        display: flex;
        flex-wrap: nowrap;
        gap: 8px;
-       justify-content: flex-end;
+       justify-content: flex-start;
        align-items: center;
        overflow-x: auto;
        overflow-y: hidden;
@@ -157,9 +209,11 @@ export class GrowspaceHeader extends LitElement {
        min-width: 0;
        scrollbar-width: none;
        -ms-overflow-style: none;
-       mask-image: linear-gradient(to right, black 85%, transparent 100%);
-       -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+       /* Remove static mask */
+       /* mask-image: linear-gradient(to right, black 85%, transparent 100%); */
+       /* -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%); */
        padding: 4px 2px;
+       transition: mask-image 0.3s;
 
        touch-action: manipulation;
        max-width: 100%;
@@ -167,6 +221,10 @@ export class GrowspaceHeader extends LitElement {
     }
     .gs-stats-chips::-webkit-scrollbar {
       display: none;
+    }
+
+    .gs-stats-chips > :first-child {
+      margin-left: auto;
     }
 
     .stat-chip {
@@ -471,6 +529,48 @@ export class GrowspaceHeader extends LitElement {
         width: 90%;
       }
     }
+
+    .scroll-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0.5;
+        transition: opacity 0.2s;
+        min-width: 24px;
+        color: #fff;
+    }
+
+    .scroll-nav:hover {
+        opacity: 1;
+    }
+
+    .scroll-nav svg {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+    }
+
+    @media (pointer: coarse) {
+        .scroll-nav {
+            display: none;
+        }
+    }
+
+    .gs-stats-chips.mask-right {
+        mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
+    }
+
+    .gs-stats-chips.mask-left {
+        mask-image: linear-gradient(to right, transparent 0%, black 40px, black 100%);
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 40px, black 100%);
+    }
+    
+    .gs-stats-chips.mask-left.mask-right {
+        mask-image: linear-gradient(to right, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%);
+    }
   `;
 
   private _handleDeviceChange(e: Event) {
@@ -532,10 +632,7 @@ export class GrowspaceHeader extends LitElement {
     window.addEventListener('resize', this._checkMobileBound);
   }
 
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    window.removeEventListener('resize', this._checkMobileBound);
-  }
+
 
   private _checkMobileBound = () => this._checkMobile();
 
@@ -737,7 +834,12 @@ export class GrowspaceHeader extends LitElement {
                  <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
               </div>
 
-              <div class="gs-stats-chips ${this._mobileLink ? 'mobile-link-active' : ''}">
+              <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px; overflow: hidden;">
+                ${this._canScrollLeft && !this._mobileLink ? html`
+                    <div class="scroll-nav left" @click=${() => this._scrollChips('left')}><svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg></div>
+                ` : ''}
+                
+                <div class="gs-stats-chips ${this._mobileLink ? 'mobile-link-active' : ''} ${this._canScrollLeft ? 'mask-left' : ''} ${this._canScrollRight ? 'mask-right' : ''}" ${ref(this._chipsContainerRef)}>
 
                 ${temp !== undefined ? html`
                   <div class="stat-chip ${this.activeEnvGraphs.has('temperature') ? 'active' : ''}"
@@ -986,6 +1088,11 @@ export class GrowspaceHeader extends LitElement {
           return '';
         })()}
                   </div>` : ''}
+              </div>
+
+                ${this._canScrollRight && !this._mobileLink ? html`
+                    <div class="scroll-nav right" @click=${() => this._scrollChips('right')}><svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg></div>
+                ` : ''}
               </div>
 
               <div class="menu-container">

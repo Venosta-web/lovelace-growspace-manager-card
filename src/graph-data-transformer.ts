@@ -1,5 +1,4 @@
-
-import { GraphDataPoint } from './growspace-env-chart';
+import { GraphDataPoint, HistorySensorState, MetricType } from './types';
 
 export class GraphDataTransformer {
     /**
@@ -77,5 +76,63 @@ export class GraphDataTransformer {
         dataPoints.push({ time: endTime, value: 0 });
 
         return dataPoints;
+    }
+
+    static synthesizeLiveDataPoint(
+        metricKey: string,
+        overviewEntity: any,
+        now: Date,
+        lastDataPoint?: GraphDataPoint
+    ): GraphDataPoint | null {
+        if (metricKey === 'dehumidifier') {
+            if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
+                const state = overviewEntity.attributes.dehumidifier_state;
+                const val = (state === 'on' || state === 'true' || state === '1') ? 1 : 0;
+                return { time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } };
+            }
+        } else if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+            let val = metricKey === 'exhaust' ? overviewEntity?.attributes?.exhaust_value : overviewEntity?.attributes?.humidifier_value;
+            if (val !== undefined) {
+                let numVal = parseFloat(val);
+                let meta: any = undefined;
+                if (isNaN(numVal)) {
+                    if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') { numVal = 1; meta = { state: 'ON' }; }
+                    else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') { numVal = 0; meta = { state: 'OFF' }; }
+                }
+                if (!isNaN(numVal)) {
+                    return { time: now.getTime(), value: numVal, meta };
+                }
+            }
+        }
+
+        // Generic fallback: extend last value
+        if (lastDataPoint) {
+            return { time: now.getTime(), value: lastDataPoint.value, meta: lastDataPoint.meta };
+        }
+
+        return null;
+    }
+
+    static normalizeSensorValue(ent: HistorySensorState, key: string): number | undefined {
+        const s = ent.state;
+        if (s === 'unavailable' || s === 'unknown') return undefined;
+
+        if (key === 'dehumidifier') {
+            return (s === 'on' || s === 'true' || s === '1' || s === 'heating' || s === 'drying') ? 1 : 0;
+        }
+        if (key === 'light') {
+            return (s === 'on' || s === 'true' || s === '1') ? 1 : 0;
+        }
+
+        const val = parseFloat(s);
+        if (isNaN(val)) {
+            // Try to handle ON/OFF for 0-10 sensors if state comes as text?
+            // Usually they are numbers, but just in case
+            if (s === 'on') return 1;
+            if (s === 'off') return 0;
+            return undefined;
+        }
+
+        return val;
     }
 }

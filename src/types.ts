@@ -165,6 +165,7 @@ export interface GrowspaceDevice {
     vpd_sensor?: string;
     co2_sensor?: string;
     soil_moisture_sensor?: string;
+    light_sensor?: string;
     dehumidifier_entity?: string;
     humidifier_entity?: string;
     exhaust_entity?: string;
@@ -344,4 +345,32 @@ export interface GrowspaceWebSocketData {
   light_level?: string;
   daily_light_integral?: number;
   heater_socket?: string;
+}
+
+export type MetricType = 'temperature' | 'humidity' | 'vpd' | 'co2' | 'soil_moisture' | 'exhaust' | 'humidifier' | 'dehumidifier' | 'circulation_fan' | 'light' | 'optimal';
+
+export interface GraphDataPoint {
+  time: number;
+  value: number;
+  meta?: any;
+}
+
+export interface HistorySensorState {
+  entity_id: string;
+  state: string;
+  attributes: any;
+  last_changed: string;
+}
+
+export interface GraphSeries {
+  id: string; // metricKey
+  title: string;
+  color: string;
+  unit: string;
+  points: GraphDataPoint[];
+  min: number;
+  max: number;
+  avg?: number;
+  path: string;
+  fillType: 'gradient' | 'flat' | 'none';
 }

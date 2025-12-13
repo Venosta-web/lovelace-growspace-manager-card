@@ -23,6 +23,7 @@ export class GrowspaceAnalytics extends LitElement {
     @property({ attribute: false }) humidifierHistory: any[] = [];
     @property({ attribute: false }) circulationFanHistory: any[] = [];
     @property({ attribute: false }) soilMoistureHistory: any[] = [];
+    @property({ attribute: false }) lightHistory: any[] = [];
     // Individual environment sensor histories (since env data moved to WebSocket)
     @property({ attribute: false }) temperatureHistory: any[] = [];
     @property({ attribute: false }) humidityHistory: any[] = [];
@@ -104,6 +105,7 @@ export class GrowspaceAnalytics extends LitElement {
             humidifier: this.humidifierHistory || [],
             circulation_fan: this.circulationFanHistory || [],
             soil_moisture: this.soilMoistureHistory || [],
+            light: this.lightHistory || [],
             optimal: this.optimalHistory || []
         };
         // Add raw history data as fallback if needed or mapped

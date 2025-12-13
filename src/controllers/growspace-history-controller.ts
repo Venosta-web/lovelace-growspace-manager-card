@@ -25,6 +25,8 @@ export class GrowspaceHistoryController implements ReactiveController {
     public humidityHistory: any[] | null = null;
     public vpdHistory: any[] | null = null;
     public co2History: any[] | null = null;
+    public lightHistory: any[] | null = null;
+
 
     public activeEnvGraphs: Set<string> = new Set();
     public linkedGraphGroups: string[][] = [];
@@ -96,6 +98,7 @@ export class GrowspaceHistoryController implements ReactiveController {
             if (metric === 'humidifier') this._fetchHumidifierHistory(range);
             if (metric === 'circulation_fan') this._fetchCirculationFanHistory(range);
             if (metric === 'soil_moisture') this._fetchSoilMoistureHistory(range);
+            if (metric === 'light') this._fetchLightHistory(range);
         }
         this.activeEnvGraphs = newSet;
         this.host.requestUpdate();
@@ -157,6 +160,7 @@ export class GrowspaceHistoryController implements ReactiveController {
         if (this.activeEnvGraphs.has('humidifier')) this._fetchHumidifierHistory(range);
         if (this.activeEnvGraphs.has('circulation_fan')) this._fetchCirculationFanHistory(range);
         if (this.activeEnvGraphs.has('soil_moisture')) this._fetchSoilMoistureHistory(range);
+        if (this.activeEnvGraphs.has('light')) this._fetchLightHistory(range);
     }
 
     public optimalHistory: any[] | null = null;
@@ -259,6 +263,18 @@ export class GrowspaceHistoryController implements ReactiveController {
             }
         }
 
+        // Light
+        if (envAttrs.light_sensor) {
+            try {
+                const history = await this.host.dataService.getHistory(envAttrs.light_sensor, start, end);
+                console.log('[HistoryController] Light history fetched from', envAttrs.light_sensor, 'length:', history?.length || 0);
+                this.lightHistory = history;
+            } catch (e) {
+                console.error("Failed to fetch Light history", e);
+            }
+        }
+
+
         // Soil Moisture
         if (envAttrs.soil_moisture_sensor) {
             try {
@@ -327,17 +343,26 @@ export class GrowspaceHistoryController implements ReactiveController {
         }
     }
 
-    private async _fetchSoilMoistureHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
-        const { device, entityId } = this.getRelatedEntityId('soil_moisture_sensor');
-        if (!device || !entityId) return;
+    private async _fetchSoilMoistureHistory(range: '1h' | '6h' | '24h' | '7d') {
+        const device = this.host.devices.find(d => d.device_id === this.host.selectedDevice);
+        if (!device?.environment_attributes?.soil_moisture_sensor) return;
+
         const { start, end } = this.calculateTimeRange(range);
         try {
-            const history = await this.host.dataService.getHistory(entityId, start, end);
-            this.soilMoistureHistory = history;
+            this.soilMoistureHistory = await this.host.dataService.getHistory(device.environment_attributes.soil_moisture_sensor, start, end);
             this.host.requestUpdate();
-        } catch (e) {
-            console.error("Failed to fetch soil moisture history", e);
-        }
+        } catch (e) { console.error(e); }
+    }
+
+    private async _fetchLightHistory(range: '1h' | '6h' | '24h' | '7d') {
+        const device = this.host.devices.find(d => d.device_id === this.host.selectedDevice);
+        if (!device?.environment_attributes?.light_sensor) return;
+
+        const { start, end } = this.calculateTimeRange(range);
+        try {
+            this.lightHistory = await this.host.dataService.getHistory(device.environment_attributes.light_sensor, start, end);
+            this.host.requestUpdate();
+        } catch (e) { console.error(e); }
     }
 
     private getRelatedEntityId(attribute: string) {
