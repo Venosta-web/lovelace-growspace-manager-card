@@ -77,6 +77,25 @@ export const SENSOR_CHART_DEFAULTS: Record<string, { min?: number; max?: number;
     optimizer: { min: 0, max: 1, disablePadding: true, binary: true, unit: 'state' }
 };
 
+/**
+ * Maps metric keys to their entity attribute keys in GrowspaceDevice.environment_attributes
+ * and GrowspaceDevice.irrigation_config. Used by header chips and history controller.
+ */
+export const METRIC_ENTITY_KEYS: Record<string, { primary: string; fallback?: string; source?: 'environment' | 'irrigation' }> = {
+    temperature: { primary: 'temperature_sensor' },
+    humidity: { primary: 'humidity_sensor' },
+    vpd: { primary: 'vpd_sensor' },
+    co2: { primary: 'co2_sensor' },
+    exhaust: { primary: 'exhaust_sensor', fallback: 'exhaust_entity' },
+    humidifier: { primary: 'humidifier_sensor', fallback: 'humidifier_entity' },
+    dehumidifier: { primary: 'dehumidifier_entity' },
+    circulation_fan: { primary: 'circulation_fan_entity' },
+    light: { primary: 'light_sensor' },
+    soil_moisture: { primary: 'soil_moisture_sensor' },
+    irrigation: { primary: 'irrigation_pump_entity', source: 'irrigation' },
+    drain: { primary: 'drain_pump_entity', source: 'irrigation' },
+};
+
 export const DOMAIN = 'growspace_manager';
 export const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
 
