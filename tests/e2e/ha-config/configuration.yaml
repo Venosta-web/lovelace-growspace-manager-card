@@ -134,15 +134,14 @@ template:
       # Full brightness during day (6:00-18:00), 0 at night
       - name: "Test Light"
         unique_id: test_light
-        state_class: measurement
         unit_of_measurement: "%"
+        state_class: measurement
         device_class: power_factor
         icon: mdi:lightbulb-on-outline
         state: >
           {% set hour = now().hour %}
           {% if hour >= 6 and hour < 18 %}
-            {% set minutes = now().minute + (now().second / 60) %}
-            {{ (50 + 50 * sin(minutes / 30 * 3.14159)) | round(1) }}
+            100.0
           {% else %}
             0.0
           {% endif %}

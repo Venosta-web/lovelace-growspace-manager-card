@@ -26,6 +26,8 @@ export class GrowspaceHistoryController implements ReactiveController {
     public vpdHistory: any[] | null = null;
     public co2History: any[] | null = null;
     public lightHistory: any[] | null = null;
+    public irrigationHistory: any[] | null = null;
+    public drainHistory: any[] | null = null;
 
 
     public activeEnvGraphs: Set<string> = new Set();
@@ -99,6 +101,8 @@ export class GrowspaceHistoryController implements ReactiveController {
             if (metric === 'circulation_fan') this._fetchCirculationFanHistory(range);
             if (metric === 'soil_moisture') this._fetchSoilMoistureHistory(range);
             if (metric === 'light') this._fetchLightHistory(range);
+            if (metric === 'irrigation') this._fetchIrrigationHistory(range);
+            if (metric === 'drain') this._fetchDrainHistory(range);
         }
         this.activeEnvGraphs = newSet;
         this.host.requestUpdate();
@@ -161,6 +165,8 @@ export class GrowspaceHistoryController implements ReactiveController {
         if (this.activeEnvGraphs.has('circulation_fan')) this._fetchCirculationFanHistory(range);
         if (this.activeEnvGraphs.has('soil_moisture')) this._fetchSoilMoistureHistory(range);
         if (this.activeEnvGraphs.has('light')) this._fetchLightHistory(range);
+        if (this.activeEnvGraphs.has('irrigation')) this._fetchIrrigationHistory(range);
+        if (this.activeEnvGraphs.has('drain')) this._fetchDrainHistory(range);
     }
 
     public optimalHistory: any[] | null = null;
@@ -286,7 +292,40 @@ export class GrowspaceHistoryController implements ReactiveController {
             }
         }
 
+        // Fallback: If light history is missing but we have optimal history, try to derive it from 'is_lights_on' attribute
+        if ((!this.lightHistory || this.lightHistory.length === 0) && this.optimalHistory && this.optimalHistory.length > 0) {
+            console.log('[HistoryController] Synthesizing Light history from Optimal attributes');
+            this.lightHistory = this.optimalHistory.map(h => ({
+                ...h,
+                entity_id: 'derived_light',
+                state: h.attributes?.is_lights_on ? 'on' : 'off',
+                attributes: {}
+            }));
+        }
+
         this.host.requestUpdate();
+    }
+
+    private async _fetchIrrigationHistory(range: '1h' | '6h' | '24h' | '7d') {
+        const device = this.host.devices.find(d => d.device_id === this.host.selectedDevice);
+        if (!device?.irrigation_config?.irrigation_pump_entity) return;
+
+        const { start, end } = this.calculateTimeRange(range);
+        try {
+            this.irrigationHistory = await this.host.dataService.getHistory(device.irrigation_config.irrigation_pump_entity, start, end);
+            this.host.requestUpdate();
+        } catch (e) { console.error(e); }
+    }
+
+    private async _fetchDrainHistory(range: '1h' | '6h' | '24h' | '7d') {
+        const device = this.host.devices.find(d => d.device_id === this.host.selectedDevice);
+        if (!device?.irrigation_config?.drain_pump_entity) return;
+
+        const { start, end } = this.calculateTimeRange(range);
+        try {
+            this.drainHistory = await this.host.dataService.getHistory(device.irrigation_config.drain_pump_entity, start, end);
+            this.host.requestUpdate();
+        } catch (e) { console.error(e); }
     }
 
     private async _fetchDehumidifierHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {

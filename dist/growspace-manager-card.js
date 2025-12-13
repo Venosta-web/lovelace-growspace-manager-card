@@ -9613,6 +9613,8 @@ class GrowspaceHistoryController {
         this.vpdHistory = null;
         this.co2History = null;
         this.lightHistory = null;
+        this.irrigationHistory = null;
+        this.drainHistory = null;
         this.activeEnvGraphs = new Set();
         this.linkedGraphGroups = [];
         this.graphRanges = {};
@@ -9681,6 +9683,10 @@ class GrowspaceHistoryController {
                 this._fetchSoilMoistureHistory(range);
             if (metric === 'light')
                 this._fetchLightHistory(range);
+            if (metric === 'irrigation')
+                this._fetchIrrigationHistory(range);
+            if (metric === 'drain')
+                this._fetchDrainHistory(range);
         }
         this.activeEnvGraphs = newSet;
         this.host.requestUpdate();
@@ -9737,6 +9743,10 @@ class GrowspaceHistoryController {
             this._fetchSoilMoistureHistory(range);
         if (this.activeEnvGraphs.has('light'))
             this._fetchLightHistory(range);
+        if (this.activeEnvGraphs.has('irrigation'))
+            this._fetchIrrigationHistory(range);
+        if (this.activeEnvGraphs.has('drain'))
+            this._fetchDrainHistory(range);
     }
     async _fetchHistory(range = '24h') {
         console.log('[HistoryController] _fetchHistory called with range:', range);
@@ -9855,7 +9865,43 @@ class GrowspaceHistoryController {
                 console.error("Failed to fetch soil moisture history", e);
             }
         }
+        // Fallback: If light history is missing but we have optimal history, try to derive it from 'is_lights_on' attribute
+        if ((!this.lightHistory || this.lightHistory.length === 0) && this.optimalHistory && this.optimalHistory.length > 0) {
+            console.log('[HistoryController] Synthesizing Light history from Optimal attributes');
+            this.lightHistory = this.optimalHistory.map(h => ({
+                ...h,
+                entity_id: 'derived_light',
+                state: h.attributes?.is_lights_on ? 'on' : 'off',
+                attributes: {}
+            }));
+        }
         this.host.requestUpdate();
+    }
+    async _fetchIrrigationHistory(range) {
+        const device = this.host.devices.find(d => d.device_id === this.host.selectedDevice);
+        if (!device?.irrigation_config?.irrigation_pump_entity)
+            return;
+        const { start, end } = this.calculateTimeRange(range);
+        try {
+            this.irrigationHistory = await this.host.dataService.getHistory(device.irrigation_config.irrigation_pump_entity, start, end);
+            this.host.requestUpdate();
+        }
+        catch (e) {
+            console.error(e);
+        }
+    }
+    async _fetchDrainHistory(range) {
+        const device = this.host.devices.find(d => d.device_id === this.host.selectedDevice);
+        if (!device?.irrigation_config?.drain_pump_entity)
+            return;
+        const { start, end } = this.calculateTimeRange(range);
+        try {
+            this.drainHistory = await this.host.dataService.getHistory(device.irrigation_config.drain_pump_entity, start, end);
+            this.host.requestUpdate();
+        }
+        catch (e) {
+            console.error(e);
+        }
     }
     async _fetchDehumidifierHistory(range = '24h') {
         const { device, entityId } = this.getRelatedEntityId('dehumidifier_entity');
@@ -10373,7 +10419,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             const config = this.metricConfig[key] || {
                 color: this.isCombined ? (METRIC_CONFIG[key]?.color || '#ffffff') : this.color,
                 title: this.isCombined ? (METRIC_CONFIG[key]?.title || key) : this.title,
-                unit: this.isCombined ? (METRIC_CONFIG[key]?.unit || '') : this.unit
+                unit: this.isCombined ? (METRIC_CONFIG[key]?.unit || '') : this.unit,
+                icon: this.isCombined ? (METRIC_CONFIG[key]?.icon || '') : this.icon
             };
             const historySource = this.sensorHistory[key] || [];
             let dataPoints = [];
@@ -10497,6 +10544,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                     title: config.title || key,
                     color: config.color || '#fff',
                     unit: config.unit || '',
+                    icon: config.icon || '',
                     points: dataPoints,
                     min,
                     max,
@@ -10543,11 +10591,11 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                      @mouseleave=${() => { this._tooltip = null; this._hoverTime = null; }}>
                     
                     ${this._renderTooltip(series)}
+                    ${!this.isCombined ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit) : ''}
+                    ${this._renderXAxisHTML(this.range)}
                     
                     <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="width: 100%; height: 100%; overflow: visible;">
                         ${this._renderGrid(width, height)}
-                        ${this._renderXLabels(this.range, '#666')}
-                        ${!this.isCombined ? this._renderYLabels(series[0].min, series[0].max, series[0].unit) : ''}
                         
                         ${series.map(s => {
             if (s.fillType === 'gradient') {
@@ -10597,7 +10645,11 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
         return x `
             <div class="gs-env-graph-header" @click=${() => this.dispatchEvent(new ToggleEnvGraphEvent(series.id))}>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <ha-icon .icon=${this.icon} style="color: ${series.color};"></ha-icon>
+                    <div style="width: 24px; height: 24px; color: ${series.color}; display: flex; align-items: center; justify-content: center;">
+                        <svg viewBox="0 0 24 24" style="width: 100%; height: 100%; fill: currentColor;">
+                            <path d="${series.icon || this.icon}"></path>
+                        </svg>
+                    </div>
                     <span style="color: ${series.color}; font-weight: 500;">${series.title}</span>
                 </div>
                 <div style="text-align: right;">
@@ -10621,7 +10673,12 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
                     <div class="chips-scroll-container" ${n(this._chipsContainerRef)} @click=${(e) => e.stopPropagation()}>
                         ${seriesList.map(s => x `
                             <div class="gs-legend-item ${this._canScrollLeft ? 'mask-left' : ''} ${this._canScrollRight ? 'mask-right' : ''}" @click=${(e) => { e.stopPropagation(); this.dispatchEvent(new UnlinkGraphMetricEvent(s.id)); }}>
-                                <span style="display:inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${s.color}; margin-right: 4px; flex-shrink: 0;"></span>
+                                <span style="display:inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${s.color}; margin-right: 6px; flex-shrink: 0;"></span>
+                                ${s.icon ? x `
+                                <div style="width: 16px; height: 16px; color: ${s.color}; margin-right: 4px; display: inline-flex;">
+                                    <svg viewBox="0 0 24 24" style="width: 100%; height: 100%; fill: currentColor;"><path d="${s.icon}"></path></svg>
+                                </div>
+                                ` : ''}
                                 <span style="color: ${s.color}; font-weight: 500;">${s.title}</span>
                             </div>
                         `)}
@@ -10752,26 +10809,41 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$2 {
             </linearGradient>
         `;
     }
-    _renderXLabels(range, color) {
-        // Simplified X-Axis labels based on range
-        // Just visual approximation
-        return b `
-            <text x="0" y="215" fill="${color}" font-size="10" text-anchor="start">Now</text>
-            <text x="800" y="215" fill="${color}" font-size="10" text-anchor="end">-${range}</text>
+    _renderXAxisHTML(range) {
+        // Render X-Axis labels as HTML overlay
+        // Container padding: 20px 40px 30px 50px (top right bottom left)
+        // Labels usually at bottom. Bottom padding 30px is for these labels.
+        // We want them effectively at bottom: 10px? 
+        const labelStyle = "position: absolute; bottom: 8px; font-size: 10px; color: #666; line-height: 1; pointer-events: none;";
+        return x `
+            <div style="${labelStyle} left: 50px;">-${range}</div>
+            <div style="${labelStyle} right: 40px;">Now</div>
         `;
     }
-    _renderYLabels(min, max, unit) {
-        // Render Y-Axis labels on the left (SVG coords < 0) - needs overflow visible
+    _renderYAxisHTML(min, max, unit) {
+        // Render Y-Axis labels as HTML overlay to avoid SVG scaling distortion
+        // Container has padding: 20px 40px 30px 50px
+        // Top label at top of graph area (20px)
+        // Bottom label at bottom of graph area (20px + 100% height = approx bottom)
+        // Graph area height is 180px, defined by container height (which is content-box by default?)
+        // Let's assume standard box model. Height 180px is strictly the graph area? 
+        // No, CSS says height: 180px and padding. 
+        // If box-sizing is border-box (common in frameworks), height 180 includes padding. Graph area = 180 - 20 - 30 = 130px.
+        // If box-sizing is content-box (default), height 180 is graph area. 
+        // In HA/Lit, usually we rely on user agent defaults unless reset.
+        // Let's assume content-box for now as that's standard CSS.
+        // Even if it's border-box, we can use percentages.
+        const labelStyle = "position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: #aaa; line-height: 1; pointer-events: none;";
         if (unit === 'state' || (max === 1 && min === 0)) {
-            return b `
-                <text x="-10" y="10" fill="#aaa" font-size="10" text-anchor="end">ON</text>
-                <text x="-10" y="190" fill="#aaa" font-size="10" text-anchor="end">OFF</text>
+            return x `
+                <div style="${labelStyle} top: 20px;">ON</div>
+                <div style="${labelStyle} bottom: 30px;">OFF</div>
             `;
         }
-        return b `
-            <text x="-10" y="10" fill="#aaa" font-size="10" text-anchor="end">${max}${unit}</text>
-            <text x="-10" y="100" fill="#aaa" font-size="10" text-anchor="end">${((max + min) / 2).toFixed(1)}</text>
-            <text x="-10" y="190" fill="#aaa" font-size="10" text-anchor="end">${min}${unit}</text>
+        return x `
+            <div style="${labelStyle} top: 20px;">${max}${unit}</div>
+            <div style="${labelStyle} top: 50%; transform: translateY(-5px);">${((max + min) / 2).toFixed(1)}</div>
+            <div style="${labelStyle} bottom: 30px;">${min}${unit}</div>
         `;
     }
     _getDurationMillis(range) {
@@ -19000,6 +19072,8 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
         this.circulationFanHistory = [];
         this.soilMoistureHistory = [];
         this.lightHistory = [];
+        this.irrigationHistory = [];
+        this.drainHistory = [];
         // Individual environment sensor histories (since env data moved to WebSocket)
         this.temperatureHistory = [];
         this.humidityHistory = [];
@@ -19058,6 +19132,8 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$2 {
             circulation_fan: this.circulationFanHistory || [],
             soil_moisture: this.soilMoistureHistory || [],
             light: this.lightHistory || [],
+            irrigation: this.irrigationHistory || [],
+            drain: this.drainHistory || [],
             optimal: this.optimalHistory || []
         };
         // Add raw history data as fallback if needed or mapped
@@ -19195,6 +19271,14 @@ __decorate([
     n$4({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "lightHistory", void 0);
+__decorate([
+    n$4({ attribute: false }),
+    __metadata("design:type", Array)
+], GrowspaceAnalytics.prototype, "irrigationHistory", void 0);
+__decorate([
+    n$4({ attribute: false }),
+    __metadata("design:type", Array)
+], GrowspaceAnalytics.prototype, "drainHistory", void 0);
 __decorate([
     n$4({ attribute: false }),
     __metadata("design:type", Array)
@@ -20547,6 +20631,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$2 {
             .humidifierHistory=${this.historyController.humidifierHistory || []}
             .circulationFanHistory=${this.historyController.circulationFanHistory || []}
             .soilMoistureHistory=${this.historyController.soilMoistureHistory || []}
+            .lightHistory=${this.historyController.lightHistory || []}
+            .irrigationHistory=${this.historyController.irrigationHistory || []}
+            .drainHistory=${this.historyController.drainHistory || []}
             .temperatureHistory=${this.historyController.temperatureHistory || []}
             .humidityHistory=${this.historyController.humidityHistory || []}
             .vpdHistory=${this.historyController.vpdHistory || []}

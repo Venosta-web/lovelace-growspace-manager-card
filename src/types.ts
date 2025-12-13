@@ -367,6 +367,7 @@ export interface GraphSeries {
   title: string;
   color: string;
   unit: string;
+  icon?: string;
   points: GraphDataPoint[];
   min: number;
   max: number;

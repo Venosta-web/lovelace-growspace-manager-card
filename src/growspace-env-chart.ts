@@ -46,7 +46,7 @@ export class GrowspaceEnvChart extends LitElement {
     // For combined graphs
     @property({ type: Array }) metrics: string[] = [];
     @property({ type: Boolean }) isCombined = false;
-    @property({ type: Object }) metricConfig: Record<string, { color: string, title: string, unit: string }> = {};
+    @property({ type: Object }) metricConfig: Record<string, { color: string, title: string, unit: string, icon?: string }> = {};
 
     @state() private _tooltip: { id: string; x: number; time: string; value: string } | null = null;
     @state() private _hoverTime: number | null = null;
@@ -99,7 +99,8 @@ export class GrowspaceEnvChart extends LitElement {
             const config = this.metricConfig[key] || {
                 color: this.isCombined ? (METRIC_CONFIG[key]?.color || '#ffffff') : this.color,
                 title: this.isCombined ? (METRIC_CONFIG[key]?.title || key) : this.title,
-                unit: this.isCombined ? (METRIC_CONFIG[key]?.unit || '') : this.unit
+                unit: this.isCombined ? (METRIC_CONFIG[key]?.unit || '') : this.unit,
+                icon: this.isCombined ? (METRIC_CONFIG[key]?.icon || '') : this.icon
             };
 
             const historySource = this.sensorHistory[key] || [];
@@ -225,6 +226,7 @@ export class GrowspaceEnvChart extends LitElement {
                     title: config.title || key,
                     color: config.color || '#fff',
                     unit: config.unit || '',
+                    icon: config.icon || '',
                     points: dataPoints,
                     min,
                     max,
@@ -277,11 +279,11 @@ export class GrowspaceEnvChart extends LitElement {
                      @mouseleave=${() => { this._tooltip = null; this._hoverTime = null; }}>
                     
                     ${this._renderTooltip(series)}
+                    ${!this.isCombined ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit) : ''}
+                    ${this._renderXAxisHTML(this.range)}
                     
                     <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="width: 100%; height: 100%; overflow: visible;">
                         ${this._renderGrid(width, height)}
-                        ${this._renderXLabels(this.range, '#666')}
-                        ${!this.isCombined ? this._renderYLabels(series[0].min, series[0].max, series[0].unit) : ''}
                         
                         ${series.map(s => {
             if (s.fillType === 'gradient') {
@@ -330,7 +332,11 @@ export class GrowspaceEnvChart extends LitElement {
         return html`
             <div class="gs-env-graph-header" @click=${() => this.dispatchEvent(new ToggleEnvGraphEvent(series.id))}>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <ha-icon .icon=${this.icon} style="color: ${series.color};"></ha-icon>
+                    <div style="width: 24px; height: 24px; color: ${series.color}; display: flex; align-items: center; justify-content: center;">
+                        <svg viewBox="0 0 24 24" style="width: 100%; height: 100%; fill: currentColor;">
+                            <path d="${series.icon || this.icon}"></path>
+                        </svg>
+                    </div>
                     <span style="color: ${series.color}; font-weight: 500;">${series.title}</span>
                 </div>
                 <div style="text-align: right;">
@@ -355,7 +361,12 @@ export class GrowspaceEnvChart extends LitElement {
                     <div class="chips-scroll-container" ${ref(this._chipsContainerRef)} @click=${(e: Event) => e.stopPropagation()}>
                         ${seriesList.map(s => html`
                             <div class="gs-legend-item ${this._canScrollLeft ? 'mask-left' : ''} ${this._canScrollRight ? 'mask-right' : ''}" @click=${(e: Event) => { e.stopPropagation(); this.dispatchEvent(new UnlinkGraphMetricEvent(s.id)); }}>
-                                <span style="display:inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${s.color}; margin-right: 4px; flex-shrink: 0;"></span>
+                                <span style="display:inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${s.color}; margin-right: 6px; flex-shrink: 0;"></span>
+                                ${s.icon ? html`
+                                <div style="width: 16px; height: 16px; color: ${s.color}; margin-right: 4px; display: inline-flex;">
+                                    <svg viewBox="0 0 24 24" style="width: 100%; height: 100%; fill: currentColor;"><path d="${s.icon}"></path></svg>
+                                </div>
+                                ` : ''}
                                 <span style="color: ${s.color}; font-weight: 500;">${s.title}</span>
                             </div>
                         `)}
@@ -501,29 +512,47 @@ export class GrowspaceEnvChart extends LitElement {
         `;
     }
 
-    private _renderXLabels(range: string, color: string): TemplateResult {
-        // Simplified X-Axis labels based on range
-        // Just visual approximation
-        return svg`
-            <text x="0" y="215" fill="${color}" font-size="10" text-anchor="start">Now</text>
-            <text x="800" y="215" fill="${color}" font-size="10" text-anchor="end">-${range}</text>
+    private _renderXAxisHTML(range: string): TemplateResult {
+        // Render X-Axis labels as HTML overlay
+        // Container padding: 20px 40px 30px 50px (top right bottom left)
+        // Labels usually at bottom. Bottom padding 30px is for these labels.
+        // We want them effectively at bottom: 10px? 
+
+        const labelStyle = "position: absolute; bottom: 8px; font-size: 10px; color: #666; line-height: 1; pointer-events: none;";
+
+        return html`
+            <div style="${labelStyle} left: 50px;">-${range}</div>
+            <div style="${labelStyle} right: 40px;">Now</div>
         `;
     }
 
-    private _renderYLabels(min: number, max: number, unit: string): TemplateResult {
-        // Render Y-Axis labels on the left (SVG coords < 0) - needs overflow visible
+    private _renderYAxisHTML(min: number, max: number, unit: string): TemplateResult {
+        // Render Y-Axis labels as HTML overlay to avoid SVG scaling distortion
+        // Container has padding: 20px 40px 30px 50px
+        // Top label at top of graph area (20px)
+        // Bottom label at bottom of graph area (20px + 100% height = approx bottom)
+        // Graph area height is 180px, defined by container height (which is content-box by default?)
+        // Let's assume standard box model. Height 180px is strictly the graph area? 
+        // No, CSS says height: 180px and padding. 
+        // If box-sizing is border-box (common in frameworks), height 180 includes padding. Graph area = 180 - 20 - 30 = 130px.
+        // If box-sizing is content-box (default), height 180 is graph area. 
+        // In HA/Lit, usually we rely on user agent defaults unless reset.
+        // Let's assume content-box for now as that's standard CSS.
+        // Even if it's border-box, we can use percentages.
+
+        const labelStyle = "position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: #aaa; line-height: 1; pointer-events: none;";
 
         if (unit === 'state' || (max === 1 && min === 0)) {
-            return svg`
-                <text x="-10" y="10" fill="#aaa" font-size="10" text-anchor="end">ON</text>
-                <text x="-10" y="190" fill="#aaa" font-size="10" text-anchor="end">OFF</text>
+            return html`
+                <div style="${labelStyle} top: 20px;">ON</div>
+                <div style="${labelStyle} bottom: 30px;">OFF</div>
             `;
         }
 
-        return svg`
-            <text x="-10" y="10" fill="#aaa" font-size="10" text-anchor="end">${max}${unit}</text>
-            <text x="-10" y="100" fill="#aaa" font-size="10" text-anchor="end">${((max + min) / 2).toFixed(1)}</text>
-            <text x="-10" y="190" fill="#aaa" font-size="10" text-anchor="end">${min}${unit}</text>
+        return html`
+            <div style="${labelStyle} top: 20px;">${max}${unit}</div>
+            <div style="${labelStyle} top: 50%; transform: translateY(-5px);">${((max + min) / 2).toFixed(1)}</div>
+            <div style="${labelStyle} bottom: 30px;">${min}${unit}</div>
         `;
     }
 
