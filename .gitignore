@@ -49,3 +49,5 @@ coverage/
 
 
 playwright/.auth/user.json
+playwright-report/index.html
+playwright-report/.auth/*
