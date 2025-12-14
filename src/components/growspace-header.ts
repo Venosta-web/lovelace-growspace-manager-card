@@ -471,6 +471,37 @@ export class GrowspaceHeader extends LitElement {
     }
     .menu-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
     .menu-item svg { width: 20px; height: 20px; fill: currentColor; }
+    .menu-item-label { flex: 1; }
+
+    .menu-toggle-switch {
+      width: 40px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      position: relative;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .menu-toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: white;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.2s;
+    }
+
+    .menu-toggle-switch.active {
+      background: var(--primary-color, #03a9f4);
+    }
+
+    .menu-toggle-switch.active::after {
+      transform: translateX(20px);
+    }
   `;
 
   private _handleDeviceChange(e: Event) {
@@ -1021,38 +1052,41 @@ export class GrowspaceHeader extends LitElement {
   private _renderMenu() {
     if (!this._menuOpen) return '';
     return html`
-      <div class="menu-dropdown">
-        <div class="menu-item" @click=${() => this._triggerAction('add_plant')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-            <span>Add Plant</span>
+      <div class="menu-dropdown" @click=${(e: Event) => e.stopPropagation()}>
+        <div class="menu-item" @click=${() => this._triggerAction('config')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+            <span class="menu-item-label">Config</span>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('edit')}>
-             <div class="menu-toggle-switch ${this.store.state.isEditMode ? 'active' : ''}"></div>
-             <span>Edit Mode</span>
+            <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+            <span class="menu-item-label">Edit</span>
+            <div class=${classMap({ 'menu-toggle-switch': true, active: this.store.state.isEditMode })}></div>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('compact')}>
-             <div class="menu-toggle-switch ${this.store.state.viewMode === 'compact' ? 'active' : ''}"></div>
-             <span>Compact View</span>
+            <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+            <span class="menu-item-label">Compact View</span>
+            <div class=${classMap({ 'menu-toggle-switch': true, active: this.store.state.viewMode === 'compact' })}></div>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
+            <span class="menu-item-label">Control Dehumidifier</span>
+            <div class=${classMap({ 'menu-toggle-switch': true, active: !!this._envAttrs.dehumidifier_control_enabled })}></div>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('strains')}>
             <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-            <span>Strain Library</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
-            <span>Logbook</span>
+            <span class="menu-item-label">Strains</span>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
             <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-            <span>Irrigation Manager</span>
+            <span class="menu-item-label">Irrigation</span>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('ai')}>
             <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-            <span>Ask GrowMaster</span>
+            <span class="menu-item-label">Ask AI</span>
         </div>
-        <div class="menu-item" @click=${() => this._triggerAction('config')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-            <span>Settings</span>
+        <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
+            <span class="menu-item-label">Logbook</span>
         </div>
       </div>
     `;
