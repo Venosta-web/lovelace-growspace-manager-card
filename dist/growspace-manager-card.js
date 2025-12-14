@@ -21129,7 +21129,7 @@ const growspaceCardStyles = i$6 `
     background: rgba(0, 0, 0, 0.2);
     border-bottom-left-radius: 12px;
     border-bottom-right-radius: 12px;
-    margin-top: 0; 
+    margin-top: 20px; 
     transition: all 0.2s;
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-top: none;

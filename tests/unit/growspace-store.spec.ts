@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GrowspaceStore } from '../../src/store/growspace-store';
-import { DataService } from '../../src/data-service';
 import { PlantEntity } from '../../src/types';
 
 // Mock DataService
@@ -104,6 +103,59 @@ describe('GrowspaceStore', () => {
             // Note: We'd need to mock showToast or inspect side effects if critical.
             // For now, ensuring it doesn't crash is good.
             consoleSpy.mockRestore();
+        });
+    });
+    describe('View Modes', () => {
+        it('should initialize to standard mode by default', () => {
+            store.initializeSelectedDevice({});
+            expect(store.state.viewMode).toBe('standard');
+            expect(store.state.isCompactView).toBe(false);
+        });
+
+        it('should initialize to header_only from config', () => {
+            store.initializeSelectedDevice({ initial_view_mode: 'header_only' });
+            expect(store.state.viewMode).toBe('header_only');
+        });
+
+        it('should initialize to grid_only from compact legacy config', () => {
+            store.initializeSelectedDevice({ compact: true });
+            expect(store.state.viewMode).toBe('grid_only');
+            // Legacy flag sync
+            expect(store.state.isCompactView).toBe(true);
+        });
+
+        it('should update state when setViewMode is called', () => {
+            store.setViewMode('header_only');
+            expect(store.state.viewMode).toBe('header_only');
+
+            store.setViewMode('grid_only');
+            expect(store.state.viewMode).toBe('grid_only');
+            // Legacy flag sync check
+            expect(store.state.isCompactView).toBe(true);
+
+            store.setViewMode('standard');
+            expect(store.state.viewMode).toBe('standard');
+            expect(store.state.isCompactView).toBe(false);
+        });
+
+        it('should toggle header expansion correctly', () => {
+            // Case 1: Header Only -> Standard
+            store.setViewMode('header_only');
+            store.toggleHeaderExpansion();
+            expect(store.state.viewMode).toBe('standard');
+
+            // Case 2: Standard -> Header Only
+            // Note: toggleHeaderExpansion currently switches back to header_only if not in header_only
+            store.toggleHeaderExpansion();
+            expect(store.state.viewMode).toBe('header_only');
+        });
+
+        it('should map old setIsCompactView to new View Modes', () => {
+            store.setIsCompactView(true);
+            expect(store.state.viewMode).toBe('grid_only');
+
+            store.setIsCompactView(false);
+            expect(store.state.viewMode).toBe('standard');
         });
     });
 });
