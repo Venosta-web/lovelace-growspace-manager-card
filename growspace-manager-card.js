@@ -21965,7 +21965,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     ></growspace-dialog-host>`;
     }
 };
-GrowspaceManagerCard.styles = [sharedStyles, uiStyles, growspaceCardStyles]; // Styles
+GrowspaceManagerCard.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
 __decorate([
     e$3({ context: storeContext }),
     __metadata("design:type", Object)

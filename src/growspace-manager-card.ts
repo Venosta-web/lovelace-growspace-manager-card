@@ -30,6 +30,7 @@ import './components/growspace-analytics';
 import { sharedStyles } from './styles/shared.styles';
 import { uiStyles } from './styles/ui.styles';
 import { growspaceCardStyles } from './styles/growspace-card.styles';
+import { variables } from './styles/variables';
 import { GrowspaceStore } from './store/growspace-store';
 
 import { GrowspaceGridController } from './controllers/grid-controller';
@@ -73,7 +74,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   @property({ attribute: false })
   private _config!: GrowspaceManagerCardConfig;
 
-  static styles: CSSResultGroup = [sharedStyles, uiStyles, growspaceCardStyles]; // Styles
+  static styles: CSSResultGroup = [variables, sharedStyles, uiStyles, growspaceCardStyles];
 
   protected firstUpdated() {
     this.store.updateHass(this.hass);
