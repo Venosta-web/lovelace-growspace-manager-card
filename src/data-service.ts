@@ -286,21 +286,17 @@ export class DataService {
   async harvestPlant(plantId: string, target: string = 'dry') {
     console.log('[DataService:harvestPlant] Harvesting plant:', plantId, '→ target:', target);
     try {
+      const payload: any = {
+        plant_id: plantId,
+        target_growspace_id: target // Pass the ID directly
+      };
+
+      // Legacy mapping if needed (optional safety)
       const hint = (target || '').toLowerCase();
-      const payload: any = { plant_id: plantId };
-      // Prefer passing a concrete growspace_id when hint is clear
-      if (hint.includes('dry')) {
-        payload.target_growspace_id = 'dry'; // Was dry_overview
-      } else if (hint.includes('cure')) {
-        payload.target_growspace_id = 'cure'; // Was cure_overview
-      } else if (hint.includes('mother')) {
-        payload.target_growspace_id = 'mother'; // Was mother_overview
-      } else if (hint.includes('clone')) {
-        payload.target_growspace_id = 'clone'; // Was clone_overview
-      }
-      // Note: Backend only accepts target_growspace_id.
-      // If target is a custom name, we can't send it unless we resolve it to an ID first.
-      // We will assume the UI passes IDs or we map known ones.
+      if (hint.includes('dry') && target !== 'dry') payload.target_growspace_id = 'dry';
+      if (hint.includes('cure') && target !== 'cure') payload.target_growspace_id = 'cure';
+      if (hint.includes('mother') && target !== 'mother') payload.target_growspace_id = 'mother';
+      if (hint.includes('clone') && target !== 'clone') payload.target_growspace_id = 'clone';
 
       const res = await this.hass.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
       console.log('[DataService:harvestPlant] Response:', res);
@@ -318,12 +314,36 @@ export class DataService {
   }) {
     console.log('[DataService:takeClone] Cloning plant:', params);
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.TAKE_CLONE, params);
+      // Ensure target_growspace_id is set if not provided (though backend handles 'clone' default)
+      const payload = { ...params };
+      if (!payload.target_growspace_id) delete payload.target_growspace_id;
+
+      const res = await this.hass.callService(DOMAIN, SERVICES.TAKE_CLONE, payload);
       console.log('[DataService:takeClone] Response:', res);
       return res;
-    } catch (error) {
-      console.error('[DataService:takeClone] Error:', error);
-      throw error;
+    } catch (err) {
+      console.error('[DataService:takeClone] Error:', err);
+      throw err;
+    }
+  }
+
+  async moveClone(plantId: string, targetGrowspaceId: string, transitionDate?: string) {
+    console.log('[DataService:moveClone] Moving clone:', plantId, 'to', targetGrowspaceId);
+    try {
+      const payload: any = {
+        plant_id: plantId,
+        target_growspace_id: targetGrowspaceId,
+      };
+      if (transitionDate) {
+        payload.transition_date = transitionDate;
+      }
+
+      const res = await this.hass.callService(DOMAIN, SERVICES.MOVE_CLONE, payload);
+      console.log('[DataService:moveClone] Response:', res);
+      return res;
+    } catch (err) {
+      console.error('[DataService:moveClone] Error:', err);
+      throw err;
     }
   }
 
@@ -342,20 +362,7 @@ export class DataService {
     }
   }
 
-  async moveClone(plantId: string, targetGrowspaceId: string) {
-    console.log(`[DataService:moveClone] Moving clone: ${plantId} to ${targetGrowspaceId}`);
-    try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.MOVE_CLONE, {
-        plant_id: plantId,
-        target_growspace_id: targetGrowspaceId,
-      });
-      console.log('[DataService:moveClone] Response:', res);
-      return res;
-    } catch (err) {
-      console.error('[DataService:moveClone] Error:', err);
-      throw err;
-    }
-  }
+
 
   async setDehumidifierControl(growspaceId: string, enabled: boolean) {
     console.log(

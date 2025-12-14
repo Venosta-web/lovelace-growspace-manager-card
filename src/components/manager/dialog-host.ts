@@ -13,8 +13,13 @@ import '../../dialogs/strain-recommendation-dialog';
 import '../../dialogs/irrigation-dialog';
 import '../../dialogs/logbook-dialog';
 
+import { HomeAssistant } from 'custom-card-helpers';
+
 @customElement('growspace-dialog-host')
 export class DialogHost extends LitElement {
+    @property({ attribute: false })
+    hass!: HomeAssistant;
+
     @property({ attribute: false })
     store!: GrowspaceStore;
 
@@ -119,32 +124,9 @@ export class DialogHost extends LitElement {
             @take-clone=${(e: CustomEvent) =>
                 this.store.clonePlant(e.detail.plant, e.detail.numClones)}
             @move-clone=${(e: CustomEvent) =>
-                this._moveClonePlant(e.detail.plant, e.detail.targetGrowspace)}
+                this.store.movePlantToGrowspace(e.detail.plant, e.detail.targetGrowspace)}
         ></plant-overview-dialog>
         `;
-    }
-
-    // Helper for moveClone which is not fully in store yet, or use store wrapper?
-    // The original card had _moveClonePlant calling dataService.
-    // We should move this logic to Store completely or keep a small bridge here?
-    // Better to move to store. But store methods I restored might miss it.
-    // Let's check if store has moveClonePlant. Checking...
-    // Store has handleMovePlantToNextStage but moveClone is specific.
-    // The original code had:
-    /*
-    _moveClonePlant(plant: PlantEntity, targetGrowspace: string) {
-        const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-        this.store.dataService.moveClone(plantId, targetGrowspace)...
-    }
-    */
-    // I will implement a temporary bridge or assume I can call store.dataService
-    private _moveClonePlant(plant: PlantEntity, targetGrowspace: string) {
-        const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-        this.store.dataService.moveClone(plantId, targetGrowspace)
-            .then(() => {
-                this.store.closeActiveDialog();
-            })
-            .catch(err => console.error("Error moving clone", err));
     }
 
 
@@ -187,6 +169,7 @@ export class DialogHost extends LitElement {
         return html`
         <config-dialog
             .open=${true}
+            .hass=${this.hass}
             .currentTab=${dialogState.currentTab}
             .environmentData=${dialogState.environmentData}
             .growspaceOptions=${growspaceOptions}

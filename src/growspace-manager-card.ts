@@ -558,6 +558,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     return html`
       <growspace-dialog-host
         .store=${this.store}
+        .hass=${this.hass}
         .activeDialogState=${this.store.state.activeDialog}
         .strainLibrary=${this.store.state.strainLibrary}
       ></growspace-dialog-host>

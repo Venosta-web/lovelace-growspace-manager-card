@@ -933,24 +933,20 @@ class DataService {
     async harvestPlant(plantId, target = 'dry') {
         console.log('[DataService:harvestPlant] Harvesting plant:', plantId, '→ target:', target);
         try {
+            const payload = {
+                plant_id: plantId,
+                target_growspace_id: target // Pass the ID directly
+            };
+            // Legacy mapping if needed (optional safety)
             const hint = (target || '').toLowerCase();
-            const payload = { plant_id: plantId };
-            // Prefer passing a concrete growspace_id when hint is clear
-            if (hint.includes('dry')) {
-                payload.target_growspace_id = 'dry'; // Was dry_overview
-            }
-            else if (hint.includes('cure')) {
-                payload.target_growspace_id = 'cure'; // Was cure_overview
-            }
-            else if (hint.includes('mother')) {
-                payload.target_growspace_id = 'mother'; // Was mother_overview
-            }
-            else if (hint.includes('clone')) {
-                payload.target_growspace_id = 'clone'; // Was clone_overview
-            }
-            // Note: Backend only accepts target_growspace_id.
-            // If target is a custom name, we can't send it unless we resolve it to an ID first.
-            // We will assume the UI passes IDs or we map known ones.
+            if (hint.includes('dry') && target !== 'dry')
+                payload.target_growspace_id = 'dry';
+            if (hint.includes('cure') && target !== 'cure')
+                payload.target_growspace_id = 'cure';
+            if (hint.includes('mother') && target !== 'mother')
+                payload.target_growspace_id = 'mother';
+            if (hint.includes('clone') && target !== 'clone')
+                payload.target_growspace_id = 'clone';
             const res = await this.hass.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
             console.log('[DataService:harvestPlant] Response:', res);
             return res;
@@ -963,13 +959,36 @@ class DataService {
     async takeClone(params) {
         console.log('[DataService:takeClone] Cloning plant:', params);
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.TAKE_CLONE, params);
+            // Ensure target_growspace_id is set if not provided (though backend handles 'clone' default)
+            const payload = { ...params };
+            if (!payload.target_growspace_id)
+                delete payload.target_growspace_id;
+            const res = await this.hass.callService(DOMAIN, SERVICES.TAKE_CLONE, payload);
             console.log('[DataService:takeClone] Response:', res);
             return res;
         }
-        catch (error) {
-            console.error('[DataService:takeClone] Error:', error);
-            throw error;
+        catch (err) {
+            console.error('[DataService:takeClone] Error:', err);
+            throw err;
+        }
+    }
+    async moveClone(plantId, targetGrowspaceId, transitionDate) {
+        console.log('[DataService:moveClone] Moving clone:', plantId, 'to', targetGrowspaceId);
+        try {
+            const payload = {
+                plant_id: plantId,
+                target_growspace_id: targetGrowspaceId,
+            };
+            if (transitionDate) {
+                payload.transition_date = transitionDate;
+            }
+            const res = await this.hass.callService(DOMAIN, SERVICES.MOVE_CLONE, payload);
+            console.log('[DataService:moveClone] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:moveClone] Error:', err);
+            throw err;
         }
     }
     async swapPlants(plant1Id, plant2Id) {
@@ -984,21 +1003,6 @@ class DataService {
         }
         catch (err) {
             console.error('[DataService:swapPlants] Error:', err);
-            throw err;
-        }
-    }
-    async moveClone(plantId, targetGrowspaceId) {
-        console.log(`[DataService:moveClone] Moving clone: ${plantId} to ${targetGrowspaceId}`);
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.MOVE_CLONE, {
-                plant_id: plantId,
-                target_growspace_id: targetGrowspaceId,
-            });
-            console.log('[DataService:moveClone] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:moveClone] Error:', err);
             throw err;
         }
     }
@@ -3586,6 +3590,27 @@ class GrowspaceStore {
         }
         catch (err) {
             console.error('Error moving plant to next stage:', err);
+        }
+    }
+    async movePlantToGrowspace(plant, targetGrowspace) {
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        const currentStage = plant.attributes?.stage || 'unknown';
+        try {
+            if (currentStage === 'clone') {
+                // Clones use specific service to handle transition to Veg
+                await this.dataService.moveClone(plantId, targetGrowspace);
+            }
+            else {
+                // Other stages use harvest loop (flower->dry->cure etc)
+                await this.dataService.harvestPlant(plantId, targetGrowspace);
+            }
+            this.showToast(`Plant moved to ${targetGrowspace}`, 'success');
+            await this.refreshData();
+            this.closeActiveDialog();
+        }
+        catch (err) {
+            console.error('Error moving plant:', err);
+            this.showToast(`Failed to move plant: ${err.message}`, 'error');
         }
     }
     async addStrain(strainData) {
@@ -9256,31 +9281,9 @@ let DialogHost = class DialogHost extends i$3 {
             @harvest-plant=${(e) => this.store.harvestPlant(e.detail.plant)}
             @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
             @take-clone=${(e) => this.store.clonePlant(e.detail.plant, e.detail.numClones)}
-            @move-clone=${(e) => this._moveClonePlant(e.detail.plant, e.detail.targetGrowspace)}
+            @move-clone=${(e) => this.store.movePlantToGrowspace(e.detail.plant, e.detail.targetGrowspace)}
         ></plant-overview-dialog>
         `;
-    }
-    // Helper for moveClone which is not fully in store yet, or use store wrapper?
-    // The original card had _moveClonePlant calling dataService.
-    // We should move this logic to Store completely or keep a small bridge here?
-    // Better to move to store. But store methods I restored might miss it.
-    // Let's check if store has moveClonePlant. Checking...
-    // Store has handleMovePlantToNextStage but moveClone is specific.
-    // The original code had:
-    /*
-    _moveClonePlant(plant: PlantEntity, targetGrowspace: string) {
-        const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-        this.store.dataService.moveClone(plantId, targetGrowspace)...
-    }
-    */
-    // I will implement a temporary bridge or assume I can call store.dataService
-    _moveClonePlant(plant, targetGrowspace) {
-        const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-        this.store.dataService.moveClone(plantId, targetGrowspace)
-            .then(() => {
-            this.store.closeActiveDialog();
-        })
-            .catch(err => console.error("Error moving clone", err));
     }
     _renderStrainLibraryDialog(active, strainLibrary) {
         if (active.type !== 'STRAIN_LIBRARY')
@@ -9317,6 +9320,7 @@ let DialogHost = class DialogHost extends i$3 {
         return x `
         <config-dialog
             .open=${true}
+            .hass=${this.hass}
             .currentTab=${dialogState.currentTab}
             .environmentData=${dialogState.environmentData}
             .growspaceOptions=${growspaceOptions}
@@ -9433,6 +9437,10 @@ let DialogHost = class DialogHost extends i$3 {
         `;
     }
 };
+__decorate([
+    n$5({ attribute: false }),
+    __metadata("design:type", Object)
+], DialogHost.prototype, "hass", void 0);
 __decorate([
     n$5({ attribute: false }),
     __metadata("design:type", GrowspaceStore)
@@ -21865,6 +21873,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         return x `
       <growspace-dialog-host
         .store=${this.store}
+        .hass=${this.hass}
         .activeDialogState=${this.store.state.activeDialog}
         .strainLibrary=${this.store.state.strainLibrary}
       ></growspace-dialog-host>

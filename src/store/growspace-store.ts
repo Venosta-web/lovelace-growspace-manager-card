@@ -579,6 +579,28 @@ export class GrowspaceStore implements ReactiveController {
             });
     };
 
+    async movePlantToGrowspace(plant: PlantEntity, targetGrowspace: string) {
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        const currentStage = plant.attributes?.stage || 'unknown';
+
+        try {
+            if (currentStage === 'clone') {
+                // Clones use specific service to handle transition to Veg
+                await this.dataService.moveClone(plantId, targetGrowspace);
+            } else {
+                // Other stages use harvest loop (flower->dry->cure etc)
+                await this.dataService.harvestPlant(plantId, targetGrowspace);
+            }
+
+            this.showToast(`Plant moved to ${targetGrowspace}`, 'success');
+            await this.refreshData();
+            this.closeActiveDialog();
+        } catch (err: any) {
+            console.error('Error moving plant:', err);
+            this.showToast(`Failed to move plant: ${err.message}`, 'error');
+        }
+    }
+
     async addStrain(strainData: Partial<StrainEntry>) {
         if (!strainData.strain) return;
 
