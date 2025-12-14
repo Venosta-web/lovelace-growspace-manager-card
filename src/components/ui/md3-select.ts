@@ -17,7 +17,7 @@ export class Md3Select extends LitElement {
         display: block;
         width: 100%;
       }
-    `
+    `,
   ];
 
   private _handleChange(e: Event) {
@@ -30,17 +30,13 @@ export class Md3Select extends LitElement {
     return html`
       <div class="md3-input-group">
         <label class="md3-label">${this.label}</label>
-        <select
-          class="md3-input"
-          .value=${this.value}
-          @change=${this._handleChange}
-        >
+        <select class="md3-input" .value=${this.value} @change=${this._handleChange}>
           <option value="">Select...</option>
-          ${this.options.map(opt => {
-      const label = typeof opt === 'string' ? opt : opt.label;
-      const val = typeof opt === 'string' ? opt : opt.value;
-      return html`<option value="${val}" ?selected=${val === this.value}>${label}</option>`;
-    })}
+          ${this.options.map((opt) => {
+            const label = typeof opt === 'string' ? opt : opt.label;
+            const val = typeof opt === 'string' ? opt : opt.value;
+            return html`<option value="${val}" ?selected=${val === this.value}>${label}</option>`;
+          })}
         </select>
       </div>
     `;

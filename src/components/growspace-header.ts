@@ -39,7 +39,7 @@ import {
   ToggleEnvGraphEvent,
   LinkGraphsEvent,
   UnlinkGraphsEvent,
-  TriggerActionEvent
+  TriggerActionEvent,
 } from '../events';
 import { METRIC_CONFIG } from '../constants';
 
@@ -51,7 +51,9 @@ export class GrowspaceHeader extends LitElement {
   @property({ attribute: false }) public device!: GrowspaceDevice;
 
   @consume({ context: configContext, subscribe: true })
-  @property({ attribute: false }) public config!: GrowspaceManagerCardConfig;
+  @property({ attribute: false })
+  public config!: GrowspaceManagerCardConfig;
+
   @property({ attribute: false }) public devices: GrowspaceDevice[] = [];
   @property({ type: Boolean }) public compact = false;
   @property({ type: Boolean }) public isEditMode = false;
@@ -69,8 +71,6 @@ export class GrowspaceHeader extends LitElement {
   @state() private _deviceChips: any[] = [];
   @state() private _dominant: any = undefined;
   @state() private _envAttrs: any = {};
-
-
 
   @state() private _canScrollLeft = false;
   @state() private _canScrollRight = false;
@@ -90,8 +90,14 @@ export class GrowspaceHeader extends LitElement {
     return undefined;
   }
 
-  private _computeMetrics(): { mainChips: any[]; deviceChips: any[]; dominant: any; envAttrs: any } {
-    if (!this.device || !this.hass) return { mainChips: [], deviceChips: [], dominant: undefined, envAttrs: {} };
+  private _computeMetrics(): {
+    mainChips: any[];
+    deviceChips: any[];
+    dominant: any;
+    envAttrs: any;
+  } {
+    if (!this.device || !this.hass)
+      return { mainChips: [], deviceChips: [], dominant: undefined, envAttrs: {} };
 
     const dominant = PlantUtils.getDominantStage(this.device.plants);
 
@@ -112,8 +118,11 @@ export class GrowspaceHeader extends LitElement {
     }
 
     const envEntity = this.hass.states[envEntityId];
-    const overviewEntity = this.device.overview_entity_id ? this.hass.states[this.device.overview_entity_id] : undefined;
-    const envAttrs = this.device.environment_attributes || overviewEntity?.attributes || ({} as any);
+    const overviewEntity = this.device.overview_entity_id
+      ? this.hass.states[this.device.overview_entity_id]
+      : undefined;
+    const envAttrs =
+      this.device.environment_attributes || overviewEntity?.attributes || ({} as any);
 
     const temp = this._getAttributeValue(envEntity, 'temperature');
     const hum = this._getAttributeValue(envEntity, 'humidity');
@@ -130,7 +139,15 @@ export class GrowspaceHeader extends LitElement {
       }
       if (vpd === undefined || vpd === null) {
         // Calculated VPD fallback
-        const slugify = (text: string) => text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '_').replace(/^-+/, '').replace(/-+$/, '');
+        const slugify = (text: string) =>
+          text
+            .toString()
+            .toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^\w\-]+/g, '')
+            .replace(/\-\-+/g, '_')
+            .replace(/^-+/, '')
+            .replace(/-+$/, '');
         const calcName = `${this.device.name} Calculated VPD`;
         const calculatedId = `sensor.${slugify(calcName)}`;
         const vpdState = this.hass.states[calculatedId];
@@ -147,9 +164,14 @@ export class GrowspaceHeader extends LitElement {
     const vpdDangerMin = overviewEntity?.attributes?.vpd_danger_min;
     const vpdDangerMax = overviewEntity?.attributes?.vpd_danger_max;
 
-    if ((!vpdStatus || vpdStatus === 'unknown') && vpd !== undefined &&
-      vpdTargetMin !== undefined && vpdTargetMax !== undefined &&
-      vpdDangerMin !== undefined && vpdDangerMax !== undefined) {
+    if (
+      (!vpdStatus || vpdStatus === 'unknown') &&
+      vpd !== undefined &&
+      vpdTargetMin !== undefined &&
+      vpdTargetMax !== undefined &&
+      vpdDangerMin !== undefined &&
+      vpdDangerMax !== undefined
+    ) {
       if (vpd < vpdDangerMin || vpd > vpdDangerMax) {
         vpdStatus = 'danger';
       } else if (vpd < vpdTargetMin || vpd > vpdTargetMax) {
@@ -161,17 +183,19 @@ export class GrowspaceHeader extends LitElement {
 
     const isSpecialGrowspace = isCure || isDry;
     const co2Value = this._getAttributeValue(envEntity, 'co2');
-    const co2 = (isSpecialGrowspace || co2Value === undefined || co2Value === null) ? undefined : co2Value;
+    const co2 =
+      isSpecialGrowspace || co2Value === undefined || co2Value === null ? undefined : co2Value;
 
     const isLightsOnValue = this._getAttributeValue(envEntity, 'is_lights_on');
-    const hasLightSensor = !isSpecialGrowspace && (isLightsOnValue !== undefined && isLightsOnValue !== null);
+    const hasLightSensor =
+      !isSpecialGrowspace && isLightsOnValue !== undefined && isLightsOnValue !== null;
     const isLightsOn = isLightsOnValue === true;
 
     const getNextEvent = (times?: IrrigationTime[]): string | undefined => {
       if (!times || !times.length) return undefined;
       const now = DateTime.now();
       const upcoming = times
-        .map(t => {
+        .map((t) => {
           const [h, m] = t.time.split(':').map(Number);
           let dt = now.set({ hour: h, minute: m, second: 0 });
           if (dt < now) dt = dt.plus({ days: 1 });
@@ -185,7 +209,14 @@ export class GrowspaceHeader extends LitElement {
     const nextDrain = getNextEvent(this.device.drain_times);
 
     // Build Chips
-    const createChipData = (key: string, icon: string, value: string | undefined, label?: string, status?: string, tooltip?: string) => {
+    const createChipData = (
+      key: string,
+      icon: string,
+      value: string | undefined,
+      label?: string,
+      status?: string,
+      tooltip?: string
+    ) => {
       if (value === undefined) return null;
       const { linked, groupIndex } = this._isMetricLinked(key);
       const active = this.activeEnvGraphs.has(key);
@@ -195,40 +226,101 @@ export class GrowspaceHeader extends LitElement {
     const mainChips = [
       createChipData('temperature', mdiThermometer, temp !== undefined ? `${temp}°C` : undefined),
       createChipData('humidity', mdiWaterPercent, hum !== undefined ? `${hum}%` : undefined),
-      createChipData('vpd', mdiCloudOutline, vpd !== undefined ? `${vpd} kPa` : undefined, undefined, vpdStatus,
-        vpdTargetMin !== undefined && vpdTargetMax !== undefined ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})` : ''),
+      createChipData(
+        'vpd',
+        mdiCloudOutline,
+        vpd !== undefined ? `${vpd} kPa` : undefined,
+        undefined,
+        vpdStatus,
+        vpdTargetMin !== undefined && vpdTargetMax !== undefined
+          ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})`
+          : ''
+      ),
       createChipData('co2', mdiWeatherCloudy, co2 !== undefined ? `${co2} ppm` : undefined),
-      createChipData('light', isLightsOn ? mdiLightbulbOn : mdiLightbulbOff, hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined),
-      createChipData('soil_moisture', mdiWaterPercent, this._getAttributeValue(overviewEntity, 'soil_moisture_value') !== undefined ? `${this._getAttributeValue(overviewEntity, 'soil_moisture_value')}%` : undefined, 'Moisture'),
+      createChipData(
+        'light',
+        isLightsOn ? mdiLightbulbOn : mdiLightbulbOff,
+        hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined
+      ),
+      createChipData(
+        'soil_moisture',
+        mdiWaterPercent,
+        this._getAttributeValue(overviewEntity, 'soil_moisture_value') !== undefined
+          ? `${this._getAttributeValue(overviewEntity, 'soil_moisture_value')}%`
+          : undefined,
+        'Moisture'
+      ),
       createChipData('irrigation', mdiWater, nextIrrigation, 'Next'),
       createChipData('drain', mdiWater, nextDrain, 'Next'),
-      envEntity ? createChipData('optimal', envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank,
-        envEntity.state === 'on' ? 'Optimal Conditions' : (envEntity.attributes.reasons || 'Not Optimal'), undefined,
-        envEntity.state === 'on' ? 'optimal' : 'warning') : null
+      envEntity
+        ? createChipData(
+            'optimal',
+            envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank,
+            envEntity.state === 'on'
+              ? 'Optimal Conditions'
+              : envEntity.attributes.reasons || 'Not Optimal',
+            undefined,
+            envEntity.state === 'on' ? 'optimal' : 'warning'
+          )
+        : null,
     ].filter((c): c is NonNullable<typeof c> => c !== null);
 
     // Device Chips
     const exhaustId = envAttrs.exhaust_entity;
     const exhaustSensor = envAttrs.exhaust_sensor;
-    const exhaustState = (exhaustId && this.hass.states[exhaustId]) ? this.hass.states[exhaustId].state :
-      (exhaustSensor && this.hass.states[exhaustSensor]) ? this.hass.states[exhaustSensor].state : undefined;
+    const exhaustState =
+      exhaustId && this.hass.states[exhaustId]
+        ? this.hass.states[exhaustId].state
+        : exhaustSensor && this.hass.states[exhaustSensor]
+          ? this.hass.states[exhaustSensor].state
+          : undefined;
 
     const humidifierId = envAttrs.humidifier_entity;
     const humidifierSensor = envAttrs.humidifier_sensor;
-    const humidifierState = (humidifierId && this.hass.states[humidifierId]) ? this.hass.states[humidifierId].state :
-      (humidifierSensor && this.hass.states[humidifierSensor]) ? this.hass.states[humidifierSensor].state : undefined;
+    const humidifierState =
+      humidifierId && this.hass.states[humidifierId]
+        ? this.hass.states[humidifierId].state
+        : humidifierSensor && this.hass.states[humidifierSensor]
+          ? this.hass.states[humidifierSensor].state
+          : undefined;
 
     const dehumidifierId = envAttrs.dehumidifier_entity;
-    const dehumidifierState = dehumidifierId && this.hass.states[dehumidifierId] ? this.hass.states[dehumidifierId].state : undefined;
+    const dehumidifierState =
+      dehumidifierId && this.hass.states[dehumidifierId]
+        ? this.hass.states[dehumidifierId].state
+        : undefined;
 
     const circulationFanId = envAttrs.circulation_fan_entity;
-    const circulationFanState = circulationFanId && this.hass.states[circulationFanId] ? this.hass.states[circulationFanId].state : undefined;
+    const circulationFanState =
+      circulationFanId && this.hass.states[circulationFanId]
+        ? this.hass.states[circulationFanId].state
+        : undefined;
 
     const deviceChips = [
-      createChipData('exhaust', mdiFan, (exhaustId || exhaustSensor) ? `${exhaustState ?? '-'}` : undefined, 'Exhaust'),
-      createChipData('circulation_fan', mdiFan, circulationFanId ? `${circulationFanState ?? '-'}` : undefined, 'Fan'),
-      createChipData('humidifier', mdiAirHumidifier, (humidifierId || humidifierSensor) ? `${humidifierState ?? '-'}` : undefined, 'Humidifier'),
-      createChipData('dehumidifier', mdiAirHumidifierOff, dehumidifierId ? `${dehumidifierState ?? '-'}` : undefined, 'Dehumidifier')
+      createChipData(
+        'exhaust',
+        mdiFan,
+        exhaustId || exhaustSensor ? `${exhaustState ?? '-'}` : undefined,
+        'Exhaust'
+      ),
+      createChipData(
+        'circulation_fan',
+        mdiFan,
+        circulationFanId ? `${circulationFanState ?? '-'}` : undefined,
+        'Fan'
+      ),
+      createChipData(
+        'humidifier',
+        mdiAirHumidifier,
+        humidifierId || humidifierSensor ? `${humidifierState ?? '-'}` : undefined,
+        'Humidifier'
+      ),
+      createChipData(
+        'dehumidifier',
+        mdiAirHumidifierOff,
+        dehumidifierId ? `${dehumidifierState ?? '-'}` : undefined,
+        'Dehumidifier'
+      ),
     ].filter((c): c is NonNullable<typeof c> => c !== null);
 
     return { mainChips, deviceChips, dominant, envAttrs };
@@ -246,11 +338,18 @@ export class GrowspaceHeader extends LitElement {
     if (container) {
       // 1px buffer to handle subpixels
       this._canScrollLeft = container.scrollLeft > 1;
-      this._canScrollRight = container.scrollLeft < (container.scrollWidth - container.clientWidth - 1);
+      this._canScrollRight =
+        container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
     }
   }
+
   protected willUpdate(changedProperties: Map<string, any>) {
-    if (changedProperties.has('device') || changedProperties.has('hass') || changedProperties.has('activeEnvGraphs') || changedProperties.has('linkedGraphGroups')) {
+    if (
+      changedProperties.has('device') ||
+      changedProperties.has('hass') ||
+      changedProperties.has('activeEnvGraphs') ||
+      changedProperties.has('linkedGraphGroups')
+    ) {
       const { mainChips, deviceChips, dominant, envAttrs } = this._computeMetrics();
       this._mainChips = mainChips;
       this._deviceChips = deviceChips;
@@ -260,7 +359,11 @@ export class GrowspaceHeader extends LitElement {
   }
 
   updated(changedProps: Map<string, any>) {
-    if (changedProps.has('activeEnvGraphs') || changedProps.has('linkedGraphGroups') || changedProps.has('device')) {
+    if (
+      changedProps.has('activeEnvGraphs') ||
+      changedProps.has('linkedGraphGroups') ||
+      changedProps.has('device')
+    ) {
       // Content might change size
       setTimeout(() => this._checkScroll(), 0);
     }
@@ -331,7 +434,7 @@ export class GrowspaceHeader extends LitElement {
       background: linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
 
     .growspace-select-header {
@@ -374,26 +477,26 @@ export class GrowspaceHeader extends LitElement {
     }
 
     .gs-stats-chips {
-       display: flex;
-       flex-wrap: nowrap;
-       gap: 8px;
-       justify-content: flex-start;
-       align-items: center;
-       overflow-x: auto;
-       overflow-y: hidden;
-       flex: 1;
-       min-width: 0;
-       scrollbar-width: none;
-       -ms-overflow-style: none;
-       /* Remove static mask */
-       /* mask-image: linear-gradient(to right, black 85%, transparent 100%); */
-       /* -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%); */
-       padding: 4px 2px;
-       transition: mask-image 0.3s;
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 8px;
+      justify-content: flex-start;
+      align-items: center;
+      overflow-x: auto;
+      overflow-y: hidden;
+      flex: 1;
+      min-width: 0;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      /* Remove static mask */
+      /* mask-image: linear-gradient(to right, black 85%, transparent 100%); */
+      /* -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%); */
+      padding: 4px 2px;
+      transition: mask-image 0.3s;
 
-       touch-action: manipulation;
-       max-width: 100%;
-       -webkit-overflow-scrolling: touch;
+      touch-action: manipulation;
+      max-width: 100%;
+      -webkit-overflow-scrolling: touch;
     }
     .gs-stats-chips::-webkit-scrollbar {
       display: none;
@@ -421,14 +524,20 @@ export class GrowspaceHeader extends LitElement {
       user-select: none;
       flex-shrink: 0;
       white-space: nowrap;
-      touch-action: auto; 
+      touch-action: auto;
     }
 
     /* Status Colors */
     @keyframes pulse-red {
-      0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
-      70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+      0% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+      }
     }
     .stat-chip.status-optimal {
       color: #2e7d32 !important;
@@ -678,19 +787,19 @@ export class GrowspaceHeader extends LitElement {
         margin-bottom: 8px; /* Gap logic */
         flex-shrink: 0;
       }
-      
+
       .mobile-link-btn.active {
         background: var(--primary-color, #03a9f4);
         border-color: var(--primary-color, #03a9f4);
         box-shadow: 0 0 12px rgba(3, 169, 244, 0.4);
       }
-      
+
       .mobile-link-btn svg {
         width: 24px;
         height: 24px;
         fill: currentColor;
       }
-        
+
       /* Link Mode Active State - WRAPPING ENABLED, SCROLL DISABLED */
       .gs-stats-chips.mobile-link-active,
       .gs-device-chips.mobile-link-active {
@@ -707,45 +816,57 @@ export class GrowspaceHeader extends LitElement {
     }
 
     .scroll-nav {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        opacity: 0.5;
-        transition: opacity 0.2s;
-        min-width: 24px;
-        color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+      min-width: 24px;
+      color: #fff;
     }
 
     .scroll-nav:hover {
-        opacity: 1;
+      opacity: 1;
     }
 
     .scroll-nav svg {
-        width: 24px;
-        height: 24px;
-        fill: currentColor;
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
     }
 
     @media (pointer: coarse) {
-        .scroll-nav {
-            display: none;
-        }
+      .scroll-nav {
+        display: none;
+      }
     }
 
     .gs-stats-chips.mask-right {
-        mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
-        -webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
+      mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
     }
 
     .gs-stats-chips.mask-left {
-        mask-image: linear-gradient(to right, transparent 0%, black 40px, black 100%);
-        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 40px, black 100%);
+      mask-image: linear-gradient(to right, transparent 0%, black 40px, black 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 40px, black 100%);
     }
-    
+
     .gs-stats-chips.mask-left.mask-right {
-        mask-image: linear-gradient(to right, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%);
-        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%);
+      mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 40px,
+        black calc(100% - 40px),
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 40px,
+        black calc(100% - 40px),
+        transparent 100%
+      );
     }
   `;
 
@@ -784,12 +905,16 @@ export class GrowspaceHeader extends LitElement {
     }
   }
 
-  private _isMetricLinked(metric: string): { linked: boolean, groupIndex: number, group: string[] } {
-    const index = this.linkedGraphGroups.findIndex(g => g.includes(metric));
+  private _isMetricLinked(metric: string): {
+    linked: boolean;
+    groupIndex: number;
+    group: string[];
+  } {
+    const index = this.linkedGraphGroups.findIndex((g) => g.includes(metric));
     return {
       linked: index !== -1,
       groupIndex: index,
-      group: index !== -1 ? this.linkedGraphGroups[index] : []
+      group: index !== -1 ? this.linkedGraphGroups[index] : [],
     };
   }
 
@@ -807,8 +932,6 @@ export class GrowspaceHeader extends LitElement {
     this._checkMobile();
     window.addEventListener('resize', this._checkMobileBound);
   }
-
-
 
   private _checkMobileBound = () => this._checkMobile();
 
@@ -834,7 +957,6 @@ export class GrowspaceHeader extends LitElement {
     return 'true';
   }
 
-
   private _triggerAction(action: string) {
     this.dispatchEvent(new TriggerActionEvent(action));
     this._menuOpen = false;
@@ -850,49 +972,76 @@ export class GrowspaceHeader extends LitElement {
       <div class="gs-stats-container">
         <div class="gs-header-top">
           <div class="gs-title-group">
-            ${!this.config?.default_growspace ? html`
-        <select class="growspace-select-header" .value=${this.device.device_id} @change=${this._handleDeviceChange}>
-          ${Object.entries(this.growspaceOptions).map(([id, name]) => html`<option value="${id}">${name}</option>`)}
-        </select>
-          ` : html`
-          <h3 class="gs-title"> ${this.device.name} </h3>
-            `}
-
-            ${dominant ? html`
-              <div style="display: flex; gap: 8px;">
-                <div class="gs-stage-chip">
-                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
-                  ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Day ${dominant.days}
-                </div>
-                <div class="gs-stage-chip">
-                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
-                  ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Week ${Math.ceil(dominant.days / 7)}
-                </div>
-              </div>
-            ` : ''}
+            ${!this.config?.default_growspace
+              ? html`
+                  <select
+                    class="growspace-select-header"
+                    .value=${this.device.device_id}
+                    @change=${this._handleDeviceChange}
+                  >
+                    ${Object.entries(this.growspaceOptions).map(
+                      ([id, name]) => html`<option value="${id}">${name}</option>`
+                    )}
+                  </select>
+                `
+              : html` <h3 class="gs-title">${this.device.name}</h3> `}
+            ${dominant
+              ? html`
+                  <div style="display: flex; gap: 8px;">
+                    <div class="gs-stage-chip">
+                      <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path>
+                      </svg>
+                      ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Day
+                      ${dominant.days}
+                    </div>
+                    <div class="gs-stage-chip">
+                      <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path>
+                      </svg>
+                      ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Week
+                      ${Math.ceil(dominant.days / 7)}
+                    </div>
+                  </div>
+                `
+              : ''}
           </div>
 
-          <div class="header-controls-container" style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
+          <div
+            class="header-controls-container"
+            style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;"
+          >
             <div class="header-controls">
-              
-              <div class=${classMap({ 'mobile-link-btn': true, 'active': this._mobileLink })}
-                   @click=${() => this._mobileLink = !this._mobileLink}>
-                 <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
+              <div
+                class=${classMap({ 'mobile-link-btn': true, active: this._mobileLink })}
+                @click=${() => (this._mobileLink = !this._mobileLink)}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
               </div>
 
-              <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px; overflow: hidden;">
-                ${this._canScrollLeft && !this._mobileLink ? html`
-                    <div class="scroll-nav left" @click=${() => this._scrollChips('left')}><svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg></div>
-                ` : ''}
-                
-                <div class=${classMap({
-      'gs-stats-chips': true,
-      'mobile-link-active': this._mobileLink,
-      'mask-left': this._canScrollLeft,
-      'mask-right': this._canScrollRight
-    })} ${ref(this._chipsContainerRef)}>
-                  ${this._mainChips.map(chip => html`
-                    <growspace-chip
+              <div
+                style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px; overflow: hidden;"
+              >
+                ${this._canScrollLeft && !this._mobileLink
+                  ? html`
+                      <div class="scroll-nav left" @click=${() => this._scrollChips('left')}>
+                        <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+                      </div>
+                    `
+                  : ''}
+
+                <div
+                  class=${classMap({
+                    'gs-stats-chips': true,
+                    'mobile-link-active': this._mobileLink,
+                    'mask-left': this._canScrollLeft,
+                    'mask-right': this._canScrollRight,
+                  })}
+                  ${ref(this._chipsContainerRef)}
+                >
+                  ${this._mainChips.map(
+                    (chip) => html`
+                      <growspace-chip
                         .icon=${chip.icon}
                         .label=${chip.label || ''}
                         .value=${chip.value}
@@ -905,86 +1054,114 @@ export class GrowspaceHeader extends LitElement {
                         @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
                         @dragover=${(e: DragEvent) => this._handleDragOver(e)}
                         @click=${(e: Event) => {
-        if ((e.target as HTMLElement).closest('.link-icon')) return;
-        this._toggleEnvGraph(chip.key);
-      }}
-                        @unlink=${() => chip.groupIndex !== undefined && this._unlinkGraphs(chip.groupIndex)}
-                    ></growspace-chip>
-                  `)}
-              </div>
+                          if ((e.target as HTMLElement).closest('.link-icon')) return;
+                          this._toggleEnvGraph(chip.key);
+                        }}
+                        @unlink=${() =>
+                          chip.groupIndex !== undefined && this._unlinkGraphs(chip.groupIndex)}
+                      ></growspace-chip>
+                    `
+                  )}
+                </div>
 
-                ${this._canScrollRight && !this._mobileLink ? html`
-                    <div class="scroll-nav right" @click=${() => this._scrollChips('right')}><svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg></div>
-                ` : ''}
+                ${this._canScrollRight && !this._mobileLink
+                  ? html`
+                      <div class="scroll-nav right" @click=${() => this._scrollChips('right')}>
+                        <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                      </div>
+                    `
+                  : ''}
               </div>
 
               <div class="menu-container">
-                <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
+                <div class="menu-button" @click=${() => (this._menuOpen = !this._menuOpen)}>
                   <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
                 </div>
-                ${this._menuOpen ? html`
-                  <div class="menu-dropdown" @click=${(e: Event) => e.stopPropagation()}>
-                    <div class="menu-item" @click=${() => this._triggerAction('config')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                      <span class="menu-item-label">Config</span>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('edit')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-                      <span class="menu-item-label">Edit</span>
-                      <div class=${classMap({ 'menu-toggle-switch': true, 'active': this.isEditMode })}></div>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('compact')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-                      <span class="menu-item-label">Compact View</span>
-                      <div class=${classMap({ 'menu-toggle-switch': true, 'active': this.compact })}></div>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
-                      <span class="menu-item-label">Control Dehumidifier</span>
-                      <div class=${classMap({ 'menu-toggle-switch': true, 'active': !!envAttrs.dehumidifier_control_enabled })}></div>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('strains')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-                      <span class="menu-item-label">Strains</span>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                      <span class="menu-item-label">Irrigation</span>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('ai')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-                      <span class="menu-item-label">Ask AI</span>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
-                      <span class="menu-item-label">Logbook</span>
-                    </div>
-                  </div>
-                ` : ''}
+                ${this._menuOpen
+                  ? html`
+                      <div class="menu-dropdown" @click=${(e: Event) => e.stopPropagation()}>
+                        <div class="menu-item" @click=${() => this._triggerAction('config')}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                          <span class="menu-item-label">Config</span>
+                        </div>
+                        <div class="menu-item" @click=${() => this._triggerAction('edit')}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                          <span class="menu-item-label">Edit</span>
+                          <div
+                            class=${classMap({
+                              'menu-toggle-switch': true,
+                              active: this.isEditMode,
+                            })}
+                          ></div>
+                        </div>
+                        <div class="menu-item" @click=${() => this._triggerAction('compact')}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+                          <span class="menu-item-label">Compact View</span>
+                          <div
+                            class=${classMap({ 'menu-toggle-switch': true, active: this.compact })}
+                          ></div>
+                        </div>
+                        <div
+                          class="menu-item"
+                          @click=${() => this._triggerAction('control_dehumidifier')}
+                        >
+                          <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
+                          <span class="menu-item-label">Control Dehumidifier</span>
+                          <div
+                            class=${classMap({
+                              'menu-toggle-switch': true,
+                              active: !!envAttrs.dehumidifier_control_enabled,
+                            })}
+                          ></div>
+                        </div>
+                        <div class="menu-item" @click=${() => this._triggerAction('strains')}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+                          <span class="menu-item-label">Strains</span>
+                        </div>
+                        <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                          <span class="menu-item-label">Irrigation</span>
+                        </div>
+                        <div class="menu-item" @click=${() => this._triggerAction('ai')}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+                          <span class="menu-item-label">Ask AI</span>
+                        </div>
+                        <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
+                          <span class="menu-item-label">Logbook</span>
+                        </div>
+                      </div>
+                    `
+                  : ''}
               </div>
             </div>
 
-            <div class=${classMap({ 'gs-device-chips': true, 'mobile-link-active': this._mobileLink })}>
-              ${this._deviceChips.map(chip => html`
-                    <growspace-chip
-                        .icon=${chip.icon}
-                        .label=${chip.label || ''}
-                        .value=${chip.value}
-                        .status=${chip.status || ''}
-                        .active=${chip.active}
-                        .linked=${chip.linked}
-                        .tooltip=${chip.tooltip || ''}
-                        draggable="${this._chipDraggable}"
-                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
-                        @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
-                        @dragover=${(e: DragEvent) => this._handleDragOver(e)}
-                        @click=${(e: Event) => {
-          if ((e.target as HTMLElement).closest('.link-icon')) return;
-          this._toggleEnvGraph(chip.key);
-        }}
-                         @unlink=${() => chip.groupIndex !== undefined && this._unlinkGraphs(chip.groupIndex)}
-                    ></growspace-chip>
-                  `)}
+            <div
+              class=${classMap({ 'gs-device-chips': true, 'mobile-link-active': this._mobileLink })}
+            >
+              ${this._deviceChips.map(
+                (chip) => html`
+                  <growspace-chip
+                    .icon=${chip.icon}
+                    .label=${chip.label || ''}
+                    .value=${chip.value}
+                    .status=${chip.status || ''}
+                    .active=${chip.active}
+                    .linked=${chip.linked}
+                    .tooltip=${chip.tooltip || ''}
+                    draggable="${this._chipDraggable}"
+                    @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
+                    @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
+                    @dragover=${(e: DragEvent) => this._handleDragOver(e)}
+                    @click=${(e: Event) => {
+                      if ((e.target as HTMLElement).closest('.link-icon')) return;
+                      this._toggleEnvGraph(chip.key);
+                    }}
+                    @unlink=${() =>
+                      chip.groupIndex !== undefined && this._unlinkGraphs(chip.groupIndex)}
+                  ></growspace-chip>
+                `
+              )}
             </div>
           </div>
         </div>

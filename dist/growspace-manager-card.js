@@ -59,30 +59,20 @@ var PlantStage;
 })(PlantStage || (PlantStage = {}));
 const stageInputs = {
     [PlantStage.SEEDLING]: [],
-    [PlantStage.MOTHER]: [
-        { label: "Mother Start", icon: mdiSprout, key: "mother_start" },
-    ],
-    [PlantStage.CLONE]: [
-        { label: "Clone Start", icon: mdiSprout, key: "clone_start" },
-    ],
-    [PlantStage.VEG]: [
-        { label: "Vegetative Start", icon: mdiSprout, key: "veg_start" },
-    ],
+    [PlantStage.MOTHER]: [{ label: 'Mother Start', icon: mdiSprout, key: 'mother_start' }],
+    [PlantStage.CLONE]: [{ label: 'Clone Start', icon: mdiSprout, key: 'clone_start' }],
+    [PlantStage.VEG]: [{ label: 'Vegetative Start', icon: mdiSprout, key: 'veg_start' }],
     [PlantStage.FLOWER]: [
-        { label: "Vegetative Start", icon: mdiSprout, key: "veg_start" },
-        { label: "Flower Start", icon: mdiFlower, key: "flower_start" },
+        { label: 'Vegetative Start', icon: mdiSprout, key: 'veg_start' },
+        { label: 'Flower Start', icon: mdiFlower, key: 'flower_start' },
     ],
-    [PlantStage.DRY]: [
-        { label: "Dry Start", icon: mdiHairDryer, key: "dry_start" },
-    ],
-    [PlantStage.CURE]: [
-        { label: "Cure Start", icon: mdiCannabis, key: "cure_start" },
-    ],
+    [PlantStage.DRY]: [{ label: 'Dry Start', icon: mdiHairDryer, key: 'dry_start' }],
+    [PlantStage.CURE]: [{ label: 'Cure Start', icon: mdiCannabis, key: 'cure_start' }],
 };
 function createGrowspaceDevice(params) {
     return {
         ...params,
-        type: params.type ?? "normal",
+        type: params.type ?? 'normal',
     };
 }
 
@@ -107,7 +97,7 @@ class PlantUtils {
     }
     static getPlantStageColor(state) {
         const key = this.normalizeStage(state);
-        return this.stageColors[key] ?? "#757575";
+        return this.stageColors[key] ?? '#757575';
     }
     static getPlantStageIcon(state) {
         const key = this.normalizeStage(state);
@@ -201,7 +191,7 @@ class PlantUtils {
         const { name, plants, plants_per_row, rows } = device;
         // Check for special growspaces by name/ID logic or type if available
         // Assuming name might match stage or ID.
-        if (name === "dry" || name === "cure" || name === "mother" || name === "clone") {
+        if (name === 'dry' || name === 'cure' || name === 'mother' || name === 'clone') {
             if (plants.length === 0)
                 return 1;
             const maxRowUsed = Math.max(...plants.map((p) => p.attributes?.row || 1));
@@ -219,7 +209,7 @@ class PlantUtils {
             return undefined;
         try {
             // Append ":00" if only HH:MM is provided
-            const isoString = value.length === 16 ? value + ":00" : value;
+            const isoString = value.length === 16 ? value + ':00' : value;
             const dt = new Date(isoString);
             if (isNaN(dt.getTime()))
                 return undefined;
@@ -264,7 +254,7 @@ class PlantUtils {
     }
     static getCurrentDateTime() {
         const now = new Date();
-        const pad = (n) => n.toString().padStart(2, "0");
+        const pad = (n) => n.toString().padStart(2, '0');
         return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:00`;
     }
     /**
@@ -272,12 +262,12 @@ class PlantUtils {
      */
     static toDateTimeLocal(value) {
         if (!value)
-            return "";
+            return '';
         try {
             const dt = new Date(value);
             if (isNaN(dt.getTime()))
-                return "";
-            const pad = (n) => n.toString().padStart(2, "0");
+                return '';
+            const pad = (n) => n.toString().padStart(2, '0');
             const yyyy = dt.getFullYear();
             const mm = pad(dt.getMonth() + 1);
             const dd = pad(dt.getDate());
@@ -286,7 +276,7 @@ class PlantUtils {
             return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
         }
         catch {
-            return "";
+            return '';
         }
     }
     static getDominantStage(plants) {
@@ -301,7 +291,7 @@ class PlantUtils {
             PlantStage.VEG,
             PlantStage.CLONE,
             PlantStage.MOTHER,
-            PlantStage.SEEDLING
+            PlantStage.SEEDLING,
         ];
         // Find the highest priority stage present in the plants
         let bestStage = null;
@@ -323,7 +313,7 @@ class PlantUtils {
                 // Find max days for this stage
                 // Map stage to attribute key
                 const daysKey = `${stage === PlantStage.VEG ? 'veg' : stage}_days`;
-                const daysValues = plantsByStage[stage].map(p => {
+                const daysValues = plantsByStage[stage].map((p) => {
                     const val = p.attributes[daysKey];
                     return typeof val === 'number' ? val : 0;
                 });
@@ -371,7 +361,7 @@ class PlantUtils {
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     if (!ctx) {
-                        reject(new Error("Failed to get canvas context"));
+                        reject(new Error('Failed to get canvas context'));
                         return;
                     }
                     ctx.drawImage(img, 0, 0, width, height);
@@ -399,13 +389,13 @@ class PlantUtils {
     }
 }
 PlantUtils.stageColors = {
-    [PlantStage.MOTHER]: "#E91E63",
-    [PlantStage.CLONE]: "#FF5722",
-    [PlantStage.SEEDLING]: "#4CAF50",
-    [PlantStage.VEG]: "#8BC34A",
-    [PlantStage.FLOWER]: "#FF9800",
-    [PlantStage.DRY]: "#795548",
-    [PlantStage.CURE]: "#9C27B0",
+    [PlantStage.MOTHER]: '#E91E63',
+    [PlantStage.CLONE]: '#FF5722',
+    [PlantStage.SEEDLING]: '#4CAF50',
+    [PlantStage.VEG]: '#8BC34A',
+    [PlantStage.FLOWER]: '#FF9800',
+    [PlantStage.DRY]: '#795548',
+    [PlantStage.CURE]: '#9C27B0',
 };
 PlantUtils.stageIcons = {
     [PlantStage.MOTHER]: mdiSprout,
@@ -423,8 +413,11 @@ class GrowspaceAdapter {
         const growspaceId = attributes.growspace_id;
         const name = attributes.friendly_name || `Growspace ${growspaceId}`;
         const type = attributes.type ??
-            (name.toLowerCase().includes('dry') ? 'dry' :
-                name.toLowerCase().includes('cure') ? 'cure' : 'normal');
+            (name.toLowerCase().includes('dry')
+                ? 'dry'
+                : name.toLowerCase().includes('cure')
+                    ? 'cure'
+                    : 'normal');
         // 1. Check for missing data (empty state fix)
         // If we have no WS data AND the attributes grid is empty/undefined, allow returning null/simulating loading
         // We return null so the caller can filter this out and keep the previous state or show loading
@@ -455,84 +448,90 @@ class GrowspaceAdapter {
                         friendly_name: `${slot.strain} ${slot.phenotype}`,
                         stage: slot.stage,
                         row,
-                        col
-                    }
+                        col,
+                    },
                 });
             }
         });
         // Extract enhanced metrics from WS data or attributes
-        const bioMetrics = wsData ? {
-            vpd_status: wsData.vpd_status,
-            vpd_target_min: wsData.vpd_target_min,
-            vpd_target_max: wsData.vpd_target_max,
-            vpd_danger_min: wsData.vpd_danger_min,
-            vpd_danger_max: wsData.vpd_danger_max,
-            granular_stage: wsData.granular_stage,
-            is_day: wsData.is_day,
-            veg_week: wsData.veg_week,
-            flower_week: wsData.flower_week,
-            // Added per request:
-            air_exchange: wsData.air_exchange
-        } : {
-            // Fallback to attributes if WS failed or not used (though we removed them from backend)
-            vpd_status: attributes.vpd_status,
-            vpd_target_min: attributes.vpd_target_min,
-            vpd_target_max: attributes.vpd_target_max,
-            granular_stage: attributes.granular_stage,
-            is_day: attributes.is_day,
-            air_exchange: attributes.air_exchange
-        };
+        const bioMetrics = wsData
+            ? {
+                vpd_status: wsData.vpd_status,
+                vpd_target_min: wsData.vpd_target_min,
+                vpd_target_max: wsData.vpd_target_max,
+                vpd_danger_min: wsData.vpd_danger_min,
+                vpd_danger_max: wsData.vpd_danger_max,
+                granular_stage: wsData.granular_stage,
+                is_day: wsData.is_day,
+                veg_week: wsData.veg_week,
+                flower_week: wsData.flower_week,
+                // Added per request:
+                air_exchange: wsData.air_exchange,
+            }
+            : {
+                // Fallback to attributes if WS failed or not used (though we removed them from backend)
+                vpd_status: attributes.vpd_status,
+                vpd_target_min: attributes.vpd_target_min,
+                vpd_target_max: attributes.vpd_target_max,
+                granular_stage: attributes.granular_stage,
+                is_day: attributes.is_day,
+                air_exchange: attributes.air_exchange,
+            };
         // Extract irrigation times from nested config in WS data
         const rawIrrigation = wsData?.irrigation_config?.irrigation_times || attributes.irrigation_times || [];
         const irrigationTimes = Array.isArray(rawIrrigation)
-            ? rawIrrigation.map((t) => typeof t === 'string' ? { time: t } : t)
+            ? rawIrrigation.map((t) => (typeof t === 'string' ? { time: t } : t))
             : [];
         const rawDrain = wsData?.irrigation_config?.drain_times || attributes.drain_times || [];
         const drainTimes = Array.isArray(rawDrain)
-            ? rawDrain.map((t) => typeof t === 'string' ? { time: t } : t)
+            ? rawDrain.map((t) => (typeof t === 'string' ? { time: t } : t))
             : [];
         // Environment attributes
-        const envAttrs = wsData ? {
-            temperature_sensor: wsData.temperature_sensor,
-            humidity_sensor: wsData.humidity_sensor,
-            vpd_sensor: wsData.vpd_sensor,
-            co2_sensor: wsData.co2_sensor,
-            soil_moisture_sensor: wsData.soil_moisture_sensor,
-            dehumidifier_entity: wsData.dehumidifier_entity,
-            humidifier_entity: wsData.humidifier_entity,
-            exhaust_entity: wsData.exhaust_entity,
-            exhaust_sensor: wsData.exhaust_sensor,
-            humidifier_sensor: wsData.humidifier_sensor,
-            circulation_fan_entity: wsData.circulation_fan_entity,
-            light_sensor: wsData.light_sensor,
-            dehumidifier_control_enabled: wsData.dehumidifier_control_enabled,
-            // Added per request:
-            dehumidifier_humidity: wsData.dehumidifier_humidity,
-            dehumidifier_current_humidity: wsData.dehumidifier_current_humidity,
-            dehumidifier_mode: wsData.dehumidifier_mode,
-            vpd: wsData.vpd
-        } : {
-            // Fallback
-            temperature_sensor: attributes.temperature_sensor,
-            humidity_sensor: attributes.humidity_sensor,
-            vpd_sensor: attributes.vpd_sensor,
-            co2_sensor: attributes.co2_sensor,
-            soil_moisture_sensor: attributes.soil_moisture_sensor,
-            light_sensor: attributes.light_sensor,
-            exhaust_entity: attributes.exhaust_entity,
-            exhaust_sensor: attributes.exhaust_sensor,
-            humidifier_entity: attributes.humidifier_entity,
-            humidifier_sensor: attributes.humidifier_sensor,
-            circulation_fan_entity: attributes.circulation_fan_entity,
-            dehumidifier_entity: attributes.dehumidifier_entity,
-            dehumidifier_control_enabled: attributes.dehumidifier_control_enabled
-        };
-        const irrigationConfig = wsData ? wsData.irrigation_config : {
-            irrigation_pump_entity: attributes.irrigation_pump_entity,
-            drain_pump_entity: attributes.drain_pump_entity,
-            irrigation_duration: attributes.irrigation_duration,
-            drain_duration: attributes.drain_duration
-        };
+        const envAttrs = wsData
+            ? {
+                temperature_sensor: wsData.temperature_sensor,
+                humidity_sensor: wsData.humidity_sensor,
+                vpd_sensor: wsData.vpd_sensor,
+                co2_sensor: wsData.co2_sensor,
+                soil_moisture_sensor: wsData.soil_moisture_sensor,
+                dehumidifier_entity: wsData.dehumidifier_entity,
+                humidifier_entity: wsData.humidifier_entity,
+                exhaust_entity: wsData.exhaust_entity,
+                exhaust_sensor: wsData.exhaust_sensor,
+                humidifier_sensor: wsData.humidifier_sensor,
+                circulation_fan_entity: wsData.circulation_fan_entity,
+                light_sensor: wsData.light_sensor,
+                dehumidifier_control_enabled: wsData.dehumidifier_control_enabled,
+                // Added per request:
+                dehumidifier_humidity: wsData.dehumidifier_humidity,
+                dehumidifier_current_humidity: wsData.dehumidifier_current_humidity,
+                dehumidifier_mode: wsData.dehumidifier_mode,
+                vpd: wsData.vpd,
+            }
+            : {
+                // Fallback
+                temperature_sensor: attributes.temperature_sensor,
+                humidity_sensor: attributes.humidity_sensor,
+                vpd_sensor: attributes.vpd_sensor,
+                co2_sensor: attributes.co2_sensor,
+                soil_moisture_sensor: attributes.soil_moisture_sensor,
+                light_sensor: attributes.light_sensor,
+                exhaust_entity: attributes.exhaust_entity,
+                exhaust_sensor: attributes.exhaust_sensor,
+                humidifier_entity: attributes.humidifier_entity,
+                humidifier_sensor: attributes.humidifier_sensor,
+                circulation_fan_entity: attributes.circulation_fan_entity,
+                dehumidifier_entity: attributes.dehumidifier_entity,
+                dehumidifier_control_enabled: attributes.dehumidifier_control_enabled,
+            };
+        const irrigationConfig = wsData
+            ? wsData.irrigation_config
+            : {
+                irrigation_pump_entity: attributes.irrigation_pump_entity,
+                drain_pump_entity: attributes.drain_pump_entity,
+                irrigation_duration: attributes.irrigation_duration,
+                drain_duration: attributes.drain_duration,
+            };
         const irrigationStrategy = wsData ? wsData.irrigation_strategy : attributes.irrigation_strategy;
         return createGrowspaceDevice({
             device_id: growspaceId,
@@ -553,7 +552,7 @@ class GrowspaceAdapter {
             max_veg_days: wsData?.max_veg_days,
             max_flower_days: wsData?.max_flower_days,
             total_plants: wsData?.total_plants,
-            max_stage_summary: wsData?.max_stage_summary
+            max_stage_summary: wsData?.max_stage_summary,
         });
     }
     /**
@@ -571,7 +570,7 @@ class GrowspaceAdapter {
                 attrs.row === undefined &&
                 attrs.col === undefined);
         });
-        return overviewSensors.map(overview => this.transformGrowspace(overview, null));
+        return overviewSensors.map((overview) => this.transformGrowspace(overview, null));
     }
 }
 
@@ -588,7 +587,7 @@ const METRIC_SORT_ORDER = [
     'exhaust',
     'circulation_fan',
     'humidifier',
-    'dehumidifier'
+    'dehumidifier',
 ];
 const METRIC_CONFIG = {
     temperature: { color: '#ff5252', title: 'Temperature', unit: '°C', icon: mdiThermometer },
@@ -599,32 +598,50 @@ const METRIC_CONFIG = {
     air_exchange: { color: '#8d6e63', title: 'Air Exchange', unit: 'm³/h', icon: mdiAirFilter },
     soil_moisture: { color: '#03a9f4', title: 'Soil Moisture', unit: '%', icon: mdiWaterPercent },
     light: { color: '#ffc107', title: 'Light', unit: 'state', icon: mdiLightbulbOn, type: 'step' },
-    irrigation: { color: '#03a9f4', title: 'Irrigation', unit: 'state', icon: mdiWater, type: 'step' },
+    irrigation: {
+        color: '#03a9f4',
+        title: 'Irrigation',
+        unit: 'state',
+        icon: mdiWater,
+        type: 'step',
+    },
     drain: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: 'step' },
     exhaust: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
     circulation_fan: {
         color: '#607d8b',
         title: 'Circulation Fan',
         unit: '',
-        icon: mdiFan
+        icon: mdiFan,
     },
     humidifier: { color: '#607d8b', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
-    dehumidifier: { color: '#009688', title: 'Dehumidifier', unit: 'state', icon: mdiAirHumidifierOff, type: 'step' },
-    optimal: { color: '#4caf50', title: 'Optimal Conditions', unit: 'state', icon: mdiRadioboxMarked, type: 'step' }
+    dehumidifier: {
+        color: '#009688',
+        title: 'Dehumidifier',
+        unit: 'state',
+        icon: mdiAirHumidifierOff,
+        type: 'step',
+    },
+    optimal: {
+        color: '#4caf50',
+        title: 'Optimal Conditions',
+        unit: 'state',
+        icon: mdiRadioboxMarked,
+        type: 'step',
+    },
 };
 const DEFAULT_METRIC_CONFIG = {
     color: '#fff',
     title: 'Unknown',
     unit: '',
     icon: mdiMagnify,
-    type: 'line'
+    type: 'line',
 };
 const SENSOR_CHART_DEFAULTS = {
     exhaust: { min: 0, max: 10, disablePadding: true, unit: 'state' },
     dehumidifier: { min: 0, max: 1, disablePadding: true, binary: true },
     humidifier: { min: 0, max: 10, disablePadding: true, unit: 'state' },
     circulation_fan: { min: 0, max: 10, disablePadding: true, unit: 'state' },
-    optimizer: { min: 0, max: 1, disablePadding: true, binary: true, unit: 'state' }
+    optimizer: { min: 0, max: 1, disablePadding: true, binary: true, unit: 'state' },
 };
 /**
  * Maps metric keys to their entity attribute keys in GrowspaceDevice.environment_attributes
@@ -672,11 +689,13 @@ const SERVICES = {
     CONFIGURE_ENVIRONMENT: 'configure_environment',
     ASK_GROW_ADVICE: 'ask_grow_advice',
     ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
-    STRAIN_RECOMMENDATION: 'strain_recommendation'
+    STRAIN_RECOMMENDATION: 'strain_recommendation',
 };
 
 class DataService {
     constructor(hass) {
+        // Cache for transformed devices to avoid expensive re-parsing on every HASS update
+        this._deviceCache = new Map();
         if (hass) {
             this.hass = hass;
         }
@@ -695,14 +714,14 @@ class DataService {
             return result;
         }
         catch (err) {
-            console.error("[DataService:fetchGrowspaceData] Error:", err);
+            console.error('[DataService:fetchGrowspaceData] Error:', err);
             // Fallback: If WS fails, we return null, and adapter will try to use attributes (which might be empty for heavy data)
             return null;
         }
     }
     getGrowspaceDevices(wsDataMap = {}) {
         if (!this.hass) {
-            console.log('[DataService] getGrowspaceDevices: no hass');
+            // console.log('[DataService] getGrowspaceDevices: no hass');
             return [];
         }
         const allStates = Object.values(this.hass.states);
@@ -711,12 +730,43 @@ class DataService {
             s.attributes.plants_per_row !== undefined &&
             s.attributes.row === undefined &&
             s.attributes.col === undefined);
-        console.log('[DataService] getGrowspaceDevices: found', overviewSensors.length, 'sensors, total states:', allStates.length);
-        return overviewSensors.map((sensor) => {
+        /*
+        console.log(
+          '[DataService] getGrowspaceDevices: found',
+          overviewSensors.length,
+          'sensors, total states:',
+          allStates.length
+        );
+        */
+        const activeEntityIds = new Set();
+        const devices = overviewSensors
+            .map((sensor) => {
             const growspaceId = sensor.attributes.growspace_id;
             const wsData = wsDataMap[growspaceId] || null;
-            return GrowspaceAdapter.transformGrowspace(sensor, wsData);
-        }).filter((device) => device !== null);
+            // Cache Check
+            const cached = this._deviceCache.get(sensor.entity_id);
+            if (cached && cached.entity === sensor && cached.wsData === wsData) {
+                activeEntityIds.add(sensor.entity_id);
+                return cached.result;
+            }
+            // Cache Miss - Reprocess
+            const device = GrowspaceAdapter.transformGrowspace(sensor, wsData);
+            if (device) {
+                this._deviceCache.set(sensor.entity_id, { entity: sensor, wsData, result: device });
+                activeEntityIds.add(sensor.entity_id);
+            }
+            return device;
+        })
+            .filter((device) => device !== null);
+        // Cleanup cache for removed entities
+        if (this._deviceCache.size > activeEntityIds.size) {
+            for (const id of this._deviceCache.keys()) {
+                if (!activeEntityIds.has(id)) {
+                    this._deviceCache.delete(id);
+                }
+            }
+        }
+        return devices;
     }
     getGrowspaceId(entity) {
         // Plant entities expose growspace_id directly
@@ -736,7 +786,7 @@ class DataService {
             return rawStrains.map((s) => ({
                 strain: s,
                 phenotype: '',
-                key: `${s}|default`
+                key: `${s}|default`,
             }));
         }
         if (typeof rawStrains === 'object') {
@@ -759,7 +809,7 @@ class DataService {
                         image: phenoData.image_path,
                         image_crop_meta: phenoData.image_crop_meta,
                         flowering_days_min: phenoData.flower_days_min,
-                        flowering_days_max: phenoData.flower_days_max
+                        flowering_days_max: phenoData.flower_days_max,
                     });
                 });
             }
@@ -773,7 +823,7 @@ class DataService {
         return [];
     }
     async fetchStrainLibrary() {
-        console.log("[DataService:fetchStrainLibrary] Fetching strain library via API");
+        console.log('[DataService:fetchStrainLibrary] Fetching strain library via API');
         try {
             const serviceResponse = await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
@@ -784,7 +834,7 @@ class DataService {
             });
             const rawStrains = serviceResponse?.response || serviceResponse || {};
             const currentStrains = [];
-            console.log("[DataService:fetchStrainLibrary] Raw response:", rawStrains);
+            console.log('[DataService:fetchStrainLibrary] Raw response:', rawStrains);
             Object.entries(rawStrains).forEach(([strainName, data]) => {
                 if (strainName === 'response')
                     return; // unexpected wrapper?
@@ -805,7 +855,7 @@ class DataService {
                         image: phenoData.image_path,
                         image_crop_meta: phenoData.image_crop_meta,
                         flowering_days_min: phenoData.flower_days_min,
-                        flowering_days_max: phenoData.flower_days_max
+                        flowering_days_max: phenoData.flower_days_max,
                     });
                 });
             });
@@ -829,92 +879,92 @@ class DataService {
             return res && res.length > 0 ? res[0] : [];
         }
         catch (err) {
-            console.error("Error fetching history:", err);
+            console.error('Error fetching history:', err);
             return [];
         }
     }
     // Service calls
     async addPlant(params) {
-        console.log("[DataService:addPlant] Sending payload:", params);
+        console.log('[DataService:addPlant] Sending payload:', params);
         try {
-            if (params.growspace_id === "mother" || params.growspace_id === "mother_overview") {
+            if (params.growspace_id === 'mother' || params.growspace_id === 'mother_overview') {
                 params.mother_start = new Date().toISOString().split('T')[0];
             }
-            if (params.growspace_id === "clone" || params.growspace_id === "clone_overview") {
+            if (params.growspace_id === 'clone' || params.growspace_id === 'clone_overview') {
                 params.clone_start = new Date().toISOString().split('T')[0];
             }
             const res = await this.hass.callService(DOMAIN, SERVICES.ADD_PLANT, params);
-            console.log("[DataService:addPlant] Response:", res);
+            console.log('[DataService:addPlant] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:addPlant] Error:", err);
+            console.error('[DataService:addPlant] Error:', err);
             throw err;
         }
     }
     async updatePlant(params) {
-        console.log("[DataService:updatePlant] Sending payload:", params);
+        console.log('[DataService:updatePlant] Sending payload:', params);
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
-            console.log("[DataService:updatePlant] Response:", res);
+            console.log('[DataService:updatePlant] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:updatePlant] Error:", err);
+            console.error('[DataService:updatePlant] Error:', err);
             throw err;
         }
     }
     async removePlant(plantId) {
-        console.log("[DataService:removePlant] Removing plant_id:", plantId);
+        console.log('[DataService:removePlant] Removing plant_id:', plantId);
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_PLANT, { plant_id: plantId });
-            console.log("[DataService:removePlant] Response:", res);
+            console.log('[DataService:removePlant] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:removePlant] Error:", err);
+            console.error('[DataService:removePlant] Error:', err);
             throw err;
         }
     }
-    async harvestPlant(plantId, target = "dry") {
-        console.log("[DataService:harvestPlant] Harvesting plant:", plantId, "→ target:", target);
+    async harvestPlant(plantId, target = 'dry') {
+        console.log('[DataService:harvestPlant] Harvesting plant:', plantId, '→ target:', target);
         try {
-            const hint = (target || "").toLowerCase();
+            const hint = (target || '').toLowerCase();
             const payload = { plant_id: plantId };
             // Prefer passing a concrete growspace_id when hint is clear
-            if (hint.includes("dry")) {
-                payload.target_growspace_id = "dry"; // Was dry_overview
+            if (hint.includes('dry')) {
+                payload.target_growspace_id = 'dry'; // Was dry_overview
             }
-            else if (hint.includes("cure")) {
-                payload.target_growspace_id = "cure"; // Was cure_overview
+            else if (hint.includes('cure')) {
+                payload.target_growspace_id = 'cure'; // Was cure_overview
             }
-            else if (hint.includes("mother")) {
-                payload.target_growspace_id = "mother"; // Was mother_overview
+            else if (hint.includes('mother')) {
+                payload.target_growspace_id = 'mother'; // Was mother_overview
             }
-            else if (hint.includes("clone")) {
-                payload.target_growspace_id = "clone"; // Was clone_overview
+            else if (hint.includes('clone')) {
+                payload.target_growspace_id = 'clone'; // Was clone_overview
             }
-            // Note: Backend only accepts target_growspace_id. 
+            // Note: Backend only accepts target_growspace_id.
             // If target is a custom name, we can't send it unless we resolve it to an ID first.
             // We will assume the UI passes IDs or we map known ones.
             const res = await this.hass.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
-            console.log("[DataService:harvestPlant] Response:", res);
+            console.log('[DataService:harvestPlant] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:harvestPlant] Error:", err);
+            console.error('[DataService:harvestPlant] Error:', err);
             throw err;
         }
     }
     async takeClone(params) {
-        console.log("[DataService:takeClone] Cloning plant:", params);
+        console.log('[DataService:takeClone] Cloning plant:', params);
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.TAKE_CLONE, params);
-            console.log("[DataService:takeClone] Response:", res);
+            console.log('[DataService:takeClone] Response:', res);
             return res;
         }
         catch (error) {
-            console.error("[DataService:takeClone] Error:", error);
+            console.error('[DataService:takeClone] Error:', error);
             throw error;
         }
     }
@@ -925,11 +975,11 @@ class DataService {
                 plant1_id: plant1Id,
                 plant2_id: plant2Id,
             });
-            console.log("[DataService:swapPlants] Response:", res);
+            console.log('[DataService:swapPlants] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:swapPlants] Error:", err);
+            console.error('[DataService:swapPlants] Error:', err);
             throw err;
         }
     }
@@ -938,13 +988,13 @@ class DataService {
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.MOVE_CLONE, {
                 plant_id: plantId,
-                target_growspace_id: targetGrowspaceId
+                target_growspace_id: targetGrowspaceId,
             });
-            console.log("[DataService:moveClone] Response:", res);
+            console.log('[DataService:moveClone] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:moveClone] Error:", err);
+            console.error('[DataService:moveClone] Error:', err);
             throw err;
         }
     }
@@ -953,155 +1003,155 @@ class DataService {
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.SET_DEHUMIDIFIER_CONTROL, {
                 growspace_id: growspaceId,
-                enabled: enabled
+                enabled,
             });
-            console.log("[DataService:setDehumidifierControl] Response:", res);
+            console.log('[DataService:setDehumidifierControl] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:setDehumidifierControl] Error:", err);
+            console.error('[DataService:setDehumidifierControl] Error:', err);
             throw err;
         }
     }
     async setIrrigationSettings(params) {
-        console.log("[DataService:setIrrigationSettings] Setting irrigation settings:", params);
+        console.log('[DataService:setIrrigationSettings] Setting irrigation settings:', params);
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, params);
-            console.log("[DataService:setIrrigationSettings] Response:", res);
+            console.log('[DataService:setIrrigationSettings] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:setIrrigationSettings] Error:", err);
+            console.error('[DataService:setIrrigationSettings] Error:', err);
             throw err;
         }
     }
     async addIrrigationTime(params) {
-        console.log("[DataService:addIrrigationTime] Adding irrigation time:", params);
+        console.log('[DataService:addIrrigationTime] Adding irrigation time:', params);
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, params);
-            console.log("[DataService:addIrrigationTime] Response:", res);
+            console.log('[DataService:addIrrigationTime] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:addIrrigationTime] Error:", err);
+            console.error('[DataService:addIrrigationTime] Error:', err);
             throw err;
         }
     }
     async removeIrrigationTime(params) {
-        console.log("[DataService:removeIrrigationTime] Removing irrigation time:", params);
+        console.log('[DataService:removeIrrigationTime] Removing irrigation time:', params);
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, params);
-            console.log("[DataService:removeIrrigationTime] Response:", res);
+            console.log('[DataService:removeIrrigationTime] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:removeIrrigationTime] Error:", err);
+            console.error('[DataService:removeIrrigationTime] Error:', err);
             throw err;
         }
     }
     async setIrrigationStrategy(growspaceId, strategy) {
-        console.log("[DataService:setIrrigationStrategy] Setting strategy:", strategy);
+        console.log('[DataService:setIrrigationStrategy] Setting strategy:', strategy);
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, {
                 growspace_id: growspaceId,
-                ...strategy
+                ...strategy,
             });
-            console.log("[DataService:setIrrigationStrategy] Response:", res);
+            console.log('[DataService:setIrrigationStrategy] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:setIrrigationStrategy] Error:", err);
+            console.error('[DataService:setIrrigationStrategy] Error:', err);
             throw err;
         }
     }
     async addDrainTime(params) {
-        console.log("[DataService:addDrainTime] Adding drain time:", params);
+        console.log('[DataService:addDrainTime] Adding drain time:', params);
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, params);
-            console.log("[DataService:addDrainTime] Response:", res);
+            console.log('[DataService:addDrainTime] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:addDrainTime] Error:", err);
+            console.error('[DataService:addDrainTime] Error:', err);
             throw err;
         }
     }
     async removeDrainTime(params) {
-        console.log("[DataService:removeDrainTime] Removing drain time:", params);
+        console.log('[DataService:removeDrainTime] Removing drain time:', params);
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, params);
-            console.log("[DataService:removeDrainTime] Response:", res);
+            console.log('[DataService:removeDrainTime] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:removeDrainTime] Error:", err);
+            console.error('[DataService:removeDrainTime] Error:', err);
             throw err;
         }
     }
     async exportStrainLibrary() {
-        console.log("[DataService:exportStrainLibrary] Exporting strain library");
+        console.log('[DataService:exportStrainLibrary] Exporting strain library');
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.EXPORT_STRAIN_LIBRARY);
-            console.log("[DataService:exportStrainLibrary] Response:", res);
+            console.log('[DataService:exportStrainLibrary] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:exportStrainLibrary] Error:", err);
+            console.error('[DataService:exportStrainLibrary] Error:', err);
             throw err;
         }
     }
     async addStrain(data) {
-        console.log("[DataService:addStrain] Adding strain:", data);
+        console.log('[DataService:addStrain] Adding strain:', data);
         try {
             const payload = { ...data };
             // Clean undefined keys
-            Object.keys(payload).forEach(key => {
+            Object.keys(payload).forEach((key) => {
                 if (payload[key] === undefined) {
                     delete payload[key];
                 }
             });
             if (data.image) {
-                if (data.image.startsWith("data:")) {
+                if (data.image.startsWith('data:')) {
                     // It's a base64 string (new upload)
                     payload.image_base64 = data.image;
                     delete payload.image; // Backend expects image_base64
                 }
                 else {
-                    // It's a path (existing image) - Backend schema doesn't explicitly list image_path, 
-                    // but we'll try to send it if the backend supports it dynamically, 
+                    // It's a path (existing image) - Backend schema doesn't explicitly list image_path,
+                    // but we'll try to send it if the backend supports it dynamically,
                     // or we might need to omit it if it's just for local display.
-                    // Checking services.yaml, only image_base64 is listed. 
+                    // Checking services.yaml, only image_base64 is listed.
                     // We will assume image_path is not supported for add_strain and omit it to avoid schema errors.
-                    // payload.image_path = data.image; 
+                    // payload.image_path = data.image;
                     delete payload.image;
                 }
             }
             const res = await this.hass.callService(DOMAIN, SERVICES.ADD_STRAIN, payload);
-            console.log("[DataService:addStrain] Response:", res);
+            console.log('[DataService:addStrain] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:addStrain] Error:", err);
+            console.error('[DataService:addStrain] Error:', err);
             throw err;
         }
     }
     async removeStrain(strain, phenotype) {
-        console.log("[DataService:removeStrain] Removing strain:", strain, phenotype);
+        console.log('[DataService:removeStrain] Removing strain:', strain, phenotype);
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_STRAIN, {
                 strain,
-                phenotype
+                phenotype,
             });
-            console.log("[DataService:removeStrain] Response:", res);
+            console.log('[DataService:removeStrain] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:removeStrain] Error:", err);
+            console.error('[DataService:removeStrain] Error:', err);
             throw err;
         }
     }
     async importStrainLibrary(file, replace) {
-        console.log("[DataService:importStrainLibrary] Importing strain library ZIP via HTTP. Replace:", replace);
+        console.log('[DataService:importStrainLibrary] Importing strain library ZIP via HTTP. Replace:', replace);
         const formData = new FormData();
         formData.append('file', file);
         formData.append('replace', replace.toString());
@@ -1115,7 +1165,7 @@ class DataService {
                 throw new Error(errorText || response.statusText);
             }
             const result = await response.json();
-            console.log("[DataService:importStrainLibrary] Response:", result);
+            console.log('[DataService:importStrainLibrary] Response:', result);
             if (result.success) {
                 return result;
             }
@@ -1124,43 +1174,43 @@ class DataService {
             }
         }
         catch (err) {
-            console.error("[DataService:importStrainLibrary] Error:", err);
+            console.error('[DataService:importStrainLibrary] Error:', err);
             throw err;
         }
     }
     async clearStrainLibrary() {
-        console.log("[DataService:clearStrainLibrary] Clearing library");
+        console.log('[DataService:clearStrainLibrary] Clearing library');
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.CLEAR_STRAIN_LIBRARY);
-            console.log("[DataService:clearStrainLibrary] Response:", res);
+            console.log('[DataService:clearStrainLibrary] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:clearStrainLibrary] Error:", err);
+            console.error('[DataService:clearStrainLibrary] Error:', err);
             throw err;
         }
     }
     // Configuration Services
     async addGrowspace(data) {
-        console.log("[DataService:addGrowspace] Adding growspace:", data);
+        console.log('[DataService:addGrowspace] Adding growspace:', data);
         try {
             const payload = {
                 name: data.name,
                 rows: data.rows,
                 plants_per_row: data.plants_per_row,
-                notification_target: data.notification_service // Map to backend field
+                notification_target: data.notification_service, // Map to backend field
             };
             const res = await this.hass.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
-            console.log("[DataService:addGrowspace] Response:", res);
+            console.log('[DataService:addGrowspace] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:addGrowspace] Error:", err);
+            console.error('[DataService:addGrowspace] Error:', err);
             throw err;
         }
     }
     async updateGrowspace(data) {
-        console.log("[DataService:updateGrowspace] Updating growspace:", data);
+        console.log('[DataService:updateGrowspace] Updating growspace:', data);
         try {
             const payload = {
                 growspace_id: data.growspace_id,
@@ -1174,42 +1224,42 @@ class DataService {
             if (data.notification_service)
                 payload.notification_target = data.notification_service;
             const res = await this.hass.callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
-            console.log("[DataService:updateGrowspace] Response:", res);
+            console.log('[DataService:updateGrowspace] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:updateGrowspace] Error:", err);
+            console.error('[DataService:updateGrowspace] Error:', err);
             throw err;
         }
     }
     async removeGrowspace(growspaceId) {
-        console.log("[DataService:removeGrowspace] Removing growspace:", growspaceId);
+        console.log('[DataService:removeGrowspace] Removing growspace:', growspaceId);
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
-                growspace_id: growspaceId
+                growspace_id: growspaceId,
             });
-            console.log("[DataService:removeGrowspace] Response:", res);
+            console.log('[DataService:removeGrowspace] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:removeGrowspace] Error:", err);
+            console.error('[DataService:removeGrowspace] Error:', err);
             throw err;
         }
     }
     async configureEnvironment(data) {
-        console.log("[DataService:configureEnvironment] Configuring sensors:", data);
+        console.log('[DataService:configureEnvironment] Configuring sensors:', data);
         try {
             const res = await this.hass.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, data);
-            console.log("[DataService:configureEnvironment] Response:", res);
+            console.log('[DataService:configureEnvironment] Response:', res);
             return res;
         }
         catch (err) {
-            console.error("[DataService:configureEnvironment] Error:", err);
+            console.error('[DataService:configureEnvironment] Error:', err);
             throw err;
         }
     }
     async askGrowAdvice(growspaceId, userQuery) {
-        console.log("[DataService:askGrowAdvice] Asking advice for:", growspaceId, userQuery);
+        console.log('[DataService:askGrowAdvice] Asking advice for:', growspaceId, userQuery);
         try {
             // UPDATED: Use sendMessagePromise to send return_response=true
             return await this.hass.connection.sendMessagePromise({
@@ -1224,12 +1274,12 @@ class DataService {
             });
         }
         catch (err) {
-            console.error("[DataService:askGrowAdvice] Error:", err);
+            console.error('[DataService:askGrowAdvice] Error:', err);
             throw err;
         }
     }
     async analyzeAllGrowspaces() {
-        console.log("[DataService:analyzeAllGrowspaces] Analyzing all growspaces");
+        console.log('[DataService:analyzeAllGrowspaces] Analyzing all growspaces');
         try {
             return await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
@@ -1240,12 +1290,12 @@ class DataService {
             });
         }
         catch (err) {
-            console.error("[DataService:analyzeAllGrowspaces] Error:", err);
+            console.error('[DataService:analyzeAllGrowspaces] Error:', err);
             throw err;
         }
     }
     async getStrainRecommendation(userQuery) {
-        console.log("[DataService:getStrainRecommendation] Getting strain recommendation for:", userQuery);
+        console.log('[DataService:getStrainRecommendation] Getting strain recommendation for:', userQuery);
         try {
             return await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
@@ -1258,7 +1308,7 @@ class DataService {
             });
         }
         catch (err) {
-            console.error("[DataService:getStrainRecommendation] Error:", err);
+            console.error('[DataService:getStrainRecommendation] Error:', err);
             throw err;
         }
     }
@@ -9520,28 +9570,28 @@ function friendlyDateTime(dateTimeish) {
 const variables = i$6 `
   :host {
     /* MD3 Color System */
-    --primary-gradient: linear-gradient(135deg, #4CAF50, #45a049);
-    --secondary-gradient: linear-gradient(135deg, #2196F3, #1976D2);
+    --primary-gradient: linear-gradient(135deg, #4caf50, #45a049);
+    --secondary-gradient: linear-gradient(135deg, #2196f3, #1976d2);
     --danger-gradient: linear-gradient(135deg, #f44336, #d32f2f);
-    
+
     /* MD3 Elevation Levels */
     --md3-elevation-level0: none;
-    --md3-elevation-level1: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
-    --md3-elevation-level2: 0 1px 2px rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15);
-    --md3-elevation-level3: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3);
-    --md3-elevation-level4: 0 6px 10px 4px rgba(0,0,0,0.15), 0 2px 3px rgba(0,0,0,0.3);
-    --md3-elevation-level5: 0 8px 12px 6px rgba(0,0,0,0.15), 0 4px 4px rgba(0,0,0,0.3);
-    
+    --md3-elevation-level1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+    --md3-elevation-level2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+    --md3-elevation-level3: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+    --md3-elevation-level4: 0 6px 10px 4px rgba(0, 0, 0, 0.15), 0 2px 3px rgba(0, 0, 0, 0.3);
+    --md3-elevation-level5: 0 8px 12px 6px rgba(0, 0, 0, 0.15), 0 4px 4px rgba(0, 0, 0, 0.3);
+
     --surface-elevation: var(--md3-elevation-level1);
     --surface-elevation-hover: var(--md3-elevation-level2);
-    
+
     /* Spacing (MD3 spacing system) */
     --spacing-xs: 4px;
     --spacing-sm: 8px;
     --spacing-md: 16px;
     --spacing-lg: 24px;
     --spacing-xl: 32px;
-    
+
     /* Border Radius (MD3 shape system) */
     --border-radius-xs: 4px;
     --border-radius-sm: 8px;
@@ -9549,19 +9599,19 @@ const variables = i$6 `
     --border-radius-lg: 16px;
     --border-radius-xl: 28px;
     --border-radius: 12px; /* Default */
-    
+
     /* MD3 Typography Scale */
-    --font-size-xs: 0.6875rem;   /* 11px */
-    --font-size-sm: 0.875rem;    /* 14px - Body Small */
-    --font-size-md: 1rem;        /* 16px - Body Medium */
-    --font-size-lg: 1.25rem;     /* 20px - Title Large */
-    --font-size-xl: 1.5rem;      /* 24px - Headline Small */
+    --font-size-xs: 0.6875rem; /* 11px */
+    --font-size-sm: 0.875rem; /* 14px - Body Small */
+    --font-size-md: 1rem; /* 16px - Body Medium */
+    --font-size-lg: 1.25rem; /* 20px - Title Large */
+    --font-size-xl: 1.5rem; /* 24px - Headline Small */
 
     /* Font Weights */
     --font-weight-regular: 400;
     --font-weight-medium: 500;
     --font-weight-bold: 700;
-    
+
     /* MD3 Motion Tokens */
     --md3-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
     --md3-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
@@ -9604,39 +9654,71 @@ const variables = i$6 `
     --error-color: #f44336;
     --error-bg: rgba(244, 67, 54, 0.1);
     --error-border: rgba(244, 67, 54, 0.3);
-    
+
     /* Strain Dialog */
     --strain-dialog-bg: var(--ha-card-background, #1e1e1e);
     --strain-dialog-color: var(--primary-text-color, #fff);
     --strain-border-color: #4caf50;
     --strain-input-bg: #2a2a2a;
     --strain-input-border: #3a3a3a;
-    
+
     /* Light Color */
-    --primary-light-color: #FFEB3B;
+    --primary-light-color: #ffeb3b;
   }
 `;
 
 class GrowspaceHistoryController {
     /** @deprecated Use historyCache['main'] instead */
-    get historyData() { return this.historyCache['main'] || null; }
-    set historyData(value) { this.historyCache['main'] = value || []; }
+    get historyData() {
+        return this.historyCache.main || null;
+    }
+    set historyData(value) {
+        this.historyCache.main = value || [];
+    }
     /** @deprecated Use historyCache['optimal'] instead */
-    get optimalHistory() { return this.historyCache['optimal'] || null; }
-    set optimalHistory(value) { this.historyCache['optimal'] = value || []; }
+    get optimalHistory() {
+        return this.historyCache.optimal || null;
+    }
+    set optimalHistory(value) {
+        this.historyCache.optimal = value || [];
+    }
     // Backward compatibility getters for existing code that reads these properties
-    get temperatureHistory() { return this.historyCache['temperature'] || null; }
-    get humidityHistory() { return this.historyCache['humidity'] || null; }
-    get vpdHistory() { return this.historyCache['vpd'] || null; }
-    get co2History() { return this.historyCache['co2'] || null; }
-    get lightHistory() { return this.historyCache['light'] || null; }
-    get soilMoistureHistory() { return this.historyCache['soil_moisture'] || null; }
-    get exhaustHistory() { return this.historyCache['exhaust'] || null; }
-    get humidifierHistory() { return this.historyCache['humidifier'] || null; }
-    get dehumidifierHistory() { return this.historyCache['dehumidifier'] || null; }
-    get circulationFanHistory() { return this.historyCache['circulation_fan'] || null; }
-    get irrigationHistory() { return this.historyCache['irrigation'] || null; }
-    get drainHistory() { return this.historyCache['drain'] || null; }
+    get temperatureHistory() {
+        return this.historyCache.temperature || null;
+    }
+    get humidityHistory() {
+        return this.historyCache.humidity || null;
+    }
+    get vpdHistory() {
+        return this.historyCache.vpd || null;
+    }
+    get co2History() {
+        return this.historyCache.co2 || null;
+    }
+    get lightHistory() {
+        return this.historyCache.light || null;
+    }
+    get soilMoistureHistory() {
+        return this.historyCache.soil_moisture || null;
+    }
+    get exhaustHistory() {
+        return this.historyCache.exhaust || null;
+    }
+    get humidifierHistory() {
+        return this.historyCache.humidifier || null;
+    }
+    get dehumidifierHistory() {
+        return this.historyCache.dehumidifier || null;
+    }
+    get circulationFanHistory() {
+        return this.historyCache.circulation_fan || null;
+    }
+    get irrigationHistory() {
+        return this.historyCache.irrigation || null;
+    }
+    get drainHistory() {
+        return this.historyCache.drain || null;
+    }
     constructor(host) {
         /**
          * Unified history cache keyed by metric name.
@@ -9676,14 +9758,14 @@ class GrowspaceHistoryController {
         }
     }
     getRange() {
-        return this.host.selectedDevice ? (this.graphRanges[this.host.selectedDevice] || '24h') : '24h';
+        return this.host.selectedDevice ? this.graphRanges[this.host.selectedDevice] || '24h' : '24h';
     }
     setGraphRange(range) {
         if (!this.host.selectedDevice)
             return;
         this.graphRanges = {
             ...this.graphRanges,
-            [this.host.selectedDevice]: range
+            [this.host.selectedDevice]: range,
         };
         this.host.requestUpdate();
         this._fetchHistory(range);
@@ -9706,8 +9788,8 @@ class GrowspaceHistoryController {
     }
     linkGraphs(metric1, metric2) {
         // Check if already linked
-        const existingGroupIndex = this.linkedGraphGroups.findIndex(group => group.includes(metric1) || group.includes(metric2));
-        let newGroups = [...this.linkedGraphGroups];
+        const existingGroupIndex = this.linkedGraphGroups.findIndex((group) => group.includes(metric1) || group.includes(metric2));
+        const newGroups = [...this.linkedGraphGroups];
         if (existingGroupIndex >= 0) {
             // Add unique
             const group = new Set(newGroups[existingGroupIndex]);
@@ -9740,7 +9822,9 @@ class GrowspaceHistoryController {
         this.host.requestUpdate();
     }
     unlinkGraphMetric(metric) {
-        this.linkedGraphGroups = this.linkedGraphGroups.map(group => group.filter(m => m !== metric)).filter(group => group.length > 1);
+        this.linkedGraphGroups = this.linkedGraphGroups
+            .map((group) => group.filter((m) => m !== metric))
+            .filter((group) => group.length > 1);
         this.host.requestUpdate();
     }
     /**
@@ -9757,13 +9841,16 @@ class GrowspaceHistoryController {
     async _fetchHistory(range = '24h') {
         console.log('[HistoryController] _fetchHistory called with range:', range);
         if (!this.host.hass || !this.host.selectedDevice) {
-            console.log('[HistoryController] Aborting: no hass or selectedDevice', { hasHass: !!this.host.hass, selectedDevice: this.host.selectedDevice });
+            console.log('[HistoryController] Aborting: no hass or selectedDevice', {
+                hasHass: !!this.host.hass,
+                selectedDevice: this.host.selectedDevice,
+            });
             return;
         }
         // Use pre-loaded devices from store instead of fetching independently
         const devices = this.host.devices;
-        console.log('[HistoryController] selectedDevice:', this.host.selectedDevice, 'available devices:', devices.map(d => ({ device_id: d.device_id, name: d.name })));
-        const device = devices.find(d => d.device_id === this.host.selectedDevice);
+        console.log('[HistoryController] selectedDevice:', this.host.selectedDevice, 'available devices:', devices.map((d) => ({ device_id: d.device_id, name: d.name })));
+        const device = devices.find((d) => d.device_id === this.host.selectedDevice);
         if (!device) {
             console.log('[HistoryController] Aborting: device not found. Looking for:', this.host.selectedDevice);
             return;
@@ -9778,7 +9865,7 @@ class GrowspaceHistoryController {
                 this.historyData = history;
             }
             catch (e) {
-                console.error("Failed to fetch main sensor history", e);
+                console.error('Failed to fetch main sensor history', e);
             }
         }
         else {
@@ -9801,7 +9888,7 @@ class GrowspaceHistoryController {
             this.optimalHistory = history;
         }
         catch (e) {
-            console.error("Failed to fetch optimal history", e);
+            console.error('Failed to fetch optimal history', e);
         }
         // 3. Fetch individual environment sensor histories (since env data moved to WebSocket)
         const envAttrs = device.environment_attributes || {};
@@ -9810,10 +9897,10 @@ class GrowspaceHistoryController {
             try {
                 const history = await this.host.dataService.getHistory(envAttrs.temperature_sensor, start, end);
                 console.log('[HistoryController] Temperature history fetched from', envAttrs.temperature_sensor, 'length:', history?.length || 0);
-                this.historyCache['temperature'] = history || [];
+                this.historyCache.temperature = history || [];
             }
             catch (e) {
-                console.error("Failed to fetch temperature history", e);
+                console.error('Failed to fetch temperature history', e);
             }
         }
         // Humidity
@@ -9821,10 +9908,10 @@ class GrowspaceHistoryController {
             try {
                 const history = await this.host.dataService.getHistory(envAttrs.humidity_sensor, start, end);
                 console.log('[HistoryController] Humidity history fetched from', envAttrs.humidity_sensor, 'length:', history?.length || 0);
-                this.historyCache['humidity'] = history || [];
+                this.historyCache.humidity = history || [];
             }
             catch (e) {
-                console.error("Failed to fetch humidity history", e);
+                console.error('Failed to fetch humidity history', e);
             }
         }
         // VPD
@@ -9832,10 +9919,10 @@ class GrowspaceHistoryController {
             try {
                 const history = await this.host.dataService.getHistory(envAttrs.vpd_sensor, start, end);
                 console.log('[HistoryController] VPD history fetched from', envAttrs.vpd_sensor, 'length:', history?.length || 0);
-                this.historyCache['vpd'] = history || [];
+                this.historyCache.vpd = history || [];
             }
             catch (e) {
-                console.error("Failed to fetch VPD history", e);
+                console.error('Failed to fetch VPD history', e);
             }
         }
         // CO2
@@ -9843,10 +9930,10 @@ class GrowspaceHistoryController {
             try {
                 const history = await this.host.dataService.getHistory(envAttrs.co2_sensor, start, end);
                 console.log('[HistoryController] CO2 history fetched from', envAttrs.co2_sensor, 'length:', history?.length || 0);
-                this.historyCache['co2'] = history || [];
+                this.historyCache.co2 = history || [];
             }
             catch (e) {
-                console.error("Failed to fetch CO2 history", e);
+                console.error('Failed to fetch CO2 history', e);
             }
         }
         // Light
@@ -9854,10 +9941,10 @@ class GrowspaceHistoryController {
             try {
                 const history = await this.host.dataService.getHistory(envAttrs.light_sensor, start, end);
                 console.log('[HistoryController] Light history fetched from', envAttrs.light_sensor, 'length:', history?.length || 0);
-                this.historyCache['light'] = history || [];
+                this.historyCache.light = history || [];
             }
             catch (e) {
-                console.error("Failed to fetch Light history", e);
+                console.error('Failed to fetch Light history', e);
             }
         }
         // Soil Moisture
@@ -9865,22 +9952,24 @@ class GrowspaceHistoryController {
             try {
                 const history = await this.host.dataService.getHistory(envAttrs.soil_moisture_sensor, start, end);
                 console.log('[HistoryController] Soil Moisture history fetched from', envAttrs.soil_moisture_sensor, 'length:', history?.length || 0);
-                this.historyCache['soil_moisture'] = history || [];
+                this.historyCache.soil_moisture = history || [];
             }
             catch (e) {
-                console.error("Failed to fetch soil moisture history", e);
+                console.error('Failed to fetch soil moisture history', e);
             }
         }
         // Fallback: If light history is missing but we have optimal history, try to derive it from 'is_lights_on' attribute
-        const lightHistory = this.historyCache['light'];
-        const optimalHistory = this.historyCache['optimal'];
-        if ((!lightHistory || lightHistory.length === 0) && optimalHistory && optimalHistory.length > 0) {
+        const lightHistory = this.historyCache.light;
+        const optimalHistory = this.historyCache.optimal;
+        if ((!lightHistory || lightHistory.length === 0) &&
+            optimalHistory &&
+            optimalHistory.length > 0) {
             console.log('[HistoryController] Synthesizing Light history from Optimal attributes');
-            this.historyCache['light'] = optimalHistory.map(h => ({
+            this.historyCache.light = optimalHistory.map((h) => ({
                 ...h,
                 entity_id: 'derived_light',
                 state: h.attributes?.is_lights_on ? 'on' : 'off',
-                attributes: {}
+                attributes: {},
             }));
         }
         this.host.requestUpdate();
@@ -9890,7 +9979,7 @@ class GrowspaceHistoryController {
      * Uses METRIC_ENTITY_KEYS to resolve the entity ID from device attributes.
      */
     async _fetchMetricHistory(metricKey, range) {
-        const device = this.host.devices.find(d => d.device_id === this.host.selectedDevice);
+        const device = this.host.devices.find((d) => d.device_id === this.host.selectedDevice);
         if (!device)
             return;
         const entityId = this.getEntityIdForMetric(device, metricKey);
@@ -9937,7 +10026,7 @@ class GrowspaceHistoryController {
         if (!this.host.hass || !this.host.selectedDevice)
             return { device: null, entityId: null };
         const devices = this.host.devices;
-        const device = devices.find(d => d.device_id === this.host.selectedDevice);
+        const device = devices.find((d) => d.device_id === this.host.selectedDevice);
         if (!device)
             return { device: null, entityId: null };
         let entityId = device.environment_attributes?.[attribute];
@@ -9946,11 +10035,13 @@ class GrowspaceHistoryController {
         // Fallback logic
         if (attribute.endsWith('_entity')) {
             const sensorAttr = attribute.replace('_entity', '_sensor');
-            entityId = device.environment_attributes?.[sensorAttr];
+            entityId =
+                device.environment_attributes?.[sensorAttr];
         }
         else if (attribute.endsWith('_sensor')) {
             const entityAttr = attribute.replace('_sensor', '_entity');
-            entityId = device.environment_attributes?.[entityAttr];
+            entityId =
+                device.environment_attributes?.[entityAttr];
         }
         return { device, entityId };
     }
@@ -10026,8 +10117,8 @@ class GraphDataTransformer {
         const events = [];
         // We look at reference days covering the window
         // The window might span multiple calendar days, so we check "now" and "startTime" days
-        // A safer approach for short windows (<= 7 days) is to iterate daily, 
-        // but the original logic just checked simplistic referenceDays. 
+        // A safer approach for short windows (<= 7 days) is to iterate daily,
+        // but the original logic just checked simplistic referenceDays.
         // We will preserve the original logic's intent but robustify if needed.
         // Original used: const referenceDays = [new Date(now), new Date(startTime)];
         const now = new Date(endTime);
@@ -10040,7 +10131,7 @@ class GraphDataTransformer {
             let durationStr = `${durationSeconds}s`;
             if (durationSeconds >= 60)
                 durationStr = `${Math.round(durationSeconds / 60)}m`;
-            referenceDays.forEach(refDay => {
+            referenceDays.forEach((refDay) => {
                 const eventStart = new Date(refDay);
                 eventStart.setHours(h, m, 0, 0);
                 const eventEnd = new Date(eventStart.getTime() + duration);
@@ -10049,7 +10140,7 @@ class GraphDataTransformer {
                     events.push({
                         start: Math.max(eventStart.getTime(), startTime),
                         end: Math.min(eventEnd.getTime(), endTime),
-                        durationStr
+                        durationStr,
                     });
                 }
             });
@@ -10057,7 +10148,7 @@ class GraphDataTransformer {
         events.sort((a, b) => a.start - b.start);
         // Initial point
         dataPoints.push({ time: startTime, value: 0 });
-        events.forEach(ev => {
+        events.forEach((ev) => {
             // "Step" up 1ms before
             dataPoints.push({ time: ev.start - 1, value: 0 });
             // Start of event
@@ -10075,15 +10166,17 @@ class GraphDataTransformer {
         if (metricKey === 'dehumidifier') {
             if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
                 const state = overviewEntity.attributes.dehumidifier_state;
-                const val = (state === 'on' || state === 'true' || state === '1') ? 1 : 0;
+                const val = state === 'on' || state === 'true' || state === '1' ? 1 : 0;
                 return { time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } };
             }
         }
         else if (metricKey === 'exhaust' || metricKey === 'humidifier') {
-            let val = metricKey === 'exhaust' ? overviewEntity?.attributes?.exhaust_value : overviewEntity?.attributes?.humidifier_value;
+            const val = metricKey === 'exhaust'
+                ? overviewEntity?.attributes?.exhaust_value
+                : overviewEntity?.attributes?.humidifier_value;
             if (val !== undefined) {
                 let numVal = parseFloat(val);
-                let meta = undefined;
+                let meta;
                 if (isNaN(numVal)) {
                     if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') {
                         numVal = 1;
@@ -10110,7 +10203,7 @@ class GraphDataTransformer {
         if (s === 'unavailable' || s === 'unknown')
             return undefined;
         if (key === 'dehumidifier') {
-            return (s === 'on' || s === 'true' || s === '1' || s === 'heating' || s === 'drying') ? 1 : 0;
+            return s === 'on' || s === 'true' || s === '1' || s === 'heating' || s === 'drying' ? 1 : 0;
         }
         if (key === 'light') {
             // Text based check
@@ -10342,7 +10435,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         const container = this._chipsContainerRef.value;
         if (container) {
             this._canScrollLeft = container.scrollLeft > 1;
-            this._canScrollRight = container.scrollLeft < (container.scrollWidth - container.clientWidth - 1);
+            this._canScrollRight =
+                container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
         }
     }
     firstUpdated() {
@@ -10363,15 +10457,15 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
     _computeGraphSeries(width, height, startTime, durationMillis, now) {
         const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
         const seriesList = [];
-        metricKeys.forEach(key => {
+        metricKeys.forEach((key) => {
             const config = this.metricConfig[key] || {
-                color: this.isCombined ? (METRIC_CONFIG[key]?.color || '#ffffff') : this.color,
-                title: this.isCombined ? (METRIC_CONFIG[key]?.title || key) : this.title,
-                unit: this.isCombined ? (METRIC_CONFIG[key]?.unit || '') : this.unit,
-                icon: this.isCombined ? (METRIC_CONFIG[key]?.icon || '') : this.icon
+                color: this.isCombined ? METRIC_CONFIG[key]?.color || '#ffffff' : this.color,
+                title: this.isCombined ? METRIC_CONFIG[key]?.title || key : this.title,
+                unit: this.isCombined ? METRIC_CONFIG[key]?.unit || '' : this.unit,
+                icon: this.isCombined ? METRIC_CONFIG[key]?.icon || '' : this.icon,
             };
             const historySource = this.sensorHistory[key] || [];
-            let dataPoints = [];
+            const dataPoints = [];
             if (key === 'optimal' && historySource.length > 0) {
                 // Optimal logic (Step Graph for Binary Sensor)
                 const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
@@ -10386,7 +10480,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                     const val = initialState.state === 'on' ? 1 : 0;
                     dataPoints.push({ time: startTime.getTime(), value: val });
                 }
-                sortedHistory.forEach(h => {
+                sortedHistory.forEach((h) => {
                     const t = new Date(h.last_changed).getTime();
                     if (t <= startTime.getTime())
                         return;
@@ -10416,7 +10510,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                         dataPoints.push({ time: startTime.getTime(), value: val });
                     }
                 }
-                sortedHistory.forEach(h => {
+                sortedHistory.forEach((h) => {
                     const t = new Date(h.last_changed).getTime();
                     if (t <= startTime.getTime())
                         return;
@@ -10436,8 +10530,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                 }
             }
             if (dataPoints.length > 0) {
-                let min = Math.min(...dataPoints.map(d => d.value));
-                let max = Math.max(...dataPoints.map(d => d.value));
+                let min = Math.min(...dataPoints.map((d) => d.value));
+                let max = Math.max(...dataPoints.map((d) => d.value));
                 const sum = dataPoints.reduce((acc, curr) => acc + curr.value, 0);
                 const avg = sum / dataPoints.length;
                 // Enforce specific ranges
@@ -10476,16 +10570,16 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                             stepPoints.push([x, y]);
                         }
                     }
-                    pathStr = `M ${stepPoints.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+                    pathStr = `M ${stepPoints.map((p) => `${p[0]},${p[1]}`).join(' L ')}`;
                 }
                 else {
                     // Line Path
-                    const points = dataPoints.map(p => {
+                    const points = dataPoints.map((p) => {
                         const x = ((p.time - startTime.getTime()) / durationMillis) * width;
                         const y = height - ((p.value - min) / paddedRange) * height;
                         return [x, y];
                     });
-                    pathStr = `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+                    pathStr = `M ${points.map((p) => `${p[0]},${p[1]}`).join(' L ')}`;
                 }
                 seriesList.push({
                     id: key,
@@ -10498,7 +10592,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                     max,
                     avg,
                     path: pathStr,
-                    fillType: this.isCombined ? 'flat' : 'gradient'
+                    fillType: this.isCombined ? 'flat' : 'gradient',
                 });
             }
         });
@@ -10517,36 +10611,50 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         const series = this._renderSeries;
         if (series.length === 0) {
             return x `
-                <div class="gs-env-graph-card">
-                    <div class="gs-env-graph-header">
-                         <div style="display:flex; align-items:center; gap:8px;">
-                            ${this.icon ? x `<ha-icon .icon=${this.icon}></ha-icon>` : ''}
-                            <span>${this.title || 'Graph'}</span>
-                        </div>
-                        <span style="color: #666; font-size: 0.9em;">No Data</span>
-                    </div>
-                    <div class="gs-env-chart-container" style="display: flex; align-items: center; justify-content: center; color: #444;">
-                        No history data available for ${this.range}
-                    </div>
-                </div>
-            `;
+        <div class="gs-env-graph-card">
+          <div class="gs-env-graph-header">
+            <div style="display:flex; align-items:center; gap:8px;">
+              ${this.icon ? x `<ha-icon .icon=${this.icon}></ha-icon>` : ''}
+              <span>${this.title || 'Graph'}</span>
+            </div>
+            <span style="color: #666; font-size: 0.9em;">No Data</span>
+          </div>
+          <div
+            class="gs-env-chart-container"
+            style="display: flex; align-items: center; justify-content: center; color: #444;"
+          >
+            No history data available for ${this.range}
+          </div>
+        </div>
+      `;
         }
         return x `
-            <div class="gs-env-graph-card">
-                 ${this.isCombined ? this._renderCombinedHeader(series) : this._renderSingleHeader(series[0])}
-                
-                <div class="gs-env-chart-container" 
-                     @mousemove=${(e) => this._handleGraphHover(e, series, startTime, durationMillis, width)}
-                     @mouseleave=${() => { this._activeTooltip = null; this._hoverTime = null; }}>
-                    
-                    ${this._renderTooltip()}
-                    ${!this.isCombined ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit) : ''}
-                    ${this._renderXAxisHTML(this.range)}
-                    
-                    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="width: 100%; height: 100%; overflow: visible; display: block;">
-                        ${this._renderGrid(width, height)}
-                        
-                        ${series.map((s) => {
+      <div class="gs-env-graph-card">
+        ${this.isCombined
+            ? this._renderCombinedHeader(series)
+            : this._renderSingleHeader(series[0])}
+
+        <div
+          class="gs-env-chart-container"
+          @mousemove=${(e) => this._handleGraphHover(e, series, startTime, durationMillis, width)}
+          @mouseleave=${() => {
+            this._activeTooltip = null;
+            this._hoverTime = null;
+        }}
+        >
+          ${this._renderTooltip()}
+          ${!this.isCombined
+            ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit)
+            : ''}
+          ${this._renderXAxisHTML(this.range)}
+
+          <svg
+            viewBox="0 0 ${width} ${height}"
+            preserveAspectRatio="none"
+            style="width: 100%; height: 100%; overflow: visible; display: block;"
+          >
+            ${this._renderGrid(width, height)}
+            ${series.map((s) => {
             if (s.fillType === 'gradient') {
                 return b `
                                     <defs>
@@ -10560,14 +10668,14 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                 return b `
                                      <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" />
                                      <!-- Optional: light fill for combined -->
-                                     <path d="${s.path} V ${height} H ${s.points.length > 0 ? ((s.points[0].time - startTime.getTime()) / durationMillis * width) : 0} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />
+                                     <path d="${s.path} V ${height} H ${s.points.length > 0 ? ((s.points[0].time - startTime.getTime()) / durationMillis) * width : 0} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />
                                 `;
             }
         })}
-                    </svg>
-                </div>
-            </div>
-        `;
+          </svg>
+        </div>
+      </div>
+    `;
     }
     _renderSingleHeader(series) {
         let valStr = '-';
@@ -10575,10 +10683,13 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             const lastPoint = series.points[series.points.length - 1];
             const val = lastPoint.value;
             const defaults = SENSOR_CHART_DEFAULTS[series.id];
-            const isBinary = defaults?.binary === true || (series.unit === 'state' && defaults?.max === undefined) || series.id === 'optimal' || series.id === 'dehumidifier';
+            const isBinary = defaults?.binary === true ||
+                (series.unit === 'state' && defaults?.max === undefined) ||
+                series.id === 'optimal' ||
+                series.id === 'dehumidifier';
             if (isBinary) {
                 if (series.id === 'optimal') {
-                    valStr = val === 1 ? 'Optimal' : (lastPoint.meta?.reasons || 'Not Optimal');
+                    valStr = val === 1 ? 'Optimal' : lastPoint.meta?.reasons || 'Not Optimal';
                 }
                 else {
                     valStr = val === 1 ? 'ON' : 'OFF';
@@ -10592,83 +10703,141 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             }
         }
         return x `
-            <div class="gs-env-graph-header" @click=${() => this.dispatchEvent(new ToggleEnvGraphEvent(series.id))}>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <div style="width: 24px; height: 24px; color: ${series.color}; display: flex; align-items: center; justify-content: center;">
-                        <svg viewBox="0 0 24 24" style="width: 100%; height: 100%; fill: currentColor;">
-                            <path d="${series.icon || this.icon}"></path>
-                        </svg>
-                    </div>
-                    <span style="color: ${series.color}; font-weight: 500;">${series.title}</span>
-                </div>
-                <div style="text-align: right;">
-                     <div style="font-size: 1.2em; font-weight: bold; color: ${series.color};">
-                        ${valStr}
-                    </div>
-                </div>
-            </div>
-        `;
+      <div
+        class="gs-env-graph-header"
+        @click=${() => this.dispatchEvent(new ToggleEnvGraphEvent(series.id))}
+      >
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div
+            style="width: 24px; height: 24px; color: ${series.color}; display: flex; align-items: center; justify-content: center;"
+          >
+            <svg viewBox="0 0 24 24" style="width: 100%; height: 100%; fill: currentColor;">
+              <path d="${series.icon || this.icon}"></path>
+            </svg>
+          </div>
+          <span style="color: ${series.color}; font-weight: 500;">${series.title}</span>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 1.2em; font-weight: bold; color: ${series.color};">${valStr}</div>
+        </div>
+      </div>
+    `;
     }
     _renderCombinedHeader(seriesList) {
         return x `
-             <div class="gs-env-graph-header">
-                <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
-                     ${this._canScrollLeft ? x `
-                    <div class="scroll-nav left" @click=${(e) => { e.stopPropagation(); this._scrollChips('left'); }}>
-                         <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
-                    </div>
-                    ` : ''}
-                    
-                        <div class="chips-scroll-container" ${n$1(this._chipsContainerRef)} @click=${(e) => e.stopPropagation()}>
-                        ${seriesList.map(s => x `
-                            <div class=${e({
+      <div class="gs-env-graph-header">
+        <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
+          ${this._canScrollLeft
+            ? x `
+                <div
+                  class="scroll-nav left"
+                  @click=${(e) => {
+                e.stopPropagation();
+                this._scrollChips('left');
+            }}
+                >
+                  <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+                </div>
+              `
+            : ''}
+
+          <div
+            class="chips-scroll-container"
+            ${n$1(this._chipsContainerRef)}
+            @click=${(e) => e.stopPropagation()}
+          >
+            ${seriesList.map((s) => x `
+                <div
+                  class=${e({
             'gs-legend-item': true,
             'mask-left': this._canScrollLeft,
-            'mask-right': this._canScrollRight
-        })} @click=${(e) => { e.stopPropagation(); this.dispatchEvent(new UnlinkGraphMetricEvent(s.id)); }}>
-                                <span style="display:inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${s.color}; margin-right: 6px; flex-shrink: 0;"></span>
-                                ${s.icon ? x `
-                                <div style="width: 16px; height: 16px; color: ${s.color}; margin-right: 4px; display: inline-flex;">
-                                    <svg viewBox="0 0 24 24" style="width: 100%; height: 100%; fill: currentColor;"><path d="${s.icon}"></path></svg>
-                                </div>
-                                ` : ''}
-                                <span style="color: ${s.color}; font-weight: 500;">${s.title}</span>
-                            </div>
-                        `)}
-                    </div>
-
-                    ${this._canScrollRight ? x `
-                    <div class="scroll-nav right" @click=${(e) => { e.stopPropagation(); this._scrollChips('right'); }}>
-                         <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
-                    </div>
-                    ` : ''}
+            'mask-right': this._canScrollRight,
+        })}
+                  @click=${(e) => {
+            e.stopPropagation();
+            this.dispatchEvent(new UnlinkGraphMetricEvent(s.id));
+        }}
+                >
+                  <span
+                    style="display:inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${s.color}; margin-right: 6px; flex-shrink: 0;"
+                  ></span>
+                  ${s.icon
+            ? x `
+                        <div
+                          style="width: 16px; height: 16px; color: ${s.color}; margin-right: 4px; display: inline-flex;"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            style="width: 100%; height: 100%; fill: currentColor;"
+                          >
+                            <path d="${s.icon}"></path>
+                          </svg>
+                        </div>
+                      `
+            : ''}
+                  <span style="color: ${s.color}; font-weight: 500;">${s.title}</span>
                 </div>
+              `)}
+          </div>
 
-                <div style="display:flex; gap: 8px; margin-left: 8px; flex-shrink: 0;">
-                    <ha-icon-button .path=${mdiLink} @click=${() => this.dispatchEvent(new UnlinkGraphsEvent(-1))} title="Unlink Graphs"></ha-icon-button>
+          ${this._canScrollRight
+            ? x `
+                <div
+                  class="scroll-nav right"
+                  @click=${(e) => {
+                e.stopPropagation();
+                this._scrollChips('right');
+            }}
+                >
+                  <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
                 </div>
-             </div>
-        `;
+              `
+            : ''}
+        </div>
+
+        <div style="display:flex; gap: 8px; margin-left: 8px; flex-shrink: 0;">
+          <ha-icon-button
+            .path=${mdiLink}
+            @click=${() => this.dispatchEvent(new UnlinkGraphsEvent(-1))}
+            title="Unlink Graphs"
+          ></ha-icon-button>
+        </div>
+      </div>
+    `;
     }
     _renderTooltip() {
         if (!this._activeTooltip)
             return x ``;
         const { x: x$1, time, items } = this._activeTooltip;
         return x `
-            <div class="gs-tooltip" style=${o({ left: `${x$1}px`, top: '0' })}>
-                <div style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 2px;">
-                    ${time}
-                </div>
-                ${items.map(i => x `
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px;">
-                            <span style="color: ${i.color};">${i.title}:</span>
-                            <span style="font-family: monospace; font-weight: bold;">${i.value}</span>
-                    </div>
-                `)}
+      <div class="gs-tooltip" style=${o({ left: `${x$1}px`, top: '0' })}>
+        <div
+          style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 2px;"
+        >
+          ${time}
+        </div>
+        ${items.map((i) => x `
+            <div
+              style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px;"
+            >
+              <span style="color: ${i.color};">${i.title}:</span>
+              <span style="font-family: monospace; font-weight: bold;">${i.value}</span>
             </div>
-            <!-- Cursor Line -->
-             <div class="gs-cursor-line" style=${o({ left: `${x$1}px`, height: '100%', top: '0', position: 'absolute', borderLeft: '1px dashed rgba(255,255,255,0.3)', pointerEvents: 'none' })}></div>
-        `;
+          `)}
+      </div>
+      <!-- Cursor Line -->
+      <div
+        class="gs-cursor-line"
+        style=${o({
+            left: `${x$1}px`,
+            height: '100%',
+            top: '0',
+            position: 'absolute',
+            borderLeft: '1px dashed rgba(255,255,255,0.3)',
+            pointerEvents: 'none',
+        })}
+      ></div>
+    `;
     }
     _renderGrid(width, height) {
         return b `
@@ -10690,12 +10859,12 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         // Render X-Axis labels as HTML overlay
         // Container padding: 20px 40px 30px 50px (top right bottom left)
         // Labels usually at bottom. Bottom padding 30px is for these labels.
-        // We want them effectively at bottom: 10px? 
-        const labelStyle = "position: absolute; bottom: 8px; font-size: 10px; color: #666; line-height: 1; pointer-events: none;";
+        // We want them effectively at bottom: 10px?
+        const labelStyle = 'position: absolute; bottom: 8px; font-size: 10px; color: #666; line-height: 1; pointer-events: none;';
         return x `
-            <div style="${labelStyle} left: 50px;">-${range}</div>
-            <div style="${labelStyle} right: 40px;">Now</div>
-        `;
+      <div style="${labelStyle} left: 50px;">-${range}</div>
+      <div style="${labelStyle} right: 40px;">Now</div>
+    `;
     }
     _renderYAxisHTML(min, max, unit) {
         // Render Y-Axis labels as HTML overlay to avoid SVG scaling distortion
@@ -10703,25 +10872,27 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         // Top label at top of graph area (20px)
         // Bottom label at bottom of graph area (20px + 100% height = approx bottom)
         // Graph area height is 180px, defined by container height (which is content-box by default?)
-        // Let's assume standard box model. Height 180px is strictly the graph area? 
-        // No, CSS says height: 180px and padding. 
+        // Let's assume standard box model. Height 180px is strictly the graph area?
+        // No, CSS says height: 180px and padding.
         // If box-sizing is border-box (common in frameworks), height 180 includes padding. Graph area = 180 - 20 - 30 = 130px.
-        // If box-sizing is content-box (default), height 180 is graph area. 
+        // If box-sizing is content-box (default), height 180 is graph area.
         // In HA/Lit, usually we rely on user agent defaults unless reset.
         // Let's assume content-box for now as that's standard CSS.
         // Even if it's border-box, we can use percentages.
-        const labelStyle = "position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: #aaa; line-height: 1; pointer-events: none;";
+        const labelStyle = 'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: #aaa; line-height: 1; pointer-events: none;';
         if (unit === 'state' || (max === 1 && min === 0)) {
             return x `
-                <div style="${labelStyle} top: 20px;">ON</div>
-                <div style="${labelStyle} bottom: 30px;">OFF</div>
-            `;
+        <div style="${labelStyle} top: 20px;">ON</div>
+        <div style="${labelStyle} bottom: 30px;">OFF</div>
+      `;
         }
         return x `
-            <div style="${labelStyle} top: 20px;">${max}${unit}</div>
-            <div style="${labelStyle} top: 50%; transform: translateY(-5px);">${((max + min) / 2).toFixed(1)}</div>
-            <div style="${labelStyle} bottom: 30px;">${min}${unit}</div>
-        `;
+      <div style="${labelStyle} top: 20px;">${max}${unit}</div>
+      <div style="${labelStyle} top: 50%; transform: translateY(-5px);">
+        ${((max + min) / 2).toFixed(1)}
+      </div>
+      <div style="${labelStyle} bottom: 30px;">${min}${unit}</div>
+    `;
     }
     _getDurationMillis(range) {
         if (range === '1h')
@@ -10739,10 +10910,18 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         this.dispatchEvent(new UnlinkGraphsEvent(groupIndex));
     }
     willUpdate(changedProperties) {
-        if (changedProperties.has('device') || changedProperties.has('sensorHistory') || changedProperties.has('range') ||
-            changedProperties.has('metricKey') || changedProperties.has('metrics') || changedProperties.has('isCombined') ||
-            changedProperties.has('metricConfig') || changedProperties.has('type') || changedProperties.has('color') ||
-            changedProperties.has('unit') || changedProperties.has('title') || changedProperties.has('icon')) {
+        if (changedProperties.has('device') ||
+            changedProperties.has('sensorHistory') ||
+            changedProperties.has('range') ||
+            changedProperties.has('metricKey') ||
+            changedProperties.has('metrics') ||
+            changedProperties.has('isCombined') ||
+            changedProperties.has('metricConfig') ||
+            changedProperties.has('type') ||
+            changedProperties.has('color') ||
+            changedProperties.has('unit') ||
+            changedProperties.has('title') ||
+            changedProperties.has('icon')) {
             const durationMillis = this._getDurationMillis(this.range);
             const now = new Date();
             const startTime = new Date(now.getTime() - durationMillis);
@@ -10757,7 +10936,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         const relX = Math.max(0, Math.min(1, (e.clientX - rect.left - 50) / contentWidth));
         const hoverTime = startTime.getTime() + relX * durationMillis;
         // Find closest points and format values
-        const items = seriesList.map(s => {
+        const items = seriesList.map((s) => {
             // Binary search (nearest neighbor)
             const searchTime = hoverTime;
             let closest = s.points[0];
@@ -10774,8 +10953,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                         hi = mid;
                     }
                 }
-                const candidates = [lo, lo - 1, lo + 1].filter(i => i >= 0 && i < s.points.length);
-                candidates.forEach(i => {
+                const candidates = [lo, lo - 1, lo + 1].filter((i) => i >= 0 && i < s.points.length);
+                candidates.forEach((i) => {
                     const p = s.points[i];
                     const diff = Math.abs(p.time - searchTime);
                     if (diff < minDiff) {
@@ -10786,7 +10965,10 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             }
             // Format Value
             const defaults = SENSOR_CHART_DEFAULTS[s.id];
-            const isBinary = defaults?.binary === true || (s.unit === 'state' && defaults?.max === undefined) || s.id === 'optimal' || s.id === 'dehumidifier';
+            const isBinary = defaults?.binary === true ||
+                (s.unit === 'state' && defaults?.max === undefined) ||
+                s.id === 'optimal' ||
+                s.id === 'dehumidifier';
             let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
             if (isBinary) {
                 if (s.id === 'optimal') {
@@ -10808,12 +10990,15 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             return { title: s.title, value: valStr, color: s.color };
         });
         const locale = this.hass?.locale?.language || undefined;
-        const timeStr = new Date(hoverTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+        const timeStr = new Date(hoverTime).toLocaleTimeString(locale, {
+            hour: '2-digit',
+            minute: '2-digit',
+        });
         this._activeTooltip = {
             id: 'hover',
             x: e.clientX - rect.left,
             time: timeStr,
-            items: items
+            items,
         };
         this._hoverTime = hoverTime;
     }
@@ -10823,137 +11008,152 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
     }
 };
 GrowspaceEnvChart.styles = i$6 `
-    :host { display: block; position: relative; }
-    
+    :host {
+      display: block;
+      position: relative;
+    }
+
     .gs-env-graph-card {
-        margin-top: 12px;
-        background: #1a1a1a;
-        border-radius: 12px;
-        padding: 16px;
+      margin-top: 12px;
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 16px;
     }
 
     .gs-env-graph-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 8px;
-        cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      cursor: pointer;
     }
 
     .gs-env-chart-container {
-        position: relative;
-        height: 180px;
-        background: #0d0d0d;
-        border-radius: 8px;
-        padding: 20px 40px 30px 50px;
-        cursor: crosshair;
+      position: relative;
+      height: 180px;
+      background: #0d0d0d;
+      border-radius: 8px;
+      padding: 20px 40px 30px 50px;
+      cursor: crosshair;
     }
 
     .gs-tooltip {
-        position: absolute;
-        background: rgba(30, 30, 35, 0.9);
-        color: #fff;
-        padding: 8px 12px;
-        border-radius: 8px;
-        font-size: 0.75rem;
-        pointer-events: none;
-        transform: translate(-50%, 0);
-        z-index: 1000;
-        white-space: nowrap;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(12px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        line-height: 1.4;
-        text-align: center;
+      position: absolute;
+      background: rgba(30, 30, 35, 0.9);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      pointer-events: none;
+      transform: translate(-50%, 0);
+      z-index: 1000;
+      white-space: nowrap;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      line-height: 1.4;
+      text-align: center;
     }
-    
+
     .gs-cursor-line {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 1px;
-        background: rgba(255, 255, 255, 0.3);
-        pointer-events: none;
-        z-index: 5;
-        border-left: 1px dashed rgba(255, 255, 255, 0.5);
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.3);
+      pointer-events: none;
+      z-index: 5;
+      border-left: 1px dashed rgba(255, 255, 255, 0.5);
     }
 
     .gs-legend-item {
-        display: flex;
-        align-items: center;
-        margin-right: 12px;
-        font-size: 0.85rem;
-        cursor: pointer;
-        opacity: 0.8;
-        transition: opacity 0.2s;
+      display: flex;
+      align-items: center;
+      margin-right: 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      opacity: 0.8;
+      transition: opacity 0.2s;
     }
-    
+
     .gs-legend-item:hover {
-        opacity: 1;
+      opacity: 1;
     }
 
     .chips-scroll-container {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        overflow-x: auto;
-        white-space: nowrap;
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* IE/Edge */
-        scroll-behavior: smooth;
-        flex: 1;
-        min-width: 0;
-        /* Removed static mask */
-        padding: 0 10px;
-        transition: mask-image 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE/Edge */
+      scroll-behavior: smooth;
+      flex: 1;
+      min-width: 0;
+      /* Removed static mask */
+      padding: 0 10px;
+      transition: mask-image 0.3s;
     }
-    
+
     .chips-scroll-container.mask-right {
-        mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%);
-        -webkit-mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%);
+      mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%);
     }
 
     .chips-scroll-container.mask-left {
-        mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%);
-        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%);
+      mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%);
     }
 
     .chips-scroll-container.mask-left.mask-right {
-        mask-image: linear-gradient(to right, transparent 0%, black 30px, black calc(100% - 30px), transparent 100%);
-        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 30px, black calc(100% - 30px), transparent 100%);
+      mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 30px,
+        black calc(100% - 30px),
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 30px,
+        black calc(100% - 30px),
+        transparent 100%
+      );
     }
-    
+
     .chips-scroll-container::-webkit-scrollbar {
-        display: none;
+      display: none;
     }
 
     .scroll-nav {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        opacity: 0.5;
-        transition: opacity 0.2s;
-        min-width: 24px;
-        color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+      min-width: 24px;
+      color: #fff;
     }
 
     .scroll-nav:hover {
-        opacity: 1;
+      opacity: 1;
     }
 
     .scroll-nav svg {
-        width: 24px;
-        height: 24px;
-        fill: currentColor;
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
     }
 
     @media (pointer: coarse) {
-        .scroll-nav {
-            display: none;
-        }
+      .scroll-nav {
+        display: none;
+      }
     }
-    `;
+  `;
 __decorate([
     c$2({ context: hassContext, subscribe: true }),
     __metadata("design:type", Object)
@@ -11072,7 +11272,7 @@ const dialogStyles = i$6 `
     align-items: center;
     justify-content: center;
     margin-right: 16px;
-    color: var(--stage-color, #4CAF50);
+    color: var(--stage-color, #4caf50);
   }
 
   .dialog-title-group {
@@ -11151,7 +11351,7 @@ const dialogStyles = i$6 `
     background: rgba(255, 255, 255, 0.15);
   }
   .md3-button.primary {
-    background: var(--primary-color, #4CAF50);
+    background: var(--primary-color, #4caf50);
     color: #fff;
   }
   .md3-button.primary:hover {
@@ -11202,7 +11402,7 @@ const dialogStyles = i$6 `
   }
   .md3-input:focus {
     outline: none;
-    border-color: #4CAF50;
+    border-color: #4caf50;
     background: rgba(255, 255, 255, 0.08);
   }
 
@@ -11223,7 +11423,7 @@ const dialogStyles = i$6 `
     .dialog-header {
       padding: 12px 16px;
     }
-    
+
     /* Restored responsive rules */
     .dialog-content-grid {
       flex: 1;
@@ -11276,7 +11476,7 @@ Md3TextInput.styles = [
         display: block;
         width: 100%;
       }
-    `
+    `,
 ];
 __decorate([
     n$5(),
@@ -11339,7 +11539,7 @@ Md3NumberInput.styles = [
         display: block;
         width: 100%;
       }
-    `
+    `,
 ];
 __decorate([
     n$5(),
@@ -11381,13 +11581,9 @@ let Md3Select = class Md3Select extends i$3 {
         return x `
       <div class="md3-input-group">
         <label class="md3-label">${this.label}</label>
-        <select
-          class="md3-input"
-          .value=${this.value}
-          @change=${this._handleChange}
-        >
+        <select class="md3-input" .value=${this.value} @change=${this._handleChange}>
           <option value="">Select...</option>
-          ${this.options.map(opt => {
+          ${this.options.map((opt) => {
             const label = typeof opt === 'string' ? opt : opt.label;
             const val = typeof opt === 'string' ? opt : opt.value;
             return x `<option value="${val}" ?selected=${val === this.value}>${label}</option>`;
@@ -11404,7 +11600,7 @@ Md3Select.styles = [
         display: block;
         width: 100%;
       }
-    `
+    `,
 ];
 __decorate([
     n$5(),
@@ -11463,7 +11659,7 @@ Md3DateInput.styles = [
         display: block;
         width: 100%;
       }
-    `
+    `,
 ];
 __decorate([
     n$5(),
@@ -11560,11 +11756,11 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         if (value === undefined || value === null || value === '')
             return E;
         return x `
-        <div class="stat-item">
-            <span class="stat-value">${value} ${unit}</span>
-            <span class="stat-label">${label}</span>
-        </div>
-      `;
+      <div class="stat-item">
+        <span class="stat-value">${value} ${unit}</span>
+        <span class="stat-label">${label}</span>
+      </div>
+    `;
     }
     _renderPlantStats(plant) {
         if (!plant.attributes)
@@ -11579,13 +11775,43 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         };
         const normCurrent = normalize(currentStage);
         const stats = [
-            { label: 'Vegetative Stage', value: plant.attributes.veg_days, unit: 'days', stage: PlantStage.VEG },
-            { label: 'Flowering Stage', value: plant.attributes.flower_days, unit: 'days', stage: PlantStage.FLOWER },
-            { label: 'Mother Stage', value: plant.attributes.mom_days, unit: 'days', stage: PlantStage.MOTHER },
-            { label: 'Clone Stage', value: plant.attributes.clone_days, unit: 'days', stage: PlantStage.CLONE },
-            { label: 'Drying Stage', value: plant.attributes.dry_days, unit: 'days', stage: PlantStage.DRY },
-            { label: 'Curing Stage', value: plant.attributes.cure_days, unit: 'days', stage: PlantStage.CURE },
-        ].filter(s => {
+            {
+                label: 'Vegetative Stage',
+                value: plant.attributes.veg_days,
+                unit: 'days',
+                stage: PlantStage.VEG,
+            },
+            {
+                label: 'Flowering Stage',
+                value: plant.attributes.flower_days,
+                unit: 'days',
+                stage: PlantStage.FLOWER,
+            },
+            {
+                label: 'Mother Stage',
+                value: plant.attributes.mom_days,
+                unit: 'days',
+                stage: PlantStage.MOTHER,
+            },
+            {
+                label: 'Clone Stage',
+                value: plant.attributes.clone_days,
+                unit: 'days',
+                stage: PlantStage.CLONE,
+            },
+            {
+                label: 'Drying Stage',
+                value: plant.attributes.dry_days,
+                unit: 'days',
+                stage: PlantStage.DRY,
+            },
+            {
+                label: 'Curing Stage',
+                value: plant.attributes.cure_days,
+                unit: 'days',
+                stage: PlantStage.CURE,
+            },
+        ].filter((s) => {
             if (s.value === undefined || s.value === null)
                 return false;
             const val = Number(s.value);
@@ -11597,30 +11823,42 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         if (stats.length === 0)
             return E;
         return x `
-        <div class="detail-card">
-            <h3>Days in Stage</h3>
-            <div class="stat-grid">
-               ${stats.map(s => this._renderStatItem(s.label, s.value, s.unit))}
-            </div>
+      <div class="detail-card">
+        <h3>Days in Stage</h3>
+        <div class="stat-grid">
+          ${stats.map((s) => this._renderStatItem(s.label, s.value, s.unit))}
         </div>
-      `;
+      </div>
+    `;
     }
     _renderDeleteOverlay() {
         return x `
-      <div class="dialog-overlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:100; display:flex; align-items:center; justify-content:center;">
+      <div
+        class="dialog-overlay"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:100; display:flex; align-items:center; justify-content:center;"
+      >
         <div class="glass-dialog-container" style="width: 350px; height: auto; padding: 24px;">
           <h2 class="dialog-title" style="margin-bottom:12px">Confirm Deletion</h2>
-          <p style="color:rgba(255,255,255,0.7); margin-bottom:24px; font-size: 1rem; line-height: 1.5;">Are you sure you want to delete this plant? This action cannot be undone.</p>
+          <p
+            style="color:rgba(255,255,255,0.7); margin-bottom:24px; font-size: 1rem; line-height: 1.5;"
+          >
+            Are you sure you want to delete this plant? This action cannot be undone.
+          </p>
           <div style="display:flex; justify-content:flex-end; gap:12px">
             <button class="md3-button tonal" @click=${this._cancelDelete}>Cancel</button>
             <button class="md3-button danger" @click=${this._confirmDelete}>
-               <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
-               Delete
+              <svg
+                style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                viewBox="0 0 24 24"
+              >
+                <path d="${mdiDelete}"></path>
+              </svg>
+              Delete
             </button>
           </div>
         </div>
       </div>
-     `;
+    `;
     }
     render() {
         if (!this.plant)
@@ -11638,7 +11876,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
       >
         <div class="glass-dialog-container" style="--stage-color: ${stageColor}">
           ${this._showDeleteConfirmation ? this._renderDeleteOverlay() : E}
-        
+
           <!-- HEADER -->
           <div class="dialog-header">
             <div class="dialog-icon">
@@ -11648,45 +11886,53 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             </div>
             <div class="dialog-title-group">
               <h2 class="dialog-title">${this.editedAttributes.strain || 'Unknown Strain'}</h2>
-              <div class="dialog-subtitle">${this.plant.state} Stage • ${this.editedAttributes.phenotype || 'No Phenotype'}</div>
+              <div class="dialog-subtitle">
+                ${this.plant.state} Stage • ${this.editedAttributes.phenotype || 'No Phenotype'}
+              </div>
             </div>
-            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
-               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                 <path d="${mdiClose}"></path>
-               </svg>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
             </button>
           </div>
 
           <div class="overview-grid">
-             <!-- IDENTITY & LOCATION CARD -->
-             <div class="detail-card">
-                <h3>Identity & Location</h3>
-                ${this.isEditing ? x `
-                   <md3-text-input
-                     label="Strain Name"
-                     .value=${this.editedAttributes.strain || ''}
-                     @change=${(e) => this._attributeChange('strain', e.detail)}
-                   ></md3-text-input>
-                   <md3-text-input
-                     label="Phenotype"
-                     .value=${this.editedAttributes.phenotype || ''}
-                     @change=${(e) => this._attributeChange('phenotype', e.detail)}
-                   ></md3-text-input>
-                   
-                   <div style="display:flex; gap:16px;">
-                     <md3-number-input
-                       label="Row"
-                       .value=${this.editedAttributes.row ?? ''}
-                       @change=${(e) => this._attributeChange('row', e.detail)}
-                     ></md3-number-input>
-                     <md3-number-input
-                       label="Column"
-                       .value=${this.editedAttributes.col ?? ''}
-                       @change=${(e) => this._attributeChange('col', e.detail)}
-                     ></md3-number-input>
-                   </div>
-                ` : x `
-                   <div class="stat-grid">
+            <!-- IDENTITY & LOCATION CARD -->
+            <div class="detail-card">
+              <h3>Identity & Location</h3>
+              ${this.isEditing
+            ? x `
+                    <md3-text-input
+                      label="Strain Name"
+                      .value=${this.editedAttributes.strain || ''}
+                      @change=${(e) => this._attributeChange('strain', e.detail)}
+                    ></md3-text-input>
+                    <md3-text-input
+                      label="Phenotype"
+                      .value=${this.editedAttributes.phenotype || ''}
+                      @change=${(e) => this._attributeChange('phenotype', e.detail)}
+                    ></md3-text-input>
+
+                    <div style="display:flex; gap:16px;">
+                      <md3-number-input
+                        label="Row"
+                        .value=${this.editedAttributes.row ?? ''}
+                        @change=${(e) => this._attributeChange('row', e.detail)}
+                      ></md3-number-input>
+                      <md3-number-input
+                        label="Column"
+                        .value=${this.editedAttributes.col ?? ''}
+                        @change=${(e) => this._attributeChange('col', e.detail)}
+                      ></md3-number-input>
+                    </div>
+                  `
+            : x `
+                    <div class="stat-grid">
                       <div class="stat-item">
                         <span class="stat-value">${this.plant.attributes.strain}</span>
                         <span class="stat-label">Strain</span>
@@ -11703,68 +11949,165 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                         <span class="stat-value">${this.plant.attributes.col ?? '-'}</span>
                         <span class="stat-label">Col</span>
                       </div>
-                   </div>
-                `}
-             </div>
-             <!-- STATS CARD -->
-             ${this._renderPlantStats(this.plant)}
-             
-             <!-- TIMELINE CARD -->
-             <div class="detail-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                  <h3 style="margin: 0;">Timeline</h3>
-                  <button class="md3-button text" style="min-width: auto; padding: 4px;" @click=${this._toggleShowAllDates}>
-                    <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-                  </button>
-                </div>
-                
-                ${this.showAllDates ? x `
-                   <md3-date-input label="Seedling Start" .value=${this.editedAttributes.seedling_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('seedling_start', e.detail)}></md3-date-input>
-                   <md3-date-input label="Mother Start" .value=${this.editedAttributes.mother_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('mother_start', e.detail)}></md3-date-input>
-                   <md3-date-input label="Clone Start" .value=${this.editedAttributes.clone_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('clone_start', e.detail)}></md3-date-input>
-                   <md3-date-input label="Vegetative Start" .value=${this.editedAttributes.veg_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('veg_start', e.detail)}></md3-date-input>
-                   <md3-date-input label="Flower Start" .value=${this.editedAttributes.flower_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('flower_start', e.detail)}></md3-date-input>
-                   <md3-date-input label="Dry Start" .value=${this.editedAttributes.dry_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('dry_start', e.detail)}></md3-date-input>
-                   <md3-date-input label="Cure Start" .value=${this.editedAttributes.cure_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('cure_start', e.detail)}></md3-date-input>
-                ` : x `
-                   ${this.editedAttributes.stage === PlantStage.MOTHER ? x `
-                       <md3-date-input label="Mother Start" .value=${this.editedAttributes.mother_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('mother_start', e.detail)}></md3-date-input>
-                   ` : E}
-                   ${this.editedAttributes.stage === PlantStage.CLONE ? x `
-                       <md3-date-input label="Clone Start" .value=${this.editedAttributes.clone_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('clone_start', e.detail)}></md3-date-input>
-                   ` : E}
-                   ${this.editedAttributes.stage === PlantStage.VEG || this.editedAttributes.stage === PlantStage.FLOWER ? x `
-                       <md3-date-input label="Vegetative Start" .value=${this.editedAttributes.veg_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('veg_start', e.detail)}></md3-date-input>
-                   ` : E}
-                   ${this.editedAttributes.stage === PlantStage.FLOWER ? x `
-                       <md3-date-input label="Flower Start" .value=${this.editedAttributes.flower_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('flower_start', e.detail)}></md3-date-input>
-                   ` : E}
-                   ${this.editedAttributes.stage === PlantStage.DRY || this.editedAttributes.stage === PlantStage.CURE ? x `
-                       <md3-date-input label="Dry Start" .value=${this.editedAttributes.dry_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('dry_start', e.detail)}></md3-date-input>
-                   ` : E}
-                   ${this.editedAttributes.stage === PlantStage.CURE ? x `
-                       <md3-date-input label="Cure Start" .value=${this.editedAttributes.cure_start ?? ''} ?time=${true} @change=${(e) => this._attributeChange('cure_start', e.detail)}></md3-date-input>
-                   ` : E}
-                `}
-             </div>
-            
+                    </div>
+                  `}
+            </div>
+            <!-- STATS CARD -->
+            ${this._renderPlantStats(this.plant)}
+
+            <!-- TIMELINE CARD -->
+            <div class="detail-card">
+              <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
+              >
+                <h3 style="margin: 0;">Timeline</h3>
+                <button
+                  class="md3-button text"
+                  style="min-width: auto; padding: 4px;"
+                  @click=${this._toggleShowAllDates}
+                >
+                  <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiPencil}"></path>
+                  </svg>
+                </button>
+              </div>
+
+              ${this.showAllDates
+            ? x `
+                    <md3-date-input
+                      label="Seedling Start"
+                      .value=${this.editedAttributes.seedling_start ?? ''}
+                      ?time=${true}
+                      @change=${(e) => this._attributeChange('seedling_start', e.detail)}
+                    ></md3-date-input>
+                    <md3-date-input
+                      label="Mother Start"
+                      .value=${this.editedAttributes.mother_start ?? ''}
+                      ?time=${true}
+                      @change=${(e) => this._attributeChange('mother_start', e.detail)}
+                    ></md3-date-input>
+                    <md3-date-input
+                      label="Clone Start"
+                      .value=${this.editedAttributes.clone_start ?? ''}
+                      ?time=${true}
+                      @change=${(e) => this._attributeChange('clone_start', e.detail)}
+                    ></md3-date-input>
+                    <md3-date-input
+                      label="Vegetative Start"
+                      .value=${this.editedAttributes.veg_start ?? ''}
+                      ?time=${true}
+                      @change=${(e) => this._attributeChange('veg_start', e.detail)}
+                    ></md3-date-input>
+                    <md3-date-input
+                      label="Flower Start"
+                      .value=${this.editedAttributes.flower_start ?? ''}
+                      ?time=${true}
+                      @change=${(e) => this._attributeChange('flower_start', e.detail)}
+                    ></md3-date-input>
+                    <md3-date-input
+                      label="Dry Start"
+                      .value=${this.editedAttributes.dry_start ?? ''}
+                      ?time=${true}
+                      @change=${(e) => this._attributeChange('dry_start', e.detail)}
+                    ></md3-date-input>
+                    <md3-date-input
+                      label="Cure Start"
+                      .value=${this.editedAttributes.cure_start ?? ''}
+                      ?time=${true}
+                      @change=${(e) => this._attributeChange('cure_start', e.detail)}
+                    ></md3-date-input>
+                  `
+            : x `
+                    ${this.editedAttributes.stage === PlantStage.MOTHER
+                ? x `
+                          <md3-date-input
+                            label="Mother Start"
+                            .value=${this.editedAttributes.mother_start ?? ''}
+                            ?time=${true}
+                            @change=${(e) => this._attributeChange('mother_start', e.detail)}
+                          ></md3-date-input>
+                        `
+                : E}
+                    ${this.editedAttributes.stage === PlantStage.CLONE
+                ? x `
+                          <md3-date-input
+                            label="Clone Start"
+                            .value=${this.editedAttributes.clone_start ?? ''}
+                            ?time=${true}
+                            @change=${(e) => this._attributeChange('clone_start', e.detail)}
+                          ></md3-date-input>
+                        `
+                : E}
+                    ${this.editedAttributes.stage === PlantStage.VEG ||
+                this.editedAttributes.stage === PlantStage.FLOWER
+                ? x `
+                          <md3-date-input
+                            label="Vegetative Start"
+                            .value=${this.editedAttributes.veg_start ?? ''}
+                            ?time=${true}
+                            @change=${(e) => this._attributeChange('veg_start', e.detail)}
+                          ></md3-date-input>
+                        `
+                : E}
+                    ${this.editedAttributes.stage === PlantStage.FLOWER
+                ? x `
+                          <md3-date-input
+                            label="Flower Start"
+                            .value=${this.editedAttributes.flower_start ?? ''}
+                            ?time=${true}
+                            @change=${(e) => this._attributeChange('flower_start', e.detail)}
+                          ></md3-date-input>
+                        `
+                : E}
+                    ${this.editedAttributes.stage === PlantStage.DRY ||
+                this.editedAttributes.stage === PlantStage.CURE
+                ? x `
+                          <md3-date-input
+                            label="Dry Start"
+                            .value=${this.editedAttributes.dry_start ?? ''}
+                            ?time=${true}
+                            @change=${(e) => this._attributeChange('dry_start', e.detail)}
+                          ></md3-date-input>
+                        `
+                : E}
+                    ${this.editedAttributes.stage === PlantStage.CURE
+                ? x `
+                          <md3-date-input
+                            label="Cure Start"
+                            .value=${this.editedAttributes.cure_start ?? ''}
+                            ?time=${true}
+                            @change=${(e) => this._attributeChange('cure_start', e.detail)}
+                          ></md3-date-input>
+                        `
+                : E}
+                  `}
+            </div>
           </div>
 
           <!-- ACTION BUTTONS -->
           <div class="button-group" style="padding: 16px 24px;">
-             <button class="md3-button danger" @click=${() => this._delete(plantId)}>
-                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
-                Delete
-             </button>
+            <button class="md3-button danger" @click=${() => this._delete(plantId)}>
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiDelete}"></path>
+              </svg>
+              Delete
+            </button>
 
-             <button class="md3-button tonal" @click=${this._update}>
-                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
-                Save
-             </button>
+            <button class="md3-button tonal" @click=${this._update}>
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiCheck}"></path>
+              </svg>
+              Save
+            </button>
 
-             <!-- DYNAMIC ACTIONS -->
-             ${this.plant.state.toLowerCase() === PlantStage.MOTHER ? x `
-                 <div class="take-clone-container" style="display:contents;" data-plant-id="${this.plant.entity_id}">
+            <!-- DYNAMIC ACTIONS -->
+            ${this.plant.state.toLowerCase() === PlantStage.MOTHER
+            ? x `
+                  <div
+                    class="take-clone-container"
+                    style="display:contents;"
+                    data-plant-id="${this.plant.entity_id}"
+                  >
                     <md3-number-input
                       .min=${1}
                       .max=${10}
@@ -11772,51 +12115,68 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                       id="clone-count-input"
                       style="width: 80px;"
                     ></md3-number-input>
-                    <button class="md3-button primary"
+                    <button
+                      class="md3-button primary"
                       @click=${(e) => {
-            const btn = e.currentTarget;
-            const container = btn.parentElement;
-            const inputEl = container?.querySelector('md3-number-input');
-            const numClones = inputEl ? Number(inputEl.value) : 1;
-            this._takeClone(this.plant, numClones);
-        }}
+                const btn = e.currentTarget;
+                const container = btn.parentElement;
+                const inputEl = container?.querySelector('md3-number-input');
+                const numClones = inputEl ? Number(inputEl.value) : 1;
+                this._takeClone(this.plant, numClones);
+            }}
                     >
-                      <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+                      <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="${mdiContentCopy}"></path>
+                      </svg>
                       Take Clone
                     </button>
-                 </div>
-             ` : E}
-
-             ${this.plant.state.toLowerCase() === PlantStage.FLOWER ? x `
-                <button class="md3-button primary" @click=${() => this._harvest(this.plant)}>
-                  <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
-                  Harvest
-                </button>
-             ` : E}
-
-             ${this.plant.state.toLowerCase() === PlantStage.DRY ? x `
-                <button class="md3-button primary" @click=${() => this._finishDrying(this.plant)}>
-                  <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
-                  Finish Drying
-                </button>
-             ` : E}
-             
-             ${this.plant.state.toLowerCase() === PlantStage.CLONE ? x `
-                <div style="display:contents; display:flex; gap: 8px; align-items: center;">
-                     <md3-select
-                       .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
-                       .value=${this.cloneTargetId}
-                       @change=${(e) => this.cloneTargetId = e.detail}
-                       style="min-width: 150px;"
-                     ></md3-select>
-                     <button class="md3-button primary"
-                       @click=${() => this._moveClone(this.plant)}
-                     >
-                       <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
-                       Move
-                     </button>
-                </div>
-             ` : E}
+                  </div>
+                `
+            : E}
+            ${this.plant.state.toLowerCase() === PlantStage.FLOWER
+            ? x `
+                  <button class="md3-button primary" @click=${() => this._harvest(this.plant)}>
+                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                      <path d="${mdiFlower}"></path>
+                    </svg>
+                    Harvest
+                  </button>
+                `
+            : E}
+            ${this.plant.state.toLowerCase() === PlantStage.DRY
+            ? x `
+                  <button
+                    class="md3-button primary"
+                    @click=${() => this._finishDrying(this.plant)}
+                  >
+                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                      <path d="${mdiCannabis}"></path>
+                    </svg>
+                    Finish Drying
+                  </button>
+                `
+            : E}
+            ${this.plant.state.toLowerCase() === PlantStage.CLONE
+            ? x `
+                  <div style="display:contents; display:flex; gap: 8px; align-items: center;">
+                    <md3-select
+                      .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({
+                label: name,
+                value: id,
+            }))}
+                      .value=${this.cloneTargetId}
+                      @change=${(e) => (this.cloneTargetId = e.detail)}
+                      style="min-width: 150px;"
+                    ></md3-select>
+                    <button class="md3-button primary" @click=${() => this._moveClone(this.plant)}>
+                      <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="${mdiArrowRight}"></path>
+                      </svg>
+                      Move
+                    </button>
+                  </div>
+                `
+            : E}
           </div>
         </div>
       </ha-dialog>
@@ -11829,7 +12189,7 @@ PlantOverviewDialog.styles = [
       :host {
         display: block;
       }
-      
+
       .overview-grid {
         padding: 24px;
         overflow-y: auto;
@@ -11857,7 +12217,7 @@ PlantOverviewDialog.styles = [
         width: 12px;
         height: 12px;
         border-radius: 50%;
-        background: var(--event-color, #4CAF50);
+        background: var(--event-color, #4caf50);
         border: 2px solid #2c2c2c;
       }
       .timeline-date {
@@ -11915,7 +12275,7 @@ PlantOverviewDialog.styles = [
       .plant-image:hover {
         transform: scale(1.05);
       }
-      
+
       .md3-input-group {
         display: flex;
         flex-direction: column;
@@ -11924,13 +12284,13 @@ PlantOverviewDialog.styles = [
         margin-bottom: 12px;
       }
 
-      @media(max-width: 600px) {
+      @media (max-width: 600px) {
         .overview-grid {
           grid-template-columns: 1fr;
           padding: 16px;
         }
       }
-      @media(max-width: 450px) {
+      @media (max-width: 450px) {
         .glass-dialog-container {
           border-radius: 0;
           width: 100vw;
@@ -11946,7 +12306,7 @@ PlantOverviewDialog.styles = [
           padding: 12px 16px;
         }
       }
-    `
+    `,
 ];
 __decorate([
     c$2({ context: hassContext, subscribe: true }),
@@ -12027,7 +12387,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 description: '',
                 image: '',
                 sativa_percentage: 50,
-                indica_percentage: 50
+                indica_percentage: 50,
             };
         }
         this._view = 'editor';
@@ -12062,7 +12422,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     _handleSelectLibraryImage(imageUrl) {
         this._editorState = { ...this._editorState, image: imageUrl };
         // Find existing crop meta
-        const existing = this.strains.find(s => s.image === imageUrl && !!s.image_crop_meta);
+        const existing = this.strains.find((s) => s.image === imageUrl && !!s.image_crop_meta);
         if (existing && existing.image_crop_meta) {
             this._editorState.image_crop_meta = { ...existing.image_crop_meta };
         }
@@ -12079,7 +12439,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             const file = e.target.files?.[0];
             if (file) {
                 this.dispatchEvent(new CustomEvent('import-library', {
-                    detail: { file, replace: this._importReplace }
+                    detail: { file, replace: this._importReplace },
                 }));
                 this._importDialogOpen = false;
             }
@@ -12124,7 +12484,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     }
     renderBrowseView() {
         const query = this._searchQuery.toLowerCase();
-        const filteredStrains = this.strains.filter(s => s.strain.toLowerCase().includes(query) ||
+        const filteredStrains = this.strains.filter((s) => s.strain.toLowerCase().includes(query) ||
             (s.breeder && s.breeder.toLowerCase().includes(query)) ||
             (s.phenotype && s.phenotype.toLowerCase().includes(query)));
         // Pagination Logic
@@ -12139,106 +12499,174 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         return x `
       <div class="dialog-header">
         <div class="dialog-icon">
-            <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiLeaf}"></path></svg>
+          <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiLeaf}"></path>
+          </svg>
         </div>
         <div class="dialog-title-group">
-            <h2 class="dialog-title">Strain Library</h2>
+          <h2 class="dialog-title">Strain Library</h2>
         </div>
-        
+
         <div class="header-actions" style="display:flex; gap:8px;">
-            <button class="md3-button text" @click=${() => this._mobileMenuOpen = !this._mobileMenuOpen} style="min-width:auto; padding:8px; display: none;">
-                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
-            </button>
-            <style>@media(max-width:600px){ button[style*="mdiDotsVertical"] { display: flex !important; } }</style>
-            
-            <button class="md3-button text" @click=${() => this.dispatchEvent(new CustomEvent('close'))} style="min-width:auto; padding:8px;">
-                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
-            </button>
+          <button
+            class="md3-button text"
+            @click=${() => (this._mobileMenuOpen = !this._mobileMenuOpen)}
+            style="min-width:auto; padding:8px; display: none;"
+          >
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiDotsVertical}"></path>
+            </svg>
+          </button>
+          <style>
+            @media (max-width: 600px) {
+              button[style*='mdiDotsVertical'] {
+                display: flex !important;
+              }
+            }
+          </style>
+
+          <button
+            class="md3-button text"
+            @click=${() => this.dispatchEvent(new CustomEvent('close'))}
+            style="min-width:auto; padding:8px;"
+          >
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiClose}"></path>
+            </svg>
+          </button>
         </div>
       </div>
 
       <div class="sd-content">
         <div class="search-bar-container">
           <div class="search-input-wrapper">
-             <md3-text-input 
-                placeholder="Search Strains by Name, Breeder..."
-                .value=${this._searchQuery}
-                @change=${(e) => {
+            <md3-text-input
+              placeholder="Search Strains by Name, Breeder..."
+              .value=${this._searchQuery}
+              @change=${(e) => {
             this._searchQuery = e.detail;
             this._currentPage = 1;
         }}
-             ></md3-text-input>
+            ></md3-text-input>
           </div>
         </div>
 
         <div class="sd-grid">
-          ${paginatedStrains.map(strain => this.renderStrainCard(strain))}
+          ${paginatedStrains.map((strain) => this.renderStrainCard(strain))}
         </div>
 
-        ${filteredStrains.length === 0 ? x `
-          <div style="text-align:center; padding: 40px; color: var(--secondary-text-color);">
-            <svg style="width:48px;height:48px;fill:currentColor; opacity:0.5;" viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-            <p>No strains found matching "${query}"</p>
-          </div>
-        ` : E}
-
-        ${totalPages > 1 ? x `
-            <div class="pagination-container">
-                <button 
-                    class="pagination-btn" 
-                    ?disabled=${this._currentPage === 1}
-                    @click=${() => this._currentPage--}
+        ${filteredStrains.length === 0
+            ? x `
+              <div style="text-align:center; padding: 40px; color: var(--secondary-text-color);">
+                <svg
+                  style="width:48px;height:48px;fill:currentColor; opacity:0.5;"
+                  viewBox="0 0 24 24"
                 >
-                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+                  <path d="${mdiMagnify}"></path>
+                </svg>
+                <p>No strains found matching "${query}"</p>
+              </div>
+            `
+            : E}
+        ${totalPages > 1
+            ? x `
+              <div class="pagination-container">
+                <button
+                  class="pagination-btn"
+                  ?disabled=${this._currentPage === 1}
+                  @click=${() => this._currentPage--}
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiChevronLeft}"></path>
+                  </svg>
                 </button>
                 <span class="pagination-text">Page ${this._currentPage} of ${totalPages}</span>
-                <button 
-                    class="pagination-btn" 
-                    ?disabled=${this._currentPage === totalPages}
-                    @click=${() => this._currentPage++}
+                <button
+                  class="pagination-btn"
+                  ?disabled=${this._currentPage === totalPages}
+                  @click=${() => this._currentPage++}
                 >
-                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiChevronRight}"></path>
+                  </svg>
                 </button>
-            </div>
-        ` : E}
+              </div>
+            `
+            : E}
       </div>
 
       <!-- Mobile Menu Dropdown -->
-      ${this._mobileMenuOpen ? x `
-        <div class="menu-overlay" @click=${() => this._mobileMenuOpen = false}></div>
-        <div class="mobile-menu">
-            <div class="mobile-menu-item" @click=${() => { this.dispatchEvent(new CustomEvent('get-recommendation')); this._mobileMenuOpen = false; }}>
+      ${this._mobileMenuOpen
+            ? x `
+            <div class="menu-overlay" @click=${() => (this._mobileMenuOpen = false)}></div>
+            <div class="mobile-menu">
+              <div
+                class="mobile-menu-item"
+                @click=${() => {
+                this.dispatchEvent(new CustomEvent('get-recommendation'));
+                this._mobileMenuOpen = false;
+            }}
+              >
                 <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg> Get Recommendation
-            </div>
-            <div class="mobile-menu-item" @click=${() => { this._importDialogOpen = true; this._mobileMenuOpen = false; }}>
+              </div>
+              <div
+                class="mobile-menu-item"
+                @click=${() => {
+                this._importDialogOpen = true;
+                this._mobileMenuOpen = false;
+            }}
+              >
                 <svg viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg> Import Strains
-            </div>
-            <div class="mobile-menu-item" @click=${() => { this.dispatchEvent(new CustomEvent('export-library')); this._mobileMenuOpen = false; }}>
+              </div>
+              <div
+                class="mobile-menu-item"
+                @click=${() => {
+                this.dispatchEvent(new CustomEvent('export-library'));
+                this._mobileMenuOpen = false;
+            }}
+              >
                 <svg viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg> Export Strains
+              </div>
             </div>
-        </div>
-      ` : E}
+          `
+            : E}
 
       <!-- Mobile FAB -->
       <button class="fab-btn" @click=${() => this._startEdit()}>
-        <svg style="fill:currentColor; width: 24px; height: 24px;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+        <svg style="fill:currentColor; width: 24px; height: 24px;" viewBox="0 0 24 24">
+          <path d="${mdiPlus}"></path>
+        </svg>
       </button>
 
       <div class="sd-footer">
-        <button class="md3-button tonal" @click=${() => this.dispatchEvent(new CustomEvent('get-recommendation'))}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+        <button
+          class="md3-button tonal"
+          @click=${() => this.dispatchEvent(new CustomEvent('get-recommendation'))}
+        >
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiBrain}"></path>
+          </svg>
           Get Recommendation
         </button>
-        <button class="md3-button tonal" @click=${() => this._importDialogOpen = true}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
+        <button class="md3-button tonal" @click=${() => (this._importDialogOpen = true)}>
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiCloudUpload}"></path>
+          </svg>
           Import Strains
         </button>
-        <button class="md3-button tonal" @click=${() => this.dispatchEvent(new CustomEvent('export-library'))}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg>
+        <button
+          class="md3-button tonal"
+          @click=${() => this.dispatchEvent(new CustomEvent('export-library'))}
+        >
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiDownload}"></path>
+          </svg>
           Export Strains
         </button>
         <button class="md3-button primary" @click=${() => this._startEdit()}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiPlus}"></path>
+          </svg>
           New Strain
         </button>
       </div>
@@ -12246,7 +12674,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     }
     renderStrainCard(strain) {
         let typeIcon = mdiLeaf;
-        let typeLabel = strain.type || 'Unknown';
+        const typeLabel = strain.type || 'Unknown';
         const lowerType = (strain.type || '').toLowerCase();
         if (lowerType.includes('indica'))
             typeIcon = mdiWeatherNight;
@@ -12258,22 +12686,49 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
       <div class="strain-card" @click=${() => this._startEdit(strain)}>
         <div class="sc-thumb">
           ${strain.image
-            ? x `<img src="${strain.image}" loading="lazy" alt="${strain.strain}" style="${this.getImgStyle(strain.image_crop_meta)}" />`
-            : x `<svg style="width:48px;height:48px;opacity:0.2;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiLeaf}"></path></svg>`}
+            ? x `<img
+                src="${strain.image}"
+                loading="lazy"
+                alt="${strain.strain}"
+                style="${this.getImgStyle(strain.image_crop_meta)}"
+              />`
+            : x `<svg
+                style="width:48px;height:48px;opacity:0.2;fill:currentColor;"
+                viewBox="0 0 24 24"
+              >
+                <path d="${mdiLeaf}"></path>
+              </svg>`}
           <div class="sc-actions">
-            <button class="sc-action-btn" @click=${(e) => { e.stopPropagation(); this._handleDelete(strain.key); }}>
-              <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+            <button
+              class="sc-action-btn"
+              @click=${(e) => {
+            e.stopPropagation();
+            this._handleDelete(strain.key);
+        }}
+            >
+              <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiDelete}"></path>
+              </svg>
             </button>
           </div>
         </div>
         <div class="sc-content">
-          <h3 class="sc-title">${strain.strain} ${strain.phenotype ? `(${strain.phenotype})` : ''}</h3>
+          <h3 class="sc-title">
+            ${strain.strain} ${strain.phenotype ? `(${strain.phenotype})` : ''}
+          </h3>
           <div class="sc-type-row">
-            <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${typeIcon}"></path></svg>
+            <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${typeIcon}"></path>
+            </svg>
             <span>${typeLabel}</span>
           </div>
           <div class="sc-meta">
-            ${strain.flowering_days_min ? x `<span>Flowering: ${strain.flowering_days_min}-${strain.flowering_days_max || '?'} Days</span>` : E}
+            ${strain.flowering_days_min
+            ? x `<span
+                  >Flowering: ${strain.flowering_days_min}-${strain.flowering_days_max || '?'}
+                  Days</span
+                >`
+            : E}
             ${strain.breeder ? x `<span>Breeder: ${strain.breeder}</span>` : E}
           </div>
         </div>
@@ -12282,121 +12737,220 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     }
     renderEditorView() {
         const s = this._editorState;
-        const isEdit = !!s.strain && this.strains.some(ex => ex.strain === s.strain && ex.phenotype === s.phenotype);
-        const uniqueStrains = [...new Set(this.strains.map(st => st.strain).filter(Boolean))].sort();
-        const uniqueBreeders = [...new Set(this.strains.map(st => st.breeder).filter(Boolean))].sort();
+        const isEdit = !!s.strain &&
+            this.strains.some((ex) => ex.strain === s.strain && ex.phenotype === s.phenotype);
+        const uniqueStrains = [...new Set(this.strains.map((st) => st.strain).filter(Boolean))].sort();
+        const uniqueBreeders = [
+            ...new Set(this.strains.map((st) => st.breeder).filter(Boolean)),
+        ].sort();
         const handleFileChange = (e) => {
             const file = e.target.files?.[0];
             if (file) {
                 PlantUtils.compressImage(file)
-                    .then(base64 => this._handleEditorChange('image', base64))
-                    .catch(err => console.error("Error compressing image:", err));
+                    .then((base64) => this._handleEditorChange('image', base64))
+                    .catch((err) => console.error('Error compressing image:', err));
             }
         };
         return x `
       <datalist id="strain-suggestions">
-        ${uniqueStrains.map(name => x `<option value="${name}"></option>`)}
+        ${uniqueStrains.map((name) => x `<option value="${name}"></option>`)}
       </datalist>
       <datalist id="breeder-suggestions">
-        ${uniqueBreeders.map(name => x `<option value="${name}"></option>`)}
+        ${uniqueBreeders.map((name) => x `<option value="${name}"></option>`)}
       </datalist>
 
       <div class="dialog-header">
-         <div style="display:flex; align-items:center; gap:16px;">
-           <button class="md3-button tonal" style="padding: 0 12px; height: 32px;" @click=${() => this._view = 'browse'}>
-             <svg style="width:18px;height:18px;fill:currentColor; margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiArrowLeft}"></path></svg>
-             Back
-           </button>
-           <h2 class="dialog-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
-         </div>
-         <button class="md3-button text" @click=${() => this.dispatchEvent(new CustomEvent('close'))} style="min-width:auto; padding:8px;">
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
-         </button>
+        <div style="display:flex; align-items:center; gap:16px;">
+          <button
+            class="md3-button tonal"
+            style="padding: 0 12px; height: 32px;"
+            @click=${() => (this._view = 'browse')}
+          >
+            <svg
+              style="width:18px;height:18px;fill:currentColor; margin-right:4px;"
+              viewBox="0 0 24 24"
+            >
+              <path d="${mdiArrowLeft}"></path>
+            </svg>
+            Back
+          </button>
+          <h2 class="dialog-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
+        </div>
+        <button
+          class="md3-button text"
+          @click=${() => this.dispatchEvent(new CustomEvent('close'))}
+          style="min-width:auto; padding:8px;"
+        >
+          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiClose}"></path>
+          </svg>
+        </button>
       </div>
 
       <div class="sd-content">
         <div class="editor-layout">
           <!-- LEFT COL: IDENTITY -->
           <div class="editor-col">
-            <div class="photo-upload-area"
-                @click=${(e) => {
+            <div
+              class="photo-upload-area"
+              @click=${(e) => {
             const target = e.target;
-            if (!target.closest('.crop-btn') && !target.closest('.select-library-btn') && !target.closest('.md3-button')) {
+            if (!target.closest('.crop-btn') &&
+                !target.closest('.select-library-btn') &&
+                !target.closest('.md3-button')) {
                 e.currentTarget.querySelector('input')?.click();
             }
         }}
-                @dragover=${(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
-                @drop=${(e) => {
+              @dragover=${(e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+        }}
+              @drop=${(e) => {
             e.preventDefault();
             const file = e.dataTransfer?.files[0];
             if (file) {
                 PlantUtils.compressImage(file)
-                    .then(base64 => this._handleEditorChange('image', base64))
-                    .catch(err => console.error("Error compressing image:", err));
+                    .then((base64) => this._handleEditorChange('image', base64))
+                    .catch((err) => console.error('Error compressing image:', err));
             }
-        }}>
-
-              <button class="select-library-btn" @click=${(e) => {
+        }}
+            >
+              <button
+                class="select-library-btn"
+                @click=${(e) => {
             e.stopPropagation();
             this._toggleImageSelector(true);
-        }}>
-                  <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
-                  Select from Library
+        }}
+              >
+                <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiViewDashboard}"></path>
+                </svg>
+                Select from Library
               </button>
 
-              ${s.image ? x `
-                ${s.image_crop_meta
-            ? x `<div style="width:100%; height:100%; border-radius:10px; ${this.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"></div>`
-            : x `<img src="${s.image}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;" />`}
+              ${s.image
+            ? x `
+                    ${s.image_crop_meta
+                ? x `<div
+                          style="width:100%; height:100%; border-radius:10px; ${this.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"
+                        ></div>`
+                : x `<img
+                          src="${s.image}"
+                          style="width:100%; height:100%; object-fit:cover; border-radius:10px;"
+                        />`}
 
-                <div style="position:absolute; bottom:8px; right:8px; display:flex; gap:8px;">
-                    <button class="crop-btn"
-                            style="background:rgba(0,0,0,0.6); border:none; padding:6px; border-radius:50%; cursor:pointer; color:white;"
-                            @click=${(e) => { e.stopPropagation(); this._toggleCropMode(true); }}
-                            title="Crop Image">
-                      <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
-                    </button>
-                    <div style="background:rgba(0,0,0,0.6); padding:6px; border-radius:50%; pointer-events:none;">
-                      <svg style="width:18px;height:18px;fill:white;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                    <div style="position:absolute; bottom:8px; right:8px; display:flex; gap:8px;">
+                      <button
+                        class="crop-btn"
+                        style="background:rgba(0,0,0,0.6); border:none; padding:6px; border-radius:50%; cursor:pointer; color:white;"
+                        @click=${(e) => {
+                e.stopPropagation();
+                this._toggleCropMode(true);
+            }}
+                        title="Crop Image"
+                      >
+                        <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                          <path d="${mdiContentCopy}"></path>
+                        </svg>
+                      </button>
+                      <div
+                        style="background:rgba(0,0,0,0.6); padding:6px; border-radius:50%; pointer-events:none;"
+                      >
+                        <svg style="width:18px;height:18px;fill:white;" viewBox="0 0 24 24">
+                          <path d="${mdiPencil}"></path>
+                        </svg>
+                      </div>
                     </div>
-                </div>
-              ` : x `
-                <div style="display: flex; gap: 16px; align-items: center;">
-                  <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                      <button class="md3-button tonal" @click=${(e) => e.currentTarget.nextElementSibling.click()}>
-                        <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
-                        Camera
-                      </button>
-                      <input type="file" accept="image/*" capture="environment" style="display:none" @change=${handleFileChange} />
-                  </div>
-                  
-                  <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                      <button class="md3-button tonal" @click=${(e) => e.currentTarget.nextElementSibling.click()}>
-                        <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
-                        Gallery
-                      </button>
-                      <input type="file" accept="image/*" style="display:none" @change=${handleFileChange} />
-                  </div>
-                </div>
-                <span style="font-size:0.8rem; margin-top:12px; opacity: 0.7;">(Or Drag & Drop)</span>
-              `}
+                  `
+            : x `
+                    <div style="display: flex; gap: 16px; align-items: center;">
+                      <div
+                        style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
+                      >
+                        <button
+                          class="md3-button tonal"
+                          @click=${(e) => e.currentTarget
+                .nextElementSibling.click()}
+                        >
+                          <svg
+                            style="width:24px;height:24px;fill:currentColor;"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="${mdiCamera}"></path>
+                          </svg>
+                          Camera
+                        </button>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          style="display:none"
+                          @change=${handleFileChange}
+                        />
+                      </div>
+
+                      <div
+                        style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
+                      >
+                        <button
+                          class="md3-button tonal"
+                          @click=${(e) => e.currentTarget
+                .nextElementSibling.click()}
+                        >
+                          <svg
+                            style="width:24px;height:24px;fill:currentColor;"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="${mdiImage}"></path>
+                          </svg>
+                          Gallery
+                        </button>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style="display:none"
+                          @change=${handleFileChange}
+                        />
+                      </div>
+                    </div>
+                    <span style="font-size:0.8rem; margin-top:12px; opacity: 0.7;"
+                      >(Or Drag & Drop)</span
+                    >
+                  `}
             </div>
 
             <div class="sd-form-group">
               <label class="sd-label">Strain Name *</label>
-              <input type="text" class="sd-input" list="strain-suggestions" .value=${s.strain || ''} @input=${(e) => this._handleEditorChange('strain', e.target.value)} />
+              <input
+                type="text"
+                class="sd-input"
+                list="strain-suggestions"
+                .value=${s.strain || ''}
+                @input=${(e) => this._handleEditorChange('strain', e.target.value)}
+              />
             </div>
 
             <div class="sd-form-group">
               <label class="sd-label">Phenotype</label>
-              <input type="text" class="sd-input" placeholder="e.g. #1 (Optional)" .value=${s.phenotype || ''} @input=${(e) => this._handleEditorChange('phenotype', e.target.value)} />
+              <input
+                type="text"
+                class="sd-input"
+                placeholder="e.g. #1 (Optional)"
+                .value=${s.phenotype || ''}
+                @input=${(e) => this._handleEditorChange('phenotype', e.target.value)}
+              />
             </div>
 
             <div class="sd-form-group">
               <label class="sd-label">Breeder/Seedbank</label>
-              <input type="text" class="sd-input" list="breeder-suggestions" .value=${s.breeder || ''} @input=${(e) => this._handleEditorChange('breeder', e.target.value)} />
+              <input
+                type="text"
+                class="sd-input"
+                list="breeder-suggestions"
+                .value=${s.breeder || ''}
+                @input=${(e) => this._handleEditorChange('breeder', e.target.value)}
+              />
             </div>
-            
           </div>
 
           <!-- RIGHT COL: GENETICS -->
@@ -12404,7 +12958,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             <div class="sd-form-group">
               <label class="sd-label">Type *</label>
               <div class="type-selector-grid">
-                ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map(t => {
+                ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map((t) => {
             let icon = mdiLeaf;
             if (t === 'Indica')
                 icon = mdiWeatherNight;
@@ -12414,107 +12968,164 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 icon = mdiTuneVariant;
             const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
             return x `
-                    <div class="type-option ${isActive ? 'active' : ''}"
-                        @click=${() => this._handleEditorChange('type', t)}>
+                    <div
+                      class="type-option ${isActive ? 'active' : ''}"
+                      @click=${() => this._handleEditorChange('type', t)}
+                    >
                       <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-                      <span class="type-label" style="font-size:0.85rem; font-weight:500;">${t}</span>
+                      <span class="type-label" style="font-size:0.85rem; font-weight:500;"
+                        >${t}</span
+                      >
                     </div>
                   `;
         })}
               </div>
             </div>
 
-            ${(s.type || '').toLowerCase() === 'hybrid' ? x `
-              <div style="margin-bottom: 20px;">
-                <label class="md3-label" style="display:block; margin-bottom:8px; color:var(--secondary-text-color);">Hybrid Composition (%)</label>
-                <div class="hg-container" style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;">
-                  <div class="hg-labels">
-                    <div class="hg-input-label" style="display:flex; align-items:center; gap:4px;">
-                      <span>Indica:</span>
-                      <input class="hg-num-input" type="number" min="0" max="100"
-                        .value=${s.indica_percentage || 0}
-                        @input=${(e) => {
-            let val = Math.floor(parseFloat(e.target.value)) || 0;
-            if (val < 0)
-                val = 0;
-            if (val > 100)
-                val = 100;
-            this._handleEditorChange('indica_percentage', val);
-            this._handleEditorChange('sativa_percentage', 100 - val);
-        }} />
-                      <span>%</span>
-                    </div>
-                    <div class="hg-input-label" style="display:flex; align-items:center; gap:4px;">
-                      <span>Sativa:</span>
-                      <input class="hg-num-input" type="number" min="0" max="100"
-                        .value=${s.sativa_percentage || 0}
-                        @input=${(e) => {
-            let val = Math.floor(parseFloat(e.target.value)) || 0;
-            if (val < 0)
-                val = 0;
-            if (val > 100)
-                val = 100;
-            this._handleEditorChange('sativa_percentage', val);
-            this._handleEditorChange('indica_percentage', 100 - val);
-        }} />
-                      <span>%</span>
-                    </div>
-                  </div>
+            ${(s.type || '').toLowerCase() === 'hybrid'
+            ? x `
+                  <div style="margin-bottom: 20px;">
+                    <label
+                      class="md3-label"
+                      style="display:block; margin-bottom:8px; color:var(--secondary-text-color);"
+                      >Hybrid Composition (%)</label
+                    >
+                    <div
+                      class="hg-container"
+                      style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;"
+                    >
+                      <div class="hg-labels">
+                        <div
+                          class="hg-input-label"
+                          style="display:flex; align-items:center; gap:4px;"
+                        >
+                          <span>Indica:</span>
+                          <input
+                            class="hg-num-input"
+                            type="number"
+                            min="0"
+                            max="100"
+                            .value=${s.indica_percentage || 0}
+                            @input=${(e) => {
+                let val = Math.floor(parseFloat(e.target.value)) || 0;
+                if (val < 0)
+                    val = 0;
+                if (val > 100)
+                    val = 100;
+                this._handleEditorChange('indica_percentage', val);
+                this._handleEditorChange('sativa_percentage', 100 - val);
+            }}
+                          />
+                          <span>%</span>
+                        </div>
+                        <div
+                          class="hg-input-label"
+                          style="display:flex; align-items:center; gap:4px;"
+                        >
+                          <span>Sativa:</span>
+                          <input
+                            class="hg-num-input"
+                            type="number"
+                            min="0"
+                            max="100"
+                            .value=${s.sativa_percentage || 0}
+                            @input=${(e) => {
+                let val = Math.floor(parseFloat(e.target.value)) || 0;
+                if (val < 0)
+                    val = 0;
+                if (val > 100)
+                    val = 100;
+                this._handleEditorChange('sativa_percentage', val);
+                this._handleEditorChange('indica_percentage', 100 - val);
+            }}
+                          />
+                          <span>%</span>
+                        </div>
+                      </div>
 
-                  <div class="hg-bar-track"
+                      <div
+                        class="hg-bar-track"
                         @click=${(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            let percent = Math.round((x / rect.width) * 100);
-            if (percent < 0)
-                percent = 0;
-            if (percent > 100)
-                percent = 100;
-            this._handleEditorChange('indica_percentage', percent);
-            this._handleEditorChange('sativa_percentage', 100 - percent);
-        }}>
-                    <div class="hg-bar-indica" style="width: ${s.indica_percentage || 0}%"></div>
-                    <div class="hg-bar-sativa"></div>
-                    <div class="hg-tick" style="left: 25%"></div>
-                    <div class="hg-tick" style="left: 50%"></div>
-                    <div class="hg-tick" style="left: 75%"></div>
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                let percent = Math.round((x / rect.width) * 100);
+                if (percent < 0)
+                    percent = 0;
+                if (percent > 100)
+                    percent = 100;
+                this._handleEditorChange('indica_percentage', percent);
+                this._handleEditorChange('sativa_percentage', 100 - percent);
+            }}
+                      >
+                        <div
+                          class="hg-bar-indica"
+                          style="width: ${s.indica_percentage || 0}%"
+                        ></div>
+                        <div class="hg-bar-sativa"></div>
+                        <div class="hg-tick" style="left: 25%"></div>
+                        <div class="hg-tick" style="left: 50%"></div>
+                        <div class="hg-tick" style="left: 75%"></div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ` : E}
+                `
+            : E}
 
             <div class="sd-form-group">
               <label class="sd-label">Flowering Time (Days)</label>
               <div style="display:flex; gap:16px;">
-                <input type="number" class="sd-input" placeholder="Min" .value=${s.flowering_days_min || ''} @input=${(e) => this._handleEditorChange('flowering_days_min', e.target.value)} />
-                <input type="number" class="sd-input" placeholder="Max" .value=${s.flowering_days_max || ''} @input=${(e) => this._handleEditorChange('flowering_days_max', e.target.value)} />
+                <input
+                  type="number"
+                  class="sd-input"
+                  placeholder="Min"
+                  .value=${s.flowering_days_min || ''}
+                  @input=${(e) => this._handleEditorChange('flowering_days_min', e.target.value)}
+                />
+                <input
+                  type="number"
+                  class="sd-input"
+                  placeholder="Max"
+                  .value=${s.flowering_days_max || ''}
+                  @input=${(e) => this._handleEditorChange('flowering_days_max', e.target.value)}
+                />
               </div>
             </div>
 
             <div class="sd-form-group">
               <label class="sd-label">Lineage</label>
-              <input type="text" class="sd-input" .value=${s.lineage || ''} @input=${(e) => this._handleEditorChange('lineage', e.target.value)} />
+              <input
+                type="text"
+                class="sd-input"
+                .value=${s.lineage || ''}
+                @input=${(e) => this._handleEditorChange('lineage', e.target.value)}
+              />
             </div>
 
             <div class="sd-form-group">
               <label class="sd-label">Sex</label>
               <div style="display:flex; gap:20px; padding: 8px 0;">
-                ${['Feminized', 'Regular'].map(sex => x `
-                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:white;">
-                    <input type="radio" name="sex_radio"
-                          .checked=${s.sex === sex}
-                          @change=${() => this._handleEditorChange('sex', sex)}
-                          style="accent-color: var(--accent-green); transform: scale(1.2);" />
-                    ${sex}
-                  </label>
-                `)}
+                ${['Feminized', 'Regular'].map((sex) => x `
+                    <label
+                      style="display:flex; align-items:center; gap:8px; cursor:pointer; color:white;"
+                    >
+                      <input
+                        type="radio"
+                        name="sex_radio"
+                        .checked=${s.sex === sex}
+                        @change=${() => this._handleEditorChange('sex', sex)}
+                        style="accent-color: var(--accent-green); transform: scale(1.2);"
+                      />
+                      ${sex}
+                    </label>
+                  `)}
               </div>
             </div>
 
             <div class="sd-form-group">
               <label class="sd-label">Description</label>
-              <textarea class="sd-textarea" 
-                .value=${s.description || ''} 
+              <textarea
+                class="sd-textarea"
+                .value=${s.description || ''}
                 @input=${(e) => this._handleEditorChange('description', e.target.value)}
               ></textarea>
             </div>
@@ -12523,17 +13134,27 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
       </div>
 
       <div class="sd-footer" style="justify-content: space-between;">
-        ${s.key ? x `
-          <button class="md3-button text" style="color: var(--error-color, #f44336);" @click=${() => this._handleDelete(s.key)}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
-            Delete
-          </button>
-        ` : x `<div></div>`}
-        
+        ${s.key
+            ? x `
+              <button
+                class="md3-button text"
+                style="color: var(--error-color, #f44336);"
+                @click=${() => this._handleDelete(s.key)}
+              >
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiDelete}"></path>
+                </svg>
+                Delete
+              </button>
+            `
+            : x `<div></div>`}
+
         <div style="display:flex; gap:12px;">
-          <button class="md3-button tonal" @click=${() => this._view = 'browse'}>Cancel</button>
+          <button class="md3-button tonal" @click=${() => (this._view = 'browse')}>Cancel</button>
           <button class="md3-button primary" @click=${() => this._handleSave()}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiCheck}"></path>
+            </svg>
             Save Strain
           </button>
         </div>
@@ -12559,8 +13180,8 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             const onMouseMove = (ev) => {
                 const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
                 const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
-                let newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
-                let newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
+                const newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
+                const newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
                 this._handleEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
             };
             const onMouseUp = () => {
@@ -12573,29 +13194,47 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         return x `
       <div class="crop-overlay">
         <h3 style="color:white; margin-bottom:20px;">Adjust Image</h3>
-        <div class="crop-viewport"
-              @wheel=${handleWheel}
-              @mousedown=${handleMouseDown}
-              @dragstart=${(e) => e.preventDefault()}>
-          <div style="width: 100%; height: 100%;
+        <div
+          class="crop-viewport"
+          @wheel=${handleWheel}
+          @mousedown=${handleMouseDown}
+          @dragstart=${(e) => e.preventDefault()}
+        >
+          <div
+            style="width: 100%; height: 100%;
               background-image: url('${s.image}');
               background-size: ${meta.scale * 100}%;
               background-position: ${meta.x}% ${meta.y}%;
               background-repeat: no-repeat;
-              pointer-events: none;">
-          </div>
+              pointer-events: none;"
+          ></div>
         </div>
 
         <div class="crop-controls">
           <div style="display:flex; justify-content:space-between; color:#ccc; font-size:0.8rem;">
             <span>Zoom: ${(meta.scale * 100).toFixed(0)}%</span>
           </div>
-          <input type="range" class="crop-slider" min="1" max="5" step="0.1"
-                  .value=${meta.scale.toString()}
-                  @input=${(e) => this._handleEditorChange('image_crop_meta', { ...meta, scale: parseFloat(e.target.value) })} />
+          <input
+            type="range"
+            class="crop-slider"
+            min="1"
+            max="5"
+            step="0.1"
+            .value=${meta.scale.toString()}
+            @input=${(e) => this._handleEditorChange('image_crop_meta', {
+            ...meta,
+            scale: parseFloat(e.target.value),
+        })}
+          />
 
           <div style="display:flex; gap:12px; margin-top:12px;">
-            <button class="md3-button tonal" style="flex:1" @click=${() => this._toggleCropMode(false)}>Done</button>
+            <button
+              class="md3-button tonal"
+              style="flex:1"
+              @click=${() => this._toggleCropMode(false)}
+            >
+              Done
+            </button>
           </div>
           <div style="text-align:center; font-size:0.8rem; color:#888; margin-top:8px;">
             Drag to pan • Scroll to zoom
@@ -12606,7 +13245,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     }
     renderImageSelector() {
         const imageMap = new Map();
-        this.strains.forEach(s => {
+        this.strains.forEach((s) => {
             if (s.image) {
                 if (!imageMap.has(s.image)) {
                     imageMap.set(s.image, []);
@@ -12616,31 +13255,56 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         });
         return x `
       <div class="crop-overlay">
-        <div class="glass-dialog-container" style="width: 80%; max-width: 800px; height: 80%; max-height: 600px;">
+        <div
+          class="glass-dialog-container"
+          style="width: 80%; max-width: 800px; height: 80%; max-height: 600px;"
+        >
           <div class="dialog-header">
             <h2 class="dialog-title">Select from Library</h2>
-            <button class="md3-button text" @click=${() => this._toggleImageSelector(false)} style="min-width:auto; padding:8px;">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+            <button
+              class="md3-button text"
+              @click=${() => this._toggleImageSelector(false)}
+              style="min-width:auto; padding:8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
             </button>
           </div>
           <div class="sd-content" style="overflow-y: auto;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;">
+            <div
+              style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;"
+            >
               ${[...imageMap.entries()].map(([img, infoList]) => x `
-                <div style="aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative;"
-                      @click=${() => this._handleSelectLibraryImage(img)}>
-                  <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" />
-                  <div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 8px; font-size: 0.75rem; color: white;">
-                    ${infoList.map((info, index) => x `
-                      <div style="${index < infoList.length - 1 ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);' : ''}">
-                        <div style="font-weight: 700;">Strain: ${info.strain}</div>
-                        <div style="opacity: 0.9;">Pheno: ${info.phenotype || 'N/A'}</div>
-                      </div>
-                    `)}
+                  <div
+                    style="aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative;"
+                    @click=${() => this._handleSelectLibraryImage(img)}
+                  >
+                    <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" />
+                    <div
+                      style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 8px; font-size: 0.75rem; color: white;"
+                    >
+                      ${infoList.map((info, index) => x `
+                          <div
+                            style="${index < infoList.length - 1
+            ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);'
+            : ''}"
+                          >
+                            <div style="font-weight: 700;">Strain: ${info.strain}</div>
+                            <div style="opacity: 0.9;">Pheno: ${info.phenotype || 'N/A'}</div>
+                          </div>
+                        `)}
+                    </div>
                   </div>
-                </div>
-              `)}
+                `)}
             </div>
-            ${imageMap.size === 0 ? x `<p style="text-align: center; color: var(--secondary-text-color); margin-top: 40px;">No images found in library.</p>` : E}
+            ${imageMap.size === 0
+            ? x `<p
+                  style="text-align: center; color: var(--secondary-text-color); margin-top: 40px;"
+                >
+                  No images found in library.
+                </p>`
+            : E}
           </div>
         </div>
       </div>
@@ -12652,50 +13316,73 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         <div class="glass-dialog-container" style="width: 400px; max-width: 90vw; height: auto;">
           <div class="dialog-header">
             <h2 class="dialog-title">Import Strains</h2>
-            <button class="md3-button text" @click=${() => this._importDialogOpen = false} style="min-width:auto; padding:8px;">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+            <button
+              class="md3-button text"
+              @click=${() => (this._importDialogOpen = false)}
+              style="min-width:auto; padding:8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
             </button>
           </div>
-          
+
           <div style="padding: 24px;">
-            <div style="font-size: 0.9rem; color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 20px;">
-                Select a ZIP file containing your strain library export. You can either merge the new strains with your existing library or replace it entirely.
+            <div
+              style="font-size: 0.9rem; color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 20px;"
+            >
+              Select a ZIP file containing your strain library export. You can either merge the new
+              strains with your existing library or replace it entirely.
             </div>
 
-            <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
-                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
-                <input type="radio" name="import_mode"
-                        .checked=${!this._importReplace}
-                        @change=${() => this._importReplace = false}
-                        style="accent-color: var(--accent-green); transform: scale(1.2);" />
+            <div
+              style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"
+            >
+              <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                <input
+                  type="radio"
+                  name="import_mode"
+                  .checked=${!this._importReplace}
+                  @change=${() => (this._importReplace = false)}
+                  style="accent-color: var(--accent-green); transform: scale(1.2);"
+                />
                 <div>
-                    <div style="font-weight: 600;">Merge</div>
-                    <div style="font-size: 0.8rem; color: var(--secondary-text-color);">Add new strains, keep existing ones.</div>
+                  <div style="font-weight: 600;">Merge</div>
+                  <div style="font-size: 0.8rem; color: var(--secondary-text-color);">
+                    Add new strains, keep existing ones.
+                  </div>
                 </div>
-                </label>
+              </label>
 
-                <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 12px 0;"></div>
+              <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 12px 0;"></div>
 
-                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
-                <input type="radio" name="import_mode"
-                        .checked=${this._importReplace}
-                        @change=${() => this._importReplace = true}
-                        style="accent-color: var(--accent-green); transform: scale(1.2);" />
+              <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                <input
+                  type="radio"
+                  name="import_mode"
+                  .checked=${this._importReplace}
+                  @change=${() => (this._importReplace = true)}
+                  style="accent-color: var(--accent-green); transform: scale(1.2);"
+                />
                 <div>
-                    <div style="font-weight: 600;">Replace</div>
-                    <div style="font-size: 0.8rem; color: var(--secondary-text-color);">Overwrite entire library with import.</div>
+                  <div style="font-weight: 600;">Replace</div>
+                  <div style="font-size: 0.8rem; color: var(--secondary-text-color);">
+                    Overwrite entire library with import.
+                  </div>
                 </div>
-                </label>
+              </label>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
-                <button class="md3-button tonal" @click=${() => this._importDialogOpen = false}>
+              <button class="md3-button tonal" @click=${() => (this._importDialogOpen = false)}>
                 Cancel
-                </button>
-                <button class="md3-button primary" @click=${() => this._handleImportFile()}>
-                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
+              </button>
+              <button class="md3-button primary" @click=${() => this._handleImportFile()}>
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiCloudUpload}"></path>
+                </svg>
                 Select File
-                </button>
+              </button>
             </div>
           </div>
         </div>
@@ -12705,15 +13392,25 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     renderDeleteConfirmation() {
         return x `
       <div class="crop-overlay">
-        <div class="glass-dialog-container" style="width: 400px; height: auto; padding: 24px; display: flex; flex-direction: column;">
+        <div
+          class="glass-dialog-container"
+          style="width: 400px; height: auto; padding: 24px; display: flex; flex-direction: column;"
+        >
           <h2 class="dialog-title">Delete Strain?</h2>
-          <p style="color: var(--secondary-text-color); margin: 16px 0; font-size: 1rem; line-height: 1.5;">
+          <p
+            style="color: var(--secondary-text-color); margin: 16px 0; font-size: 1rem; line-height: 1.5;"
+          >
             Are you sure you want to delete this strain? This action cannot be undone.
           </p>
           <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
             <button class="md3-button tonal" @click=${this._cancelDelete}>Cancel</button>
             <button class="md3-button text" style="color: #f44336;" @click=${this._confirmDelete}>
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+              <svg
+                style="width:18px;height:18px;fill:currentColor;margin-right:8px;"
+                viewBox="0 0 24 24"
+              >
+                <path d="${mdiDelete}"></path>
+              </svg>
               Delete
             </button>
           </div>
@@ -12725,74 +13422,74 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
 StrainLibraryDialog.styles = [
     dialogStyles,
     i$6 `
-    :host {
-      --accent-green: #4CAF50;
-      /* Using dialogStyles variables where possible */
-    }
+      :host {
+        --accent-green: #4caf50;
+        /* Using dialogStyles variables where possible */
+      }
 
-    ha-dialog {
-      --mdc-dialog-min-width: 80vw;
-      --mdc-dialog-max-width: 95vw;
-      --dialog-surface-margin: 24px;
-      --dialog-content-padding: 0;
-      --dialog-scrollable-header-padding: 0;
-    }
+      ha-dialog {
+        --mdc-dialog-min-width: 80vw;
+        --mdc-dialog-max-width: 95vw;
+        --dialog-surface-margin: 24px;
+        --dialog-content-padding: 0;
+        --dialog-scrollable-header-padding: 0;
+      }
 
-    /* Additional specific styles */
-    
-    /* Layout Overrides */
-    .strain-dialog-container {
-        @apply .glass-dialog-container; 
+      /* Additional specific styles */
+
+      /* Layout Overrides */
+      .strain-dialog-container {
+        @apply .glass-dialog-container;
         /* Since we can't use @apply in standard css without processor, we must duplicate or rely on .glass-dialog-container class in render */
         /* But we will use the class in render */
-    }
+      }
 
-    .glass-dialog-container {
+      .glass-dialog-container {
         width: 80vw;
         max-width: 95vw;
         height: 85vh;
-    }
-    
-    .sd-content {
-      padding: 24px;
-      overflow-y: auto;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
+      }
 
-    .sd-footer {
+      .sd-content {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .sd-footer {
         padding: 16px 24px;
-        background: rgba(0,0,0,0.2);
-        border-top: 1px solid rgba(255,255,255,0.1);
+        background: rgba(0, 0, 0, 0.2);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
         display: flex;
         justify-content: flex-end;
         gap: 12px;
-    }
+      }
 
-    /* GRID & CARDS */
-    .sd-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
-    }
-    .strain-card {
-        background: rgba(255,255,255,0.05);
+      /* GRID & CARDS */
+      .sd-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+      }
+      .strain-card {
+        background: rgba(255, 255, 255, 0.05);
         border-radius: 12px;
         overflow: hidden;
-        border: 1px solid rgba(255,255,255,0.05);
+        border: 1px solid rgba(255, 255, 255, 0.05);
         transition: all 0.3s ease;
         position: relative;
         display: flex;
         flex-direction: column;
         cursor: pointer;
-    }
-    .strain-card:hover {
+      }
+      .strain-card:hover {
         border-color: var(--accent-green);
         transform: translateY(-4px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-    }
-    .sc-thumb {
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+      }
+      .sc-thumb {
         height: 180px;
         background: #222;
         display: flex;
@@ -12800,23 +13497,23 @@ StrainLibraryDialog.styles = [
         justify-content: center;
         color: #444;
         position: relative;
-    }
-    .sc-thumb img {
+      }
+      .sc-thumb img {
         width: 100%;
         height: 100%;
         object-fit: cover;
-    }
-    .sc-content {
+      }
+      .sc-content {
         padding: 16px;
         flex: 1;
-    }
-    .sc-title {
+      }
+      .sc-title {
         font-size: 1.1rem;
         font-weight: 700;
         margin: 0 0 4px 0;
         color: #fff;
-    }
-    .sc-type-row {
+      }
+      .sc-type-row {
         display: flex;
         align-items: center;
         gap: 6px;
@@ -12824,15 +13521,15 @@ StrainLibraryDialog.styles = [
         font-size: 0.85rem;
         font-weight: 600;
         margin-bottom: 12px;
-    }
-    .sc-meta {
+      }
+      .sc-meta {
         display: flex;
         flex-direction: column;
         gap: 4px;
         font-size: 0.8rem;
         color: var(--secondary-text-color);
-    }
-    .sc-actions {
+      }
+      .sc-actions {
         position: absolute;
         top: 8px;
         right: 8px;
@@ -12840,17 +13537,17 @@ StrainLibraryDialog.styles = [
         gap: 8px;
         opacity: 0;
         transition: opacity 0.2s;
-    }
-    .strain-card:hover .sc-actions {
-        opacity: 1;
-    }
-    @media (hover: none) {
-      .sc-actions {
+      }
+      .strain-card:hover .sc-actions {
         opacity: 1;
       }
-    }
-    .sc-action-btn {
-        background: rgba(0,0,0,0.6);
+      @media (hover: none) {
+        .sc-actions {
+          opacity: 1;
+        }
+      }
+      .sc-action-btn {
+        background: rgba(0, 0, 0, 0.6);
         border: none;
         border-radius: 50%;
         width: 32px;
@@ -12860,20 +13557,20 @@ StrainLibraryDialog.styles = [
         justify-content: center;
         color: #fff;
         cursor: pointer;
-    }
-    .sc-action-btn:hover {
+      }
+      .sc-action-btn:hover {
         background: var(--accent-green);
-    }
+      }
 
-    /* SEARCH BAR */
-    .search-bar-container {
+      /* SEARCH BAR */
+      .search-bar-container {
         margin-bottom: 24px;
-    }
-    .search-input-wrapper {
+      }
+      .search-input-wrapper {
         position: relative;
         margin-bottom: 12px;
-    }
-    .search-input-wrapper svg {
+      }
+      .search-input-wrapper svg {
         position: absolute;
         left: 16px;
         top: 50%;
@@ -12882,11 +13579,11 @@ StrainLibraryDialog.styles = [
         height: 20px;
         fill: var(--secondary-text-color);
         pointer-events: none;
-    }
-    .search-bar-input {
+      }
+      .search-bar-input {
         width: 100%;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
         padding: 14px 14px 14px 48px;
         color: #fff;
@@ -12894,55 +13591,59 @@ StrainLibraryDialog.styles = [
         outline: none;
         box-sizing: border-box;
         font-family: inherit;
-    }
-    .search-bar-input:focus {
+      }
+      .search-bar-input:focus {
         border-color: var(--accent-green);
-        background: rgba(255,255,255,0.08);
-    }
-    
-    /* FORMS */
-    .sd-form-group {
-      margin-bottom: 20px;
-    }
-    .sd-label {
-      display: block;
-      color: var(--secondary-text-color);
-      font-size: 0.85rem;
-      margin-bottom: 8px;
-      font-weight: 500;
-    }
-    .sd-input, .sd-textarea, .sd-select {
-      width: 100%;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px;
-      padding: 12px 16px;
-      color: #fff;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-      box-sizing: border-box;
-    }
-    .sd-input:focus, .sd-textarea:focus, .sd-select:focus {
-      border-color: var(--accent-green);
-    }
-    .sd-textarea {
-      resize: vertical;
-      min-height: 100px;
-    }
+        background: rgba(255, 255, 255, 0.08);
+      }
 
-    /* EDITOR LAYOUT */
-    .editor-layout {
+      /* FORMS */
+      .sd-form-group {
+        margin-bottom: 20px;
+      }
+      .sd-label {
+        display: block;
+        color: var(--secondary-text-color);
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+      .sd-input,
+      .sd-textarea,
+      .sd-select {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: #fff;
+        font-size: 0.95rem;
+        outline: none;
+        transition: border-color 0.2s;
+        box-sizing: border-box;
+      }
+      .sd-input:focus,
+      .sd-textarea:focus,
+      .sd-select:focus {
+        border-color: var(--accent-green);
+      }
+      .sd-textarea {
+        resize: vertical;
+        min-height: 100px;
+      }
+
+      /* EDITOR LAYOUT */
+      .editor-layout {
         display: grid;
         grid-template-columns: 1fr 1.5fr;
         gap: 32px;
-    }
+      }
 
-    /* PHOTO UPLOAD */
-    .photo-upload-area {
-        border: 2px dashed rgba(255,255,255,0.1);
+      /* PHOTO UPLOAD */
+      .photo-upload-area {
+        border: 2px dashed rgba(255, 255, 255, 0.1);
         border-radius: 12px;
-        background: rgba(255,255,255,0.02);
+        background: rgba(255, 255, 255, 0.02);
         height: 240px;
         display: flex;
         flex-direction: column;
@@ -12954,17 +13655,17 @@ StrainLibraryDialog.styles = [
         margin-bottom: 20px;
         position: relative;
         overflow: hidden;
-    }
-    .photo-upload-area:hover {
+      }
+      .photo-upload-area:hover {
         border-color: var(--accent-green);
         background: rgba(76, 175, 80, 0.05);
-    }
-    .select-library-btn {
+      }
+      .select-library-btn {
         position: absolute;
         top: 8px;
         left: 8px;
-        background: rgba(0,0,0,0.6);
-        border: 1px solid rgba(255,255,255,0.2);
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.2);
         color: #fff;
         padding: 6px 12px;
         border-radius: 20px;
@@ -12974,55 +13675,58 @@ StrainLibraryDialog.styles = [
         gap: 6px;
         z-index: 10;
         cursor: pointer;
-    }
-    .select-library-btn:hover {
+      }
+      .select-library-btn:hover {
         background: var(--accent-green);
         border-color: var(--accent-green);
-    }
+      }
 
-    /* Crop Overlay */
-    .crop-overlay {
+      /* Crop Overlay */
+      .crop-overlay {
         position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.9);
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.9);
         z-index: 1000;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         padding: 20px;
-    }
-    .crop-viewport {
+      }
+      .crop-viewport {
         width: 300px;
         height: 300px;
         border: 2px solid var(--accent-green);
         overflow: hidden;
         position: relative;
         cursor: move;
-        box-shadow: 0 0 0 100vmax rgba(0,0,0,0.7);
-    }
-    .crop-controls {
+        box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.7);
+      }
+      .crop-controls {
         margin-top: 20px;
         width: 300px;
         display: flex;
         flex-direction: column;
         gap: 12px;
-    }
-    .crop-slider {
+      }
+      .crop-slider {
         width: 100%;
         accent-color: var(--accent-green);
-    }
+      }
 
-    /* Type Selector */
-    .type-selector-grid {
+      /* Type Selector */
+      .type-selector-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px;
         margin-bottom: 16px;
-    }
-    .type-option {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
+      }
+      .type-option {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 8px;
         padding: 16px;
         cursor: pointer;
@@ -13032,42 +13736,42 @@ StrainLibraryDialog.styles = [
         gap: 8px;
         transition: all 0.2s;
         text-align: center;
-    }
-    .type-option:hover {
+      }
+      .type-option:hover {
         border-color: #666;
-    }
-    .type-option.active {
+      }
+      .type-option.active {
         background: rgba(76, 175, 80, 0.1);
         border-color: var(--accent-green);
         color: #fff;
-    }
-    .type-option svg {
+      }
+      .type-option svg {
         width: 28px;
         height: 28px;
         fill: var(--secondary-text-color);
-    }
-    .type-option.active svg {
+      }
+      .type-option.active svg {
         fill: var(--accent-green);
-    }
-    
-    /* Hybrid Graph */
-    .hg-container {
+      }
+
+      /* Hybrid Graph */
+      .hg-container {
         display: flex;
         flex-direction: column;
         gap: 4px;
         width: 100%;
         margin-top: 8px;
         font-family: 'Roboto', sans-serif;
-    }
-    .hg-labels {
+      }
+      .hg-labels {
         display: flex;
         justify-content: space-between;
         font-size: 0.75rem;
         font-weight: 700;
         color: #fff;
         margin-bottom: 2px;
-    }
-    .hg-bar-track {
+      }
+      .hg-bar-track {
         height: 18px;
         width: 100%;
         background: #333;
@@ -13075,29 +13779,30 @@ StrainLibraryDialog.styles = [
         position: relative;
         overflow: hidden;
         display: flex;
-        border: 1px solid rgba(255,255,255,0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         cursor: pointer;
-    }
-    .hg-bar-indica {
-        background: #8B5CF6; /* Purple */
+      }
+      .hg-bar-indica {
+        background: #8b5cf6; /* Purple */
         height: 100%;
         transition: width 0.2s ease;
-    }
-    .hg-bar-sativa {
-        background: #EAB308; /* Yellow */
+      }
+      .hg-bar-sativa {
+        background: #eab308; /* Yellow */
         height: 100%;
         flex: 1;
         transition: width 0.2s ease;
-    }
-    .hg-tick {
+      }
+      .hg-tick {
         position: absolute;
-        top: 0; bottom: 0;
+        top: 0;
+        bottom: 0;
         width: 1px;
-        background: rgba(255,255,255,0.4);
+        background: rgba(255, 255, 255, 0.4);
         pointer-events: none;
-    }
-    
-    .hg-num-input {
+      }
+
+      .hg-num-input {
         background: transparent;
         border: none;
         border-bottom: 1px solid var(--secondary-text-color);
@@ -13107,29 +13812,29 @@ StrainLibraryDialog.styles = [
         font-size: 0.75rem;
         font-weight: 700;
         padding: 0;
-    }
-    .hg-num-input:focus {
+      }
+      .hg-num-input:focus {
         outline: none;
         border-bottom-color: var(--accent-green);
-    }
-    
-    /* Pagination */
-    .pagination-container {
+      }
+
+      /* Pagination */
+      .pagination-container {
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 16px;
         margin-top: 24px;
         padding-bottom: 8px;
-    }
-    .pagination-text {
+      }
+      .pagination-text {
         color: var(--secondary-text-color);
         font-size: 0.9rem;
         font-weight: 500;
-    }
-    .pagination-btn {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
+      }
+      .pagination-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         color: #fff;
         width: 36px;
         height: 36px;
@@ -13139,89 +13844,118 @@ StrainLibraryDialog.styles = [
         justify-content: center;
         cursor: pointer;
         transition: all 0.2s;
-    }
-    .pagination-btn:hover:not(:disabled) {
+      }
+      .pagination-btn:hover:not(:disabled) {
         border-color: var(--accent-green);
         color: var(--accent-green);
-        background: rgba(255,255,255,0.1);
-    }
-    .pagination-btn:disabled {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .pagination-btn:disabled {
         opacity: 0.5;
         cursor: not-allowed;
         border-color: transparent;
-    }
-
-    /* Mobile Responsive */
-     @media (max-width: 600px) {
-      ha-dialog {
-        --mdc-dialog-min-width: 95vw;
-        --mdc-dialog-max-width: 95vw;
       }
-       .glass-dialog-container {
-         width: 95vw;
-         height: 90vh;
-         max-width: 95vw;
-       }
-       .sd-header { padding: 16px; }
-       .sd-content { padding: 16px; }
-       .sd-grid { grid-template-columns: 1fr; }
-       .sd-footer { display: none; }
-       .fab-btn { display: flex; }
-       .editor-layout { grid-template-columns: 1fr; }
-     }
-     .fab-btn {
+
+      /* Mobile Responsive */
+      @media (max-width: 600px) {
+        ha-dialog {
+          --mdc-dialog-min-width: 95vw;
+          --mdc-dialog-max-width: 95vw;
+        }
+        .glass-dialog-container {
+          width: 95vw;
+          height: 90vh;
+          max-width: 95vw;
+        }
+        .sd-header {
+          padding: 16px;
+        }
+        .sd-content {
+          padding: 16px;
+        }
+        .sd-grid {
+          grid-template-columns: 1fr;
+        }
+        .sd-footer {
+          display: none;
+        }
+        .fab-btn {
+          display: flex;
+        }
+        .editor-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+      .fab-btn {
         position: absolute;
-        bottom: 24px; right: 24px;
-        width: 56px; height: 56px;
+        bottom: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
         border-radius: 16px;
         background: var(--accent-green);
         color: #fff;
         border: none;
-        box-shadow: 0 4px 8px 3px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 8px 3px rgba(0, 0, 0, 0.15);
         display: none; /* Hidden on desktop */
-        align-items: center; justify-content: center;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
         z-index: 20;
-     }
+      }
 
-     .sd-textarea {
-          width: 100%;
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 8px;
-          padding: 12px;
-          color: #fff;
-          font-family: inherit;
-          resize: vertical;
-          box-sizing: border-box;
-          font-size: 1rem; 
-     }
-     .sd-textarea:focus {
+      .sd-textarea {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 12px;
+        color: #fff;
+        font-family: inherit;
+        resize: vertical;
+        box-sizing: border-box;
+        font-size: 1rem;
+      }
+      .sd-textarea:focus {
         border-color: var(--accent-green);
         outline: none;
-        background: rgba(255,255,255,0.08);
-     }
-     
-     /* Mobile menu */
-     .mobile-menu {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      /* Mobile menu */
+      .mobile-menu {
         position: absolute;
-        top: 60px; right: 16px;
+        top: 60px;
+        right: 16px;
         background: #2d2d2d;
         border-radius: 4px;
         padding: 8px 0;
         min-width: 200px;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
         z-index: 30;
       }
       .mobile-menu-item {
         padding: 12px 16px;
-        display: flex; align-items: center; gap: 12px;
-        color: #fff; cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #fff;
+        cursor: pointer;
       }
-      .mobile-menu-item:hover { background: rgba(255,255,255,0.08); }
-      .mobile-menu-item svg { width: 20px; height: 20px; fill: var(--secondary-text-color); }
-      .menu-overlay { position: absolute; inset:0; z-index: 25; }
-    `
+      .mobile-menu-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .mobile-menu-item svg {
+        width: 20px;
+        height: 20px;
+        fill: var(--secondary-text-color);
+      }
+      .menu-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 25;
+      }
+    `,
 ];
 __decorate([
     n$5({ type: Boolean }),
@@ -13288,14 +14022,14 @@ let Md3Switch = class Md3Switch extends i$3 {
         this.dispatchEvent(new CustomEvent('change', {
             detail: { checked: this.checked },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     render() {
         return x `
-      <button 
-        role="switch" 
-        aria-checked=${this.checked} 
+      <button
+        role="switch"
+        aria-checked=${this.checked}
         @click=${this._handleClick}
         ?disabled=${this.disabled}
       >
@@ -13311,7 +14045,7 @@ Md3Switch.styles = i$6 `
       --md-switch-width: 52px;
       --md-switch-height: 32px;
       --md-switch-handle-size: 24px;
-      --md-switch-track-color-on: var(--primary-color, #2196F3);
+      --md-switch-track-color-on: var(--primary-color, #2196f3);
       --md-switch-track-color-off: rgba(255, 255, 255, 0.1);
       --md-switch-handle-color: #fff;
     }
@@ -13343,8 +14077,8 @@ Md3Switch.styles = i$6 `
       height: var(--md-switch-handle-size);
       background: var(--md-switch-handle-color);
       border-radius: 50%;
-      transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
 
     :host([checked]) .handle {
@@ -13399,7 +14133,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             device: this.device,
             irrigation_times: this._irrigation_times,
             drain_times: this._drain_times,
-            raw_config: config
+            raw_config: config,
         });
         // Initialize Strategy
         const strat = this.device.irrigation_strategy;
@@ -13411,7 +14145,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             target_vwc_percent: strat?.target_vwc_percent || 45.0,
             maintenance_dryback_percent: strat?.maintenance_dryback_percent || 3.0,
             shot_duration_seconds: strat?.shot_duration_seconds || 15,
-            shot_interval_minutes: strat?.shot_interval_minutes || 15
+            shot_interval_minutes: strat?.shot_interval_minutes || 15,
         };
     }
     // ... (Keep existing _parseScheduleString, _saveSettings, _addIrrigationTime, etc. - ensure logical flow)
@@ -13420,11 +14154,11 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             return scheduleString;
         if (!scheduleString)
             return [];
-        return scheduleString.split(',').map(t => {
+        return scheduleString.split(',').map((t) => {
             const parts = t.trim().split('|');
             return {
                 time: parts[0],
-                duration: parts[1] ? parseInt(parts[1]) : undefined
+                duration: parts[1] ? parseInt(parts[1]) : undefined,
             };
         });
     }
@@ -13437,7 +14171,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 irrigation_pump_entity: this._irrigation_pump_entity,
                 drain_pump_entity: this._drain_pump_entity,
                 irrigation_duration: this._irrigation_duration,
-                drain_duration: this._drain_duration
+                drain_duration: this._drain_duration,
             });
         }
         catch (e) {
@@ -13451,7 +14185,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             await this._dataService.addIrrigationTime({
                 growspace_id: this.device.device_id,
                 time,
-                duration: duration || this._irrigation_duration
+                duration: duration || this._irrigation_duration,
             });
             // Optimistic update
             const newTime = { time, duration: duration || this._irrigation_duration };
@@ -13468,10 +14202,10 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         try {
             await this._dataService.removeIrrigationTime({
                 growspace_id: this.device.device_id,
-                time
+                time,
             });
             // Optimistic update
-            this._irrigation_times = this._irrigation_times.filter(t => t.time !== time);
+            this._irrigation_times = this._irrigation_times.filter((t) => t.time !== time);
         }
         catch (e) {
             console.error('Failed to remove irrigation time:', e);
@@ -13484,7 +14218,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             await this._dataService.addDrainTime({
                 growspace_id: this.device.device_id,
                 time,
-                duration: duration || this._drain_duration
+                duration: duration || this._drain_duration,
             });
             // Optimistic update
             const newTime = { time, duration: duration || this._drain_duration };
@@ -13501,10 +14235,10 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         try {
             await this._dataService.removeDrainTime({
                 growspace_id: this.device.device_id,
-                time
+                time,
             });
             // Optimistic update
-            this._drain_times = this._drain_times.filter(t => t.time !== time);
+            this._drain_times = this._drain_times.filter((t) => t.time !== time);
         }
         catch (e) {
             console.error('Failed to remove drain time:', e);
@@ -13518,7 +14252,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
         this._adding_irrigation_time = {
             time: timeStr,
-            duration: this._irrigation_duration
+            duration: this._irrigation_duration,
         };
     }
     _startAddingDrainTime(x, width) {
@@ -13529,7 +14263,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
         this._adding_drain_time = {
             time: timeStr,
-            duration: this._drain_duration
+            duration: this._drain_duration,
         };
     }
     _close() {
@@ -13571,7 +14305,11 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               <h2 class="dialog-title">Irrigation Management</h2>
               <div class="dialog-subtitle">${this.growspaceName}</div>
             </div>
-            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiClose}"></path>
               </svg>
@@ -13579,129 +14317,154 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           </div>
 
           <!-- Tabs -->
-          <div class="tabs-row" style="display: flex; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0;">
-            <div class="tab-item ${this._activeTab === 'schedules' ? 'active' : ''}"
-                 @click=${() => this._activeTab = 'schedules'}
-                 style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
+          <div
+            class="tabs-row"
+            style="display: flex; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0;"
+          >
+            <div
+              class="tab-item ${this._activeTab === 'schedules' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'schedules')}
+              style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
             >
               <style>
-                .tab-item.active { border-bottom-color: ${dialogColor} !important; opacity: 1 !important; }
-                .tab-item:hover { opacity: 1 !important; background: rgba(255,255,255,0.05); }
+                .tab-item.active {
+                  border-bottom-color: ${dialogColor} !important;
+                  opacity: 1 !important;
+                }
+                .tab-item:hover {
+                  opacity: 1 !important;
+                  background: rgba(255, 255, 255, 0.05);
+                }
               </style>
               Schedules
             </div>
-            <div class="tab-item ${this._activeTab === 'steering' ? 'active' : ''}"
-                 @click=${() => this._activeTab = 'steering'}
-                 style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
+            <div
+              class="tab-item ${this._activeTab === 'steering' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'steering')}
+              style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
             >
               Crop Steering (VWC)
             </div>
           </div>
 
           <div class="dialog-body">
-            ${this._activeTab === 'schedules' ? this._renderSchedulesTab(dialogColor) : this._renderSteeringTab(dialogColor)}
-          </div>
-          
-          <div class="button-group">
-             <button class="md3-button tonal" @click=${this._close}>Close</button>
-             ${this._activeTab === 'steering' ? x `
-                <button class="md3-button primary" style="background: ${dialogColor};" @click=${this._saveStrategy}>Save Strategy</button>
-             ` : ''}
+            ${this._activeTab === 'schedules'
+            ? this._renderSchedulesTab(dialogColor)
+            : this._renderSteeringTab(dialogColor)}
           </div>
 
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close}>Close</button>
+            ${this._activeTab === 'steering'
+            ? x `
+                  <button
+                    class="md3-button primary"
+                    style="background: ${dialogColor};"
+                    @click=${this._saveStrategy}
+                  >
+                    Save Strategy
+                  </button>
+                `
+            : ''}
+          </div>
         </div>
       </ha-dialog>
     `;
     }
     _renderSchedulesTab(color) {
         return x `
-            ${this._renderScheduleSection('Irrigation Schedule', this._irrigation_times, this._irrigation_duration, 'irrigation', color)}
-
-            ${this._renderScheduleSection('Drain Schedule', this._drain_times, this._drain_duration, 'drain', '#FF9800')}
-      `;
+      ${this._renderScheduleSection('Irrigation Schedule', this._irrigation_times, this._irrigation_duration, 'irrigation', color)}
+      ${this._renderScheduleSection('Drain Schedule', this._drain_times, this._drain_duration, 'drain', '#FF9800')}
+    `;
     }
     _renderSteeringTab(color) {
         return x `
-        <div class="detail-card">
-            <h3 style="margin-top: 0;">Crop Steering Configuration</h3>
-            <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 20px;">
-                Enable logic-based irrigation based on volumetric water content (VWC) targets. Overrides basic schedules when active.
-            </p>
+      <div class="detail-card">
+        <h3 style="margin-top: 0;">Crop Steering Configuration</h3>
+        <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 20px;">
+          Enable logic-based irrigation based on volumetric water content (VWC) targets. Overrides
+          basic schedules when active.
+        </p>
 
-            <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div style="grid-column: span 2; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
-                    <span>Enable VWC Steering</span>
-                    <md3-switch 
-                        .checked=${this._strategy.enabled}
-                        @change=${(e) => this._updateStrategyField('enabled', e.target.checked)}
-                    ></md3-switch>
-                </div>
+        <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div
+            style="grid-column: span 2; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;"
+          >
+            <span>Enable VWC Steering</span>
+            <md3-switch
+              .checked=${this._strategy.enabled}
+              @change=${(e) => this._updateStrategyField('enabled', e.target.checked)}
+            ></md3-switch>
+          </div>
 
-                <div style="grid-column: span 2; border-bottom: 1px solid rgba(255,255,255,0.1); margin: 8px 0;"></div>
-                <h4 style="grid-column: span 2; margin: 4px 0;">Targets</h4>
+          <div
+            style="grid-column: span 2; border-bottom: 1px solid rgba(255,255,255,0.1); margin: 8px 0;"
+          ></div>
+          <h4 style="grid-column: span 2; margin: 4px 0;">Targets</h4>
 
-                <md3-number-input
-                    label="Target VWC (%)"
-                    .value=${this._strategy.target_vwc_percent}
-                    @change=${(e) => this._updateStrategyField('target_vwc_percent', parseFloat(e.detail))}
-                ></md3-number-input>
+          <md3-number-input
+            label="Target VWC (%)"
+            .value=${this._strategy.target_vwc_percent}
+            @change=${(e) => this._updateStrategyField('target_vwc_percent', parseFloat(e.detail))}
+          ></md3-number-input>
 
-                <md3-number-input
-                    label="Dryback (%)"
-                    .value=${this._strategy.maintenance_dryback_percent}
-                    @change=${(e) => this._updateStrategyField('maintenance_dryback_percent', parseFloat(e.detail))}
-                ></md3-number-input>
+          <md3-number-input
+            label="Dryback (%)"
+            .value=${this._strategy.maintenance_dryback_percent}
+            @change=${(e) => this._updateStrategyField('maintenance_dryback_percent', parseFloat(e.detail))}
+          ></md3-number-input>
 
+          <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Timing</h4>
 
-                <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Timing</h4>
-                
-                <md3-text-input
-                    label="Lights On Time"
-                    type="time"
-                    .value=${this._strategy.lights_on_time}
-                    @change=${(e) => this._updateStrategyField('lights_on_time', e.target.value || e.detail)}
-                ></md3-text-input>
+          <md3-text-input
+            label="Lights On Time"
+            type="time"
+            .value=${this._strategy.lights_on_time}
+            @change=${(e) => this._updateStrategyField('lights_on_time', e.target.value || e.detail)}
+          ></md3-text-input>
 
-                <md3-number-input
-                    label="P0 Duration (min)"
-                    .value=${this._strategy.p0_duration_minutes}
-                    @change=${(e) => this._updateStrategyField('p0_duration_minutes', parseInt(e.detail))}
-                ></md3-number-input>
+          <md3-number-input
+            label="P0 Duration (min)"
+            .value=${this._strategy.p0_duration_minutes}
+            @change=${(e) => this._updateStrategyField('p0_duration_minutes', parseInt(e.detail))}
+          ></md3-number-input>
 
-                <md3-number-input
-                    label="P2 Stop Buffer (min)"
-                    .value=${this._strategy.p2_stop_before_lights_off_minutes}
-                    @change=${(e) => this._updateStrategyField('p2_stop_before_lights_off_minutes', parseInt(e.detail))}
-                ></md3-number-input>
+          <md3-number-input
+            label="P2 Stop Buffer (min)"
+            .value=${this._strategy.p2_stop_before_lights_off_minutes}
+            @change=${(e) => this._updateStrategyField('p2_stop_before_lights_off_minutes', parseInt(e.detail))}
+          ></md3-number-input>
 
+          <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Dosing</h4>
 
-                <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Dosing</h4>
+          <md3-number-input
+            label="Shot Duration (sec)"
+            .value=${this._strategy.shot_duration_seconds}
+            @change=${(e) => this._updateStrategyField('shot_duration_seconds', parseInt(e.detail))}
+          ></md3-number-input>
 
-                <md3-number-input
-                    label="Shot Duration (sec)"
-                    .value=${this._strategy.shot_duration_seconds}
-                    @change=${(e) => this._updateStrategyField('shot_duration_seconds', parseInt(e.detail))}
-                ></md3-number-input>
-
-                <md3-number-input
-                    label="Shot Interval (min)"
-                    .value=${this._strategy.shot_interval_minutes}
-                    @change=${(e) => this._updateStrategyField('shot_interval_minutes', parseInt(e.detail))}
-                ></md3-number-input>
-
-            </div>
+          <md3-number-input
+            label="Shot Interval (min)"
+            .value=${this._strategy.shot_interval_minutes}
+            @change=${(e) => this._updateStrategyField('shot_interval_minutes', parseInt(e.detail))}
+          ></md3-number-input>
         </div>
-      `;
+      </div>
+    `;
     }
     _renderScheduleSection(title, times, defaultDuration, type, color) {
         const addingTime = type === 'irrigation' ? this._adding_irrigation_time : this._adding_drain_time;
         return x `
       <div class="detail-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"
+        >
           <h3 style="margin: 0;">${title}</h3>
           <button
             @click=${(e) => {
-            const container = e.target.closest('.detail-card')?.querySelector(`.${type}-time-bar`);
+            const container = e.target
+                .closest('.detail-card')
+                ?.querySelector(`.${type}-time-bar`);
             if (container) {
                 const rect = container.getBoundingClientRect();
                 type === 'irrigation'
@@ -13712,7 +14475,9 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             class="md3-button primary"
             style="background: ${color};"
           >
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiPlus}"></path>
+            </svg>
             ADD TIME
           </button>
         </div>
@@ -13728,14 +14493,16 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }}
           style="border: 2px solid ${color}40;"
         >
-          ${Array.from({ length: 25 }, (_, i) => i).map(hour => x `
-            <div class="time-tick ${hour % 6 === 0 ? 'major' : ''}" style="left: ${(hour / 24) * 100}%;">
-              ${hour % 3 === 0 ? x `
-                <span class="time-label">${hour.toString().padStart(2, '0')}:00</span>
-              ` : ''}
-            </div>
-          `)}
-
+          ${Array.from({ length: 25 }, (_, i) => i).map((hour) => x `
+              <div
+                class="time-tick ${hour % 6 === 0 ? 'major' : ''}"
+                style="left: ${(hour / 24) * 100}%;"
+              >
+                ${hour % 3 === 0
+            ? x ` <span class="time-label">${hour.toString().padStart(2, '0')}:00</span> `
+            : ''}
+              </div>
+            `)}
           ${times.map((t) => {
             const [hours, minutes] = t.time.split(':').map(Number);
             const position = ((hours + minutes / 60) / 24) * 100;
@@ -13769,59 +14536,80 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           <span>24:00</span>
         </div>
 
-        ${addingTime ? x `
-          <div class="overlay-backdrop" 
-               @click=${() => type === 'irrigation' ? this._adding_irrigation_time = undefined : this._adding_drain_time = undefined}>
-            <div class="detail-card" style="max-width: 400px; margin: 0; background: #2d2d2d; width: 90%;" @click=${(e) => e.stopPropagation()}>
-              <h3>Add ${title} Time</h3>
-
-              <md3-text-input
-                label="Time"
-                type="time"
-                .value=${addingTime.time}
-                @change=${(e) => {
-            const val = e.target.value || e.detail; // md3-text-input uses detail
-            if (type === 'irrigation' && this._adding_irrigation_time)
-                this._adding_irrigation_time = { ...this._adding_irrigation_time, time: val };
-            if (type === 'drain' && this._adding_drain_time)
-                this._adding_drain_time = { ...this._adding_drain_time, time: val };
-        }}
-              ></md3-text-input>
-
-              <md3-number-input
-                label="Duration (seconds)"
-                .value=${addingTime.duration}
-                .min=${1}
-                @change=${(e) => {
-            const val = parseInt(e.detail);
-            if (!isNaN(val)) {
-                if (type === 'irrigation' && this._adding_irrigation_time)
-                    this._adding_irrigation_time = { ...this._adding_irrigation_time, duration: val };
-                if (type === 'drain' && this._adding_drain_time)
-                    this._adding_drain_time = { ...this._adding_drain_time, duration: val };
-            }
-        }}
-              ></md3-number-input>
-
-              <div class="button-group">
-                <button class="md3-button tonal" @click=${() => type === 'irrigation' ? this._adding_irrigation_time = undefined : this._adding_drain_time = undefined}>
-                  Cancel
-                </button>
-                <button
-                  class="md3-button primary"
-                  @click=${() => {
-            type === 'irrigation'
-                ? this._addIrrigationTime(addingTime.time, addingTime.duration)
-                : this._addDrainTime(addingTime.time, addingTime.duration);
-        }}
-                  style="background: ${color};"
+        ${addingTime
+            ? x `
+              <div
+                class="overlay-backdrop"
+                @click=${() => type === 'irrigation'
+                ? (this._adding_irrigation_time = undefined)
+                : (this._adding_drain_time = undefined)}
+              >
+                <div
+                  class="detail-card"
+                  style="max-width: 400px; margin: 0; background: #2d2d2d; width: 90%;"
+                  @click=${(e) => e.stopPropagation()}
                 >
-                  Add Schedule
-                </button>
+                  <h3>Add ${title} Time</h3>
+
+                  <md3-text-input
+                    label="Time"
+                    type="time"
+                    .value=${addingTime.time}
+                    @change=${(e) => {
+                const val = e.target.value || e.detail; // md3-text-input uses detail
+                if (type === 'irrigation' && this._adding_irrigation_time)
+                    this._adding_irrigation_time = {
+                        ...this._adding_irrigation_time,
+                        time: val,
+                    };
+                if (type === 'drain' && this._adding_drain_time)
+                    this._adding_drain_time = { ...this._adding_drain_time, time: val };
+            }}
+                  ></md3-text-input>
+
+                  <md3-number-input
+                    label="Duration (seconds)"
+                    .value=${addingTime.duration}
+                    .min=${1}
+                    @change=${(e) => {
+                const val = parseInt(e.detail);
+                if (!isNaN(val)) {
+                    if (type === 'irrigation' && this._adding_irrigation_time)
+                        this._adding_irrigation_time = {
+                            ...this._adding_irrigation_time,
+                            duration: val,
+                        };
+                    if (type === 'drain' && this._adding_drain_time)
+                        this._adding_drain_time = { ...this._adding_drain_time, duration: val };
+                }
+            }}
+                  ></md3-number-input>
+
+                  <div class="button-group">
+                    <button
+                      class="md3-button tonal"
+                      @click=${() => type === 'irrigation'
+                ? (this._adding_irrigation_time = undefined)
+                : (this._adding_drain_time = undefined)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      class="md3-button primary"
+                      @click=${() => {
+                type === 'irrigation'
+                    ? this._addIrrigationTime(addingTime.time, addingTime.duration)
+                    : this._addDrainTime(addingTime.time, addingTime.duration);
+            }}
+                      style="background: ${color};"
+                    >
+                      Add Schedule
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        ` : ''}
+            `
+            : ''}
       </div>
     `;
     }
@@ -13829,86 +14617,92 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
 IrrigationDialog.styles = [
     dialogStyles,
     i$6 `
-        :host {
-             --mdc-dialog-min-width: 400px;
-             --mdc-dialog-max-width: 1000px;
-        }
-        
-        /* Overrides/Specific Layouts */
-        .dialog-body {
-            padding: 24px;
-            overflow-y: auto;
-            max-height: 70vh;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+      :host {
+        --mdc-dialog-min-width: 400px;
+        --mdc-dialog-max-width: 1000px;
+      }
 
-        /* Time Bar Visualization */
-        .time-bar-container {
-             position: relative; 
-             height: 80px; 
-             background: rgba(0,0,0,0.3); 
-             border-radius: 8px; 
-             cursor: crosshair; 
-        }
-        
-        .time-tick {
-             position: absolute; 
-             top: 0; bottom: 0; 
-             border-left: 1px solid rgba(255,255,255,0.05); 
-             pointer-events: none;
-        }
-        .time-tick.major {
-             border-left-color: rgba(255,255,255,0.2);
-        }
-        
-        .time-label {
-             position: absolute; 
-             bottom: -22px; 
-             left: -12px; 
-             font-size: 0.7rem; 
-             color: var(--secondary-text-color);
-        }
+      /* Overrides/Specific Layouts */
+      .dialog-body {
+        padding: 24px;
+        overflow-y: auto;
+        max-height: 70vh;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
 
-        .chart-marker {
-             position: absolute; 
-             top: 10%; bottom: 10%; 
-             width: 4px; 
-             cursor: pointer; 
-             border-radius: 2px;
-        }
-        
-        .chart-tooltip {
-             position: absolute; 
-             left: 8px; top: -24px; 
-             color: #fff; 
-             padding: 4px 8px; 
-             border-radius: 4px; 
-             font-size: 0.7rem; 
-             white-space: nowrap; 
-             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-             z-index: 10;
-        }
+      /* Time Bar Visualization */
+      .time-bar-container {
+        position: relative;
+        height: 80px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        cursor: crosshair;
+      }
 
-        .legend-row {
-             margin-top: 30px; 
-             display: flex; 
-             justify-content: space-between; 
-             font-size: 0.7rem; 
-             color: var(--secondary-text-color);
-        }
-        
-        .overlay-backdrop {
-             position: fixed; 
-             top: 0; left: 0; right: 0; bottom: 0; 
-             background: rgba(0,0,0,0.7); 
-             display: flex; 
-             align-items: center; 
-             justify-content: center; 
-             z-index: 10000;
-        }
-    `
+      .time-tick {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        border-left: 1px solid rgba(255, 255, 255, 0.05);
+        pointer-events: none;
+      }
+      .time-tick.major {
+        border-left-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .time-label {
+        position: absolute;
+        bottom: -22px;
+        left: -12px;
+        font-size: 0.7rem;
+        color: var(--secondary-text-color);
+      }
+
+      .chart-marker {
+        position: absolute;
+        top: 10%;
+        bottom: 10%;
+        width: 4px;
+        cursor: pointer;
+        border-radius: 2px;
+      }
+
+      .chart-tooltip {
+        position: absolute;
+        left: 8px;
+        top: -24px;
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        z-index: 10;
+      }
+
+      .legend-row {
+        margin-top: 30px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.7rem;
+        color: var(--secondary-text-color);
+      }
+
+      .overlay-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      }
+    `,
 ];
 __decorate([
     c$2({ context: hassContext, subscribe: true }),
@@ -14025,112 +14819,142 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         this.dispatchEvent(new CustomEvent('add-plant-submit', {
             detail: payload,
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     render() {
         if (!this.open)
             return x ``;
-        const uniqueStrains = [...new Set(this.strainLibrary.map(s => s.strain))].sort();
+        const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
         return x `
-    <ha-dialog
-      open
-      @closed=${this._close}
-      hideActions
-      .scrimClickAction=${''}
-      .escapeKeyAction=${''}
-    >
-      <div class="glass-dialog-container">
-
-        <!-- HEADER -->
-        <div class="dialog-header">
-           <div class="dialog-icon">
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="glass-dialog-container">
+          <!-- HEADER -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiSprout}"></path>
               </svg>
-           </div>
-           <div class="dialog-title-group">
+            </div>
+            <div class="dialog-title-group">
               <h2 class="dialog-title">Add New Plant</h2>
               <div class="dialog-subtitle">Enter plant details below</div>
-           </div>
-           <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiClose}"></path>
               </svg>
-           </button>
-        </div>
+            </button>
+          </div>
 
-        <div class="overview-grid">
-           <!-- IDENTITY CARD -->
-           <div class="detail-card">
-             <h3>Identity & Location</h3>
-             <md3-select
-               label="Strain *"
-               .value=${this.strain}
-               .options=${uniqueStrains}
-               @change=${(e) => this.strain = e.detail}
-             ></md3-select>
-             <md3-text-input
-               label="Phenotype"
-               .value=${this.phenotype}
-               @change=${(e) => this.phenotype = e.detail}
-             ></md3-text-input>
-             <div class="row-col-grid">
-               <md3-number-input
-                 label="Row"
-                 .value=${this.row + 1}
-                 @change=${(e) => this.row = parseInt(e.detail) - 1}
-               ></md3-number-input>
-               <md3-number-input
-                 label="Col"
-                 .value=${this.col + 1}
-                 @change=${(e) => this.col = parseInt(e.detail) - 1}
-               ></md3-number-input>
-             </div>
-           </div>
+          <div class="overview-grid">
+            <!-- IDENTITY CARD -->
+            <div class="detail-card">
+              <h3>Identity & Location</h3>
+              <md3-select
+                label="Strain *"
+                .value=${this.strain}
+                .options=${uniqueStrains}
+                @change=${(e) => (this.strain = e.detail)}
+              ></md3-select>
+              <md3-text-input
+                label="Phenotype"
+                .value=${this.phenotype}
+                @change=${(e) => (this.phenotype = e.detail)}
+              ></md3-text-input>
+              <div class="row-col-grid">
+                <md3-number-input
+                  label="Row"
+                  .value=${this.row + 1}
+                  @change=${(e) => (this.row = parseInt(e.detail) - 1)}
+                ></md3-number-input>
+                <md3-number-input
+                  label="Col"
+                  .value=${this.col + 1}
+                  @change=${(e) => (this.col = parseInt(e.detail) - 1)}
+                ></md3-number-input>
+              </div>
+            </div>
 
-           <!-- TIMELINE CARD -->
-           <div class="detail-card">
+            <!-- TIMELINE CARD -->
+            <div class="detail-card">
               <h3>Timeline</h3>
               ${this.renderTimelineContent()}
-           </div>
-        </div>
+            </div>
+          </div>
 
-        <!-- ACTION BUTTONS -->
-        <div class="button-group">
-          <button class="md3-button tonal" @click=${this._close}>
-            Cancel
-          </button>
-          <button class="md3-button primary" @click=${this._confirm}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
-            Add Plant
-          </button>
+          <!-- ACTION BUTTONS -->
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+            <button class="md3-button primary" @click=${this._confirm}>
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiSprout}"></path>
+              </svg>
+              Add Plant
+            </button>
+          </div>
         </div>
-
-      </div>
-    </ha-dialog>
-  `;
+      </ha-dialog>
+    `;
     }
     renderTimelineContent() {
         const name = this.growspaceName.toLowerCase();
         if (name.includes('mother')) {
-            return x `<md3-date-input label="Mother Start" .value=${this.mother_start} @change=${(e) => this.mother_start = e.detail}></md3-date-input>`;
+            return x `<md3-date-input
+        label="Mother Start"
+        .value=${this.mother_start}
+        @change=${(e) => (this.mother_start = e.detail)}
+      ></md3-date-input>`;
         }
         else if (name.includes('clone')) {
-            return x `<md3-date-input label="Clone Start" .value=${this.clone_start} @change=${(e) => this.clone_start = e.detail}></md3-date-input>`;
+            return x `<md3-date-input
+        label="Clone Start"
+        .value=${this.clone_start}
+        @change=${(e) => (this.clone_start = e.detail)}
+      ></md3-date-input>`;
         }
         else if (name.includes('dry')) {
-            return x `<md3-date-input label="Dry Start" .value=${this.dry_start} @change=${(e) => this.dry_start = e.detail}></md3-date-input>`;
+            return x `<md3-date-input
+        label="Dry Start"
+        .value=${this.dry_start}
+        @change=${(e) => (this.dry_start = e.detail)}
+      ></md3-date-input>`;
         }
         else if (name.includes('cure')) {
-            return x `<md3-date-input label="Cure Start" .value=${this.cure_start} @change=${(e) => this.cure_start = e.detail}></md3-date-input>`;
+            return x `<md3-date-input
+        label="Cure Start"
+        .value=${this.cure_start}
+        @change=${(e) => (this.cure_start = e.detail)}
+      ></md3-date-input>`;
         }
         else {
             return x `
-         <md3-date-input label="Seedling Start" .value=${this.seedling_start} @change=${(e) => this.seedling_start = e.detail}></md3-date-input>
-         <md3-date-input label="Veg Start" .value=${this.veg_start} @change=${(e) => this.veg_start = e.detail}></md3-date-input>
-         <md3-date-input label="Flower Start" .value=${this.flower_start} @change=${(e) => this.flower_start = e.detail}></md3-date-input>
-       `;
+        <md3-date-input
+          label="Seedling Start"
+          .value=${this.seedling_start}
+          @change=${(e) => (this.seedling_start = e.detail)}
+        ></md3-date-input>
+        <md3-date-input
+          label="Veg Start"
+          .value=${this.veg_start}
+          @change=${(e) => (this.veg_start = e.detail)}
+        ></md3-date-input>
+        <md3-date-input
+          label="Flower Start"
+          .value=${this.flower_start}
+          @change=${(e) => (this.flower_start = e.detail)}
+        ></md3-date-input>
+      `;
         }
     }
 };
@@ -14154,7 +14978,7 @@ AddPlantDialog.styles = [
           padding: 16px;
         }
       }
-    `
+    `,
 ];
 __decorate([
     c$2({ context: hassContext, subscribe: true }),
@@ -14292,10 +15116,10 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 name: this.add_name,
                 rows: this.add_rows,
                 plants_per_row: this.add_plants_per_row,
-                notification_service: this.add_notification_service
+                notification_service: this.add_notification_service,
             },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     _submitEnvironment() {
@@ -14308,10 +15132,10 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 co2_sensor: this.env_co2_sensor,
                 circulation_fan: this.env_circulation_fan,
                 stress_threshold: this.env_stress_threshold,
-                mold_threshold: this.env_mold_threshold
+                mold_threshold: this.env_mold_threshold,
             },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     _submitEditGrowspace() {
@@ -14322,10 +15146,10 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 growspace_id: this.edit_selectedId,
                 name: this.edit_name,
                 rows: this.edit_rows,
-                plants_per_row: this.edit_plants_per_row
+                plants_per_row: this.edit_plants_per_row,
             },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     _submitDeleteGrowspace() {
@@ -14336,10 +15160,10 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     _confirmDeleteGrowspace() {
         this.dispatchEvent(new CustomEvent('delete-growspace-submit', {
             detail: {
-                growspace_id: this.edit_selectedId
+                growspace_id: this.edit_selectedId,
             },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
         // Reset selection after delete
         this.edit_selectedId = '';
@@ -14355,7 +15179,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         const growspaceId = e.target.value;
         this.edit_selectedId = growspaceId;
         if (growspaceId && this.devices) {
-            const device = this.devices.find(d => d.device_id === growspaceId);
+            const device = this.devices.find((d) => d.device_id === growspaceId);
             if (device) {
                 this.edit_name = device.name;
                 this.edit_rows = device.rows || 4;
@@ -14375,63 +15199,102 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         .escapeKeyAction=${''}
       >
         <div class="glass-dialog-container">
-           <!-- Header -->
-           <div class="dialog-header">
-              <div class="dialog-icon">
-                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-              </div>
-              <div class="dialog-title-group">
-                 <h2 class="dialog-title">Configuration</h2>
-                 <div class="dialog-subtitle">Manage growspaces & settings</div>
-              </div>
-              <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
-                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
-              </button>
-           </div>
-
-           <!-- Tabs -->
-           <div class="config-tabs">
-              <div class="config-tab ${this.currentTab === 'add_growspace' ? 'active' : ''}"
-                   @click=${() => this._switchTab('add_growspace')}>
-                 <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
-                 Add Growspace
-              </div>
-              <div class="config-tab ${this.currentTab === 'edit_growspace' ? 'active' : ''}"
-                    @click=${() => this._switchTab('edit_growspace')}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-                  Edit Growspace
-               </div>
-               <div class="config-tab ${this.currentTab === 'environment' ? 'active' : ''}"
-                    @click=${() => this._switchTab('environment')}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
-                  Environment
-               </div>
+          <!-- Header -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiCog}"></path>
+              </svg>
             </div>
-
-           <!-- Content -->
-            <div class="config-content">
-               ${this.currentTab === 'add_growspace' ? this.renderAddGrowspaceTab() : E}
-               ${this.currentTab === 'edit_growspace' ? this.renderEditGrowspaceTab() : E}
-               ${this.currentTab === 'environment' ? this.renderEnvironmentTab() : E}
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Configuration</h2>
+              <div class="dialog-subtitle">Manage growspaces & settings</div>
             </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
 
-           <!-- Actions -->
-           <div class="button-group">
-              <button class="md3-button tonal" @click=${this._close}>Cancel</button>
-              ${this.currentTab === 'add_growspace' ? x `
-                 <button class="md3-button primary" @click=${this._submitAddGrowspace}>Add Growspace</button>
-              ` : E}
-               ${this.currentTab === 'environment' ? x `
-                  <button class="md3-button primary" @click=${this._submitEnvironment}>Save Sensors</button>
-               ` : E}
-                ${this.currentTab === 'edit_growspace' && !this._showDeleteConfirm ? x `
-                   <button class="md3-button tonal error" @click=${this._submitDeleteGrowspace} ?disabled=${!this.edit_selectedId}>
-                      <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
-                      Delete
-                   </button>
-                   <button class="md3-button primary" @click=${this._submitEditGrowspace} ?disabled=${!this.edit_selectedId}>Save Changes</button>
-                ` : E}
-             </div>
+          <!-- Tabs -->
+          <div class="config-tabs">
+            <div
+              class="config-tab ${this.currentTab === 'add_growspace' ? 'active' : ''}"
+              @click=${() => this._switchTab('add_growspace')}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
+              Add Growspace
+            </div>
+            <div
+              class="config-tab ${this.currentTab === 'edit_growspace' ? 'active' : ''}"
+              @click=${() => this._switchTab('edit_growspace')}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+              Edit Growspace
+            </div>
+            <div
+              class="config-tab ${this.currentTab === 'environment' ? 'active' : ''}"
+              @click=${() => this._switchTab('environment')}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
+              Environment
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div class="config-content">
+            ${this.currentTab === 'add_growspace' ? this.renderAddGrowspaceTab() : E}
+            ${this.currentTab === 'edit_growspace' ? this.renderEditGrowspaceTab() : E}
+            ${this.currentTab === 'environment' ? this.renderEnvironmentTab() : E}
+          </div>
+
+          <!-- Actions -->
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+            ${this.currentTab === 'add_growspace'
+            ? x `
+                  <button class="md3-button primary" @click=${this._submitAddGrowspace}>
+                    Add Growspace
+                  </button>
+                `
+            : E}
+            ${this.currentTab === 'environment'
+            ? x `
+                  <button class="md3-button primary" @click=${this._submitEnvironment}>
+                    Save Sensors
+                  </button>
+                `
+            : E}
+            ${this.currentTab === 'edit_growspace' && !this._showDeleteConfirm
+            ? x `
+                  <button
+                    class="md3-button tonal error"
+                    @click=${this._submitDeleteGrowspace}
+                    ?disabled=${!this.edit_selectedId}
+                  >
+                    <svg
+                      style="width:18px;height:18px;fill:currentColor;margin-right:8px"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="${mdiDelete}"></path>
+                    </svg>
+                    Delete
+                  </button>
+                  <button
+                    class="md3-button primary"
+                    @click=${this._submitEditGrowspace}
+                    ?disabled=${!this.edit_selectedId}
+                  >
+                    Save Changes
+                  </button>
+                `
+            : E}
+          </div>
         </div>
       </ha-dialog>
     `;
@@ -14439,39 +15302,40 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     renderAddGrowspaceTab() {
         return x `
       <div style="display:flex; flex-direction:column; gap:20px;">
-         <div class="detail-card">
-            <h3>New Growspace Details</h3>
-            <md3-text-input
-              label="Growspace Name"
-              .value=${this.add_name}
-              @change=${(e) => this.add_name = e.detail}
-            ></md3-text-input>
-            <div class="row-col-grid">
-               <md3-number-input
-                 label="Rows"
-                 .value=${this.add_rows}
-                 @change=${(e) => this.add_rows = parseInt(e.detail)}
-               ></md3-number-input>
-               <md3-number-input
-                 label="Plants per Row"
-                 .value=${this.add_plants_per_row}
-                 @change=${(e) => this.add_plants_per_row = parseInt(e.detail)}
-               ></md3-number-input>
-            </div>
-            <md3-text-input
-              label="Notification Service (Optional)"
-              .value=${this.add_notification_service}
-              @change=${(e) => this.add_notification_service = e.detail}
-            ></md3-text-input>
-         </div>
+        <div class="detail-card">
+          <h3>New Growspace Details</h3>
+          <md3-text-input
+            label="Growspace Name"
+            .value=${this.add_name}
+            @change=${(e) => (this.add_name = e.detail)}
+          ></md3-text-input>
+          <div class="row-col-grid">
+            <md3-number-input
+              label="Rows"
+              .value=${this.add_rows}
+              @change=${(e) => (this.add_rows = parseInt(e.detail))}
+            ></md3-number-input>
+            <md3-number-input
+              label="Plants per Row"
+              .value=${this.add_plants_per_row}
+              @change=${(e) => (this.add_plants_per_row = parseInt(e.detail))}
+            ></md3-number-input>
+          </div>
+          <md3-text-input
+            label="Notification Service (Optional)"
+            .value=${this.add_notification_service}
+            @change=${(e) => (this.add_notification_service = e.detail)}
+          ></md3-text-input>
+        </div>
       </div>
-   `;
+    `;
     }
     // Add helper to filter entities
     _getEntities(domains, deviceClass) {
         if (!this.hass)
             return [];
-        return Object.values(this.hass.states).filter(stateObj => {
+        return Object.values(this.hass.states)
+            .filter((stateObj) => {
             const domain = stateObj.entity_id.split('.')[0];
             if (!domains.includes(domain))
                 return false;
@@ -14480,23 +15344,22 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 return stateObj.attributes.device_class === deviceClass;
             }
             return true;
-        }).sort((a, b) => (a.attributes.friendly_name || a.entity_id).localeCompare(b.attributes.friendly_name || b.entity_id));
+        })
+            .sort((a, b) => (a.attributes.friendly_name || a.entity_id).localeCompare(b.attributes.friendly_name || b.entity_id));
     }
     // Add helper to render selects
     _renderEntitySelect(label, value, domains, deviceClass, changeHandler) {
         const entities = this._getEntities(domains, deviceClass);
         return x `
-        <div class="md3-input-group">
-           <label class="md3-label">${label}</label>
-           <select
-             class="md3-input"
-             .value=${value}
-             @change=${changeHandler}
-           >
-              <option value="">Select Entity...</option>
-              ${entities.map(e => x `<option value="${e.entity_id}" ?selected=${e.entity_id === value}>${e.attributes.friendly_name || e.entity_id} (${e.entity_id})</option>`)}
-           </select>
-        </div>
+      <div class="md3-input-group">
+        <label class="md3-label">${label}</label>
+        <select class="md3-input" .value=${value} @change=${changeHandler}>
+          <option value="">Select Entity...</option>
+          ${entities.map((e) => x `<option value="${e.entity_id}" ?selected=${e.entity_id === value}>
+                ${e.attributes.friendly_name || e.entity_id} (${e.entity_id})
+              </option>`)}
+        </select>
+      </div>
     `;
     }
     renderEditGrowspaceTab() {
@@ -14505,8 +15368,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         <div class="detail-card" style="text-align: center; padding: 40px 20px;">
           <h3 style="color: var(--error-color, #ff5252);">Delete Growspace?</h3>
           <p style="margin-bottom: 30px; color: rgba(255,255,255,0.7);">
-            Are you sure you want to delete "<strong>${this.edit_name}</strong>"?<br>
-            This will remove all associated plants and history.<br>
+            Are you sure you want to delete "<strong>${this.edit_name}</strong>"?<br />
+            This will remove all associated plants and history.<br />
             This action cannot be undone.
           </p>
           <div class="button-group" style="justify-content: center; gap: 16px;">
@@ -14520,96 +15383,98 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         }
         return x `
       <div style="display:flex; flex-direction:column; gap:20px;">
-         <div class="detail-card">
-            <h3>Select Growspace to Edit</h3>
-             <div class="md3-input-group">
-                <label class="md3-label">Growspace</label>
-                <select
-                  class="md3-input"
-                  .value=${this.edit_selectedId}
-                  @change=${this._handleEditSelection}
-                >
-                   <option value="">Select...</option>
-                   ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
-                </select>
-             </div>
-         </div>
+        <div class="detail-card">
+          <h3>Select Growspace to Edit</h3>
+          <div class="md3-input-group">
+            <label class="md3-label">Growspace</label>
+            <select
+              class="md3-input"
+              .value=${this.edit_selectedId}
+              @change=${this._handleEditSelection}
+            >
+              <option value="">Select...</option>
+              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
+            </select>
+          </div>
+        </div>
 
-         ${this.edit_selectedId ? x `
-         <div class="detail-card">
-            <h3>Edit Details</h3>
-            <md3-text-input
-              label="Growspace Name"
-              .value=${this.edit_name}
-              @change=${(e) => this.edit_name = e.detail}
-            ></md3-text-input>
-            <div class="row-col-grid">
-               <md3-number-input
-                 label="Rows"
-                 .value=${this.edit_rows}
-                 @change=${(e) => this.edit_rows = parseInt(e.detail)}
-               ></md3-number-input>
-               <md3-number-input
-                 label="Plants per Row"
-                 .value=${this.edit_plants_per_row}
-                 @change=${(e) => this.edit_plants_per_row = parseInt(e.detail)}
-               ></md3-number-input>
-            </div>
-         </div>
-         ` : x `
-           <div style="text-align:center; padding: 20px; color: rgba(255,255,255,0.5);">
-             Please select a growspace to edit.
-           </div>
-         `}
+        ${this.edit_selectedId
+            ? x `
+              <div class="detail-card">
+                <h3>Edit Details</h3>
+                <md3-text-input
+                  label="Growspace Name"
+                  .value=${this.edit_name}
+                  @change=${(e) => (this.edit_name = e.detail)}
+                ></md3-text-input>
+                <div class="row-col-grid">
+                  <md3-number-input
+                    label="Rows"
+                    .value=${this.edit_rows}
+                    @change=${(e) => (this.edit_rows = parseInt(e.detail))}
+                  ></md3-number-input>
+                  <md3-number-input
+                    label="Plants per Row"
+                    .value=${this.edit_plants_per_row}
+                    @change=${(e) => (this.edit_plants_per_row = parseInt(e.detail))}
+                  ></md3-number-input>
+                </div>
+              </div>
+            `
+            : x `
+              <div style="text-align:center; padding: 20px; color: rgba(255,255,255,0.5);">
+                Please select a growspace to edit.
+              </div>
+            `}
       </div>
     `;
     }
     renderEnvironmentTab() {
         return x `
       <div style="display:flex; flex-direction:column; gap:20px;">
-         <div class="detail-card">
-            <h3>Select Target</h3>
-            <div class="md3-input-group">
-               <label class="md3-label">Growspace</label>
-               <select
-                 class="md3-input"
-                 .value=${this.env_selectedGrowspaceId}
-                 @change=${(e) => this.env_selectedGrowspaceId = e.target.value}
-               >
-                  <option value="">Select...</option>
-                  ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
-               </select>
-            </div>
-         </div>
+        <div class="detail-card">
+          <h3>Select Target</h3>
+          <div class="md3-input-group">
+            <label class="md3-label">Growspace</label>
+            <select
+              class="md3-input"
+              .value=${this.env_selectedGrowspaceId}
+              @change=${(e) => (this.env_selectedGrowspaceId = e.target.value)}
+            >
+              <option value="">Select...</option>
+              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
+            </select>
+          </div>
+        </div>
 
-         <div class="detail-card">
-            <h3>Sensors</h3>
-            ${this._renderEntitySelect("Temperature Sensor", this.env_temp_sensor, ["sensor", "input_number"], "temperature", (e) => this.env_temp_sensor = e.target.value)}
-            ${this._renderEntitySelect("Humidity Sensor", this.env_humidity_sensor, ["sensor", "input_number"], "humidity", (e) => this.env_humidity_sensor = e.target.value)}
-            ${this._renderEntitySelect("VPD Sensor (Optional)", this.env_vpd_sensor, ["sensor", "input_number"], "pressure", (e) => this.env_vpd_sensor = e.target.value)}
-         </div>
+        <div class="detail-card">
+          <h3>Sensors</h3>
+          ${this._renderEntitySelect('Temperature Sensor', this.env_temp_sensor, ['sensor', 'input_number'], 'temperature', (e) => (this.env_temp_sensor = e.target.value))}
+          ${this._renderEntitySelect('Humidity Sensor', this.env_humidity_sensor, ['sensor', 'input_number'], 'humidity', (e) => (this.env_humidity_sensor = e.target.value))}
+          ${this._renderEntitySelect('VPD Sensor (Optional)', this.env_vpd_sensor, ['sensor', 'input_number'], 'pressure', (e) => (this.env_vpd_sensor = e.target.value))}
+        </div>
 
-         <div class="detail-card">
-            <h3>Optional</h3>
-            ${this._renderEntitySelect("CO2 Sensor", this.env_co2_sensor, ["sensor", "input_number"], "carbon_dioxide", (e) => this.env_co2_sensor = e.target.value)}
-            ${this._renderEntitySelect("Circulation Fan / Switch", this.env_circulation_fan, ["fan", "switch", "input_boolean", "sensor", "input_number"], null, (e) => this.env_circulation_fan = e.target.value)}
-         </div>
+        <div class="detail-card">
+          <h3>Optional</h3>
+          ${this._renderEntitySelect('CO2 Sensor', this.env_co2_sensor, ['sensor', 'input_number'], 'carbon_dioxide', (e) => (this.env_co2_sensor = e.target.value))}
+          ${this._renderEntitySelect('Circulation Fan / Switch', this.env_circulation_fan, ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'], null, (e) => (this.env_circulation_fan = e.target.value))}
+        </div>
 
-         <div class="detail-card">
-            <h3>Thresholds</h3>
-            <md3-number-input
-              label="Stress Threshold (0.0-1.0)"
-              .value=${this.env_stress_threshold}
-              @change=${(e) => this.env_stress_threshold = parseFloat(e.detail)}
-            ></md3-number-input>
-            <md3-number-input
-              label="Mold Threshold (0.0-1.0)"
-              .value=${this.env_mold_threshold}
-              @change=${(e) => this.env_mold_threshold = parseFloat(e.detail)}
-            ></md3-number-input>
-         </div>
+        <div class="detail-card">
+          <h3>Thresholds</h3>
+          <md3-number-input
+            label="Stress Threshold (0.0-1.0)"
+            .value=${this.env_stress_threshold}
+            @change=${(e) => (this.env_stress_threshold = parseFloat(e.detail))}
+          ></md3-number-input>
+          <md3-number-input
+            label="Mold Threshold (0.0-1.0)"
+            .value=${this.env_mold_threshold}
+            @change=${(e) => (this.env_mold_threshold = parseFloat(e.detail))}
+          ></md3-number-input>
+        </div>
       </div>
-   `;
+    `;
     }
 };
 ConfigDialog.styles = [
@@ -14618,7 +15483,7 @@ ConfigDialog.styles = [
       :host {
         display: block;
       }
-      
+
       /* Config Tabs Specific */
       .glass-dialog-container {
         min-width: 30vw;
@@ -14629,17 +15494,17 @@ ConfigDialog.styles = [
       .config-tabs {
         display: flex;
         padding: 0 16px;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         background: transparent;
       }
       .config-tab {
-        flex: 1 1 0px; 
+        flex: 1 1 0px;
         width: 0;
         min-width: 0;
         padding: 16px 8px;
         text-align: center;
         cursor: pointer;
-        color: rgba(255,255,255,0.5);
+        color: rgba(255, 255, 255, 0.5);
         border-bottom: 2px solid transparent;
         transition: all 0.2s;
         display: flex;
@@ -14659,12 +15524,12 @@ ConfigDialog.styles = [
       }
       .config-tab:hover {
         color: #fff;
-        background: rgba(255,255,255,0.05);
+        background: rgba(255, 255, 255, 0.05);
         border-radius: 8px 8px 0 0;
       }
       .config-tab.active {
-        color: var(--primary-color, #4CAF50);
-        border-bottom-color: var(--primary-color, #4CAF50);
+        color: var(--primary-color, #4caf50);
+        border-bottom-color: var(--primary-color, #4caf50);
       }
       .config-content {
         padding: 24px;
@@ -14673,9 +15538,9 @@ ConfigDialog.styles = [
         display: flex;
         flex-direction: column;
         gap: 16px;
-        min-height: 0; 
+        min-height: 0;
       }
-      
+
       @media (max-width: 450px) {
         .glass-dialog-container {
           width: 100vw;
@@ -14687,7 +15552,7 @@ ConfigDialog.styles = [
           padding: 16px;
         }
       }
-    `
+    `,
 ];
 __decorate([
     n$5({ type: Boolean, reflect: true }),
@@ -14802,14 +15667,14 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
         this.dispatchEvent(new CustomEvent('analyze-growspace', {
             detail: { query: this.userQuery },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     _analyzeAll() {
         this.dispatchEvent(new CustomEvent('analyze-all-growspaces', {
             detail: { query: this.userQuery },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     render() {
@@ -14826,68 +15691,81 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
         .escapeKeyAction=${''}
       >
         <div class="glass-dialog-container" style="border-color: ${borderColor}">
-           <div class="dialog-header">
-              <div class="dialog-icon" style="color: ${borderColor}">
-                 <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+          <div class="dialog-header">
+            <div class="dialog-icon" style="color: ${borderColor}">
+              <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiBrain}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">${title}</h2>
+              <div class="dialog-subtitle">
+                ${this.isStressed ? 'Warning: Plant Stress Detected' : 'All systems normal'}
               </div>
-              <div class="dialog-title-group">
-                 <h2 class="dialog-title">${title}</h2>
-                 <div class="dialog-subtitle">
-                    ${this.isStressed ? 'Warning: Plant Stress Detected' : 'All systems normal'}
-                 </div>
-              </div>
-              <button class="md3-button text" @click=${this._close} style="min-width:auto; padding:8px;">
-                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width:auto; padding:8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="content-padding">
+            <!-- Input Area -->
+            <div class="md3-input-group">
+              <label class="md3-label">Your Question</label>
+              <textarea
+                class="sd-textarea"
+                placeholder="Ask about this growspace..."
+                .value=${this.userQuery}
+                @input=${(e) => (this.userQuery = e.target.value)}
+                style="min-height: 80px;"
+              ></textarea>
+            </div>
+
+            <!-- Action -->
+            <div class="button-group" style="padding: 12px 0; justify-content: flex-end;">
+              <button
+                class="md3-button tonal"
+                @click=${this._analyzeAll}
+                ?disabled=${this.isLoading}
+                style="opacity: ${this.isLoading ? 0.7 : 1}"
+              >
+                Analyze All
               </button>
-           </div>
+              <button
+                class="md3-button primary"
+                @click=${this._analyze}
+                ?disabled=${this.isLoading}
+                style="opacity: ${this.isLoading ? 0.7 : 1}"
+              >
+                ${this.isLoading ? 'Analyzing...' : 'Analyze Environment'}
+              </button>
+            </div>
 
-           <div class="content-padding">
-              <!-- Input Area -->
-              <div class="md3-input-group">
-                 <label class="md3-label">Your Question</label>
-                 <textarea
-                    class="sd-textarea"
-                    placeholder="Ask about this growspace..."
-                    .value=${this.userQuery}
-                    @input=${(e) => this.userQuery = e.target.value}
-                    style="min-height: 80px;"
-                 ></textarea>
-              </div>
-
-              <!-- Action -->
-              <div class="button-group" style="padding: 12px 0; justify-content: flex-end;">
-                 <button
-                    class="md3-button tonal"
-                    @click=${this._analyzeAll}
-                    ?disabled=${this.isLoading}
-                    style="opacity: ${this.isLoading ? 0.7 : 1}"
-                 >
-                    Analyze All
-                 </button>
-                 <button
-                    class="md3-button primary"
-                    @click=${this._analyze}
-                    ?disabled=${this.isLoading}
-                    style="opacity: ${this.isLoading ? 0.7 : 1}"
-                 >
-                    ${this.isLoading ? 'Analyzing...' : 'Analyze Environment'}
-                 </button>
-              </div>
-
-              <!-- Response Area -->
-              ${this.isLoading ? x `
-                 <div class="gm-loading">
-                    <svg class="spinner" viewBox="0 0 24 24"><path d="${mdiLoading}" fill="currentColor"></path></svg>
+            <!-- Response Area -->
+            ${this.isLoading
+            ? x `
+                  <div class="gm-loading">
+                    <svg class="spinner" viewBox="0 0 24 24">
+                      <path d="${mdiLoading}" fill="currentColor"></path>
+                    </svg>
                     <span>Consulting the archives...</span>
-                 </div>
-              ` : E}
-
-              ${!this.isLoading && this.response ? x `
-                 <div class="gm-response-box" style="border: 2px solid ${borderColor};">
+                  </div>
+                `
+            : E}
+            ${!this.isLoading && this.response
+            ? x `
+                  <div class="gm-response-box" style="border: 2px solid ${borderColor};">
                     ${this.response}
-                 </div>
-              ` : E}
-           </div>
+                  </div>
+                `
+            : E}
+          </div>
         </div>
       </ha-dialog>
     `;
@@ -14896,62 +15774,66 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
 GrowMasterDialog.styles = [
     dialogStyles,
     i$6 `
-        :host {
-            display: block;
-        }
-        
-        /* Specific overrides or additions */
-        .gm-response-box {
-            background: rgba(255,255,255,0.05);
-            border-radius: 16px;
-            padding: 20px;
-            line-height: 1.6;
-            font-size: 0.95rem;
-            white-space: pre-wrap;
-            position: relative;
-            margin-top: 20px;
-        }
-        .gm-loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-            color: rgba(255, 255, 255, 0.7);
-            gap: 12px;
-        }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        .spinner {
-            animation: spin 1s linear infinite;
-            width: 24px;
-            height: 24px;
-        }
-        
-        .sd-textarea {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 12px;
-            color: #fff;
-            font-family: inherit;
-            resize: vertical;
-            box-sizing: border-box;
-            font-size: 1rem;
-        }
-        .sd-textarea:focus {
-            outline: none;
-            border-color: #4CAF50;
-            background: rgba(255, 255, 255, 0.08);
-        }
+      :host {
+        display: block;
+      }
 
-        .content-padding {
-            padding: 24px;
-            overflow-y: auto;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
+      /* Specific overrides or additions */
+      .gm-response-box {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 20px;
+        line-height: 1.6;
+        font-size: 0.95rem;
+        white-space: pre-wrap;
+        position: relative;
+        margin-top: 20px;
+      }
+      .gm-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        color: rgba(255, 255, 255, 0.7);
+        gap: 12px;
+      }
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
         }
-    `
+      }
+      .spinner {
+        animation: spin 1s linear infinite;
+        width: 24px;
+        height: 24px;
+      }
+
+      .sd-textarea {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 12px;
+        color: #fff;
+        font-family: inherit;
+        resize: vertical;
+        box-sizing: border-box;
+        font-size: 1rem;
+      }
+      .sd-textarea:focus {
+        outline: none;
+        border-color: #4caf50;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .content-padding {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+    `,
 ];
 __decorate([
     n$5({ type: Boolean, reflect: true }),
@@ -14996,7 +15878,7 @@ let StrainRecommendationDialog = class StrainRecommendationDialog extends i$3 {
         this.dispatchEvent(new CustomEvent('get-recommendation', {
             detail: { query: this.userQuery },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     render() {
@@ -15011,62 +15893,66 @@ let StrainRecommendationDialog = class StrainRecommendationDialog extends i$3 {
         .escapeKeyAction=${''}
       >
         <div class="glass-dialog-container">
-           <div class="dialog-header">
-              <div class="dialog-icon" style="color: #4CAF50">
-                 <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-              </div>
-              <div class="dialog-title-group">
-                 <h2 class="dialog-title">Get Strain Recommendation</h2>
-              </div>
-              <button class="md3-button text" @click=${this._close} style="min-width:auto; padding:8px;">
-                 <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+          <div class="dialog-header">
+            <div class="dialog-icon" style="color: #4CAF50">
+              <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiBrain}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Get Strain Recommendation</h2>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width:auto; padding:8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="content-padding">
+            <!-- Input Area -->
+            <div class="md3-input-group">
+              <label class="md3-label">Your Preferences</label>
+              <textarea
+                class="sd-textarea"
+                placeholder="e.g., something fruity and good for daytime use..."
+                .value=${this.userQuery}
+                @input=${(e) => (this.userQuery = e.target.value)}
+                style="min-height: 80px;"
+              ></textarea>
+            </div>
+
+            <!-- Action -->
+            <div class="button-group" style="padding: 0; justify-content: flex-end;">
+              <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+              <button
+                class="md3-button primary"
+                @click=${this._handleGetRecommendation}
+                ?disabled=${this.isLoading}
+                style="opacity: ${this.isLoading ? 0.7 : 1}"
+              >
+                ${this.isLoading ? 'Getting Recommendation...' : 'Get Recommendation'}
               </button>
-           </div>
+            </div>
 
-           <div class="content-padding">
-              <!-- Input Area -->
-              <div class="md3-input-group">
-                 <label class="md3-label">Your Preferences</label>
-                 <textarea
-                    class="sd-textarea"
-                    placeholder="e.g., something fruity and good for daytime use..."
-                    .value=${this.userQuery}
-                    @input=${(e) => this.userQuery = e.target.value}
-                    style="min-height: 80px;"
-                 ></textarea>
-              </div>
-
-              <!-- Action -->
-              <div class="button-group" style="padding: 0; justify-content: flex-end;">
-                 <button
-                    class="md3-button tonal"
-                    @click=${this._close}
-                 >
-                    Cancel
-                 </button>
-                 <button
-                    class="md3-button primary"
-                    @click=${this._handleGetRecommendation}
-                    ?disabled=${this.isLoading}
-                    style="opacity: ${this.isLoading ? 0.7 : 1}"
-                 >
-                    ${this.isLoading ? 'Getting Recommendation...' : 'Get Recommendation'}
-                 </button>
-              </div>
-
-              ${this.isLoading ? x `
-                 <div class="gm-loading">
-                    <svg class="spinner" viewBox="0 0 24 24"><path d="${mdiLoading}" fill="currentColor"></path></svg>
+            ${this.isLoading
+            ? x `
+                  <div class="gm-loading">
+                    <svg class="spinner" viewBox="0 0 24 24">
+                      <path d="${mdiLoading}" fill="currentColor"></path>
+                    </svg>
                     <span>Consulting the archives...</span>
-                 </div>
-              ` : E}
-
-              ${!this.isLoading && this.response ? x `
-                 <div class="gm-response-box">
-                    ${this.response}
-                 </div>
-              ` : E}
-           </div>
+                  </div>
+                `
+            : E}
+            ${!this.isLoading && this.response
+            ? x ` <div class="gm-response-box">${this.response}</div> `
+            : E}
+          </div>
         </div>
       </ha-dialog>
     `;
@@ -15075,57 +15961,59 @@ let StrainRecommendationDialog = class StrainRecommendationDialog extends i$3 {
 StrainRecommendationDialog.styles = [
     dialogStyles,
     i$6 `
-        :host {
-            display: block;
+      :host {
+        display: block;
+      }
+      .content-padding {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .sd-textarea {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: #fff;
+        padding: 12px;
+        font-family: inherit;
+        resize: vertical;
+        box-sizing: border-box;
+        font-size: 1rem;
+      }
+      .sd-textarea:focus {
+        outline: none;
+        border-color: #4caf50;
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .gm-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        color: rgba(255, 255, 255, 0.7);
+        gap: 12px;
+      }
+      .spinner {
+        width: 24px;
+        height: 24px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
         }
-        .content-padding {
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        .sd-textarea {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: #fff;
-            padding: 12px;
-            font-family: inherit;
-            resize: vertical;
-            box-sizing: border-box;
-            font-size: 1rem;
-        }
-        .sd-textarea:focus {
-            outline: none;
-            border-color: #4CAF50;
-            background: rgba(255, 255, 255, 0.08);
-        }
-        .gm-loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-            color: rgba(255, 255, 255, 0.7);
-            gap: 12px;
-        }
-        .spinner {
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            100% { transform: rotate(360deg); }
-        }
-        .gm-response-box {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 16px;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            margin-top: 16px;
-        }
-    `
+      }
+      .gm-response-box {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 16px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        margin-top: 16px;
+      }
+    `,
 ];
 __decorate([
     c$2({ context: hassContext, subscribe: true }),
@@ -15157,18 +16045,18 @@ class GrowspaceLogbookController {
     }
     async fetchEventLog(growspaceId) {
         if (!this.hass) {
-            console.warn("Home Assistant instance not available");
+            console.warn('Home Assistant instance not available');
             return [];
         }
         try {
             const response = await this.hass.callWS({
-                type: "growspace_manager/get_log",
+                type: 'growspace_manager/get_log',
                 growspace_id: growspaceId,
             });
             return response[growspaceId] || [];
         }
         catch (e) {
-            console.error("Error fetching event log:", e);
+            console.error('Error fetching event log:', e);
             return [];
         }
     }
@@ -15242,7 +16130,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
                 month: 'short',
                 day: 'numeric',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
             });
         }
         catch {
@@ -15257,13 +16145,13 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
         // Filter logic
         let filteredEvents = allEvents;
         if (this._activeFilter === 'alerts') {
-            filteredEvents = allEvents.filter(e => e.category === 'alert' || e.severity >= 0.75);
+            filteredEvents = allEvents.filter((e) => e.category === 'alert' || e.severity >= 0.75);
         }
         else if (this._activeFilter === 'irrigation') {
-            filteredEvents = allEvents.filter(e => e.category === 'irrigation' || ['irrigation', 'drain'].includes(e.sensor_type));
+            filteredEvents = allEvents.filter((e) => e.category === 'irrigation' || ['irrigation', 'drain'].includes(e.sensor_type));
         }
         else if (this._activeFilter === 'environment') {
-            filteredEvents = allEvents.filter(e => ['temperature', 'humidity', 'vpd', 'co2'].includes(e.sensor_type));
+            filteredEvents = allEvents.filter((e) => ['temperature', 'humidity', 'vpd', 'co2'].includes(e.sensor_type));
         }
         // Sort by time descending (newest first)
         const sortedEvents = [...filteredEvents].sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
@@ -15271,53 +16159,64 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
             { id: 'all', label: 'All' },
             { id: 'alerts', label: 'Alerts' },
             { id: 'irrigation', label: 'Irrigation' },
-            { id: 'environment', label: 'Environment' }
+            { id: 'environment', label: 'Environment' },
         ];
         return x `
       <div class="filter-bar">
-        ${filters.map(filter => x `
-          <div 
-            class="filter-chip ${this._activeFilter === filter.id ? 'active' : ''}"
-            @click=${() => this._activeFilter = filter.id}
-          >
-            ${filter.label}
-          </div>
-        `)}
+        ${filters.map((filter) => x `
+            <div
+              class="filter-chip ${this._activeFilter === filter.id ? 'active' : ''}"
+              @click=${() => (this._activeFilter = filter.id)}
+            >
+              ${filter.label}
+            </div>
+          `)}
       </div>
 
       <div class="log-container">
-        ${sortedEvents.length > 0 ? sortedEvents.map(event => x `
-          <div class="event-card">
-            <div class="event-header">
-              <span class="event-time">${this._formatTime(event.start_time)}</span>
-              <span class="event-duration">${this._formatDuration(event.duration_sec)}</span>
-            </div>
-            
-            <div class="event-details">
-              <div>
-                <div class="event-type">${event.sensor_type.replace(/_/g, ' ')}</div>
-                
-                ${event.reasons && event.reasons.length > 0 ? x `
-                  <div class="event-reasons">
-                    ${event.reasons.map(reason => x `<span class="reason-badge">${reason}</span>`)}
+        ${sortedEvents.length > 0
+            ? sortedEvents.map((event) => x `
+                <div class="event-card">
+                  <div class="event-header">
+                    <span class="event-time">${this._formatTime(event.start_time)}</span>
+                    <span class="event-duration">${this._formatDuration(event.duration_sec)}</span>
                   </div>
-                ` : E}
+
+                  <div class="event-details">
+                    <div>
+                      <div class="event-type">${event.sensor_type.replace(/_/g, ' ')}</div>
+
+                      ${event.reasons && event.reasons.length > 0
+                ? x `
+                            <div class="event-reasons">
+                              ${event.reasons.map((reason) => x `<span class="reason-badge">${reason}</span>`)}
+                            </div>
+                          `
+                : E}
+                    </div>
+
+                    ${event.category === 'alert'
+                ? x `
+                          <div
+                            class="event-probability"
+                            style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}"
+                          >
+                            ${this._formatProb(event.severity)}
+                          </div>
+                        `
+                : x `
+                          <div class="event-probability">
+                            <ha-icon icon="mdi:water"></ha-icon>
+                          </div>
+                        `}
+                  </div>
+                </div>
+              `)
+            : x `
+              <div class="empty-state">
+                No events found for "${filters.find((f) => f.id === this._activeFilter)?.label}".
               </div>
-              
-              ${event.category === 'alert' ? x `
-                  <div class="event-probability" style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}">
-                    ${this._formatProb(event.severity)}
-                  </div>
-                ` : x `
-                   <div class="event-probability">
-                     <ha-icon icon="mdi:water"></ha-icon>
-                   </div>
-                `}
-            </div>
-          </div>
-        `) : x `
-          <div class="empty-state">No events found for "${filters.find(f => f.id === this._activeFilter)?.label}".</div>
-        `}
+            `}
       </div>
     `;
     }
@@ -15378,7 +16277,7 @@ GrowspaceLogbook.styles = [
       }
       .event-type {
         font-weight: 600;
-        color: var(--accent-color, #4CAF50);
+        color: var(--accent-color, #4caf50);
         margin-bottom: 4px;
         text-transform: capitalize;
       }
@@ -15427,12 +16326,12 @@ GrowspaceLogbook.styles = [
         flex-shrink: 0;
       }
       .filter-chip.active {
-        background: var(--accent-color, #4CAF50);
+        background: var(--accent-color, #4caf50);
         color: white;
         opacity: 1;
         border-color: transparent;
         font-weight: 500;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       }
       .filter-chip:hover:not(.active) {
         background: rgba(255, 255, 255, 0.1);
@@ -15444,7 +16343,7 @@ GrowspaceLogbook.styles = [
         opacity: 0.5;
         font-style: italic;
       }
-    `
+    `,
 ];
 __decorate([
     c$2({ context: hassContext, subscribe: true }),
@@ -15483,19 +16382,20 @@ let LogbookDialog = class LogbookDialog extends i$3 {
         if (!this.open)
             return x ``;
         return x `
-      <ha-dialog
-        .open=${this.open}
-        @closed=${this._close}
-        hideActions
-        .heading=${true}
-      >
+      <ha-dialog .open=${this.open} @closed=${this._close} hideActions .heading=${true}>
         <div slot="heading" class="dialog-header">
-           <h2 class="dialog-title">Events Logbook</h2>
-           <button class="md3-button text" @click=${this._close} style="min-width:auto; padding:8px;">
-             <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
-           </button>
+          <h2 class="dialog-title">Events Logbook</h2>
+          <button
+            class="md3-button text"
+            @click=${this._close}
+            style="min-width:auto; padding:8px;"
+          >
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiClose}"></path>
+            </svg>
+          </button>
         </div>
-        
+
         <div class="content-wrapper">
           <growspace-logbook
             .hass=${this.hass}
@@ -15515,7 +16415,7 @@ LogbookDialog.styles = [
         --mdc-dialog-min-height: 80vh;
         --mdc-dialog-max-height: 90vh;
       }
-      
+
       @media (min-width: 600px) {
         ha-dialog {
           --mdc-dialog-min-width: 600px;
@@ -15530,7 +16430,7 @@ LogbookDialog.styles = [
         margin-bottom: 0;
         padding-bottom: 0;
       }
-      
+
       .content-wrapper {
         height: 70vh;
         display: flex;
@@ -15543,7 +16443,7 @@ LogbookDialog.styles = [
         overflow: hidden;
         margin-top: 16px;
       }
-    `
+    `,
 ];
 __decorate([
     c$2({ context: hassContext, subscribe: true }),
@@ -15567,11 +16467,111 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         this.strainLibrary = [];
         this.isEditMode = false;
         this.selected = false;
+        this._displayData = null;
         this._isDraggingMobile = false;
         this._startX = 0;
         this._startY = 0;
         this._initialLeft = 0;
         this._initialTop = 0;
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('plant') || changedProps.has('strainLibrary')) {
+            this._calculateDisplayData();
+        }
+    }
+    _calculateDisplayData() {
+        if (!this.plant) {
+            this._displayData = null;
+            return;
+        }
+        const plant = this.plant;
+        const stageColor = PlantUtils.getPlantStageColor(plant.state);
+        const strainName = plant.attributes?.strain || 'Unknown Strain';
+        const pheno = plant.attributes?.phenotype || '';
+        // Image logic
+        let imageUrl;
+        let imageCropMeta;
+        if (strainName !== 'Unknown Strain') {
+            const phenoMatch = this.strainLibrary.find((s) => s.strain === strainName && s.phenotype === pheno);
+            if (phenoMatch && phenoMatch.image) {
+                imageUrl = phenoMatch.image;
+                imageCropMeta = phenoMatch.image_crop_meta;
+            }
+            else {
+                const strainMatch = this.strainLibrary.find((s) => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
+                if (strainMatch && strainMatch.image) {
+                    imageUrl = strainMatch.image;
+                    imageCropMeta = strainMatch.image_crop_meta;
+                }
+                else if (!imageUrl) {
+                    const anyMatch = this.strainLibrary.find((s) => s.strain === strainName && s.image);
+                    if (anyMatch) {
+                        imageUrl = anyMatch.image;
+                        imageCropMeta = anyMatch.image_crop_meta;
+                    }
+                }
+            }
+        }
+        // Stages logic
+        const days = [
+            {
+                days: plant.attributes?.seedling_days,
+                icon: mdiSprout,
+                title: 'Seedling',
+                stage: PlantStage.SEEDLING,
+            },
+            {
+                days: plant.attributes?.mother_days,
+                icon: mdiSprout,
+                title: 'Mother',
+                stage: PlantStage.MOTHER,
+            },
+            {
+                days: plant.attributes?.clone_days,
+                icon: mdiSprout,
+                title: 'Clone',
+                stage: PlantStage.CLONE,
+            },
+            { days: plant.attributes?.veg_days, icon: mdiSprout, title: 'Veg', stage: PlantStage.VEG },
+            {
+                days: plant.attributes?.flower_days,
+                icon: mdiFlower,
+                title: 'Flower',
+                stage: PlantStage.FLOWER,
+            },
+            { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: 'Dry', stage: PlantStage.DRY },
+            {
+                days: plant.attributes?.cure_days,
+                icon: mdiCannabis,
+                title: 'Cure',
+                stage: PlantStage.CURE,
+            },
+        ].filter((d) => d.days !== undefined && d.days !== null);
+        const currentStage = (plant.state || '').toLowerCase();
+        let visibleDays = days.filter((d) => d.days);
+        if (currentStage === PlantStage.DRY) {
+            visibleDays = visibleDays.filter((d) => d.stage === PlantStage.DRY);
+        }
+        else if (currentStage === PlantStage.CURE) {
+            visibleDays = visibleDays.filter((d) => d.stage === PlantStage.CURE);
+        }
+        const normalizedCurrent = currentStage === 'veg' || currentStage === 'vegetative' ? PlantStage.VEG : currentStage;
+        const stages = visibleDays.map((d) => ({
+            days: d.days,
+            icon: d.icon,
+            title: d.title,
+            stage: d.stage,
+            isCurrent: d.stage === normalizedCurrent,
+            color: PlantUtils.getPlantStageColor(d.stage),
+        }));
+        this._displayData = {
+            stageColor,
+            strainName,
+            pheno,
+            imageUrl,
+            imageCropMeta,
+            stages,
+        };
     }
     _handleTouchStart(e) {
         if (this.isEditMode)
@@ -15601,7 +16601,8 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         else {
             // If moved significantly before timer fires, cancel timer
             const touch = e.touches[0];
-            if (Math.abs(touch.clientX - this._startX) > 10 || Math.abs(touch.clientY - this._startY) > 10) {
+            if (Math.abs(touch.clientX - this._startX) > 10 ||
+                Math.abs(touch.clientY - this._startY) > 10) {
                 clearTimeout(this._longPressTimer);
             }
         }
@@ -15620,7 +16621,7 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         this.dispatchEvent(new CustomEvent('mobile-drag-start', {
             detail: { plant: this.plant },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     _endMobileDrag(e) {
@@ -15633,10 +16634,10 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
             detail: {
                 x: touch.clientX,
                 y: touch.clientY,
-                plant: this.plant
+                plant: this.plant,
             },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     _handleDragStart(e) {
@@ -15647,14 +16648,14 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         const target = e.target;
         target.classList.add('dragging');
         if (e.dataTransfer) {
-            e.dataTransfer.setData("text/plain", JSON.stringify({ id: this.plant.entity_id }));
+            e.dataTransfer.setData('text/plain', JSON.stringify({ id: this.plant.entity_id }));
             e.dataTransfer.effectAllowed = 'move';
         }
         // Dispatch event to parent to track dragged plant state
         this.dispatchEvent(new CustomEvent('plant-drag-start', {
             detail: { plant: this.plant },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     _handleDragEnd(e) {
@@ -15670,10 +16671,10 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
                 originalEvent: e,
                 row: this.row,
                 col: this.col,
-                plant: this.plant
+                plant: this.plant,
             },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     _handleDragOver(e) {
@@ -15684,7 +16685,7 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         this.dispatchEvent(new CustomEvent('plant-click', {
             detail: { plant: this.plant },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     _toggleSelection(e) {
@@ -15692,35 +16693,16 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         this.dispatchEvent(new CustomEvent('plant-toggle-selection', {
             detail: { plant: this.plant },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
-    renderPlantDaysRich(plant) {
-        const days = [
-            { days: plant.attributes?.seedling_days, icon: mdiSprout, title: "Seedling", stage: PlantStage.SEEDLING },
-            { days: plant.attributes?.mother_days, icon: mdiSprout, title: "Mother", stage: PlantStage.MOTHER },
-            { days: plant.attributes?.clone_days, icon: mdiSprout, title: "Clone", stage: PlantStage.CLONE },
-            { days: plant.attributes?.veg_days, icon: mdiSprout, title: "Veg", stage: PlantStage.VEG },
-            { days: plant.attributes?.flower_days, icon: mdiFlower, title: "Flower", stage: PlantStage.FLOWER },
-            { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: "Dry", stage: PlantStage.DRY },
-            { days: plant.attributes?.cure_days, icon: mdiCannabis, title: "Cure", stage: PlantStage.CURE }
-        ].filter(d => d.days !== undefined && d.days !== null);
-        const currentStage = (plant.state || '').toLowerCase();
-        let visibleDays = days.filter(d => d.days);
-        if (currentStage === PlantStage.DRY) {
-            visibleDays = visibleDays.filter(d => d.stage === PlantStage.DRY);
-        }
-        else if (currentStage === PlantStage.CURE) {
-            visibleDays = visibleDays.filter(d => d.stage === PlantStage.CURE);
-        }
-        const normalizedCurrent = currentStage === 'veg' || currentStage === 'vegetative' ? PlantStage.VEG : currentStage;
+    renderPlantDaysRich(stages) {
         return x `
-      ${visibleDays.map(d => {
-            const color = PlantUtils.getPlantStageColor(d.stage);
-            const isCurrent = d.stage === normalizedCurrent;
+      ${stages.map((d) => {
+            // Logic for classMap if needed
             return x `
-          <div class="pc-stat-item ${isCurrent ? 'current-stage' : ''}">
-            <svg style="color: ${color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
+          <div class="pc-stat-item ${d.isCurrent ? 'current-stage' : ''}">
+            <svg style="color: ${d.color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
             <div class="pc-stat-text">${d.days}d</div>
           </div>
         `;
@@ -15728,34 +16710,9 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
     `;
     }
     render() {
-        if (!this.plant)
+        if (!this.plant || !this._displayData)
             return x ``;
-        const stageColor = PlantUtils.getPlantStageColor(this.plant.state);
-        const strainName = this.plant.attributes?.strain;
-        const pheno = this.plant.attributes?.phenotype;
-        let imageUrl;
-        let imageCropMeta;
-        if (strainName) {
-            const phenoMatch = this.strainLibrary.find(s => s.strain === strainName && s.phenotype === pheno);
-            if (phenoMatch && phenoMatch.image) {
-                imageUrl = phenoMatch.image;
-                imageCropMeta = phenoMatch.image_crop_meta;
-            }
-            else {
-                const strainMatch = this.strainLibrary.find(s => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
-                if (strainMatch && strainMatch.image) {
-                    imageUrl = strainMatch.image;
-                    imageCropMeta = strainMatch.image_crop_meta;
-                }
-                else if (!imageUrl) {
-                    const anyMatch = this.strainLibrary.find(s => s.strain === strainName && s.image);
-                    if (anyMatch) {
-                        imageUrl = anyMatch.image;
-                        imageCropMeta = anyMatch.image_crop_meta;
-                    }
-                }
-            }
-        }
+        const { stageColor, strainName, pheno, imageUrl, imageCropMeta, stages } = this._displayData;
         return x `
       <div
         class="plant-card-rich"
@@ -15770,39 +16727,44 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         @touchend=${this._handleTouchEnd}
         @click=${this._handleClick}
       >
-        ${imageUrl ? x `
-          <img 
-            class="plant-card-bg" 
-            src="${imageUrl}" 
-            loading="lazy" 
-            alt="${strainName || 'Plant'}"
-            style="${PlantUtils.getImgStyle(imageCropMeta)}"
-          />
-          <div class="plant-card-overlay"></div>
-        ` : ''}
-
-        ${this.isEditMode ? x `
-          <div class="plant-card-checkbox ${this.selected ? 'selected' : ''}" @click=${this._toggleSelection}>
-             <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: ${this.selected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)'};">
-               <path d="${this.selected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
-             </svg>
-          </div>
-        ` : ''}
+        ${imageUrl
+            ? x `
+              <img
+                class="plant-card-bg"
+                src="${imageUrl}"
+                loading="lazy"
+                alt="${strainName}"
+                style="${PlantUtils.getImgStyle(imageCropMeta)}"
+              />
+              <div class="plant-card-overlay"></div>
+            `
+            : ''}
+        ${this.isEditMode
+            ? x `
+              <div
+                class="plant-card-checkbox ${this.selected ? 'selected' : ''}"
+                @click=${this._toggleSelection}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  style="width: 24px; height: 24px; fill: ${this.selected
+                ? 'var(--primary-color)'
+                : 'rgba(255,255,255,0.7)'};"
+                >
+                  <path d="${this.selected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
+                </svg>
+              </div>
+            `
+            : ''}
 
         <div class="plant-card-content">
           <div class="pc-info">
-            <div class="pc-strain-name" title="${this.plant.attributes?.strain || ''}">
-              ${this.plant.attributes?.strain || 'Unknown Strain'}
-            </div>
-            ${this.plant.attributes?.phenotype ? x `<div class="pc-pheno">${this.plant.attributes.phenotype}</div>` : ''}
-            <div class="pc-stage">
-              ${this.plant.state || 'Unknown'}
-            </div>
+            <div class="pc-strain-name" title="${strainName}">${strainName}</div>
+            ${pheno ? x `<div class="pc-pheno">${pheno}</div>` : ''}
+            <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
           </div>
 
-          <div class="pc-stats">
-            ${this.renderPlantDaysRich(this.plant)}
-          </div>
+          <div class="pc-stats">${this.renderPlantDaysRich(stages)}</div>
         </div>
       </div>
     `;
@@ -15824,26 +16786,27 @@ GrowspacePlantCard.styles = i$6 `
       border-radius: 16px;
       overflow: hidden;
       /* Default background if no image */
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--ha-card-background, rgba(255, 255, 255, 0.05));
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      box-shadow: var(--ha-card-box-shadow, 0 4px 6px rgba(0, 0, 0, 0.1));
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
       aspect-ratio: 1;
       box-sizing: border-box;
+      color: var(--primary-text-color);
     }
 
     .plant-card-rich:hover {
       transform: translateY(-4px);
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: var(--primary-color, rgba(255, 255, 255, 0.2));
     }
     .plant-card-rich:focus {
-        outline: 2px solid var(--primary-color, #22c55e);
-        outline-offset: 2px;
-    }  
+      outline: 2px solid var(--primary-color, #22c55e);
+      outline-offset: 2px;
+    }
 
     .plant-card-bg {
       position: absolute;
@@ -15861,7 +16824,12 @@ GrowspacePlantCard.styles = i$6 `
       left: 0;
       width: 100%;
       height: 100%;
-      background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.3) 100%);
+      background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.9) 0%,
+        rgba(0, 0, 0, 0.6) 50%,
+        rgba(0, 0, 0, 0.3) 100%
+      );
       z-index: 1;
     }
 
@@ -15908,8 +16876,8 @@ GrowspacePlantCard.styles = i$6 `
     .pc-strain-name {
       font-size: 1.1rem;
       font-weight: 700;
-      color: #fff;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      color: var(--primary-text-color, #fff);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -15918,7 +16886,7 @@ GrowspacePlantCard.styles = i$6 `
 
     .pc-pheno {
       font-size: 0.9rem;
-      color: rgba(255,255,255,0.7);
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
       font-weight: 500;
     }
 
@@ -15927,7 +16895,7 @@ GrowspacePlantCard.styles = i$6 `
       font-weight: 600;
       margin-top: 8px;
       color: var(--stage-color);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
       text-transform: capitalize;
     }
 
@@ -15956,23 +16924,22 @@ GrowspacePlantCard.styles = i$6 `
     .pc-stat-text {
       font-size: 0.85rem;
       font-weight: 500;
-      color: #fff;
+      color: var(--primary-text-color, #fff);
     }
-    
+
     .current-stage {
-        /* Add any specific styles for current stage if needed, 
-           though logic was mainly setting color in SVG which is handled in render */
+      /* Add any specific styles for current stage if needed */
     }
 
     .plant-card-rich.dragging {
       opacity: 0.5;
       transform: rotate(5deg);
     }
-    
+
     .plant-card-rich.dragging-mobile {
       opacity: 0.8;
       transform: scale(1.05);
-      box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
       z-index: 1000;
       pointer-events: none; /* Let events pass through to grid for elementFromPoint */
     }
@@ -16001,6 +16968,10 @@ __decorate([
     n$5({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowspacePlantCard.prototype, "selected", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspacePlantCard.prototype, "_displayData", void 0);
 GrowspacePlantCard = __decorate([
     t$2('growspace-plant-card')
 ], GrowspacePlantCard);
@@ -16020,22 +16991,18 @@ let GrowspaceChip = class GrowspaceChip extends i$3 {
         // Determine classes based on meaningful status string
         const statusClass = this.status ? `status-${this.status}` : '';
         return x `
-      <div 
-        class="stat-chip ${statusClass}"
-        title="${this.tooltip}"
-      >
+      <div class="stat-chip ${statusClass}" title="${this.tooltip}">
         <div class="icon">
           <svg viewBox="0 0 24 24"><path d="${this.icon}"></path></svg>
         </div>
         ${this.label ? x `${this.label}: ` : ''}${this.value}
-        
-        ${this.linked ? x `
-          <div class="link-icon" 
-               @click=${this._handleLinkClick}
-               title="Unlink Graph">
-            <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
-          </div>
-        ` : ''}
+        ${this.linked
+            ? x `
+              <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">
+                <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
+              </div>
+            `
+            : ''}
       </div>
     `;
     }
@@ -16075,9 +17042,15 @@ GrowspaceChip.styles = i$6 `
 
     /* Status Colors */
     @keyframes pulse-red {
-      0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
-      70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+      0% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+      }
     }
 
     .stat-chip.status-optimal {
@@ -16110,7 +17083,7 @@ GrowspaceChip.styles = i$6 `
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       color: #fff;
     }
-    
+
     .icon {
       width: 18px;
       height: 18px;
@@ -16136,11 +17109,11 @@ GrowspaceChip.styles = i$6 `
       opacity: 0.8;
       cursor: pointer;
     }
-    
+
     .link-icon svg {
-        width: 100%;
-        height: 100%;
-        fill: var(--primary-color, #03a9f4);
+      width: 100%;
+      height: 100%;
+      fill: var(--primary-color, #03a9f4);
     }
   `;
 __decorate([
@@ -16233,7 +17206,9 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             envEntityId = `binary_sensor.dry_optimal_drying`;
         }
         const envEntity = this.hass.states[envEntityId];
-        const overviewEntity = this.device.overview_entity_id ? this.hass.states[this.device.overview_entity_id] : undefined;
+        const overviewEntity = this.device.overview_entity_id
+            ? this.hass.states[this.device.overview_entity_id]
+            : undefined;
         const envAttrs = this.device.environment_attributes || overviewEntity?.attributes || {};
         const temp = this._getAttributeValue(envEntity, 'temperature');
         const hum = this._getAttributeValue(envEntity, 'humidity');
@@ -16250,7 +17225,14 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             }
             if (vpd === undefined || vpd === null) {
                 // Calculated VPD fallback
-                const slugify = (text) => text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '_').replace(/^-+/, '').replace(/-+$/, '');
+                const slugify = (text) => text
+                    .toString()
+                    .toLowerCase()
+                    .replace(/\s+/g, '_')
+                    .replace(/[^\w\-]+/g, '')
+                    .replace(/\-\-+/g, '_')
+                    .replace(/^-+/, '')
+                    .replace(/-+$/, '');
                 const calcName = `${this.device.name} Calculated VPD`;
                 const calculatedId = `sensor.${slugify(calcName)}`;
                 const vpdState = this.hass.states[calculatedId];
@@ -16266,9 +17248,12 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         const vpdTargetMax = overviewEntity?.attributes?.vpd_target_max;
         const vpdDangerMin = overviewEntity?.attributes?.vpd_danger_min;
         const vpdDangerMax = overviewEntity?.attributes?.vpd_danger_max;
-        if ((!vpdStatus || vpdStatus === 'unknown') && vpd !== undefined &&
-            vpdTargetMin !== undefined && vpdTargetMax !== undefined &&
-            vpdDangerMin !== undefined && vpdDangerMax !== undefined) {
+        if ((!vpdStatus || vpdStatus === 'unknown') &&
+            vpd !== undefined &&
+            vpdTargetMin !== undefined &&
+            vpdTargetMax !== undefined &&
+            vpdDangerMin !== undefined &&
+            vpdDangerMax !== undefined) {
             if (vpd < vpdDangerMin || vpd > vpdDangerMax) {
                 vpdStatus = 'danger';
             }
@@ -16281,16 +17266,16 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         }
         const isSpecialGrowspace = isCure || isDry;
         const co2Value = this._getAttributeValue(envEntity, 'co2');
-        const co2 = (isSpecialGrowspace || co2Value === undefined || co2Value === null) ? undefined : co2Value;
+        const co2 = isSpecialGrowspace || co2Value === undefined || co2Value === null ? undefined : co2Value;
         const isLightsOnValue = this._getAttributeValue(envEntity, 'is_lights_on');
-        const hasLightSensor = !isSpecialGrowspace && (isLightsOnValue !== undefined && isLightsOnValue !== null);
+        const hasLightSensor = !isSpecialGrowspace && isLightsOnValue !== undefined && isLightsOnValue !== null;
         const isLightsOn = isLightsOnValue === true;
         const getNextEvent = (times) => {
             if (!times || !times.length)
                 return undefined;
             const now = DateTime.now();
             const upcoming = times
-                .map(t => {
+                .map((t) => {
                 const [h, m] = t.time.split(':').map(Number);
                 let dt = now.set({ hour: h, minute: m, second: 0 });
                 if (dt < now)
@@ -16313,32 +17298,50 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         const mainChips = [
             createChipData('temperature', mdiThermometer, temp !== undefined ? `${temp}°C` : undefined),
             createChipData('humidity', mdiWaterPercent, hum !== undefined ? `${hum}%` : undefined),
-            createChipData('vpd', mdiCloudOutline, vpd !== undefined ? `${vpd} kPa` : undefined, undefined, vpdStatus, vpdTargetMin !== undefined && vpdTargetMax !== undefined ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})` : ''),
+            createChipData('vpd', mdiCloudOutline, vpd !== undefined ? `${vpd} kPa` : undefined, undefined, vpdStatus, vpdTargetMin !== undefined && vpdTargetMax !== undefined
+                ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})`
+                : ''),
             createChipData('co2', mdiWeatherCloudy, co2 !== undefined ? `${co2} ppm` : undefined),
             createChipData('light', isLightsOn ? mdiLightbulbOn : mdiLightbulbOff, hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined),
-            createChipData('soil_moisture', mdiWaterPercent, this._getAttributeValue(overviewEntity, 'soil_moisture_value') !== undefined ? `${this._getAttributeValue(overviewEntity, 'soil_moisture_value')}%` : undefined, 'Moisture'),
+            createChipData('soil_moisture', mdiWaterPercent, this._getAttributeValue(overviewEntity, 'soil_moisture_value') !== undefined
+                ? `${this._getAttributeValue(overviewEntity, 'soil_moisture_value')}%`
+                : undefined, 'Moisture'),
             createChipData('irrigation', mdiWater, nextIrrigation, 'Next'),
             createChipData('drain', mdiWater, nextDrain, 'Next'),
-            envEntity ? createChipData('optimal', envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank, envEntity.state === 'on' ? 'Optimal Conditions' : (envEntity.attributes.reasons || 'Not Optimal'), undefined, envEntity.state === 'on' ? 'optimal' : 'warning') : null
+            envEntity
+                ? createChipData('optimal', envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank, envEntity.state === 'on'
+                    ? 'Optimal Conditions'
+                    : envEntity.attributes.reasons || 'Not Optimal', undefined, envEntity.state === 'on' ? 'optimal' : 'warning')
+                : null,
         ].filter((c) => c !== null);
         // Device Chips
         const exhaustId = envAttrs.exhaust_entity;
         const exhaustSensor = envAttrs.exhaust_sensor;
-        const exhaustState = (exhaustId && this.hass.states[exhaustId]) ? this.hass.states[exhaustId].state :
-            (exhaustSensor && this.hass.states[exhaustSensor]) ? this.hass.states[exhaustSensor].state : undefined;
+        const exhaustState = exhaustId && this.hass.states[exhaustId]
+            ? this.hass.states[exhaustId].state
+            : exhaustSensor && this.hass.states[exhaustSensor]
+                ? this.hass.states[exhaustSensor].state
+                : undefined;
         const humidifierId = envAttrs.humidifier_entity;
         const humidifierSensor = envAttrs.humidifier_sensor;
-        const humidifierState = (humidifierId && this.hass.states[humidifierId]) ? this.hass.states[humidifierId].state :
-            (humidifierSensor && this.hass.states[humidifierSensor]) ? this.hass.states[humidifierSensor].state : undefined;
+        const humidifierState = humidifierId && this.hass.states[humidifierId]
+            ? this.hass.states[humidifierId].state
+            : humidifierSensor && this.hass.states[humidifierSensor]
+                ? this.hass.states[humidifierSensor].state
+                : undefined;
         const dehumidifierId = envAttrs.dehumidifier_entity;
-        const dehumidifierState = dehumidifierId && this.hass.states[dehumidifierId] ? this.hass.states[dehumidifierId].state : undefined;
+        const dehumidifierState = dehumidifierId && this.hass.states[dehumidifierId]
+            ? this.hass.states[dehumidifierId].state
+            : undefined;
         const circulationFanId = envAttrs.circulation_fan_entity;
-        const circulationFanState = circulationFanId && this.hass.states[circulationFanId] ? this.hass.states[circulationFanId].state : undefined;
+        const circulationFanState = circulationFanId && this.hass.states[circulationFanId]
+            ? this.hass.states[circulationFanId].state
+            : undefined;
         const deviceChips = [
-            createChipData('exhaust', mdiFan, (exhaustId || exhaustSensor) ? `${exhaustState ?? '-'}` : undefined, 'Exhaust'),
+            createChipData('exhaust', mdiFan, exhaustId || exhaustSensor ? `${exhaustState ?? '-'}` : undefined, 'Exhaust'),
             createChipData('circulation_fan', mdiFan, circulationFanId ? `${circulationFanState ?? '-'}` : undefined, 'Fan'),
-            createChipData('humidifier', mdiAirHumidifier, (humidifierId || humidifierSensor) ? `${humidifierState ?? '-'}` : undefined, 'Humidifier'),
-            createChipData('dehumidifier', mdiAirHumidifierOff, dehumidifierId ? `${dehumidifierState ?? '-'}` : undefined, 'Dehumidifier')
+            createChipData('humidifier', mdiAirHumidifier, humidifierId || humidifierSensor ? `${humidifierState ?? '-'}` : undefined, 'Humidifier'),
+            createChipData('dehumidifier', mdiAirHumidifierOff, dehumidifierId ? `${dehumidifierState ?? '-'}` : undefined, 'Dehumidifier'),
         ].filter((c) => c !== null);
         return { mainChips, deviceChips, dominant, envAttrs };
     }
@@ -16353,11 +17356,15 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         if (container) {
             // 1px buffer to handle subpixels
             this._canScrollLeft = container.scrollLeft > 1;
-            this._canScrollRight = container.scrollLeft < (container.scrollWidth - container.clientWidth - 1);
+            this._canScrollRight =
+                container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
         }
     }
     willUpdate(changedProperties) {
-        if (changedProperties.has('device') || changedProperties.has('hass') || changedProperties.has('activeEnvGraphs') || changedProperties.has('linkedGraphGroups')) {
+        if (changedProperties.has('device') ||
+            changedProperties.has('hass') ||
+            changedProperties.has('activeEnvGraphs') ||
+            changedProperties.has('linkedGraphGroups')) {
             const { mainChips, deviceChips, dominant, envAttrs } = this._computeMetrics();
             this._mainChips = mainChips;
             this._deviceChips = deviceChips;
@@ -16366,7 +17373,9 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         }
     }
     updated(changedProps) {
-        if (changedProps.has('activeEnvGraphs') || changedProps.has('linkedGraphGroups') || changedProps.has('device')) {
+        if (changedProps.has('activeEnvGraphs') ||
+            changedProps.has('linkedGraphGroups') ||
+            changedProps.has('device')) {
             // Content might change size
             setTimeout(() => this._checkScroll(), 0);
         }
@@ -16417,11 +17426,11 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         }
     }
     _isMetricLinked(metric) {
-        const index = this.linkedGraphGroups.findIndex(g => g.includes(metric));
+        const index = this.linkedGraphGroups.findIndex((g) => g.includes(metric));
         return {
             linked: index !== -1,
             groupIndex: index,
-            group: index !== -1 ? this.linkedGraphGroups[index] : []
+            group: index !== -1 ? this.linkedGraphGroups[index] : [],
         };
     }
     _unlinkGraphs(groupIndex) {
@@ -16463,49 +17472,73 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
       <div class="gs-stats-container">
         <div class="gs-header-top">
           <div class="gs-title-group">
-            ${!this.config?.default_growspace ? x `
-        <select class="growspace-select-header" .value=${this.device.device_id} @change=${this._handleDeviceChange}>
-          ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
-        </select>
-          ` : x `
-          <h3 class="gs-title"> ${this.device.name} </h3>
-            `}
-
-            ${dominant ? x `
-              <div style="display: flex; gap: 8px;">
-                <div class="gs-stage-chip">
-                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
-                  ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Day ${dominant.days}
-                </div>
-                <div class="gs-stage-chip">
-                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path></svg>
-                  ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Week ${Math.ceil(dominant.days / 7)}
-                </div>
-              </div>
-            ` : ''}
+            ${!this.config?.default_growspace
+            ? x `
+                  <select
+                    class="growspace-select-header"
+                    .value=${this.device.device_id}
+                    @change=${this._handleDeviceChange}
+                  >
+                    ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
+                  </select>
+                `
+            : x ` <h3 class="gs-title">${this.device.name}</h3> `}
+            ${dominant
+            ? x `
+                  <div style="display: flex; gap: 8px;">
+                    <div class="gs-stage-chip">
+                      <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path>
+                      </svg>
+                      ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Day
+                      ${dominant.days}
+                    </div>
+                    <div class="gs-stage-chip">
+                      <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path>
+                      </svg>
+                      ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Week
+                      ${Math.ceil(dominant.days / 7)}
+                    </div>
+                  </div>
+                `
+            : ''}
           </div>
 
-          <div class="header-controls-container" style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;">
+          <div
+            class="header-controls-container"
+            style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;"
+          >
             <div class="header-controls">
-              
-              <div class=${e({ 'mobile-link-btn': true, 'active': this._mobileLink })}
-                   @click=${() => this._mobileLink = !this._mobileLink}>
-                 <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
+              <div
+                class=${e({ 'mobile-link-btn': true, active: this._mobileLink })}
+                @click=${() => (this._mobileLink = !this._mobileLink)}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
               </div>
 
-              <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px; overflow: hidden;">
-                ${this._canScrollLeft && !this._mobileLink ? x `
-                    <div class="scroll-nav left" @click=${() => this._scrollChips('left')}><svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg></div>
-                ` : ''}
-                
-                <div class=${e({
+              <div
+                style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px; overflow: hidden;"
+              >
+                ${this._canScrollLeft && !this._mobileLink
+            ? x `
+                      <div class="scroll-nav left" @click=${() => this._scrollChips('left')}>
+                        <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+                      </div>
+                    `
+            : ''}
+
+                <div
+                  class=${e({
             'gs-stats-chips': true,
             'mobile-link-active': this._mobileLink,
             'mask-left': this._canScrollLeft,
-            'mask-right': this._canScrollRight
-        })} ${n$1(this._chipsContainerRef)}>
-                  ${this._mainChips.map(chip => x `
-                    <growspace-chip
+            'mask-right': this._canScrollRight,
+        })}
+                  ${n$1(this._chipsContainerRef)}
+                >
+                  ${this._mainChips.map((chip) => x `
+                      <growspace-chip
                         .icon=${chip.icon}
                         .label=${chip.label || ''}
                         .value=${chip.value}
@@ -16523,83 +17556,106 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             this._toggleEnvGraph(chip.key);
         }}
                         @unlink=${() => chip.groupIndex !== undefined && this._unlinkGraphs(chip.groupIndex)}
-                    ></growspace-chip>
-                  `)}
-              </div>
+                      ></growspace-chip>
+                    `)}
+                </div>
 
-                ${this._canScrollRight && !this._mobileLink ? x `
-                    <div class="scroll-nav right" @click=${() => this._scrollChips('right')}><svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg></div>
-                ` : ''}
+                ${this._canScrollRight && !this._mobileLink
+            ? x `
+                      <div class="scroll-nav right" @click=${() => this._scrollChips('right')}>
+                        <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                      </div>
+                    `
+            : ''}
               </div>
 
               <div class="menu-container">
-                <div class="menu-button" @click=${() => this._menuOpen = !this._menuOpen}>
+                <div class="menu-button" @click=${() => (this._menuOpen = !this._menuOpen)}>
                   <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
                 </div>
-                ${this._menuOpen ? x `
-                  <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
-                    <div class="menu-item" @click=${() => this._triggerAction('config')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                      <span class="menu-item-label">Config</span>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('edit')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-                      <span class="menu-item-label">Edit</span>
-                      <div class=${e({ 'menu-toggle-switch': true, 'active': this.isEditMode })}></div>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('compact')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-                      <span class="menu-item-label">Compact View</span>
-                      <div class=${e({ 'menu-toggle-switch': true, 'active': this.compact })}></div>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
-                      <span class="menu-item-label">Control Dehumidifier</span>
-                      <div class=${e({ 'menu-toggle-switch': true, 'active': !!envAttrs.dehumidifier_control_enabled })}></div>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('strains')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-                      <span class="menu-item-label">Strains</span>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                      <span class="menu-item-label">Irrigation</span>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('ai')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-                      <span class="menu-item-label">Ask AI</span>
-                    </div>
-                    <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
-                      <span class="menu-item-label">Logbook</span>
-                    </div>
-                  </div>
-                ` : ''}
+                ${this._menuOpen
+            ? x `
+                      <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
+                        <div class="menu-item" @click=${() => this._triggerAction('config')}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                          <span class="menu-item-label">Config</span>
+                        </div>
+                        <div class="menu-item" @click=${() => this._triggerAction('edit')}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                          <span class="menu-item-label">Edit</span>
+                          <div
+                            class=${e({
+                'menu-toggle-switch': true,
+                active: this.isEditMode,
+            })}
+                          ></div>
+                        </div>
+                        <div class="menu-item" @click=${() => this._triggerAction('compact')}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+                          <span class="menu-item-label">Compact View</span>
+                          <div
+                            class=${e({ 'menu-toggle-switch': true, active: this.compact })}
+                          ></div>
+                        </div>
+                        <div
+                          class="menu-item"
+                          @click=${() => this._triggerAction('control_dehumidifier')}
+                        >
+                          <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
+                          <span class="menu-item-label">Control Dehumidifier</span>
+                          <div
+                            class=${e({
+                'menu-toggle-switch': true,
+                active: !!envAttrs.dehumidifier_control_enabled,
+            })}
+                          ></div>
+                        </div>
+                        <div class="menu-item" @click=${() => this._triggerAction('strains')}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+                          <span class="menu-item-label">Strains</span>
+                        </div>
+                        <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                          <span class="menu-item-label">Irrigation</span>
+                        </div>
+                        <div class="menu-item" @click=${() => this._triggerAction('ai')}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+                          <span class="menu-item-label">Ask AI</span>
+                        </div>
+                        <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
+                          <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
+                          <span class="menu-item-label">Logbook</span>
+                        </div>
+                      </div>
+                    `
+            : ''}
               </div>
             </div>
 
-            <div class=${e({ 'gs-device-chips': true, 'mobile-link-active': this._mobileLink })}>
-              ${this._deviceChips.map(chip => x `
-                    <growspace-chip
-                        .icon=${chip.icon}
-                        .label=${chip.label || ''}
-                        .value=${chip.value}
-                        .status=${chip.status || ''}
-                        .active=${chip.active}
-                        .linked=${chip.linked}
-                        .tooltip=${chip.tooltip || ''}
-                        draggable="${this._chipDraggable}"
-                        @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
-                        @drop=${(e) => this._handleChipDrop(e, chip.key)}
-                        @dragover=${(e) => this._handleDragOver(e)}
-                        @click=${(e) => {
+            <div
+              class=${e({ 'gs-device-chips': true, 'mobile-link-active': this._mobileLink })}
+            >
+              ${this._deviceChips.map((chip) => x `
+                  <growspace-chip
+                    .icon=${chip.icon}
+                    .label=${chip.label || ''}
+                    .value=${chip.value}
+                    .status=${chip.status || ''}
+                    .active=${chip.active}
+                    .linked=${chip.linked}
+                    .tooltip=${chip.tooltip || ''}
+                    draggable="${this._chipDraggable}"
+                    @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
+                    @drop=${(e) => this._handleChipDrop(e, chip.key)}
+                    @dragover=${(e) => this._handleDragOver(e)}
+                    @click=${(e) => {
             if (e.target.closest('.link-icon'))
                 return;
             this._toggleEnvGraph(chip.key);
         }}
-                         @unlink=${() => chip.groupIndex !== undefined && this._unlinkGraphs(chip.groupIndex)}
-                    ></growspace-chip>
-                  `)}
+                    @unlink=${() => chip.groupIndex !== undefined && this._unlinkGraphs(chip.groupIndex)}
+                  ></growspace-chip>
+                `)}
             </div>
           </div>
         </div>
@@ -16652,7 +17708,7 @@ GrowspaceHeader.styles = i$6 `
       background: linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
 
     .growspace-select-header {
@@ -16695,26 +17751,26 @@ GrowspaceHeader.styles = i$6 `
     }
 
     .gs-stats-chips {
-       display: flex;
-       flex-wrap: nowrap;
-       gap: 8px;
-       justify-content: flex-start;
-       align-items: center;
-       overflow-x: auto;
-       overflow-y: hidden;
-       flex: 1;
-       min-width: 0;
-       scrollbar-width: none;
-       -ms-overflow-style: none;
-       /* Remove static mask */
-       /* mask-image: linear-gradient(to right, black 85%, transparent 100%); */
-       /* -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%); */
-       padding: 4px 2px;
-       transition: mask-image 0.3s;
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 8px;
+      justify-content: flex-start;
+      align-items: center;
+      overflow-x: auto;
+      overflow-y: hidden;
+      flex: 1;
+      min-width: 0;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      /* Remove static mask */
+      /* mask-image: linear-gradient(to right, black 85%, transparent 100%); */
+      /* -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%); */
+      padding: 4px 2px;
+      transition: mask-image 0.3s;
 
-       touch-action: manipulation;
-       max-width: 100%;
-       -webkit-overflow-scrolling: touch;
+      touch-action: manipulation;
+      max-width: 100%;
+      -webkit-overflow-scrolling: touch;
     }
     .gs-stats-chips::-webkit-scrollbar {
       display: none;
@@ -16742,14 +17798,20 @@ GrowspaceHeader.styles = i$6 `
       user-select: none;
       flex-shrink: 0;
       white-space: nowrap;
-      touch-action: auto; 
+      touch-action: auto;
     }
 
     /* Status Colors */
     @keyframes pulse-red {
-      0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
-      70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+      0% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+      }
     }
     .stat-chip.status-optimal {
       color: #2e7d32 !important;
@@ -16999,19 +18061,19 @@ GrowspaceHeader.styles = i$6 `
         margin-bottom: 8px; /* Gap logic */
         flex-shrink: 0;
       }
-      
+
       .mobile-link-btn.active {
         background: var(--primary-color, #03a9f4);
         border-color: var(--primary-color, #03a9f4);
         box-shadow: 0 0 12px rgba(3, 169, 244, 0.4);
       }
-      
+
       .mobile-link-btn svg {
         width: 24px;
         height: 24px;
         fill: currentColor;
       }
-        
+
       /* Link Mode Active State - WRAPPING ENABLED, SCROLL DISABLED */
       .gs-stats-chips.mobile-link-active,
       .gs-device-chips.mobile-link-active {
@@ -17028,45 +18090,57 @@ GrowspaceHeader.styles = i$6 `
     }
 
     .scroll-nav {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        opacity: 0.5;
-        transition: opacity 0.2s;
-        min-width: 24px;
-        color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+      min-width: 24px;
+      color: #fff;
     }
 
     .scroll-nav:hover {
-        opacity: 1;
+      opacity: 1;
     }
 
     .scroll-nav svg {
-        width: 24px;
-        height: 24px;
-        fill: currentColor;
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
     }
 
     @media (pointer: coarse) {
-        .scroll-nav {
-            display: none;
-        }
+      .scroll-nav {
+        display: none;
+      }
     }
 
     .gs-stats-chips.mask-right {
-        mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
-        -webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
+      mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
     }
 
     .gs-stats-chips.mask-left {
-        mask-image: linear-gradient(to right, transparent 0%, black 40px, black 100%);
-        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 40px, black 100%);
+      mask-image: linear-gradient(to right, transparent 0%, black 40px, black 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 40px, black 100%);
     }
-    
+
     .gs-stats-chips.mask-left.mask-right {
-        mask-image: linear-gradient(to right, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%);
-        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 40px, black calc(100% - 40px), transparent 100%);
+      mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 40px,
+        black calc(100% - 40px),
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 40px,
+        black calc(100% - 40px),
+        transparent 100%
+      );
     }
   `;
 __decorate([
@@ -17257,34 +18331,38 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         // Assuming plants input is (PlantEntity | null)[][]
         const flatGrid = this.plants.flat();
         return x `
-      <div class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
-           style="${gridStyle}"
-           @mobile-drop=${this._handleMobileDrop}>
-           ${this.isLoading ? this.renderSkeletonGrid() : ''}
-         ${!this.isLoading ? c(flatGrid, (plant, index) => plant ? (plant.attributes?.plant_id || plant.entity_id) : `empty-${index}`, (plant, index) => {
-            // Recalculate row/col based on grid index
-            const row = Math.floor(index / this.cols) + 1;
-            const col = (index % this.cols) + 1;
-            if (!plant) {
-                return this.renderEmptySlot(row, col);
-            }
-            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-            const isSelected = this.selectedPlants.has(plantId);
-            return x `
-               <growspace-plant-card
-                 .plant=${plant}
-                 .row=${row}
-                 .col=${col}
-                 .strainLibrary=${this.strainLibrary}
-                 .isEditMode=${this.isEditMode}
-                 .selected=${isSelected}
-                 @plant-click=${() => this._handlePlantClick(plant)}
-                 @plant-drag-start=${() => this._handleDragStart(plant)}
-                 @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, row, col, plant)}
-                 @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
-               ></growspace-plant-card>
-             `;
-        }) : ''}
+      <div
+        class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
+        style="${gridStyle}"
+        @mobile-drop=${this._handleMobileDrop}
+      >
+        ${this.isLoading ? this.renderSkeletonGrid() : ''}
+        ${!this.isLoading
+            ? c(flatGrid, (plant, index) => plant ? plant.attributes?.plant_id || plant.entity_id : `empty-${index}`, (plant, index) => {
+                // Recalculate row/col based on grid index
+                const row = Math.floor(index / this.cols) + 1;
+                const col = (index % this.cols) + 1;
+                if (!plant) {
+                    return this.renderEmptySlot(row, col);
+                }
+                const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+                const isSelected = this.selectedPlants.has(plantId);
+                return x `
+                  <growspace-plant-card
+                    .plant=${plant}
+                    .row=${row}
+                    .col=${col}
+                    .strainLibrary=${this.strainLibrary}
+                    .isEditMode=${this.isEditMode}
+                    .selected=${isSelected}
+                    @plant-click=${() => this._handlePlantClick(plant)}
+                    @plant-drag-start=${() => this._handleDragStart(plant)}
+                    @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, row, col, plant)}
+                    @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
+                  ></growspace-plant-card>
+                `;
+            })
+            : ''}
       </div>
     `;
     }
@@ -17300,7 +18378,10 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         @drop=${(e) => this._handleDrop(e, row, col, null)}
       >
         <div class="plant-header">
-          <svg style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;" viewBox="0 0 24 24">
+          <svg
+            style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;"
+            viewBox="0 0 24 24"
+          >
             <path d="${mdiPlus}"></path>
           </svg>
         </div>
@@ -17311,261 +18392,270 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
     renderSkeletonGrid() {
         // Generate placeholder items matching row * col count
         const count = this.rows * this.cols;
-        return Array(count).fill(0).map(() => x `<div class="skeleton-card"></div>`);
+        return Array(count)
+            .fill(0)
+            .map(() => x `<div class="skeleton-card"></div>`);
     }
 };
 GrowspaceGrid.styles = i$6 `
-      :host {
-        display: block;
-      }
+    :host {
+      display: block;
+    }
 
+    .grid {
+      display: grid;
+      gap: var(--spacing-md);
+    }
+
+    .grid.compact {
+      gap: var(--spacing-sm);
+    }
+
+    /* Empty Plant Card Styles */
+    .plant-card-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      aspect-ratio: 1;
+      border: 2px dashed rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      color: var(--secondary-text-color);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Skeleton Loading */
+    .skeleton-card {
+      height: 100%;
+      aspect-ratio: 1;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 0.6;
+      }
+      50% {
+        opacity: 0.3;
+      }
+      100% {
+        opacity: 0.6;
+      }
+    }
+
+    .plant-card-empty:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateY(-2px);
+    }
+
+    .plant-card-rich,
+    .plant-card-empty {
+      min-width: 0;
+    }
+
+    .plant-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    /* Force List View for Wide Grids on Desktop */
+    .grid.force-list-view {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+      /* Remove grid template */
+      grid-template-columns: 1fr !important;
+      grid-template-rows: auto !important;
+    }
+
+    .grid.force-list-view .plant-card-rich {
+      min-height: auto;
+      aspect-ratio: unset;
+      flex-direction: row;
+      align-items: center;
+      padding: 12px;
+      gap: 12px;
+    }
+
+    .grid.force-list-view .plant-card-bg {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      border-radius: 8px;
+      flex-shrink: 0;
+      background-color: rgba(0, 0, 0, 0.2);
+    }
+
+    .grid.force-list-view .plant-card-overlay {
+      display: none;
+    }
+
+    .grid.force-list-view .plant-card-content {
+      flex-direction: row;
+      padding: 0;
+      align-items: center;
+      width: 100%;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .grid.force-list-view .pc-info {
+      margin-top: 0;
+      align-items: flex-start;
+      text-align: left;
+      flex: 1;
+      gap: 2px;
+    }
+
+    .grid.force-list-view .pc-strain-name {
+      font-size: 1rem;
+    }
+
+    .grid.force-list-view .pc-pheno {
+      font-size: 0.85rem;
+    }
+
+    .grid.force-list-view .pc-stage {
+      margin-top: 2px;
+      font-size: 0.85rem;
+    }
+
+    .grid.force-list-view .pc-stats {
+      width: auto;
+      padding: 0;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .grid.force-list-view .pc-stat-item svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .grid.force-list-view .plant-card-empty {
+      min-height: 80px;
+      aspect-ratio: unset;
+      flex-direction: row;
+      justify-content: flex-start;
+      padding: 0 24px;
+      gap: 16px;
+    }
+
+    @media (max-width: 600px) {
       .grid {
-        display: grid;
-        gap: var(--spacing-md);
-      }
-
-      .grid.compact {
+        display: flex !important;
+        flex-direction: column !important;
         gap: var(--spacing-sm);
+        grid-template-columns: unset !important;
+        grid-template-rows: unset !important;
       }
 
-      /* Empty Plant Card Styles */
-      .plant-card-empty {
+      /* Mobile List View for Rich Cards */
+      .plant-card-rich {
+        width: 100%;
+        box-sizing: border-box;
+        min-height: auto;
+        aspect-ratio: unset;
+        flex-direction: row;
+        align-items: center;
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .plant-card-bg {
+        /* Turn background into a thumbnail on mobile */
+        position: relative !important;
+        width: 64px !important;
+        height: 64px !important;
+        border-radius: 8px;
+        flex-shrink: 0;
+        background-color: rgba(0, 0, 0, 0.2);
+        object-fit: cover !important;
+      }
+
+      .plant-card-overlay {
+        display: none;
+      }
+
+      .plant-card-content {
+        position: static;
+        z-index: auto;
+        display: flex;
+        flex: 1;
+        min-width: 0;
+        width: 100%;
+        flex-direction: row;
+        padding: 0;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .pc-info {
         display: flex;
         flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        aspect-ratio: 1;
-        border: 2px dashed rgba(255, 255, 255, 0.2);
-        border-radius: 16px;
-        color: var(--secondary-text-color);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        background: rgba(255, 255, 255, 0.02);
+        margin-top: 0;
+        align-items: flex-start;
+        text-align: left;
+        flex: 1;
+        gap: 2px;
+        min-width: 0;
       }
 
-      /* Skeleton Loading */
-      .skeleton-card {
-        height: 100%;
-        aspect-ratio: 1;
-        border-radius: 16px;
-        background: rgba(255, 255, 255, 0.05);
-        animation: pulse 1.5s infinite;
-      }
-      
-      @keyframes pulse {
-        0% { opacity: 0.6; }
-        50% { opacity: 0.3; }
-        100% { opacity: 0.6; }
+      .pc-strain-name {
+        font-size: 0.9rem;
+        color: #fff !important;
+        font-weight: 700;
       }
 
-      .plant-card-empty:hover {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-        background: rgba(255, 255, 255, 0.05);
-        transform: translateY(-2px);
+      .pc-pheno {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.7) !important;
       }
 
-      .plant-card-rich, .plant-card-empty {
-         min-width: 0;
+      .pc-stage {
+        margin-top: 2px;
+        font-size: 0.8rem;
+        color: var(--stage-color, #fff) !important;
+        font-weight: 600;
       }
 
-      .plant-header {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 8px;
+      .pc-stats {
+        width: auto;
+        padding: 0;
+        gap: 12px;
+        flex-shrink: 0;
       }
 
-      /* Force List View for Wide Grids on Desktop */
-      .grid.force-list-view {
-          display: flex;
-          flex-direction: column;
-          gap: var(--spacing-sm);
-          /* Remove grid template */
-          grid-template-columns: 1fr !important;
-          grid-template-rows: auto !important;
+      .pc-stat-item svg {
+        width: 20px;
+        height: 20px;
       }
 
-      .grid.force-list-view .plant-card-rich {
-          min-height: auto;
-          aspect-ratio: unset;
-          flex-direction: row;
-          align-items: center;
-          padding: 12px;
-          gap: 12px;
+      /* Hide non-current stages on mobile */
+      .pc-stat-item:not(.current-stage) {
+        display: none;
       }
 
-      .grid.force-list-view .plant-card-bg {
-           position: relative;
-           width: 64px;
-           height: 64px;
-           border-radius: 8px;
-           flex-shrink: 0;
-           background-color: rgba(0,0,0,0.2);
+      /* Empty Slot in List View */
+      .plant-card-empty {
+        min-height: 80px;
+        aspect-ratio: unset;
+        flex-direction: row;
+        justify-content: flex-start;
+        padding: 0 24px;
+        gap: 16px;
       }
-
-      .grid.force-list-view .plant-card-overlay {
-           display: none;
-      }
-
-      .grid.force-list-view .plant-card-content {
-           flex-direction: row;
-           padding: 0;
-           align-items: center;
-           width: 100%;
-           justify-content: space-between;
-           gap: 8px;
-      }
-
-      .grid.force-list-view .pc-info {
-           margin-top: 0;
-           align-items: flex-start;
-           text-align: left;
-           flex: 1;
-           gap: 2px;
-      }
-
-      .grid.force-list-view .pc-strain-name {
-           font-size: 1rem;
-      }
-
-      .grid.force-list-view .pc-pheno {
-           font-size: 0.85rem;
-      }
-
-      .grid.force-list-view .pc-stage {
-           margin-top: 2px;
-           font-size: 0.85rem;
-      }
-
-      .grid.force-list-view .pc-stats {
-           width: auto;
-           padding: 0;
-           gap: 12px;
-           flex-shrink: 0;
-      }
-
-      .grid.force-list-view .pc-stat-item svg {
-           width: 20px;
-           height: 20px;
-      }
-
-      .grid.force-list-view .plant-card-empty {
-           min-height: 80px;
-           aspect-ratio: unset;
-           flex-direction: row;
-           justify-content: flex-start;
-           padding: 0 24px;
-           gap: 16px;
-      }
-
-      @media (max-width: 600px) {
-        .grid {
-          display: flex !important;
-          flex-direction: column !important;
-          gap: var(--spacing-sm);
-          grid-template-columns: unset !important;
-          grid-template-rows: unset !important;
-        }
-
-        /* Mobile List View for Rich Cards */
-        .plant-card-rich {
-          width: 100%;
-          box-sizing: border-box;
-          min-height: auto;
-          aspect-ratio: unset;
-          flex-direction: row;
-          align-items: center;
-          padding: 12px;
-          gap: 12px;
-        }
-
-        .plant-card-bg {
-           /* Turn background into a thumbnail on mobile */
-           position: relative !important;
-           width: 64px !important;
-           height: 64px !important;
-           border-radius: 8px;
-           flex-shrink: 0;
-           background-color: rgba(0,0,0,0.2);
-           object-fit: cover !important;
-        }
-
-        .plant-card-overlay {
-           display: none;
-        }
-
-        .plant-card-content {
-           position: static;
-           z-index: auto;
-           display: flex;
-           flex: 1;
-           min-width: 0;
-           width: 100%;
-           flex-direction: row;
-           padding: 0;
-           align-items: center;
-           justify-content: space-between;
-           gap: 12px;
-        }
-
-        .pc-info {
-           display: flex;
-           flex-direction: column;
-           margin-top: 0;
-           align-items: flex-start;
-           text-align: left;
-           flex: 1;
-           gap: 2px;
-           min-width: 0;
-        }
-
-        .pc-strain-name {
-           font-size: 0.9rem;
-           color: #fff !important;
-           font-weight: 700;
-        }
-
-        .pc-pheno {
-           font-size: 0.8rem;
-           color: rgba(255,255,255,0.7) !important;
-        }
-
-        .pc-stage {
-           margin-top: 2px;
-           font-size: 0.8rem;
-           color: var(--stage-color, #fff) !important;
-           font-weight: 600;
-        }
-
-        .pc-stats {
-           width: auto;
-           padding: 0;
-           gap: 12px;
-           flex-shrink: 0;
-        }
-
-        .pc-stat-item svg {
-           width: 20px;
-           height: 20px;
-        }
-
-        /* Hide non-current stages on mobile */
-        .pc-stat-item:not(.current-stage) {
-           display: none;
-        }
-
-        /* Empty Slot in List View */
-        .plant-card-empty {
-           min-height: 80px;
-           aspect-ratio: unset;
-           flex-direction: row;
-           justify-content: flex-start;
-           padding: 0 24px;
-           gap: 16px;
-        }
-      }
+    }
   `;
 __decorate([
     n$5({ type: Array }),
@@ -17604,1299 +18694,1358 @@ GrowspaceGrid = __decorate([
 ], GrowspaceGrid);
 
 const growspaceCardStyles = i$6 `
-      :host {
-        display: block;
-        font-family: 'Roboto', sans-serif;
-        color: var(--growspace-card-text);
-      }
-        
-      ha-card {
-        padding: var(--spacing-lg);
-        border-radius: var(--border-radius-lg);
-        background: var(--growspace-card-bg);
-        box-shadow: var(--card-shadow);
-        transition: var(--transition-medium);
-      }
-
-      ha-card:hover {
-        box-shadow: var(--card-shadow-hover);
-      }
-
-      /* Unified Card Container - Glassmorphism 2.0 */
-      .unified-growspace-card {
-        /* Deep glass effect */
-        background: rgba(20, 20, 24, 0.6);
-        background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
-
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 28px; /* MD3 Large rounding */
-        padding: 24px;
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-        color: #fff;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 
-          0 4px 24px -1px rgba(0, 0, 0, 0.2),
-          0 0 0 1px rgba(255, 255, 255, 0.02) inset;
-      }
-      /* Edit Mode Banner */
-      .edit-mode-banner {
-        background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
-        border: 1px solid rgba(76, 175, 80, 0.4);
-        border-radius: 12px;
-        padding: 12px 16px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-        animation: slideDown 0.3s ease;
-      }
-
-      @keyframes slideDown {
-        from {
-          opacity: 0;
-          transform: translateY(-10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .banner-content {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        color: #fff;
-        font-weight: 500;
-        font-size: 0.95rem;
-      }
-
-      .banner-content svg {
-        width: 20px;
-        height: 20px;
-        fill: currentColor;
-      }
-
-      .stat-chip svg {
-        width: 18px;
-        height: 18px;
-        fill: currentColor;
-        opacity: 0.8;
-        pointer-events: none; /* Ensure key events pass through to chip/container */
-      }
-
-      @keyframes pulse-red {
-        0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
-        70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
-      }
-
-      .stat-chip.status-warning {
-        color: #ffa726 !important;
-        border-color: rgba(255, 167, 38, 0.5) !important;
-        background: rgba(255, 167, 38, 0.1) !important;
-      }
-
-      .stat-chip.status-danger {
-        color: #ef5350 !important;
-        border-color: rgba(239, 83, 80, 0.5) !important;
-        background: rgba(239, 83, 80, 0.1) !important;
-        animation: pulse-red 2s infinite;
-      }
-      .banner-actions {
-        display: flex;
-        gap: 8px;
-      }
-
-      /* 24h Chart */
-      .gs-chart-container {
-         margin-top: 8px;
-         height: 150px;
-         position: relative;
-         width: 100%;
-      }
-
-      .gs-chart-svg {
-        width: 100%;
-        height: 100%;
-        filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.2));
-      }
-
-      .chart-line {
-        fill: none;
-        stroke: var(--primary-light-color, #FFEB3B);
-        stroke-width: 2;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-      }
-
-      .chart-gradient-fill {
-        fill: url(#gradient);
-        opacity: 0.2;
-      }
-
-      /* Time Range Selector - MD3 Tonal Chips */
-      .time-range-selector {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 16px;
-        justify-content: flex-end;
-      }
-      .range-btn {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid transparent;
-        color: rgba(255, 255, 255, 0.7);
-        border-radius: 8px; /* Small rounding for compact look */
-        padding: 6px 12px;
-        font-size: 0.75rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-        letter-spacing: 0.5px;
-      }
-      .range-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: #fff;
-      }
-      .range-btn.active {
-        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.15);
-        color: var(--primary-color, #4caf50);
-        border-color: rgba(var(--rgb-primary-color, 76, 175, 80), 0.3);
-        font-weight: 600;
-      }
-
-      /* Time markers for chart */
-      .chart-markers {
-         display: flex;
-         justify-content: space-between;
-         margin-top: -24px;
-         padding: 0 10px;
-         font-size: 0.75rem;
-         color: rgba(255, 255, 255, 0.3);
-         font-weight: 500;
-         position: relative;
-         z-index: 2;
-         pointer-events: none;
-      }
-
-      /* Accessibility */
-      .sr-only-announcer {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border: 0;
-      }
-
-      .gs-tooltip {
-        position: absolute;
-        top: 10px;
-        background: rgba(30, 30, 35, 0.9);
-        color: #fff;
-        padding: 8px 12px;
-        border-radius: 8px;
-        font-size: 0.75rem;
-        pointer-events: none;
-        transform: translate(-50%, 0);
-        z-index: 10;
-        white-space: nowrap;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(12px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-        line-height: 1.4;
-        text-align: center;
-      }
-      .gs-tooltip .time {
-        font-weight: bold;
-        color: var(--primary-light-color);
-        margin-bottom: 2px;
-      }
-
-      .gs-cursor-line {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 1px;
-        background: rgba(255, 255, 255, 0.3);
-        pointer-events: none;
-        z-index: 5;
-        border-left: 1px dashed rgba(255, 255, 255, 0.5);
-      }
-
-      /* Light Cycle Card Nested */
-      .gs-light-cycle-card {
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 16px;
-        padding: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        transition: all 0.3s ease;
-      }
-
-      .gs-light-cycle-card.collapsed {
-        padding: 12px 20px;
-        gap: 0;
-      }
-
-      .gs-light-header-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 4px;
-        cursor: pointer;
-      }
-
-      .gs-light-cycle-card.collapsed .gs-light-header-row {
-        margin-bottom: 0;
-      }
-
-      .gs-light-title {
-         font-size: 1.5rem;
-         font-weight: 600;
-         display: flex;
-         align-items: center;
-         gap: 12px;
-         color: #fff;
-      }
-
-      .gs-icon-box {
-        background: rgba(255, 235, 59, 0.05);
-        border: 1px solid rgba(255, 235, 59, 0.2);
-        border-radius: 14px;
-        width: 48px;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--primary-light-color);
-      }
-
-      .gs-light-subtitle {
-        font-size: 0.75rem;
-        opacity: 0.5;
-        font-weight: 500;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-        margin-top: 4px;
-      }
-
-      .light-status-text {
-         font-size: 1.5rem;
-         font-weight: 700;
-         display: flex;
-         align-items: center;
-         gap: 8px;
-      }
-
-      .status-dot {
-         width: 8px;
-         height: 8px;
-         border-radius: 50%;
-         background: currentColor;
-         box-shadow: 0 0 8px currentColor;
-      }
-
-      .target-cycle-text {
-         font-size: 0.9rem;
-         opacity: 0.5;
-         text-align: right;
-         margin-top: 4px;
-      }
-
-      /* Bottom Action Cards */
-      .gs-action-cards {
-        display: flex;
-        gap: 16px;
-        margin-top: 8px;
-      }
-
-      .action-card {
-         flex: 1;
-         background: rgba(255, 255, 255, 0.05);
-         border: 1px solid rgba(255, 255, 255, 0.05);
-         border-radius: 16px;
-         padding: 16px;
-         display: flex;
-         align-items: center;
-         justify-content: space-between;
-         cursor: default; /* Or pointer if clickable */
-      }
-
-      .ac-content {
-         display: flex;
-         align-items: center;
-         gap: 12px;
-      }
-
-      .ac-icon {
-         width: 40px;
-         height: 40px;
-         border-radius: 50%;
-         display: flex;
-         align-items: center;
-         justify-content: center;
-      }
-
-      .ac-icon.on {
-         background: rgba(255, 235, 59, 0.1);
-         color: var(--primary-light-color);
-      }
-
-      .ac-icon.off {
-         background: rgba(120, 144, 156, 0.1);
-         color: #90a4ae;
-      }
-
-      .ac-text h4 {
-         margin: 0;
-         font-size: 0.7rem;
-         text-transform: uppercase;
-         opacity: 0.5;
-         letter-spacing: 0.5px;
-      }
-
-      .ac-text .time {
-         font-size: 1.2rem;
-         font-weight: 600;
-         color: #fff;
-      }
-
-      .ac-text .time span {
-         font-size: 0.9rem;
-         font-weight: 400;
-         opacity: 0.7;
-         margin-left: 2px;
-      }
-
-      .grid {
-        display: grid;
-        gap: var(--spacing-md);
-      }
-
-      .grid.compact {
-        gap: var(--spacing-sm);
-      }
-
-      ha-dialog {
-        --mdc-dialog-border-radius: var(--border-radius-md);
-        --mdc-dialog-box-shadow: var(--card-shadow-hover);
-      }
-
-      .no-data {
-        text-align: center;
-        color: var(--secondary-text-color);
-        padding: var(--spacing-lg);
-        font-style: italic;
-        background: var(--growspace-empty-bg);
-        border-radius: var(--border-radius-md);
-        margin: var(--spacing-md) 0;
-      }
-
-      .error {
-        color: var(--error-color);
-        padding: var(--spacing-md);
-        background: var(--error-bg);
-        border: 1px solid var(--error-border);
-        border-radius: var(--border-radius-md);
-        margin: var(--spacing-md) 0;
-      }
-      /* Dialog Styles */
-      ha-dialog {
-        --mdc-dialog-border-radius: var(--border-radius);
-        --mdc-dialog-box-shadow: var(--surface-elevation-hover);
-      }
-      
-      ha-dialog .mdc-dialog--open .mdc-dialog__container,
-      ha-dialog .mdc-dialog--open {
-        align-items: start;
-        margin-top: 5vh;
-      }
-      
-      ha-dialog.strain-dialog .mdc-dialog--open .mdc-dialog__container .mdc-dialog__surface {
-        width: 800px;
-        max-width: 90vw;
-        height: 600px;
-        max-height: 90vh;
-      }
-      ha-dialog.strain-dialog .mdc-dialog--open .dialog-content .strain-library-header {
-        justify-content: space-between;
-      }
-      ha-dialog.strain-dialog {
-        --mdc-dialog-min-width: 45vw;
-        --mdc-dialog-max-width: 45vw;
-        --mdc-dialog-surface-fill-color: var(--growspace-card-bg);
-      }
-      .dialog-content {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-md);
-        padding: var(--spacing-md) 0;
-      }
-
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-      }
-
-      .form-group label {
-        font-weight: 500;
-        color: var(--primary-text-color);
-        font-size: 0.9rem;
-      }
-
-      .form-input {
-        padding: var(--spacing-sm) var(--spacing-md);
-        border: 2px solid var(--divider-color);
-        border-radius: var(--border-radius);
-        font-family: inherit;
-        font-size: 0.9rem;
-        transition: var(--transition);
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-      }
-
-      .form-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(var(--rgb-primary-color), 0.1);
-      }
-
-      /* Empty Plant Card Styles */
-      .plant-card-empty {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        aspect-ratio: 1;
-        border: 2px dashed rgba(255, 255, 255, 0.2);
-        border-radius: 16px;
-        color: var(--secondary-text-color);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        background: rgba(255, 255, 255, 0.02);
-      }
-
-      .plant-card-empty:hover {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-        background: rgba(255, 255, 255, 0.05);
-        transform: translateY(-2px);
-      }
-
-      .plant-header {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 8px;
-      }
-
-      /* Strain Library Styles - Glassmorphism & Table */
-      .strain-search-container {
-        position: relative;
-        margin-bottom: var(--spacing-md);
-      }
-      .search-input {
-        width: 100%;
-        padding: var(--spacing-sm) var(--spacing-lg);
-        padding-left: 40px;
-        border-radius: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--primary-text-color);
-        backdrop-filter: blur(10px);
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-        transition: var(--transition);
-      }
-      .search-input:focus {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: var(--primary-color);
-        outline: none;
-      }
-      .search-icon {
-        position: absolute;
-        left: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 20px;
-        height: 20px;
-        color: var(--secondary-text-color);
-        pointer-events: none;
-      }
-
-      .strain-table-container {
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        overflow: hidden;
-        max-height: 60vh;
-        overflow-y: auto;
-      }
-
-      .strain-table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-
-      .strain-row {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        cursor: pointer;
-        transition: background-color 0.2s;
-      }
-      .strain-row:last-child {
-        border-bottom: none;
-      }
-      .strain-row:hover {
-        background: rgba(255, 255, 255, 0.05);
-      }
-      .strain-cell {
-        padding: var(--spacing-md);
-        display: flex;
-        align-items: center;
-      }
-      .strain-cell.expand-icon {
-        width: 40px;
-        justify-content: center;
-        color: var(--secondary-text-color);
-      }
-      .strain-cell.content {
-        flex: 1;
-        font-weight: 500;
-        font-size: 1.1rem;
-      }
-      .strain-cell.actions {
-        justify-content: flex-end;
-        gap: var(--spacing-sm);
-      }
-
-      .pheno-row {
-        background: rgba(0, 0, 0, 0.2);
-      }
-      .pheno-list {
-        padding: var(--spacing-sm) var(--spacing-lg);
-      }
-      .pheno-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: var(--spacing-sm) 0;
-        border-bottom: 1px dashed rgba(255,255,255,0.1);
-        color: var(--secondary-text-color);
-      }
-      .pheno-item:last-child {
-        border-bottom: none;
-      }
-
-      .fab-button {
-        position: absolute;
-        bottom: 24px;
-        right: 24px;
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background: var(--plant-border-color-default);
-        color: var(--growspace-card-text);
-        border: none;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
-        z-index: 10;
-      }
-      .fab-button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 6px 16px rgba(0,0,0,0.4);
-      }
-      .fab-button:active {
-        transform: scale(0.95);
-      }
-
-      /* Add Form Overlay */
-      .add-form-overlay {
-        position: absolute;
-        bottom: 90px;
-        right: 24px;
-        width: 300px;
-        background: var(--card-background-color);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: var(--spacing-md);
-        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-        backdrop-filter: blur(12px);
-        z-index: 10;
-        animation: slideUp 0.3s ease-out;
-      }
-      @keyframes slideUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-
-      .badge {
-        background: rgba(255,255,255,0.1);
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 0.8em;
-        margin-left: 8px;
-        color: var(--secondary-text-color);
-      }
-
-      /* Clear Confirmation */
-      .confirmation-overlay {
-        position: absolute;
-        bottom: 24px;
-        left: 24px;
-        background: var(--error-bg);
-        border: 1px solid var(--error-border);
-        padding: var(--spacing-sm) var(--spacing-md);
-        border-radius: 24px;
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        animation: fadeIn 0.2s ease-out;
-      }
-
-      .rotate-icon {
-         transition: transform 0.3s ease;
-      }
-      .rotate-icon.expanded {
-         transform: rotate(180deg);
-      }
-
-      /* Allow Grid Items to Scale Down (Fix 5-col Overflow) */
-      .plant-card-rich, .plant-card-empty {
-         min-width: 0;
-      }
-
-      /* Force List View for Wide Grids on Desktop */
-      .grid.force-list-view {
-          display: flex;
-          flex-direction: column;
-          gap: var(--spacing-sm);
-          /* Remove grid template */
-          grid-template-columns: 1fr !important;
-          grid-template-rows: auto !important;
-      }
-
-      .grid.force-list-view .plant-card-rich {
-          min-height: auto;
-          aspect-ratio: unset;
-          flex-direction: row;
-          align-items: center;
-          padding: 12px;
-          gap: 12px;
-      }
-
-      .grid.force-list-view .plant-card-bg {
-           position: relative;
-           width: 64px;
-           height: 64px;
-           border-radius: 8px;
-           flex-shrink: 0;
-           background-color: rgba(0,0,0,0.2);
-      }
-
-      .grid.force-list-view .plant-card-overlay {
-           display: none;
-      }
-
-      .grid.force-list-view .plant-card-content {
-           flex-direction: row;
-           padding: 0;
-           align-items: center;
-           width: 100%;
-           justify-content: space-between;
-           gap: 8px;
-      }
-
-      .grid.force-list-view .pc-info {
-           margin-top: 0;
-           align-items: flex-start;
-           text-align: left;
-           flex: 1;
-           gap: 2px;
-      }
-
-      .grid.force-list-view .pc-strain-name {
-           font-size: 1rem;
-      }
-
-      .grid.force-list-view .pc-pheno {
-           font-size: 0.85rem;
-      }
-
-      .grid.force-list-view .pc-stage {
-           margin-top: 2px;
-           font-size: 0.85rem;
-      }
-
-      .grid.force-list-view .pc-stats {
-           width: auto;
-           padding: 0;
-           gap: 12px;
-           flex-shrink: 0;
-      }
-
-      .grid.force-list-view .pc-stat-item svg {
-           width: 20px;
-           height: 20px;
-      }
-
-      .grid.force-list-view .plant-card-empty {
-           min-height: 80px;
-           aspect-ratio: unset;
-           flex-direction: row;
-           justify-content: flex-start;
-           padding: 0 24px;
-           gap: 16px;
-      }
-
-      @media (max-width: 600px) {
-        .unified-growspace-card {
-            padding: 12px;
-        }
-        .header {
-          flex-direction: column;
-          align-items: stretch;
-        }
-        .selector-container {
-          justify-content: center;
-        }
-        /* Switch Grid to List View */
-        .grid {
-          display: flex !important;
-          flex-direction: column !important;
-          gap: var(--spacing-sm);
-          grid-template-columns: unset !important;
-          grid-template-rows: unset !important;
-        }
-
-        /* Mobile List View for Rich Cards */
-        .plant-card-rich {
-          width: 100%;
-          box-sizing: border-box;
-          min-height: auto;
-          aspect-ratio: unset;
-          flex-direction: row;
-          align-items: center;
-          padding: 12px;
-          gap: 12px;
-        }
-
-        .plant-card-bg {
-           /* Turn background into a thumbnail on mobile */
-           position: relative !important;
-           width: 64px !important;
-           height: 64px !important;
-           border-radius: 8px;
-           flex-shrink: 0;
-           background-color: rgba(0,0,0,0.2);
-           object-fit: cover !important;
-        }
-
-        .plant-card-overlay {
-           display: none;
-        }
-
-        .plant-card-content {
-           position: static;
-           z-index: auto;
-           display: flex;
-           flex: 1;
-           min-width: 0;
-           width: 100%;
-           flex-direction: row;
-           padding: 0;
-           align-items: center;
-           justify-content: space-between;
-           gap: 12px;
-        }
-
-        .pc-info {
-           display: flex;
-           flex-direction: column;
-           margin-top: 0;
-           align-items: flex-start;
-           text-align: left;
-           flex: 1;
-           gap: 2px;
-           min-width: 0;
-        }
-
-        .pc-strain-name {
-           font-size: 0.9rem;
-           color: #fff !important;
-           font-weight: 700;
-        }
-
-        .pc-pheno {
-           font-size: 0.8rem;
-           color: rgba(255,255,255,0.7) !important;
-        }
-
-        .pc-stage {
-           margin-top: 2px;
-           font-size: 0.8rem;
-           color: var(--stage-color, #fff) !important;
-           font-weight: 600;
-        }
-
-        .pc-stats {
-           width: auto;
-           padding: 0;
-           gap: 12px;
-           flex-shrink: 0;
-        }
-
-        .pc-stat-item svg {
-           width: 20px;
-           height: 20px;
-        }
-
-        /* Hide non-current stages on mobile */
-        .pc-stat-item:not(.current-stage) {
-           display: none;
-        }
-
-        /* Empty Slot in List View */
-        .plant-card-empty {
-           min-height: 80px;
-           aspect-ratio: unset;
-           flex-direction: row;
-           justify-content: flex-start;
-           padding: 0 24px;
-           gap: 16px;
-        }
-
-        /* Header vertical stacking */
-        .gs-header-top {
-            flex-direction: column;
-        }
-        .gs-stats-chips {
-            flex-direction: column;
-            width: 100%;
-            align-items: stretch;
-            gap: 4px;
-        }
-        .stat-chip {
-            width: 100%;
-            box-sizing: border-box;
-            justify-content: space-between; /* Icon/Value spread */
-        }
-
-        /* Mobile specific dialog adjustments */
-        ha-dialog.strain-dialog .mdc-dialog__surface {
-            width: 100vw !important;
-            height: 100vh !important;
-            max-height: 100vh !important;
-            border-radius: 0 !important;
-        }
-        .fab-button {
-            bottom: 16px;
-            right: 16px;
-        }
-        .add-form-overlay {
-            bottom: 80px;
-            right: 16px;
-            left: 16px;
-            width: auto;
-        }
-      }
-
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-
-      .plant {
-        animation: fadeIn 0.3s ease-out;
-      }
-
-      /* Glassmorphism for Dialogs */
-      ha-dialog {
-        --mdc-dialog-surface-fill-color: transparent; /* Transparent base for glass effect */
-        --mdc-dialog-min-width: 400px;
-        --mdc-dialog-max-width: 90vw;
-      }
-      .glass-dialog-container {
-        background: var(--growspace-card-bg);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        border-radius: 28px; /* MD3 extra large rounding */
-        padding: var(--spacing-lg);
-        color: #ffffff; /* Force white text for contrast against dark glass */
-        margin: -24px; /* Counteract default dialog padding if necessary */
-        min-width: 320px;
-      }
-
-      /* MD3 Dialog Layout */
-      .dialog-header {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-md);
-        margin-bottom: var(--spacing-lg);
-        padding-bottom: var(--spacing-md);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .dialog-icon {
-        width: 48px;
-        height: 48px;
-        padding: 12px;
-        border-radius: 16px; /* MD3 medium shape */
-        background: rgba(var(--stage-color-rgb, 76, 175, 80), 0.2);
-        color: var(--stage-color, #4caf50);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .dialog-title-group {
-        flex: 1;
-      }
-
-      .dialog-title {
-        font-size: 1.5rem;
-        font-weight: 500; /* MD3 Headline Small */
-        margin: 0;
-        color: #ffffff;
-      }
-
-      .dialog-subtitle {
-        font-size: 0.875rem;
-        color: rgba(255, 255, 255, 0.7);
-        margin-top: 4px;
-        text-transform: capitalize;
-      }
-
-      /* MD3 Cards inside Dialog */
-      .detail-card {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        padding: var(--spacing-md);
-        margin-bottom: var(--spacing-md);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-      }
-
-      .detail-card h3 {
-        margin: 0 0 var(--spacing-sm) 0;
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--secondary-text-color);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      /* MD3 Input Styles - Enhanced for Material Design 3 */
-      .md3-input-group {
-        position: relative;
-        margin-bottom: 20px;
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 4px 4px 0 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.4);
-        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-      }
-
-      .md3-input-group:hover {
-        background: rgba(255, 255, 255, 0.06);
-        border-bottom-color: rgba(255, 255, 255, 0.9);
-      }
-
-      .md3-input-group:focus-within {
-        background: rgba(255, 255, 255, 0.08);
-        border-bottom: 2px solid var(--primary-color, #4caf50);
-      }
-
-      /* Error state for inputs */
-      .md3-input-group.error {
-        border-bottom-color: var(--error-color, #f44336);
-      }
-
-      .md3-input-group.error .md3-label {
-        color: var(--error-color, #f44336);
-      }
-
-      .md3-label {
-        position: absolute;
-        left: 16px;
-        top: 8px;
-        font-size: 0.75rem;
-        font-weight: 500;
-        color: rgba(255, 255, 255, 0.6);
-        pointer-events: none;
-        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-        letter-spacing: 0.4px;
-      }
-
-      .md3-input-group:focus-within .md3-label {
-        color: var(--primary-color, #4caf50);
-      }
-
-      .md3-input {
-        width: 100%;
-        padding: 24px 16px 8px;
-        border: none;
-        background: transparent;
-        color: #ffffff;
-        font-size: 1rem;
-        font-family: 'Roboto', sans-serif;
-        box-sizing: border-box;
-        outline: none;
-      }
-
-      .md3-input::placeholder {
-        color: rgba(255, 255, 255, 0.38);
-        opacity: 1;
-      }
-
-      .md3-input:focus {
-        outline: none;
-      }
-
-      /* Disabled input state */
-      .md3-input:disabled {
-        color: rgba(255, 255, 255, 0.38);
-        cursor: not-allowed;
-      }
-
-      .md3-input-group:has(.md3-input:disabled) {
-        background: rgba(255, 255, 255, 0.02);
-        border-bottom-style: dotted;
-      }
-
-      /* Supporting text for inputs */
-      .md3-supporting-text {
-        padding: 4px 16px 0;
-        font-size: 0.75rem;
-        color: rgba(255, 255, 255, 0.6);
-        letter-spacing: 0.4px;
-      }
-
-      .md3-supporting-text.error {
-        color: var(--error-color, #f44336);
-      }
-
-      /* Button Group & MD3 Buttons */
-      .button-group {
-        display: flex;
-        gap: var(--spacing-sm);
-        justify-content: flex-end;
-        flex-wrap: wrap;
-        margin-top: var(--spacing-lg);
-      }
-
-      /* MD3 Button Styles - Enhanced for Material Design 3 */
-      .md3-button {
-        height: 40px;
-        padding: 0 24px;
-        border-radius: 20px; /* Full-rounded MD3 style */
-        border: none;
-        font-family: 'Roboto', sans-serif;
-        font-weight: 500;
-        font-size: 0.875rem;
-        letter-spacing: 0.1px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-        text-transform: none;
-        position: relative;
-        overflow: hidden;
-        user-select: none;
-        outline: none;
-      }
-
-      /* MD3 State Layer Effect */
-      .md3-button::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: currentColor;
-        opacity: 0;
-        transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
-        pointer-events: none;
-      }
-
-      .md3-button:hover::before {
-        opacity: 0.08;
-      }
-
-      .md3-button:focus-visible::before {
-        opacity: 0.12;
-      }
-
-      .md3-button:active::before {
-        opacity: 0.12;
-      }
-
-      /* Focus visible state for accessibility */
-      .md3-button:focus-visible {
-        outline: 2px solid var(--primary-color);
-        outline-offset: 2px;
-      }
-
-      /* Primary Filled Button */
-      .md3-button.primary {
-        background: var(--primary-color, #4caf50);
-        color: var(--text-primary-color, #fff);
-        box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
-      }
-
-      .md3-button.primary:hover {
-        box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15);
-      }
-
-      .md3-button.primary:active {
-        box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
-      }
-
-      /* Tonal Button (MD3 Filled Tonal variant) */
-      .md3-button.tonal {
-        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
-        color: var(--primary-color, #4caf50);
-      }
-
-      .md3-button.tonal:hover {
-        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.16);
-        box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
-      }
-
-      .md3-button.tonal:active {
-        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
-      }
-
-      /* Text Button */
-      .md3-button.text {
-        background: transparent;
-        color: var(--primary-color, #4caf50);
-        padding: 0 12px;
-      }
-
-      .md3-button.text:hover {
-        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.08);
-      }
-
-      .md3-button.text:active {
-        background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
-      }
-
-      /* Danger/Error Button (Outlined variant with error color) */
-      .md3-button.danger {
-        background: transparent;
-        color: var(--error-color, #f44336);
-        border: 1px solid currentColor;
-      }
-
-      .md3-button.danger::before {
-        background: var(--error-color, #f44336);
-      }
-
-      .md3-button.danger:hover {
-        background: rgba(244, 67, 54, 0.08);
-        border-color: var(--error-color, #f44336);
-      }
-
-      .md3-button.danger:active {
-        background: rgba(244, 67, 54, 0.12);
-      }
-
-      .md3-button.danger:focus-visible {
-        outline-color: var(--error-color, #f44336);
-      }
-
-      /* Disabled state */
-      .md3-button:disabled {
-        opacity: 0.38;
-        cursor: not-allowed;
-        box-shadow: none;
-      }
-
-      .md3-button:disabled::before {
-        display: none;
-      }
-
-      /* Specific adjustments for HA Dialog content constraints */
-      ha-dialog {
-        --mdc-theme-primary: var(--primary-color);
-      }
-
-      @media (max-width: 600px) {
-        .glass-dialog-container {
-            margin: -20px;
-            padding: var(--spacing-md);
-        }
-        .dialog-header {
-            flex-direction: column;
-            text-align: center;
-        }
-        .button-group {
-            justify-content: center;
-        }
-      }
-
-      /* Toast Notification */
-      .toast-notification {
-        position: absolute;
-        bottom: 24px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #323232;
-        color: #fff;
-        padding: 12px 24px;
-        border-radius: 24px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        z-index: 100;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        animation: slideUpFade 0.3s ease-out;
-        min-width: 200px;
-        text-align: center;
-      }
-
-      .toast-notification.success {
-        background: var(--success-color, #4caf50);
-        color: #fff;
-      }
-
-      .toast-notification.error {
-        background: var(--error-color, #f44336);
-        color: #fff;
-      }
-
-      @keyframes slideUpFade {
-        from {
-          opacity: 0;
-          transform: translate(-50%, 20px);
-        }
-        to {
-          opacity: 1;
-          transform: translate(-50%, 0);
-        }
-      }
+  :host {
+    display: block;
+    font-family: 'Roboto', sans-serif;
+    color: var(--growspace-card-text);
+  }
+
+  ha-card {
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-lg);
+    background: var(--growspace-card-bg);
+    box-shadow: var(--card-shadow);
+    transition: var(--transition-medium);
+  }
+
+  ha-card:hover {
+    box-shadow: var(--card-shadow-hover);
+  }
+
+  /* Unified Card Container - Glassmorphism 2.0 */
+  .unified-growspace-card {
+    /* Deep glass effect */
+    background: rgba(20, 20, 24, 0.6);
+    background-image: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.03) 0%,
+      rgba(255, 255, 255, 0.01) 100%
+    );
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 28px; /* MD3 Large rounding */
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+      0 4px 24px -1px rgba(0, 0, 0, 0.2),
+      0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+  }
+  /* Edit Mode Banner */
+  .edit-mode-banner {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
+    border: 1px solid rgba(76, 175, 80, 0.4);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .banner-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #fff;
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+
+  .banner-content svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+  }
+
+  .stat-chip svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    opacity: 0.8;
+    pointer-events: none; /* Ensure key events pass through to chip/container */
+  }
+
+  @keyframes pulse-red {
+    0% {
+      box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+    }
+  }
+
+  .stat-chip.status-warning {
+    color: #ffa726 !important;
+    border-color: rgba(255, 167, 38, 0.5) !important;
+    background: rgba(255, 167, 38, 0.1) !important;
+  }
+
+  .stat-chip.status-danger {
+    color: #ef5350 !important;
+    border-color: rgba(239, 83, 80, 0.5) !important;
+    background: rgba(239, 83, 80, 0.1) !important;
+    animation: pulse-red 2s infinite;
+  }
+  .banner-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* 24h Chart */
+  .gs-chart-container {
+    margin-top: 8px;
+    height: 150px;
+    position: relative;
+    width: 100%;
+  }
+
+  .gs-chart-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.2));
+  }
+
+  .chart-line {
+    fill: none;
+    stroke: var(--primary-light-color, #ffeb3b);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .chart-gradient-fill {
+    fill: url(#gradient);
+    opacity: 0.2;
+  }
+
+  /* Time Range Selector - MD3 Tonal Chips */
+  .time-range-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    justify-content: flex-end;
+  }
+  .range-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid transparent;
+    color: rgba(255, 255, 255, 0.7);
+    border-radius: 8px; /* Small rounding for compact look */
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    letter-spacing: 0.5px;
+  }
+  .range-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+  .range-btn.active {
+    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.15);
+    color: var(--primary-color, #4caf50);
+    border-color: rgba(var(--rgb-primary-color, 76, 175, 80), 0.3);
+    font-weight: 600;
+  }
+
+  /* Time markers for chart */
+  .chart-markers {
+    display: flex;
+    justify-content: space-between;
+    margin-top: -24px;
+    padding: 0 10px;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.3);
+    font-weight: 500;
+    position: relative;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* Accessibility */
+  .sr-only-announcer {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .gs-tooltip {
+    position: absolute;
+    top: 10px;
+    background: rgba(30, 30, 35, 0.9);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    pointer-events: none;
+    transform: translate(-50%, 0);
+    z-index: 10;
+    white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    line-height: 1.4;
+    text-align: center;
+  }
+  .gs-tooltip .time {
+    font-weight: bold;
+    color: var(--primary-light-color);
+    margin-bottom: 2px;
+  }
+
+  .gs-cursor-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.3);
+    pointer-events: none;
+    z-index: 5;
+    border-left: 1px dashed rgba(255, 255, 255, 0.5);
+  }
+
+  /* Light Cycle Card Nested */
+  .gs-light-cycle-card {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.3s ease;
+  }
+
+  .gs-light-cycle-card.collapsed {
+    padding: 12px 20px;
+    gap: 0;
+  }
+
+  .gs-light-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    cursor: pointer;
+  }
+
+  .gs-light-cycle-card.collapsed .gs-light-header-row {
+    margin-bottom: 0;
+  }
+
+  .gs-light-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #fff;
+  }
+
+  .gs-icon-box {
+    background: rgba(255, 235, 59, 0.05);
+    border: 1px solid rgba(255, 235, 59, 0.2);
+    border-radius: 14px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-light-color);
+  }
+
+  .gs-light-subtitle {
+    font-size: 0.75rem;
+    opacity: 0.5;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .light-status-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  .target-cycle-text {
+    font-size: 0.9rem;
+    opacity: 0.5;
+    text-align: right;
+    margin-top: 4px;
+  }
+
+  /* Bottom Action Cards */
+  .gs-action-cards {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+  }
+
+  .action-card {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: default; /* Or pointer if clickable */
+  }
+
+  .ac-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ac-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ac-icon.on {
+    background: rgba(255, 235, 59, 0.1);
+    color: var(--primary-light-color);
+  }
+
+  .ac-icon.off {
+    background: rgba(120, 144, 156, 0.1);
+    color: #90a4ae;
+  }
+
+  .ac-text h4 {
+    margin: 0;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    opacity: 0.5;
+    letter-spacing: 0.5px;
+  }
+
+  .ac-text .time {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .ac-text .time span {
+    font-size: 0.9rem;
+    font-weight: 400;
+    opacity: 0.7;
+    margin-left: 2px;
+  }
+
+  .grid {
+    display: grid;
+    gap: var(--spacing-md);
+  }
+
+  .grid.compact {
+    gap: var(--spacing-sm);
+  }
+
+  ha-dialog {
+    --mdc-dialog-border-radius: var(--border-radius-md);
+    --mdc-dialog-box-shadow: var(--card-shadow-hover);
+  }
+
+  .no-data {
+    text-align: center;
+    color: var(--secondary-text-color);
+    padding: var(--spacing-lg);
+    font-style: italic;
+    background: var(--growspace-empty-bg);
+    border-radius: var(--border-radius-md);
+    margin: var(--spacing-md) 0;
+  }
+
+  .error {
+    color: var(--error-color);
+    padding: var(--spacing-md);
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    border-radius: var(--border-radius-md);
+    margin: var(--spacing-md) 0;
+  }
+  /* Dialog Styles */
+  ha-dialog {
+    --mdc-dialog-border-radius: var(--border-radius);
+    --mdc-dialog-box-shadow: var(--surface-elevation-hover);
+  }
+
+  ha-dialog .mdc-dialog--open .mdc-dialog__container,
+  ha-dialog .mdc-dialog--open {
+    align-items: start;
+    margin-top: 5vh;
+  }
+
+  ha-dialog.strain-dialog .mdc-dialog--open .mdc-dialog__container .mdc-dialog__surface {
+    width: 800px;
+    max-width: 90vw;
+    height: 600px;
+    max-height: 90vh;
+  }
+  ha-dialog.strain-dialog .mdc-dialog--open .dialog-content .strain-library-header {
+    justify-content: space-between;
+  }
+  ha-dialog.strain-dialog {
+    --mdc-dialog-min-width: 45vw;
+    --mdc-dialog-max-width: 45vw;
+    --mdc-dialog-surface-fill-color: var(--growspace-card-bg);
+  }
+  .dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) 0;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .form-group label {
+    font-weight: 500;
+    color: var(--primary-text-color);
+    font-size: 0.9rem;
+  }
+
+  .form-input {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 2px solid var(--divider-color);
+    border-radius: var(--border-radius);
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: var(--transition);
+    background: var(--card-background-color);
+    color: var(--primary-text-color);
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--rgb-primary-color), 0.1);
+  }
+
+  /* Empty Plant Card Styles */
+  .plant-card-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    aspect-ratio: 1;
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    color: var(--secondary-text-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .plant-card-empty:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-2px);
+  }
+
+  .plant-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  /* Strain Library Styles - Glassmorphism & Table */
+  .strain-search-container {
+    position: relative;
+    margin-bottom: var(--spacing-md);
+  }
+  .search-input {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    padding-left: 40px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--primary-text-color);
+    backdrop-filter: blur(10px);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: var(--transition);
+  }
+  .search-input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary-color);
+    outline: none;
+  }
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    color: var(--secondary-text-color);
+    pointer-events: none;
+  }
+
+  .strain-table-container {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .strain-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .strain-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  .strain-row:last-child {
+    border-bottom: none;
+  }
+  .strain-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .strain-cell {
+    padding: var(--spacing-md);
+    display: flex;
+    align-items: center;
+  }
+  .strain-cell.expand-icon {
+    width: 40px;
+    justify-content: center;
+    color: var(--secondary-text-color);
+  }
+  .strain-cell.content {
+    flex: 1;
+    font-weight: 500;
+    font-size: 1.1rem;
+  }
+  .strain-cell.actions {
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+  }
+
+  .pheno-row {
+    background: rgba(0, 0, 0, 0.2);
+  }
+  .pheno-list {
+    padding: var(--spacing-sm) var(--spacing-lg);
+  }
+  .pheno-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+    color: var(--secondary-text-color);
+  }
+  .pheno-item:last-child {
+    border-bottom: none;
+  }
+
+  .fab-button {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--plant-border-color-default);
+    color: var(--growspace-card-text);
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
+    z-index: 10;
+  }
+  .fab-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  }
+  .fab-button:active {
+    transform: scale(0.95);
+  }
+
+  /* Add Form Overlay */
+  .add-form-overlay {
+    position: absolute;
+    bottom: 90px;
+    right: 24px;
+    width: 300px;
+    background: var(--card-background-color);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: var(--spacing-md);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+    z-index: 10;
+    animation: slideUp 0.3s ease-out;
+  }
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .badge {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    margin-left: 8px;
+    color: var(--secondary-text-color);
+  }
+
+  /* Clear Confirmation */
+  .confirmation-overlay {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .rotate-icon {
+    transition: transform 0.3s ease;
+  }
+  .rotate-icon.expanded {
+    transform: rotate(180deg);
+  }
+
+  /* Allow Grid Items to Scale Down (Fix 5-col Overflow) */
+  .plant-card-rich,
+  .plant-card-empty {
+    min-width: 0;
+  }
+
+  /* Force List View for Wide Grids on Desktop */
+  .grid.force-list-view {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    /* Remove grid template */
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto !important;
+  }
+
+  .grid.force-list-view .plant-card-rich {
+    min-height: auto;
+    aspect-ratio: unset;
+    flex-direction: row;
+    align-items: center;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .grid.force-list-view .plant-card-bg {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+
+  .grid.force-list-view .plant-card-overlay {
+    display: none;
+  }
+
+  .grid.force-list-view .plant-card-content {
+    flex-direction: row;
+    padding: 0;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .grid.force-list-view .pc-info {
+    margin-top: 0;
+    align-items: flex-start;
+    text-align: left;
+    flex: 1;
+    gap: 2px;
+  }
+
+  .grid.force-list-view .pc-strain-name {
+    font-size: 1rem;
+  }
+
+  .grid.force-list-view .pc-pheno {
+    font-size: 0.85rem;
+  }
+
+  .grid.force-list-view .pc-stage {
+    margin-top: 2px;
+    font-size: 0.85rem;
+  }
+
+  .grid.force-list-view .pc-stats {
+    width: auto;
+    padding: 0;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .grid.force-list-view .pc-stat-item svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .grid.force-list-view .plant-card-empty {
+    min-height: 80px;
+    aspect-ratio: unset;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 0 24px;
+    gap: 16px;
+  }
+
+  @media (max-width: 600px) {
+    .unified-growspace-card {
+      padding: 12px;
+    }
+    .header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .selector-container {
+      justify-content: center;
+    }
+    /* Switch Grid to List View */
+    .grid {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: var(--spacing-sm);
+      grid-template-columns: unset !important;
+      grid-template-rows: unset !important;
+    }
+
+    /* Mobile List View for Rich Cards */
+    .plant-card-rich {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: auto;
+      aspect-ratio: unset;
+      flex-direction: row;
+      align-items: center;
+      padding: 12px;
+      gap: 12px;
+    }
+
+    .plant-card-bg {
+      /* Turn background into a thumbnail on mobile */
+      position: relative !important;
+      width: 64px !important;
+      height: 64px !important;
+      border-radius: 8px;
+      flex-shrink: 0;
+      background-color: rgba(0, 0, 0, 0.2);
+      object-fit: cover !important;
+    }
+
+    .plant-card-overlay {
+      display: none;
+    }
+
+    .plant-card-content {
+      position: static;
+      z-index: auto;
+      display: flex;
+      flex: 1;
+      min-width: 0;
+      width: 100%;
+      flex-direction: row;
+      padding: 0;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .pc-info {
+      display: flex;
+      flex-direction: column;
+      margin-top: 0;
+      align-items: flex-start;
+      text-align: left;
+      flex: 1;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .pc-strain-name {
+      font-size: 0.9rem;
+      color: #fff !important;
+      font-weight: 700;
+    }
+
+    .pc-pheno {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.7) !important;
+    }
+
+    .pc-stage {
+      margin-top: 2px;
+      font-size: 0.8rem;
+      color: var(--stage-color, #fff) !important;
+      font-weight: 600;
+    }
+
+    .pc-stats {
+      width: auto;
+      padding: 0;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .pc-stat-item svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Hide non-current stages on mobile */
+    .pc-stat-item:not(.current-stage) {
+      display: none;
+    }
+
+    /* Empty Slot in List View */
+    .plant-card-empty {
+      min-height: 80px;
+      aspect-ratio: unset;
+      flex-direction: row;
+      justify-content: flex-start;
+      padding: 0 24px;
+      gap: 16px;
+    }
+
+    /* Header vertical stacking */
+    .gs-header-top {
+      flex-direction: column;
+    }
+    .gs-stats-chips {
+      flex-direction: column;
+      width: 100%;
+      align-items: stretch;
+      gap: 4px;
+    }
+    .stat-chip {
+      width: 100%;
+      box-sizing: border-box;
+      justify-content: space-between; /* Icon/Value spread */
+    }
+
+    /* Mobile specific dialog adjustments */
+    ha-dialog.strain-dialog .mdc-dialog__surface {
+      width: 100vw !important;
+      height: 100vh !important;
+      max-height: 100vh !important;
+      border-radius: 0 !important;
+    }
+    .fab-button {
+      bottom: 16px;
+      right: 16px;
+    }
+    .add-form-overlay {
+      bottom: 80px;
+      right: 16px;
+      left: 16px;
+      width: auto;
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .plant {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  /* Glassmorphism for Dialogs */
+  ha-dialog {
+    --mdc-dialog-surface-fill-color: transparent; /* Transparent base for glass effect */
+    --mdc-dialog-min-width: 400px;
+    --mdc-dialog-max-width: 90vw;
+  }
+  .glass-dialog-container {
+    background: var(--growspace-card-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    border-radius: 28px; /* MD3 extra large rounding */
+    padding: var(--spacing-lg);
+    color: #ffffff; /* Force white text for contrast against dark glass */
+    margin: -24px; /* Counteract default dialog padding if necessary */
+    min-width: 320px;
+  }
+
+  /* MD3 Dialog Layout */
+  .dialog-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .dialog-icon {
+    width: 48px;
+    height: 48px;
+    padding: 12px;
+    border-radius: 16px; /* MD3 medium shape */
+    background: rgba(var(--stage-color-rgb, 76, 175, 80), 0.2);
+    color: var(--stage-color, #4caf50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dialog-title-group {
+    flex: 1;
+  }
+
+  .dialog-title {
+    font-size: 1.5rem;
+    font-weight: 500; /* MD3 Headline Small */
+    margin: 0;
+    color: #ffffff;
+  }
+
+  .dialog-subtitle {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 4px;
+    text-transform: capitalize;
+  }
+
+  /* MD3 Cards inside Dialog */
+  .detail-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .detail-card h3 {
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--secondary-text-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* MD3 Input Styles - Enhanced for Material Design 3 */
+  .md3-input-group {
+    position: relative;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px 4px 0 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .md3-input-group:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-bottom-color: rgba(255, 255, 255, 0.9);
+  }
+
+  .md3-input-group:focus-within {
+    background: rgba(255, 255, 255, 0.08);
+    border-bottom: 2px solid var(--primary-color, #4caf50);
+  }
+
+  /* Error state for inputs */
+  .md3-input-group.error {
+    border-bottom-color: var(--error-color, #f44336);
+  }
+
+  .md3-input-group.error .md3-label {
+    color: var(--error-color, #f44336);
+  }
+
+  .md3-label {
+    position: absolute;
+    left: 16px;
+    top: 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    letter-spacing: 0.4px;
+  }
+
+  .md3-input-group:focus-within .md3-label {
+    color: var(--primary-color, #4caf50);
+  }
+
+  .md3-input {
+    width: 100%;
+    padding: 24px 16px 8px;
+    border: none;
+    background: transparent;
+    color: #ffffff;
+    font-size: 1rem;
+    font-family: 'Roboto', sans-serif;
+    box-sizing: border-box;
+    outline: none;
+  }
+
+  .md3-input::placeholder {
+    color: rgba(255, 255, 255, 0.38);
+    opacity: 1;
+  }
+
+  .md3-input:focus {
+    outline: none;
+  }
+
+  /* Disabled input state */
+  .md3-input:disabled {
+    color: rgba(255, 255, 255, 0.38);
+    cursor: not-allowed;
+  }
+
+  .md3-input-group:has(.md3-input:disabled) {
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom-style: dotted;
+  }
+
+  /* Supporting text for inputs */
+  .md3-supporting-text {
+    padding: 4px 16px 0;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 0.4px;
+  }
+
+  .md3-supporting-text.error {
+    color: var(--error-color, #f44336);
+  }
+
+  /* Button Group & MD3 Buttons */
+  .button-group {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    margin-top: var(--spacing-lg);
+  }
+
+  /* MD3 Button Styles - Enhanced for Material Design 3 */
+  .md3-button {
+    height: 40px;
+    padding: 0 24px;
+    border-radius: 20px; /* Full-rounded MD3 style */
+    border: none;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    font-size: 0.875rem;
+    letter-spacing: 0.1px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    text-transform: none;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+    outline: none;
+  }
+
+  /* MD3 State Layer Effect */
+  .md3-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
+    pointer-events: none;
+  }
+
+  .md3-button:hover::before {
+    opacity: 0.08;
+  }
+
+  .md3-button:focus-visible::before {
+    opacity: 0.12;
+  }
+
+  .md3-button:active::before {
+    opacity: 0.12;
+  }
+
+  /* Focus visible state for accessibility */
+  .md3-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  /* Primary Filled Button */
+  .md3-button.primary {
+    background: var(--primary-color, #4caf50);
+    color: var(--text-primary-color, #fff);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.3),
+      0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  }
+
+  .md3-button.primary:hover {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.3),
+      0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  }
+
+  .md3-button.primary:active {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.3),
+      0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Tonal Button (MD3 Filled Tonal variant) */
+  .md3-button.tonal {
+    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
+    color: var(--primary-color, #4caf50);
+  }
+
+  .md3-button.tonal:hover {
+    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.16);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.3),
+      0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  }
+
+  .md3-button.tonal:active {
+    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
+  }
+
+  /* Text Button */
+  .md3-button.text {
+    background: transparent;
+    color: var(--primary-color, #4caf50);
+    padding: 0 12px;
+  }
+
+  .md3-button.text:hover {
+    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.08);
+  }
+
+  .md3-button.text:active {
+    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
+  }
+
+  /* Danger/Error Button (Outlined variant with error color) */
+  .md3-button.danger {
+    background: transparent;
+    color: var(--error-color, #f44336);
+    border: 1px solid currentColor;
+  }
+
+  .md3-button.danger::before {
+    background: var(--error-color, #f44336);
+  }
+
+  .md3-button.danger:hover {
+    background: rgba(244, 67, 54, 0.08);
+    border-color: var(--error-color, #f44336);
+  }
+
+  .md3-button.danger:active {
+    background: rgba(244, 67, 54, 0.12);
+  }
+
+  .md3-button.danger:focus-visible {
+    outline-color: var(--error-color, #f44336);
+  }
+
+  /* Disabled state */
+  .md3-button:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .md3-button:disabled::before {
+    display: none;
+  }
+
+  /* Specific adjustments for HA Dialog content constraints */
+  ha-dialog {
+    --mdc-theme-primary: var(--primary-color);
+  }
+
+  @media (max-width: 600px) {
+    .glass-dialog-container {
+      margin: -20px;
+      padding: var(--spacing-md);
+    }
+    .dialog-header {
+      flex-direction: column;
+      text-align: center;
+    }
+    .button-group {
+      justify-content: center;
+    }
+  }
+
+  /* Toast Notification */
+  .toast-notification {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #323232;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: slideUpFade 0.3s ease-out;
+    min-width: 200px;
+    text-align: center;
+  }
+
+  .toast-notification.success {
+    background: var(--success-color, #4caf50);
+    color: #fff;
+  }
+
+  .toast-notification.error {
+    background: var(--error-color, #f44336);
+    color: #fff;
+  }
+
+  @keyframes slideUpFade {
+    from {
+      opacity: 0;
+      transform: translate(-50%, 20px);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+
+  /* Loading Spinner */
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+  }
+
+  .loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-left-color: var(--primary-color, #4caf50);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
 `;
 
 let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
@@ -18927,12 +20076,18 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
         if (changedProperties.has('activeEnvGraphs') || changedProperties.has('linkedGraphGroups')) {
             this._computeItemsToRender();
         }
-        if (changedProperties.has('temperatureHistory') || changedProperties.has('humidityHistory') ||
-            changedProperties.has('vpdHistory') || changedProperties.has('co2History') ||
-            changedProperties.has('dehumidifierHistory') || changedProperties.has('exhaustHistory') ||
-            changedProperties.has('humidifierHistory') || changedProperties.has('circulationFanHistory') ||
-            changedProperties.has('soilMoistureHistory') || changedProperties.has('lightHistory') ||
-            changedProperties.has('irrigationHistory') || changedProperties.has('drainHistory') ||
+        if (changedProperties.has('temperatureHistory') ||
+            changedProperties.has('humidityHistory') ||
+            changedProperties.has('vpdHistory') ||
+            changedProperties.has('co2History') ||
+            changedProperties.has('dehumidifierHistory') ||
+            changedProperties.has('exhaustHistory') ||
+            changedProperties.has('humidifierHistory') ||
+            changedProperties.has('circulationFanHistory') ||
+            changedProperties.has('soilMoistureHistory') ||
+            changedProperties.has('lightHistory') ||
+            changedProperties.has('irrigationHistory') ||
+            changedProperties.has('drainHistory') ||
             changedProperties.has('optimalHistory')) {
             this._sensorHistory = {
                 temperature: this.temperatureHistory || [],
@@ -18947,7 +20102,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
                 light: this.lightHistory || [],
                 irrigation: this.irrigationHistory || [],
                 drain: this.drainHistory || [],
-                optimal: this.optimalHistory || []
+                optimal: this.optimalHistory || [],
             };
         }
     }
@@ -18959,25 +20114,25 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
         const items = [];
         const processedMetrics = new Set();
         // Process Linked Groups
-        this.linkedGraphGroups.forEach(group => {
-            const activeMetricsInGroup = group.filter(m => this.activeEnvGraphs.has(m));
+        this.linkedGraphGroups.forEach((group) => {
+            const activeMetricsInGroup = group.filter((m) => this.activeEnvGraphs.has(m));
             if (activeMetricsInGroup.length > 0) {
                 const minIndex = Math.min(...activeMetricsInGroup.map(getSortIndex));
                 items.push({
                     type: 'group',
                     metrics: activeMetricsInGroup,
-                    sortIndex: minIndex
+                    sortIndex: minIndex,
                 });
-                activeMetricsInGroup.forEach(m => processedMetrics.add(m));
+                activeMetricsInGroup.forEach((m) => processedMetrics.add(m));
             }
         });
         // Process Individual Metrics
-        this.activeEnvGraphs.forEach(metric => {
+        this.activeEnvGraphs.forEach((metric) => {
             if (!processedMetrics.has(metric)) {
                 items.push({
                     type: 'single',
                     metrics: [metric],
-                    sortIndex: getSortIndex(metric)
+                    sortIndex: getSortIndex(metric),
                 });
             }
         });
@@ -18996,25 +20151,25 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
         (item) => {
             if (item.type === 'group') {
                 return x `
-              <growspace-env-chart
-                  .hass=${this.hass}
-                  .device=${this.device}
-                  .sensorHistory=${this._sensorHistory}
-                  .metrics=${item.metrics}
-                  .isCombined=${true}
-                  .metricConfig=${METRIC_CONFIG}
-                  .range=${this.range}
-                  @toggle-graph=${this._handleToggleGraph}
-                  @unlink-graphs=${this._handleUnlinkGraphs}
-                  @unlink-graph=${this._handleUnlinkGraphMetric}
-              ></growspace-env-chart>
+            <growspace-env-chart
+              .hass=${this.hass}
+              .device=${this.device}
+              .sensorHistory=${this._sensorHistory}
+              .metrics=${item.metrics}
+              .isCombined=${true}
+              .metricConfig=${METRIC_CONFIG}
+              .range=${this.range}
+              @toggle-graph=${this._handleToggleGraph}
+              @unlink-graphs=${this._handleUnlinkGraphs}
+              @unlink-graph=${this._handleUnlinkGraphMetric}
+            ></growspace-env-chart>
           `;
             }
             else {
                 const metric = item.metrics[0];
                 const config = METRIC_CONFIG[metric] || DEFAULT_METRIC_CONFIG;
                 return x `
-          <growspace-env-chart
+            <growspace-env-chart
               .hass=${this.hass}
               .device=${this.device}
               .sensorHistory=${this._sensorHistory}
@@ -19026,29 +20181,24 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
               .range=${this.range}
               .type=${config.type || 'line'}
               @toggle-graph=${this._handleToggleGraph}
-          ></growspace-env-chart>
-        `;
+            ></growspace-env-chart>
+          `;
             }
         });
-        return x `
-        <div class="graphs-container">
-            ${this.renderTimeRangeSelector()}
-            ${graphs}
-        </div>
-    `;
+        return x ` <div class="graphs-container">${this.renderTimeRangeSelector()} ${graphs}</div> `;
     }
     renderTimeRangeSelector() {
         const ranges = ['1h', '6h', '24h', '7d'];
         return x `
       <div class="time-range-selector">
-        ${ranges.map(r => x `
-          <button 
-            class="range-btn ${this.range === r ? 'active' : ''}"
-            @click=${() => this._setGraphRange(r)}
-          >
-            ${r}
-          </button>
-        `)}
+        ${ranges.map((r) => x `
+            <button
+              class="range-btn ${this.range === r ? 'active' : ''}"
+              @click=${() => this._setGraphRange(r)}
+            >
+              ${r}
+            </button>
+          `)}
       </div>
     `;
     }
@@ -19076,7 +20226,7 @@ GrowspaceAnalytics.styles = [
         flex-direction: column;
         gap: 12px;
       }
-    `
+    `,
 ];
 __decorate([
     c$2({ context: hassContext, subscribe: true }),
@@ -19182,29 +20332,32 @@ class GrowspaceStore {
             isCompactView: false,
             defaultApplied: false,
             isLoading: true,
-            devices: []
+            devices: [],
         };
         this.wsDataCache = {};
         this._isFetchingWS = false;
         this.handleTakeClone = (motherPlant, numClones) => {
             const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
-            this.dataService.takeClone({
+            this.dataService
+                .takeClone({
                 mother_plant_id: plantId,
-                num_clones: numClones
-            }).then(() => {
+                num_clones: numClones,
+            })
+                .then(() => {
                 console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
-            }).catch((error) => {
+            })
+                .catch((error) => {
                 console.error(`Failed to take clone: ${error.message}`);
             });
         };
         this.host = host;
         host.addController(this);
-        console.log("GrowspaceStore Authenticated v2025-12-11-FIX-DATA-SERVICE-PARSING");
+        console.log('GrowspaceStore Authenticated v2025-12-11-FIX-DATA-SERVICE-PARSING');
         this.dataService = new DataService();
     }
     hostConnected() {
         // Lifecycle hook
-        // We can't subscribe here because hass might not be set yet. 
+        // We can't subscribe here because hass might not be set yet.
         // Logic handled in updateHass/subscribe
     }
     hostDisconnected() {
@@ -19227,6 +20380,10 @@ class GrowspaceStore {
         }
         if (!this.state.selectedDevice && this.state.devices.length > 0) {
             this.state.selectedDevice = this.state.devices[0].device_id;
+            // Ensure the UI knows we are ready to display
+            if (this.state.isLoading) {
+                this.state.isLoading = false;
+            }
             this.requestUpdate();
         }
         this.pruneOptimisticDeletions();
@@ -19239,7 +20396,7 @@ class GrowspaceStore {
             'growspace_manager_updated');
         }
         catch (err) {
-            console.error("Failed to subscribe to growspace events", err);
+            console.error('Failed to subscribe to growspace events', err);
         }
     }
     async refreshData() {
@@ -19261,17 +20418,25 @@ class GrowspaceStore {
             this._updateDevicesState();
         }
         catch (e) {
-            console.error("Failed to fetch growspace data", e);
+            console.error('Failed to fetch growspace data', e);
         }
         finally {
             this._isFetchingWS = false;
-            this.state.isLoading = false;
+            // Only clear loading if we didn't find any devices OR if we already have a selection
+            // If we found devices but no selection, wait for auto-select logic in updateHass/initialize
+            if (this.state.devices.length === 0 || this.state.selectedDevice) {
+                this.state.isLoading = false;
+            }
             this.requestUpdate();
         }
     }
     _updateDevicesState() {
         const devices = this.dataService.getGrowspaceDevices(this.wsDataCache);
         this.state.devices = devices;
+        // Auto-select if needed (handles initial load race condition where updateHass hasn't run yet)
+        if (!this.state.selectedDevice && devices.length > 0) {
+            this.state.selectedDevice = devices[0].device_id;
+        }
         this.requestUpdate();
     }
     requestUpdate() {
@@ -19306,8 +20471,7 @@ class GrowspaceStore {
             return;
         // Try to apply default from config
         if (config?.default_growspace) {
-            const defaultDevice = devices.find(d => d.device_id === config.default_growspace ||
-                d.name === config.default_growspace);
+            const defaultDevice = devices.find((d) => d.device_id === config.default_growspace || d.name === config.default_growspace);
             if (defaultDevice) {
                 this.state.selectedDevice = defaultDevice.device_id;
                 this.state.defaultApplied = true;
@@ -19357,7 +20521,7 @@ class GrowspaceStore {
                     const cacheData = {
                         version: 2,
                         timestamp: Date.now(),
-                        data: currentStrains
+                        data: currentStrains,
                     };
                     localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
                 }
@@ -19375,10 +20539,10 @@ class GrowspaceStore {
         if (!this.state.selectedDevice)
             return;
         const devices = this.state.devices;
-        const device = devices.find(d => d.device_id === this.state.selectedDevice);
+        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
         if (!device)
             return;
-        const plants = device.plants.filter(p => !this.state.optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
+        const plants = device.plants.filter((p) => !this.state.optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
         if (plants.length === 0)
             return;
         if (key === 'ArrowRight') {
@@ -19410,9 +20574,7 @@ class GrowspaceStore {
         this.requestUpdate();
     }
     togglePlantSelection(plantOrId) {
-        const plantId = (typeof plantOrId === 'string')
-            ? plantOrId
-            : (plantOrId.attributes.plant_id || '');
+        const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
         if (!plantId)
             return;
         const newSet = new Set(this.state.selectedPlants);
@@ -19429,9 +20591,9 @@ class GrowspaceStore {
         if (!this.state.selectedDevice)
             return;
         const devices = this.state.devices;
-        const selectedDeviceData = devices.find(d => d.device_id === this.state.selectedDevice);
+        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
         if (selectedDeviceData && selectedDeviceData.plants) {
-            selectedDeviceData.plants.forEach(plant => {
+            selectedDeviceData.plants.forEach((plant) => {
                 const pId = plant.attributes.plant_id;
                 if (pId && !this.state.optimisticDeletedPlantIds.has(pId)) {
                     this.state.selectedPlants.add(pId);
@@ -19496,22 +20658,30 @@ class GrowspaceStore {
                 plant,
                 editedAttributes: { ...plant.attributes },
                 activeTab: 'dashboard',
-                selectedPlantIds: selectedIds
-            }
+                selectedPlantIds: selectedIds,
+            },
         };
         this.requestUpdate();
     }
     async updatePlantFromDialog(dialogState) {
         const { plant, editedAttributes, selectedPlantIds } = dialogState;
         const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        const targetIds = (selectedPlantIds && selectedPlantIds.length > 0) ? selectedPlantIds : [plantId];
+        const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
         const isBulkEdit = targetIds.length > 1;
         const payloadTemplate = {};
-        const dateFields = ['seedling_start', 'mother_start', 'clone_start', 'veg_start', 'flower_start', 'dry_start', 'cure_start'];
+        const dateFields = [
+            'seedling_start',
+            'mother_start',
+            'clone_start',
+            'veg_start',
+            'flower_start',
+            'dry_start',
+            'cure_start',
+        ];
         const fieldsToProcess = isBulkEdit
             ? dateFields
             : ['strain', 'phenotype', 'row', 'col', ...dateFields];
-        fieldsToProcess.forEach(field => {
+        fieldsToProcess.forEach((field) => {
             if (editedAttributes[field] !== undefined) {
                 if (dateFields.includes(field)) {
                     const val = String(editedAttributes[field] || '');
@@ -19550,33 +20720,33 @@ class GrowspaceStore {
             this.requestUpdate();
         }
         catch (err) {
-            console.error("Error updating plant(s):", err);
+            console.error('Error updating plant(s):', err);
         }
     }
     async updatePlant(plantId, updates) {
         try {
             await this.dataService.updatePlant({ plant_id: plantId, ...updates });
-            this.showToast("Plant updated", "success");
+            this.showToast('Plant updated', 'success');
             // Dialog might stay open or close? Usually stay open for overview.
             this.requestUpdate();
         }
         catch (e) {
-            console.error("Failed to update plant:", e);
-            this.showToast(`Failed to update plant: ${e.message}`, "error");
+            console.error('Failed to update plant:', e);
+            this.showToast(`Failed to update plant: ${e.message}`, 'error');
         }
     }
     async handleDeletePlant(plantId) {
         const ids = Array.isArray(plantId) ? plantId : [plantId];
-        ids.forEach(id => this.state.optimisticDeletedPlantIds.add(id));
+        ids.forEach((id) => this.state.optimisticDeletedPlantIds.add(id));
         this.requestUpdate();
         try {
             // Check if backend supports bulk delete? If not, loop.
             // Assuming dataService.deletePlant takes one ID.
-            await Promise.all(ids.map(id => this.dataService.removePlant(id)));
-            this.showToast("Plant(s) deleted", "success");
-            // Do NOT remove from optimistic set here. 
+            await Promise.all(ids.map((id) => this.dataService.removePlant(id)));
+            this.showToast('Plant(s) deleted', 'success');
+            // Do NOT remove from optimistic set here.
             // We wait for updateHass/pruneOptimisticDeletions to confirm they are gone from HA state.
-            ids.forEach(id => {
+            ids.forEach((id) => {
                 this.state.selectedPlants.delete(id);
             });
             if (this.state.activeDialog.type === 'PLANT_OVERVIEW') {
@@ -19585,9 +20755,9 @@ class GrowspaceStore {
             this.updateGrid();
         }
         catch (e) {
-            console.error("Failed to delete plant:", e);
-            this.showToast(`Failed to delete: ${e.message}`, "error");
-            ids.forEach(id => this.state.optimisticDeletedPlantIds.delete(id));
+            console.error('Failed to delete plant:', e);
+            this.showToast(`Failed to delete: ${e.message}`, 'error');
+            ids.forEach((id) => this.state.optimisticDeletedPlantIds.delete(id));
             this.requestUpdate();
         }
     }
@@ -19596,9 +20766,9 @@ class GrowspaceStore {
             return;
         const allPlantIds = new Set();
         const devices = this.state.devices;
-        devices.forEach(d => d.plants.forEach(p => allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))));
+        devices.forEach((d) => d.plants.forEach((p) => allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))));
         const toRemove = new Set();
-        this.state.optimisticDeletedPlantIds.forEach(id => {
+        this.state.optimisticDeletedPlantIds.forEach((id) => {
             // If the plant ID is NOT in the current data, it means deletion is confirmed/propagated.
             // So we can stop masking it.
             if (!allPlantIds.has(id)) {
@@ -19606,38 +20776,38 @@ class GrowspaceStore {
             }
         });
         if (toRemove.size > 0) {
-            toRemove.forEach(id => this.state.optimisticDeletedPlantIds.delete(id));
+            toRemove.forEach((id) => this.state.optimisticDeletedPlantIds.delete(id));
             this.requestUpdate(); // Not strictly needed if it just affects rendering of missing items, but good for debug
         }
     }
     async handleMovePlantToNextStage(plant) {
         const stage = plant.attributes?.stage;
-        let targetGrowspace = "";
-        const movableStages = new Set(["mother", "flower", "dry", "cure"]);
+        let targetGrowspace = '';
+        const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
         if (!stage || !movableStages.has(stage)) {
-            this.showToast("Plant must be in mother or flower or dry or cure stage to move. stage is " + stage, 'error');
+            this.showToast('Plant must be in mother or flower or dry or cure stage to move. stage is ' + stage, 'error');
             return;
         }
-        if (stage === "flower") {
-            targetGrowspace = "dry";
+        if (stage === 'flower') {
+            targetGrowspace = 'dry';
         }
-        else if (stage === "dry") {
-            targetGrowspace = "cure";
+        else if (stage === 'dry') {
+            targetGrowspace = 'cure';
         }
-        else if (stage === "mother") {
-            targetGrowspace = "clone";
+        else if (stage === 'mother') {
+            targetGrowspace = 'clone';
         }
         else {
-            console.error("Unknown stage, cannot move plant", targetGrowspace);
-            targetGrowspace = "error";
+            console.error('Unknown stage, cannot move plant', targetGrowspace);
+            targetGrowspace = 'error';
         }
         try {
-            const plantId = plant.attributes?.plant_id || plant.entity_id.replace("sensor.", "");
+            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
             await this.dataService.harvestPlant(plantId, targetGrowspace);
             this.closeActiveDialog();
         }
         catch (err) {
-            console.error("Error moving plant to next stage:", err);
+            console.error('Error moving plant to next stage:', err);
         }
     }
     async addStrain(strainData) {
@@ -19648,22 +20818,26 @@ class GrowspaceStore {
             phenotype: strainData.phenotype,
             breeder: strainData.breeder,
             type: strainData.type,
-            flowering_days_min: strainData.flowering_days_min ? Number(strainData.flowering_days_min) : undefined,
-            flowering_days_max: strainData.flowering_days_max ? Number(strainData.flowering_days_max) : undefined,
+            flowering_days_min: strainData.flowering_days_min
+                ? Number(strainData.flowering_days_min)
+                : undefined,
+            flowering_days_max: strainData.flowering_days_max
+                ? Number(strainData.flowering_days_max)
+                : undefined,
             lineage: strainData.lineage,
             sex: strainData.sex,
             description: strainData.description,
             image: strainData.image,
             image_crop_meta: strainData.image_crop_meta,
             sativa_percentage: strainData.sativa_percentage,
-            indica_percentage: strainData.indica_percentage
+            indica_percentage: strainData.indica_percentage,
         };
         try {
             await this.dataService.addStrain(payload);
             await this.fetchStrainLibrary(true);
         }
         catch (err) {
-            console.error("Error adding strain:", err);
+            console.error('Error adding strain:', err);
         }
     }
     async removeStrain(strainKey) {
@@ -19673,13 +20847,13 @@ class GrowspaceStore {
             const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
             await this.dataService.removeStrain(strain, phenotype);
             if (this.state.strainLibrary) {
-                this.state.strainLibrary = this.state.strainLibrary.filter(s => s.key !== strainKey);
+                this.state.strainLibrary = this.state.strainLibrary.filter((s) => s.key !== strainKey);
                 this.requestUpdate();
             }
             await this.fetchStrainLibrary(true);
         }
         catch (err) {
-            console.error("Error removing strain:", err);
+            console.error('Error removing strain:', err);
         }
     }
     updateGrid() {
@@ -19696,8 +20870,8 @@ class GrowspaceStore {
             return;
         try {
             if (targetPlant) {
-                const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace("sensor.", "");
-                const targetId = targetPlant.attributes.plant_id || targetPlant.entity_id.replace("sensor.", "");
+                const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
+                const targetId = targetPlant.attributes.plant_id || targetPlant.entity_id.replace('sensor.', '');
                 if (sourceId === targetId)
                     return;
                 await this.dataService.swapPlants(sourceId, targetId);
@@ -19708,7 +20882,7 @@ class GrowspaceStore {
             }
         }
         catch (err) {
-            console.error("Error during drag-and-drop:", err);
+            console.error('Error during drag-and-drop:', err);
         }
     }
     async movePlant(plant, newRow, newCol) {
@@ -19722,7 +20896,7 @@ class GrowspaceStore {
             this.updateGrid();
         }
         catch (err) {
-            console.error("Error moving plant:", err);
+            console.error('Error moving plant:', err);
         }
     }
     async handleAddGrowspace(detail) {
@@ -19736,7 +20910,7 @@ class GrowspaceStore {
                 name,
                 rows: rows || 4,
                 plants_per_row: plants_per_row || 4,
-                notification_service: notification_service || 'mobile_app_notify'
+                notification_service: notification_service || 'mobile_app_notify',
             });
             this.showToast('Growspace added successfully!', 'success');
             await this.refreshData();
@@ -19758,7 +20932,7 @@ class GrowspaceStore {
             this.fetchStrainLibrary();
             this.setActiveDialog({
                 type: 'ADD_PLANT',
-                payload: { row, col }
+                payload: { row, col },
             });
             return;
         }
@@ -19766,7 +20940,7 @@ class GrowspaceStore {
         if (!this.state.selectedDevice)
             return;
         const devices = this.state.devices;
-        const device = devices.find(d => d.device_id === this.state.selectedDevice);
+        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
         if (device) {
             const rows = device.rows || 4;
             const cols = device.plants_per_row || 4;
@@ -19776,7 +20950,7 @@ class GrowspaceStore {
             // Convert 1-based backend coordinates to 0-based dialog coordinates
             this.setActiveDialog({
                 type: 'ADD_PLANT',
-                payload: { row: targetRow - 1, col: targetCol - 1 }
+                payload: { row: targetRow - 1, col: targetCol - 1 },
             });
         }
     }
@@ -19785,15 +20959,15 @@ class GrowspaceStore {
     }
     async confirmAddPlant(detail) {
         const devices = this.state.devices;
-        const selectedDeviceData = devices.find(d => d.device_id === this.state.selectedDevice);
+        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
         if (!selectedDeviceData)
             return;
         // Convert 0-based dialog coordinates to 1-based backend coordinates
         const row = detail.row + 1;
         const col = detail.col + 1;
-        const { strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start } = detail;
+        const { strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start, } = detail;
         if (!strain) {
-            this.showToast("Please select a strain", "error");
+            this.showToast('Please select a strain', 'error');
             return;
         }
         try {
@@ -19803,14 +20977,20 @@ class GrowspaceStore {
                 phenotype: phenotype || '',
                 row,
                 col,
-                veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start
+                veg_start,
+                flower_start,
+                seedling_start,
+                mother_start,
+                clone_start,
+                dry_start,
+                cure_start,
             });
-            this.showToast("Plant added successfully", "success");
+            this.showToast('Plant added successfully', 'success');
             this.closeActiveDialog();
         }
         catch (e) {
             console.error(e);
-            this.showToast("Failed to add plant", "error");
+            this.showToast('Failed to add plant', 'error');
         }
     }
     async analyzeGrowspace(query, isGlobal = false) {
@@ -19820,7 +21000,7 @@ class GrowspaceStore {
         // Update dialog state to loading
         this.setActiveDialog({
             type: 'GROW_MASTER',
-            payload: { ...dialogPayload, isLoading: true, response: null }
+            payload: { ...dialogPayload, isLoading: true, response: null },
         });
         try {
             let result;
@@ -19830,41 +21010,45 @@ class GrowspaceStore {
             else {
                 result = await this.dataService.askGrowAdvice(this.state.selectedDevice || '', query);
             }
-            const responseText = (typeof result.response === 'string') ? result.response : result.response?.response || JSON.stringify(result);
+            const responseText = typeof result.response === 'string'
+                ? result.response
+                : result.response?.response || JSON.stringify(result);
             this.setActiveDialog({
                 type: 'GROW_MASTER',
-                payload: { ...dialogPayload, isLoading: false, response: responseText }
+                payload: { ...dialogPayload, isLoading: false, response: responseText },
             });
         }
         catch (err) {
-            console.error("Error asking Grow Master:", err);
+            console.error('Error asking Grow Master:', err);
             this.setActiveDialog({
                 type: 'GROW_MASTER',
-                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` }
+                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
             });
         }
     }
     async getStrainRecommendation(userQuery) {
-        const dialogPayload = this.state.activeDialog.type === 'STRAIN_RECOMMENDATION' ? this.state.activeDialog.payload : null;
+        const dialogPayload = this.state.activeDialog.type === 'STRAIN_RECOMMENDATION'
+            ? this.state.activeDialog.payload
+            : null;
         if (!dialogPayload)
             return;
         this.setActiveDialog({
             type: 'STRAIN_RECOMMENDATION',
-            payload: { ...dialogPayload, isLoading: true, response: null }
+            payload: { ...dialogPayload, isLoading: true, response: null },
         });
         try {
             const result = await this.dataService.getStrainRecommendation(userQuery);
-            const responseText = (typeof result.response === 'string') ? result.response : JSON.stringify(result);
+            const responseText = typeof result.response === 'string' ? result.response : JSON.stringify(result);
             this.setActiveDialog({
                 type: 'STRAIN_RECOMMENDATION',
-                payload: { ...dialogPayload, isLoading: false, response: responseText }
+                payload: { ...dialogPayload, isLoading: false, response: responseText },
             });
         }
         catch (err) {
-            console.error("Error getting strain recommendation:", err);
+            console.error('Error getting strain recommendation:', err);
             this.setActiveDialog({
                 type: 'STRAIN_RECOMMENDATION',
-                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` }
+                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
             });
         }
     }
@@ -19873,8 +21057,8 @@ class GrowspaceStore {
             type: 'STRAIN_RECOMMENDATION',
             payload: {
                 isLoading: false,
-                response: null
-            }
+                response: null,
+            },
         });
     }
     openLogbookDialog() {
@@ -19883,8 +21067,8 @@ class GrowspaceStore {
         this.setActiveDialog({
             type: 'LOGBOOK',
             payload: {
-                growspaceId: this.state.selectedDevice
-            }
+                growspaceId: this.state.selectedDevice,
+            },
         });
     }
     handleExportLibrary() {
@@ -19910,10 +21094,10 @@ class GrowspaceStore {
         }, 'growspace_manager_strain_library_exported');
         try {
             await this.dataService.exportStrainLibrary();
-            this.showToast("Export started...", "info");
+            this.showToast('Export started...', 'info');
         }
         catch (err) {
-            console.error("Failed to call export service", err);
+            console.error('Failed to call export service', err);
             unsubscribe();
         }
     }
@@ -19935,7 +21119,7 @@ class GrowspaceStore {
             await this.fetchStrainLibrary(true);
         }
         catch (err) {
-            console.error("Import failed:", err);
+            console.error('Import failed:', err);
             this.showToast(`Import failed: ${err.message}`, 'error');
         }
     }
@@ -19948,21 +21132,29 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         // History controller manages history state
         this.historyController = new GrowspaceHistoryController(this);
         // Memoization properties
-        this._cachedGridLayout = null;
-        this._lastDeviceDataForGrid = '';
+        this._cachedActiveDevices = [];
+        this._cachedGridLayout = {
+            effectiveRows: 0,
+            grid: [],
+        };
         this._handleTakeClone = (motherPlant) => {
             const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
-            this.store.dataService.takeClone({
-                mother_plant_id: plantId
-            }).then(() => {
+            this.store.dataService
+                .takeClone({
+                mother_plant_id: plantId,
+            })
+                .then(() => {
                 console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
-            }).catch((error) => {
+            })
+                .catch((error) => {
                 console.error(`Failed to take clone: ${error.message}`);
             });
         };
     }
     /* Getter for convenience/compatibility if needed, or update call sites */
-    get selectedDevice() { return this.store.state.selectedDevice; }
+    get selectedDevice() {
+        return this.store.state.selectedDevice;
+    }
     // Getter to satisfy GrowspaceCardHost interface and allow external access
     get dataService() {
         return this.store.dataService;
@@ -19982,11 +21174,41 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         this.store.initializeSelectedDevice(this._config);
         this.store.fetchStrainLibrary();
     }
-    updated(changedProps) {
-        super.updated(changedProps);
+    willUpdate(changedProps) {
+        // 1. Recalculate Active Devices if needed
+        // We do this every update to ensure fresh data from store, but we filter in place.
+        // Ideally we would check for changes, but this is already better than doing it in render().
         if (changedProps.has('hass')) {
             this.store.updateHass(this.hass);
         }
+        // 1. Recalculate Active Devices if needed
+        // We do this every update to ensure fresh data from store, but we filter in place.
+        // Ideally we would check for changes, but this is already better than doing it in render().
+        if (this.store && this.store.state) {
+            const devices = this.store.state.devices || [];
+            this._cachedActiveDevices = devices.map((d) => ({
+                ...d,
+                plants: d.plants.filter((p) => {
+                    const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+                    return !this.store.state.optimisticDeletedPlantIds.has(pId);
+                }),
+            }));
+            // 2. Recalculate Grid Layout
+            const selectedDeviceId = this.store.state.selectedDevice;
+            const selectedDeviceData = this._cachedActiveDevices.find((d) => d.device_id === selectedDeviceId);
+            if (selectedDeviceData) {
+                const effectiveRows = PlantUtils.calculateEffectiveRows(selectedDeviceData);
+                const { grid } = PlantUtils.createGridLayout(selectedDeviceData.plants, effectiveRows, selectedDeviceData.plants_per_row);
+                this._cachedGridLayout = { effectiveRows, grid };
+            }
+            else {
+                this._cachedGridLayout = { effectiveRows: 0, grid: [] };
+            }
+        }
+    }
+    updated(changedProps) {
+        super.updated(changedProps);
+        // updateHass moved to willUpdate for immediate state consistency
         // Handle focus update from store state
         if (this.store.state.focusedPlantIndex >= 0) {
             this._focusPlantByIndex(this.store.state.focusedPlantIndex);
@@ -19995,18 +21217,18 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     static async getConfigElement() {
         // path must match where the editor JS is served relative to the card script
         await Promise.resolve().then(function () { return growspaceManagerCardEditor; });
-        const el = document.createElement("growspace-manager-card-editor");
+        const el = document.createElement('growspace-manager-card-editor');
         return el;
     }
     static getStubConfig() {
         return {
-            default_growspace: "4x4",
-            compact: true
+            default_growspace: '4x4',
+            compact: true,
         };
     }
     setConfig(config) {
         if (!config)
-            throw new Error("Invalid configuration");
+            throw new Error('Invalid configuration');
         this._config = config;
         // handled in initializeSelectedDevice or store setter, but we can set initial state here if store exists?
         // Actually store exists in constructor.
@@ -20014,7 +21236,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             this.store.state.isCompactView = this._config.compact;
         }
     }
-    getCardSize() { return 4; }
+    getCardSize() {
+        return 4;
+    }
     // Event handlers
     _handleDeviceChange(e) {
         this.store.handleDeviceChange(e.detail.deviceId);
@@ -20077,8 +21301,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
                 plant,
                 editedAttributes: { ...plant.attributes },
                 activeTab: 'dashboard',
-                selectedPlantIds: selectedIds
-            }
+                selectedPlantIds: selectedIds,
+            },
         });
     }
     getHaDateTimeString() {
@@ -20098,16 +21322,16 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         }
         this.store.setActiveDialog({
             type: 'STRAIN_LIBRARY',
-            payload: {}
+            payload: {},
         });
     }
-    //Irrigation dialog methods
+    // Irrigation dialog methods
     _openIrrigationDialog() {
         if (!this.store.state.selectedDevice)
             return;
         this.store.setActiveDialog({
             type: 'IRRIGATION',
-            payload: true
+            payload: true,
         });
     }
     async _addStrain(strainData) {
@@ -20133,7 +21357,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             // Optional: Show a "Exporting..." toast or spinner here
         }
         catch (err) {
-            console.error("Failed to call export service", err);
+            console.error('Failed to call export service', err);
             unsubscribe(); // Cleanup if call fails
         }
     }
@@ -20155,7 +21379,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             await this.store.fetchStrainLibrary();
         }
         catch (err) {
-            console.error("Import failed:", err);
+            console.error('Import failed:', err);
             this.store.showToast(`Import failed: ${err.message}`, 'error');
         }
     }
@@ -20175,12 +21399,14 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     }
     _moveClonePlant(plant, targetGrowspace) {
         const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-        this.store.dataService.moveClone(plantId, targetGrowspace)
+        this.store.dataService
+            .moveClone(plantId, targetGrowspace)
             .then(() => {
             console.log(`Moved clone ${plant.attributes.friendly_name} to ${targetGrowspace}`);
             // Optionally refresh local state
             this.store.closeActiveDialog();
-        }).catch((err) => {
+        })
+            .catch((err) => {
             console.error('Error moving clone:', err);
         });
     }
@@ -20201,7 +21427,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
                 break;
             case 'control_dehumidifier':
                 if (this.store.state.selectedDevice) {
-                    const device = this.store.state.devices.find(d => d.device_id === this.store.state.selectedDevice);
+                    const device = this.store.state.devices.find((d) => d.device_id === this.store.state.selectedDevice);
                     if (device && device.overview_entity_id) {
                         const stateObj = this.hass.states[device.overview_entity_id];
                         const attrs = stateObj?.attributes || {};
@@ -20209,10 +21435,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
                         // Ensure your backend GrowspaceOverviewSensor exposes this attribute!
                         const currentStatus = attrs.dehumidifier_control_enabled === true;
                         // 2. Call service with opposite state
-                        this.store.dataService.setDehumidifierControl(this.store.state.selectedDevice, !currentStatus)
+                        this.store.dataService
+                            .setDehumidifierControl(this.store.state.selectedDevice, !currentStatus)
                             .then(() => {
                             console.log(`Toggled dehumidifier control to ${!currentStatus} for`, this.store.state.selectedDevice);
-                        }).catch(err => {
+                        })
+                            .catch((err) => {
                             console.error('Failed to toggle dehumidifier control:', err);
                         });
                     }
@@ -20246,9 +21474,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
                     co2_sensor: '',
                     circulation_fan: '',
                     stress_threshold: 0.8,
-                    mold_threshold: 0.8
-                }
-            }
+                    mold_threshold: 0.8,
+                },
+            },
         });
     }
     async _handleAddGrowspace(detail) {
@@ -20259,23 +21487,27 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     async _handleEnvironmentConfig(detail) {
         if (this.store.state.activeDialog?.type !== 'CONFIG')
             return;
-        const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold } = detail;
+        const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold, } = detail;
         if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
-            console.error("Missing mandatory fields", { selectedGrowspaceId, temp_sensor, humidity_sensor });
+            console.error('Missing mandatory fields', {
+                selectedGrowspaceId,
+                temp_sensor,
+                humidity_sensor,
+            });
             this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
             return;
         }
-        console.log("Submitting environment config", detail);
+        console.log('Submitting environment config', detail);
         try {
             await this.store.dataService.configureEnvironment({
                 growspace_id: selectedGrowspaceId,
                 temperature_sensor: temp_sensor,
-                humidity_sensor: humidity_sensor,
+                humidity_sensor,
                 vpd_sensor: vpd_sensor || undefined,
                 co2_sensor: co2_sensor || undefined,
                 circulation_fan: circulation_fan || undefined,
-                stress_threshold: stress_threshold,
-                mold_threshold: mold_threshold
+                stress_threshold,
+                mold_threshold,
             });
             this.store.showToast('Environment configured successfully!', 'success');
             await this.store.refreshData();
@@ -20293,8 +21525,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
                 growspaceId: this.store.state.selectedDevice || '',
                 isLoading: false,
                 response: null,
-                mode: isStressed ? 'all' : 'single'
-            }
+                mode: isStressed ? 'all' : 'single',
+            },
         });
         if (isStressed) {
             this.store.analyzeGrowspace('', true);
@@ -20306,7 +21538,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         // Set loading state
         this.store.setActiveDialog({
             type: 'GROW_MASTER',
-            payload: { ...this.store.state.activeDialog.payload, isLoading: true, response: null }
+            payload: { ...this.store.state.activeDialog.payload, isLoading: true, response: null },
         });
         try {
             let result;
@@ -20330,7 +21562,11 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             if (this.store.state.activeDialog.type === 'GROW_MASTER') {
                 this.store.setActiveDialog({
                     type: 'GROW_MASTER',
-                    payload: { ...this.store.state.activeDialog.payload, isLoading: false, response: responseText }
+                    payload: {
+                        ...this.store.state.activeDialog.payload,
+                        isLoading: false,
+                        response: responseText,
+                    },
                 });
             }
         }
@@ -20339,7 +21575,11 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             if (this.store.state.activeDialog.type === 'GROW_MASTER') {
                 this.store.setActiveDialog({
                     type: 'GROW_MASTER',
-                    payload: { ...this.store.state.activeDialog.payload, isLoading: false, response: `Error: ${e.message || 'Failed to get analysis.'}` }
+                    payload: {
+                        ...this.store.state.activeDialog.payload,
+                        isLoading: false,
+                        response: `Error: ${e.message || 'Failed to get analysis.'}`,
+                    },
                 });
             }
         }
@@ -20352,8 +21592,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             type: 'STRAIN_RECOMMENDATION',
             payload: {
                 isLoading: false,
-                response: null
-            }
+                response: null,
+            },
         });
     }
     async _getStrainRecommendation(query) {
@@ -20376,7 +21616,11 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
                 }
                 this.store.setActiveDialog({
                     type: 'STRAIN_RECOMMENDATION',
-                    payload: { ...this.store.state.activeDialog.payload, isLoading: false, response: responseText }
+                    payload: {
+                        ...this.store.state.activeDialog.payload,
+                        isLoading: false,
+                        response: responseText,
+                    },
                 });
             }
         }
@@ -20384,7 +21628,11 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             if (this.store.state.activeDialog?.type === 'STRAIN_RECOMMENDATION') {
                 this.store.setActiveDialog({
                     type: 'STRAIN_RECOMMENDATION',
-                    payload: { ...this.store.state.activeDialog.payload, isLoading: false, response: `Error: ${e.message || 'Failed to get recommendation.'}` }
+                    payload: {
+                        ...this.store.state.activeDialog.payload,
+                        isLoading: false,
+                        response: `Error: ${e.message || 'Failed to get recommendation.'}`,
+                    },
                 });
             }
         }
@@ -20398,63 +21646,51 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         this.store.setActiveDialog({
             type: 'LOGBOOK',
             payload: {
-                growspaceId: this.selectedDevice
-            }
+                growspaceId: this.selectedDevice,
+            },
         });
-    }
-    get _activeDevices() {
-        if (!this.hass)
-            return [];
-        // updateHass is handled in updated() lifecycle, do not call here to avoid loops.
-        // Use store state
-        const devices = this.store.state.devices;
-        // Filter out optimistically deleted plants
-        return devices.map(d => ({
-            ...d,
-            plants: d.plants.filter(p => {
-                const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
-                return !this.store.state.optimisticDeletedPlantIds.has(pId);
-            })
-        }));
-    }
-    _calculateCurrentGridLayout(deviceData) {
-        // Caching removed: last_updated refers to the sensor entity, which doesn't change
-        // when we receive new data via WebSocket. The grid calculation is cheap enough to run every time.
-        const effectiveRows = PlantUtils.calculateEffectiveRows(deviceData);
-        const { grid } = PlantUtils.createGridLayout(deviceData.plants, effectiveRows, deviceData.plants_per_row);
-        return { effectiveRows, grid };
     }
     render() {
         if (!this.hass) {
             return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
         }
-        const devices = this._activeDevices;
+        const devices = this._cachedActiveDevices;
+        // Show loading spinner if initially loading and no devices yet
+        if (this.store.state.isLoading) {
+            return x `
+        <ha-card>
+          <div class="loading-container">
+            <div class="loading-spinner"></div>
+          </div>
+        </ha-card>
+      `;
+        }
         if (!devices.length) {
             return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
         }
         // Apply default growspace logic
         if (!this.store.state.defaultApplied && this._config?.default_growspace) {
-            const match = devices.find(d => d.device_id === this._config.default_growspace || d.name === this._config.default_growspace);
+            const match = devices.find((d) => d.device_id === this._config.default_growspace ||
+                d.name === this._config.default_growspace);
             if (match)
                 this.store.handleDeviceChange(match.device_id); // Use store method
             this.store.setDefaultApplied(true);
         }
-        if (!this.selectedDevice || !devices.find(d => d.device_id === this.selectedDevice)) {
-            this.store.handleDeviceChange(devices[0].device_id); // Use store method
-        }
-        const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
+        // Fallback selection handled in store.updateHass / willUpdate
+        // if (!this.selectedDevice || !devices.find(d => d.device_id === this.selectedDevice)) {
+        //   this.store.handleDeviceChange(devices[0].device_id);
+        // }
+        const selectedDeviceData = devices.find((d) => d.device_id === this.selectedDevice);
         if (!selectedDeviceData) {
             return x `<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
         }
         const growspaceOptions = {};
-        const growspaces = this.hass.states['sensor.growspaces_list']?.attributes?.growspaces;
-        if (growspaces) {
-            Object.entries(growspaces).forEach(([id, name]) => {
-                growspaceOptions[id] = name;
-            });
-        }
-        // Calculate grid layout
-        const { effectiveRows, grid } = this._calculateCurrentGridLayout(selectedDeviceData);
+        // Use cached devices to ensure dropdown matches available devices
+        devices.forEach((d) => {
+            growspaceOptions[d.device_id] = d.name;
+        });
+        // Calculate grid layout - now using cached value from willUpdate
+        const { effectiveRows, grid } = this._cachedGridLayout;
         const isWide = selectedDeviceData.plants_per_row > 7;
         const strainLibrary = this.store.state.strainLibrary || [];
         return x `
@@ -20506,14 +21742,15 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         </div>
       </ha-card>
 
-
-          ${this.store.state.notification ? x `
+      ${this.store.state.notification
+            ? x `
             <div class="toast-notification ${this.store.state.notification.type}">
               ${this.store.state.notification.message}
             </div>
-          ` : ''}
-          ${this.renderDialogs(growspaceOptions)}
-        `;
+          `
+            : ''}
+      ${this.renderDialogs(growspaceOptions)}
+    `;
     }
     renderEditModeBanner() {
         if (!this.store.state.isEditMode)
@@ -20556,12 +21793,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     }
     async _confirmAddPlant(detail) {
         const devices = this.store.state.devices;
-        const selectedDeviceData = devices.find(d => d.device_id === this.store.state.selectedDevice);
+        const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
         if (!selectedDeviceData)
             return;
-        const { strain, phenotype, row, col, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start } = detail;
+        const { strain, phenotype, row, col, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start, } = detail;
         if (!strain) {
-            this.store.showToast("Please select a strain", "error");
+            this.store.showToast('Please select a strain', 'error');
             return;
         }
         try {
@@ -20571,15 +21808,21 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
                 phenotype: phenotype || '',
                 row,
                 col,
-                veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start
+                veg_start,
+                flower_start,
+                seedling_start,
+                mother_start,
+                clone_start,
+                dry_start,
+                cure_start,
             });
-            this.store.showToast("Plant added successfully", "success");
+            this.store.showToast('Plant added successfully', 'success');
             this.store.closeActiveDialog();
             await this.store.refreshData(); // Force refresh to show new sensor
         }
         catch (e) {
             console.error(e);
-            this.store.showToast("Failed to add plant", "error");
+            this.store.showToast('Failed to add plant', 'error');
         }
     }
     async _handleEditGrowspace(detail) {
@@ -20591,19 +21834,19 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         }
         catch (e) {
             console.error(e);
-            this.store.showToast("Failed to update growspace", "error");
+            this.store.showToast('Failed to update growspace', 'error');
         }
     }
     async _handleDeleteGrowspace(detail) {
         try {
             await this.store.dataService.removeGrowspace(detail.growspace_id);
-            this.store.showToast("Growspace deleted", "success");
+            this.store.showToast('Growspace deleted', 'success');
             this.store.closeActiveDialog();
             await this.store.refreshData();
         }
         catch (e) {
             console.error(e);
-            this.store.showToast("Failed to delete growspace", "error");
+            this.store.showToast('Failed to delete growspace', 'error');
         }
     }
     _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
@@ -20638,7 +21881,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             this.store.updatePlantFromDialog({
                 plant: payload.plant,
                 editedAttributes: e.detail,
-                selectedPlantIds: payload.selectedPlantIds
+                selectedPlantIds: payload.selectedPlantIds,
             });
         }}
         @delete-plant=${(e) => this.store.handleDeletePlant(e.detail.plantId)}
@@ -20651,11 +21894,13 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         @move-clone=${(e) => {
             const { plant, targetGrowspace } = e.detail;
             const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-            this.store.dataService.moveClone(plantId, targetGrowspace)
+            this.store.dataService
+                .moveClone(plantId, targetGrowspace)
                 .then(() => {
                 console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
                 this.store.closeActiveDialog();
-            }).catch((err) => {
+            })
+                .catch((err) => {
                 console.error('Error moving clone:', err);
             });
         }}
@@ -20713,14 +21958,14 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         const dialogState = active.payload;
         // Determine stress state for the dialog
         let isStressed = false;
-        let personality = undefined;
+        let personality;
         // Attempt to find stress sensor
         if (this.selectedDevice && this.hass) {
             const id = this.selectedDevice;
             const stressEntityIds = [
                 `binary_sensor.${id}_plants_under_stress`,
                 `binary_sensor.${id}_stress`,
-                `binary_sensor.growspace_manager_${id}_stress`
+                `binary_sensor.growspace_manager_${id}_stress`,
             ];
             for (const eid of stressEntityIds) {
                 const ent = this.hass.states[eid];
@@ -20768,14 +22013,13 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         if (active.type !== 'IRRIGATION')
             return x ``;
         return x `
-       <irrigation-dialog
+      <irrigation-dialog
         .open=${true}
         .device=${selectedDeviceData}
-
         .growspaceName=${selectedDeviceData?.name || ''}
         @close=${() => this.store.closeActiveDialog()}
         @closed=${() => this.store.closeActiveDialog()}
-       ></irrigation-dialog>
+      ></irrigation-dialog>
     `;
     }
     _renderLogbookDialog(active) {
@@ -20796,7 +22040,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             return x ``;
         const strainLibrary = this.store.state.strainLibrary || [];
         const devices = this.store.state.devices;
-        const selectedDeviceData = devices.find(d => d.device_id === this.store.state.selectedDevice);
+        const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
         switch (active.type) {
             case 'ADD_PLANT':
                 return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
@@ -20819,10 +22063,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         }
     }
 };
-GrowspaceManagerCard.styles = [
-    variables,
-    growspaceCardStyles
-];
+GrowspaceManagerCard.styles = [variables, growspaceCardStyles];
 __decorate([
     e$3({ context: hassContext }),
     n$5({ attribute: false }),
@@ -20847,7 +22088,7 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
         this._loadGrowspaces();
     }
     updated(changedProps) {
-        if (changedProps.has("hass") && this.hass) {
+        if (changedProps.has('hass') && this.hass) {
             this._loadGrowspaces();
             this._subscribeToSensorUpdates();
         }
@@ -20864,7 +22105,7 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
             return;
         this._unsubStateChanged = this.hass.connection.subscribeEvents((event) => {
             const newState = event.data.new_state;
-            if (newState?.entity_id === "sensor.growspaces_list") {
+            if (newState?.entity_id === 'sensor.growspaces_list') {
                 if (Array.isArray(newState.attributes?.growspaces)) {
                     this._growspaceOptions = newState.attributes.growspaces;
                 }
@@ -20872,12 +22113,12 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
                     this._growspaceOptions = [];
                 }
             }
-        }, "state_changed");
+        }, 'state_changed');
     }
     _loadGrowspaces() {
         if (!this.hass)
             return;
-        const entity = this.hass.states["sensor.growspaces_list"];
+        const entity = this.hass.states['sensor.growspaces_list'];
         if (entity && entity.attributes?.growspaces) {
             const gsObj = entity.attributes.growspaces;
             // Option 1: just values (friendly names)
@@ -20896,8 +22137,8 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
       <div class="form-group">
         <label>Default Growspace</label>
         <select
-          .value=${this._config.default_growspace ?? ""}
-          @change=${(e) => this._valueChanged("default_growspace", e.target.value)}
+          .value=${this._config.default_growspace ?? ''}
+          @change=${(e) => this._valueChanged('default_growspace', e.target.value)}
         >
           <option value="">Select a growspace</option>
           ${this._growspaceOptions.length === 0
@@ -20911,7 +22152,7 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
         if (!this._config)
             return;
         const newConfig = { ...this._config, [key]: value };
-        this.dispatchEvent(new CustomEvent("config-changed", {
+        this.dispatchEvent(new CustomEvent('config-changed', {
             detail: { config: newConfig },
             bubbles: true,
             composed: true,
@@ -20946,7 +22187,7 @@ __decorate([
     __metadata("design:type", Array)
 ], GrowspaceManagerCardEditor.prototype, "_growspaceOptions", void 0);
 GrowspaceManagerCardEditor = __decorate([
-    t$2("growspace-manager-card-editor")
+    t$2('growspace-manager-card-editor')
 ], GrowspaceManagerCardEditor);
 
 var growspaceManagerCardEditor = /*#__PURE__*/Object.freeze({

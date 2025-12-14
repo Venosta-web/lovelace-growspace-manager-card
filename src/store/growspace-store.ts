@@ -1,15 +1,10 @@
 import { ReactiveController, ReactiveControllerHost } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { DateTime } from 'luxon';
-import {
-    GrowspaceDevice,
-    StrainEntry,
-    PlantEntity,
-    CropMeta
-} from '../types';
+import { GrowspaceDevice, StrainEntry, PlantEntity, CropMeta } from '../types';
 import { ActiveDialogState } from '../ui-state';
 import { DataService } from '../data-service';
-import { PlantUtils } from "../utils";
+import { PlantUtils } from '../utils';
 
 export interface GrowspaceState {
     selectedDevice: string | null;
@@ -20,7 +15,7 @@ export interface GrowspaceState {
     optimisticDeletedPlantIds: Set<string>;
     focusedPlantIndex: number;
     menuOpen: boolean;
-    notification: { message: string, type: 'info' | 'error' | 'success' } | null;
+    notification: { message: string; type: 'info' | 'error' | 'success' } | null;
     isCompactView: boolean;
     defaultApplied: boolean;
     isLoading: boolean;
@@ -46,7 +41,7 @@ export class GrowspaceStore implements ReactiveController {
         isCompactView: false,
         defaultApplied: false,
         isLoading: true,
-        devices: []
+        devices: [],
     };
 
     private wsDataCache: Record<string, any> = {};
@@ -56,13 +51,13 @@ export class GrowspaceStore implements ReactiveController {
     constructor(host: ReactiveControllerHost) {
         this.host = host;
         host.addController(this);
-        console.log("GrowspaceStore Authenticated v2025-12-11-FIX-DATA-SERVICE-PARSING");
+        console.log('GrowspaceStore Authenticated v2025-12-11-FIX-DATA-SERVICE-PARSING');
         this.dataService = new DataService();
     }
 
     hostConnected() {
         // Lifecycle hook
-        // We can't subscribe here because hass might not be set yet. 
+        // We can't subscribe here because hass might not be set yet.
         // Logic handled in updateHass/subscribe
     }
 
@@ -89,6 +84,10 @@ export class GrowspaceStore implements ReactiveController {
 
         if (!this.state.selectedDevice && this.state.devices.length > 0) {
             this.state.selectedDevice = this.state.devices[0].device_id;
+            // Ensure the UI knows we are ready to display
+            if (this.state.isLoading) {
+                this.state.isLoading = false;
+            }
             this.requestUpdate();
         }
 
@@ -104,7 +103,7 @@ export class GrowspaceStore implements ReactiveController {
                 'growspace_manager_updated'
             );
         } catch (err) {
-            console.error("Failed to subscribe to growspace events", err);
+            console.error('Failed to subscribe to growspace events', err);
         }
     }
 
@@ -128,10 +127,14 @@ export class GrowspaceStore implements ReactiveController {
             this.wsDataCache = data || {};
             this._updateDevicesState();
         } catch (e) {
-            console.error("Failed to fetch growspace data", e);
+            console.error('Failed to fetch growspace data', e);
         } finally {
             this._isFetchingWS = false;
-            this.state.isLoading = false;
+            // Only clear loading if we didn't find any devices OR if we already have a selection
+            // If we found devices but no selection, wait for auto-select logic in updateHass/initialize
+            if (this.state.devices.length === 0 || this.state.selectedDevice) {
+                this.state.isLoading = false;
+            }
             this.requestUpdate();
         }
     }
@@ -139,6 +142,12 @@ export class GrowspaceStore implements ReactiveController {
     private _updateDevicesState() {
         const devices = this.dataService.getGrowspaceDevices(this.wsDataCache);
         this.state.devices = devices;
+
+        // Auto-select if needed (handles initial load race condition where updateHass hasn't run yet)
+        if (!this.state.selectedDevice && devices.length > 0) {
+            this.state.selectedDevice = devices[0].device_id;
+        }
+
         this.requestUpdate();
     }
 
@@ -180,9 +189,8 @@ export class GrowspaceStore implements ReactiveController {
 
         // Try to apply default from config
         if (config?.default_growspace) {
-            const defaultDevice = devices.find(d =>
-                d.device_id === config.default_growspace ||
-                d.name === config.default_growspace
+            const defaultDevice = devices.find(
+                (d) => d.device_id === config.default_growspace || d.name === config.default_growspace
             );
             if (defaultDevice) {
                 this.state.selectedDevice = defaultDevice.device_id;
@@ -240,7 +248,7 @@ export class GrowspaceStore implements ReactiveController {
                     const cacheData = {
                         version: 2,
                         timestamp: Date.now(),
-                        data: currentStrains
+                        data: currentStrains,
                     };
                     localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
                 }
@@ -258,10 +266,12 @@ export class GrowspaceStore implements ReactiveController {
 
         if (!this.state.selectedDevice) return;
         const devices = this.state.devices;
-        const device = devices.find(d => d.device_id === this.state.selectedDevice);
+        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
         if (!device) return;
 
-        const plants = device.plants.filter(p => !this.state.optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
+        const plants = device.plants.filter(
+            (p) => !this.state.optimisticDeletedPlantIds.has(p.attributes.plant_id || '')
+        );
         if (plants.length === 0) return;
 
         if (key === 'ArrowRight') {
@@ -291,9 +301,7 @@ export class GrowspaceStore implements ReactiveController {
     }
 
     togglePlantSelection(plantOrId: string | PlantEntity) {
-        const plantId = (typeof plantOrId === 'string')
-            ? plantOrId
-            : (plantOrId.attributes.plant_id || '');
+        const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
 
         if (!plantId) return;
 
@@ -310,10 +318,10 @@ export class GrowspaceStore implements ReactiveController {
     selectAllPlants() {
         if (!this.state.selectedDevice) return;
         const devices = this.state.devices;
-        const selectedDeviceData = devices.find(d => d.device_id === this.state.selectedDevice);
+        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
 
         if (selectedDeviceData && selectedDeviceData.plants) {
-            selectedDeviceData.plants.forEach(plant => {
+            selectedDeviceData.plants.forEach((plant) => {
                 const pId = plant.attributes.plant_id;
                 if (pId && !this.state.optimisticDeletedPlantIds.has(pId)) {
                     this.state.selectedPlants.add(pId);
@@ -388,8 +396,8 @@ export class GrowspaceStore implements ReactiveController {
                 plant,
                 editedAttributes: { ...plant.attributes },
                 activeTab: 'dashboard',
-                selectedPlantIds: selectedIds
-            }
+                selectedPlantIds: selectedIds,
+            },
         };
         this.requestUpdate();
     }
@@ -398,17 +406,26 @@ export class GrowspaceStore implements ReactiveController {
         const { plant, editedAttributes, selectedPlantIds } = dialogState;
         const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
 
-        const targetIds = (selectedPlantIds && selectedPlantIds.length > 0) ? selectedPlantIds : [plantId];
+        const targetIds =
+            selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
         const isBulkEdit = targetIds.length > 1;
 
         const payloadTemplate: any = {};
-        const dateFields = ['seedling_start', 'mother_start', 'clone_start', 'veg_start', 'flower_start', 'dry_start', 'cure_start'];
+        const dateFields = [
+            'seedling_start',
+            'mother_start',
+            'clone_start',
+            'veg_start',
+            'flower_start',
+            'dry_start',
+            'cure_start',
+        ];
 
         const fieldsToProcess = isBulkEdit
             ? dateFields
             : ['strain', 'phenotype', 'row', 'col', ...dateFields];
 
-        fieldsToProcess.forEach(field => {
+        fieldsToProcess.forEach((field) => {
             if (editedAttributes[field] !== undefined) {
                 if (dateFields.includes(field)) {
                     const val = String(editedAttributes[field] || '');
@@ -448,40 +465,39 @@ export class GrowspaceStore implements ReactiveController {
             }
             this.requestUpdate();
         } catch (err) {
-            console.error("Error updating plant(s):", err);
+            console.error('Error updating plant(s):', err);
         }
     }
 
     async updatePlant(plantId: string, updates: Partial<PlantEntity['attributes']>) {
         try {
             await this.dataService.updatePlant({ plant_id: plantId, ...updates });
-            this.showToast("Plant updated", "success");
+            this.showToast('Plant updated', 'success');
             // Dialog might stay open or close? Usually stay open for overview.
             this.requestUpdate();
         } catch (e: any) {
-            console.error("Failed to update plant:", e);
-            this.showToast(`Failed to update plant: ${e.message}`, "error");
+            console.error('Failed to update plant:', e);
+            this.showToast(`Failed to update plant: ${e.message}`, 'error');
         }
     }
 
     async handleDeletePlant(plantId: string | string[]) {
         const ids = Array.isArray(plantId) ? plantId : [plantId];
 
-
-        ids.forEach(id => this.state.optimisticDeletedPlantIds.add(id));
+        ids.forEach((id) => this.state.optimisticDeletedPlantIds.add(id));
         this.requestUpdate();
 
         try {
             // Check if backend supports bulk delete? If not, loop.
             // Assuming dataService.deletePlant takes one ID.
-            await Promise.all(ids.map(id => this.dataService.removePlant(id)));
+            await Promise.all(ids.map((id) => this.dataService.removePlant(id)));
 
-            this.showToast("Plant(s) deleted", "success");
+            this.showToast('Plant(s) deleted', 'success');
 
-            // Do NOT remove from optimistic set here. 
+            // Do NOT remove from optimistic set here.
             // We wait for updateHass/pruneOptimisticDeletions to confirm they are gone from HA state.
 
-            ids.forEach(id => {
+            ids.forEach((id) => {
                 this.state.selectedPlants.delete(id);
             });
 
@@ -489,11 +505,10 @@ export class GrowspaceStore implements ReactiveController {
                 this.closeActiveDialog();
             }
             this.updateGrid();
-
         } catch (e: any) {
-            console.error("Failed to delete plant:", e);
-            this.showToast(`Failed to delete: ${e.message}`, "error");
-            ids.forEach(id => this.state.optimisticDeletedPlantIds.delete(id));
+            console.error('Failed to delete plant:', e);
+            this.showToast(`Failed to delete: ${e.message}`, 'error');
+            ids.forEach((id) => this.state.optimisticDeletedPlantIds.delete(id));
             this.requestUpdate();
         }
     }
@@ -503,10 +518,14 @@ export class GrowspaceStore implements ReactiveController {
 
         const allPlantIds = new Set<string>();
         const devices = this.state.devices;
-        devices.forEach(d => d.plants.forEach(p => allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))));
+        devices.forEach((d) =>
+            d.plants.forEach((p) =>
+                allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))
+            )
+        );
 
         const toRemove = new Set<string>();
-        this.state.optimisticDeletedPlantIds.forEach(id => {
+        this.state.optimisticDeletedPlantIds.forEach((id) => {
             // If the plant ID is NOT in the current data, it means deletion is confirmed/propagated.
             // So we can stop masking it.
             if (!allPlantIds.has(id)) {
@@ -515,53 +534,59 @@ export class GrowspaceStore implements ReactiveController {
         });
 
         if (toRemove.size > 0) {
-            toRemove.forEach(id => this.state.optimisticDeletedPlantIds.delete(id));
+            toRemove.forEach((id) => this.state.optimisticDeletedPlantIds.delete(id));
             this.requestUpdate(); // Not strictly needed if it just affects rendering of missing items, but good for debug
         }
     }
 
     async handleMovePlantToNextStage(plant: PlantEntity) {
         const stage = plant.attributes?.stage;
-        let targetGrowspace = "";
+        let targetGrowspace = '';
 
-        const movableStages = new Set(["mother", "flower", "dry", "cure"]);
+        const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
         if (!stage || !movableStages.has(stage)) {
-            this.showToast("Plant must be in mother or flower or dry or cure stage to move. stage is " + stage, 'error');
+            this.showToast(
+                'Plant must be in mother or flower or dry or cure stage to move. stage is ' + stage,
+                'error'
+            );
             return;
         }
 
-        if (stage === "flower") {
-            targetGrowspace = "dry";
-        } else if (stage === "dry") {
-            targetGrowspace = "cure";
-        } else if (stage === "mother") {
-            targetGrowspace = "clone";
-        }
-        else {
-            console.error("Unknown stage, cannot move plant", targetGrowspace);
-            targetGrowspace = "error";
+        if (stage === 'flower') {
+            targetGrowspace = 'dry';
+        } else if (stage === 'dry') {
+            targetGrowspace = 'cure';
+        } else if (stage === 'mother') {
+            targetGrowspace = 'clone';
+        } else {
+            console.error('Unknown stage, cannot move plant', targetGrowspace);
+            targetGrowspace = 'error';
         }
 
         try {
-            const plantId = plant.attributes?.plant_id || plant.entity_id.replace("sensor.", "");
+            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
             await this.dataService.harvestPlant(plantId, targetGrowspace);
             this.closeActiveDialog();
         } catch (err) {
-            console.error("Error moving plant to next stage:", err);
+            console.error('Error moving plant to next stage:', err);
         }
     }
 
     handleTakeClone = (motherPlant: PlantEntity, numClones?: number) => {
-        const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
+        const plantId =
+            motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
 
-        this.dataService.takeClone({
-            mother_plant_id: plantId,
-            num_clones: numClones
-        }).then(() => {
-            console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
-        }).catch((error: any) => {
-            console.error(`Failed to take clone: ${error.message}`);
-        });
+        this.dataService
+            .takeClone({
+                mother_plant_id: plantId,
+                num_clones: numClones,
+            })
+            .then(() => {
+                console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
+            })
+            .catch((error: any) => {
+                console.error(`Failed to take clone: ${error.message}`);
+            });
     };
 
     async addStrain(strainData: Partial<StrainEntry>) {
@@ -572,22 +597,26 @@ export class GrowspaceStore implements ReactiveController {
             phenotype: strainData.phenotype,
             breeder: strainData.breeder,
             type: strainData.type,
-            flowering_days_min: strainData.flowering_days_min ? Number(strainData.flowering_days_min) : undefined,
-            flowering_days_max: strainData.flowering_days_max ? Number(strainData.flowering_days_max) : undefined,
+            flowering_days_min: strainData.flowering_days_min
+                ? Number(strainData.flowering_days_min)
+                : undefined,
+            flowering_days_max: strainData.flowering_days_max
+                ? Number(strainData.flowering_days_max)
+                : undefined,
             lineage: strainData.lineage,
             sex: strainData.sex,
             description: strainData.description,
             image: strainData.image,
             image_crop_meta: strainData.image_crop_meta,
             sativa_percentage: strainData.sativa_percentage,
-            indica_percentage: strainData.indica_percentage
+            indica_percentage: strainData.indica_percentage,
         };
 
         try {
             await this.dataService.addStrain(payload);
             await this.fetchStrainLibrary(true);
         } catch (err) {
-            console.error("Error adding strain:", err);
+            console.error('Error adding strain:', err);
         }
     }
 
@@ -600,12 +629,12 @@ export class GrowspaceStore implements ReactiveController {
             await this.dataService.removeStrain(strain, phenotype);
 
             if (this.state.strainLibrary) {
-                this.state.strainLibrary = this.state.strainLibrary.filter(s => s.key !== strainKey);
+                this.state.strainLibrary = this.state.strainLibrary.filter((s) => s.key !== strainKey);
                 this.requestUpdate();
             }
             await this.fetchStrainLibrary(true);
         } catch (err) {
-            console.error("Error removing strain:", err);
+            console.error('Error removing strain:', err);
         }
     }
 
@@ -629,8 +658,10 @@ export class GrowspaceStore implements ReactiveController {
 
         try {
             if (targetPlant) {
-                const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace("sensor.", "");
-                const targetId = targetPlant.attributes.plant_id || targetPlant.entity_id.replace("sensor.", "");
+                const sourceId =
+                    sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
+                const targetId =
+                    targetPlant.attributes.plant_id || targetPlant.entity_id.replace('sensor.', '');
 
                 if (sourceId === targetId) return;
 
@@ -640,7 +671,7 @@ export class GrowspaceStore implements ReactiveController {
                 await this.movePlant(sourcePlant, targetRow, targetCol);
             }
         } catch (err) {
-            console.error("Error during drag-and-drop:", err);
+            console.error('Error during drag-and-drop:', err);
         }
     }
 
@@ -654,20 +685,23 @@ export class GrowspaceStore implements ReactiveController {
             });
             this.updateGrid();
         } catch (err) {
-            console.error("Error moving plant:", err);
+            console.error('Error moving plant:', err);
         }
     }
 
     async handleAddGrowspace(detail: any) {
         const { name, rows, plants_per_row, notification_service } = detail;
-        if (!name) { this.showToast('Name is required', 'error'); return; }
+        if (!name) {
+            this.showToast('Name is required', 'error');
+            return;
+        }
 
         try {
             await this.dataService.addGrowspace({
                 name,
                 rows: rows || 4,
                 plants_per_row: plants_per_row || 4,
-                notification_service: notification_service || 'mobile_app_notify'
+                notification_service: notification_service || 'mobile_app_notify',
             });
             this.showToast('Growspace added successfully!', 'success');
             await this.refreshData();
@@ -691,7 +725,7 @@ export class GrowspaceStore implements ReactiveController {
             this.fetchStrainLibrary();
             this.setActiveDialog({
                 type: 'ADD_PLANT',
-                payload: { row, col }
+                payload: { row, col },
             });
             return;
         }
@@ -699,7 +733,7 @@ export class GrowspaceStore implements ReactiveController {
         // Auto-find free slot if not specified
         if (!this.state.selectedDevice) return;
         const devices = this.state.devices;
-        const device = devices.find(d => d.device_id === this.state.selectedDevice);
+        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
 
         if (device) {
             const rows = device.rows || 4;
@@ -716,7 +750,7 @@ export class GrowspaceStore implements ReactiveController {
             // Convert 1-based backend coordinates to 0-based dialog coordinates
             this.setActiveDialog({
                 type: 'ADD_PLANT',
-                payload: { row: targetRow - 1, col: targetCol - 1 }
+                payload: { row: targetRow - 1, col: targetCol - 1 },
             });
         }
     }
@@ -727,7 +761,7 @@ export class GrowspaceStore implements ReactiveController {
 
     async confirmAddPlant(detail: any) {
         const devices = this.state.devices;
-        const selectedDeviceData = devices.find(d => d.device_id === this.state.selectedDevice);
+        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
         if (!selectedDeviceData) return;
 
         // Convert 0-based dialog coordinates to 1-based backend coordinates
@@ -735,12 +769,19 @@ export class GrowspaceStore implements ReactiveController {
         const col = detail.col + 1;
 
         const {
-            strain, phenotype,
-            veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start
+            strain,
+            phenotype,
+            veg_start,
+            flower_start,
+            seedling_start,
+            mother_start,
+            clone_start,
+            dry_start,
+            cure_start,
         } = detail;
 
         if (!strain) {
-            this.showToast("Please select a strain", "error");
+            this.showToast('Please select a strain', 'error');
             return;
         }
 
@@ -751,26 +792,32 @@ export class GrowspaceStore implements ReactiveController {
                 phenotype: phenotype || '',
                 row,
                 col,
-                veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start
+                veg_start,
+                flower_start,
+                seedling_start,
+                mother_start,
+                clone_start,
+                dry_start,
+                cure_start,
             });
-            this.showToast("Plant added successfully", "success");
+            this.showToast('Plant added successfully', 'success');
             this.closeActiveDialog();
         } catch (e: any) {
             console.error(e);
-            this.showToast("Failed to add plant", "error");
+            this.showToast('Failed to add plant', 'error');
         }
     }
 
     async analyzeGrowspace(query: string, isGlobal: boolean = false) {
-        const dialogPayload = this.state.activeDialog.type === 'GROW_MASTER' ? this.state.activeDialog.payload : null;
+        const dialogPayload =
+            this.state.activeDialog.type === 'GROW_MASTER' ? this.state.activeDialog.payload : null;
         if (!dialogPayload) return;
 
         // Update dialog state to loading
         this.setActiveDialog({
             type: 'GROW_MASTER',
-            payload: { ...dialogPayload, isLoading: true, response: null }
+            payload: { ...dialogPayload, isLoading: true, response: null },
         });
-
 
         try {
             let result;
@@ -780,44 +827,49 @@ export class GrowspaceStore implements ReactiveController {
                 result = await this.dataService.askGrowAdvice(this.state.selectedDevice || '', query);
             }
 
-            const responseText = (typeof result.response === 'string') ? result.response : (result.response as any)?.response || JSON.stringify(result);
+            const responseText =
+                typeof result.response === 'string'
+                    ? result.response
+                    : (result.response as any)?.response || JSON.stringify(result);
 
             this.setActiveDialog({
                 type: 'GROW_MASTER',
-                payload: { ...dialogPayload, isLoading: false, response: responseText }
+                payload: { ...dialogPayload, isLoading: false, response: responseText },
             });
-
         } catch (err: any) {
-            console.error("Error asking Grow Master:", err);
+            console.error('Error asking Grow Master:', err);
             this.setActiveDialog({
                 type: 'GROW_MASTER',
-                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` }
+                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
             });
         }
     }
 
     async getStrainRecommendation(userQuery: string) {
-        const dialogPayload = this.state.activeDialog.type === 'STRAIN_RECOMMENDATION' ? this.state.activeDialog.payload : null;
+        const dialogPayload =
+            this.state.activeDialog.type === 'STRAIN_RECOMMENDATION'
+                ? this.state.activeDialog.payload
+                : null;
         if (!dialogPayload) return;
 
         this.setActiveDialog({
             type: 'STRAIN_RECOMMENDATION',
-            payload: { ...dialogPayload, isLoading: true, response: null }
+            payload: { ...dialogPayload, isLoading: true, response: null },
         });
 
         try {
             const result = await this.dataService.getStrainRecommendation(userQuery);
-            const responseText = (typeof result.response === 'string') ? result.response : JSON.stringify(result);
+            const responseText =
+                typeof result.response === 'string' ? result.response : JSON.stringify(result);
             this.setActiveDialog({
                 type: 'STRAIN_RECOMMENDATION',
-                payload: { ...dialogPayload, isLoading: false, response: responseText }
+                payload: { ...dialogPayload, isLoading: false, response: responseText },
             });
-
         } catch (err: any) {
-            console.error("Error getting strain recommendation:", err);
+            console.error('Error getting strain recommendation:', err);
             this.setActiveDialog({
                 type: 'STRAIN_RECOMMENDATION',
-                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` }
+                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
             });
         }
     }
@@ -827,8 +879,8 @@ export class GrowspaceStore implements ReactiveController {
             type: 'STRAIN_RECOMMENDATION',
             payload: {
                 isLoading: false,
-                response: null
-            }
+                response: null,
+            },
         });
     }
 
@@ -837,8 +889,8 @@ export class GrowspaceStore implements ReactiveController {
         this.setActiveDialog({
             type: 'LOGBOOK',
             payload: {
-                growspaceId: this.state.selectedDevice
-            }
+                growspaceId: this.state.selectedDevice,
+            },
         });
     }
 
@@ -868,9 +920,9 @@ export class GrowspaceStore implements ReactiveController {
 
         try {
             await this.dataService.exportStrainLibrary();
-            this.showToast("Export started...", "info");
+            this.showToast('Export started...', 'info');
         } catch (err) {
-            console.error("Failed to call export service", err);
+            console.error('Failed to call export service', err);
             unsubscribe();
         }
     }
@@ -890,12 +942,14 @@ export class GrowspaceStore implements ReactiveController {
 
         try {
             const result = await this.dataService.importStrainLibrary(file, replace);
-            this.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
+            this.showToast(
+                `Import successful! ${result.imported_count || ''} strains imported.`,
+                'success'
+            );
             await this.fetchStrainLibrary(true);
         } catch (err: any) {
-            console.error("Import failed:", err);
+            console.error('Import failed:', err);
             this.showToast(`Import failed: ${err.message}`, 'error');
         }
     }
 }
-

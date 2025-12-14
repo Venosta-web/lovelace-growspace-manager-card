@@ -12,6 +12,7 @@ import { hassContext } from '../context';
 export class LogbookDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
   public hass!: HomeAssistant;
+
   @property({ type: Boolean }) public open = false;
   @property({ type: String }) public growspaceId = '';
 
@@ -24,7 +25,7 @@ export class LogbookDialog extends LitElement {
         --mdc-dialog-min-height: 80vh;
         --mdc-dialog-max-height: 90vh;
       }
-      
+
       @media (min-width: 600px) {
         ha-dialog {
           --mdc-dialog-min-width: 600px;
@@ -39,7 +40,7 @@ export class LogbookDialog extends LitElement {
         margin-bottom: 0;
         padding-bottom: 0;
       }
-      
+
       .content-wrapper {
         height: 70vh;
         display: flex;
@@ -52,7 +53,7 @@ export class LogbookDialog extends LitElement {
         overflow: hidden;
         margin-top: 16px;
       }
-    `
+    `,
   ];
 
   private _close() {
@@ -63,19 +64,20 @@ export class LogbookDialog extends LitElement {
     if (!this.open) return html``;
 
     return html`
-      <ha-dialog
-        .open=${this.open}
-        @closed=${this._close}
-        hideActions
-        .heading=${true}
-      >
+      <ha-dialog .open=${this.open} @closed=${this._close} hideActions .heading=${true}>
         <div slot="heading" class="dialog-header">
-           <h2 class="dialog-title">Events Logbook</h2>
-           <button class="md3-button text" @click=${this._close} style="min-width:auto; padding:8px;">
-             <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
-           </button>
+          <h2 class="dialog-title">Events Logbook</h2>
+          <button
+            class="md3-button text"
+            @click=${this._close}
+            style="min-width:auto; padding:8px;"
+          >
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiClose}"></path>
+            </svg>
+          </button>
         </div>
-        
+
         <div class="content-wrapper">
           <growspace-logbook
             .hass=${this.hass}

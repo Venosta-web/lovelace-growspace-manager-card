@@ -5,6 +5,5 @@ export * from './types';
 export { PlantUtils } from './utils';
 export { DataService } from './data-service';
 
-
 // Export main component
 export { GrowspaceManagerCard } from './growspace-manager-card';

@@ -1,4 +1,4 @@
-import { mdiSprout, mdiFlower, mdiHairDryer, mdiCannabis } from "@mdi/js";
+import { mdiSprout, mdiFlower, mdiHairDryer, mdiCannabis } from '@mdi/js';
 import { LovelaceCardConfig } from 'custom-card-helpers';
 
 export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
@@ -73,41 +73,34 @@ export interface PlantEntity {
   };
 }
 export enum PlantStage {
-  SEEDLING = "seedling",
-  MOTHER = "mother",
-  CLONE = "clone",
-  VEG = "veg",
-  FLOWER = "flower",
-  DRY = "dry",
-  CURE = "cure"
+  SEEDLING = 'seedling',
+  MOTHER = 'mother',
+  CLONE = 'clone',
+  VEG = 'veg',
+  FLOWER = 'flower',
+  DRY = 'dry',
+  CURE = 'cure',
 }
 
-export type GrowspaceType = "normal" | "mother" | "clone" | "dry" | "cure";
-export const stageInputs: Record<PlantStage, Array<{
-  label: string;
-  icon: string;
-  key: keyof PlantEntity['attributes'];
-}>> = {
+export type GrowspaceType = 'normal' | 'mother' | 'clone' | 'dry' | 'cure';
+export const stageInputs: Record<
+  PlantStage,
+  Array<{
+    label: string;
+    icon: string;
+    key: keyof PlantEntity['attributes'];
+  }>
+> = {
   [PlantStage.SEEDLING]: [],
-  [PlantStage.MOTHER]: [
-    { label: "Mother Start", icon: mdiSprout, key: "mother_start" },
-  ],
-  [PlantStage.CLONE]: [
-    { label: "Clone Start", icon: mdiSprout, key: "clone_start" },
-  ],
-  [PlantStage.VEG]: [
-    { label: "Vegetative Start", icon: mdiSprout, key: "veg_start" },
-  ],
+  [PlantStage.MOTHER]: [{ label: 'Mother Start', icon: mdiSprout, key: 'mother_start' }],
+  [PlantStage.CLONE]: [{ label: 'Clone Start', icon: mdiSprout, key: 'clone_start' }],
+  [PlantStage.VEG]: [{ label: 'Vegetative Start', icon: mdiSprout, key: 'veg_start' }],
   [PlantStage.FLOWER]: [
-    { label: "Vegetative Start", icon: mdiSprout, key: "veg_start" },
-    { label: "Flower Start", icon: mdiFlower, key: "flower_start" },
+    { label: 'Vegetative Start', icon: mdiSprout, key: 'veg_start' },
+    { label: 'Flower Start', icon: mdiFlower, key: 'flower_start' },
   ],
-  [PlantStage.DRY]: [
-    { label: "Dry Start", icon: mdiHairDryer, key: "dry_start" },
-  ],
-  [PlantStage.CURE]: [
-    { label: "Cure Start", icon: mdiCannabis, key: "cure_start" },
-  ],
+  [PlantStage.DRY]: [{ label: 'Dry Start', icon: mdiHairDryer, key: 'dry_start' }],
+  [PlantStage.CURE]: [{ label: 'Cure Start', icon: mdiCannabis, key: 'cure_start' }],
 };
 
 export type PlantAttributeValue = string | number | undefined;
@@ -155,7 +148,7 @@ export interface GrowspaceDevice {
     irrigation_duration?: number;
     drain_duration?: number;
     irrigation_times?: { time: string; duration?: number }[]; // Added here
-    drain_times?: { time: string; duration?: number }[];      // Added here
+    drain_times?: { time: string; duration?: number }[]; // Added here
     [key: string]: any;
   };
   irrigation_strategy?: IrrigationStrategy;
@@ -178,11 +171,11 @@ export interface GrowspaceDevice {
   max_stage_summary?: string;
 }
 export function createGrowspaceDevice(
-  params: Omit<GrowspaceDevice, "type"> & { type?: GrowspaceType }
+  params: Omit<GrowspaceDevice, 'type'> & { type?: GrowspaceType }
 ): GrowspaceDevice {
   return {
     ...params,
-    type: params.type ?? "normal",
+    type: params.type ?? 'normal',
   };
 }
 
@@ -192,7 +185,6 @@ export interface AddPlantDialogState {
 }
 
 export interface PlantOverviewDialogState {
-
   plant: PlantEntity;
   editedAttributes: { [key: string]: any };
   activeTab: 'dashboard' | 'timeline' | 'genetics';
@@ -200,9 +192,7 @@ export interface PlantOverviewDialogState {
   selectedPlantIds?: string[];
 }
 
-export interface StrainLibraryDialogState {
-
-}
+export interface StrainLibraryDialogState {}
 
 export interface ConfigDialogState {
   currentTab: 'add_growspace' | 'environment';
@@ -347,7 +337,18 @@ export interface GrowspaceWebSocketData {
   heater_socket?: string;
 }
 
-export type MetricType = 'temperature' | 'humidity' | 'vpd' | 'co2' | 'soil_moisture' | 'exhaust' | 'humidifier' | 'dehumidifier' | 'circulation_fan' | 'light' | 'optimal';
+export type MetricType =
+  | 'temperature'
+  | 'humidity'
+  | 'vpd'
+  | 'co2'
+  | 'soil_moisture'
+  | 'exhaust'
+  | 'humidifier'
+  | 'dehumidifier'
+  | 'circulation_fan'
+  | 'light'
+  | 'optimal';
 
 export interface GraphDataPoint {
   time: number;

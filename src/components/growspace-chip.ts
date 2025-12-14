@@ -4,15 +4,15 @@ import { mdiLink } from '@mdi/js';
 
 @customElement('growspace-chip')
 export class GrowspaceChip extends LitElement {
-    @property({ type: String }) icon = '';
-    @property({ type: String }) label = '';
-    @property({ type: String }) value: string | number | undefined = undefined;
-    @property({ type: String }) status: 'optimal' | 'warning' | 'danger' | '' = '';
-    @property({ type: Boolean, reflect: true }) active = false;
-    @property({ type: Boolean }) linked = false;
-    @property({ type: String }) tooltip = '';
+  @property({ type: String }) icon = '';
+  @property({ type: String }) label = '';
+  @property({ type: String }) value: string | number | undefined = undefined;
+  @property({ type: String }) status: 'optimal' | 'warning' | 'danger' | '' = '';
+  @property({ type: Boolean, reflect: true }) active = false;
+  @property({ type: Boolean }) linked = false;
+  @property({ type: String }) tooltip = '';
 
-    static styles = css`
+  static styles = css`
     :host {
       display: inline-flex;
       vertical-align: middle;
@@ -43,9 +43,15 @@ export class GrowspaceChip extends LitElement {
 
     /* Status Colors */
     @keyframes pulse-red {
-      0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
-      70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+      0% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+      }
     }
 
     .stat-chip.status-optimal {
@@ -78,7 +84,7 @@ export class GrowspaceChip extends LitElement {
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       color: #fff;
     }
-    
+
     .icon {
       width: 18px;
       height: 18px;
@@ -104,47 +110,43 @@ export class GrowspaceChip extends LitElement {
       opacity: 0.8;
       cursor: pointer;
     }
-    
+
     .link-icon svg {
-        width: 100%;
-        height: 100%;
-        fill: var(--primary-color, #03a9f4);
+      width: 100%;
+      height: 100%;
+      fill: var(--primary-color, #03a9f4);
     }
   `;
 
-    render() {
-        // Determine classes based on meaningful status string
-        const statusClass = this.status ? `status-${this.status}` : '';
+  render() {
+    // Determine classes based on meaningful status string
+    const statusClass = this.status ? `status-${this.status}` : '';
 
-        return html`
-      <div 
-        class="stat-chip ${statusClass}"
-        title="${this.tooltip}"
-      >
+    return html`
+      <div class="stat-chip ${statusClass}" title="${this.tooltip}">
         <div class="icon">
           <svg viewBox="0 0 24 24"><path d="${this.icon}"></path></svg>
         </div>
         ${this.label ? html`${this.label}: ` : ''}${this.value}
-        
-        ${this.linked ? html`
-          <div class="link-icon" 
-               @click=${this._handleLinkClick}
-               title="Unlink Graph">
-            <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
-          </div>
-        ` : ''}
+        ${this.linked
+          ? html`
+              <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">
+                <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
+              </div>
+            `
+          : ''}
       </div>
     `;
-    }
+  }
 
-    private _handleLinkClick(e: Event) {
-        e.stopPropagation();
-        this.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
-    }
+  private _handleLinkClick(e: Event) {
+    e.stopPropagation();
+    this.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
+  }
 }
 
 declare global {
-    interface HTMLElementTagNameMap {
-        'growspace-chip': GrowspaceChip;
-    }
+  interface HTMLElementTagNameMap {
+    'growspace-chip': GrowspaceChip;
+  }
 }

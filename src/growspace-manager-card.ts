@@ -1,4 +1,11 @@
-import { LitElement, html, CSSResultGroup, TemplateResult, PropertyValues, ReactiveControllerHost } from 'lit';
+import {
+  LitElement,
+  html,
+  CSSResultGroup,
+  TemplateResult,
+  PropertyValues,
+  ReactiveControllerHost,
+} from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 import { ref } from 'lit/directives/ref.js';
@@ -8,16 +15,14 @@ import { mdiCheckboxMarked } from '@mdi/js';
 import { DateTime } from 'luxon';
 import { variables } from './styles/variables';
 
-import {
-  GrowspaceManagerCardConfig,
-  PlantEntity,
-  GrowspaceDevice,
-  StrainEntry,
-} from './types';
+import { GrowspaceManagerCardConfig, PlantEntity, GrowspaceDevice, StrainEntry } from './types';
 import { ActiveDialogState } from './ui-state';
-import { PlantUtils } from "./utils";
+import { PlantUtils } from './utils';
 import { DataService } from './data-service';
-import { GrowspaceHistoryController, GrowspaceCardHost } from './controllers/growspace-history-controller';
+import {
+  GrowspaceHistoryController,
+  GrowspaceCardHost,
+} from './controllers/growspace-history-controller';
 import './growspace-env-chart';
 import './dialogs/plant-overview-dialog';
 import './dialogs/strain-library-dialog';
@@ -46,7 +51,7 @@ import {
   HarvestPlantEvent,
   FinishDryingEvent,
   TakeCloneEvent,
-  MoveCloneEvent
+  MoveCloneEvent,
 } from './events';
 import './components/growspace-grid';
 import './components/growspace-analytics';
@@ -57,14 +62,19 @@ import { GrowspaceStore } from './store/growspace-store';
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard, GrowspaceCardHost {
   public store = new GrowspaceStore(this);
   /* Getter for convenience/compatibility if needed, or update call sites */
-  get selectedDevice() { return this.store.state.selectedDevice; }
+  get selectedDevice() {
+    return this.store.state.selectedDevice;
+  }
 
   // History controller manages history state
   public historyController = new GrowspaceHistoryController(this);
 
   // Memoization properties
-  private _cachedGridLayout: { effectiveRows: number, grid: any[] } | null = null;
-  private _lastDeviceDataForGrid: string = '';
+  private _cachedActiveDevices: GrowspaceDevice[] = [];
+  private _cachedGridLayout: { effectiveRows: number; grid: (PlantEntity | null)[][] } = {
+    effectiveRows: 0,
+    grid: [],
+  };
 
   // Getter to satisfy GrowspaceCardHost interface and allow external access
   get dataService() {
@@ -77,18 +87,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   }
 
   @provide({ context: hassContext })
-  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ attribute: false })
+  public hass!: HomeAssistant;
 
   @provide({ context: configContext })
-  @property({ attribute: false }) private _config!: GrowspaceManagerCardConfig;
+  @property({ attribute: false })
+  private _config!: GrowspaceManagerCardConfig;
 
-
-
-  static styles: CSSResultGroup = [
-    variables,
-    growspaceCardStyles
-  ];
-
+  static styles: CSSResultGroup = [variables, growspaceCardStyles];
 
   connectedCallback() {
     super.connectedCallback();
@@ -104,33 +110,74 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     this.store.fetchStrainLibrary();
   }
 
-  protected updated(changedProps: PropertyValues): void {
-    super.updated(changedProps);
+  protected willUpdate(changedProps: PropertyValues): void {
+    // 1. Recalculate Active Devices if needed
+    // We do this every update to ensure fresh data from store, but we filter in place.
+    // Ideally we would check for changes, but this is already better than doing it in render().
     if (changedProps.has('hass')) {
       this.store.updateHass(this.hass);
     }
+
+    // 1. Recalculate Active Devices if needed
+    // We do this every update to ensure fresh data from store, but we filter in place.
+    // Ideally we would check for changes, but this is already better than doing it in render().
+    if (this.store && this.store.state) {
+      const devices = this.store.state.devices || [];
+      this._cachedActiveDevices = devices.map((d) => ({
+        ...d,
+        plants: d.plants.filter((p) => {
+          const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+          return !this.store.state.optimisticDeletedPlantIds.has(pId);
+        }),
+      }));
+
+      // 2. Recalculate Grid Layout
+      const selectedDeviceId = this.store.state.selectedDevice;
+      const selectedDeviceData = this._cachedActiveDevices.find(
+        (d) => d.device_id === selectedDeviceId
+      );
+
+      if (selectedDeviceData) {
+        const effectiveRows = PlantUtils.calculateEffectiveRows(selectedDeviceData);
+        const { grid } = PlantUtils.createGridLayout(
+          selectedDeviceData.plants,
+          effectiveRows,
+          selectedDeviceData.plants_per_row
+        );
+        this._cachedGridLayout = { effectiveRows, grid };
+      } else {
+        this._cachedGridLayout = { effectiveRows: 0, grid: [] };
+      }
+    }
+  }
+
+  protected updated(changedProps: PropertyValues): void {
+    super.updated(changedProps);
+    // updateHass moved to willUpdate for immediate state consistency
     // Handle focus update from store state
     if (this.store.state.focusedPlantIndex >= 0) {
       this._focusPlantByIndex(this.store.state.focusedPlantIndex);
     }
   }
 
-
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     // path must match where the editor JS is served relative to the card script
-    await import("./growspace-manager-card-editor.js");
-    const el = document.createElement("growspace-manager-card-editor") as unknown as LovelaceCardEditor;
+    await import('./growspace-manager-card-editor.js');
+    const el = document.createElement(
+      'growspace-manager-card-editor'
+    ) as unknown as LovelaceCardEditor;
     return el;
   }
+
   public static getStubConfig() {
     return {
-      default_growspace: "4x4",
-      compact: true
+      default_growspace: '4x4',
+      compact: true,
     };
   }
 
   public setConfig(config: GrowspaceManagerCardConfig): void {
-    if (!config) throw new Error("Invalid configuration");
+    if (!config) throw new Error('Invalid configuration');
     this._config = config;
     // handled in initializeSelectedDevice or store setter, but we can set initial state here if store exists?
     // Actually store exists in constructor.
@@ -139,7 +186,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     }
   }
 
-  public getCardSize(): number { return 4; }
+  public getCardSize(): number {
+    return 4;
+  }
 
   // Event handlers
   private _handleDeviceChange(e: DeviceChangeEvent): void {
@@ -212,20 +261,25 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         plant,
         editedAttributes: { ...plant.attributes },
         activeTab: 'dashboard',
-        selectedPlantIds: selectedIds
-      }
+        selectedPlantIds: selectedIds,
+      },
     });
   }
-  private _handleTakeClone = (motherPlant: PlantEntity) => {
-    const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
 
-    this.store.dataService.takeClone({
-      mother_plant_id: plantId
-    }).then(() => {
-      console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
-    }).catch((error: any) => {
-      console.error(`Failed to take clone: ${error.message}`);
-    });
+  private _handleTakeClone = (motherPlant: PlantEntity) => {
+    const plantId =
+      motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
+
+    this.store.dataService
+      .takeClone({
+        mother_plant_id: plantId,
+      })
+      .then(() => {
+        console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
+      })
+      .catch((error: any) => {
+        console.error(`Failed to take clone: ${error.message}`);
+      });
   };
 
   private getHaDateTimeString(): string {
@@ -233,16 +287,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     const tz = this.hass.config.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     return DateTime.now()
-      .setZone(tz)                  // Use HA timezone
+      .setZone(tz) // Use HA timezone
       .toFormat("yyyy-LL-dd'T'HH:mm"); // Format for datetime-local input
   }
 
   private _openAddPlantDialog(row: number, col: number) {
     this.store.openAddPlantDialog(row, col);
   }
-
-
-
 
   // Strain library methods
   private async _openStrainLibraryDialog() {
@@ -251,22 +302,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     }
     this.store.setActiveDialog({
       type: 'STRAIN_LIBRARY',
-      payload: {}
+      payload: {},
     });
   }
 
-
-
-
-  //Irrigation dialog methods
+  // Irrigation dialog methods
   private _openIrrigationDialog() {
     if (!this.store.state.selectedDevice) return;
     this.store.setActiveDialog({
       type: 'IRRIGATION',
-      payload: true
+      payload: true,
     });
   }
-
 
   private async _addStrain(strainData: Partial<StrainEntry>) {
     this.store.addStrain(strainData);
@@ -294,7 +341,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       await this.store.dataService.exportStrainLibrary();
       // Optional: Show a "Exporting..." toast or spinner here
     } catch (err) {
-      console.error("Failed to call export service", err);
+      console.error('Failed to call export service', err);
       unsubscribe(); // Cleanup if call fails
     }
   }
@@ -309,17 +356,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     document.body.removeChild(a);
   }
 
-
-
   private async _performImport(file: File, replace: boolean) {
     if (!file) return;
 
     try {
       const result = await this.store.dataService.importStrainLibrary(file, replace);
-      this.store.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
+      this.store.showToast(
+        `Import successful! ${result.imported_count || ''} strains imported.`,
+        'success'
+      );
       await this.store.fetchStrainLibrary();
     } catch (err: any) {
-      console.error("Import failed:", err);
+      console.error('Import failed:', err);
       this.store.showToast(`Import failed: ${err.message}`, 'error');
     }
   }
@@ -347,12 +395,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
   _moveClonePlant(plant: PlantEntity, targetGrowspace: string) {
     const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-    this.store.dataService.moveClone(plantId, targetGrowspace)
+    this.store.dataService
+      .moveClone(plantId, targetGrowspace)
       .then(() => {
         console.log(`Moved clone ${plant.attributes.friendly_name} to ${targetGrowspace}`);
         // Optionally refresh local state
         this.store.closeActiveDialog();
-      }).catch((err) => {
+      })
+      .catch((err) => {
         console.error('Error moving clone:', err);
       });
   }
@@ -374,7 +424,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         break;
       case 'control_dehumidifier':
         if (this.store.state.selectedDevice) {
-          const device = this.store.state.devices.find(d => d.device_id === this.store.state.selectedDevice);
+          const device = this.store.state.devices.find(
+            (d) => d.device_id === this.store.state.selectedDevice
+          );
 
           if (device && device.overview_entity_id) {
             const stateObj = this.hass.states[device.overview_entity_id];
@@ -385,10 +437,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
             const currentStatus = attrs.dehumidifier_control_enabled === true;
 
             // 2. Call service with opposite state
-            this.store.dataService.setDehumidifierControl(this.store.state.selectedDevice, !currentStatus)
+            this.store.dataService
+              .setDehumidifierControl(this.store.state.selectedDevice, !currentStatus)
               .then(() => {
-                console.log(`Toggled dehumidifier control to ${!currentStatus} for`, this.store.state.selectedDevice);
-              }).catch(err => {
+                console.log(
+                  `Toggled dehumidifier control to ${!currentStatus} for`,
+                  this.store.state.selectedDevice
+                );
+              })
+              .catch((err) => {
                 console.error('Failed to toggle dehumidifier control:', err);
               });
           }
@@ -409,10 +466,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     }
   }
 
-
-
-
-
   // Configuration Dialog Methods
   private _openConfigDialog() {
     this.store.setActiveDialog({
@@ -427,9 +480,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
           co2_sensor: '',
           circulation_fan: '',
           stress_threshold: 0.8,
-          mold_threshold: 0.8
-        }
-      }
+          mold_threshold: 0.8,
+        },
+      },
     });
   }
 
@@ -443,28 +496,38 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     if (this.store.state.activeDialog?.type !== 'CONFIG') return;
 
     const {
-      selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor,
-      co2_sensor, circulation_fan, stress_threshold, mold_threshold
+      selectedGrowspaceId,
+      temp_sensor,
+      humidity_sensor,
+      vpd_sensor,
+      co2_sensor,
+      circulation_fan,
+      stress_threshold,
+      mold_threshold,
     } = detail;
 
     if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
-      console.error("Missing mandatory fields", { selectedGrowspaceId, temp_sensor, humidity_sensor });
+      console.error('Missing mandatory fields', {
+        selectedGrowspaceId,
+        temp_sensor,
+        humidity_sensor,
+      });
       this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
       return;
     }
 
-    console.log("Submitting environment config", detail);
+    console.log('Submitting environment config', detail);
 
     try {
       await this.store.dataService.configureEnvironment({
         growspace_id: selectedGrowspaceId,
         temperature_sensor: temp_sensor,
-        humidity_sensor: humidity_sensor,
+        humidity_sensor,
         vpd_sensor: vpd_sensor || undefined,
         co2_sensor: co2_sensor || undefined,
         circulation_fan: circulation_fan || undefined,
-        stress_threshold: stress_threshold,
-        mold_threshold: mold_threshold
+        stress_threshold,
+        mold_threshold,
       });
       this.store.showToast('Environment configured successfully!', 'success');
       await this.store.refreshData();
@@ -482,16 +545,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         growspaceId: this.store.state.selectedDevice || '',
         isLoading: false,
         response: null,
-        mode: isStressed ? 'all' : 'single'
-      }
+        mode: isStressed ? 'all' : 'single',
+      },
     });
     if (isStressed) {
       this.store.analyzeGrowspace('', true);
     }
   }
-
-
-
 
   private async _analyzeGrowspace(query: string, all: boolean) {
     if (this.store.state.activeDialog?.type !== 'GROW_MASTER') return;
@@ -499,7 +559,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     // Set loading state
     this.store.setActiveDialog({
       type: 'GROW_MASTER',
-      payload: { ...this.store.state.activeDialog.payload, isLoading: true, response: null }
+      payload: { ...this.store.state.activeDialog.payload, isLoading: true, response: null },
     });
 
     try {
@@ -524,7 +584,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       if (this.store.state.activeDialog.type === 'GROW_MASTER') {
         this.store.setActiveDialog({
           type: 'GROW_MASTER',
-          payload: { ...this.store.state.activeDialog.payload, isLoading: false, response: responseText }
+          payload: {
+            ...this.store.state.activeDialog.payload,
+            isLoading: false,
+            response: responseText,
+          },
         });
       }
     } catch (e: any) {
@@ -532,7 +596,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       if (this.store.state.activeDialog.type === 'GROW_MASTER') {
         this.store.setActiveDialog({
           type: 'GROW_MASTER',
-          payload: { ...this.store.state.activeDialog.payload, isLoading: false, response: `Error: ${e.message || 'Failed to get analysis.'}` }
+          payload: {
+            ...this.store.state.activeDialog.payload,
+            isLoading: false,
+            response: `Error: ${e.message || 'Failed to get analysis.'}`,
+          },
         });
       }
     } finally {
@@ -545,8 +613,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       type: 'STRAIN_RECOMMENDATION',
       payload: {
         isLoading: false,
-        response: null
-      }
+        response: null,
+      },
     });
   }
 
@@ -571,14 +639,22 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         }
         this.store.setActiveDialog({
           type: 'STRAIN_RECOMMENDATION',
-          payload: { ...this.store.state.activeDialog.payload, isLoading: false, response: responseText }
+          payload: {
+            ...this.store.state.activeDialog.payload,
+            isLoading: false,
+            response: responseText,
+          },
         });
       }
     } catch (e: any) {
       if (this.store.state.activeDialog?.type === 'STRAIN_RECOMMENDATION') {
         this.store.setActiveDialog({
           type: 'STRAIN_RECOMMENDATION',
-          payload: { ...this.store.state.activeDialog.payload, isLoading: false, response: `Error: ${e.message || 'Failed to get recommendation.'}` }
+          payload: {
+            ...this.store.state.activeDialog.payload,
+            isLoading: false,
+            response: `Error: ${e.message || 'Failed to get recommendation.'}`,
+          },
         });
       }
     } finally {
@@ -591,42 +667,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     this.store.setActiveDialog({
       type: 'LOGBOOK',
       payload: {
-        growspaceId: this.selectedDevice
-      }
+        growspaceId: this.selectedDevice,
+      },
     });
-  }
-
-
-  private get _activeDevices(): GrowspaceDevice[] {
-    if (!this.hass) return [];
-
-    // updateHass is handled in updated() lifecycle, do not call here to avoid loops.
-
-    // Use store state
-    const devices = this.store.state.devices;
-
-    // Filter out optimistically deleted plants
-    return devices.map(d => ({
-      ...d,
-      plants: d.plants.filter(p => {
-        const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
-        return !this.store.state.optimisticDeletedPlantIds.has(pId);
-      })
-    }));
-  }
-
-  private _calculateCurrentGridLayout(deviceData: GrowspaceDevice) {
-    // Caching removed: last_updated refers to the sensor entity, which doesn't change
-    // when we receive new data via WebSocket. The grid calculation is cheap enough to run every time.
-
-    const effectiveRows = PlantUtils.calculateEffectiveRows(deviceData);
-    const { grid } = PlantUtils.createGridLayout(
-      deviceData.plants,
-      effectiveRows,
-      deviceData.plants_per_row
-    );
-
-    return { effectiveRows, grid };
   }
 
   protected render(): TemplateResult {
@@ -634,7 +677,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
     }
 
-    const devices = this._activeDevices;
+    const devices = this._cachedActiveDevices;
+
+    // Show loading spinner if initially loading and no devices yet
+    if (this.store.state.isLoading) {
+      return html`
+        <ha-card>
+          <div class="loading-container">
+            <div class="loading-spinner"></div>
+          </div>
+        </ha-card>
+      `;
+    }
 
     if (!devices.length) {
       return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
@@ -642,32 +696,33 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
     // Apply default growspace logic
     if (!this.store.state.defaultApplied && this._config?.default_growspace) {
-      const match = devices.find(d =>
-        d.device_id === this._config.default_growspace || d.name === this._config.default_growspace
+      const match = devices.find(
+        (d) =>
+          d.device_id === this._config.default_growspace ||
+          d.name === this._config.default_growspace
       );
       if (match) this.store.handleDeviceChange(match.device_id); // Use store method
       this.store.setDefaultApplied(true);
     }
 
-    if (!this.selectedDevice || !devices.find(d => d.device_id === this.selectedDevice)) {
-      this.store.handleDeviceChange(devices[0].device_id); // Use store method
-    }
+    // Fallback selection handled in store.updateHass / willUpdate
+    // if (!this.selectedDevice || !devices.find(d => d.device_id === this.selectedDevice)) {
+    //   this.store.handleDeviceChange(devices[0].device_id);
+    // }
 
-    const selectedDeviceData = devices.find(d => d.device_id === this.selectedDevice);
+    const selectedDeviceData = devices.find((d) => d.device_id === this.selectedDevice);
     if (!selectedDeviceData) {
       return html`<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
     }
 
     const growspaceOptions: Record<string, string> = {};
-    const growspaces = this.hass.states['sensor.growspaces_list']?.attributes?.growspaces;
-    if (growspaces) {
-      Object.entries(growspaces).forEach(([id, name]) => {
-        growspaceOptions[id] = name as string;
-      });
-    }
+    // Use cached devices to ensure dropdown matches available devices
+    devices.forEach((d) => {
+      growspaceOptions[d.device_id] = d.name;
+    });
 
-    // Calculate grid layout
-    const { effectiveRows, grid } = this._calculateCurrentGridLayout(selectedDeviceData);
+    // Calculate grid layout - now using cached value from willUpdate
+    const { effectiveRows, grid } = this._cachedGridLayout;
 
     const isWide = selectedDeviceData.plants_per_row > 7;
     const strainLibrary = this.store.state.strainLibrary || [];
@@ -687,9 +742,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
             .growspaceOptions=${growspaceOptions}
             .linkedGraphGroups=${this.historyController.linkedGraphGroups}
             @growspace-changed=${this._handleDeviceChange}
-            @toggle-env-graph=${(e: ToggleEnvGraphEvent) => this.historyController.toggleEnvGraph({ metric: e.detail.metric, visible: true })}
-            @link-graphs=${(e: LinkGraphsEvent) => this.historyController.linkGraphs(e.detail.metric1, e.detail.metric2)}
-            @unlink-graphs=${(e: UnlinkGraphsEvent) => this.historyController.unlinkGraphGroup(e.detail.groupIndex)}
+            @toggle-env-graph=${(e: ToggleEnvGraphEvent) =>
+              this.historyController.toggleEnvGraph({ metric: e.detail.metric, visible: true })}
+            @link-graphs=${(e: LinkGraphsEvent) =>
+              this.historyController.linkGraphs(e.detail.metric1, e.detail.metric2)}
+            @unlink-graphs=${(e: UnlinkGraphsEvent) =>
+              this.historyController.unlinkGraphGroup(e.detail.groupIndex)}
             @trigger-action=${this._handleHeaderAction}
           ></growspace-header>
           <growspace-analytics
@@ -711,27 +769,30 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
             .activeEnvGraphs=${this.historyController.activeEnvGraphs}
             .linkedGraphGroups=${this.historyController.linkedGraphGroups}
             .range=${this.historyController.getRange()}
-            @range-change=${(e: RangeChangeEvent) => this.historyController.setGraphRange(e.detail.range)}
-            @toggle-graph=${(e: ToggleEnvGraphEvent) => this.historyController.toggleEnvGraph({ metric: e.detail.metric, visible: true })}
-            @unlink-graphs=${(e: UnlinkGraphsEvent) => this.historyController.unlinkGraphGroup(e.detail.groupIndex)}
-            @unlink-graph=${(e: UnlinkGraphMetricEvent) => this.historyController.unlinkGraphMetric(e.detail.metric)}
+            @range-change=${(e: RangeChangeEvent) =>
+              this.historyController.setGraphRange(e.detail.range)}
+            @toggle-graph=${(e: ToggleEnvGraphEvent) =>
+              this.historyController.toggleEnvGraph({ metric: e.detail.metric, visible: true })}
+            @unlink-graphs=${(e: UnlinkGraphsEvent) =>
+              this.historyController.unlinkGraphGroup(e.detail.groupIndex)}
+            @unlink-graph=${(e: UnlinkGraphMetricEvent) =>
+              this.historyController.unlinkGraphMetric(e.detail.metric)}
           ></growspace-analytics>
           ${this.renderEditModeBanner()}
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
         </div>
       </ha-card>
 
-
-          ${this.store.state.notification ? html`
+      ${this.store.state.notification
+        ? html`
             <div class="toast-notification ${this.store.state.notification.type}">
               ${this.store.state.notification.message}
             </div>
-          ` : ''}
-          ${this.renderDialogs(growspaceOptions)}
-        `;
+          `
+        : ''}
+      ${this.renderDialogs(growspaceOptions)}
+    `;
   }
-
-
 
   private renderEditModeBanner(): TemplateResult {
     if (!this.store.state.isEditMode) return html``;
@@ -753,7 +814,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     `;
   }
 
-  private renderGrid(grid: (PlantEntity | null)[][], rows: number, cols: number, strainLibrary: StrainEntry[]): TemplateResult {
+  private renderGrid(
+    grid: (PlantEntity | null)[][],
+    rows: number,
+    cols: number,
+    strainLibrary: StrainEntry[]
+  ): TemplateResult {
     return html`
       <growspace-grid
         .plants=${grid}
@@ -765,38 +831,44 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         .compact=${this.store.state.isCompactView}
         .isLoading=${this.store.state.isLoading}
         @plant-click=${(e: PlantClickEvent) => this._handlePlantClick(e.detail.plant)}
-        @add-plant-click=${(e: AddPlantClickEvent) => this._openAddPlantDialog(e.detail.row, e.detail.col)}
+        @add-plant-click=${(e: AddPlantClickEvent) =>
+          this._openAddPlantDialog(e.detail.row, e.detail.col)}
         @plant-drop=${(e: PlantDropEvent) =>
-        this._handleDrop(
-          e.detail.originalEvent,
-          e.detail.targetRow,
-          e.detail.targetCol,
-          e.detail.targetPlant,
-          e.detail.sourcePlant
-        )
-      }
+          this._handleDrop(
+            e.detail.originalEvent,
+            e.detail.targetRow,
+            e.detail.targetCol,
+            e.detail.targetPlant,
+            e.detail.sourcePlant
+          )}
         @selection-changed=${(e: SelectionChangedEvent) => {
-        this.store.setSelectedPlants(e.detail.selectedPlants);
-      }}
+          this.store.setSelectedPlants(e.detail.selectedPlants);
+        }}
       ></growspace-grid>
     `;
   }
 
-
-
-
   private async _confirmAddPlant(detail: any) {
     const devices = this.store.state.devices;
-    const selectedDeviceData = devices.find(d => d.device_id === this.store.state.selectedDevice);
+    const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
     if (!selectedDeviceData) return;
 
     const {
-      strain, phenotype, row, col,
-      veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start
+      strain,
+      phenotype,
+      row,
+      col,
+      veg_start,
+      flower_start,
+      seedling_start,
+      mother_start,
+      clone_start,
+      dry_start,
+      cure_start,
     } = detail;
 
     if (!strain) {
-      this.store.showToast("Please select a strain", "error");
+      this.store.showToast('Please select a strain', 'error');
       return;
     }
 
@@ -807,14 +879,20 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         phenotype: phenotype || '',
         row,
         col,
-        veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start
+        veg_start,
+        flower_start,
+        seedling_start,
+        mother_start,
+        clone_start,
+        dry_start,
+        cure_start,
       });
-      this.store.showToast("Plant added successfully", "success");
+      this.store.showToast('Plant added successfully', 'success');
       this.store.closeActiveDialog();
       await this.store.refreshData(); // Force refresh to show new sensor
     } catch (e: any) {
       console.error(e);
-      this.store.showToast("Failed to add plant", "error");
+      this.store.showToast('Failed to add plant', 'error');
     }
   }
 
@@ -826,23 +904,27 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       await this.store.refreshData();
     } catch (e: any) {
       console.error(e);
-      this.store.showToast("Failed to update growspace", "error");
+      this.store.showToast('Failed to update growspace', 'error');
     }
   }
 
   private async _handleDeleteGrowspace(detail: any) {
     try {
       await this.store.dataService.removeGrowspace(detail.growspace_id);
-      this.store.showToast("Growspace deleted", "success");
+      this.store.showToast('Growspace deleted', 'success');
       this.store.closeActiveDialog();
       await this.store.refreshData();
     } catch (e: any) {
       console.error(e);
-      this.store.showToast("Failed to delete growspace", "error");
+      this.store.showToast('Failed to delete growspace', 'error');
     }
   }
 
-  private _renderAddPlantDialog(active: ActiveDialogState, strainLibrary: StrainEntry[], selectedDeviceData?: GrowspaceDevice): TemplateResult {
+  private _renderAddPlantDialog(
+    active: ActiveDialogState,
+    strainLibrary: StrainEntry[],
+    selectedDeviceData?: GrowspaceDevice
+  ): TemplateResult {
     if (active.type !== 'ADD_PLANT') return html``;
     const dialogState = active.payload;
     return html`
@@ -858,7 +940,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     `;
   }
 
-  private _renderPlantOverviewDialog(active: ActiveDialogState, growspaceOptions: Record<string, string>): TemplateResult {
+  private _renderPlantOverviewDialog(
+    active: ActiveDialogState,
+    growspaceOptions: Record<string, string>
+  ): TemplateResult {
     if (active.type !== 'PLANT_OVERVIEW') return html``;
     const dialogState = active.payload;
     return html`
@@ -869,46 +954,53 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         .growspaceOptions=${growspaceOptions}
         @close=${() => this.store.closeActiveDialog()}
         @update-plant=${(e: UpdatePlantEvent) => {
-        const payload = active.payload;
-        this.store.updatePlantFromDialog({
-          plant: payload.plant,
-          editedAttributes: e.detail,
-          selectedPlantIds: payload.selectedPlantIds
-        });
-      }}
-        @delete-plant=${(e: DeletePlantEvent) => this.store.handleDeletePlant(e.detail.plantId)}
-        @harvest-plant=${(e: HarvestPlantEvent) => this.store.handleMovePlantToNextStage(e.detail.plant)}
-        @finish-drying=${(e: FinishDryingEvent) => this.store.handleMovePlantToNextStage(e.detail.plant)}
-        @take-clone=${(e: TakeCloneEvent) => {
-        const { plant, numClones } = e.detail;
-        this.store.handleTakeClone(plant, numClones);
-      }}
-        @move-clone=${(e: MoveCloneEvent) => {
-        const { plant, targetGrowspace } = e.detail;
-        const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-        this.store.dataService.moveClone(plantId, targetGrowspace)
-          .then(() => {
-            console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
-            this.store.closeActiveDialog();
-          }).catch((err: any) => {
-            console.error('Error moving clone:', err);
+          const payload = active.payload;
+          this.store.updatePlantFromDialog({
+            plant: payload.plant,
+            editedAttributes: e.detail,
+            selectedPlantIds: payload.selectedPlantIds,
           });
-      }}
+        }}
+        @delete-plant=${(e: DeletePlantEvent) => this.store.handleDeletePlant(e.detail.plantId)}
+        @harvest-plant=${(e: HarvestPlantEvent) =>
+          this.store.handleMovePlantToNextStage(e.detail.plant)}
+        @finish-drying=${(e: FinishDryingEvent) =>
+          this.store.handleMovePlantToNextStage(e.detail.plant)}
+        @take-clone=${(e: TakeCloneEvent) => {
+          const { plant, numClones } = e.detail;
+          this.store.handleTakeClone(plant, numClones);
+        }}
+        @move-clone=${(e: MoveCloneEvent) => {
+          const { plant, targetGrowspace } = e.detail;
+          const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
+          this.store.dataService
+            .moveClone(plantId, targetGrowspace)
+            .then(() => {
+              console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
+              this.store.closeActiveDialog();
+            })
+            .catch((err: any) => {
+              console.error('Error moving clone:', err);
+            });
+        }}
         @attribute-change=${(e: CustomEvent) => {
-        const payload = active.payload;
-        payload.editedAttributes[e.detail.key] = e.detail.value;
-        this.requestUpdate();
-      }}
+          const payload = active.payload;
+          payload.editedAttributes[e.detail.key] = e.detail.value;
+          this.requestUpdate();
+        }}
         @toggle-show-all-dates=${() => {
-        const payload = active.payload;
-        payload.showAllDates = !payload.showAllDates;
-        this.requestUpdate();
-      }}
+          const payload = active.payload;
+          payload.showAllDates = !payload.showAllDates;
+          this.requestUpdate();
+        }}
       ></plant-overview-dialog>
     `;
   }
 
-  private _renderStrainLibraryDialog(active: ActiveDialogState, strainLibrary: StrainEntry[]): TemplateResult {
+  private _renderStrainLibraryDialog(
+    active: ActiveDialogState,
+    strainLibrary: StrainEntry[]
+  ): TemplateResult {
     if (active.type !== 'STRAIN_LIBRARY') return html``;
     return html`
       <strain-library-dialog
@@ -917,14 +1009,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         @close=${() => this.store.closeActiveDialog()}
         @save-strain=${(e: CustomEvent) => this._addStrain(e.detail)}
         @delete-strain=${(e: CustomEvent) => this._removeStrain(e.detail.key)}
-        @import-library=${(e: CustomEvent) => this.store.performImport(e.detail.file, e.detail.replace)}
+        @import-library=${(e: CustomEvent) =>
+          this.store.performImport(e.detail.file, e.detail.replace)}
         @export-library=${() => this.store.handleExportLibrary()}
         @get-recommendation=${() => this._openStrainRecommendationDialog()}
       ></strain-library-dialog>
     `;
   }
 
-  private _renderConfigDialog(active: ActiveDialogState, growspaceOptions: Record<string, string>): TemplateResult {
+  private _renderConfigDialog(
+    active: ActiveDialogState,
+    growspaceOptions: Record<string, string>
+  ): TemplateResult {
     if (active.type !== 'CONFIG') return html``;
     const dialogState = active.payload;
     return html`
@@ -949,7 +1045,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
     // Determine stress state for the dialog
     let isStressed = false;
-    let personality = undefined;
+    let personality;
 
     // Attempt to find stress sensor
     if (this.selectedDevice && this.hass) {
@@ -957,7 +1053,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       const stressEntityIds = [
         `binary_sensor.${id}_plants_under_stress`,
         `binary_sensor.${id}_stress`,
-        `binary_sensor.growspace_manager_${id}_stress`
+        `binary_sensor.growspace_manager_${id}_stress`,
       ];
 
       for (const eid of stressEntityIds) {
@@ -986,7 +1082,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         .response=${dialogState.response}
         @close=${() => this.store.closeActiveDialog()}
         @analyze-growspace=${(e: CustomEvent) => this.store.analyzeGrowspace(e.detail.query, false)}
-        @analyze-all-growspaces=${(e: CustomEvent) => this.store.analyzeGrowspace(e.detail.query, true)}
+        @analyze-all-growspaces=${(e: CustomEvent) =>
+          this.store.analyzeGrowspace(e.detail.query, true)}
       ></grow-master-dialog>
     `;
   }
@@ -1000,22 +1097,25 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         .isLoading=${dialogState.isLoading}
         .response=${dialogState.response}
         @close=${() => this.store.closeActiveDialog()}
-        @get-recommendation=${(e: CustomEvent) => this.store.getStrainRecommendation(e.detail.query)}
+        @get-recommendation=${(e: CustomEvent) =>
+          this.store.getStrainRecommendation(e.detail.query)}
       ></strain-recommendation-dialog>
     `;
   }
 
-  private _renderIrrigationDialog(active: ActiveDialogState, selectedDeviceData?: GrowspaceDevice): TemplateResult {
+  private _renderIrrigationDialog(
+    active: ActiveDialogState,
+    selectedDeviceData?: GrowspaceDevice
+  ): TemplateResult {
     if (active.type !== 'IRRIGATION') return html``;
     return html`
-       <irrigation-dialog
+      <irrigation-dialog
         .open=${true}
         .device=${selectedDeviceData}
-
         .growspaceName=${selectedDeviceData?.name || ''}
         @close=${() => this.store.closeActiveDialog()}
         @closed=${() => this.store.closeActiveDialog()}
-       ></irrigation-dialog>
+      ></irrigation-dialog>
     `;
   }
 
@@ -1037,7 +1137,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
     const strainLibrary = this.store.state.strainLibrary || [];
     const devices = this.store.state.devices;
-    const selectedDeviceData = devices.find(d => d.device_id === this.store.state.selectedDevice);
+    const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
 
     switch (active.type) {
       case 'ADD_PLANT':

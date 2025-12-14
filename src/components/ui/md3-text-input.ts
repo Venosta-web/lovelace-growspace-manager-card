@@ -17,7 +17,7 @@ export class Md3TextInput extends LitElement {
         display: block;
         width: 100%;
       }
-    `
+    `,
   ];
 
   private _handleInput(e: Event) {

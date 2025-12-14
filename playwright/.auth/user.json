@@ -6,7 +6,7 @@
       "localStorage": [
         {
           "name": "hassTokens",
-          "value": "{\"access_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIxYzUzMzc5Njc3OTI0MTk4OGQ2YjY3MGU3NGYxYTJlNCIsImlhdCI6MTc2NTcwMDA3NywiZXhwIjoxNzY1NzAxODc3fQ.yFNjNzZVp1f7mx7Af2thcCc_IsO78hme7X2Z5hm-B4M\",\"token_type\":\"Bearer\",\"refresh_token\":\"c10b6c3c3c0e043de291e2ce90cac5ba9875c52f83049e70420abcba048d633f4a6eb78fe55e3dbffbe4ad485aa2924f369181f7cd88e40adf25b1960cb1e33f\",\"expires_in\":1800,\"ha_auth_provider\":\"homeassistant\",\"hassUrl\":\"http://127.0.0.1:8123\",\"clientId\":\"http://127.0.0.1:8123/\",\"expires\":1765701877507}"
+          "value": "{\"access_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIxNDM3MWI2ZDAwMGE0YzdkODQzOTIyNTFjNTY1YTAwMSIsImlhdCI6MTc2NTcwMzIxNCwiZXhwIjoxNzY1NzA1MDE0fQ.MY5De9ybXx5VYWhfHwELizwEwnX8jBaM1E5_Y_dQY98\",\"token_type\":\"Bearer\",\"refresh_token\":\"889d3a29e0b49dfe92e7865d39e7647087da4cda0c179fb680e86520e16725966e3cb6803de30265f3c2c1258b260a0b6fd47d85bd38a0ae886cb42aab4151ab\",\"expires_in\":1800,\"ha_auth_provider\":\"homeassistant\",\"hassUrl\":\"http://127.0.0.1:8123\",\"clientId\":\"http://127.0.0.1:8123/\",\"expires\":1765705014328}"
         },
         {
           "name": "ha-version",

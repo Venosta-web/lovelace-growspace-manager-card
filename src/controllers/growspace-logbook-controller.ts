@@ -1,29 +1,29 @@
-import { HomeAssistant } from "custom-card-helpers";
-import { GrowspaceEvent } from "../types";
+import { HomeAssistant } from 'custom-card-helpers';
+import { GrowspaceEvent } from '../types';
 
 export class GrowspaceLogbookController {
-    private hass: HomeAssistant;
+  private hass: HomeAssistant;
 
-    constructor(hass: HomeAssistant) {
-        this.hass = hass;
+  constructor(hass: HomeAssistant) {
+    this.hass = hass;
+  }
+
+  async fetchEventLog(growspaceId: string): Promise<GrowspaceEvent[]> {
+    if (!this.hass) {
+      console.warn('Home Assistant instance not available');
+      return [];
     }
 
-    async fetchEventLog(growspaceId: string): Promise<GrowspaceEvent[]> {
-        if (!this.hass) {
-            console.warn("Home Assistant instance not available");
-            return [];
-        }
+    try {
+      const response = await this.hass.callWS<Record<string, GrowspaceEvent[]>>({
+        type: 'growspace_manager/get_log',
+        growspace_id: growspaceId,
+      });
 
-        try {
-            const response = await this.hass.callWS<Record<string, GrowspaceEvent[]>>({
-                type: "growspace_manager/get_log",
-                growspace_id: growspaceId,
-            });
-
-            return response[growspaceId] || [];
-        } catch (e) {
-            console.error("Error fetching event log:", e);
-            return [];
-        }
+      return response[growspaceId] || [];
+    } catch (e) {
+      console.error('Error fetching event log:', e);
+      return [];
     }
+  }
 }

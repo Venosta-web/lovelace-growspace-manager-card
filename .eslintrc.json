@@ -1,0 +1,16 @@
+{
+  "parser": "@typescript-eslint/parser",
+  "plugins": [
+    "@typescript-eslint"
+  ],
+  "extends": [
+    "standard",
+    "plugin:@typescript-eslint/recommended",
+    "prettier"
+  ],
+  "rules": {
+    "no-useless-constructor": "off",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/explicit-module-boundary-types": "off"
+  }
+}

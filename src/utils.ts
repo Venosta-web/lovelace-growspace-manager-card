@@ -1,5 +1,5 @@
-import { mdiSprout, mdiFlower, mdiHairDryer, mdiCannabis } from "@mdi/js";
-import { PlantEntity, GrowspaceDevice, PlantStage, CropMeta } from "./types";
+import { mdiSprout, mdiFlower, mdiHairDryer, mdiCannabis } from '@mdi/js';
+import { PlantEntity, GrowspaceDevice, PlantStage, CropMeta } from './types';
 
 export const PLANT_STAGES: PlantStage[] = [
   PlantStage.SEEDLING,
@@ -13,13 +13,13 @@ export const PLANT_STAGES: PlantStage[] = [
 
 export class PlantUtils {
   private static readonly stageColors: Record<PlantStage, string> = {
-    [PlantStage.MOTHER]: "#E91E63",
-    [PlantStage.CLONE]: "#FF5722",
-    [PlantStage.SEEDLING]: "#4CAF50",
-    [PlantStage.VEG]: "#8BC34A",
-    [PlantStage.FLOWER]: "#FF9800",
-    [PlantStage.DRY]: "#795548",
-    [PlantStage.CURE]: "#9C27B0",
+    [PlantStage.MOTHER]: '#E91E63',
+    [PlantStage.CLONE]: '#FF5722',
+    [PlantStage.SEEDLING]: '#4CAF50',
+    [PlantStage.VEG]: '#8BC34A',
+    [PlantStage.FLOWER]: '#FF9800',
+    [PlantStage.DRY]: '#795548',
+    [PlantStage.CURE]: '#9C27B0',
   };
 
   private static readonly stageIcons: Record<PlantStage, string> = {
@@ -42,13 +42,14 @@ export class PlantUtils {
 
   static getPlantStageColor(state: PlantStage | string): string {
     const key = this.normalizeStage(state);
-    return this.stageColors[key] ?? "#757575";
+    return this.stageColors[key] ?? '#757575';
   }
 
   static getPlantStageIcon(state: PlantStage | string): string {
     const key = this.normalizeStage(state);
     return this.stageIcons[key] ?? mdiSprout;
   }
+
   // --- helpers at the top ---
   static getPlantStage(plant: PlantEntity): PlantStage {
     const attrs = plant?.attributes ?? {};
@@ -71,13 +72,27 @@ export class PlantUtils {
     let startStr: string | undefined;
 
     switch (stage) {
-      case PlantStage.FLOWER: startStr = attrs.flower_start; break;
-      case PlantStage.VEG: startStr = attrs.veg_start; break;
-      case PlantStage.MOTHER: startStr = attrs.mom_start; break;
-      case PlantStage.CLONE: startStr = attrs.clone_start; break;
-      case PlantStage.DRY: startStr = attrs.dry_start; break;
-      case PlantStage.CURE: startStr = attrs.cure_start; break;
-      case PlantStage.SEEDLING: startStr = attrs.planted_date; break;
+      case PlantStage.FLOWER:
+        startStr = attrs.flower_start;
+        break;
+      case PlantStage.VEG:
+        startStr = attrs.veg_start;
+        break;
+      case PlantStage.MOTHER:
+        startStr = attrs.mom_start;
+        break;
+      case PlantStage.CLONE:
+        startStr = attrs.clone_start;
+        break;
+      case PlantStage.DRY:
+        startStr = attrs.dry_start;
+        break;
+      case PlantStage.CURE:
+        startStr = attrs.cure_start;
+        break;
+      case PlantStage.SEEDLING:
+        startStr = attrs.planted_date;
+        break;
     }
 
     if (!startStr) return 0;
@@ -88,6 +103,7 @@ export class PlantUtils {
     const diff = now.getTime() - start.getTime();
     return Math.floor(diff / (1000 * 60 * 60 * 24));
   }
+
   static createGridLayout(
     plants: PlantEntity[],
     rows: number,
@@ -136,21 +152,18 @@ export class PlantUtils {
 
     // Check for special growspaces by name/ID logic or type if available
     // Assuming name might match stage or ID.
-    if (name === "dry" || name === "cure" || name === "mother" || name === "clone") {
+    if (name === 'dry' || name === 'cure' || name === 'mother' || name === 'clone') {
       if (plants.length === 0) return 1;
 
-      const maxRowUsed = Math.max(
-        ...plants.map((p) => p.attributes?.row || 1)
-      );
-      const lastRowCount = plants.filter(
-        (p) => (p.attributes?.row || 1) === maxRowUsed
-      ).length;
+      const maxRowUsed = Math.max(...plants.map((p) => p.attributes?.row || 1));
+      const lastRowCount = plants.filter((p) => (p.attributes?.row || 1) === maxRowUsed).length;
 
       return lastRowCount >= plants_per_row ? maxRowUsed + 1 : maxRowUsed;
     }
 
     return rows;
   }
+
   /**
    * Converts a datetime-local input string (YYYY-MM-DDTHH:mm) to ISO string
    * Returns null if input is empty or invalid
@@ -159,7 +172,7 @@ export class PlantUtils {
     if (!value) return undefined;
     try {
       // Append ":00" if only HH:MM is provided
-      const isoString = value.length === 16 ? value + ":00" : value;
+      const isoString = value.length === 16 ? value + ':00' : value;
       const dt = new Date(isoString);
 
       if (isNaN(dt.getTime())) return undefined;
@@ -204,7 +217,7 @@ export class PlantUtils {
 
   static getCurrentDateTime(): string {
     const now = new Date();
-    const pad = (n: number) => n.toString().padStart(2, "0");
+    const pad = (n: number) => n.toString().padStart(2, '0');
     return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:00`;
   }
 
@@ -212,12 +225,12 @@ export class PlantUtils {
    * Formats a date string (YYYY-MM-DD or ISO) to YYYY-MM-DDThh:mm for datetime-local inputs
    */
   static toDateTimeLocal(value?: string | null): string {
-    if (!value) return "";
+    if (!value) return '';
     try {
       const dt = new Date(value);
-      if (isNaN(dt.getTime())) return "";
+      if (isNaN(dt.getTime())) return '';
 
-      const pad = (n: number) => n.toString().padStart(2, "0");
+      const pad = (n: number) => n.toString().padStart(2, '0');
       const yyyy = dt.getFullYear();
       const mm = pad(dt.getMonth() + 1);
       const dd = pad(dt.getDate());
@@ -226,11 +239,11 @@ export class PlantUtils {
 
       return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
     } catch {
-      return "";
+      return '';
     }
   }
 
-  static getDominantStage(plants: PlantEntity[]): { stage: PlantStage, days: number } | null {
+  static getDominantStage(plants: PlantEntity[]): { stage: PlantStage; days: number } | null {
     if (!plants || plants.length === 0) return null;
 
     // Defined priority: Cure > Dry > Flower > Vegetative > Clone > Mother > Seedling
@@ -242,7 +255,7 @@ export class PlantUtils {
       PlantStage.VEG,
       PlantStage.CLONE,
       PlantStage.MOTHER,
-      PlantStage.SEEDLING
+      PlantStage.SEEDLING,
     ];
 
     // Find the highest priority stage present in the plants
@@ -268,7 +281,7 @@ export class PlantUtils {
         // Map stage to attribute key
         const daysKey = `${stage === PlantStage.VEG ? 'veg' : stage}_days`;
 
-        const daysValues = plantsByStage[stage].map(p => {
+        const daysValues = plantsByStage[stage].map((p) => {
           const val = p.attributes[daysKey];
           return typeof val === 'number' ? val : 0;
         });
@@ -291,7 +304,12 @@ export class PlantUtils {
    * @param quality Quality between 0 and 1.
    * @returns Promise resolving to base64 string.
    */
-  static compressImage(file: File, maxWidth: number = 800, maxHeight: number = 800, quality: number = 0.7): Promise<string> {
+  static compressImage(
+    file: File,
+    maxWidth: number = 800,
+    maxHeight: number = 800,
+    quality: number = 0.7
+  ): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -320,7 +338,7 @@ export class PlantUtils {
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           if (!ctx) {
-            reject(new Error("Failed to get canvas context"));
+            reject(new Error('Failed to get canvas context'));
             return;
           }
           ctx.drawImage(img, 0, 0, width, height);

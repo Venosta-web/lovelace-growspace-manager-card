@@ -3,17 +3,17 @@ import { customElement, property } from 'lit/decorators.js';
 
 @customElement('md3-switch')
 export class Md3Switch extends LitElement {
-    @property({ type: Boolean }) checked = false;
-    @property({ type: Boolean }) disabled = false;
+  @property({ type: Boolean }) checked = false;
+  @property({ type: Boolean }) disabled = false;
 
-    static styles = css`
+  static styles = css`
     :host {
       display: inline-block;
       vertical-align: middle;
       --md-switch-width: 52px;
       --md-switch-height: 32px;
       --md-switch-handle-size: 24px;
-      --md-switch-track-color-on: var(--primary-color, #2196F3);
+      --md-switch-track-color-on: var(--primary-color, #2196f3);
       --md-switch-track-color-off: rgba(255, 255, 255, 0.1);
       --md-switch-handle-color: #fff;
     }
@@ -45,8 +45,8 @@ export class Md3Switch extends LitElement {
       height: var(--md-switch-handle-size);
       background: var(--md-switch-handle-color);
       border-radius: 50%;
-      transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
 
     :host([checked]) .handle {
@@ -54,26 +54,28 @@ export class Md3Switch extends LitElement {
     }
   `;
 
-    private _handleClick() {
-        if (this.disabled) return;
-        this.checked = !this.checked;
-        this.dispatchEvent(new CustomEvent('change', {
-            detail: { checked: this.checked },
-            bubbles: true,
-            composed: true
-        }));
-    }
+  private _handleClick() {
+    if (this.disabled) return;
+    this.checked = !this.checked;
+    this.dispatchEvent(
+      new CustomEvent('change', {
+        detail: { checked: this.checked },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
 
-    render() {
-        return html`
-      <button 
-        role="switch" 
-        aria-checked=${this.checked} 
+  render() {
+    return html`
+      <button
+        role="switch"
+        aria-checked=${this.checked}
         @click=${this._handleClick}
         ?disabled=${this.disabled}
       >
         <div class="handle"></div>
       </button>
     `;
-    }
+  }
 }

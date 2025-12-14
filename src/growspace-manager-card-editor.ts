@@ -1,9 +1,9 @@
-import { LitElement, html, css } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
-import type { LovelaceCardEditor } from "custom-card-helpers";
-import type { GrowspaceManagerCardConfig } from "./types";
+import { LitElement, html, css } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import type { LovelaceCardEditor } from 'custom-card-helpers';
+import type { GrowspaceManagerCardConfig } from './types';
 
-@customElement("growspace-manager-card-editor")
+@customElement('growspace-manager-card-editor')
 export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass?: any;
   @property({ attribute: false }) private _config?: GrowspaceManagerCardConfig;
@@ -17,7 +17,7 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
   }
 
   updated(changedProps: Map<string, any>) {
-    if (changedProps.has("hass") && this.hass) {
+    if (changedProps.has('hass') && this.hass) {
       this._loadGrowspaces();
       this._subscribeToSensorUpdates();
     }
@@ -32,27 +32,24 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
   }
 
   private _subscribeToSensorUpdates() {
-  if (!this.hass || this._unsubStateChanged) return;
+    if (!this.hass || this._unsubStateChanged) return;
 
-  this._unsubStateChanged = this.hass.connection.subscribeEvents(
-    (event: any) => {
+    this._unsubStateChanged = this.hass.connection.subscribeEvents((event: any) => {
       const newState = event.data.new_state;
-      if (newState?.entity_id === "sensor.growspaces_list") {
+      if (newState?.entity_id === 'sensor.growspaces_list') {
         if (Array.isArray(newState.attributes?.growspaces)) {
           this._growspaceOptions = newState.attributes.growspaces;
         } else {
           this._growspaceOptions = [];
         }
       }
-    },
-    "state_changed"
-  );
-}
+    }, 'state_changed');
+  }
 
   private _loadGrowspaces() {
     if (!this.hass) return;
 
-    const entity = this.hass.states["sensor.growspaces_list"];
+    const entity = this.hass.states['sensor.growspaces_list'];
     if (entity && entity.attributes?.growspaces) {
       const gsObj = entity.attributes.growspaces;
       // Option 1: just values (friendly names)
@@ -88,19 +85,14 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
       <div class="form-group">
         <label>Default Growspace</label>
         <select
-          .value=${this._config.default_growspace ?? ""}
+          .value=${this._config.default_growspace ?? ''}
           @change=${(e: Event) =>
-            this._valueChanged(
-              "default_growspace",
-              (e.target as HTMLSelectElement).value
-            )}
+            this._valueChanged('default_growspace', (e.target as HTMLSelectElement).value)}
         >
           <option value="">Select a growspace</option>
           ${this._growspaceOptions.length === 0
             ? html`<option disabled>No growspaces found</option>`
-            : this._growspaceOptions.map(
-                (gs) => html`<option value="${gs}">${gs}</option>`
-              )}
+            : this._growspaceOptions.map((gs) => html`<option value="${gs}">${gs}</option>`)}
         </select>
       </div>
     `;
@@ -110,7 +102,7 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
     if (!this._config) return;
     const newConfig = { ...this._config, [key]: value };
     this.dispatchEvent(
-      new CustomEvent("config-changed", {
+      new CustomEvent('config-changed', {
         detail: { config: newConfig },
         bubbles: true,
         composed: true,

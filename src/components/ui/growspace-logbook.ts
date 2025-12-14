@@ -12,6 +12,7 @@ import { hassContext } from '../../context';
 export class GrowspaceLogbook extends LitElement {
   @consume({ context: hassContext, subscribe: true })
   hass!: HomeAssistant;
+
   @property({ type: String }) growspaceId!: string;
 
   @state() private _events: GrowspaceEvent[] = [];
@@ -76,7 +77,7 @@ export class GrowspaceLogbook extends LitElement {
       }
       .event-type {
         font-weight: 600;
-        color: var(--accent-color, #4CAF50);
+        color: var(--accent-color, #4caf50);
         margin-bottom: 4px;
         text-transform: capitalize;
       }
@@ -125,12 +126,12 @@ export class GrowspaceLogbook extends LitElement {
         flex-shrink: 0;
       }
       .filter-chip.active {
-        background: var(--accent-color, #4CAF50);
+        background: var(--accent-color, #4caf50);
         color: white;
         opacity: 1;
         border-color: transparent;
         font-weight: 500;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       }
       .filter-chip:hover:not(.active) {
         background: rgba(255, 255, 255, 0.1);
@@ -142,7 +143,7 @@ export class GrowspaceLogbook extends LitElement {
         opacity: 0.5;
         font-style: italic;
       }
-    `
+    `,
   ];
 
   protected firstUpdated() {
@@ -161,6 +162,7 @@ export class GrowspaceLogbook extends LitElement {
     if (severity >= 0.75) return 'var(--warning-color)';
     return 'var(--primary-text-color)';
   }
+
   protected willUpdate(changedProps: Map<string, any>) {
     if (changedProps.has('hass') && !this._controller) {
       this._initController();
@@ -208,7 +210,7 @@ export class GrowspaceLogbook extends LitElement {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
       });
     } catch {
       return isoString;
@@ -225,70 +227,94 @@ export class GrowspaceLogbook extends LitElement {
     // Filter logic
     let filteredEvents = allEvents;
     if (this._activeFilter === 'alerts') {
-      filteredEvents = allEvents.filter(e => e.category === 'alert' || e.severity >= 0.75);
+      filteredEvents = allEvents.filter((e) => e.category === 'alert' || e.severity >= 0.75);
     } else if (this._activeFilter === 'irrigation') {
-      filteredEvents = allEvents.filter(e => e.category === 'irrigation' || ['irrigation', 'drain'].includes(e.sensor_type));
+      filteredEvents = allEvents.filter(
+        (e) => e.category === 'irrigation' || ['irrigation', 'drain'].includes(e.sensor_type)
+      );
     } else if (this._activeFilter === 'environment') {
-      filteredEvents = allEvents.filter(e => ['temperature', 'humidity', 'vpd', 'co2'].includes(e.sensor_type));
+      filteredEvents = allEvents.filter((e) =>
+        ['temperature', 'humidity', 'vpd', 'co2'].includes(e.sensor_type)
+      );
     }
 
     // Sort by time descending (newest first)
-    const sortedEvents = [...filteredEvents].sort((a, b) =>
-      new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+    const sortedEvents = [...filteredEvents].sort(
+      (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
     );
 
     const filters = [
       { id: 'all', label: 'All' },
       { id: 'alerts', label: 'Alerts' },
       { id: 'irrigation', label: 'Irrigation' },
-      { id: 'environment', label: 'Environment' }
+      { id: 'environment', label: 'Environment' },
     ];
 
     return html`
       <div class="filter-bar">
-        ${filters.map(filter => html`
-          <div 
-            class="filter-chip ${this._activeFilter === filter.id ? 'active' : ''}"
-            @click=${() => this._activeFilter = filter.id}
-          >
-            ${filter.label}
-          </div>
-        `)}
+        ${filters.map(
+          (filter) => html`
+            <div
+              class="filter-chip ${this._activeFilter === filter.id ? 'active' : ''}"
+              @click=${() => (this._activeFilter = filter.id)}
+            >
+              ${filter.label}
+            </div>
+          `
+        )}
       </div>
 
       <div class="log-container">
-        ${sortedEvents.length > 0 ? sortedEvents.map(event => html`
-          <div class="event-card">
-            <div class="event-header">
-              <span class="event-time">${this._formatTime(event.start_time)}</span>
-              <span class="event-duration">${this._formatDuration(event.duration_sec)}</span>
-            </div>
-            
-            <div class="event-details">
-              <div>
-                <div class="event-type">${event.sensor_type.replace(/_/g, ' ')}</div>
-                
-                ${event.reasons && event.reasons.length > 0 ? html`
-                  <div class="event-reasons">
-                    ${event.reasons.map(reason => html`<span class="reason-badge">${reason}</span>`)}
+        ${sortedEvents.length > 0
+          ? sortedEvents.map(
+              (event) => html`
+                <div class="event-card">
+                  <div class="event-header">
+                    <span class="event-time">${this._formatTime(event.start_time)}</span>
+                    <span class="event-duration">${this._formatDuration(event.duration_sec)}</span>
                   </div>
-                ` : nothing}
+
+                  <div class="event-details">
+                    <div>
+                      <div class="event-type">${event.sensor_type.replace(/_/g, ' ')}</div>
+
+                      ${event.reasons && event.reasons.length > 0
+                        ? html`
+                            <div class="event-reasons">
+                              ${event.reasons.map(
+                                (reason) => html`<span class="reason-badge">${reason}</span>`
+                              )}
+                            </div>
+                          `
+                        : nothing}
+                    </div>
+
+                    ${event.category === 'alert'
+                      ? html`
+                          <div
+                            class="event-probability"
+                            style="color: ${this._getSeverityColor(
+                              event.severity,
+                              event.sensor_type
+                            )}"
+                          >
+                            ${this._formatProb(event.severity)}
+                          </div>
+                        `
+                      : html`
+                          <div class="event-probability">
+                            <ha-icon icon="mdi:water"></ha-icon>
+                          </div>
+                        `}
+                  </div>
+                </div>
+              `
+            )
+          : html`
+              <div class="empty-state">
+                No events found for "${filters.find((f) => f.id === this._activeFilter)?.label}".
               </div>
-              
-              ${event.category === 'alert' ? html`
-                  <div class="event-probability" style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}">
-                    ${this._formatProb(event.severity)}
-                  </div>
-                ` : html`
-                   <div class="event-probability">
-                     <ha-icon icon="mdi:water"></ha-icon>
-                   </div>
-                `}
-            </div>
-          </div>
-        `) : html`
-          <div class="empty-state">No events found for "${filters.find(f => f.id === this._activeFilter)?.label}".</div>
-        `}
+            `}
       </div>
     `;
   }

@@ -42,7 +42,7 @@ export const dialogStyles = css`
     align-items: center;
     justify-content: center;
     margin-right: 16px;
-    color: var(--stage-color, #4CAF50);
+    color: var(--stage-color, #4caf50);
   }
 
   .dialog-title-group {
@@ -121,7 +121,7 @@ export const dialogStyles = css`
     background: rgba(255, 255, 255, 0.15);
   }
   .md3-button.primary {
-    background: var(--primary-color, #4CAF50);
+    background: var(--primary-color, #4caf50);
     color: #fff;
   }
   .md3-button.primary:hover {
@@ -172,7 +172,7 @@ export const dialogStyles = css`
   }
   .md3-input:focus {
     outline: none;
-    border-color: #4CAF50;
+    border-color: #4caf50;
     background: rgba(255, 255, 255, 0.08);
   }
 
@@ -193,7 +193,7 @@ export const dialogStyles = css`
     .dialog-header {
       padding: 12px 16px;
     }
-    
+
     /* Restored responsive rules */
     .dialog-content-grid {
       flex: 1;
