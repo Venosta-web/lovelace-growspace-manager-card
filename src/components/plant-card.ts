@@ -13,7 +13,7 @@ import {
   mdiCheckboxBlankOutline,
 } from '@mdi/js';
 import { PlantEntity, StrainEntry, PlantStage } from '../types';
-import { PlantUtils } from '../utils';
+import { PlantUtils } from '../utils/plant-utils';
 
 interface StageDisplay {
   days: number;

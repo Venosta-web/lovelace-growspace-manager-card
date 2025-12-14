@@ -25,18 +25,24 @@ export class DialogHost extends LitElement {
     @consume({ context: storeContext, subscribe: true })
     store!: GrowspaceStore;
 
+    @property({ attribute: false })
+    activeDialogState!: ActiveDialogState;
+
+    @property({ attribute: false })
+    devices: GrowspaceDevice[] = [];
+
     @consume({ context: strainLibraryContext, subscribe: true })
     strainLibrary: StrainEntry[] = [];
 
     render() {
         if (!this.store) return html``;
 
-        const active = this.store.state.activeDialog;
+        const active = this.activeDialogState || this.store.state.activeDialog;
         console.log('[DialogHost] Rendering with active type:', active.type);
         if (active.type === 'NONE') return html``;
 
         const strainLibrary = this.strainLibrary || [];
-        const devices = this.store.state.devices;
+        const devices = this.devices || this.store.state.devices;
         const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
 
         // Prepare options for select dropdowns if needed

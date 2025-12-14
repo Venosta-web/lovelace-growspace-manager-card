@@ -6,12 +6,6 @@ import { mdiPlus } from '@mdi/js';
 import { repeat } from 'lit/directives/repeat.js';
 import { PlantEntity, StrainEntry } from '../types';
 import { storeContext } from '../context';
-import {
-  AddPlantClickEvent,
-  PlantClickEvent,
-  PlantDropEvent,
-  SelectionChangedEvent,
-} from '../events';
 import type { GrowspaceStore } from '../store/growspace-store';
 import './plant-card';
 
@@ -436,7 +430,7 @@ export class GrowspaceGrid extends LitElement {
                     .selected=${isSelected}
                     @plant-click=${() => this._handlePlantClick(plant)}
                     @plant-drag-start=${() => this._handleDragStart(plant)}
-                    @plant-drop=${(e: PlantDropEvent) =>
+                    @plant-drop=${(e: CustomEvent) =>
                 this._handleDrop(e.detail.originalEvent, row, col, plant)}
                     @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
                   ></growspace-plant-card>

@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest';
-import { MetricsUtils } from '../../src/utils';
+import { MetricsUtils } from '../../src/utils/metrics-utils';
 import { PlantStage } from '../../src/types';
 
 describe('MetricsUtils', () => {

@@ -4,7 +4,7 @@ import { DateTime } from 'luxon';
 import { GrowspaceDevice, StrainEntry, PlantEntity, CropMeta } from '../types';
 import { ActiveDialogState } from '../ui-state';
 import { DataService } from '../data-service';
-import { PlantUtils } from '../utils';
+import { PlantUtils } from '../utils/plant-utils';
 import { LibraryExportReadyEvent } from '../events';
 
 export interface GrowspaceState {

@@ -1,7 +1,7 @@
 import { ReactiveController, ReactiveControllerHost } from 'lit';
 import { GrowspaceStore } from '../store/growspace-store';
 import { GrowspaceDevice, PlantEntity } from '../types';
-import { PlantUtils } from '../utils';
+import { PlantUtils } from '../utils/plant-utils';
 
 export class GrowspaceGridController implements ReactiveController {
     host: ReactiveControllerHost;

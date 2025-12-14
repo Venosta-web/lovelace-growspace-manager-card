@@ -22,7 +22,8 @@ import './growspace-chip'; // Import the new component
 import { consume } from '@lit/context';
 import { hassContext, configContext, storeContext, historyContext } from '../context';
 import { GrowspaceDevice, GrowspaceManagerCardConfig, IrrigationTime } from '../types';
-import { PlantUtils, MetricsUtils } from '../utils';
+import { PlantUtils } from '../utils/plant-utils';
+import { MetricsUtils } from '../utils/metrics-utils';
 import { METRIC_CONFIG } from '../constants';
 import type { GrowspaceStore } from '../store/growspace-store';
 import type { GrowspaceHistoryController } from '../controllers/growspace-history-controller';

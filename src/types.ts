@@ -1,6 +1,7 @@
-import { mdiSprout, mdiFlower, mdiHairDryer, mdiCannabis } from '@mdi/js';
-import { LovelaceCardConfig } from 'custom-card-helpers';
+import { LovelaceCardConfig, HomeAssistant } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
+import { mdiSprout, mdiFlower, mdiHairDryer, mdiCannabis } from '@mdi/js';
+import type { GrowspaceStore } from './store/growspace-store';
 
 export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
   type: string;
@@ -21,8 +22,8 @@ export interface GrowspaceEntity<T = any> extends HassEntity {
 }
 
 export interface GrowspaceContext {
-  hass: any; // We can't strictly type HomeAssistant object easily here without circular deps or huge types
-  store: any; // Will be typed as GrowspaceStore later
+  hass: HomeAssistant;
+  store: GrowspaceStore;
 }
 
 // -- Domain Specific Attributes --

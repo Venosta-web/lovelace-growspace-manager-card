@@ -24,7 +24,7 @@ import {
   mdiDotsVertical,
 } from '@mdi/js';
 import { StrainEntry, CropMeta } from '../types';
-import { PlantUtils } from '../utils';
+import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';

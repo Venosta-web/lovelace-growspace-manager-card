@@ -77,6 +77,10244 @@ function createGrowspaceDevice(params) {
     };
 }
 
+[
+    PlantStage.SEEDLING,
+    PlantStage.MOTHER,
+    PlantStage.CLONE,
+    PlantStage.VEG,
+    PlantStage.FLOWER,
+    PlantStage.DRY,
+    PlantStage.CURE,
+];
+class PlantUtils {
+    static normalizeStage(state) {
+        const lower = state.toLowerCase();
+        if (lower === 'veg' || lower === 'vegetative')
+            return PlantStage.VEG;
+        if (lower === 'mom')
+            return PlantStage.MOTHER;
+        // Add other aliases if necessary
+        return lower;
+    }
+    static getPlantStageColor(state) {
+        const key = this.normalizeStage(state);
+        return this.stageColors[key] ?? '#757575';
+    }
+    static getPlantStageIcon(state) {
+        const key = this.normalizeStage(state);
+        return this.stageIcons[key] ?? mdiSprout;
+    }
+    // --- helpers at the top ---
+    static getPlantStage(plant) {
+        const attrs = plant?.attributes ?? {};
+        const now = new Date();
+        if (attrs.cure_start)
+            return PlantStage.CURE;
+        if (attrs.dry_start)
+            return PlantStage.DRY;
+        if (attrs.mom_start)
+            return PlantStage.MOTHER;
+        if (attrs.clone_start)
+            return PlantStage.CLONE;
+        if (attrs.flower_start && new Date(attrs.flower_start) <= now)
+            return PlantStage.FLOWER;
+        if (attrs.veg_start && new Date(attrs.veg_start) <= now)
+            return PlantStage.VEG;
+        return PlantStage.SEEDLING;
+    }
+    static calculatePlantAge(plant) {
+        if (!plant || !plant.attributes)
+            return 0;
+        const stage = this.getPlantStage(plant);
+        const attrs = plant.attributes;
+        let startStr;
+        switch (stage) {
+            case PlantStage.FLOWER:
+                startStr = attrs.flower_start;
+                break;
+            case PlantStage.VEG:
+                startStr = attrs.veg_start;
+                break;
+            case PlantStage.MOTHER:
+                startStr = attrs.mom_start;
+                break;
+            case PlantStage.CLONE:
+                startStr = attrs.clone_start;
+                break;
+            case PlantStage.DRY:
+                startStr = attrs.dry_start;
+                break;
+            case PlantStage.CURE:
+                startStr = attrs.cure_start;
+                break;
+            case PlantStage.SEEDLING:
+                startStr = attrs.planted_date;
+                break;
+        }
+        if (!startStr)
+            return 0;
+        const start = new Date(startStr);
+        const now = new Date();
+        if (isNaN(start.getTime()))
+            return 0;
+        const diff = now.getTime() - start.getTime();
+        return Math.floor(diff / (1000 * 60 * 60 * 24));
+    }
+    static createGridLayout(plants, rows, cols) {
+        const grid = Array.from({ length: rows }, () => Array.from({ length: cols }, () => null));
+        plants.forEach((plant) => {
+            const row = (plant.attributes?.row ?? 1) - 1;
+            const col = (plant.attributes?.col ?? 1) - 1;
+            if (row >= 0 && row < rows && col >= 0 && col < cols) {
+                grid[row][col] = plant;
+            }
+        });
+        return { rows, cols, grid };
+    }
+    static findFirstAvailableSlot(plants, rows, cols) {
+        const occupied = new Set();
+        plants.forEach((p) => {
+            if (p.attributes.row !== undefined && p.attributes.col !== undefined) {
+                occupied.add(`${p.attributes.row},${p.attributes.col}`);
+            }
+        });
+        for (let r = 1; r <= rows; r++) {
+            for (let c = 1; c <= cols; c++) {
+                if (!occupied.has(`${r},${c}`)) {
+                    return { row: r, col: c };
+                }
+            }
+        }
+        // Default to first slot if full
+        return { row: 1, col: 1 };
+    }
+    static calculateEffectiveRows(device) {
+        const { type, plants, plants_per_row, rows } = device;
+        // Use strict type check instead of magic string comparison
+        if (this.DYNAMIC_ROW_TYPES.includes(type)) {
+            if (plants.length === 0)
+                return 1;
+            const maxRowUsed = Math.max(...plants.map((p) => p.attributes?.row || 1));
+            const lastRowCount = plants.filter((p) => (p.attributes?.row || 1) === maxRowUsed).length;
+            return lastRowCount >= plants_per_row ? maxRowUsed + 1 : maxRowUsed;
+        }
+        return rows;
+    }
+    /**
+     * Converts a datetime-local input string (YYYY-MM-DDTHH:mm) to ISO string
+     * Returns null if input is empty or invalid
+     */
+    static parseDateTimeLocal(value) {
+        if (!value)
+            return undefined;
+        try {
+            // Append ":00" if only HH:MM is provided
+            const isoString = value.length === 16 ? value + ':00' : value;
+            const dt = new Date(isoString);
+            if (isNaN(dt.getTime()))
+                return undefined;
+            // Format as YYYY-MM-DDTHH:MM:SS (no Z)
+            const yyyy = dt.getFullYear();
+            const mm = String(dt.getMonth() + 1).padStart(2, '0');
+            const dd = String(dt.getDate()).padStart(2, '0');
+            const hh = String(dt.getHours()).padStart(2, '0');
+            const min = String(dt.getMinutes()).padStart(2, '0');
+            const sec = String(dt.getSeconds()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}T${hh}:${min}:${sec}`;
+        }
+        catch {
+            return undefined;
+        }
+    }
+    /**
+     * Extracts YYYY-MM-DD from a date string or datetime-local string
+     */
+    static formatDateForBackend(value) {
+        if (!value)
+            return undefined;
+        try {
+            // If it's already roughly ISO format, extracting the first part is safest
+            // if we assume the user entered local time in the datetime-local input.
+            const parts = value.split('T');
+            if (parts.length > 0 && parts[0].match(/^\d{4}-\d{2}-\d{2}$/)) {
+                return parts[0];
+            }
+            // Fallback to parsing if format is unexpected
+            const dt = new Date(value);
+            if (isNaN(dt.getTime()))
+                return undefined;
+            const yyyy = dt.getFullYear();
+            const mm = String(dt.getMonth() + 1).padStart(2, '0');
+            const dd = String(dt.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+        catch {
+            return undefined;
+        }
+    }
+    /**
+     * Maps dialog-edited attributes to API-ready payload.
+     * Pure function - no side effects.
+     * @param editedAttributes - Attributes from the plant overview dialog
+     * @param isBulkEdit - Whether multiple plants are being edited
+     * @returns Object ready for API call
+     */
+    static mapDialogToApiPayload(editedAttributes, isBulkEdit) {
+        const payload = {};
+        const fieldsToProcess = isBulkEdit
+            ? [...this.DATE_FIELDS]
+            : ['strain', 'phenotype', 'row', 'col', ...this.DATE_FIELDS];
+        fieldsToProcess.forEach((field) => {
+            if (editedAttributes[field] !== undefined) {
+                if (this.DATE_FIELDS.includes(field)) {
+                    const val = String(editedAttributes[field] || '');
+                    if (!val || val === 'null' || val === 'undefined') {
+                        payload[field] = null;
+                    }
+                    else {
+                        const formattedDate = this.formatDateForBackend(val);
+                        if (formattedDate) {
+                            payload[field] = formattedDate;
+                        }
+                    }
+                }
+                else {
+                    if (editedAttributes[field] !== null) {
+                        payload[field] = editedAttributes[field];
+                    }
+                }
+            }
+        });
+        // Remove position fields for bulk edits
+        if (isBulkEdit) {
+            delete payload.row;
+            delete payload.col;
+        }
+        return payload;
+    }
+    static getCurrentDateTime() {
+        const now = new Date();
+        const pad = (n) => n.toString().padStart(2, '0');
+        return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:00`;
+    }
+    /**
+     * Formats a date string (YYYY-MM-DD or ISO) to YYYY-MM-DDThh:mm for datetime-local inputs
+     */
+    static toDateTimeLocal(value) {
+        if (!value)
+            return '';
+        try {
+            const dt = new Date(value);
+            if (isNaN(dt.getTime()))
+                return '';
+            const pad = (n) => n.toString().padStart(2, '0');
+            const yyyy = dt.getFullYear();
+            const mm = pad(dt.getMonth() + 1);
+            const dd = pad(dt.getDate());
+            const hh = pad(dt.getHours());
+            const min = pad(dt.getMinutes());
+            return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+        }
+        catch {
+            return '';
+        }
+    }
+    static getDominantStage(plants) {
+        if (!plants || plants.length === 0)
+            return null;
+        // Defined priority: Cure > Dry > Flower > Vegetative > Clone > Mother > Seedling
+        // Lower index = higher priority
+        const priority = [
+            PlantStage.CURE,
+            PlantStage.DRY,
+            PlantStage.FLOWER,
+            PlantStage.VEG,
+            PlantStage.CLONE,
+            PlantStage.MOTHER,
+            PlantStage.SEEDLING,
+        ];
+        // Find the highest priority stage present in the plants
+        let bestStage = null;
+        let maxDays = 0;
+        // Group plants by normalized stage
+        const plantsByStage = {};
+        for (const plant of plants) {
+            // Use plant.state directly if possible, or calculate it
+            // plant.state usually contains the stage string
+            const stage = this.normalizeStage(plant.state || this.getPlantStage(plant));
+            if (!plantsByStage[stage])
+                plantsByStage[stage] = [];
+            plantsByStage[stage].push(plant);
+        }
+        // Iterate priority list to find the first matching stage
+        for (const stage of priority) {
+            if (plantsByStage[stage] && plantsByStage[stage].length > 0) {
+                bestStage = stage;
+                // Find max days for this stage
+                // Map stage to attribute key
+                const daysKey = `${stage === PlantStage.VEG ? 'veg' : stage}_days`;
+                const daysValues = plantsByStage[stage].map((p) => {
+                    const val = p.attributes[daysKey];
+                    return typeof val === 'number' ? val : 0;
+                });
+                maxDays = Math.max(...daysValues);
+                break;
+            }
+        }
+        if (!bestStage)
+            return null;
+        return { stage: bestStage, days: maxDays };
+    }
+    /**
+     * Compresses and resizes an image file.
+     * @param file The file object from input.
+     * @param maxWidth Maximum width in pixels.
+     * @param maxHeight Maximum height in pixels.
+     * @param quality Quality between 0 and 1.
+     * @returns Promise resolving to base64 string.
+     */
+    static compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+                    // Calculate new dimensions
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                    }
+                    else {
+                        if (height > maxHeight) {
+                            width = Math.round((width * maxHeight) / height);
+                            height = maxHeight;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        reject(new Error('Failed to get canvas context'));
+                        return;
+                    }
+                    ctx.drawImage(img, 0, 0, width, height);
+                    // Get base64 string
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    resolve(dataUrl);
+                };
+                img.onerror = (err) => reject(err);
+            };
+            reader.onerror = (err) => reject(err);
+        });
+    }
+    static preloadImage(url) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = url;
+            img.onload = () => resolve();
+            img.onerror = () => reject();
+        });
+    }
+    static getImgStyle(meta) {
+        if (!meta)
+            return 'width: 100%; height: 100%; object-fit: cover;';
+        return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
+    }
+}
+PlantUtils.stageColors = {
+    [PlantStage.MOTHER]: '#E91E63',
+    [PlantStage.CLONE]: '#FF5722',
+    [PlantStage.SEEDLING]: '#4CAF50',
+    [PlantStage.VEG]: '#8BC34A',
+    [PlantStage.FLOWER]: '#FF9800',
+    [PlantStage.DRY]: '#795548',
+    [PlantStage.CURE]: '#9C27B0',
+};
+PlantUtils.stageIcons = {
+    [PlantStage.MOTHER]: mdiSprout,
+    [PlantStage.CLONE]: mdiSprout,
+    [PlantStage.SEEDLING]: mdiSprout,
+    [PlantStage.VEG]: mdiSprout,
+    [PlantStage.FLOWER]: mdiFlower,
+    [PlantStage.DRY]: mdiHairDryer,
+    [PlantStage.CURE]: mdiCannabis,
+};
+/** Growspace types that support dynamic row expansion */
+PlantUtils.DYNAMIC_ROW_TYPES = ['dry', 'cure', 'mother', 'clone'];
+/** Date fields used for plant lifecycle */
+PlantUtils.DATE_FIELDS = [
+    'seedling_start',
+    'mother_start',
+    'clone_start',
+    'veg_start',
+    'flower_start',
+    'dry_start',
+    'cure_start',
+];
+
+class GrowspaceAdapter {
+    static transformGrowspace(overview, wsData = null) {
+        const attributes = overview.attributes;
+        const growspaceId = attributes.growspace_id;
+        const name = attributes.friendly_name || `Growspace ${growspaceId}`;
+        const type = attributes.type ??
+            (name.toLowerCase().includes('dry')
+                ? 'dry'
+                : name.toLowerCase().includes('cure')
+                    ? 'cure'
+                    : 'normal');
+        // 1. Check for missing data (empty state fix)
+        // If we have no WS data AND the attributes grid is empty/undefined, allow returning null/simulating loading
+        // We return null so the caller can filter this out and keep the previous state or show loading
+        if (!wsData && (!attributes.grid || Object.keys(attributes.grid).length === 0)) {
+            return null; // Cast to avoid changing return type signature broadly if strictly typed, but better handled by caller check
+        }
+        // Prefer WS data for grid, fallback to attributes.grid (legacy/fallback)
+        const grid = wsData?.grid || attributes.grid || {};
+        const plants = [];
+        Object.entries(grid).forEach(([key, slot]) => {
+            if (slot) {
+                // Fix: Use the stable entity_id from backend if available, fallback to unknown (never guess)
+                const entityId = slot.entity_id || 'unknown';
+                // Extract row/col from key "position_R_C"
+                let row;
+                let col;
+                const parts = key.split('_');
+                if (parts.length === 3) {
+                    row = parseInt(parts[1]);
+                    col = parseInt(parts[2]);
+                }
+                plants.push({
+                    entity_id: entityId,
+                    state: slot.stage || 'unknown',
+                    attributes: {
+                        ...slot,
+                        growspace_id: growspaceId,
+                        friendly_name: `${slot.strain} ${slot.phenotype}`,
+                        stage: slot.stage,
+                        row,
+                        col,
+                    },
+                    last_changed: '',
+                    last_updated: '',
+                    context: { id: '', parent_id: null, user_id: null },
+                });
+            }
+        });
+        // Extract enhanced metrics from WS data or attributes
+        const bioMetrics = wsData
+            ? {
+                vpd_status: wsData.vpd_status,
+                vpd_target_min: wsData.vpd_target_min,
+                vpd_target_max: wsData.vpd_target_max,
+                vpd_danger_min: wsData.vpd_danger_min,
+                vpd_danger_max: wsData.vpd_danger_max,
+                granular_stage: wsData.granular_stage,
+                is_day: wsData.is_day,
+                veg_week: wsData.veg_week,
+                flower_week: wsData.flower_week,
+                // Added per request:
+                air_exchange: wsData.air_exchange,
+            }
+            : {
+                // Fallback to attributes if WS failed or not used (though we removed them from backend)
+                vpd_status: attributes.vpd_status,
+                vpd_target_min: attributes.vpd_target_min,
+                vpd_target_max: attributes.vpd_target_max,
+                granular_stage: attributes.granular_stage,
+                is_day: attributes.is_day,
+                air_exchange: attributes.air_exchange,
+            };
+        // Extract irrigation times from nested config in WS data
+        const rawIrrigation = wsData?.irrigation_config?.irrigation_times || attributes.irrigation_times || [];
+        const irrigationTimes = Array.isArray(rawIrrigation)
+            ? rawIrrigation.map((t) => (typeof t === 'string' ? { time: t } : t))
+            : [];
+        const rawDrain = wsData?.irrigation_config?.drain_times || attributes.drain_times || [];
+        const drainTimes = Array.isArray(rawDrain)
+            ? rawDrain.map((t) => (typeof t === 'string' ? { time: t } : t))
+            : [];
+        // Environment attributes
+        const envAttrs = wsData
+            ? {
+                temperature_sensor: wsData.temperature_sensor,
+                humidity_sensor: wsData.humidity_sensor,
+                vpd_sensor: wsData.vpd_sensor,
+                co2_sensor: wsData.co2_sensor,
+                soil_moisture_sensor: wsData.soil_moisture_sensor,
+                dehumidifier_entity: wsData.dehumidifier_entity,
+                humidifier_entity: wsData.humidifier_entity,
+                exhaust_entity: wsData.exhaust_entity,
+                exhaust_sensor: wsData.exhaust_sensor,
+                humidifier_sensor: wsData.humidifier_sensor,
+                circulation_fan_entity: wsData.circulation_fan_entity,
+                light_sensor: wsData.light_sensor,
+                dehumidifier_control_enabled: wsData.dehumidifier_control_enabled,
+                // Added per request:
+                dehumidifier_humidity: wsData.dehumidifier_humidity,
+                dehumidifier_current_humidity: wsData.dehumidifier_current_humidity,
+                dehumidifier_mode: wsData.dehumidifier_mode,
+                vpd: wsData.vpd,
+            }
+            : {
+                // Fallback
+                temperature_sensor: attributes.temperature_sensor,
+                humidity_sensor: attributes.humidity_sensor,
+                vpd_sensor: attributes.vpd_sensor,
+                co2_sensor: attributes.co2_sensor,
+                soil_moisture_sensor: attributes.soil_moisture_sensor,
+                light_sensor: attributes.light_sensor,
+                exhaust_entity: attributes.exhaust_entity,
+                exhaust_sensor: attributes.exhaust_sensor,
+                humidifier_entity: attributes.humidifier_entity,
+                humidifier_sensor: attributes.humidifier_sensor,
+                circulation_fan_entity: attributes.circulation_fan_entity,
+                dehumidifier_entity: attributes.dehumidifier_entity,
+                dehumidifier_control_enabled: attributes.dehumidifier_control_enabled,
+            };
+        const irrigationConfig = wsData
+            ? wsData.irrigation_config
+            : {
+                irrigation_pump_entity: attributes.irrigation_pump_entity,
+                drain_pump_entity: attributes.drain_pump_entity,
+                irrigation_duration: attributes.irrigation_duration,
+                drain_duration: attributes.drain_duration,
+            };
+        const irrigationStrategy = wsData ? wsData.irrigation_strategy : attributes.irrigation_strategy;
+        return createGrowspaceDevice({
+            device_id: growspaceId,
+            overview_entity_id: overview.entity_id,
+            name,
+            plants,
+            rows: attributes.rows ?? 3,
+            plants_per_row: attributes.plants_per_row ?? 3,
+            type,
+            last_updated: overview.last_updated,
+            biological_metrics: bioMetrics,
+            irrigation_times: irrigationTimes,
+            drain_times: drainTimes,
+            irrigation_config: irrigationConfig,
+            irrigation_strategy: irrigationStrategy,
+            environment_attributes: envAttrs,
+            // Pass through new statistics
+            max_veg_days: wsData?.max_veg_days,
+            max_flower_days: wsData?.max_flower_days,
+            total_plants: wsData?.total_plants,
+            max_stage_summary: wsData?.max_stage_summary,
+        });
+    }
+    /**
+     * @deprecated Relies on attributes that are often empty. Use DataService.getGrowspaceDevices instead which uses WS data.
+     */
+    static transformToDevices(allStates) {
+        // Legacy method - might be unused after refactor, but kept for safety if needed
+        // Assuming no WS data available here, so grid comes from attributes (which might be empty now)
+        const overviewSensors = allStates.filter((entity) => {
+            const attrs = entity.attributes;
+            return (entity.entity_id.startsWith('sensor.') &&
+                attrs.growspace_id !== undefined &&
+                attrs.rows !== undefined &&
+                attrs.plants_per_row !== undefined &&
+                attrs.row === undefined &&
+                attrs.col === undefined);
+        });
+        return overviewSensors.map((overview) => this.transformGrowspace(overview, null));
+    }
+}
+
+const METRIC_SORT_ORDER = [
+    'temperature',
+    'humidity',
+    'vpd',
+    'co2',
+    'light',
+    'soil_moisture',
+    'irrigation',
+    'drain',
+    'optimal',
+    'exhaust',
+    'circulation_fan',
+    'humidifier',
+    'dehumidifier',
+];
+const METRIC_CONFIG = {
+    temperature: { color: '#ff5252', title: 'Temperature', unit: '°C', icon: mdiThermometer },
+    humidity: { color: '#2196f3', title: 'Humidity', unit: '%', icon: mdiWaterPercent },
+    vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa', icon: mdiCloudOutline },
+    calculated_vpd: { color: '#ab47bc', title: 'Calc. VPD', unit: 'kPa', icon: mdiCalculator },
+    co2: { color: '#4caf50', title: 'CO2', unit: 'ppm', icon: mdiWeatherCloudy },
+    air_exchange: { color: '#8d6e63', title: 'Air Exchange', unit: 'm³/h', icon: mdiAirFilter },
+    soil_moisture: { color: '#03a9f4', title: 'Soil Moisture', unit: '%', icon: mdiWaterPercent },
+    light: { color: '#ffc107', title: 'Light', unit: 'state', icon: mdiLightbulbOn, type: 'step' },
+    irrigation: {
+        color: '#03a9f4',
+        title: 'Irrigation',
+        unit: 'state',
+        icon: mdiWater,
+        type: 'step',
+    },
+    drain: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: 'step' },
+    exhaust: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
+    circulation_fan: {
+        color: '#607d8b',
+        title: 'Circulation Fan',
+        unit: '',
+        icon: mdiFan,
+    },
+    humidifier: { color: '#607d8b', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
+    dehumidifier: {
+        color: '#009688',
+        title: 'Dehumidifier',
+        unit: 'state',
+        icon: mdiAirHumidifierOff,
+        type: 'step',
+    },
+    optimal: {
+        color: '#4caf50',
+        title: 'Optimal Conditions',
+        unit: 'state',
+        icon: mdiRadioboxMarked,
+        type: 'step',
+    },
+};
+const DEFAULT_METRIC_CONFIG = {
+    color: '#fff',
+    title: 'Unknown',
+    unit: '',
+    icon: mdiMagnify,
+    type: 'line',
+};
+const SENSOR_CHART_DEFAULTS = {
+    exhaust: { min: 0, max: 10, disablePadding: true, unit: 'state' },
+    dehumidifier: { min: 0, max: 1, disablePadding: true, binary: true },
+    humidifier: { min: 0, max: 10, disablePadding: true, unit: 'state' },
+    circulation_fan: { min: 0, max: 10, disablePadding: true, unit: 'state' },
+    optimizer: { min: 0, max: 1, disablePadding: true, binary: true, unit: 'state' },
+};
+/**
+ * Maps metric keys to their entity attribute keys in GrowspaceDevice.environment_attributes
+ * and GrowspaceDevice.irrigation_config. Used by header chips and history controller.
+ */
+const METRIC_ENTITY_KEYS = {
+    temperature: { primary: 'temperature_sensor' },
+    humidity: { primary: 'humidity_sensor' },
+    vpd: { primary: 'vpd_sensor' },
+    co2: { primary: 'co2_sensor' },
+    exhaust: { primary: 'exhaust_sensor', fallback: 'exhaust_entity' },
+    humidifier: { primary: 'humidifier_sensor', fallback: 'humidifier_entity' },
+    dehumidifier: { primary: 'dehumidifier_entity' },
+    circulation_fan: { primary: 'circulation_fan_entity' },
+    light: { primary: 'light_sensor' },
+    soil_moisture: { primary: 'soil_moisture_sensor' },
+    irrigation: { primary: 'irrigation_pump_entity', source: 'irrigation' },
+    drain: { primary: 'drain_pump_entity', source: 'irrigation' },
+};
+const DOMAIN = 'growspace_manager';
+const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
+const SERVICES = {
+    GET_STRAIN_LIBRARY: 'get_strain_library',
+    ADD_PLANT: 'add_plant',
+    UPDATE_PLANT: 'update_plant',
+    REMOVE_PLANT: 'remove_plant',
+    HARVEST_PLANT: 'harvest_plant',
+    TAKE_CLONE: 'take_clone',
+    SWITCH_PLANTS: 'switch_plants',
+    MOVE_CLONE: 'move_clone',
+    SET_DEHUMIDIFIER_CONTROL: 'set_dehumidifier_control',
+    SET_IRRIGATION_SETTINGS: 'set_irrigation_settings',
+    ADD_IRRIGATION_TIME: 'add_irrigation_time',
+    REMOVE_IRRIGATION_TIME: 'remove_irrigation_time',
+    SET_IRRIGATION_STRATEGY: 'set_irrigation_strategy',
+    ADD_DRAIN_TIME: 'add_drain_time',
+    REMOVE_DRAIN_TIME: 'remove_drain_time',
+    EXPORT_STRAIN_LIBRARY: 'export_strain_library',
+    ADD_STRAIN: 'add_strain',
+    REMOVE_STRAIN: 'remove_strain',
+    CLEAR_STRAIN_LIBRARY: 'clear_strain_library',
+    ADD_GROWSPACE: 'add_growspace',
+    UPDATE_GROWSPACE: 'update_growspace',
+    REMOVE_GROWSPACE: 'remove_growspace',
+    CONFIGURE_ENVIRONMENT: 'configure_environment',
+    ASK_GROW_ADVICE: 'ask_grow_advice',
+    ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
+    STRAIN_RECOMMENDATION: 'strain_recommendation',
+};
+
+class DataService {
+    constructor(hass) {
+        // Cache for transformed devices to avoid expensive re-parsing on every HASS update
+        this._deviceCache = new Map();
+        if (hass) {
+            this.hass = hass;
+        }
+    }
+    updateHass(hass) {
+        this.hass = hass;
+    }
+    async fetchGrowspaceData(growspaceId) {
+        if (!this.hass)
+            return null;
+        try {
+            const result = await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_GET_DATA,
+                growspace_id: growspaceId,
+            });
+            return result;
+        }
+        catch (err) {
+            console.error('[DataService:fetchGrowspaceData] Error:', err);
+            // Fallback: If WS fails, we return null, and adapter will try to use attributes (which might be empty for heavy data)
+            return null;
+        }
+    }
+    getGrowspaceDevices(wsDataMap = {}) {
+        if (!this.hass) {
+            // console.log('[DataService] getGrowspaceDevices: no hass');
+            return [];
+        }
+        const allStates = Object.values(this.hass.states);
+        const overviewSensors = allStates.filter((s) => s.entity_id.startsWith('sensor.') &&
+            s.attributes.growspace_id !== undefined &&
+            s.attributes.plants_per_row !== undefined &&
+            s.attributes.row === undefined &&
+            s.attributes.col === undefined);
+        /*
+        console.log(
+          '[DataService] getGrowspaceDevices: found',
+          overviewSensors.length,
+          'sensors, total states:',
+          allStates.length
+        );
+        */
+        const activeEntityIds = new Set();
+        const devices = overviewSensors
+            .map((sensor) => {
+            const growspaceId = sensor.attributes.growspace_id;
+            const wsData = wsDataMap[growspaceId] || null;
+            // Cache Check
+            const cached = this._deviceCache.get(sensor.entity_id);
+            if (cached && cached.entity === sensor && cached.wsData === wsData) {
+                activeEntityIds.add(sensor.entity_id);
+                return cached.result;
+            }
+            // Cache Miss - Reprocess
+            const device = GrowspaceAdapter.transformGrowspace(sensor, wsData);
+            if (device) {
+                this._deviceCache.set(sensor.entity_id, { entity: sensor, wsData, result: device });
+                activeEntityIds.add(sensor.entity_id);
+            }
+            return device;
+        })
+            .filter((device) => device !== null);
+        // Cleanup cache for removed entities
+        if (this._deviceCache.size > activeEntityIds.size) {
+            for (const id of this._deviceCache.keys()) {
+                if (!activeEntityIds.has(id)) {
+                    this._deviceCache.delete(id);
+                }
+            }
+        }
+        return devices;
+    }
+    getGrowspaceId(entity) {
+        // Plant entities expose growspace_id directly
+        return entity.attributes?.growspace_id || 'unknown';
+    }
+    getStrainLibrary() {
+        const allStates = Object.values(this.hass.states);
+        const strainSensor = allStates.find((s) => s.attributes?.strains !== undefined && s.attributes?.strains !== null);
+        const rawStrains = strainSensor?.attributes?.strains;
+        // If no sensor data, return empty (let dialog handle service call)
+        if (!rawStrains) {
+            console.warn('[DataService] No strain data in sensor attributes');
+            return [];
+        }
+        // Existing parsing logic...
+        if (Array.isArray(rawStrains)) {
+            return rawStrains.map((s) => ({
+                strain: s,
+                phenotype: '',
+                key: `${s}|default`,
+            }));
+        }
+        if (typeof rawStrains === 'object') {
+            const results = [];
+            for (const [strainName, strainData] of Object.entries(rawStrains)) {
+                const meta = strainData.meta || {};
+                const phenotypes = strainData.phenotypes || {};
+                Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
+                    results.push({
+                        strain: strainName,
+                        phenotype: phenoName,
+                        key: `${strainName}|${phenoName}`,
+                        breeder: meta.breeder,
+                        type: meta.type,
+                        lineage: meta.lineage,
+                        sex: meta.sex,
+                        sativa_percentage: meta.sativa_percentage,
+                        indica_percentage: meta.indica_percentage,
+                        description: phenoData.description,
+                        image: phenoData.image_path,
+                        image_crop_meta: phenoData.image_crop_meta,
+                        flowering_days_min: phenoData.flower_days_min,
+                        flowering_days_max: phenoData.flower_days_max,
+                    });
+                });
+            }
+            return results.sort((a, b) => {
+                const strainComp = a.strain.localeCompare(b.strain);
+                if (strainComp !== 0)
+                    return strainComp;
+                return (a.phenotype || '').localeCompare(b.phenotype || '');
+            });
+        }
+        return [];
+    }
+    async fetchStrainLibrary() {
+        console.log('[DataService:fetchStrainLibrary] Fetching strain library via API');
+        try {
+            const serviceResponse = await this.hass.connection.sendMessagePromise({
+                type: 'call_service',
+                domain: DOMAIN,
+                service: SERVICES.GET_STRAIN_LIBRARY,
+                service_data: {},
+                return_response: true,
+            });
+            const rawStrains = serviceResponse?.response || serviceResponse || {};
+            const currentStrains = [];
+            console.log('[DataService:fetchStrainLibrary] Raw response:', rawStrains);
+            Object.entries(rawStrains).forEach(([strainName, data]) => {
+                if (strainName === 'response')
+                    return; // unexpected wrapper?
+                const meta = data.meta || {};
+                const phenotypes = data.phenotypes || {};
+                Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
+                    currentStrains.push({
+                        strain: strainName,
+                        phenotype: phenoName,
+                        key: `${strainName}|${phenoName}`,
+                        breeder: meta.breeder,
+                        type: meta.type,
+                        lineage: meta.lineage,
+                        sex: meta.sex,
+                        sativa_percentage: meta.sativa_percentage,
+                        indica_percentage: meta.indica_percentage,
+                        description: phenoData.description,
+                        image: phenoData.image_path,
+                        image_crop_meta: phenoData.image_crop_meta,
+                        flowering_days_min: phenoData.flower_days_min,
+                        flowering_days_max: phenoData.flower_days_max,
+                    });
+                });
+            });
+            return currentStrains;
+        }
+        catch (e) {
+            console.error('Failed to fetch strain library for grid:', e);
+            return [];
+        }
+    }
+    async getHistory(entityId, startTime, endTime) {
+        if (!this.hass)
+            return [];
+        const startStr = startTime.toISOString();
+        let url = `history/period/${startStr}?filter_entity_id=${entityId}`;
+        if (endTime) {
+            url += `&end_time=${endTime.toISOString()}`;
+        }
+        try {
+            const res = await this.hass.callApi('GET', url);
+            return res && res.length > 0 ? res[0] : [];
+        }
+        catch (err) {
+            console.error('Error fetching history:', err);
+            return [];
+        }
+    }
+    // Service calls
+    async addPlant(params) {
+        console.log('[DataService:addPlant] Sending payload:', params);
+        try {
+            if (params.growspace_id === 'mother' || params.growspace_id === 'mother_overview') {
+                params.mother_start = new Date().toISOString().split('T')[0];
+            }
+            if (params.growspace_id === 'clone' || params.growspace_id === 'clone_overview') {
+                params.clone_start = new Date().toISOString().split('T')[0];
+            }
+            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_PLANT, params);
+            console.log('[DataService:addPlant] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:addPlant] Error:', err);
+            throw err;
+        }
+    }
+    async updatePlant(params) {
+        console.log('[DataService:updatePlant] Sending payload:', params);
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
+            console.log('[DataService:updatePlant] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:updatePlant] Error:', err);
+            throw err;
+        }
+    }
+    async removePlant(plantId) {
+        console.log('[DataService:removePlant] Removing plant_id:', plantId);
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_PLANT, { plant_id: plantId });
+            console.log('[DataService:removePlant] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:removePlant] Error:', err);
+            throw err;
+        }
+    }
+    async harvestPlant(plantId, target = 'dry') {
+        console.log('[DataService:harvestPlant] Harvesting plant:', plantId, '→ target:', target);
+        try {
+            const payload = {
+                plant_id: plantId,
+                target_growspace_id: target // Pass the ID directly
+            };
+            // Legacy mapping if needed (optional safety)
+            const hint = (target || '').toLowerCase();
+            if (hint.includes('dry') && target !== 'dry')
+                payload.target_growspace_id = 'dry';
+            if (hint.includes('cure') && target !== 'cure')
+                payload.target_growspace_id = 'cure';
+            if (hint.includes('mother') && target !== 'mother')
+                payload.target_growspace_id = 'mother';
+            if (hint.includes('clone') && target !== 'clone')
+                payload.target_growspace_id = 'clone';
+            const res = await this.hass.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
+            console.log('[DataService:harvestPlant] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:harvestPlant] Error:', err);
+            throw err;
+        }
+    }
+    async takeClone(params) {
+        console.log('[DataService:takeClone] Cloning plant:', params);
+        try {
+            // Ensure target_growspace_id is set if not provided (though backend handles 'clone' default)
+            const payload = { ...params };
+            if (!payload.target_growspace_id)
+                delete payload.target_growspace_id;
+            const res = await this.hass.callService(DOMAIN, SERVICES.TAKE_CLONE, payload);
+            console.log('[DataService:takeClone] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:takeClone] Error:', err);
+            throw err;
+        }
+    }
+    async moveClone(plantId, targetGrowspaceId, transitionDate) {
+        console.log('[DataService:moveClone] Moving clone:', plantId, 'to', targetGrowspaceId);
+        try {
+            const payload = {
+                plant_id: plantId,
+                target_growspace_id: targetGrowspaceId,
+            };
+            if (transitionDate) {
+                payload.transition_date = transitionDate;
+            }
+            const res = await this.hass.callService(DOMAIN, SERVICES.MOVE_CLONE, payload);
+            console.log('[DataService:moveClone] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:moveClone] Error:', err);
+            throw err;
+        }
+    }
+    async swapPlants(plant1Id, plant2Id) {
+        console.log(`[DataService:swapPlants] Swapping plants: ${plant1Id} and ${plant2Id}`);
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.SWITCH_PLANTS, {
+                plant1_id: plant1Id,
+                plant2_id: plant2Id,
+            });
+            console.log('[DataService:swapPlants] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:swapPlants] Error:', err);
+            throw err;
+        }
+    }
+    async setDehumidifierControl(growspaceId, enabled) {
+        console.log(`[DataService:setDehumidifierControl] Setting dehumidifier control for ${growspaceId} to ${enabled}`);
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.SET_DEHUMIDIFIER_CONTROL, {
+                growspace_id: growspaceId,
+                enabled,
+            });
+            console.log('[DataService:setDehumidifierControl] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:setDehumidifierControl] Error:', err);
+            throw err;
+        }
+    }
+    async setIrrigationSettings(params) {
+        console.log('[DataService:setIrrigationSettings] Setting irrigation settings:', params);
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, params);
+            console.log('[DataService:setIrrigationSettings] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:setIrrigationSettings] Error:', err);
+            throw err;
+        }
+    }
+    async addIrrigationTime(params) {
+        console.log('[DataService:addIrrigationTime] Adding irrigation time:', params);
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, params);
+            console.log('[DataService:addIrrigationTime] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:addIrrigationTime] Error:', err);
+            throw err;
+        }
+    }
+    async removeIrrigationTime(params) {
+        console.log('[DataService:removeIrrigationTime] Removing irrigation time:', params);
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, params);
+            console.log('[DataService:removeIrrigationTime] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:removeIrrigationTime] Error:', err);
+            throw err;
+        }
+    }
+    async setIrrigationStrategy(growspaceId, strategy) {
+        console.log('[DataService:setIrrigationStrategy] Setting strategy:', strategy);
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, {
+                growspace_id: growspaceId,
+                ...strategy,
+            });
+            console.log('[DataService:setIrrigationStrategy] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:setIrrigationStrategy] Error:', err);
+            throw err;
+        }
+    }
+    async addDrainTime(params) {
+        console.log('[DataService:addDrainTime] Adding drain time:', params);
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, params);
+            console.log('[DataService:addDrainTime] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:addDrainTime] Error:', err);
+            throw err;
+        }
+    }
+    async removeDrainTime(params) {
+        console.log('[DataService:removeDrainTime] Removing drain time:', params);
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, params);
+            console.log('[DataService:removeDrainTime] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:removeDrainTime] Error:', err);
+            throw err;
+        }
+    }
+    async exportStrainLibrary() {
+        console.log('[DataService:exportStrainLibrary] Exporting strain library');
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.EXPORT_STRAIN_LIBRARY);
+            console.log('[DataService:exportStrainLibrary] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:exportStrainLibrary] Error:', err);
+            throw err;
+        }
+    }
+    async addStrain(data) {
+        console.log('[DataService:addStrain] Adding strain:', data);
+        try {
+            const payload = { ...data };
+            // Clean undefined keys
+            Object.keys(payload).forEach((key) => {
+                if (payload[key] === undefined) {
+                    delete payload[key];
+                }
+            });
+            if (data.image) {
+                if (data.image.startsWith('data:')) {
+                    // It's a base64 string (new upload)
+                    payload.image_base64 = data.image;
+                    delete payload.image; // Backend expects image_base64
+                }
+                else {
+                    // It's a path (existing image) - Backend schema doesn't explicitly list image_path,
+                    // but we'll try to send it if the backend supports it dynamically,
+                    // or we might need to omit it if it's just for local display.
+                    // Checking services.yaml, only image_base64 is listed.
+                    // We will assume image_path is not supported for add_strain and omit it to avoid schema errors.
+                    // payload.image_path = data.image;
+                    delete payload.image;
+                }
+            }
+            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_STRAIN, payload);
+            console.log('[DataService:addStrain] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:addStrain] Error:', err);
+            throw err;
+        }
+    }
+    async removeStrain(strain, phenotype) {
+        console.log('[DataService:removeStrain] Removing strain:', strain, phenotype);
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_STRAIN, {
+                strain,
+                phenotype,
+            });
+            console.log('[DataService:removeStrain] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:removeStrain] Error:', err);
+            throw err;
+        }
+    }
+    async importStrainLibrary(file, replace) {
+        console.log('[DataService:importStrainLibrary] Importing strain library ZIP via HTTP. Replace:', replace);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('replace', replace.toString());
+        try {
+            const response = await this.hass.fetchWithAuth('/api/growspace_manager/import_strains', {
+                method: 'POST',
+                body: formData,
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || response.statusText);
+            }
+            const result = await response.json();
+            console.log('[DataService:importStrainLibrary] Response:', result);
+            if (result.success) {
+                return result;
+            }
+            else {
+                throw new Error(result.error || 'Unknown import error');
+            }
+        }
+        catch (err) {
+            console.error('[DataService:importStrainLibrary] Error:', err);
+            throw err;
+        }
+    }
+    async clearStrainLibrary() {
+        console.log('[DataService:clearStrainLibrary] Clearing library');
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.CLEAR_STRAIN_LIBRARY);
+            console.log('[DataService:clearStrainLibrary] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:clearStrainLibrary] Error:', err);
+            throw err;
+        }
+    }
+    // Configuration Services
+    async addGrowspace(data) {
+        console.log('[DataService:addGrowspace] Adding growspace:', data);
+        try {
+            const payload = {
+                name: data.name,
+                rows: data.rows,
+                plants_per_row: data.plants_per_row,
+                notification_target: data.notification_service, // Map to backend field
+            };
+            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
+            console.log('[DataService:addGrowspace] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:addGrowspace] Error:', err);
+            throw err;
+        }
+    }
+    async updateGrowspace(data) {
+        console.log('[DataService:updateGrowspace] Updating growspace:', data);
+        try {
+            const payload = {
+                growspace_id: data.growspace_id,
+            };
+            if (data.name)
+                payload.name = data.name;
+            if (data.rows)
+                payload.rows = data.rows;
+            if (data.plants_per_row)
+                payload.plants_per_row = data.plants_per_row;
+            if (data.notification_service)
+                payload.notification_target = data.notification_service;
+            const res = await this.hass.callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
+            console.log('[DataService:updateGrowspace] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:updateGrowspace] Error:', err);
+            throw err;
+        }
+    }
+    async removeGrowspace(growspaceId) {
+        console.log('[DataService:removeGrowspace] Removing growspace:', growspaceId);
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
+                growspace_id: growspaceId,
+            });
+            console.log('[DataService:removeGrowspace] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:removeGrowspace] Error:', err);
+            throw err;
+        }
+    }
+    async configureEnvironment(data) {
+        console.log('[DataService:configureEnvironment] Configuring sensors:', data);
+        try {
+            const res = await this.hass.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, data);
+            console.log('[DataService:configureEnvironment] Response:', res);
+            return res;
+        }
+        catch (err) {
+            console.error('[DataService:configureEnvironment] Error:', err);
+            throw err;
+        }
+    }
+    async askGrowAdvice(growspaceId, userQuery) {
+        console.log('[DataService:askGrowAdvice] Asking advice for:', growspaceId, userQuery);
+        try {
+            // UPDATED: Use sendMessagePromise to send return_response=true
+            return await this.hass.connection.sendMessagePromise({
+                type: 'call_service',
+                domain: DOMAIN,
+                service: SERVICES.ASK_GROW_ADVICE,
+                service_data: {
+                    growspace_id: growspaceId,
+                    user_query: userQuery,
+                },
+                return_response: true,
+            });
+        }
+        catch (err) {
+            console.error('[DataService:askGrowAdvice] Error:', err);
+            throw err;
+        }
+    }
+    async analyzeAllGrowspaces() {
+        console.log('[DataService:analyzeAllGrowspaces] Analyzing all growspaces');
+        try {
+            return await this.hass.connection.sendMessagePromise({
+                type: 'call_service',
+                domain: DOMAIN,
+                service: SERVICES.ANALYZE_ALL_GROWSPACES,
+                service_data: {},
+                return_response: true,
+            });
+        }
+        catch (err) {
+            console.error('[DataService:analyzeAllGrowspaces] Error:', err);
+            throw err;
+        }
+    }
+    async getStrainRecommendation(userQuery) {
+        console.log('[DataService:getStrainRecommendation] Getting strain recommendation for:', userQuery);
+        try {
+            return await this.hass.connection.sendMessagePromise({
+                type: 'call_service',
+                domain: DOMAIN,
+                service: SERVICES.STRAIN_RECOMMENDATION,
+                service_data: {
+                    user_query: userQuery,
+                },
+                return_response: true,
+            });
+        }
+        catch (err) {
+            console.error('[DataService:getStrainRecommendation] Error:', err);
+            throw err;
+        }
+    }
+}
+
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+
+function __decorate(decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+
+function __metadata(metadataKey, metadataValue) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+}
+
+typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+    var e = new Error(message);
+    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+};
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const t$4=globalThis,e$7=t$4.ShadowRoot&&(void 0===t$4.ShadyCSS||t$4.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$8=Symbol(),o$7=new WeakMap;class n$8{constructor(t,e,o){if(this._$cssResult$=!0,o!==s$8)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$7&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$7.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$7.set(s,t));}return t}toString(){return this.cssText}}const r$6=t=>new n$8("string"==typeof t?t:t+"",void 0,s$8),i$6=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$8(o,t,s$8)},S$1=(s,o)=>{if(e$7)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$4.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$5=e$7?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$6(e)})(t):t;
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const{is:i$5,defineProperty:e$6,getOwnPropertyDescriptor:h$3,getOwnPropertyNames:r$5,getOwnPropertySymbols:o$6,getPrototypeOf:n$7}=Object,a$1=globalThis,c$4=a$1.trustedTypes,l$2=c$4?c$4.emptyScript:"",p$2=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$3={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$3=(t,s)=>!i$5(t,s),b$1={attribute:!0,type:String,converter:u$3,reflect:!1,useDefault:!1,hasChanged:f$3};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;class y$1 extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=!0),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$6(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$3(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$7(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$5(t),...o$6(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$5(s));}else void 0!==s&&i.push(c$5(s));return i}static _$Eu(t,s){const i=s.attribute;return !1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&!0===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$3).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$3;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$3)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);}!1===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),!0!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),!0===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=!0;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];!0!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=!1;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=!1,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return !0}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}}y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$2?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const t$3=globalThis,i$4=t$3.trustedTypes,s$7=i$4?i$4.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$5="$lit$",h$2=`lit$${Math.random().toFixed(9).slice(2)}$`,o$5="?"+h$2,n$6=`<${o$5}>`,r$4=document,l$1=()=>r$4.createComment(""),c$3=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u$2=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f$2=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v$1=/-->/g,_=/>/g,m$1=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p$1=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$4.createTreeWalker(r$4,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$7?s$7.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f$2;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f$2?"!--"===u[1]?c=v$1:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m$1):void 0!==u[3]&&(c=m$1):c===m$1?">"===u[0]?(c=r??f$2,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m$1:'"'===u[3]?g:p$1):c===g||c===p$1?c=m$1:c===v$1||c===_?c=f$2:(c=m$1,r=void 0);const x=c===m$1&&t[i+1].startsWith("/>")?" ":"";l+=c===f$2?s+n$6:d>=0?(o.push(a),s.slice(0,d)+e$5+s.slice(d)+h$2+x):s+h$2+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e$5)){const i=v[a++],s=r.getAttribute(t).split(h$2),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h$2)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h$2),s=t.length-1;if(s>0){r.textContent=i$4?i$4.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$5)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h$2,t+1));)d.push({type:7,index:c}),t+=h$2.length-1;}c++;}}static createElement(t,i){const s=r$4.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c$3(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(!1),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}class M$1{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$4).importNode(i,!0);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$4,e}p(t){let i=0;for(const s of this._$AV)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??!0;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c$3(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u$2(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c$3(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$4.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M$1(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(!1,!0,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=!1;if(void 0===h)t=S(this,t,i,0),o=!c$3(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c$3(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const Z={M:e$5,P:h$2,A:o$5,C:1,L:V,R:M$1,D:u$2,V:S,I:R,H:k,N:I,U:L,B:H,F:z},j=t$3.litHtmlPolyfillSupport;j?.(N,R),(t$3.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const s$6=globalThis;class i$3 extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=B(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1);}render(){return T}}i$3._$litElement$=!0,i$3["finalized"]=!0,s$6.litElementHydrateSupport?.({LitElement:i$3});const o$4=s$6.litElementPolyfillSupport;o$4?.({LitElement:i$3});(s$6.litElementVersions??=[]).push("4.2.1");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const t$2=t=>(e,o)=>{void 0!==o?o.addInitializer((()=>{customElements.define(t,e);})):customElements.define(t,e);};
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const o$3={attribute:!0,type:String,converter:u$3,reflect:!1,hasChanged:f$3},r$3=(t=o$3,e,r)=>{const{kind:n,metadata:i}=r;let s=globalThis.litPropertyMetadata.get(i);if(void 0===s&&globalThis.litPropertyMetadata.set(i,s=new Map),"setter"===n&&((t=Object.create(t)).wrapped=!0),s.set(r.name,t),"accessor"===n){const{name:o}=r;return {set(r){const n=e.get.call(this);e.set.call(this,r),this.requestUpdate(o,n,t);},init(e){return void 0!==e&&this.C(o,void 0,t,e),e}}}if("setter"===n){const{name:o}=r;return function(r){const n=this[o];e.call(this,r),this.requestUpdate(o,n,t);}}throw Error("Unsupported decorator location: "+n)};function n$5(t){return (e,o)=>"object"==typeof o?r$3(t,e,o):((t,e,o)=>{const r=e.hasOwnProperty(o);return e.constructor.createProperty(o,t),r?Object.getOwnPropertyDescriptor(e,o):void 0})(t,e,o)}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */function r$2(r){return n$5({...r,state:!0,attribute:!1})}
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+class s$5 extends Event{constructor(s,t,e,o){super("context-request",{bubbles:!0,composed:!0}),this.context=s,this.contextTarget=t,this.callback=e,this.subscribe=o??!1;}}
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+function n$4(n){return n}
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */class s$4{constructor(t,s,i,h){if(this.subscribe=!1,this.provided=!1,this.value=void 0,this.t=(t,s)=>{this.unsubscribe&&(this.unsubscribe!==s&&(this.provided=!1,this.unsubscribe()),this.subscribe||this.unsubscribe()),this.value=t,this.host.requestUpdate(),this.provided&&!this.subscribe||(this.provided=!0,this.callback&&this.callback(t,s)),this.unsubscribe=s;},this.host=t,void 0!==s.context){const t=s;this.context=t.context,this.callback=t.callback,this.subscribe=t.subscribe??!1;}else this.context=s,this.callback=i,this.subscribe=h??!1;this.host.addController(this);}hostConnected(){this.dispatchRequest();}hostDisconnected(){this.unsubscribe&&(this.unsubscribe(),this.unsubscribe=void 0);}dispatchRequest(){this.host.dispatchEvent(new s$5(this.context,this.host,this.t,this.subscribe));}}
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+class s$3{get value(){return this.o}set value(s){this.setValue(s);}setValue(s,t=!1){const i=t||!Object.is(s,this.o);this.o=s,i&&this.updateObservers();}constructor(s){this.subscriptions=new Map,this.updateObservers=()=>{for(const[s,{disposer:t}]of this.subscriptions)s(this.o,t);},void 0!==s&&(this.value=s);}addCallback(s,t,i){if(!i)return void s(this.value);this.subscriptions.has(s)||this.subscriptions.set(s,{disposer:()=>{this.subscriptions.delete(s);},consumerHost:t});const{disposer:h}=this.subscriptions.get(s);s(this.value,h);}clearCallbacks(){this.subscriptions.clear();}}
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */class e$4 extends Event{constructor(t,s){super("context-provider",{bubbles:!0,composed:!0}),this.context=t,this.contextTarget=s;}}class i$2 extends s$3{constructor(s,e,i){super(void 0!==e.context?e.initialValue:i),this.onContextRequest=t=>{if(t.context!==this.context)return;const s=t.contextTarget??t.composedPath()[0];s!==this.host&&(t.stopPropagation(),this.addCallback(t.callback,s,t.subscribe));},this.onProviderRequest=s=>{if(s.context!==this.context)return;if((s.contextTarget??s.composedPath()[0])===this.host)return;const e=new Set;for(const[s,{consumerHost:i}]of this.subscriptions)e.has(s)||(e.add(s),i.dispatchEvent(new s$5(this.context,i,s,!0)));s.stopPropagation();},this.host=s,void 0!==e.context?this.context=e.context:this.context=e,this.attachListeners(),this.host.addController?.(this);}attachListeners(){this.host.addEventListener("context-request",this.onContextRequest),this.host.addEventListener("context-provider",this.onProviderRequest);}hostConnected(){this.host.dispatchEvent(new e$4(this.context,this.host));}}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */function e$3({context:e}){return (n,i)=>{const r=new WeakMap;if("object"==typeof i)return {get(){return n.get.call(this)},set(t){return r.get(this).setValue(t),n.set.call(this,t)},init(n){return r.set(this,new i$2(this,{context:e,initialValue:n})),n}};{n.constructor.addInitializer((n=>{r.set(n,new i$2(n,{context:e}));}));const o=Object.getOwnPropertyDescriptor(n,i);let s;if(void 0===o){const t=new WeakMap;s={get(){return t.get(this)},set(e){r.get(this).setValue(e),t.set(this,e);},configurable:!0,enumerable:!0};}else {const t=o.set;s={...o,set(e){r.get(this).setValue(e),t?.call(this,e);}};}return void Object.defineProperty(n,i,s)}}}
+
+/**
+ * @license
+ * Copyright 2022 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */function c$2({context:c,subscribe:e}){return (o,n)=>{"object"==typeof n?n.addInitializer((function(){new s$4(this,{context:c,callback:t=>{o.set.call(this,t);},subscribe:e});})):o.constructor.addInitializer((o=>{new s$4(o,{context:c,callback:t=>{o[n]=t;},subscribe:e});}));}}
+
+const hassContext = n$4('hass');
+const configContext = n$4('config');
+const strainLibraryContext = n$4('strain-library');
+const storeContext = n$4('store');
+const historyContext = n$4('growspace-history-controller');
+
+class GrowspaceHistoryController {
+    /** @deprecated Use historyCache['main'] instead */
+    get historyData() {
+        return this.historyCache.main || null;
+    }
+    set historyData(value) {
+        this.historyCache.main = value || [];
+    }
+    /** @deprecated Use historyCache['optimal'] instead */
+    get optimalHistory() {
+        return this.historyCache.optimal || null;
+    }
+    set optimalHistory(value) {
+        this.historyCache.optimal = value || [];
+    }
+    // Backward compatibility getters for existing code that reads these properties
+    get temperatureHistory() {
+        return this.historyCache.temperature || null;
+    }
+    get humidityHistory() {
+        return this.historyCache.humidity || null;
+    }
+    get vpdHistory() {
+        return this.historyCache.vpd || null;
+    }
+    get co2History() {
+        return this.historyCache.co2 || null;
+    }
+    get lightHistory() {
+        return this.historyCache.light || null;
+    }
+    get soilMoistureHistory() {
+        return this.historyCache.soil_moisture || null;
+    }
+    get exhaustHistory() {
+        return this.historyCache.exhaust || null;
+    }
+    get humidifierHistory() {
+        return this.historyCache.humidifier || null;
+    }
+    get dehumidifierHistory() {
+        return this.historyCache.dehumidifier || null;
+    }
+    get circulationFanHistory() {
+        return this.historyCache.circulation_fan || null;
+    }
+    get irrigationHistory() {
+        return this.historyCache.irrigation || null;
+    }
+    get drainHistory() {
+        return this.historyCache.drain || null;
+    }
+    /** Returns all sensor histories as a combined object for analytics component */
+    get combinedHistory() {
+        return {
+            temperature: this.historyCache.temperature || [],
+            humidity: this.historyCache.humidity || [],
+            vpd: this.historyCache.vpd || [],
+            co2: this.historyCache.co2 || [],
+            dehumidifier: this.historyCache.dehumidifier || [],
+            exhaust: this.historyCache.exhaust || [],
+            humidifier: this.historyCache.humidifier || [],
+            circulation_fan: this.historyCache.circulation_fan || [],
+            soil_moisture: this.historyCache.soil_moisture || [],
+            light: this.historyCache.light || [],
+            irrigation: this.historyCache.irrigation || [],
+            drain: this.historyCache.drain || [],
+            optimal: this.historyCache.optimal || [],
+        };
+    }
+    constructor(host) {
+        /**
+         * Unified history cache keyed by metric name.
+         * Replaces individual properties like temperatureHistory, humidityHistory, etc.
+         * Access via: this.historyCache['temperature'], this.historyCache['vpd'], etc.
+         */
+        this.historyCache = {};
+        this.activeEnvGraphs = new Set();
+        this.linkedGraphGroups = [];
+        this.graphRanges = {};
+        this._listeners = [];
+        this._prevSelectedDevice = null;
+        (this.host = host).addController(this);
+    }
+    addListener(callback) {
+        this._listeners.push(callback);
+    }
+    removeListener(callback) {
+        this._listeners = this._listeners.filter(l => l !== callback);
+    }
+    _notifyUpdate() {
+        this.host.requestUpdate();
+        this._listeners.forEach(cb => cb());
+    }
+    hostConnected() {
+        // Initial fetch if needed, though hostUpdated usually handles it
+    }
+    hostUpdated() {
+        // We can check if we need to refetch based on changes.
+        // However, without keeping track of previous state, we might over-fetch.
+        // The original card fetched in `updated` checking `changedProps.has('selectedDevice')`.
+        // ReactiveController doesn't get `changedProps` in `hostUpdated`.
+        // We might need to rely on explicit calls or manual caching.
+        // But the user said "Listen for changes... to automatically re-fetch".
+        // We can store prevSelectedDevice.
+    }
+    initFetch() {
+        // Called manually from firstUpdated if needed
+        this._fetchHistory();
+    }
+    async hostUpdate() {
+        // Logic to detect changes if possible, or we rely on hostUpdated
+        if (this.host.selectedDevice !== this._prevSelectedDevice) {
+            this._prevSelectedDevice = this.host.selectedDevice;
+            const range = this.getRange();
+            await this._fetchHistory(range);
+            this.refreshSecondaryHistories(range);
+        }
+    }
+    getRange() {
+        return this.host.selectedDevice ? this.graphRanges[this.host.selectedDevice] || '24h' : '24h';
+    }
+    setGraphRange(range) {
+        if (!this.host.selectedDevice)
+            return;
+        this.graphRanges = {
+            ...this.graphRanges,
+            [this.host.selectedDevice]: range,
+        };
+        this._notifyUpdate();
+        this._fetchHistory(range);
+        this.refreshSecondaryHistories(range);
+    }
+    toggleEnvGraph(details) {
+        const { metric } = details;
+        const newSet = new Set(this.activeEnvGraphs);
+        if (newSet.has(metric)) {
+            newSet.delete(metric);
+        }
+        else {
+            newSet.add(metric);
+            // Fetch history for this metric using generic method
+            const range = this.getRange();
+            this._fetchMetricHistory(metric, range);
+        }
+        this.activeEnvGraphs = newSet;
+        this._notifyUpdate();
+    }
+    linkGraphs(metric1, metric2) {
+        // Check if already linked
+        const existingGroupIndex = this.linkedGraphGroups.findIndex((group) => group.includes(metric1) || group.includes(metric2));
+        const newGroups = [...this.linkedGraphGroups];
+        if (existingGroupIndex >= 0) {
+            // Add unique
+            const group = new Set(newGroups[existingGroupIndex]);
+            group.add(metric1);
+            group.add(metric2);
+            newGroups[existingGroupIndex] = Array.from(group);
+        }
+        else {
+            // Create new group
+            newGroups.push([metric1, metric2]);
+        }
+        this.linkedGraphGroups = newGroups;
+        // Auto-activate both metrics so the linked graph displays immediately
+        const newActive = new Set(this.activeEnvGraphs);
+        newActive.add(metric1);
+        newActive.add(metric2);
+        this.activeEnvGraphs = newActive;
+        this._notifyUpdate();
+    }
+    unlinkGraphGroup(index) {
+        if (index >= 0 && index < this.linkedGraphGroups.length) {
+            const newGroups = [...this.linkedGraphGroups];
+            newGroups.splice(index, 1);
+            this.linkedGraphGroups = newGroups;
+            this._notifyUpdate();
+        }
+    }
+    clearAllLinks() {
+        this.linkedGraphGroups = [];
+        this._notifyUpdate();
+    }
+    unlinkGraphMetric(metric) {
+        this.linkedGraphGroups = this.linkedGraphGroups
+            .map((group) => group.filter((m) => m !== metric))
+            .filter((group) => group.length > 1);
+        this._notifyUpdate();
+    }
+    /**
+     * Refreshes history data for all currently active environment graphs.
+     */
+    refreshSecondaryHistories(range) {
+        for (const metricKey of this.activeEnvGraphs) {
+            // Skip 'main' and 'optimal' as those are fetched by _fetchHistory
+            if (metricKey === 'main' || metricKey === 'optimal')
+                continue;
+            this._fetchMetricHistory(metricKey, range);
+        }
+    }
+    async _fetchHistory(range = '24h') {
+        console.log('[HistoryController] _fetchHistory called with range:', range);
+        if (!this.host.hass || !this.host.selectedDevice) {
+            console.log('[HistoryController] Aborting: no hass or selectedDevice', {
+                hasHass: !!this.host.hass,
+                selectedDevice: this.host.selectedDevice,
+            });
+            return;
+        }
+        // Use pre-loaded devices from store instead of fetching independently
+        const devices = this.host.devices;
+        console.log('[HistoryController] selectedDevice:', this.host.selectedDevice, 'available devices:', devices.map((d) => ({ device_id: d.device_id, name: d.name })));
+        const device = devices.find((d) => d.device_id === this.host.selectedDevice);
+        if (!device) {
+            console.log('[HistoryController] Aborting: device not found. Looking for:', this.host.selectedDevice);
+            return;
+        }
+        const { start, end } = this.calculateTimeRange(range);
+        console.log('[HistoryController] Fetching history for device:', device.name, 'entity:', device.overview_entity_id);
+        // 1. Fetch Main Sensor History (Temp, Humidity, VPD, etc.)
+        if (device.overview_entity_id) {
+            try {
+                const history = await this.host.dataService.getHistory(device.overview_entity_id, start, end);
+                console.log('[HistoryController] History fetched, length:', history?.length || 0, 'sample:', history?.[0] ? JSON.stringify(history[0]).slice(0, 300) : 'empty');
+                this.historyData = history;
+            }
+            catch (e) {
+                console.error('Failed to fetch main sensor history', e);
+            }
+        }
+        else {
+            console.log('[HistoryController] No overview_entity_id on device');
+        }
+        // 2. Fetch Optimal Conditions Binary Sensor History
+        let slug = device.name.toLowerCase().replace(/\s+/g, '_');
+        if (device.overview_entity_id) {
+            slug = device.overview_entity_id.replace('sensor.', '');
+        }
+        let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
+        if (slug === 'cure') {
+            envEntityId = `binary_sensor.cure_optimal_curing`;
+        }
+        else if (slug === 'dry') {
+            envEntityId = `binary_sensor.dry_optimal_drying`;
+        }
+        try {
+            const history = await this.host.dataService.getHistory(envEntityId, start, end);
+            this.optimalHistory = history;
+        }
+        catch (e) {
+            console.error('Failed to fetch optimal history', e);
+        }
+        // 3. Fetch individual environment sensor histories (since env data moved to WebSocket)
+        const envAttrs = device.environment_attributes || {};
+        // Temperature
+        if (envAttrs.temperature_sensor) {
+            try {
+                const history = await this.host.dataService.getHistory(envAttrs.temperature_sensor, start, end);
+                console.log('[HistoryController] Temperature history fetched from', envAttrs.temperature_sensor, 'length:', history?.length || 0);
+                this.historyCache.temperature = history || [];
+            }
+            catch (e) {
+                console.error('Failed to fetch temperature history', e);
+            }
+        }
+        // Humidity
+        if (envAttrs.humidity_sensor) {
+            try {
+                const history = await this.host.dataService.getHistory(envAttrs.humidity_sensor, start, end);
+                console.log('[HistoryController] Humidity history fetched from', envAttrs.humidity_sensor, 'length:', history?.length || 0);
+                this.historyCache.humidity = history || [];
+            }
+            catch (e) {
+                console.error('Failed to fetch humidity history', e);
+            }
+        }
+        // VPD
+        if (envAttrs.vpd_sensor) {
+            try {
+                const history = await this.host.dataService.getHistory(envAttrs.vpd_sensor, start, end);
+                console.log('[HistoryController] VPD history fetched from', envAttrs.vpd_sensor, 'length:', history?.length || 0);
+                this.historyCache.vpd = history || [];
+            }
+            catch (e) {
+                console.error('Failed to fetch VPD history', e);
+            }
+        }
+        // CO2
+        if (envAttrs.co2_sensor) {
+            try {
+                const history = await this.host.dataService.getHistory(envAttrs.co2_sensor, start, end);
+                console.log('[HistoryController] CO2 history fetched from', envAttrs.co2_sensor, 'length:', history?.length || 0);
+                this.historyCache.co2 = history || [];
+            }
+            catch (e) {
+                console.error('Failed to fetch CO2 history', e);
+            }
+        }
+        // Light
+        if (envAttrs.light_sensor) {
+            try {
+                const history = await this.host.dataService.getHistory(envAttrs.light_sensor, start, end);
+                console.log('[HistoryController] Light history fetched from', envAttrs.light_sensor, 'length:', history?.length || 0);
+                this.historyCache.light = history || [];
+            }
+            catch (e) {
+                console.error('Failed to fetch Light history', e);
+            }
+        }
+        // Soil Moisture
+        if (envAttrs.soil_moisture_sensor) {
+            try {
+                const history = await this.host.dataService.getHistory(envAttrs.soil_moisture_sensor, start, end);
+                console.log('[HistoryController] Soil Moisture history fetched from', envAttrs.soil_moisture_sensor, 'length:', history?.length || 0);
+                this.historyCache.soil_moisture = history || [];
+            }
+            catch (e) {
+                console.error('Failed to fetch soil moisture history', e);
+            }
+        }
+        // Fallback: If light history is missing but we have optimal history, try to derive it from 'is_lights_on' attribute
+        const lightHistory = this.historyCache.light;
+        const optimalHistory = this.historyCache.optimal;
+        if ((!lightHistory || lightHistory.length === 0) &&
+            optimalHistory &&
+            optimalHistory.length > 0) {
+            console.log('[HistoryController] Synthesizing Light history from Optimal attributes');
+            this.historyCache.light = optimalHistory.map((h) => ({
+                ...h,
+                entity_id: 'derived_light',
+                state: h.attributes?.is_lights_on ? 'on' : 'off',
+                attributes: {},
+            }));
+        }
+        this.host.requestUpdate();
+    }
+    /**
+     * Generic method to fetch history for any metric.
+     * Uses METRIC_ENTITY_KEYS to resolve the entity ID from device attributes.
+     */
+    async _fetchMetricHistory(metricKey, range) {
+        const device = this.host.devices.find((d) => d.device_id === this.host.selectedDevice);
+        if (!device)
+            return;
+        const entityId = this.getEntityIdForMetric(device, metricKey);
+        if (!entityId) {
+            console.log(`[HistoryController] No entity ID found for metric: ${metricKey}`);
+            return;
+        }
+        const { start, end } = this.calculateTimeRange(range);
+        try {
+            const history = await this.host.dataService.getHistory(entityId, start, end);
+            console.log(`[HistoryController] ${metricKey} history fetched from ${entityId}, length: ${history?.length || 0}`);
+            this.historyCache[metricKey] = history || [];
+            this.host.requestUpdate();
+        }
+        catch (e) {
+            console.error(`Failed to fetch ${metricKey} history`, e);
+        }
+    }
+    /**
+     * Resolves the entity ID for a given metric using METRIC_ENTITY_KEYS mapping.
+     */
+    getEntityIdForMetric(device, metricKey) {
+        const mapping = METRIC_ENTITY_KEYS[metricKey];
+        if (!mapping)
+            return null;
+        // Check based on source type
+        if (mapping.source === 'irrigation') {
+            const entityId = device.irrigation_config?.[mapping.primary];
+            if (entityId)
+                return entityId;
+            // Fallback: If not found in irrigation_config, continue to check environment_attributes/etc below
+        }
+        // Default: environment_attributes
+        const envAttrs = device.environment_attributes || {};
+        let entityId = envAttrs[mapping.primary];
+        // Try fallback if primary not found
+        if (!entityId && mapping.fallback) {
+            entityId = envAttrs[mapping.fallback];
+        }
+        return entityId || null;
+    }
+    // Legacy method kept for compatibility - prefer getEntityIdForMetric instead
+    getRelatedEntityId(attribute) {
+        if (!this.host.hass || !this.host.selectedDevice)
+            return { device: null, entityId: null };
+        const devices = this.host.devices;
+        const device = devices.find((d) => d.device_id === this.host.selectedDevice);
+        if (!device)
+            return { device: null, entityId: null };
+        let entityId = device.environment_attributes?.[attribute];
+        if (entityId)
+            return { device, entityId };
+        // Fallback logic
+        if (attribute.endsWith('_entity')) {
+            const sensorAttr = attribute.replace('_entity', '_sensor');
+            entityId =
+                device.environment_attributes?.[sensorAttr];
+        }
+        else if (attribute.endsWith('_sensor')) {
+            const entityAttr = attribute.replace('_sensor', '_entity');
+            entityId =
+                device.environment_attributes?.[entityAttr];
+        }
+        return { device, entityId };
+    }
+    calculateTimeRange(range) {
+        const now = new Date();
+        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        switch (range) {
+            case '1h':
+                startTime = new Date(now.getTime() - 60 * 60 * 1000);
+                break;
+            case '6h':
+                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+                break;
+            case '7d':
+                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+        }
+        return { start: startTime, end: now };
+    }
+}
+
+/**
+ * @license
+ * Copyright 2020 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const {I:t$1}=Z,f$1=o=>void 0===o.strings,r$1=()=>document.createComment(""),s$2=(o,i,n)=>{const e=o._$AA.parentNode,l=void 0===i?o._$AB:i._$AA;if(void 0===n){const i=e.insertBefore(r$1(),l),d=e.insertBefore(r$1(),l);n=new t$1(i,d,o,o.options);}else {const t=n._$AB.nextSibling,i=n._$AM,d=i!==o;if(d){let t;n._$AQ?.(o),n._$AM=o,void 0!==n._$AP&&(t=o._$AU)!==i._$AU&&n._$AP(t);}if(t!==l||d){let o=n._$AA;for(;o!==t;){const t=o.nextSibling;e.insertBefore(o,l),o=t;}}}return n},v=(o,t,i=o)=>(o._$AI(t,i),o),u$1={},m=(o,t=u$1)=>o._$AH=t,p=o=>o._$AH,M=o=>{o._$AR(),o._$AA.remove();};
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const t={ATTRIBUTE:1,CHILD:2,PROPERTY:3,BOOLEAN_ATTRIBUTE:4,EVENT:5,ELEMENT:6},e$2=t=>(...e)=>({_$litDirective$:t,values:e});class i$1{constructor(t){}get _$AU(){return this._$AM._$AU}_$AT(t,e,i){this._$Ct=t,this._$AM=e,this._$Ci=i;}_$AS(t,e){return this.update(t,e)}update(t,e){return this.render(...e)}}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const s$1=(i,t)=>{const e=i._$AN;if(void 0===e)return !1;for(const i of e)i._$AO?.(t,!1),s$1(i,t);return !0},o$2=i=>{let t,e;do{if(void 0===(t=i._$AM))break;e=t._$AN,e.delete(i),i=t;}while(0===e?.size)},r=i=>{for(let t;t=i._$AM;i=t){let e=t._$AN;if(void 0===e)t._$AN=e=new Set;else if(e.has(i))break;e.add(i),c$1(t);}};function h$1(i){void 0!==this._$AN?(o$2(this),this._$AM=i,r(this)):this._$AM=i;}function n$3(i,t=!1,e=0){const r=this._$AH,h=this._$AN;if(void 0!==h&&0!==h.size)if(t)if(Array.isArray(r))for(let i=e;i<r.length;i++)s$1(r[i],!1),o$2(r[i]);else null!=r&&(s$1(r,!1),o$2(r));else s$1(this,i);}const c$1=i=>{i.type==t.CHILD&&(i._$AP??=n$3,i._$AQ??=h$1);};class f extends i$1{constructor(){super(...arguments),this._$AN=void 0;}_$AT(i,t,e){super._$AT(i,t,e),r(this),this.isConnected=i._$AU;}_$AO(i,t=!0){i!==this.isConnected&&(this.isConnected=i,i?this.reconnected?.():this.disconnected?.()),t&&(s$1(this,i),o$2(this));}setValue(t){if(f$1(this._$Ct))this._$Ct._$AI(t,this);else {const i=[...this._$Ct._$AH];i[this._$Ci]=t,this._$Ct._$AI(i,this,0);}}disconnected(){}reconnected(){}}
+
+/**
+ * @license
+ * Copyright 2020 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const e$1=()=>new h;class h{}const o$1=new WeakMap,n$2=e$2(class extends f{render(i){return E}update(i,[s]){const e=s!==this.G;return e&&void 0!==this.G&&this.rt(void 0),(e||this.lt!==this.ct)&&(this.G=s,this.ht=i.options?.host,this.rt(this.ct=i.element)),E}rt(t){if(this.isConnected||(t=void 0),"function"==typeof this.G){const i=this.ht??globalThis;let s=o$1.get(i);void 0===s&&(s=new WeakMap,o$1.set(i,s)),void 0!==s.get(this.G)&&this.G.call(this.ht,void 0),s.set(this.G,t),void 0!==t&&this.G.call(this.ht,t);}else this.G.value=t;}get lt(){return "function"==typeof this.G?o$1.get(this.ht??globalThis)?.get(this.G):this.G?.value}disconnected(){this.lt===this.ct&&this.rt(void 0);}reconnected(){this.rt(this.ct);}});
+
+/**
+ * @license
+ * Copyright 2018 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const e=e$2(class extends i$1{constructor(t$1){if(super(t$1),t$1.type!==t.ATTRIBUTE||"class"!==t$1.name||t$1.strings?.length>2)throw Error("`classMap()` can only be used in the `class` attribute and must be the only part in the attribute.")}render(t){return " "+Object.keys(t).filter((s=>t[s])).join(" ")+" "}update(s,[i]){if(void 0===this.st){this.st=new Set,void 0!==s.strings&&(this.nt=new Set(s.strings.join(" ").split(/\s/).filter((t=>""!==t))));for(const t in i)i[t]&&!this.nt?.has(t)&&this.st.add(t);return this.render(i)}const r=s.element.classList;for(const t of this.st)t in i||(r.remove(t),this.st.delete(t));for(const t in i){const s=!!i[t];s===this.st.has(t)||this.nt?.has(t)||(s?(r.add(t),this.st.add(t)):(r.remove(t),this.st.delete(t)));}return T}});
+
+/**
+ * @license
+ * Copyright 2018 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const n$1="important",i=" !"+n$1,o=e$2(class extends i$1{constructor(t$1){if(super(t$1),t$1.type!==t.ATTRIBUTE||"style"!==t$1.name||t$1.strings?.length>2)throw Error("The `styleMap` directive must be used in the `style` attribute and must be the only part in the attribute.")}render(t){return Object.keys(t).reduce(((e,r)=>{const s=t[r];return null==s?e:e+`${r=r.includes("-")?r:r.replace(/(?:^(webkit|moz|ms|o)|)(?=[A-Z])/g,"-$&").toLowerCase()}:${s};`}),"")}update(e,[r]){const{style:s}=e.element;if(void 0===this.ft)return this.ft=new Set(Object.keys(r)),this.render(r);for(const t of this.ft)null==r[t]&&(this.ft.delete(t),t.includes("-")?s.removeProperty(t):s[t]=null);for(const t in r){const e=r[t];if(null!=e){this.ft.add(t);const r="string"==typeof e&&e.endsWith(i);t.includes("-")||r?s.setProperty(t,r?e.slice(0,-11):e,r?n$1:""):s[t]=e;}}return T}});
+
+class GraphDataTransformer {
+    /**
+     * Transforms start/end time events into a time-series of 0/1 data points for a step graph.
+     *
+     * @param times Array of event objects with time string "HH:MM" and duration in seconds.
+     * @param startTime The start time of the graph window (ms timestamp).
+     * @param endTime The end time of the graph window (ms timestamp) - usually "now".
+     * @returns Array of GraphDataPoint
+     */
+    static transformEventsToTimeSeries(times, startTime, endTime) {
+        const dataPoints = [];
+        if (!times || !Array.isArray(times)) {
+            return dataPoints;
+        }
+        const events = [];
+        // We look at reference days covering the window
+        // The window might span multiple calendar days, so we check "now" and "startTime" days
+        // A safer approach for short windows (<= 7 days) is to iterate daily,
+        // but the original logic just checked simplistic referenceDays.
+        // We will preserve the original logic's intent but robustify if needed.
+        // Original used: const referenceDays = [new Date(now), new Date(startTime)];
+        const now = new Date(endTime);
+        const start = new Date(startTime);
+        const referenceDays = [now, start];
+        times.forEach((t) => {
+            const [h, m] = t.time.split(':').map(Number);
+            const duration = (t.duration || 60) * 1000;
+            const durationSeconds = duration / 1000;
+            let durationStr = `${durationSeconds}s`;
+            if (durationSeconds >= 60)
+                durationStr = `${Math.round(durationSeconds / 60)}m`;
+            referenceDays.forEach((refDay) => {
+                const eventStart = new Date(refDay);
+                eventStart.setHours(h, m, 0, 0);
+                const eventEnd = new Date(eventStart.getTime() + duration);
+                // Check overlap with window [startTime, endTime]
+                if (eventEnd.getTime() > startTime && eventStart.getTime() < endTime) {
+                    events.push({
+                        start: Math.max(eventStart.getTime(), startTime),
+                        end: Math.min(eventEnd.getTime(), endTime),
+                        durationStr,
+                    });
+                }
+            });
+        });
+        events.sort((a, b) => a.start - b.start);
+        // Initial point
+        dataPoints.push({ time: startTime, value: 0 });
+        events.forEach((ev) => {
+            // "Step" up 1ms before
+            dataPoints.push({ time: ev.start - 1, value: 0 });
+            // Start of event
+            dataPoints.push({ time: ev.start, value: 1, meta: { duration: ev.durationStr } });
+            // End of event
+            dataPoints.push({ time: ev.end, value: 1, meta: { duration: ev.durationStr } });
+            // "Step" down 1ms after
+            dataPoints.push({ time: ev.end + 1, value: 0 });
+        });
+        // Final point
+        dataPoints.push({ time: endTime, value: 0 });
+        return dataPoints;
+    }
+    static synthesizeLiveDataPoint(metricKey, overviewEntity, now, lastDataPoint) {
+        if (metricKey === 'dehumidifier') {
+            if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
+                const state = overviewEntity.attributes.dehumidifier_state;
+                const val = state === 'on' || state === 'true' || state === '1' ? 1 : 0;
+                return { time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } };
+            }
+        }
+        else if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+            const val = metricKey === 'exhaust'
+                ? overviewEntity?.attributes?.exhaust_value
+                : overviewEntity?.attributes?.humidifier_value;
+            if (val !== undefined) {
+                let numVal = parseFloat(val);
+                let meta;
+                if (isNaN(numVal)) {
+                    if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') {
+                        numVal = 1;
+                        meta = { state: 'ON' };
+                    }
+                    else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') {
+                        numVal = 0;
+                        meta = { state: 'OFF' };
+                    }
+                }
+                if (!isNaN(numVal)) {
+                    return { time: now.getTime(), value: numVal, meta };
+                }
+            }
+        }
+        // Generic fallback: extend last value
+        if (lastDataPoint) {
+            return { time: now.getTime(), value: lastDataPoint.value, meta: lastDataPoint.meta };
+        }
+        return null;
+    }
+    static normalizeSensorValue(ent, key) {
+        const s = ent.state;
+        if (s === 'unavailable' || s === 'unknown')
+            return undefined;
+        if (key === 'dehumidifier') {
+            return s === 'on' || s === 'true' || s === '1' || s === 'heating' || s === 'drying' ? 1 : 0;
+        }
+        if (key === 'light') {
+            // Text based check
+            if (s === 'on' || s === 'true')
+                return 1;
+            if (s === 'off' || s === 'false')
+                return 0;
+            // Numeric check for dimmers/percentages (0 = off, >0 = on)
+            const val = parseFloat(s);
+            if (!isNaN(val)) {
+                return val > 0 ? 1 : 0;
+            }
+            return 0;
+        }
+        const val = parseFloat(s);
+        if (isNaN(val)) {
+            // Try to handle ON/OFF for 0-10 sensors if state comes as text?
+            // Usually they are numbers, but just in case
+            if (s === 'on')
+                return 1;
+            if (s === 'off')
+                return 0;
+            return undefined;
+        }
+        return val;
+    }
+}
+
+let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.sensorHistory = {};
+        this.metricKey = '';
+        this.unit = '';
+        this.color = '#ffffff';
+        this.title = '';
+        this.icon = mdiMagnify;
+        this.range = '24h';
+        this.type = 'line';
+        // For combined graphs
+        this.metrics = [];
+        this.isCombined = false;
+        this.metricConfig = {};
+        this._activeTooltip = null;
+        this._hoverTime = null;
+        this._canScrollLeft = false;
+        this._canScrollRight = false;
+        this._renderSeries = []; // Cached series renamed for clarity
+        this._chipsContainerRef = e$1();
+    }
+    _scrollChips(direction) {
+        const container = this._chipsContainerRef.value;
+        if (container) {
+            container.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
+        }
+    }
+    _checkScroll() {
+        const container = this._chipsContainerRef.value;
+        if (container) {
+            this._canScrollLeft = container.scrollLeft > 1;
+            this._canScrollRight =
+                container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
+        }
+    }
+    firstUpdated() {
+        const container = this._chipsContainerRef.value;
+        if (container) {
+            container.addEventListener('scroll', () => this._checkScroll());
+            this._resizeObserver = new ResizeObserver(() => this._checkScroll());
+            this._resizeObserver.observe(container);
+            setTimeout(() => this._checkScroll(), 100);
+        }
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+        }
+    }
+    _computeGraphSeries(width, height, startTime, durationMillis, now) {
+        const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
+        const seriesList = [];
+        metricKeys.forEach((key) => {
+            const config = this.metricConfig[key] || {
+                color: this.isCombined ? METRIC_CONFIG[key]?.color || '#ffffff' : this.color,
+                title: this.isCombined ? METRIC_CONFIG[key]?.title || key : this.title,
+                unit: this.isCombined ? METRIC_CONFIG[key]?.unit || '' : this.unit,
+                icon: this.isCombined ? METRIC_CONFIG[key]?.icon || '' : this.icon,
+            };
+            const historySource = this.sensorHistory[key] || [];
+            const dataPoints = [];
+            if (key === 'optimal' && historySource.length > 0) {
+                // Optimal logic (Step Graph for Binary Sensor)
+                const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+                let initialState = sortedHistory[0];
+                for (const h of sortedHistory) {
+                    const t = new Date(h.last_changed).getTime();
+                    if (t > startTime.getTime())
+                        break;
+                    initialState = h;
+                }
+                if (initialState) {
+                    const val = initialState.state === 'on' ? 1 : 0;
+                    dataPoints.push({ time: startTime.getTime(), value: val });
+                }
+                sortedHistory.forEach((h) => {
+                    const t = new Date(h.last_changed).getTime();
+                    if (t <= startTime.getTime())
+                        return;
+                    const val = h.state === 'on' ? 1 : 0;
+                    const reasons = h.attributes?.reasons;
+                    dataPoints.push({ time: t, value: val, meta: reasons ? { reasons } : undefined });
+                });
+                // Extend to NOW
+                if (dataPoints.length > 0) {
+                    const last = dataPoints[dataPoints.length - 1];
+                    dataPoints.push({ time: now.getTime(), value: last.value });
+                }
+            }
+            else if (historySource.length > 0) {
+                // Standard Sensor Logic
+                const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+                let initialState = sortedHistory[0];
+                for (const h of sortedHistory) {
+                    const t = new Date(h.last_changed).getTime();
+                    if (t > startTime.getTime())
+                        break;
+                    initialState = h;
+                }
+                if (initialState) {
+                    const val = GraphDataTransformer.normalizeSensorValue(initialState, key);
+                    if (val !== undefined) {
+                        dataPoints.push({ time: startTime.getTime(), value: val });
+                    }
+                }
+                sortedHistory.forEach((h) => {
+                    const t = new Date(h.last_changed).getTime();
+                    if (t <= startTime.getTime())
+                        return;
+                    const val = GraphDataTransformer.normalizeSensorValue(h, key);
+                    if (val !== undefined) {
+                        dataPoints.push({ time: t, value: val });
+                    }
+                });
+                // Synthesize live point
+                const livePoint = GraphDataTransformer.synthesizeLiveDataPoint(key, this.device?.overview_entity_id ? { attributes: this.device } : null, now, dataPoints[dataPoints.length - 1]);
+                if (livePoint) {
+                    dataPoints.push(livePoint);
+                }
+                else if (dataPoints.length > 0) {
+                    const last = dataPoints[dataPoints.length - 1];
+                    dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
+                }
+            }
+            if (dataPoints.length > 0) {
+                let min = Math.min(...dataPoints.map((d) => d.value));
+                let max = Math.max(...dataPoints.map((d) => d.value));
+                const sum = dataPoints.reduce((acc, curr) => acc + curr.value, 0);
+                const avg = sum / dataPoints.length;
+                // Enforce specific ranges
+                if (key === 'exhaust' || key === 'humidifier' || key === 'circulation_fan') {
+                    min = 0;
+                    max = 10;
+                }
+                else if (key === 'dehumidifier') {
+                    min = 0;
+                    max = 1;
+                }
+                else if (config.type === 'step') {
+                    min = 0;
+                    max = 1;
+                } // Step graphs (optimal, irrigation, drain, light) are binary
+                // Add padding for single graphs only
+                if (!this.isCombined && max === min && config.type !== 'step') {
+                    max += 1;
+                    min -= 1;
+                }
+                const paddedRange = max - min || 1;
+                let pathStr = '';
+                if (config.type === 'step') {
+                    // Step Path
+                    const stepPoints = [];
+                    if (dataPoints.length > 0) {
+                        const startX = ((dataPoints[0].time - startTime.getTime()) / durationMillis) * width;
+                        const startY = height - ((dataPoints[0].value - min) / paddedRange) * height;
+                        stepPoints.push([startX, startY]);
+                        for (let i = 1; i < dataPoints.length; i++) {
+                            const p = dataPoints[i];
+                            const x = ((p.time - startTime.getTime()) / durationMillis) * width;
+                            const y = height - ((p.value - min) / paddedRange) * height;
+                            // Step: H then V
+                            stepPoints.push([x, stepPoints[stepPoints.length - 1][1]]);
+                            stepPoints.push([x, y]);
+                        }
+                    }
+                    pathStr = `M ${stepPoints.map((p) => `${p[0]},${p[1]}`).join(' L ')}`;
+                }
+                else {
+                    // Line Path
+                    const points = dataPoints.map((p) => {
+                        const x = ((p.time - startTime.getTime()) / durationMillis) * width;
+                        const y = height - ((p.value - min) / paddedRange) * height;
+                        return [x, y];
+                    });
+                    pathStr = `M ${points.map((p) => `${p[0]},${p[1]}`).join(' L ')}`;
+                }
+                seriesList.push({
+                    id: key,
+                    title: config.title || key,
+                    color: config.color || '#fff',
+                    unit: config.unit || '',
+                    icon: config.icon || '',
+                    points: dataPoints,
+                    min,
+                    max,
+                    avg,
+                    path: pathStr,
+                    fillType: this.isCombined ? 'flat' : 'gradient',
+                });
+            }
+        });
+        return seriesList;
+    }
+    render() {
+        if (!this.device)
+            return x ``;
+        // Dimensions (internal SVG coords)
+        const width = 800;
+        const height = 200;
+        const durationMillis = this._getDurationMillis(this.range);
+        const now = new Date(); // Only for display math if needed, but series are cached
+        const startTime = new Date(now.getTime() - durationMillis);
+        // Use cached render series
+        const series = this._renderSeries;
+        if (series.length === 0) {
+            return x `
+        <div class="gs-env-graph-card">
+          <div class="gs-env-graph-header">
+            <div style="display:flex; align-items:center; gap:8px;">
+              ${this.icon ? x `<ha-icon .icon=${this.icon}></ha-icon>` : ''}
+              <span>${this.title || 'Graph'}</span>
+            </div>
+            <span style="color: #666; font-size: 0.9em;">No Data</span>
+          </div>
+          <div
+            class="gs-env-chart-container"
+            style="display: flex; align-items: center; justify-content: center; color: #444;"
+          >
+            No history data available for ${this.range}
+          </div>
+        </div>
+      `;
+        }
+        return x `
+      <div class="gs-env-graph-card">
+        ${this.isCombined
+            ? this._renderCombinedHeader(series)
+            : this._renderSingleHeader(series[0])}
+
+        <div
+          class="gs-env-chart-container"
+          @mousemove=${(e) => this._handleGraphHover(e, series, startTime, durationMillis, width)}
+          @mouseleave=${() => {
+            this._activeTooltip = null;
+            this._hoverTime = null;
+        }}
+        >
+          ${this._renderTooltip()}
+          ${!this.isCombined
+            ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit)
+            : ''}
+          ${this._renderXAxisHTML(this.range)}
+
+          <svg
+            viewBox="0 0 ${width} ${height}"
+            preserveAspectRatio="none"
+            style="width: 100%; height: 100%; overflow: visible; display: block;"
+          >
+            ${this._renderGrid(width, height)}
+            ${series.map((s) => {
+            if (s.fillType === 'gradient') {
+                return b `
+                                    <defs>
+                                        ${this._renderGradient(s.id, s.color)}
+                                    </defs>
+                                    <path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />
+                                    <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2.5" />
+                                `;
+            }
+            else {
+                return b `
+                                     <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" />
+                                     <!-- Optional: light fill for combined -->
+                                     <path d="${s.path} V ${height} H ${s.points.length > 0 ? ((s.points[0].time - startTime.getTime()) / durationMillis) * width : 0} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />
+                                `;
+            }
+        })}
+          </svg>
+        </div>
+      </div>
+    `;
+    }
+    _renderSingleHeader(series) {
+        let valStr = '-';
+        if (series.points.length > 0) {
+            const lastPoint = series.points[series.points.length - 1];
+            const val = lastPoint.value;
+            const defaults = SENSOR_CHART_DEFAULTS[series.id];
+            const isBinary = defaults?.binary === true ||
+                (series.unit === 'state' && defaults?.max === undefined) ||
+                series.id === 'optimal' ||
+                series.id === 'dehumidifier';
+            if (isBinary) {
+                if (series.id === 'optimal') {
+                    valStr = val === 1 ? 'Optimal' : lastPoint.meta?.reasons || 'Not Optimal';
+                }
+                else {
+                    valStr = val === 1 ? 'ON' : 'OFF';
+                }
+            }
+            else if ((series.id === 'exhaust' || series.id === 'humidifier') && lastPoint.meta?.state) {
+                valStr = lastPoint.meta.state;
+            }
+            else {
+                valStr = `${val.toFixed(1)} ${series.unit}`;
+            }
+        }
+        return x `
+      <div
+        class="gs-env-graph-header"
+        @click=${() => this.dispatchEvent(new CustomEvent('toggle-graph', { detail: series.id, bubbles: true, composed: true }))}
+      >
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div
+            style="width: 24px; height: 24px; color: ${series.color}; display: flex; align-items: center; justify-content: center;"
+          >
+            <svg viewBox="0 0 24 24" style="width: 100%; height: 100%; fill: currentColor;">
+              <path d="${series.icon || this.icon}"></path>
+            </svg>
+          </div>
+          <span style="color: ${series.color}; font-weight: 500;">${series.title}</span>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 1.2em; font-weight: bold; color: ${series.color};">${valStr}</div>
+        </div>
+      </div>
+    `;
+    }
+    _renderCombinedHeader(seriesList) {
+        return x `
+      <div class="gs-env-graph-header">
+        <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
+          ${this._canScrollLeft
+            ? x `
+                <div
+                  class="scroll-nav left"
+                  @click=${(e) => {
+                e.stopPropagation();
+                this._scrollChips('left');
+            }}
+                >
+                  <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+                </div>
+              `
+            : ''}
+
+          <div
+            class="chips-scroll-container"
+            ${n$2(this._chipsContainerRef)}
+            @click=${(e) => e.stopPropagation()}
+          >
+            ${seriesList.map((s) => x `
+                <div
+                  class=${e({
+            'gs-legend-item': true,
+            'mask-left': this._canScrollLeft,
+            'mask-right': this._canScrollRight,
+        })}
+                  @click=${(e) => {
+            e.stopPropagation();
+            this.dispatchEvent(new CustomEvent('unlink-graph', { detail: s.id, bubbles: true, composed: true }));
+        }}
+                >
+                  <span
+                    style="display:inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${s.color}; margin-right: 6px; flex-shrink: 0;"
+                  ></span>
+                  ${s.icon
+            ? x `
+                        <div
+                          style="width: 16px; height: 16px; color: ${s.color}; margin-right: 4px; display: inline-flex;"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            style="width: 100%; height: 100%; fill: currentColor;"
+                          >
+                            <path d="${s.icon}"></path>
+                          </svg>
+                        </div>
+                      `
+            : ''}
+                  <span style="color: ${s.color}; font-weight: 500;">${s.title}</span>
+                </div>
+              `)}
+          </div>
+
+          ${this._canScrollRight
+            ? x `
+                <div
+                  class="scroll-nav right"
+                  @click=${(e) => {
+                e.stopPropagation();
+                this._scrollChips('right');
+            }}
+                >
+                  <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                </div>
+              `
+            : ''}
+        </div>
+
+        </div>
+
+        <div style="display:flex; gap: 8px; margin-left: 8px; flex-shrink: 0;">
+          ${this.isCombined
+            ? x `
+                <ha-icon-button
+                  .path=${mdiLink}
+                  @click=${() => this.dispatchEvent(new CustomEvent('unlink-graphs', { detail: -1, bubbles: true, composed: true }))}
+                  title="Unlink Graphs"
+                ></ha-icon-button>
+              `
+            : ''}
+        </div>
+      </div>
+    `;
+    }
+    _renderTooltip() {
+        if (!this._activeTooltip)
+            return x ``;
+        const { x: x$1, time, items } = this._activeTooltip;
+        return x `
+      <div class="gs-tooltip" style=${o({ left: `${x$1}px`, top: '0' })}>
+        <div
+          style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 2px;"
+        >
+          ${time}
+        </div>
+        ${items.map((i) => x `
+            <div
+              style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px;"
+            >
+              <span style="color: ${i.color};">${i.title}:</span>
+              <span style="font-family: monospace; font-weight: bold;">${i.value}</span>
+            </div>
+          `)}
+      </div>
+      <!-- Cursor Line -->
+      <div
+        class="gs-cursor-line"
+        style=${o({
+            left: `${x$1}px`,
+            height: '100%',
+            top: '0',
+            position: 'absolute',
+            borderLeft: '1px dashed rgba(255,255,255,0.3)',
+            pointerEvents: 'none',
+        })}
+      ></div>
+    `;
+    }
+    _renderGrid(width, height) {
+        return b `
+            <!-- Simple Grid -->
+            <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
+            <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
+            <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="#333" stroke-width="0.5" stroke-dasharray="4 4" />
+        `;
+    }
+    _renderGradient(key, color) {
+        return b `
+            <linearGradient id="grad-${key}" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="${color}" stop-opacity="0.4" />
+                <stop offset="100%" stop-color="${color}" stop-opacity="0" />
+            </linearGradient>
+        `;
+    }
+    _renderXAxisHTML(range) {
+        // Render X-Axis labels as HTML overlay
+        // Container padding: 20px 40px 30px 50px (top right bottom left)
+        // Labels usually at bottom. Bottom padding 30px is for these labels.
+        // We want them effectively at bottom: 10px?
+        const labelStyle = 'position: absolute; bottom: 8px; font-size: 10px; color: #666; line-height: 1; pointer-events: none;';
+        return x `
+      <div style="${labelStyle} left: 50px;">-${range}</div>
+      <div style="${labelStyle} right: 40px;">Now</div>
+    `;
+    }
+    _renderYAxisHTML(min, max, unit) {
+        // Render Y-Axis labels as HTML overlay to avoid SVG scaling distortion
+        // Container has padding: 20px 40px 30px 50px
+        // Top label at top of graph area (20px)
+        // Bottom label at bottom of graph area (20px + 100% height = approx bottom)
+        // Graph area height is 180px, defined by container height (which is content-box by default?)
+        // Let's assume standard box model. Height 180px is strictly the graph area?
+        // No, CSS says height: 180px and padding.
+        // If box-sizing is border-box (common in frameworks), height 180 includes padding. Graph area = 180 - 20 - 30 = 130px.
+        // If box-sizing is content-box (default), height 180 is graph area.
+        // In HA/Lit, usually we rely on user agent defaults unless reset.
+        // Let's assume content-box for now as that's standard CSS.
+        // Even if it's border-box, we can use percentages.
+        const labelStyle = 'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: #aaa; line-height: 1; pointer-events: none;';
+        if (unit === 'state' || (max === 1 && min === 0)) {
+            return x `
+        <div style="${labelStyle} top: 20px;">ON</div>
+        <div style="${labelStyle} bottom: 30px;">OFF</div>
+      `;
+        }
+        return x `
+      <div style="${labelStyle} top: 20px;">${max}${unit}</div>
+      <div style="${labelStyle} top: 50%; transform: translateY(-5px);">
+        ${((max + min) / 2).toFixed(1)}
+      </div>
+      <div style="${labelStyle} bottom: 30px;">${min}${unit}</div>
+    `;
+    }
+    _getDurationMillis(range) {
+        if (range === '1h')
+            return 60 * 60 * 1000;
+        if (range === '6h')
+            return 6 * 60 * 60 * 1000;
+        if (range === '7d')
+            return 7 * 24 * 60 * 60 * 1000;
+        return 24 * 60 * 60 * 1000;
+    }
+    _toggleEnvGraph() {
+        this.dispatchEvent(new CustomEvent('toggle-graph', { detail: this.metricKey, bubbles: true, composed: true }));
+    }
+    _unlinkGraphs(groupIndex) {
+        this.dispatchEvent(new CustomEvent('unlink-graphs', { detail: groupIndex, bubbles: true, composed: true }));
+    }
+    willUpdate(changedProperties) {
+        if (changedProperties.has('device') ||
+            changedProperties.has('sensorHistory') ||
+            changedProperties.has('range') ||
+            changedProperties.has('metricKey') ||
+            changedProperties.has('metrics') ||
+            changedProperties.has('isCombined') ||
+            changedProperties.has('metricConfig') ||
+            changedProperties.has('type') ||
+            changedProperties.has('color') ||
+            changedProperties.has('unit') ||
+            changedProperties.has('title') ||
+            changedProperties.has('icon')) {
+            const durationMillis = this._getDurationMillis(this.range);
+            const now = new Date();
+            const startTime = new Date(now.getTime() - durationMillis);
+            const width = 800;
+            const height = 200;
+            this._renderSeries = this._computeGraphSeries(width, height, startTime, durationMillis, now);
+        }
+    }
+    _handleGraphHover(e, seriesList, startTime, durationMillis, width) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const contentWidth = rect.width - 90; // 50px left + 40px right padding
+        const relX = Math.max(0, Math.min(1, (e.clientX - rect.left - 50) / contentWidth));
+        const hoverTime = startTime.getTime() + relX * durationMillis;
+        // Find closest points and format values
+        const items = seriesList.map((s) => {
+            // Binary search (nearest neighbor)
+            const searchTime = hoverTime;
+            let closest = s.points[0];
+            let minDiff = Number.MAX_VALUE;
+            let lo = 0;
+            let hi = s.points.length - 1;
+            if (s.points.length > 0) {
+                while (lo < hi) {
+                    const mid = Math.floor((lo + hi) / 2);
+                    if (s.points[mid].time < searchTime) {
+                        lo = mid + 1;
+                    }
+                    else {
+                        hi = mid;
+                    }
+                }
+                const candidates = [lo, lo - 1, lo + 1].filter((i) => i >= 0 && i < s.points.length);
+                candidates.forEach((i) => {
+                    const p = s.points[i];
+                    const diff = Math.abs(p.time - searchTime);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = p;
+                    }
+                });
+            }
+            // Format Value
+            const defaults = SENSOR_CHART_DEFAULTS[s.id];
+            const isBinary = defaults?.binary === true ||
+                (s.unit === 'state' && defaults?.max === undefined) ||
+                s.id === 'optimal' ||
+                s.id === 'dehumidifier';
+            let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
+            if (isBinary) {
+                if (s.id === 'optimal') {
+                    if (closest.value === 1)
+                        valStr = 'Optimal';
+                    else
+                        valStr = closest.meta?.reasons || 'Not Optimal';
+                }
+                else if (s.id === 'dehumidifier') {
+                    valStr = closest.value === 1 ? 'ON' : 'OFF';
+                }
+                else {
+                    valStr = closest.value === 1 ? 'ON' : 'OFF';
+                }
+            }
+            else if ((s.id === 'exhaust' || s.id === 'humidifier') && closest.meta?.state) {
+                valStr = closest.meta.state;
+            }
+            return { title: s.title, value: valStr, color: s.color };
+        });
+        const locale = this.hass?.locale?.language || undefined;
+        const timeStr = new Date(hoverTime).toLocaleTimeString(locale, {
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+        this._activeTooltip = {
+            id: 'hover',
+            x: e.clientX - rect.left,
+            time: timeStr,
+            items,
+        };
+        this._hoverTime = hoverTime;
+    }
+    _formatTime(date) {
+        const locale = this.hass?.locale?.language || undefined;
+        return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    }
+};
+GrowspaceEnvChart.styles = i$6 `
+    :host {
+      display: block;
+      position: relative;
+    }
+
+    .gs-env-graph-card {
+      margin-top: 12px;
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .gs-env-graph-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    .gs-env-chart-container {
+      position: relative;
+      height: 180px;
+      background: #0d0d0d;
+      border-radius: 8px;
+      padding: 20px 40px 30px 50px;
+      cursor: crosshair;
+    }
+
+    .gs-tooltip {
+      position: absolute;
+      background: rgba(30, 30, 35, 0.9);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      pointer-events: none;
+      transform: translate(-50%, 0);
+      z-index: 1000;
+      white-space: nowrap;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .gs-cursor-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.3);
+      pointer-events: none;
+      z-index: 5;
+      border-left: 1px dashed rgba(255, 255, 255, 0.5);
+    }
+
+    .gs-legend-item {
+      display: flex;
+      align-items: center;
+      margin-right: 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+
+    .gs-legend-item:hover {
+      opacity: 1;
+    }
+
+    .chips-scroll-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE/Edge */
+      scroll-behavior: smooth;
+      flex: 1;
+      min-width: 0;
+      /* Removed static mask */
+      padding: 0 10px;
+      transition: mask-image 0.3s;
+    }
+
+    .chips-scroll-container.mask-right {
+      mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%);
+    }
+
+    .chips-scroll-container.mask-left {
+      mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%);
+    }
+
+    .chips-scroll-container.mask-left.mask-right {
+      mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 30px,
+        black calc(100% - 30px),
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 30px,
+        black calc(100% - 30px),
+        transparent 100%
+      );
+    }
+
+    .chips-scroll-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .scroll-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+      min-width: 24px;
+      color: #fff;
+    }
+
+    .scroll-nav:hover {
+      opacity: 1;
+    }
+
+    .scroll-nav svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    @media (pointer: coarse) {
+      .scroll-nav {
+        display: none;
+      }
+    }
+  `;
+__decorate([
+    c$2({ context: hassContext, subscribe: true }),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "hass", void 0);
+__decorate([
+    n$5({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "device", void 0);
+__decorate([
+    n$5({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "sensorHistory", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "metricKey", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "unit", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "color", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "title", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "icon", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", String)
+], GrowspaceEnvChart.prototype, "range", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", String)
+], GrowspaceEnvChart.prototype, "type", void 0);
+__decorate([
+    n$5({ type: Array }),
+    __metadata("design:type", Array)
+], GrowspaceEnvChart.prototype, "metrics", void 0);
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "isCombined", void 0);
+__decorate([
+    n$5({ type: Object }),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "metricConfig", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "_activeTooltip", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "_hoverTime", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "_canScrollLeft", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspaceEnvChart.prototype, "_canScrollRight", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Array)
+], GrowspaceEnvChart.prototype, "_renderSeries", void 0);
+GrowspaceEnvChart = __decorate([
+    t$2('growspace-env-chart')
+], GrowspaceEnvChart);
+
+class PlantClickEvent extends CustomEvent {
+    constructor(plant) {
+        super(PlantClickEvent.TYPE, {
+            detail: { plant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+PlantClickEvent.TYPE = 'plant-click';
+class AddPlantClickEvent extends CustomEvent {
+    constructor(row, col) {
+        super(AddPlantClickEvent.TYPE, {
+            detail: { row, col },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+AddPlantClickEvent.TYPE = 'add-plant-click';
+class PlantDropEvent extends CustomEvent {
+    constructor(originalEvent, targetRow, targetCol, targetPlant, sourcePlant) {
+        super(PlantDropEvent.TYPE, {
+            detail: { originalEvent, targetRow, targetCol, targetPlant, sourcePlant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+PlantDropEvent.TYPE = 'plant-drop';
+class SelectionChangedEvent extends CustomEvent {
+    constructor(selectedPlants) {
+        super(SelectionChangedEvent.TYPE, {
+            detail: { selectedPlants },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+SelectionChangedEvent.TYPE = 'selection-changed';
+class UpdatePlantEvent extends CustomEvent {
+    constructor(updates) {
+        super(UpdatePlantEvent.TYPE, {
+            detail: updates,
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+UpdatePlantEvent.TYPE = 'update-plant';
+class DeletePlantEvent extends CustomEvent {
+    constructor(plantId) {
+        super(DeletePlantEvent.TYPE, {
+            detail: { plantId },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+DeletePlantEvent.TYPE = 'delete-plant';
+class HarvestPlantEvent extends CustomEvent {
+    constructor(plant) {
+        super(HarvestPlantEvent.TYPE, {
+            detail: { plant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+HarvestPlantEvent.TYPE = 'harvest-plant';
+class FinishDryingEvent extends CustomEvent {
+    constructor(plant) {
+        super(FinishDryingEvent.TYPE, {
+            detail: { plant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+FinishDryingEvent.TYPE = 'finish-drying';
+class TakeCloneEvent extends CustomEvent {
+    constructor(plant, numClones) {
+        super(TakeCloneEvent.TYPE, {
+            detail: { plant, numClones },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+TakeCloneEvent.TYPE = 'take-clone';
+class MoveCloneEvent extends CustomEvent {
+    constructor(plant, targetGrowspace) {
+        super(MoveCloneEvent.TYPE, {
+            detail: { plant, targetGrowspace },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+MoveCloneEvent.TYPE = 'move-clone';
+class LibraryExportReadyEvent extends CustomEvent {
+    constructor(url) {
+        super(LibraryExportReadyEvent.TYPE, {
+            detail: { url },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+LibraryExportReadyEvent.TYPE = 'library-export-ready';
+
+class GrowspaceStore {
+    constructor(host) {
+        // State
+        this.state = {
+            selectedDevice: null,
+            strainLibrary: [],
+            activeDialog: { type: 'NONE' },
+            isEditMode: false,
+            selectedPlants: new Set(),
+            optimisticDeletedPlantIds: new Set(),
+            focusedPlantIndex: -1,
+            menuOpen: false,
+            notification: null,
+            isCompactView: false,
+            defaultApplied: false,
+            isLoading: true,
+            devices: [],
+        };
+        this.wsDataCache = {};
+        this._isFetchingWS = false;
+        this.handleTakeClone = (motherPlant, numClones) => {
+            const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
+            this.dataService
+                .takeClone({
+                mother_plant_id: plantId,
+                num_clones: numClones,
+            })
+                .then(() => {
+                console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
+            })
+                .catch((error) => {
+                console.error(`Failed to take clone: ${error.message}`);
+            });
+        };
+        this.host = host;
+        host.addController(this);
+        // Wrap state in a proxy to auto-trigger updates
+        this.state = new Proxy(this.state, {
+            set: (target, prop, value) => {
+                const oldVal = target[prop];
+                if (oldVal !== value) {
+                    // Use type assertion to avoid 'any' is not assignable to 'never' error
+                    target[prop] = value;
+                    this.host.requestUpdate();
+                }
+                return true;
+            }
+        });
+        console.log('GrowspaceStore initialized with Reactive Proxy');
+        this.dataService = new DataService();
+    }
+    hostConnected() {
+        // Lifecycle hook
+        // We can't subscribe here because hass might not be set yet.
+        // Logic handled in updateHass/subscribe
+    }
+    hostDisconnected() {
+        if (this._unsubEvents) {
+            this._unsubEvents();
+            this._unsubEvents = undefined;
+        }
+    }
+    updateHass(hass) {
+        this.hass = hass;
+        this.dataService.updateHass(hass);
+        this._ensureEventSubscription();
+        // If cache empty, fetch initial
+        if (Object.keys(this.wsDataCache).length === 0 && !this._isFetchingWS) {
+            this._refreshGrowspaceData();
+        }
+        else {
+            // Just re-calculate derived state (sync) because entities might have changed
+            this._updateDevicesState();
+        }
+        if (!this.state.selectedDevice && this.state.devices.length > 0) {
+            this.state.selectedDevice = this.state.devices[0].device_id;
+            // Ensure the UI knows we are ready to display
+            if (this.state.isLoading) {
+                this.state.isLoading = false;
+            }
+        }
+        this.pruneOptimisticDeletions();
+    }
+    async _ensureEventSubscription() {
+        if (this._unsubEvents || !this.hass)
+            return;
+        try {
+            this._unsubEvents = await this.hass.connection.subscribeEvents(() => this._refreshGrowspaceData(), // specific logic to handle event payload? Msg is empty usually.
+            'growspace_manager_updated');
+        }
+        catch (err) {
+            console.error('Failed to subscribe to growspace events', err);
+        }
+    }
+    async refreshData() {
+        await this._refreshGrowspaceData();
+    }
+    async _refreshGrowspaceData() {
+        if (!this.hass || this._isFetchingWS)
+            return;
+        this._isFetchingWS = true;
+        // Show loading spinner if we have no devices yet
+        if (this.state.devices.length === 0) {
+            this.state.isLoading = true;
+        }
+        try {
+            // fetchGrowspaceData without ID should return all data
+            const data = await this.dataService.fetchGrowspaceData();
+            this.wsDataCache = data || {};
+            this._updateDevicesState();
+        }
+        catch (e) {
+            console.error('Failed to fetch growspace data', e);
+        }
+        finally {
+            this._isFetchingWS = false;
+            // Only clear loading if we didn't find any devices OR if we already have a selection
+            // If we found devices but no selection, wait for auto-select logic in updateHass/initialize
+            if (this.state.devices.length === 0 || this.state.selectedDevice) {
+                this.state.isLoading = false;
+            }
+        }
+    }
+    _updateDevicesState() {
+        const devices = this.dataService.getGrowspaceDevices(this.wsDataCache);
+        this.state.devices = devices;
+        // Auto-select if needed (handles initial load race condition where updateHass hasn't run yet)
+        if (!this.state.selectedDevice && devices.length > 0) {
+            this.state.selectedDevice = devices[0].device_id;
+        }
+    }
+    requestUpdate() {
+        this.host.requestUpdate();
+    }
+    // --- Actions / Logic ---
+    // State Setters
+    setIsCompactView(value) {
+        this.state.isCompactView = value;
+    }
+    setDefaultApplied(value) {
+        this.state.defaultApplied = value;
+    }
+    showToast(message, type = 'info') {
+        this.state.notification = { message, type };
+        setTimeout(() => {
+            this.state.notification = null;
+        }, 4000);
+    }
+    initializeSelectedDevice(config) {
+        // Update compact view from config if not already set (or always?)
+        if (config?.compact !== undefined) {
+            this.state.isCompactView = config.compact;
+        }
+        const devices = this.state.devices;
+        if (!devices.length || this.state.selectedDevice)
+            return;
+        // Try to apply default from config
+        if (config?.default_growspace) {
+            const defaultDevice = devices.find((d) => d.device_id === config.default_growspace || d.name === config.default_growspace);
+            if (defaultDevice) {
+                this.state.selectedDevice = defaultDevice.device_id;
+                this.state.defaultApplied = true;
+                return;
+            }
+        }
+        // Fallback to first device
+        this.state.selectedDevice = devices[0].device_id;
+    }
+    // ...
+    fetchStrainLibrary(force = false) {
+        return this._fetchStrainLibraryImpl(force);
+    }
+    async _fetchStrainLibraryImpl(force) {
+        if (!this.hass)
+            return;
+        const CACHE_KEY = 'growspace_strain_library_v2';
+        const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
+        // 1. Try to load from cache
+        const cachedRaw = localStorage.getItem(CACHE_KEY);
+        let usedCache = false;
+        if (!force && cachedRaw) {
+            try {
+                const cache = JSON.parse(cachedRaw);
+                const age = Date.now() - (cache.timestamp || 0);
+                if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
+                    this.state.strainLibrary = cache.data;
+                    usedCache = true;
+                }
+            }
+            catch (e) {
+                console.warn('Failed to parse cached strain library', e);
+                localStorage.removeItem(CACHE_KEY); // Clear bad cache
+            }
+        }
+        // 2. Fetch from backend if no cache or invalid
+        if (!usedCache) {
+            try {
+                const currentStrains = await this.dataService.fetchStrainLibrary();
+                if (Array.isArray(currentStrains)) {
+                    this.state.strainLibrary = currentStrains;
+                    // Update cache
+                    const cacheData = {
+                        version: 2,
+                        timestamp: Date.now(),
+                        data: currentStrains,
+                    };
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+                }
+            }
+            catch (e) {
+                console.error('Failed to fetch strain library:', e);
+            }
+        }
+    }
+    handleKeyboardNavigation(key) {
+        if (this.state.isEditMode && key === 'Escape') {
+            this.exitEditMode();
+            return;
+        }
+        if (!this.state.selectedDevice)
+            return;
+        const devices = this.state.devices;
+        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
+        if (!device)
+            return;
+        const plants = device.plants.filter((p) => !this.state.optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
+        if (plants.length === 0)
+            return;
+        if (key === 'ArrowRight') {
+            this.setFocusedPlantIndex((this.state.focusedPlantIndex + 1) % plants.length);
+        }
+        else if (key === 'ArrowLeft') {
+            this.setFocusedPlantIndex((this.state.focusedPlantIndex - 1 + plants.length) % plants.length);
+        }
+        else if (key === 'Enter' || key === ' ') {
+            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
+                this.handlePlantClick(plants[this.state.focusedPlantIndex]);
+            }
+        }
+        else if (key === 'Delete' || key === 'Backspace') {
+            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
+                const focusedPlant = plants[this.state.focusedPlantIndex];
+                if (focusedPlant) {
+                    this.handleDeletePlant(focusedPlant.entity_id);
+                }
+            }
+            else if (this.state.selectedPlants.size > 0) {
+                // If multiple plants are selected, delete them
+                this.handleDeletePlant(Array.from(this.state.selectedPlants));
+            }
+        }
+    }
+    handleDeviceChange(deviceId) {
+        this.state.selectedDevice = deviceId;
+    }
+    togglePlantSelection(plantOrId) {
+        const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
+        if (!plantId)
+            return;
+        const newSet = new Set(this.state.selectedPlants);
+        if (newSet.has(plantId)) {
+            newSet.delete(plantId);
+        }
+        else {
+            newSet.add(plantId);
+        }
+        this.state.selectedPlants = newSet;
+    }
+    selectAllPlants() {
+        if (!this.state.selectedDevice)
+            return;
+        const devices = this.state.devices;
+        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
+        if (selectedDeviceData && selectedDeviceData.plants) {
+            selectedDeviceData.plants.forEach((plant) => {
+                const pId = plant.attributes.plant_id;
+                if (pId && !this.state.optimisticDeletedPlantIds.has(pId)) {
+                    this.state.selectedPlants.add(pId);
+                }
+            });
+            // Force update to trigger proxy set trap on a property if we mutated distinct property? 
+            // Actually Set and Map mutations don't trigger proxy 'set'.
+            // We must reassign the Set to trigger the proxy trap.
+            this.state.selectedPlants = new Set(this.state.selectedPlants);
+        }
+    }
+    setSelectedPlants(plantIds) {
+        this.state.selectedPlants = new Set(plantIds);
+    }
+    setFocusedPlantIndex(index) {
+        this.state.focusedPlantIndex = index;
+    }
+    clearPlantSelection() {
+        this.state.selectedPlants = new Set();
+    }
+    exitEditMode() {
+        this.state.isEditMode = false;
+        this.state.selectedPlants = new Set();
+    }
+    setEditMode(value) {
+        this.state.isEditMode = value;
+    }
+    setMenuOpen(value) {
+        this.state.menuOpen = value;
+    }
+    setActiveDialog(dialogState) {
+        this.state.activeDialog = dialogState;
+    }
+    closeActiveDialog() {
+        this.state.activeDialog = { type: 'NONE' };
+    }
+    handlePlantClick(plant) {
+        if (this.state.isEditMode && this.state.selectedPlants.size > 0) {
+            const plantId = plant.attributes.plant_id;
+            if (plantId && !this.state.selectedPlants.has(plantId)) {
+                this.togglePlantSelection(plantId);
+            }
+            this.openPlantOverviewDialog(plant, Array.from(this.state.selectedPlants));
+        }
+        else {
+            this.openPlantOverviewDialog(plant);
+        }
+    }
+    openPlantOverviewDialog(plant, selectedIds) {
+        this.state.activeDialog = {
+            type: 'PLANT_OVERVIEW',
+            payload: {
+                plant,
+                editedAttributes: { ...plant.attributes },
+                activeTab: 'dashboard',
+                selectedPlantIds: selectedIds,
+            },
+        };
+    }
+    async updatePlantFromDialog(dialogState) {
+        const { plant, editedAttributes, selectedPlantIds } = dialogState;
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
+        const isBulkEdit = targetIds.length > 1;
+        // Use extracted pure function for payload generation
+        const payloadTemplate = PlantUtils.mapDialogToApiPayload(editedAttributes, isBulkEdit);
+        try {
+            const updatePromises = targetIds.map((id) => {
+                const payload = { ...payloadTemplate, plant_id: id };
+                return this.dataService.updatePlant(payload);
+            });
+            await Promise.all(updatePromises);
+            this.closeActiveDialog();
+            if (this.state.isEditMode) {
+                this.state.selectedPlants = new Set();
+                this.state.isEditMode = false;
+            }
+        }
+        catch (err) {
+            console.error('Error updating plant(s):', err);
+        }
+    }
+    async updatePlant(plantId, updates) {
+        try {
+            await this.dataService.updatePlant({ plant_id: plantId, ...updates });
+            this.showToast('Plant updated', 'success');
+            // Dialog might stay open or close? Usually stay open for overview.
+        }
+        catch (e) {
+            console.error('Failed to update plant:', e);
+            this.showToast(`Failed to update plant: ${e.message}`, 'error');
+        }
+    }
+    async handleDeletePlant(plantId) {
+        const ids = Array.isArray(plantId) ? plantId : [plantId];
+        const newOptimistic = new Set(this.state.optimisticDeletedPlantIds);
+        ids.forEach((id) => newOptimistic.add(id));
+        this.state.optimisticDeletedPlantIds = newOptimistic;
+        try {
+            // Check if backend supports bulk delete? If not, loop.
+            // Assuming dataService.deletePlant takes one ID.
+            await Promise.all(ids.map((id) => this.dataService.removePlant(id)));
+            this.showToast('Plant(s) deleted', 'success');
+            // Do NOT remove from optimistic set here.
+            // We wait for updateHass/pruneOptimisticDeletions to confirm they are gone from HA state.
+            ids.forEach((id) => {
+                this.state.selectedPlants.delete(id);
+            });
+            if (this.state.activeDialog.type === 'PLANT_OVERVIEW') {
+                this.closeActiveDialog();
+            }
+            this.updateGrid();
+        }
+        catch (e) {
+            console.error('Failed to delete plant:', e);
+            this.showToast(`Failed to delete: ${e.message}`, 'error');
+            const revertedOptimistic = new Set(this.state.optimisticDeletedPlantIds);
+            ids.forEach((id) => revertedOptimistic.delete(id));
+            this.state.optimisticDeletedPlantIds = revertedOptimistic;
+        }
+    }
+    pruneOptimisticDeletions() {
+        if (this.state.optimisticDeletedPlantIds.size === 0)
+            return;
+        const allPlantIds = new Set();
+        const devices = this.state.devices;
+        devices.forEach((d) => d.plants.forEach((p) => allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))));
+        const toRemove = new Set();
+        this.state.optimisticDeletedPlantIds.forEach((id) => {
+            // If the plant ID is NOT in the current data, it means deletion is confirmed/propagated.
+            // So we can stop masking it.
+            if (!allPlantIds.has(id)) {
+                toRemove.add(id);
+            }
+        });
+        if (toRemove.size > 0) {
+            const newOptimistic = new Set(this.state.optimisticDeletedPlantIds);
+            toRemove.forEach((id) => newOptimistic.delete(id));
+            this.state.optimisticDeletedPlantIds = newOptimistic;
+        }
+    }
+    async handleMovePlantToNextStage(plant) {
+        const stage = plant.attributes?.stage;
+        let targetGrowspace = '';
+        const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
+        if (!stage || !movableStages.has(stage)) {
+            this.showToast('Plant must be in mother or flower or dry or cure stage to move. stage is ' + stage, 'error');
+            return;
+        }
+        if (stage === 'flower') {
+            targetGrowspace = 'dry';
+        }
+        else if (stage === 'dry') {
+            targetGrowspace = 'cure';
+        }
+        else if (stage === 'mother') {
+            targetGrowspace = 'clone';
+        }
+        else {
+            console.error('Unknown stage, cannot move plant', targetGrowspace);
+            targetGrowspace = 'error';
+        }
+        try {
+            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+            await this.dataService.harvestPlant(plantId, targetGrowspace);
+            this.closeActiveDialog();
+        }
+        catch (err) {
+            console.error('Error moving plant to next stage:', err);
+        }
+    }
+    async movePlantToGrowspace(plant, targetGrowspace) {
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        const currentStage = plant.attributes?.stage || 'unknown';
+        try {
+            if (currentStage === 'clone') {
+                // Clones use specific service to handle transition to Veg
+                await this.dataService.moveClone(plantId, targetGrowspace);
+            }
+            else {
+                // Other stages use harvest loop (flower->dry->cure etc)
+                await this.dataService.harvestPlant(plantId, targetGrowspace);
+            }
+            this.showToast(`Plant moved to ${targetGrowspace}`, 'success');
+            await this.refreshData();
+            this.closeActiveDialog();
+        }
+        catch (err) {
+            console.error('Error moving plant:', err);
+            this.showToast(`Failed to move plant: ${err.message}`, 'error');
+        }
+    }
+    async addStrain(strainData) {
+        if (!strainData.strain)
+            return;
+        const payload = {
+            strain: strainData.strain,
+            phenotype: strainData.phenotype,
+            breeder: strainData.breeder,
+            type: strainData.type,
+            flowering_days_min: strainData.flowering_days_min
+                ? Number(strainData.flowering_days_min)
+                : undefined,
+            flowering_days_max: strainData.flowering_days_max
+                ? Number(strainData.flowering_days_max)
+                : undefined,
+            lineage: strainData.lineage,
+            sex: strainData.sex,
+            description: strainData.description,
+            image: strainData.image,
+            image_crop_meta: strainData.image_crop_meta,
+            sativa_percentage: strainData.sativa_percentage,
+            indica_percentage: strainData.indica_percentage,
+        };
+        try {
+            await this.dataService.addStrain(payload);
+            this.showToast('Strain saved successfully!', 'success');
+            await this.fetchStrainLibrary(true);
+        }
+        catch (err) {
+            console.error('Error adding strain:', err);
+        }
+    }
+    async removeStrain(strainKey) {
+        try {
+            const parts = strainKey.split('|');
+            const strain = parts[0];
+            const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
+            await this.dataService.removeStrain(strain, phenotype);
+            if (this.state.strainLibrary) {
+                this.state.strainLibrary = this.state.strainLibrary.filter((s) => s.key !== strainKey);
+            }
+            await this.fetchStrainLibrary(true);
+        }
+        catch (err) {
+            console.error('Error removing strain:', err);
+        }
+    }
+    updateGrid() {
+        // Force refresh from HA
+        if (this.hass) {
+            this.dataService.updateHass(this.hass);
+        }
+        // Trigger generic request update, but also maybe refresh WS data if we expect backend changes?
+        // Actions usually trigger backend changes which fire growspace_updated, so subscription handles it.
+        this.requestUpdate();
+    }
+    async handleDrop(targetRow, targetCol, targetPlant, sourcePlant) {
+        if (!sourcePlant || !this.state.selectedDevice)
+            return;
+        try {
+            if (targetPlant) {
+                const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
+                const targetId = targetPlant.attributes.plant_id || targetPlant.entity_id.replace('sensor.', '');
+                if (sourceId === targetId)
+                    return;
+                await this.dataService.swapPlants(sourceId, targetId);
+                this.updateGrid();
+            }
+            else {
+                await this.movePlant(sourcePlant, targetRow, targetCol);
+            }
+        }
+        catch (err) {
+            console.error('Error during drag-and-drop:', err);
+        }
+    }
+    async movePlant(plant, newRow, newCol) {
+        try {
+            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+            await this.dataService.updatePlant({
+                plant_id: plantId,
+                row: newRow,
+                col: newCol,
+            });
+            this.updateGrid();
+        }
+        catch (err) {
+            console.error('Error moving plant:', err);
+        }
+    }
+    async handleAddGrowspace(detail) {
+        const { name, rows, plants_per_row, notification_service } = detail;
+        if (!name) {
+            this.showToast('Name is required', 'error');
+            return;
+        }
+        try {
+            await this.dataService.addGrowspace({
+                name,
+                rows: rows || 4,
+                plants_per_row: plants_per_row || 4,
+                notification_service: notification_service || 'mobile_app_notify',
+            });
+            this.showToast('Growspace added successfully!', 'success');
+            await this.refreshData();
+            this.closeActiveDialog();
+        }
+        catch (e) {
+            this.showToast(`Error: ${e.message}`, 'error');
+        }
+    }
+    async handleUpdateGrowspace(detail) {
+        console.log('[GrowspaceStore] handleUpdateGrowspace', detail);
+        try {
+            await this.dataService.updateGrowspace({
+                growspace_id: detail.growspace_id,
+                name: detail.name,
+                rows: detail.rows,
+                plants_per_row: detail.plants_per_row,
+            });
+            this.showToast('Growspace updated successfully', 'success');
+            await this.refreshData();
+            this.closeActiveDialog();
+        }
+        catch (e) {
+            console.error('[GrowspaceStore] Update failed:', e);
+            this.showToast(`Failed to update growspace: ${e.message}`, 'error');
+        }
+    }
+    async harvestPlant(plant) {
+        await this.handleMovePlantToNextStage(plant);
+    }
+    async finishDryingPlant(plant) {
+        await this.handleMovePlantToNextStage(plant);
+    }
+    openAddPlantDialog(row, col) {
+        console.log('[GrowspaceStore] openAddPlantDialog called', { row, col });
+        // If row/col specified, use them (clicked from grid)
+        if (row !== undefined && col !== undefined) {
+            this.fetchStrainLibrary();
+            this.setActiveDialog({
+                type: 'ADD_PLANT',
+                payload: { row, col },
+            });
+            return;
+        }
+        // Auto-find free slot if not specified
+        if (!this.state.selectedDevice) {
+            console.warn('[GrowspaceStore] No selected device for Add Plant');
+            return;
+        }
+        const devices = this.state.devices;
+        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
+        if (device) {
+            const rows = device.rows || 4;
+            const cols = device.plants_per_row || 4;
+            const { row: targetRow, col: targetCol } = PlantUtils.findFirstAvailableSlot(device.plants || [], rows, cols);
+            console.log('[GrowspaceStore] Found slot', { targetRow, targetCol });
+            // If full, default to 1,1 or last found (let backend reject or user change)
+            this.fetchStrainLibrary();
+            // Convert 1-based backend coordinates to 0-based dialog coordinates
+            this.setActiveDialog({
+                type: 'ADD_PLANT',
+                payload: { row: targetRow - 1, col: targetCol - 1 },
+            });
+            console.log('[GrowspaceStore] Set Active Dialog ADD_PLANT');
+        }
+    }
+    async clonePlant(plant, numClones) {
+        await this.handleTakeClone(plant, numClones);
+    }
+    async confirmAddPlant(detail) {
+        const devices = this.state.devices;
+        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
+        if (!selectedDeviceData)
+            return;
+        // Convert 0-based dialog coordinates to 1-based backend coordinates
+        const row = detail.row + 1;
+        const col = detail.col + 1;
+        const { strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start, } = detail;
+        if (!strain) {
+            this.showToast('Please select a strain', 'error');
+            return;
+        }
+        try {
+            await this.dataService.addPlant({
+                growspace_id: selectedDeviceData.device_id,
+                strain,
+                phenotype: phenotype || '',
+                row,
+                col,
+                veg_start,
+                flower_start,
+                seedling_start,
+                mother_start,
+                clone_start,
+                dry_start,
+                cure_start,
+            });
+            this.showToast('Plant added successfully', 'success');
+            this.closeActiveDialog();
+        }
+        catch (e) {
+            console.error(e);
+            this.showToast('Failed to add plant', 'error');
+        }
+    }
+    async analyzeGrowspace(query, isGlobal = false) {
+        const dialogPayload = this.state.activeDialog.type === 'GROW_MASTER' ? this.state.activeDialog.payload : null;
+        if (!dialogPayload)
+            return;
+        // Update dialog state to loading
+        this.setActiveDialog({
+            type: 'GROW_MASTER',
+            payload: { ...dialogPayload, isLoading: true, response: null },
+        });
+        try {
+            let result;
+            if (isGlobal || dialogPayload.mode === 'all') {
+                result = await this.dataService.analyzeAllGrowspaces();
+            }
+            else {
+                result = await this.dataService.askGrowAdvice(this.state.selectedDevice || '', query);
+            }
+            const responseText = typeof result.response === 'string'
+                ? result.response
+                : result.response?.response || JSON.stringify(result);
+            this.setActiveDialog({
+                type: 'GROW_MASTER',
+                payload: { ...dialogPayload, isLoading: false, response: responseText },
+            });
+        }
+        catch (err) {
+            console.error('Error asking Grow Master:', err);
+            this.setActiveDialog({
+                type: 'GROW_MASTER',
+                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
+            });
+        }
+    }
+    async getStrainRecommendation(userQuery) {
+        const dialogPayload = this.state.activeDialog.type === 'STRAIN_RECOMMENDATION'
+            ? this.state.activeDialog.payload
+            : null;
+        if (!dialogPayload)
+            return;
+        this.setActiveDialog({
+            type: 'STRAIN_RECOMMENDATION',
+            payload: { ...dialogPayload, isLoading: true, response: null },
+        });
+        try {
+            const result = await this.dataService.getStrainRecommendation(userQuery);
+            const responseText = typeof result.response === 'string' ? result.response : JSON.stringify(result);
+            this.setActiveDialog({
+                type: 'STRAIN_RECOMMENDATION',
+                payload: { ...dialogPayload, isLoading: false, response: responseText },
+            });
+        }
+        catch (err) {
+            console.error('Error getting strain recommendation:', err);
+            this.setActiveDialog({
+                type: 'STRAIN_RECOMMENDATION',
+                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
+            });
+        }
+    }
+    openStrainRecommendationDialog() {
+        this.setActiveDialog({
+            type: 'STRAIN_RECOMMENDATION',
+            payload: {
+                isLoading: false,
+                response: null,
+            },
+        });
+    }
+    openLogbookDialog() {
+        if (!this.state.selectedDevice)
+            return;
+        this.setActiveDialog({
+            type: 'LOGBOOK',
+            payload: {
+                growspaceId: this.state.selectedDevice,
+            },
+        });
+    }
+    handleExportLibrary() {
+        // Logic needs to be adapted since event subscription on HASS connection is component specific?
+        // Actually we can do it here if we assume `hass` is available.
+        // But `subscribeEvents` is on `hass.connection`.
+        // We can emit a custom event or just implement the logic here.
+        // The download part triggers a browser action (window location or anchor click).
+        // It's better to keep DOM interaction like download in the component?
+        // Or pass a callback.
+        // I'll keep it simple: Implement logic here, but for the download part, creating an element on document
+        // might be slightly unclean in a store but it works.
+        this._handleExportLibraryLogic();
+    }
+    async _handleExportLibraryLogic() {
+        if (!this.hass)
+            return;
+        const unsubscribe = await this.hass.connection.subscribeEvents((event) => {
+            if (event.data && event.data.url) {
+                // Dispatch event to view layer for DOM-based download
+                this.host.dispatchEvent(new LibraryExportReadyEvent(event.data.url));
+                unsubscribe();
+            }
+        }, 'growspace_manager_strain_library_exported');
+        try {
+            await this.dataService.exportStrainLibrary();
+            this.showToast('Export started...', 'info');
+        }
+        catch (err) {
+            console.error('Failed to call export service', err);
+            unsubscribe();
+        }
+    }
+    async toggleDehumidifierControl(deviceId) {
+        const device = this.state.devices.find((d) => d.device_id === deviceId);
+        if (!device || !device.overview_entity_id || !this.hass)
+            return;
+        const stateObj = this.hass.states[device.overview_entity_id];
+        const attrs = stateObj?.attributes || {};
+        const currentStatus = attrs.dehumidifier_control_enabled === true;
+        try {
+            await this.dataService.setDehumidifierControl(deviceId, !currentStatus);
+            console.log(`Toggled dehumidifier control to ${!currentStatus} for ${deviceId}`);
+            this.showToast(`Dehumidifier control ${!currentStatus ? 'enabled' : 'disabled'}`, 'success');
+        }
+        catch (err) {
+            console.error('Failed to toggle dehumidifier control:', err);
+            this.showToast(`Failed to toggle dehumidifier: ${err.message}`, 'error');
+        }
+    }
+    async performImport(file, replace) {
+        if (!file)
+            return;
+        try {
+            const result = await this.dataService.importStrainLibrary(file, replace);
+            this.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
+            await this.fetchStrainLibrary(true);
+        }
+        catch (err) {
+            console.error('Import failed:', err);
+            this.showToast(`Import failed: ${err.message}`, 'error');
+        }
+    }
+}
+
+const sharedStyles = i$6 `
+  /* --- Glassmorphism Surfaces --- */
+  .glass-surface {
+    background: rgba(20, 20, 24, 0.6);
+    background-image: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.03) 0%,
+      rgba(255, 255, 255, 0.01) 100%
+    );
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 4px 24px -1px rgba(0, 0, 0, 0.2),
+      0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+    color: var(--primary-text-color, #fff);
+  }
+
+  .glass-panel {
+    border-radius: var(--border-radius-xl, 28px);
+    padding: var(--spacing-lg, 24px);
+  }
+
+  .glass-dialog-container {
+    border-radius: var(--border-radius-lg, 16px);
+    overflow: hidden;
+    background: rgba(20, 20, 20, 0.85); /* Slightly darker for dialogs */
+    backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  /* --- Cards --- */
+  .detail-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius-md, 12px);
+    padding: var(--spacing-md, 16px);
+  }
+
+
+`;
+
+const uiStyles = i$6 `
+  /* --- MD3 Buttons --- */
+  .md3-button {
+    height: 40px;
+    padding: 0 24px;
+    border-radius: 20px; /* Full-rounded MD3 style */
+    border: none;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    font-size: 0.875rem;
+    letter-spacing: 0.1px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    text-transform: none;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+    outline: none;
+    background: transparent;
+    color: var(--primary-text-color, #fff);
+  }
+
+  /* MD3 State Layer Effect */
+  .md3-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
+    pointer-events: none;
+  }
+
+  .md3-button:hover::before {
+    opacity: 0.08;
+  }
+
+  .md3-button:focus-visible::before {
+    opacity: 0.12;
+  }
+
+  .md3-button:active::before {
+    opacity: 0.12;
+  }
+
+  /* Focus visible state for accessibility */
+  .md3-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  /* Primary Filled Button */
+  .md3-button.primary {
+    background: var(--primary-color, #4caf50);
+    color: var(--text-primary-color, #fff);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.3),
+      0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  }
+
+  .md3-button.primary:hover {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.3),
+      0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  }
+
+  .md3-button.primary:active {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.3),
+      0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Tonal Button (MD3 Filled Tonal variant) */
+  .md3-button.tonal {
+    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
+    color: var(--primary-color, #4caf50);
+  }
+
+  .md3-button.tonal:hover {
+    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.16);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.3),
+      0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  }
+
+  .md3-button.tonal:active {
+    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
+  }
+
+  /* Text Button */
+  .md3-button.text {
+    background: transparent;
+    color: var(--primary-color, #4caf50);
+    padding: 0 12px;
+  }
+
+  .md3-button.text:hover {
+    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.08);
+  }
+
+  .md3-button.text:active {
+    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
+  }
+
+  /* Danger/Error Button (Outlined variant with error color) */
+  .md3-button.danger {
+    background: transparent;
+    color: var(--error-color, #f44336);
+    border: 1px solid currentColor;
+  }
+
+  .md3-button.danger::before {
+    background: var(--error-color, #f44336);
+  }
+
+  .md3-button.danger:hover {
+    background: rgba(244, 67, 54, 0.08);
+    border-color: var(--error-color, #f44336);
+  }
+
+  .md3-button.danger:active {
+    background: rgba(244, 67, 54, 0.12);
+  }
+
+  .md3-button.danger:focus-visible {
+    outline-color: var(--error-color, #f44336);
+  }
+
+  /* Disabled state */
+  .md3-button:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .md3-button:disabled::before {
+    display: none;
+  }
+
+  .button-group {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    margin-top: var(--spacing-lg);
+  }
+
+  /* --- MD3 Inputs --- */
+  .md3-input-group {
+    position: relative;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px 4px 0 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .md3-input-group:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-bottom-color: rgba(255, 255, 255, 0.9);
+  }
+
+  .md3-input-group:focus-within {
+    background: rgba(255, 255, 255, 0.08);
+    border-bottom: 2px solid var(--primary-color, #4caf50);
+  }
+
+  /* Error state for inputs */
+  .md3-input-group.error {
+    border-bottom-color: var(--error-color, #f44336);
+  }
+
+  .md3-input-group.error .md3-label {
+    color: var(--error-color, #f44336);
+  }
+
+  .md3-label {
+    position: absolute;
+    left: 16px;
+    top: 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    letter-spacing: 0.4px;
+  }
+
+  .md3-input-group:focus-within .md3-label {
+    color: var(--primary-color, #4caf50);
+  }
+
+  .md3-input {
+    width: 100%;
+    padding: 24px 16px 8px;
+    border: none;
+    background: transparent;
+    color: #ffffff;
+    font-size: 1rem;
+    font-family: 'Roboto', sans-serif;
+    box-sizing: border-box;
+    outline: none;
+  }
+
+  .md3-input::placeholder {
+    color: rgba(255, 255, 255, 0.38);
+    opacity: 1;
+  }
+
+  .md3-input:focus {
+    outline: none;
+  }
+
+  .md3-input:disabled {
+    color: rgba(255, 255, 255, 0.38);
+    cursor: not-allowed;
+  }
+
+  .md3-input-group:has(.md3-input:disabled) {
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom-style: dotted;
+  }
+
+  .md3-supporting-text {
+    padding: 4px 16px 0;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 0.4px;
+  }
+
+  .md3-supporting-text.error {
+    color: var(--error-color, #f44336);
+  }
+
+  /* --- Glass Dialog Container --- */
+  .glass-dialog-container {
+    background: var(--growspace-card-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    border-radius: 28px; /* MD3 extra large rounding */
+    padding: var(--spacing-lg);
+    color: #ffffff; /* Force white text for contrast against dark glass */
+    margin: -24px; /* Counteract default dialog padding if necessary */
+    min-width: 320px;
+  }
+
+  /* --- Toast Notification --- */
+  .toast-notification {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #323232;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: slideUpFade 0.3s ease-out;
+    min-width: 200px;
+    text-align: center;
+  }
+
+  .toast-notification.success {
+    background: var(--success-color, #4caf50);
+    color: #fff;
+  }
+
+  .toast-notification.error {
+    background: var(--error-color, #f44336);
+    color: #fff;
+  }
+
+  @keyframes slideUpFade {
+    from {
+      opacity: 0;
+      transform: translate(-50%, 20px);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+
+  /* --- Loading --- */
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+  }
+
+  .loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-left-color: var(--primary-color, #4caf50);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
+const dialogStyles = [
+    sharedStyles,
+    uiStyles,
+    i$6 `
+  .glass-dialog-container {
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh;
+    color: #fff;
+    font-family: 'Roboto', sans-serif;
+    /* Background/Shadow handled by sharedStyles, but specific flex layout kept here */
+  }
+
+  /* Restored from 1.0.24.3.0 */
+  .dialog-content-grid {
+    padding: 24px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .dialog-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .dialog-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+    color: var(--stage-color, #4caf50);
+  }
+
+  .dialog-title-group {
+    flex: 1;
+  }
+
+  .dialog-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+  }
+
+  .dialog-subtitle {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    margin-top: 2px;
+  }
+
+  .detail-card h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 1rem;
+    font-weight: 500;
+    opacity: 0.9;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+  }
+
+  .button-group {
+    padding: 16px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .row-col-grid {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .row-col-grid > * {
+    flex: 1;
+    min-width: 0;
+  }
+
+  @media (max-width: 450px) {
+    .glass-dialog-container {
+      width: 100vw;
+      max-width: 100%;
+      height: 100vh;
+      border-radius: 0;
+    }
+    .button-group {
+      justify-content: center;
+    }
+    .md3-button {
+      flex: 1 1 auto;
+      min-width: 100px;
+    }
+    .dialog-header {
+      padding: 12px 16px;
+    }
+
+    /* Restored responsive rules */
+    .dialog-content-grid {
+      flex: 1;
+      min-height: 0;
+      padding: 8px;
+    }
+    .dialog-header .md3-button.text {
+      flex: 0;
+    }
+    .detail-card .md3-button {
+      flex: 1 1 1;
+    }
+  }
+`
+];
+
+let Md3TextInput = class Md3TextInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = '';
+        this.type = 'text';
+        this.placeholder = '';
+        this.list = '';
+    }
+    _handleInput(e) {
+        const value = e.target.value;
+        this.value = value;
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${this.label}</label>
+        <input
+          .type=${this.type}
+          class="md3-input"
+          .value=${this.value}
+          .placeholder=${this.placeholder}
+          list=${this.list}
+          @input=${this._handleInput}
+        />
+      </div>
+    `;
+    }
+};
+Md3TextInput.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+        width: 100%;
+      }
+    `,
+];
+__decorate([
+    n$5(),
+    __metadata("design:type", Object)
+], Md3TextInput.prototype, "label", void 0);
+__decorate([
+    n$5(),
+    __metadata("design:type", Object)
+], Md3TextInput.prototype, "value", void 0);
+__decorate([
+    n$5(),
+    __metadata("design:type", Object)
+], Md3TextInput.prototype, "type", void 0);
+__decorate([
+    n$5(),
+    __metadata("design:type", Object)
+], Md3TextInput.prototype, "placeholder", void 0);
+__decorate([
+    n$5(),
+    __metadata("design:type", Object)
+], Md3TextInput.prototype, "list", void 0);
+Md3TextInput = __decorate([
+    t$2('md3-text-input')
+], Md3TextInput);
+
+let Md3NumberInput = class Md3NumberInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = 0;
+        this.min = 0;
+        this.placeholder = '';
+    }
+    _handleInput(e) {
+        const value = e.target.value;
+        this.value = Number(value);
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${this.label}</label>
+        <input
+          type="number"
+          class="md3-input"
+          .min=${this.min}
+          .max=${this.max}
+          .value=${this.value}
+          .placeholder=${this.placeholder}
+          @input=${this._handleInput}
+        />
+      </div>
+    `;
+    }
+};
+Md3NumberInput.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+        width: 100%;
+      }
+    `,
+];
+__decorate([
+    n$5(),
+    __metadata("design:type", Object)
+], Md3NumberInput.prototype, "label", void 0);
+__decorate([
+    n$5({ type: Number }),
+    __metadata("design:type", Object)
+], Md3NumberInput.prototype, "value", void 0);
+__decorate([
+    n$5({ type: Number }),
+    __metadata("design:type", Object)
+], Md3NumberInput.prototype, "min", void 0);
+__decorate([
+    n$5({ type: Number }),
+    __metadata("design:type", Number)
+], Md3NumberInput.prototype, "max", void 0);
+__decorate([
+    n$5(),
+    __metadata("design:type", Object)
+], Md3NumberInput.prototype, "placeholder", void 0);
+Md3NumberInput = __decorate([
+    t$2('md3-number-input')
+], Md3NumberInput);
+
+let Md3Select = class Md3Select extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = '';
+        this.options = [];
+    }
+    _handleChange(e) {
+        const value = e.target.value;
+        this.value = value;
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${this.label}</label>
+        <select class="md3-input" .value=${this.value} @change=${this._handleChange}>
+          <option value="">Select...</option>
+          ${this.options.map((opt) => {
+            const label = typeof opt === 'string' ? opt : opt.label;
+            const val = typeof opt === 'string' ? opt : opt.value;
+            return x `<option value="${val}" ?selected=${val === this.value}>${label}</option>`;
+        })}
+        </select>
+      </div>
+    `;
+    }
+};
+Md3Select.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+        width: 100%;
+      }
+    `,
+];
+__decorate([
+    n$5(),
+    __metadata("design:type", Object)
+], Md3Select.prototype, "label", void 0);
+__decorate([
+    n$5(),
+    __metadata("design:type", Object)
+], Md3Select.prototype, "value", void 0);
+__decorate([
+    n$5({ type: Array }),
+    __metadata("design:type", Array)
+], Md3Select.prototype, "options", void 0);
+Md3Select = __decorate([
+    t$2('md3-select')
+], Md3Select);
+
+let Md3DateInput = class Md3DateInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = '';
+        this.time = false; // if true, uses datetime-local
+    }
+    _handleInput(e) {
+        const value = e.target.value;
+        this.value = value;
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        let formattedValue = this.value;
+        if (this.time) {
+            formattedValue = PlantUtils.toDateTimeLocal(this.value);
+        }
+        else {
+            formattedValue = this.value ? this.value.split('T')[0] : '';
+        }
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${this.label}</label>
+        <input
+          .type=${this.time ? 'datetime-local' : 'date'}
+          class="md3-input"
+          .value=${formattedValue}
+          @input=${this._handleInput}
+          @click=${(e) => e.target.showPicker()}
+        />
+      </div>
+    `;
+    }
+};
+Md3DateInput.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+        width: 100%;
+      }
+    `,
+];
+__decorate([
+    n$5(),
+    __metadata("design:type", Object)
+], Md3DateInput.prototype, "label", void 0);
+__decorate([
+    n$5(),
+    __metadata("design:type", Object)
+], Md3DateInput.prototype, "value", void 0);
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], Md3DateInput.prototype, "time", void 0);
+Md3DateInput = __decorate([
+    t$2('md3-date-input')
+], Md3DateInput);
+
+let AddPlantDialog = class AddPlantDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.strainLibrary = [];
+        this.growspaceName = '';
+        this.open = false;
+        // Initialize with values passed via methods or defaults
+        this.strain = '';
+        this.phenotype = '';
+        this.row = 0;
+        this.col = 0;
+        // Date fields
+        this.veg_start = '';
+        this.flower_start = '';
+        this.seedling_start = '';
+        this.mother_start = '';
+        this.clone_start = '';
+        this.dry_start = '';
+        this.cure_start = '';
+    }
+    // Provide a method to set initial data from parent if needed
+    setInitialState(row, col, strain = '', phenotype = '') {
+        this.row = row;
+        this.col = col;
+        this.strain = strain;
+        this.phenotype = phenotype;
+        // resetting dates
+        this.veg_start = '';
+        this.flower_start = '';
+        this.seedling_start = '';
+        this.mother_start = '';
+        this.clone_start = '';
+        this.dry_start = '';
+        this.cure_start = '';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _confirm() {
+        const payload = {
+            row: this.row,
+            col: this.col,
+            strain: this.strain,
+            phenotype: this.phenotype,
+            veg_start: this.veg_start,
+            flower_start: this.flower_start,
+            seedling_start: this.seedling_start,
+            mother_start: this.mother_start,
+            clone_start: this.clone_start,
+            dry_start: this.dry_start,
+            cure_start: this.cure_start,
+        };
+        this.dispatchEvent(new CustomEvent('add-plant-submit', {
+            detail: payload,
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        console.log('[AddPlantDialog] render called, open:', this.open, 'strains:', this.strainLibrary?.length);
+        if (!this.open)
+            return x ``;
+        const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="glass-dialog-container">
+          <!-- HEADER -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiSprout}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Add New Plant</h2>
+              <div class="dialog-subtitle">Enter plant details below</div>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="overview-grid">
+            <!-- IDENTITY CARD -->
+            <div class="detail-card">
+              <h3>Identity & Location</h3>
+              <md3-select
+                label="Strain *"
+                .value=${this.strain}
+                .options=${uniqueStrains}
+                @change=${(e) => (this.strain = e.detail)}
+              ></md3-select>
+              <md3-text-input
+                label="Phenotype"
+                .value=${this.phenotype}
+                @change=${(e) => (this.phenotype = e.detail)}
+              ></md3-text-input>
+              <div class="row-col-grid">
+                <md3-number-input
+                  label="Row"
+                  .value=${this.row + 1}
+                  @change=${(e) => (this.row = parseInt(e.detail) - 1)}
+                ></md3-number-input>
+                <md3-number-input
+                  label="Col"
+                  .value=${this.col + 1}
+                  @change=${(e) => (this.col = parseInt(e.detail) - 1)}
+                ></md3-number-input>
+              </div>
+            </div>
+
+            <!-- TIMELINE CARD -->
+            <div class="detail-card">
+              <h3>Timeline</h3>
+              ${this.renderTimelineContent()}
+            </div>
+          </div>
+
+          <!-- ACTION BUTTONS -->
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+            <button class="md3-button primary" @click=${this._confirm}>
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiSprout}"></path>
+              </svg>
+              Add Plant
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    renderTimelineContent() {
+        const name = this.growspaceName.toLowerCase();
+        if (name.includes('mother')) {
+            return x `<md3-date-input
+        label="Mother Start"
+        .value=${this.mother_start}
+        @change=${(e) => (this.mother_start = e.detail)}
+      ></md3-date-input>`;
+        }
+        else if (name.includes('clone')) {
+            return x `<md3-date-input
+        label="Clone Start"
+        .value=${this.clone_start}
+        @change=${(e) => (this.clone_start = e.detail)}
+      ></md3-date-input>`;
+        }
+        else if (name.includes('dry')) {
+            return x `<md3-date-input
+        label="Dry Start"
+        .value=${this.dry_start}
+        @change=${(e) => (this.dry_start = e.detail)}
+      ></md3-date-input>`;
+        }
+        else if (name.includes('cure')) {
+            return x `<md3-date-input
+        label="Cure Start"
+        .value=${this.cure_start}
+        @change=${(e) => (this.cure_start = e.detail)}
+      ></md3-date-input>`;
+        }
+        else {
+            return x `
+        <md3-date-input
+          label="Seedling Start"
+          .value=${this.seedling_start}
+          @change=${(e) => (this.seedling_start = e.detail)}
+        ></md3-date-input>
+        <md3-date-input
+          label="Veg Start"
+          .value=${this.veg_start}
+          @change=${(e) => (this.veg_start = e.detail)}
+        ></md3-date-input>
+        <md3-date-input
+          label="Flower Start"
+          .value=${this.flower_start}
+          @change=${(e) => (this.flower_start = e.detail)}
+        ></md3-date-input>
+      `;
+        }
+    }
+};
+AddPlantDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      .overview-grid {
+        padding: 24px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      @media (max-width: 450px) {
+        .overview-grid {
+          flex: 1;
+          min-height: 0;
+          padding: 16px;
+        }
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true }),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Array }),
+    __metadata("design:type", Array)
+], AddPlantDialog.prototype, "strainLibrary", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "growspaceName", void 0);
+__decorate([
+    n$5({ type: Boolean, reflect: true }),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "open", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "strain", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "phenotype", void 0);
+__decorate([
+    n$5({ type: Number }),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "row", void 0);
+__decorate([
+    n$5({ type: Number }),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "col", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "veg_start", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "flower_start", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "seedling_start", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "mother_start", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "clone_start", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "dry_start", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "cure_start", void 0);
+AddPlantDialog = __decorate([
+    t$2('add-plant-dialog')
+], AddPlantDialog);
+
+let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceOptions = {};
+        this.editedAttributes = {};
+        this.isEditing = true;
+        this.showAllDates = false;
+        this.cloneTargetId = '';
+        this._showDeleteConfirmation = false;
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('dialog') && this.dialog) {
+            this.plant = this.dialog.plant;
+            this.editedAttributes = this.dialog.editedAttributes || {
+                strain: this.plant?.attributes.strain,
+                phenotype: this.plant?.attributes.phenotype,
+                row: this.plant?.attributes.row,
+                col: this.plant?.attributes.col,
+                stage: this.plant?.state,
+                veg_start: this.plant?.attributes.veg_start,
+                flower_start: this.plant?.attributes.flower_start,
+                seedling_start: this.plant?.attributes.seedling_start,
+                mother_start: this.plant?.attributes.mother_start,
+                clone_start: this.plant?.attributes.clone_start,
+                dry_start: this.plant?.attributes.dry_start,
+                cure_start: this.plant?.attributes.cure_start,
+            };
+            this.cloneTargetId = '';
+        }
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    _update() {
+        this.dispatchEvent(new UpdatePlantEvent(this.editedAttributes));
+    }
+    _delete(plantId) {
+        this._showDeleteConfirmation = true;
+    }
+    _confirmDelete() {
+        if (this.plant) {
+            const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+            this.dispatchEvent(new DeletePlantEvent(plantId));
+            this._showDeleteConfirmation = false;
+            this._close();
+        }
+    }
+    _cancelDelete() {
+        this._showDeleteConfirmation = false;
+    }
+    _harvest(plant) {
+        this.dispatchEvent(new HarvestPlantEvent(plant));
+    }
+    _finishDrying(plant) {
+        this.dispatchEvent(new FinishDryingEvent(plant));
+    }
+    _takeClone(plant, numClones) {
+        this.dispatchEvent(new TakeCloneEvent(plant, numClones));
+    }
+    _moveClone(plant) {
+        if (!this.cloneTargetId) {
+            // alert is not ideal but keeping for now as per previous logic
+            alert('Select a growspace');
+            return;
+        }
+        this.dispatchEvent(new MoveCloneEvent(plant, this.cloneTargetId));
+    }
+    _attributeChange(key, value) {
+        this.editedAttributes = { ...this.editedAttributes, [key]: value };
+        this.requestUpdate();
+    }
+    _toggleShowAllDates() {
+        this.showAllDates = !this.showAllDates;
+    }
+    _renderStatItem(label, value, unit = '') {
+        if (value === undefined || value === null || value === '')
+            return E;
+        return x `
+      <div class="stat-item">
+        <span class="stat-value">${value} ${unit}</span>
+        <span class="stat-label">${label}</span>
+      </div>
+    `;
+    }
+    _renderPlantStats(plant) {
+        if (!plant.attributes)
+            return E;
+        const currentStage = (plant.state || '').toLowerCase();
+        const normalize = (s) => {
+            if (s === 'veg' || s === 'vegetative')
+                return PlantStage.VEG;
+            if (s === 'mom')
+                return PlantStage.MOTHER;
+            return s;
+        };
+        const normCurrent = normalize(currentStage);
+        const stats = [
+            {
+                label: 'Vegetative Stage',
+                value: plant.attributes.veg_days,
+                unit: 'days',
+                stage: PlantStage.VEG,
+            },
+            {
+                label: 'Flowering Stage',
+                value: plant.attributes.flower_days,
+                unit: 'days',
+                stage: PlantStage.FLOWER,
+            },
+            {
+                label: 'Mother Stage',
+                value: plant.attributes.mom_days,
+                unit: 'days',
+                stage: PlantStage.MOTHER,
+            },
+            {
+                label: 'Clone Stage',
+                value: plant.attributes.clone_days,
+                unit: 'days',
+                stage: PlantStage.CLONE,
+            },
+            {
+                label: 'Drying Stage',
+                value: plant.attributes.dry_days,
+                unit: 'days',
+                stage: PlantStage.DRY,
+            },
+            {
+                label: 'Curing Stage',
+                value: plant.attributes.cure_days,
+                unit: 'days',
+                stage: PlantStage.CURE,
+            },
+        ].filter((s) => {
+            if (s.value === undefined || s.value === null)
+                return false;
+            const val = Number(s.value);
+            if (val > 0)
+                return true;
+            // Show if 0 but it's the current stage
+            return s.stage === normCurrent;
+        });
+        if (stats.length === 0)
+            return E;
+        return x `
+      <div class="detail-card">
+        <h3>Days in Stage</h3>
+        <div class="stat-grid">
+          ${stats.map((s) => this._renderStatItem(s.label, s.value, s.unit))}
+        </div>
+      </div>
+    `;
+    }
+    _renderDeleteOverlay() {
+        return x `
+      <div
+        class="dialog-overlay"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:100; display:flex; align-items:center; justify-content:center;"
+      >
+        <div class="glass-dialog-container" style="width: 350px; height: auto; padding: 24px;">
+          <h2 class="dialog-title" style="margin-bottom:12px">Confirm Deletion</h2>
+          <p
+            style="color:rgba(255,255,255,0.7); margin-bottom:24px; font-size: 1rem; line-height: 1.5;"
+          >
+            Are you sure you want to delete this plant? This action cannot be undone.
+          </p>
+          <div style="display:flex; justify-content:flex-end; gap:12px">
+            <button class="md3-button tonal" @click=${this._cancelDelete}>Cancel</button>
+            <button class="md3-button danger" @click=${this._confirmDelete}>
+              <svg
+                style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                viewBox="0 0 24 24"
+              >
+                <path d="${mdiDelete}"></path>
+              </svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    render() {
+        if (!this.plant)
+            return x ``;
+        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+        const stageColor = PlantUtils.getPlantStageColor(this.plant.state);
+        const stageIcon = PlantUtils.getPlantStageIcon(this.plant.state);
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="glass-dialog-container" style="--stage-color: ${stageColor}">
+          ${this._showDeleteConfirmation ? this._renderDeleteOverlay() : E}
+
+          <!-- HEADER -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${stageIcon}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">${this.editedAttributes.strain || 'Unknown Strain'}</h2>
+              <div class="dialog-subtitle">
+                ${this.plant.state} Stage • ${this.editedAttributes.phenotype || 'No Phenotype'}
+              </div>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="overview-grid">
+            <!-- IDENTITY & LOCATION CARD -->
+            <div class="detail-card">
+              <h3>Identity & Location</h3>
+              ${this.isEditing
+            ? x `
+                    <md3-text-input
+                      label="Strain Name"
+                      .value=${this.editedAttributes.strain || ''}
+                      @change=${(e) => this._attributeChange('strain', e.detail)}
+                    ></md3-text-input>
+                    <md3-text-input
+                      label="Phenotype"
+                      .value=${this.editedAttributes.phenotype || ''}
+                      @change=${(e) => this._attributeChange('phenotype', e.detail)}
+                    ></md3-text-input>
+
+                    <div style="display:flex; gap:16px;">
+                      <md3-number-input
+                        label="Row"
+                        .value=${this.editedAttributes.row ?? ''}
+                        @change=${(e) => this._attributeChange('row', e.detail)}
+                      ></md3-number-input>
+                      <md3-number-input
+                        label="Column"
+                        .value=${this.editedAttributes.col ?? ''}
+                        @change=${(e) => this._attributeChange('col', e.detail)}
+                      ></md3-number-input>
+                    </div>
+                  `
+            : x `
+                    <div class="stat-grid">
+                      <div class="stat-item">
+                        <span class="stat-value">${this.plant.attributes.strain}</span>
+                        <span class="stat-label">Strain</span>
+                      </div>
+                      <div class="stat-item">
+                        <span class="stat-value">${this.plant.attributes.phenotype || 'N/A'}</span>
+                        <span class="stat-label">Phenotype</span>
+                      </div>
+                      <div class="stat-item">
+                        <span class="stat-value">${this.plant.attributes.row ?? '-'}</span>
+                        <span class="stat-label">Row</span>
+                      </div>
+                      <div class="stat-item">
+                        <span class="stat-value">${this.plant.attributes.col ?? '-'}</span>
+                        <span class="stat-label">Col</span>
+                      </div>
+                    </div>
+                  `}
+            </div>
+            <!-- STATS CARD -->
+            ${this._renderPlantStats(this.plant)}
+
+            <!-- TIMELINE CARD -->
+            <div class="detail-card">
+              <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
+              >
+                <h3 style="margin: 0;">Timeline</h3>
+                <button
+                  class="md3-button text"
+                  style="min-width: auto; padding: 4px;"
+                  @click=${this._toggleShowAllDates}
+                >
+                  <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiPencil}"></path>
+                  </svg>
+                </button>
+              </div>
+
+              ${this.showAllDates
+            ? x `
+                    <md3-date-input
+                      label="Seedling Start"
+                      .value=${this.editedAttributes.seedling_start ?? ''}
+                      ?time=${true}
+                      @change=${(e) => this._attributeChange('seedling_start', e.detail)}
+                    ></md3-date-input>
+                    <md3-date-input
+                      label="Mother Start"
+                      .value=${this.editedAttributes.mother_start ?? ''}
+                      ?time=${true}
+                      @change=${(e) => this._attributeChange('mother_start', e.detail)}
+                    ></md3-date-input>
+                    <md3-date-input
+                      label="Clone Start"
+                      .value=${this.editedAttributes.clone_start ?? ''}
+                      ?time=${true}
+                      @change=${(e) => this._attributeChange('clone_start', e.detail)}
+                    ></md3-date-input>
+                    <md3-date-input
+                      label="Vegetative Start"
+                      .value=${this.editedAttributes.veg_start ?? ''}
+                      ?time=${true}
+                      @change=${(e) => this._attributeChange('veg_start', e.detail)}
+                    ></md3-date-input>
+                    <md3-date-input
+                      label="Flower Start"
+                      .value=${this.editedAttributes.flower_start ?? ''}
+                      ?time=${true}
+                      @change=${(e) => this._attributeChange('flower_start', e.detail)}
+                    ></md3-date-input>
+                    <md3-date-input
+                      label="Dry Start"
+                      .value=${this.editedAttributes.dry_start ?? ''}
+                      ?time=${true}
+                      @change=${(e) => this._attributeChange('dry_start', e.detail)}
+                    ></md3-date-input>
+                    <md3-date-input
+                      label="Cure Start"
+                      .value=${this.editedAttributes.cure_start ?? ''}
+                      ?time=${true}
+                      @change=${(e) => this._attributeChange('cure_start', e.detail)}
+                    ></md3-date-input>
+                  `
+            : x `
+                    ${this.editedAttributes.stage === PlantStage.MOTHER
+                ? x `
+                          <md3-date-input
+                            label="Mother Start"
+                            .value=${this.editedAttributes.mother_start ?? ''}
+                            ?time=${true}
+                            @change=${(e) => this._attributeChange('mother_start', e.detail)}
+                          ></md3-date-input>
+                        `
+                : E}
+                    ${this.editedAttributes.stage === PlantStage.CLONE
+                ? x `
+                          <md3-date-input
+                            label="Clone Start"
+                            .value=${this.editedAttributes.clone_start ?? ''}
+                            ?time=${true}
+                            @change=${(e) => this._attributeChange('clone_start', e.detail)}
+                          ></md3-date-input>
+                        `
+                : E}
+                    ${this.editedAttributes.stage === PlantStage.VEG ||
+                this.editedAttributes.stage === PlantStage.FLOWER
+                ? x `
+                          <md3-date-input
+                            label="Vegetative Start"
+                            .value=${this.editedAttributes.veg_start ?? ''}
+                            ?time=${true}
+                            @change=${(e) => this._attributeChange('veg_start', e.detail)}
+                          ></md3-date-input>
+                        `
+                : E}
+                    ${this.editedAttributes.stage === PlantStage.FLOWER
+                ? x `
+                          <md3-date-input
+                            label="Flower Start"
+                            .value=${this.editedAttributes.flower_start ?? ''}
+                            ?time=${true}
+                            @change=${(e) => this._attributeChange('flower_start', e.detail)}
+                          ></md3-date-input>
+                        `
+                : E}
+                    ${this.editedAttributes.stage === PlantStage.DRY ||
+                this.editedAttributes.stage === PlantStage.CURE
+                ? x `
+                          <md3-date-input
+                            label="Dry Start"
+                            .value=${this.editedAttributes.dry_start ?? ''}
+                            ?time=${true}
+                            @change=${(e) => this._attributeChange('dry_start', e.detail)}
+                          ></md3-date-input>
+                        `
+                : E}
+                    ${this.editedAttributes.stage === PlantStage.CURE
+                ? x `
+                          <md3-date-input
+                            label="Cure Start"
+                            .value=${this.editedAttributes.cure_start ?? ''}
+                            ?time=${true}
+                            @change=${(e) => this._attributeChange('cure_start', e.detail)}
+                          ></md3-date-input>
+                        `
+                : E}
+                  `}
+            </div>
+          </div>
+
+          <!-- ACTION BUTTONS -->
+          <div class="button-group" style="padding: 16px 24px;">
+            <button class="md3-button danger" @click=${() => this._delete(plantId)}>
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiDelete}"></path>
+              </svg>
+              Delete
+            </button>
+
+            <button class="md3-button tonal" @click=${this._update}>
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiCheck}"></path>
+              </svg>
+              Save
+            </button>
+
+            <!-- DYNAMIC ACTIONS -->
+            ${this.plant.state.toLowerCase() === PlantStage.MOTHER
+            ? x `
+                  <div
+                    class="take-clone-container"
+                    style="display:contents;"
+                    data-plant-id="${this.plant.entity_id}"
+                  >
+                    <md3-number-input
+                      .min=${1}
+                      .max=${10}
+                      .value=${1}
+                      id="clone-count-input"
+                      style="width: 80px;"
+                    ></md3-number-input>
+                    <button
+                      class="md3-button primary"
+                      @click=${(e) => {
+                const btn = e.currentTarget;
+                const container = btn.parentElement;
+                const inputEl = container?.querySelector('md3-number-input');
+                const numClones = inputEl ? Number(inputEl.value) : 1;
+                this._takeClone(this.plant, numClones);
+            }}
+                    >
+                      <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="${mdiContentCopy}"></path>
+                      </svg>
+                      Take Clone
+                    </button>
+                  </div>
+                `
+            : E}
+            ${this.plant.state.toLowerCase() === PlantStage.FLOWER
+            ? x `
+                  <button class="md3-button primary" @click=${() => this._harvest(this.plant)}>
+                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                      <path d="${mdiFlower}"></path>
+                    </svg>
+                    Harvest
+                  </button>
+                `
+            : E}
+            ${this.plant.state.toLowerCase() === PlantStage.DRY
+            ? x `
+                  <button
+                    class="md3-button primary"
+                    @click=${() => this._finishDrying(this.plant)}
+                  >
+                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                      <path d="${mdiCannabis}"></path>
+                    </svg>
+                    Finish Drying
+                  </button>
+                `
+            : E}
+            ${this.plant.state.toLowerCase() === PlantStage.CLONE
+            ? x `
+                  <div style="display:contents; display:flex; gap: 8px; align-items: center;">
+                    <md3-select
+                      .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({
+                label: name,
+                value: id,
+            }))}
+                      .value=${this.cloneTargetId}
+                      @change=${(e) => (this.cloneTargetId = e.detail)}
+                      style="min-width: 150px;"
+                    ></md3-select>
+                    <button class="md3-button primary" @click=${() => this._moveClone(this.plant)}>
+                      <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="${mdiArrowRight}"></path>
+                      </svg>
+                      Move
+                    </button>
+                  </div>
+                `
+            : E}
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+};
+PlantOverviewDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+
+      .overview-grid {
+        padding: 24px;
+        overflow-y: auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+      }
+
+      /* Timeline Styles */
+      .timeline {
+        position: relative;
+        padding-left: 24px;
+        border-left: 2px solid rgba(255, 255, 255, 0.1);
+        margin-top: 16px;
+      }
+      .timeline-event {
+        margin-bottom: 24px;
+        position: relative;
+      }
+      .timeline-event::before {
+        content: '';
+        position: absolute;
+        left: -31px;
+        top: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--event-color, #4caf50);
+        border: 2px solid #2c2c2c;
+      }
+      .timeline-date {
+        font-size: 0.8rem;
+        opacity: 0.6;
+        margin-bottom: 4px;
+      }
+      .timeline-content {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      /* Stat Grid */
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 12px;
+      }
+      .stat-item {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+      .stat-value {
+        font-size: 1.1rem;
+        font-weight: 500;
+      }
+      .stat-label {
+        font-size: 0.75rem;
+        opacity: 0.7;
+      }
+
+      /* Image Gallery */
+      .image-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .plant-image {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: cover;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .plant-image:hover {
+        transform: scale(1.05);
+      }
+
+      .md3-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+        margin-bottom: 12px;
+      }
+
+      @media (max-width: 600px) {
+        .overview-grid {
+          grid-template-columns: 1fr;
+          padding: 16px;
+        }
+      }
+      @media (max-width: 450px) {
+        .glass-dialog-container {
+          border-radius: 0;
+          width: 100vw;
+          height: 100vh;
+          max-width: 100%;
+        }
+        .overview-grid {
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+        }
+        .dialog-header {
+          padding: 12px 16px;
+        }
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true }),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Boolean, reflect: true }),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false }),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "dialog", void 0);
+__decorate([
+    n$5({ type: Object }),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "plant", void 0);
+__decorate([
+    n$5({ type: Object }),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "growspaceOptions", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "editedAttributes", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "isEditing", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "showAllDates", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "cloneTargetId", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], PlantOverviewDialog.prototype, "_showDeleteConfirmation", void 0);
+PlantOverviewDialog = __decorate([
+    t$2('plant-overview-dialog')
+], PlantOverviewDialog);
+
+let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.strains = [];
+        this._view = 'browse';
+        this._searchQuery = '';
+        this._editorState = {};
+        this._isCropping = false;
+        this._isImageSelectorOpen = false;
+        this._importDialogOpen = false;
+        this._mobileMenuOpen = false;
+        this._pendingDeleteKey = null;
+        this._importReplace = false;
+        // Pagination State
+        this._currentPage = 1;
+        this.ITEMS_PER_PAGE = 15;
+    }
+    _startEdit(strain) {
+        if (strain) {
+            this._editorState = { ...strain };
+        }
+        else {
+            this._editorState = {
+                strain: '',
+                phenotype: '',
+                breeder: '',
+                type: 'Hybrid',
+                flowering_days_min: 60,
+                flowering_days_max: 70,
+                lineage: '',
+                sex: 'Feminized',
+                description: '',
+                image: '',
+                sativa_percentage: 50,
+                indica_percentage: 50,
+            };
+        }
+        this._view = 'editor';
+    }
+    _handleSave() {
+        if (!this._editorState.strain)
+            return;
+        this.dispatchEvent(new CustomEvent('save-strain', { detail: this._editorState }));
+        this._view = 'browse';
+    }
+    _handleDelete(key) {
+        this._pendingDeleteKey = key;
+    }
+    _confirmDelete() {
+        if (this._pendingDeleteKey) {
+            this.dispatchEvent(new CustomEvent('delete-strain', { detail: { key: this._pendingDeleteKey } }));
+            this._pendingDeleteKey = null;
+        }
+    }
+    _cancelDelete() {
+        this._pendingDeleteKey = null;
+    }
+    _handleEditorChange(field, value) {
+        this._editorState = { ...this._editorState, [field]: value };
+    }
+    _toggleCropMode(active) {
+        this._isCropping = active;
+    }
+    _toggleImageSelector(isOpen) {
+        this._isImageSelectorOpen = isOpen;
+    }
+    _handleSelectLibraryImage(imageUrl) {
+        this._editorState = { ...this._editorState, image: imageUrl };
+        // Find existing crop meta
+        const existing = this.strains.find((s) => s.image === imageUrl && !!s.image_crop_meta);
+        if (existing && existing.image_crop_meta) {
+            this._editorState.image_crop_meta = { ...existing.image_crop_meta };
+        }
+        else {
+            delete this._editorState.image_crop_meta;
+        }
+        this._isImageSelectorOpen = false;
+    }
+    _handleImportFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.zip';
+        input.onchange = (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                this.dispatchEvent(new CustomEvent('import-library', {
+                    detail: { file, replace: this._importReplace },
+                }));
+                this._importDialogOpen = false;
+            }
+        };
+        input.click();
+    }
+    getCropStyle(image, meta) {
+        if (!meta)
+            return `background-image: url('${image}')`;
+        return `
+      background-image: url('${image}');
+      background-size: ${meta.scale * 100}%;
+      background-position: ${meta.x}% ${meta.y}%;
+    `;
+    }
+    getImgStyle(meta) {
+        if (!meta)
+            return 'width: 100%; height: 100%; object-fit: cover;';
+        return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
+    }
+    render() {
+        if (!this.open)
+            return E;
+        return x `
+      <ha-dialog
+        open
+        @closed=${() => this.dispatchEvent(new CustomEvent('close'))}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="glass-dialog-container">
+          ${this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView()}
+        </div>
+
+        ${this._isCropping ? this.renderCropOverlay() : E}
+        ${this._isImageSelectorOpen ? this.renderImageSelector() : E}
+        ${this._importDialogOpen ? this.renderImportDialog() : E}
+        ${this._pendingDeleteKey ? this.renderDeleteConfirmation() : E}
+      </ha-dialog>
+    `;
+    }
+    renderBrowseView() {
+        const query = this._searchQuery.toLowerCase();
+        const filteredStrains = this.strains.filter((s) => s.strain.toLowerCase().includes(query) ||
+            (s.breeder && s.breeder.toLowerCase().includes(query)) ||
+            (s.phenotype && s.phenotype.toLowerCase().includes(query))).sort((a, b) => a.strain.localeCompare(b.strain));
+        // Pagination Logic
+        const totalPages = Math.ceil(filteredStrains.length / this.ITEMS_PER_PAGE);
+        if (this._currentPage > totalPages && totalPages > 0) {
+            this._currentPage = totalPages;
+        }
+        if (this._currentPage < 1)
+            this._currentPage = 1;
+        const startIndex = (this._currentPage - 1) * this.ITEMS_PER_PAGE;
+        const paginatedStrains = filteredStrains.slice(startIndex, startIndex + this.ITEMS_PER_PAGE);
+        return x `
+      <div class="dialog-header">
+        <div class="dialog-icon">
+          <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiLeaf}"></path>
+          </svg>
+        </div>
+        <div class="dialog-title-group">
+          <h2 class="dialog-title">Strain Library</h2>
+        </div>
+
+        <div class="header-actions" style="display:flex; gap:8px;">
+          <button
+            class="md3-button text"
+            @click=${() => (this._mobileMenuOpen = !this._mobileMenuOpen)}
+            style="min-width:auto; padding:8px; display: none;"
+          >
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiDotsVertical}"></path>
+            </svg>
+          </button>
+          <style>
+            @media (max-width: 600px) {
+              button[style*='mdiDotsVertical'] {
+                display: flex !important;
+              }
+            }
+          </style>
+
+          <button
+            class="md3-button text"
+            @click=${() => this.dispatchEvent(new CustomEvent('close'))}
+            style="min-width:auto; padding:8px;"
+          >
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiClose}"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="sd-content">
+        <div class="search-bar-container">
+          <div class="search-input-wrapper">
+            <md3-text-input
+              placeholder="Search Strains by Name, Breeder..."
+              .value=${this._searchQuery}
+              @change=${(e) => {
+            this._searchQuery = e.detail;
+            this._currentPage = 1;
+        }}
+            ></md3-text-input>
+          </div>
+        </div>
+
+        <div class="sd-grid">
+          ${paginatedStrains.map((strain) => this.renderStrainCard(strain))}
+        </div>
+
+        ${filteredStrains.length === 0
+            ? x `
+              <div style="text-align:center; padding: 40px; color: var(--secondary-text-color);">
+                <svg
+                  style="width:48px;height:48px;fill:currentColor; opacity:0.5;"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="${mdiMagnify}"></path>
+                </svg>
+                <p>No strains found matching "${query}"</p>
+              </div>
+            `
+            : E}
+        ${totalPages > 1
+            ? x `
+              <div class="pagination-container">
+                <button
+                  class="pagination-btn"
+                  ?disabled=${this._currentPage === 1}
+                  @click=${() => this._currentPage--}
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiChevronLeft}"></path>
+                  </svg>
+                </button>
+                <span class="pagination-text">Page ${this._currentPage} of ${totalPages}</span>
+                <button
+                  class="pagination-btn"
+                  ?disabled=${this._currentPage === totalPages}
+                  @click=${() => this._currentPage++}
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiChevronRight}"></path>
+                  </svg>
+                </button>
+              </div>
+            `
+            : E}
+      </div>
+
+      <!-- Mobile Menu Dropdown -->
+      ${this._mobileMenuOpen
+            ? x `
+            <div class="menu-overlay" @click=${() => (this._mobileMenuOpen = false)}></div>
+            <div class="mobile-menu">
+              <div
+                class="mobile-menu-item"
+                @click=${() => {
+                this.dispatchEvent(new CustomEvent('get-recommendation'));
+                this._mobileMenuOpen = false;
+            }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg> Get Recommendation
+              </div>
+              <div
+                class="mobile-menu-item"
+                @click=${() => {
+                this._importDialogOpen = true;
+                this._mobileMenuOpen = false;
+            }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg> Import Strains
+              </div>
+              <div
+                class="mobile-menu-item"
+                @click=${() => {
+                this.dispatchEvent(new CustomEvent('export-library'));
+                this._mobileMenuOpen = false;
+            }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg> Export Strains
+              </div>
+            </div>
+          `
+            : E}
+
+      <!-- Mobile FAB -->
+      <button class="fab-btn" @click=${() => this._startEdit()}>
+        <svg style="fill:currentColor; width: 24px; height: 24px;" viewBox="0 0 24 24">
+          <path d="${mdiPlus}"></path>
+        </svg>
+      </button>
+
+      <div class="sd-footer">
+        <button
+          class="md3-button tonal"
+          @click=${() => this.dispatchEvent(new CustomEvent('get-recommendation'))}
+        >
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiBrain}"></path>
+          </svg>
+          Get Recommendation
+        </button>
+        <button class="md3-button tonal" @click=${() => (this._importDialogOpen = true)}>
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiCloudUpload}"></path>
+          </svg>
+          Import Strains
+        </button>
+        <button
+          class="md3-button tonal"
+          @click=${() => this.dispatchEvent(new CustomEvent('export-library'))}
+        >
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiDownload}"></path>
+          </svg>
+          Export Strains
+        </button>
+        <button class="md3-button primary" @click=${() => this._startEdit()}>
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiPlus}"></path>
+          </svg>
+          New Strain
+        </button>
+      </div>
+    `;
+    }
+    renderStrainCard(strain) {
+        let typeIcon = mdiLeaf;
+        const typeLabel = strain.type || 'Unknown';
+        const lowerType = (strain.type || '').toLowerCase();
+        if (lowerType.includes('indica'))
+            typeIcon = mdiWeatherNight;
+        else if (lowerType.includes('sativa'))
+            typeIcon = mdiWeatherSunny;
+        else if (lowerType.includes('hybrid'))
+            typeIcon = mdiTuneVariant;
+        return x `
+      <div class="strain-card" @click=${() => this._startEdit(strain)}>
+        <div class="sc-thumb">
+          ${strain.image
+            ? x `<img
+                src="${strain.image}"
+                loading="lazy"
+                alt="${strain.strain}"
+                style="${this.getImgStyle(strain.image_crop_meta)}"
+              />`
+            : x `<svg
+                style="width:48px;height:48px;opacity:0.2;fill:currentColor;"
+                viewBox="0 0 24 24"
+              >
+                <path d="${mdiLeaf}"></path>
+              </svg>`}
+          <div class="sc-actions">
+            <button
+              class="sc-action-btn"
+              @click=${(e) => {
+            e.stopPropagation();
+            this._handleDelete(strain.key);
+        }}
+            >
+              <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiDelete}"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="sc-content">
+          <h3 class="sc-title">
+            ${strain.strain} ${strain.phenotype ? `(${strain.phenotype})` : ''}
+          </h3>
+          <div class="sc-type-row">
+            <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${typeIcon}"></path>
+            </svg>
+            <span>${typeLabel}</span>
+          </div>
+          <div class="sc-meta">
+            ${strain.flowering_days_min
+            ? x `<span
+                  >Flowering: ${strain.flowering_days_min}-${strain.flowering_days_max || '?'}
+                  Days</span
+                >`
+            : E}
+            ${strain.breeder ? x `<span>Breeder: ${strain.breeder}</span>` : E}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    renderEditorView() {
+        const s = this._editorState;
+        const isEdit = !!s.strain &&
+            this.strains.some((ex) => ex.strain === s.strain && ex.phenotype === s.phenotype);
+        const uniqueStrains = [...new Set(this.strains.map((st) => st.strain).filter(Boolean))].sort();
+        const uniqueBreeders = [
+            ...new Set(this.strains.map((st) => st.breeder).filter(Boolean)),
+        ].sort();
+        const handleFileChange = (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                PlantUtils.compressImage(file)
+                    .then((base64) => this._handleEditorChange('image', base64))
+                    .catch((err) => console.error('Error compressing image:', err));
+            }
+        };
+        return x `
+      <datalist id="strain-suggestions">
+        ${uniqueStrains.map((name) => x `<option value="${name}"></option>`)}
+      </datalist>
+      <datalist id="breeder-suggestions">
+        ${uniqueBreeders.map((name) => x `<option value="${name}"></option>`)}
+      </datalist>
+
+      <div class="dialog-header">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <button
+            class="md3-button tonal"
+            style="padding: 0 12px; height: 32px;"
+            @click=${() => (this._view = 'browse')}
+          >
+            <svg
+              style="width:18px;height:18px;fill:currentColor; margin-right:4px;"
+              viewBox="0 0 24 24"
+            >
+              <path d="${mdiArrowLeft}"></path>
+            </svg>
+            Back
+          </button>
+          <h2 class="dialog-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
+        </div>
+        <button
+          class="md3-button text"
+          @click=${() => this.dispatchEvent(new CustomEvent('close'))}
+          style="min-width:auto; padding:8px;"
+        >
+          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiClose}"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="sd-content">
+        <div class="editor-layout">
+          <!-- LEFT COL: IDENTITY -->
+          <div class="editor-col">
+            <div
+              class="photo-upload-area"
+              @click=${(e) => {
+            const target = e.target;
+            if (!target.closest('.crop-btn') &&
+                !target.closest('.select-library-btn') &&
+                !target.closest('.md3-button')) {
+                e.currentTarget.querySelector('input')?.click();
+            }
+        }}
+              @dragover=${(e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+        }}
+              @drop=${(e) => {
+            e.preventDefault();
+            const file = e.dataTransfer?.files[0];
+            if (file) {
+                PlantUtils.compressImage(file)
+                    .then((base64) => this._handleEditorChange('image', base64))
+                    .catch((err) => console.error('Error compressing image:', err));
+            }
+        }}
+            >
+              <button
+                class="select-library-btn"
+                @click=${(e) => {
+            e.stopPropagation();
+            this._toggleImageSelector(true);
+        }}
+              >
+                <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiViewDashboard}"></path>
+                </svg>
+                Select from Library
+              </button>
+
+              ${s.image
+            ? x `
+                    ${s.image_crop_meta
+                ? x `<div
+                          style="width:100%; height:100%; border-radius:10px; ${this.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"
+                        ></div>`
+                : x `<img
+                          src="${s.image}"
+                          style="width:100%; height:100%; object-fit:cover; border-radius:10px;"
+                        />`}
+
+                    <div style="position:absolute; bottom:8px; right:8px; display:flex; gap:8px;">
+                      <button
+                        class="crop-btn"
+                        style="background:rgba(0,0,0,0.6); border:none; padding:6px; border-radius:50%; cursor:pointer; color:white;"
+                        @click=${(e) => {
+                e.stopPropagation();
+                this._toggleCropMode(true);
+            }}
+                        title="Crop Image"
+                      >
+                        <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                          <path d="${mdiContentCopy}"></path>
+                        </svg>
+                      </button>
+                      <div
+                        style="background:rgba(0,0,0,0.6); padding:6px; border-radius:50%; pointer-events:none;"
+                      >
+                        <svg style="width:18px;height:18px;fill:white;" viewBox="0 0 24 24">
+                          <path d="${mdiPencil}"></path>
+                        </svg>
+                      </div>
+                    </div>
+                  `
+            : x `
+                    <div style="display: flex; gap: 16px; align-items: center;">
+                      <div
+                        style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
+                      >
+                        <button
+                          class="md3-button tonal"
+                          @click=${(e) => e.currentTarget
+                .nextElementSibling.click()}
+                        >
+                          <svg
+                            style="width:24px;height:24px;fill:currentColor;"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="${mdiCamera}"></path>
+                          </svg>
+                          Camera
+                        </button>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          style="display:none"
+                          @change=${handleFileChange}
+                        />
+                      </div>
+
+                      <div
+                        style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
+                      >
+                        <button
+                          class="md3-button tonal"
+                          @click=${(e) => e.currentTarget
+                .nextElementSibling.click()}
+                        >
+                          <svg
+                            style="width:24px;height:24px;fill:currentColor;"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="${mdiImage}"></path>
+                          </svg>
+                          Gallery
+                        </button>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style="display:none"
+                          @change=${handleFileChange}
+                        />
+                      </div>
+                    </div>
+                    <span style="font-size:0.8rem; margin-top:12px; opacity: 0.7;"
+                      >(Or Drag & Drop)</span
+                    >
+                  `}
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Strain Name *</label>
+              <input
+                type="text"
+                class="sd-input"
+                list="strain-suggestions"
+                .value=${s.strain || ''}
+                @input=${(e) => this._handleEditorChange('strain', e.target.value)}
+              />
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Phenotype</label>
+              <input
+                type="text"
+                class="sd-input"
+                placeholder="e.g. #1 (Optional)"
+                .value=${s.phenotype || ''}
+                @input=${(e) => this._handleEditorChange('phenotype', e.target.value)}
+              />
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Breeder/Seedbank</label>
+              <input
+                type="text"
+                class="sd-input"
+                list="breeder-suggestions"
+                .value=${s.breeder || ''}
+                @input=${(e) => this._handleEditorChange('breeder', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <!-- RIGHT COL: GENETICS -->
+          <div class="editor-col">
+            <div class="sd-form-group">
+              <label class="sd-label">Type *</label>
+              <div class="type-selector-grid">
+                ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map((t) => {
+            let icon = mdiLeaf;
+            if (t === 'Indica')
+                icon = mdiWeatherNight;
+            if (t === 'Sativa')
+                icon = mdiWeatherSunny;
+            if (t === 'Hybrid')
+                icon = mdiTuneVariant;
+            const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
+            return x `
+                    <div
+                      class="type-option ${isActive ? 'active' : ''}"
+                      @click=${() => this._handleEditorChange('type', t)}
+                    >
+                      <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+                      <span class="type-label" style="font-size:0.85rem; font-weight:500;"
+                        >${t}</span
+                      >
+                    </div>
+                  `;
+        })}
+              </div>
+            </div>
+
+            ${(s.type || '').toLowerCase() === 'hybrid'
+            ? x `
+                  <div style="margin-bottom: 20px;">
+                    <label
+                      class="md3-label"
+                      style="display:block; margin-bottom:8px; color:var(--secondary-text-color);"
+                      >Hybrid Composition (%)</label
+                    >
+                    <div
+                      class="hg-container"
+                      style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;"
+                    >
+                      <div class="hg-labels">
+                        <div
+                          class="hg-input-label"
+                          style="display:flex; align-items:center; gap:4px;"
+                        >
+                          <span>Indica:</span>
+                          <input
+                            class="hg-num-input"
+                            type="number"
+                            min="0"
+                            max="100"
+                            .value=${s.indica_percentage || 0}
+                            @input=${(e) => {
+                let val = Math.floor(parseFloat(e.target.value)) || 0;
+                if (val < 0)
+                    val = 0;
+                if (val > 100)
+                    val = 100;
+                this._handleEditorChange('indica_percentage', val);
+                this._handleEditorChange('sativa_percentage', 100 - val);
+            }}
+                          />
+                          <span>%</span>
+                        </div>
+                        <div
+                          class="hg-input-label"
+                          style="display:flex; align-items:center; gap:4px;"
+                        >
+                          <span>Sativa:</span>
+                          <input
+                            class="hg-num-input"
+                            type="number"
+                            min="0"
+                            max="100"
+                            .value=${s.sativa_percentage || 0}
+                            @input=${(e) => {
+                let val = Math.floor(parseFloat(e.target.value)) || 0;
+                if (val < 0)
+                    val = 0;
+                if (val > 100)
+                    val = 100;
+                this._handleEditorChange('sativa_percentage', val);
+                this._handleEditorChange('indica_percentage', 100 - val);
+            }}
+                          />
+                          <span>%</span>
+                        </div>
+                      </div>
+
+                      <div
+                        class="hg-bar-track"
+                        @click=${(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                let percent = Math.round((x / rect.width) * 100);
+                if (percent < 0)
+                    percent = 0;
+                if (percent > 100)
+                    percent = 100;
+                this._handleEditorChange('indica_percentage', percent);
+                this._handleEditorChange('sativa_percentage', 100 - percent);
+            }}
+                      >
+                        <div
+                          class="hg-bar-indica"
+                          style="width: ${s.indica_percentage || 0}%"
+                        ></div>
+                        <div class="hg-bar-sativa"></div>
+                        <div class="hg-tick" style="left: 25%"></div>
+                        <div class="hg-tick" style="left: 50%"></div>
+                        <div class="hg-tick" style="left: 75%"></div>
+                      </div>
+                    </div>
+                  </div>
+                `
+            : E}
+
+            <div class="sd-form-group">
+              <label class="sd-label">Flowering Time (Days)</label>
+              <div style="display:flex; gap:16px;">
+                <input
+                  type="number"
+                  class="sd-input"
+                  placeholder="Min"
+                  .value=${s.flowering_days_min || ''}
+                  @input=${(e) => this._handleEditorChange('flowering_days_min', e.target.value)}
+                />
+                <input
+                  type="number"
+                  class="sd-input"
+                  placeholder="Max"
+                  .value=${s.flowering_days_max || ''}
+                  @input=${(e) => this._handleEditorChange('flowering_days_max', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Lineage</label>
+              <input
+                type="text"
+                class="sd-input"
+                .value=${s.lineage || ''}
+                @input=${(e) => this._handleEditorChange('lineage', e.target.value)}
+              />
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Sex</label>
+              <div style="display:flex; gap:20px; padding: 8px 0;">
+                ${['Feminized', 'Regular'].map((sex) => x `
+                    <label
+                      style="display:flex; align-items:center; gap:8px; cursor:pointer; color:white;"
+                    >
+                      <input
+                        type="radio"
+                        name="sex_radio"
+                        .checked=${s.sex === sex}
+                        @change=${() => this._handleEditorChange('sex', sex)}
+                        style="accent-color: var(--accent-green); transform: scale(1.2);"
+                      />
+                      ${sex}
+                    </label>
+                  `)}
+              </div>
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Description</label>
+              <textarea
+                class="sd-textarea"
+                .value=${s.description || ''}
+                @input=${(e) => this._handleEditorChange('description', e.target.value)}
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sd-footer" style="justify-content: space-between;">
+        ${s.key
+            ? x `
+              <button
+                class="md3-button text"
+                style="color: var(--error-color, #f44336);"
+                @click=${() => this._handleDelete(s.key)}
+              >
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiDelete}"></path>
+                </svg>
+                Delete
+              </button>
+            `
+            : x `<div></div>`}
+
+        <div style="display:flex; gap:12px;">
+          <button class="md3-button tonal" @click=${() => (this._view = 'browse')}>Cancel</button>
+          <button class="md3-button primary" @click=${() => this._handleSave()}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiCheck}"></path>
+            </svg>
+            Save Strain
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    renderCropOverlay() {
+        const s = this._editorState;
+        if (!s.image)
+            return E;
+        const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
+        const handleWheel = (e) => {
+            e.preventDefault();
+            const delta = e.deltaY * -0.001;
+            const newScale = Math.min(Math.max(meta.scale + delta, 1), 5);
+            this._handleEditorChange('image_crop_meta', { ...meta, scale: newScale });
+        };
+        const handleMouseDown = (e) => {
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const startMetaX = meta.x;
+            const startMetaY = meta.y;
+            const onMouseMove = (ev) => {
+                const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
+                const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
+                const newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
+                const newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
+                this._handleEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
+            };
+            const onMouseUp = () => {
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+            };
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        };
+        return x `
+      <div class="crop-overlay">
+        <h3 style="color:white; margin-bottom:20px;">Adjust Image</h3>
+        <div
+          class="crop-viewport"
+          @wheel=${handleWheel}
+          @mousedown=${handleMouseDown}
+          @dragstart=${(e) => e.preventDefault()}
+        >
+          <div
+            style="width: 100%; height: 100%;
+              background-image: url('${s.image}');
+              background-size: ${meta.scale * 100}%;
+              background-position: ${meta.x}% ${meta.y}%;
+              background-repeat: no-repeat;
+              pointer-events: none;"
+          ></div>
+        </div>
+
+        <div class="crop-controls">
+          <div style="display:flex; justify-content:space-between; color:#ccc; font-size:0.8rem;">
+            <span>Zoom: ${(meta.scale * 100).toFixed(0)}%</span>
+          </div>
+          <input
+            type="range"
+            class="crop-slider"
+            min="1"
+            max="5"
+            step="0.1"
+            .value=${meta.scale.toString()}
+            @input=${(e) => this._handleEditorChange('image_crop_meta', {
+            ...meta,
+            scale: parseFloat(e.target.value),
+        })}
+          />
+
+          <div style="display:flex; gap:12px; margin-top:12px;">
+            <button
+              class="md3-button tonal"
+              style="flex:1"
+              @click=${() => this._toggleCropMode(false)}
+            >
+              Done
+            </button>
+          </div>
+          <div style="text-align:center; font-size:0.8rem; color:#888; margin-top:8px;">
+            Drag to pan • Scroll to zoom
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    renderImageSelector() {
+        const imageMap = new Map();
+        this.strains.forEach((s) => {
+            if (s.image) {
+                if (!imageMap.has(s.image)) {
+                    imageMap.set(s.image, []);
+                }
+                imageMap.get(s.image).push({ strain: s.strain, phenotype: s.phenotype || '' });
+            }
+        });
+        return x `
+      <div class="crop-overlay">
+        <div
+          class="glass-dialog-container"
+          style="width: 80%; max-width: 800px; height: 80%; max-height: 600px;"
+        >
+          <div class="dialog-header">
+            <h2 class="dialog-title">Select from Library</h2>
+            <button
+              class="md3-button text"
+              @click=${() => this._toggleImageSelector(false)}
+              style="min-width:auto; padding:8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="sd-content" style="overflow-y: auto;">
+            <div
+              style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;"
+            >
+              ${[...imageMap.entries()].map(([img, infoList]) => x `
+                  <div
+                    style="aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative;"
+                    @click=${() => this._handleSelectLibraryImage(img)}
+                  >
+                    <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" />
+                    <div
+                      style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 8px; font-size: 0.75rem; color: white;"
+                    >
+                      ${infoList.map((info, index) => x `
+                          <div
+                            style="${index < infoList.length - 1
+            ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);'
+            : ''}"
+                          >
+                            <div style="font-weight: 700;">Strain: ${info.strain}</div>
+                            <div style="opacity: 0.9;">Pheno: ${info.phenotype || 'N/A'}</div>
+                          </div>
+                        `)}
+                    </div>
+                  </div>
+                `)}
+            </div>
+            ${imageMap.size === 0
+            ? x `<p
+                  style="text-align: center; color: var(--secondary-text-color); margin-top: 40px;"
+                >
+                  No images found in library.
+                </p>`
+            : E}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    renderImportDialog() {
+        return x `
+      <div class="crop-overlay">
+        <div class="glass-dialog-container" style="width: 400px; max-width: 90vw; height: auto;">
+          <div class="dialog-header">
+            <h2 class="dialog-title">Import Strains</h2>
+            <button
+              class="md3-button text"
+              @click=${() => (this._importDialogOpen = false)}
+              style="min-width:auto; padding:8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div style="padding: 24px;">
+            <div
+              style="font-size: 0.9rem; color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 20px;"
+            >
+              Select a ZIP file containing your strain library export. You can either merge the new
+              strains with your existing library or replace it entirely.
+            </div>
+
+            <div
+              style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"
+            >
+              <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                <input
+                  type="radio"
+                  name="import_mode"
+                  .checked=${!this._importReplace}
+                  @change=${() => (this._importReplace = false)}
+                  style="accent-color: var(--accent-green); transform: scale(1.2);"
+                />
+                <div>
+                  <div style="font-weight: 600;">Merge</div>
+                  <div style="font-size: 0.8rem; color: var(--secondary-text-color);">
+                    Add new strains, keep existing ones.
+                  </div>
+                </div>
+              </label>
+
+              <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 12px 0;"></div>
+
+              <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                <input
+                  type="radio"
+                  name="import_mode"
+                  .checked=${this._importReplace}
+                  @change=${() => (this._importReplace = true)}
+                  style="accent-color: var(--accent-green); transform: scale(1.2);"
+                />
+                <div>
+                  <div style="font-weight: 600;">Replace</div>
+                  <div style="font-size: 0.8rem; color: var(--secondary-text-color);">
+                    Overwrite entire library with import.
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
+              <button class="md3-button tonal" @click=${() => (this._importDialogOpen = false)}>
+                Cancel
+              </button>
+              <button class="md3-button primary" @click=${() => this._handleImportFile()}>
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiCloudUpload}"></path>
+                </svg>
+                Select File
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    renderDeleteConfirmation() {
+        return x `
+      <div class="crop-overlay">
+        <div
+          class="glass-dialog-container"
+          style="width: 400px; height: auto; padding: 24px; display: flex; flex-direction: column;"
+        >
+          <h2 class="dialog-title">Delete Strain?</h2>
+          <p
+            style="color: var(--secondary-text-color); margin: 16px 0; font-size: 1rem; line-height: 1.5;"
+          >
+            Are you sure you want to delete this strain? This action cannot be undone.
+          </p>
+          <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
+            <button class="md3-button tonal" @click=${this._cancelDelete}>Cancel</button>
+            <button class="md3-button text" style="color: #f44336;" @click=${this._confirmDelete}>
+              <svg
+                style="width:18px;height:18px;fill:currentColor;margin-right:8px;"
+                viewBox="0 0 24 24"
+              >
+                <path d="${mdiDelete}"></path>
+              </svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+};
+StrainLibraryDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        --accent-green: #4caf50;
+        /* Using dialogStyles variables where possible */
+      }
+
+      ha-dialog {
+        --mdc-dialog-min-width: 80vw;
+        --mdc-dialog-max-width: 95vw;
+        --dialog-surface-margin: 24px;
+        --dialog-content-padding: 0;
+        --dialog-scrollable-header-padding: 0;
+      }
+
+      /* Additional specific styles */
+
+      /* Layout Overrides */
+      .strain-dialog-container {
+        @apply .glass-dialog-container;
+        /* Since we can't use @apply in standard css without processor, we must duplicate or rely on .glass-dialog-container class in render */
+        /* But we will use the class in render */
+      }
+
+      .glass-dialog-container {
+        width: 80vw;
+        max-width: 95vw;
+        height: 85vh;
+      }
+
+      .sd-content {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .sd-footer {
+        padding: 16px 24px;
+        background: rgba(0, 0, 0, 0.2);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+      }
+
+      /* GRID & CARDS */
+      .sd-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+      }
+      .strain-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.3s ease;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+      }
+      .strain-card:hover {
+        border-color: var(--accent-green);
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+      }
+      .sc-thumb {
+        height: 180px;
+        background: #222;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #444;
+        position: relative;
+      }
+      .sc-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .sc-content {
+        padding: 16px;
+        flex: 1;
+      }
+      .sc-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        color: #fff;
+      }
+      .sc-type-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--accent-green);
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 12px;
+      }
+      .sc-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 0.8rem;
+        color: var(--secondary-text-color);
+      }
+      .sc-actions {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        display: flex;
+        gap: 8px;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .strain-card:hover .sc-actions {
+        opacity: 1;
+      }
+      @media (hover: none) {
+        .sc-actions {
+          opacity: 1;
+        }
+      }
+      .sc-action-btn {
+        background: rgba(0, 0, 0, 0.6);
+        border: none;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        cursor: pointer;
+      }
+      .sc-action-btn:hover {
+        background: var(--accent-green);
+      }
+
+      /* SEARCH BAR */
+      .search-bar-container {
+        margin-bottom: 24px;
+      }
+      .search-input-wrapper {
+        position: relative;
+        margin-bottom: 12px;
+      }
+      .search-input-wrapper svg {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        fill: var(--secondary-text-color);
+        pointer-events: none;
+      }
+      .search-bar-input {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 14px 14px 14px 48px;
+        color: #fff;
+        font-size: 1rem;
+        outline: none;
+        box-sizing: border-box;
+        font-family: inherit;
+      }
+      .search-bar-input:focus {
+        border-color: var(--accent-green);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      /* FORMS */
+      .sd-form-group {
+        margin-bottom: 20px;
+      }
+      .sd-label {
+        display: block;
+        color: var(--secondary-text-color);
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+      .sd-input,
+      .sd-textarea,
+      .sd-select {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: #fff;
+        font-size: 0.95rem;
+        outline: none;
+        transition: border-color 0.2s;
+        box-sizing: border-box;
+      }
+      .sd-input:focus,
+      .sd-textarea:focus,
+      .sd-select:focus {
+        border-color: var(--accent-green);
+      }
+      .sd-textarea {
+        resize: vertical;
+        min-height: 100px;
+      }
+
+      /* EDITOR LAYOUT */
+      .editor-layout {
+        display: grid;
+        grid-template-columns: 1fr 1.5fr;
+        gap: 32px;
+      }
+
+      /* PHOTO UPLOAD */
+      .photo-upload-area {
+        border: 2px dashed rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.02);
+        height: 240px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+      .photo-upload-area:hover {
+        border-color: var(--accent-green);
+        background: rgba(76, 175, 80, 0.05);
+      }
+      .select-library-btn {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        z-index: 10;
+        cursor: pointer;
+      }
+      .select-library-btn:hover {
+        background: var(--accent-green);
+        border-color: var(--accent-green);
+      }
+
+      /* Crop Overlay */
+      .crop-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .crop-viewport {
+        width: 300px;
+        height: 300px;
+        border: 2px solid var(--accent-green);
+        overflow: hidden;
+        position: relative;
+        cursor: move;
+        box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.7);
+      }
+      .crop-controls {
+        margin-top: 20px;
+        width: 300px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .crop-slider {
+        width: 100%;
+        accent-color: var(--accent-green);
+      }
+
+      /* Type Selector */
+      .type-selector-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .type-option {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 16px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        text-align: center;
+      }
+      .type-option:hover {
+        border-color: #666;
+      }
+      .type-option.active {
+        background: rgba(76, 175, 80, 0.1);
+        border-color: var(--accent-green);
+        color: #fff;
+      }
+      .type-option svg {
+        width: 28px;
+        height: 28px;
+        fill: var(--secondary-text-color);
+      }
+      .type-option.active svg {
+        fill: var(--accent-green);
+      }
+
+      /* Hybrid Graph */
+      .hg-container {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
+        margin-top: 8px;
+        font-family: 'Roboto', sans-serif;
+      }
+      .hg-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 2px;
+      }
+      .hg-bar-track {
+        height: 18px;
+        width: 100%;
+        background: #333;
+        border-radius: 2px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        cursor: pointer;
+      }
+      .hg-bar-indica {
+        background: #8b5cf6; /* Purple */
+        height: 100%;
+        transition: width 0.2s ease;
+      }
+      .hg-bar-sativa {
+        background: #eab308; /* Yellow */
+        height: 100%;
+        flex: 1;
+        transition: width 0.2s ease;
+      }
+      .hg-tick {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: rgba(255, 255, 255, 0.4);
+        pointer-events: none;
+      }
+
+      .hg-num-input {
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--secondary-text-color);
+        color: #fff;
+        width: 36px;
+        text-align: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0;
+      }
+      .hg-num-input:focus {
+        outline: none;
+        border-bottom-color: var(--accent-green);
+      }
+
+      /* Pagination */
+      .pagination-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 24px;
+        padding-bottom: 8px;
+      }
+      .pagination-text {
+        color: var(--secondary-text-color);
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+      .pagination-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .pagination-btn:hover:not(:disabled) {
+        border-color: var(--accent-green);
+        color: var(--accent-green);
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        border-color: transparent;
+      }
+
+      /* Mobile Responsive */
+      @media (max-width: 600px) {
+        ha-dialog {
+          --mdc-dialog-min-width: 95vw;
+          --mdc-dialog-max-width: 95vw;
+        }
+        .glass-dialog-container {
+          width: 95vw;
+          height: 90vh;
+          max-width: 95vw;
+        }
+        .sd-header {
+          padding: 16px;
+        }
+        .sd-content {
+          padding: 16px;
+        }
+        .sd-grid {
+          grid-template-columns: 1fr;
+        }
+        .sd-footer {
+          display: none;
+        }
+        .fab-btn {
+          display: flex;
+        }
+        .editor-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+      .fab-btn {
+        position: absolute;
+        bottom: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: var(--accent-green);
+        color: #fff;
+        border: none;
+        box-shadow: 0 4px 8px 3px rgba(0, 0, 0, 0.15);
+        display: none; /* Hidden on desktop */
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 20;
+      }
+
+      .sd-textarea {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 12px;
+        color: #fff;
+        font-family: inherit;
+        resize: vertical;
+        box-sizing: border-box;
+        font-size: 1rem;
+      }
+      .sd-textarea:focus {
+        border-color: var(--accent-green);
+        outline: none;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      /* Mobile menu */
+      .mobile-menu {
+        position: absolute;
+        top: 60px;
+        right: 16px;
+        background: #2d2d2d;
+        border-radius: 4px;
+        padding: 8px 0;
+        min-width: 200px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+        z-index: 30;
+      }
+      .mobile-menu-item {
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #fff;
+        cursor: pointer;
+      }
+      .mobile-menu-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .mobile-menu-item svg {
+        width: 20px;
+        height: 20px;
+        fill: var(--secondary-text-color);
+      }
+      .menu-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 25;
+      }
+    `,
+];
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], StrainLibraryDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ type: Array }),
+    __metadata("design:type", Array)
+], StrainLibraryDialog.prototype, "strains", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", String)
+], StrainLibraryDialog.prototype, "_view", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], StrainLibraryDialog.prototype, "_searchQuery", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], StrainLibraryDialog.prototype, "_editorState", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], StrainLibraryDialog.prototype, "_isCropping", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], StrainLibraryDialog.prototype, "_isImageSelectorOpen", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], StrainLibraryDialog.prototype, "_importDialogOpen", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], StrainLibraryDialog.prototype, "_mobileMenuOpen", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], StrainLibraryDialog.prototype, "_pendingDeleteKey", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], StrainLibraryDialog.prototype, "_importReplace", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], StrainLibraryDialog.prototype, "_currentPage", void 0);
+StrainLibraryDialog = __decorate([
+    t$2('strain-library-dialog')
+], StrainLibraryDialog);
+
+let ConfigDialog = class ConfigDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceOptions = {};
+        this.devices = [];
+        this.initialTab = 'environment';
+        this.currentTab = 'environment';
+        this._initialStateApplied = false;
+        // Add Growspace Data
+        this.add_name = '';
+        this.add_rows = 4;
+        this.add_plants_per_row = 4;
+        this.add_notification_service = 'mobile_app_notify';
+        // Edit Growspace Data
+        this.edit_selectedId = '';
+        this.edit_name = '';
+        this.edit_rows = 0;
+        this.edit_plants_per_row = 0;
+        // Environment Data
+        this.env_selectedGrowspaceId = '';
+        this.env_temp_sensor = '';
+        this.env_humidity_sensor = '';
+        this.env_vpd_sensor = '';
+        this.env_co2_sensor = '';
+        this.env_circulation_fan = '';
+        this.env_stress_threshold = 0.8;
+        this.env_mold_threshold = 0.8;
+        this._showDeleteConfirm = false;
+    }
+    updated(changedProperties) {
+        super.updated(changedProperties);
+        // Apply initial tab state only once when dialog opens
+        if (changedProperties.has('open')) {
+            if (this.open) {
+                if (!this._initialStateApplied) {
+                    if (this.currentTab) ;
+                    this._initialStateApplied = true;
+                }
+            }
+            else if (!this.open) {
+                // Reset flag when dialog closes so next open respects initialTab again
+                this._initialStateApplied = false;
+            }
+        }
+    }
+    // Provide initial state setting from parent
+    setInitialState(currentTab = 'environment', environmentData) {
+        this.currentTab = currentTab;
+        if (environmentData) {
+            this.env_selectedGrowspaceId = environmentData.selectedGrowspaceId;
+            this.env_temp_sensor = environmentData.temp_sensor;
+            this.env_humidity_sensor = environmentData.humidity_sensor;
+            this.env_vpd_sensor = environmentData.vpd_sensor;
+            this.env_co2_sensor = environmentData.co2_sensor;
+            this.env_circulation_fan = environmentData.circulation_fan;
+            this.env_stress_threshold = environmentData.stress_threshold;
+            this.env_mold_threshold = environmentData.mold_threshold;
+        }
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _switchTab(tab) {
+        this.currentTab = tab;
+    }
+    // --- Submission Handlers ---
+    _submitAddGrowspace() {
+        this.dispatchEvent(new CustomEvent('add-growspace-submit', {
+            detail: {
+                name: this.add_name,
+                rows: this.add_rows,
+                plants_per_row: this.add_plants_per_row,
+                notification_service: this.add_notification_service,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _submitEnvironment() {
+        this.dispatchEvent(new CustomEvent('configure-environment-submit', {
+            detail: {
+                selectedGrowspaceId: this.env_selectedGrowspaceId,
+                temp_sensor: this.env_temp_sensor,
+                humidity_sensor: this.env_humidity_sensor,
+                vpd_sensor: this.env_vpd_sensor,
+                co2_sensor: this.env_co2_sensor,
+                circulation_fan: this.env_circulation_fan,
+                stress_threshold: this.env_stress_threshold,
+                mold_threshold: this.env_mold_threshold,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _submitEditGrowspace() {
+        if (!this.edit_selectedId)
+            return;
+        this.dispatchEvent(new CustomEvent('edit-growspace-submit', {
+            detail: {
+                growspace_id: this.edit_selectedId,
+                name: this.edit_name,
+                rows: this.edit_rows,
+                plants_per_row: this.edit_plants_per_row,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _submitDeleteGrowspace() {
+        if (!this.edit_selectedId)
+            return;
+        this._showDeleteConfirm = true;
+    }
+    _confirmDeleteGrowspace() {
+        this.dispatchEvent(new CustomEvent('delete-growspace-submit', {
+            detail: {
+                growspace_id: this.edit_selectedId,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+        // Reset selection after delete
+        this.edit_selectedId = '';
+        this.edit_name = '';
+        this.edit_rows = 0;
+        this.edit_plants_per_row = 0;
+        this._showDeleteConfirm = false;
+    }
+    _cancelDeleteGrowspace() {
+        this._showDeleteConfirm = false;
+    }
+    _handleEditSelection(e) {
+        const growspaceId = e.target.value;
+        this.edit_selectedId = growspaceId;
+        if (growspaceId && this.devices) {
+            const device = this.devices.find((d) => d.device_id === growspaceId);
+            if (device) {
+                this.edit_name = device.name;
+                this.edit_rows = device.rows || 4;
+                this.edit_plants_per_row = device.plants_per_row || 4;
+            }
+        }
+    }
+    render() {
+        if (!this.open)
+            return x ``;
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="glass-dialog-container">
+          <!-- Header -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiCog}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Configuration</h2>
+              <div class="dialog-subtitle">Manage growspaces & settings</div>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Tabs -->
+          <div class="config-tabs">
+            <div
+              class="config-tab ${this.currentTab === 'add_growspace' ? 'active' : ''}"
+              @click=${() => this._switchTab('add_growspace')}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
+              Add Growspace
+            </div>
+            <div
+              class="config-tab ${this.currentTab === 'edit_growspace' ? 'active' : ''}"
+              @click=${() => this._switchTab('edit_growspace')}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+              Edit Growspace
+            </div>
+            <div
+              class="config-tab ${this.currentTab === 'environment' ? 'active' : ''}"
+              @click=${() => this._switchTab('environment')}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
+              Environment
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div class="config-content">
+            ${this.currentTab === 'add_growspace' ? this.renderAddGrowspaceTab() : E}
+            ${this.currentTab === 'edit_growspace' ? this.renderEditGrowspaceTab() : E}
+            ${this.currentTab === 'environment' ? this.renderEnvironmentTab() : E}
+          </div>
+
+          <!-- Actions -->
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+            ${this.currentTab === 'add_growspace'
+            ? x `
+                  <button class="md3-button primary" @click=${this._submitAddGrowspace}>
+                    Add Growspace
+                  </button>
+                `
+            : E}
+            ${this.currentTab === 'environment'
+            ? x `
+                  <button class="md3-button primary" @click=${this._submitEnvironment}>
+                    Save Sensors
+                  </button>
+                `
+            : E}
+            ${this.currentTab === 'edit_growspace' && !this._showDeleteConfirm
+            ? x `
+                  <button
+                    class="md3-button tonal error"
+                    @click=${this._submitDeleteGrowspace}
+                    ?disabled=${!this.edit_selectedId}
+                  >
+                    <svg
+                      style="width:18px;height:18px;fill:currentColor;margin-right:8px"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="${mdiDelete}"></path>
+                    </svg>
+                    Delete
+                  </button>
+                  <button
+                    class="md3-button primary"
+                    @click=${this._submitEditGrowspace}
+                    ?disabled=${!this.edit_selectedId}
+                  >
+                    Save Changes
+                  </button>
+                `
+            : E}
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    renderAddGrowspaceTab() {
+        return x `
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div class="detail-card">
+          <h3>New Growspace Details</h3>
+          <md3-text-input
+            label="Growspace Name"
+            .value=${this.add_name}
+            @change=${(e) => (this.add_name = e.detail)}
+          ></md3-text-input>
+          <div class="row-col-grid">
+            <md3-number-input
+              label="Rows"
+              .value=${this.add_rows}
+              @change=${(e) => (this.add_rows = parseInt(e.detail))}
+            ></md3-number-input>
+            <md3-number-input
+              label="Plants per Row"
+              .value=${this.add_plants_per_row}
+              @change=${(e) => (this.add_plants_per_row = parseInt(e.detail))}
+            ></md3-number-input>
+          </div>
+          <md3-text-input
+            label="Notification Service (Optional)"
+            .value=${this.add_notification_service}
+            @change=${(e) => (this.add_notification_service = e.detail)}
+          ></md3-text-input>
+        </div>
+      </div>
+    `;
+    }
+    // Add helper to filter entities
+    _getEntities(domains, deviceClass) {
+        if (!this.hass)
+            return [];
+        return Object.values(this.hass.states)
+            .filter((stateObj) => {
+            const domain = stateObj.entity_id.split('.')[0];
+            if (!domains.includes(domain))
+                return false;
+            // If deviceClass is provided, match strictly. If null, match any (or no) device class.
+            if (deviceClass !== null) {
+                return stateObj.attributes.device_class === deviceClass;
+            }
+            return true;
+        })
+            .sort((a, b) => (a.attributes.friendly_name || a.entity_id).localeCompare(b.attributes.friendly_name || b.entity_id));
+    }
+    // Add helper to render selects
+    _renderEntitySelect(label, value, domains, deviceClass, changeHandler) {
+        const entities = this._getEntities(domains, deviceClass);
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${label}</label>
+        <select class="md3-input" .value=${value} @change=${changeHandler}>
+          <option value="">Select Entity...</option>
+          ${entities.map((e) => x `<option value="${e.entity_id}" ?selected=${e.entity_id === value}>
+                ${e.attributes.friendly_name || e.entity_id} (${e.entity_id})
+              </option>`)}
+        </select>
+      </div>
+    `;
+    }
+    renderEditGrowspaceTab() {
+        if (this._showDeleteConfirm) {
+            return x `
+        <div class="detail-card" style="text-align: center; padding: 40px 20px;">
+          <h3 style="color: var(--error-color, #ff5252);">Delete Growspace?</h3>
+          <p style="margin-bottom: 30px; color: rgba(255,255,255,0.7);">
+            Are you sure you want to delete "<strong>${this.edit_name}</strong>"?<br />
+            This will remove all associated plants and history.<br />
+            This action cannot be undone.
+          </p>
+          <div class="button-group" style="justify-content: center; gap: 16px;">
+            <button class="md3-button tonal" @click=${this._cancelDeleteGrowspace}>Cancel</button>
+            <button class="md3-button primary error" @click=${this._confirmDeleteGrowspace}>
+              Confirm Delete
+            </button>
+          </div>
+        </div>
+      `;
+        }
+        return x `
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div class="detail-card">
+          <h3>Select Growspace to Edit</h3>
+          <div class="md3-input-group">
+            <label class="md3-label">Growspace</label>
+            <select
+              class="md3-input"
+              .value=${this.edit_selectedId}
+              @change=${this._handleEditSelection}
+            >
+              <option value="">Select...</option>
+              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
+            </select>
+          </div>
+        </div>
+
+        ${this.edit_selectedId
+            ? x `
+              <div class="detail-card">
+                <h3>Edit Details</h3>
+                <md3-text-input
+                  label="Growspace Name"
+                  .value=${this.edit_name}
+                  @change=${(e) => (this.edit_name = e.detail)}
+                ></md3-text-input>
+                <div class="row-col-grid">
+                  <md3-number-input
+                    label="Rows"
+                    .value=${this.edit_rows}
+                    @change=${(e) => (this.edit_rows = parseInt(e.detail))}
+                  ></md3-number-input>
+                  <md3-number-input
+                    label="Plants per Row"
+                    .value=${this.edit_plants_per_row}
+                    @change=${(e) => (this.edit_plants_per_row = parseInt(e.detail))}
+                  ></md3-number-input>
+                </div>
+              </div>
+            `
+            : x `
+              <div style="text-align:center; padding: 20px; color: rgba(255,255,255,0.5);">
+                Please select a growspace to edit.
+              </div>
+            `}
+      </div>
+    `;
+    }
+    renderEnvironmentTab() {
+        return x `
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div class="detail-card">
+          <h3>Select Target</h3>
+          <div class="md3-input-group">
+            <label class="md3-label">Growspace</label>
+            <select
+              class="md3-input"
+              .value=${this.env_selectedGrowspaceId}
+              @change=${(e) => (this.env_selectedGrowspaceId = e.target.value)}
+            >
+              <option value="">Select...</option>
+              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
+            </select>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <h3>Sensors</h3>
+          ${this._renderEntitySelect('Temperature Sensor', this.env_temp_sensor, ['sensor', 'input_number'], 'temperature', (e) => (this.env_temp_sensor = e.target.value))}
+          ${this._renderEntitySelect('Humidity Sensor', this.env_humidity_sensor, ['sensor', 'input_number'], 'humidity', (e) => (this.env_humidity_sensor = e.target.value))}
+          ${this._renderEntitySelect('VPD Sensor (Optional)', this.env_vpd_sensor, ['sensor', 'input_number'], 'pressure', (e) => (this.env_vpd_sensor = e.target.value))}
+        </div>
+
+        <div class="detail-card">
+          <h3>Optional</h3>
+          ${this._renderEntitySelect('CO2 Sensor', this.env_co2_sensor, ['sensor', 'input_number'], 'carbon_dioxide', (e) => (this.env_co2_sensor = e.target.value))}
+          ${this._renderEntitySelect('Circulation Fan / Switch', this.env_circulation_fan, ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'], null, (e) => (this.env_circulation_fan = e.target.value))}
+        </div>
+
+        <div class="detail-card">
+          <h3>Thresholds</h3>
+          <md3-number-input
+            label="Stress Threshold (0.0-1.0)"
+            .value=${this.env_stress_threshold}
+            @change=${(e) => (this.env_stress_threshold = parseFloat(e.detail))}
+          ></md3-number-input>
+          <md3-number-input
+            label="Mold Threshold (0.0-1.0)"
+            .value=${this.env_mold_threshold}
+            @change=${(e) => (this.env_mold_threshold = parseFloat(e.detail))}
+          ></md3-number-input>
+        </div>
+      </div>
+    `;
+    }
+};
+ConfigDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+
+      /* Config Tabs Specific */
+      .glass-dialog-container {
+        min-width: 0;
+        max-width: 95vw;
+        height: 700px;
+        max-height: 90vh;
+      }
+      .config-tabs {
+        display: flex;
+        padding: 0 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        background: transparent;
+      }
+      .config-tab {
+        flex: 1 1 0px;
+        width: 0;
+        min-width: 0;
+        padding: 16px 8px;
+        text-align: center;
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.5);
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        background: transparent;
+        flex-shrink: 0;
+      }
+      .config-tab svg {
+        width: 24px;
+        height: 24px;
+        margin-bottom: 4px;
+        fill: currentColor;
+      }
+      .config-tab:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px 8px 0 0;
+      }
+      .config-tab.active {
+        color: var(--primary-color, #4caf50);
+        border-bottom-color: var(--primary-color, #4caf50);
+      }
+      .config-content {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-height: 0;
+      }
+
+      @media (max-width: 450px) {
+        .glass-dialog-container {
+          width: 100vw;
+          max-width: 100%;
+          height: 100vh;
+          border-radius: 0;
+        }
+        .config-content {
+          padding: 16px;
+        }
+      }
+    `,
+];
+__decorate([
+    n$5({ type: Boolean, reflect: true }),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false }),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Object }),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "growspaceOptions", void 0);
+__decorate([
+    n$5({ attribute: false }),
+    __metadata("design:type", Array)
+], ConfigDialog.prototype, "devices", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", String)
+], ConfigDialog.prototype, "initialTab", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", String)
+], ConfigDialog.prototype, "currentTab", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "add_name", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "add_rows", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "add_plants_per_row", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "add_notification_service", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "edit_selectedId", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "edit_name", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "edit_rows", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "edit_plants_per_row", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_selectedGrowspaceId", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_temp_sensor", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_humidity_sensor", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_vpd_sensor", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_co2_sensor", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_circulation_fan", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_stress_threshold", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "env_mold_threshold", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], ConfigDialog.prototype, "_showDeleteConfirm", void 0);
+ConfigDialog = __decorate([
+    t$2('config-dialog')
+], ConfigDialog);
+
+let GrowMasterDialog = class GrowMasterDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        // Props from parent
+        this.isStressed = false;
+        this.isLoading = false;
+        this.response = null;
+        this.userQuery = '';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _analyze() {
+        this.dispatchEvent(new CustomEvent('analyze-growspace', {
+            detail: { query: this.userQuery },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _analyzeAll() {
+        this.dispatchEvent(new CustomEvent('analyze-all-growspaces', {
+            detail: { query: this.userQuery },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        if (!this.open)
+            return x ``;
+        const borderColor = this.isStressed ? '#FF9800' : '#4CAF50';
+        const title = this.personality ? `Ask the ${this.personality}` : 'Ask the Grow Master';
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="glass-dialog-container" style="border-color: ${borderColor}">
+          <div class="dialog-header">
+            <div class="dialog-icon" style="color: ${borderColor}">
+              <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiBrain}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">${title}</h2>
+              <div class="dialog-subtitle">
+                ${this.isStressed ? 'Warning: Plant Stress Detected' : 'All systems normal'}
+              </div>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width:auto; padding:8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="content-padding">
+            <!-- Input Area -->
+            <div class="md3-input-group">
+              <label class="md3-label">Your Question</label>
+              <textarea
+                class="sd-textarea"
+                placeholder="Ask about this growspace..."
+                .value=${this.userQuery}
+                @input=${(e) => (this.userQuery = e.target.value)}
+                style="min-height: 80px;"
+              ></textarea>
+            </div>
+
+            <!-- Action -->
+            <div class="button-group" style="padding: 12px 0; justify-content: flex-end;">
+              <button
+                class="md3-button tonal"
+                @click=${this._analyzeAll}
+                ?disabled=${this.isLoading}
+                style="opacity: ${this.isLoading ? 0.7 : 1}"
+              >
+                Analyze All
+              </button>
+              <button
+                class="md3-button primary"
+                @click=${this._analyze}
+                ?disabled=${this.isLoading}
+                style="opacity: ${this.isLoading ? 0.7 : 1}"
+              >
+                ${this.isLoading ? 'Analyzing...' : 'Analyze Environment'}
+              </button>
+            </div>
+
+            <!-- Response Area -->
+            ${this.isLoading
+            ? x `
+                  <div class="gm-loading">
+                    <svg class="spinner" viewBox="0 0 24 24">
+                      <path d="${mdiLoading}" fill="currentColor"></path>
+                    </svg>
+                    <span>Consulting the archives...</span>
+                  </div>
+                `
+            : E}
+            ${!this.isLoading && this.response
+            ? x `
+                  <div class="gm-response-box" style="border: 2px solid ${borderColor};">
+                    ${this.response}
+                  </div>
+                `
+            : E}
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+};
+GrowMasterDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+
+      /* Specific overrides or additions */
+      .gm-response-box {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 20px;
+        line-height: 1.6;
+        font-size: 0.95rem;
+        white-space: pre-wrap;
+        position: relative;
+        margin-top: 20px;
+      }
+      .gm-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        color: rgba(255, 255, 255, 0.7);
+        gap: 12px;
+      }
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .spinner {
+        animation: spin 1s linear infinite;
+        width: 24px;
+        height: 24px;
+      }
+
+      .sd-textarea {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 12px;
+        color: #fff;
+        font-family: inherit;
+        resize: vertical;
+        box-sizing: border-box;
+        font-size: 1rem;
+      }
+      .sd-textarea:focus {
+        outline: none;
+        border-color: #4caf50;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .content-padding {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+    `,
+];
+__decorate([
+    n$5({ type: Boolean, reflect: true }),
+    __metadata("design:type", Object)
+], GrowMasterDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], GrowMasterDialog.prototype, "isStressed", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", String)
+], GrowMasterDialog.prototype, "personality", void 0);
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], GrowMasterDialog.prototype, "isLoading", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", Object)
+], GrowMasterDialog.prototype, "response", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowMasterDialog.prototype, "userQuery", void 0);
+GrowMasterDialog = __decorate([
+    t$2('grow-master-dialog')
+], GrowMasterDialog);
+
+let StrainRecommendationDialog = class StrainRecommendationDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.isLoading = false;
+        this.response = null;
+        this.userQuery = '';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _handleGetRecommendation() {
+        this.dispatchEvent(new CustomEvent('get-recommendation', {
+            detail: { query: this.userQuery },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        if (!this.open)
+            return E;
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="glass-dialog-container">
+          <div class="dialog-header">
+            <div class="dialog-icon" style="color: #4CAF50">
+              <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiBrain}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Get Strain Recommendation</h2>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width:auto; padding:8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="content-padding">
+            <!-- Input Area -->
+            <div class="md3-input-group">
+              <label class="md3-label">Your Preferences</label>
+              <textarea
+                class="sd-textarea"
+                placeholder="e.g., something fruity and good for daytime use..."
+                .value=${this.userQuery}
+                @input=${(e) => (this.userQuery = e.target.value)}
+                style="min-height: 80px;"
+              ></textarea>
+            </div>
+
+            <!-- Action -->
+            <div class="button-group" style="padding: 0; justify-content: flex-end;">
+              <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+              <button
+                class="md3-button primary"
+                @click=${this._handleGetRecommendation}
+                ?disabled=${this.isLoading}
+                style="opacity: ${this.isLoading ? 0.7 : 1}"
+              >
+                ${this.isLoading ? 'Getting Recommendation...' : 'Get Recommendation'}
+              </button>
+            </div>
+
+            ${this.isLoading
+            ? x `
+                  <div class="gm-loading">
+                    <svg class="spinner" viewBox="0 0 24 24">
+                      <path d="${mdiLoading}" fill="currentColor"></path>
+                    </svg>
+                    <span>Consulting the archives...</span>
+                  </div>
+                `
+            : E}
+            ${!this.isLoading && this.response
+            ? x ` <div class="gm-response-box">${this.response}</div> `
+            : E}
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+};
+StrainRecommendationDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      .content-padding {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .sd-textarea {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: #fff;
+        padding: 12px;
+        font-family: inherit;
+        resize: vertical;
+        box-sizing: border-box;
+        font-size: 1rem;
+      }
+      .sd-textarea:focus {
+        outline: none;
+        border-color: #4caf50;
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .gm-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        color: rgba(255, 255, 255, 0.7);
+        gap: 12px;
+      }
+      .spinner {
+        width: 24px;
+        height: 24px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .gm-response-box {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 16px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        margin-top: 16px;
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true }),
+    __metadata("design:type", Object)
+], StrainRecommendationDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], StrainRecommendationDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], StrainRecommendationDialog.prototype, "isLoading", void 0);
+__decorate([
+    n$5({ attribute: false }),
+    __metadata("design:type", Object)
+], StrainRecommendationDialog.prototype, "response", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", String)
+], StrainRecommendationDialog.prototype, "userQuery", void 0);
+StrainRecommendationDialog = __decorate([
+    t$2('strain-recommendation-dialog')
+], StrainRecommendationDialog);
+
+let Md3Switch = class Md3Switch extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.checked = false;
+        this.disabled = false;
+    }
+    _handleClick() {
+        if (this.disabled)
+            return;
+        this.checked = !this.checked;
+        this.dispatchEvent(new CustomEvent('change', {
+            detail: { checked: this.checked },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        return x `
+      <button
+        role="switch"
+        aria-checked=${this.checked}
+        @click=${this._handleClick}
+        ?disabled=${this.disabled}
+      >
+        <div class="handle"></div>
+      </button>
+    `;
+    }
+};
+Md3Switch.styles = i$6 `
+    :host {
+      display: inline-block;
+      vertical-align: middle;
+      --md-switch-width: 52px;
+      --md-switch-height: 32px;
+      --md-switch-handle-size: 24px;
+      --md-switch-track-color-on: var(--primary-color, #2196f3);
+      --md-switch-track-color-off: rgba(255, 255, 255, 0.1);
+      --md-switch-handle-color: #fff;
+    }
+
+    button {
+      all: unset;
+      position: relative;
+      width: var(--md-switch-width);
+      height: var(--md-switch-height);
+      border-radius: calc(var(--md-switch-height) / 2);
+      background: var(--md-switch-track-color-off);
+      cursor: pointer;
+      transition: background-color 0.2s;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-sizing: border-box;
+    }
+
+    :host([checked]) button {
+      background: var(--md-switch-track-color-on);
+      border-color: transparent;
+    }
+
+    .handle {
+      position: absolute;
+      top: 50%;
+      left: 4px;
+      transform: translateY(-50%);
+      width: var(--md-switch-handle-size);
+      height: var(--md-switch-handle-size);
+      background: var(--md-switch-handle-color);
+      border-radius: 50%;
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+
+    :host([checked]) .handle {
+      transform: translate(20px, -50%); /* 52 - 4 - 24 - 4 = 20px move */
+    }
+  `;
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], Md3Switch.prototype, "checked", void 0);
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], Md3Switch.prototype, "disabled", void 0);
+Md3Switch = __decorate([
+    t$2('md3-switch')
+], Md3Switch);
+
+let IrrigationDialog = class IrrigationDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceName = '';
+        this._irrigation_pump_entity = '';
+        this._drain_pump_entity = '';
+        this._irrigation_duration = 60;
+        this._drain_duration = 60;
+        this._irrigation_times = [];
+        this._drain_times = [];
+        this._activeTab = 'schedules';
+        this._strategy = {};
+    }
+    willUpdate(changedProps) {
+        if ((changedProps.has('open') && this.open) || (changedProps.has('device') && this.device)) {
+            this._initializeState();
+        }
+        if (this.hass && (changedProps.has('hass') || !this._dataService)) {
+            this._dataService = new DataService(this.hass);
+        }
+    }
+    _initializeState() {
+        if (!this.device)
+            return;
+        const config = this.device.irrigation_config || {};
+        this._irrigation_pump_entity = config.irrigation_pump_entity || '';
+        this._drain_pump_entity = config.drain_pump_entity || '';
+        this._irrigation_duration = config.irrigation_duration || 60;
+        this._drain_duration = config.drain_duration || 60;
+        this._irrigation_times = this.device.irrigation_times || [];
+        this._drain_times = this.device.drain_times || [];
+        console.log('[IrrigationDialog] Initializing State', {
+            device: this.device,
+            irrigation_times: this._irrigation_times,
+            drain_times: this._drain_times,
+            raw_config: config,
+        });
+        // Initialize Strategy
+        const strat = this.device.irrigation_strategy;
+        this._strategy = {
+            enabled: strat?.enabled || false,
+            lights_on_time: strat?.lights_on_time || '06:00:00',
+            p0_duration_minutes: strat?.p0_duration_minutes || 60,
+            p2_stop_before_lights_off_minutes: strat?.p2_stop_before_lights_off_minutes || 120,
+            target_vwc_percent: strat?.target_vwc_percent || 45.0,
+            maintenance_dryback_percent: strat?.maintenance_dryback_percent || 3.0,
+            shot_duration_seconds: strat?.shot_duration_seconds || 15,
+            shot_interval_minutes: strat?.shot_interval_minutes || 15,
+        };
+    }
+    // ... (Keep existing _parseScheduleString, _saveSettings, _addIrrigationTime, etc. - ensure logical flow)
+    _parseScheduleString(scheduleString) {
+        if (Array.isArray(scheduleString))
+            return scheduleString;
+        if (!scheduleString)
+            return [];
+        return scheduleString.split(',').map((t) => {
+            const parts = t.trim().split('|');
+            return {
+                time: parts[0],
+                duration: parts[1] ? parseInt(parts[1]) : undefined,
+            };
+        });
+    }
+    async _saveSettings() {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.setIrrigationSettings({
+                growspace_id: this.device.device_id,
+                irrigation_pump_entity: this._irrigation_pump_entity,
+                drain_pump_entity: this._drain_pump_entity,
+                irrigation_duration: this._irrigation_duration,
+                drain_duration: this._drain_duration,
+            });
+        }
+        catch (e) {
+            console.error('Failed to save settings:', e);
+        }
+    }
+    async _addIrrigationTime(time, duration) {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.addIrrigationTime({
+                growspace_id: this.device.device_id,
+                time,
+                duration: duration || this._irrigation_duration,
+            });
+            // Optimistic update
+            const newTime = { time, duration: duration || this._irrigation_duration };
+            this._irrigation_times = [...this._irrigation_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
+            this._adding_irrigation_time = undefined;
+        }
+        catch (e) {
+            console.error('Failed to add irrigation time:', e);
+        }
+    }
+    async _removeIrrigationTime(time) {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.removeIrrigationTime({
+                growspace_id: this.device.device_id,
+                time,
+            });
+            // Optimistic update
+            this._irrigation_times = this._irrigation_times.filter((t) => t.time !== time);
+        }
+        catch (e) {
+            console.error('Failed to remove irrigation time:', e);
+        }
+    }
+    async _addDrainTime(time, duration) {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.addDrainTime({
+                growspace_id: this.device.device_id,
+                time,
+                duration: duration || this._drain_duration,
+            });
+            // Optimistic update
+            const newTime = { time, duration: duration || this._drain_duration };
+            this._drain_times = [...this._drain_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
+            this._adding_drain_time = undefined;
+        }
+        catch (e) {
+            console.error('Failed to add drain time:', e);
+        }
+    }
+    async _removeDrainTime(time) {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.removeDrainTime({
+                growspace_id: this.device.device_id,
+                time,
+            });
+            // Optimistic update
+            this._drain_times = this._drain_times.filter((t) => t.time !== time);
+        }
+        catch (e) {
+            console.error('Failed to remove drain time:', e);
+        }
+    }
+    _startAddingIrrigationTime(x, width) {
+        const percentage = x / width;
+        const totalMinutes = Math.round(percentage * 24 * 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        this._adding_irrigation_time = {
+            time: timeStr,
+            duration: this._irrigation_duration,
+        };
+    }
+    _startAddingDrainTime(x, width) {
+        const percentage = x / width;
+        const totalMinutes = Math.round(percentage * 24 * 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        this._adding_drain_time = {
+            time: timeStr,
+            duration: this._drain_duration,
+        };
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    async _saveStrategy() {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.setIrrigationStrategy(this.device.device_id, this._strategy);
+        }
+        catch (e) {
+            console.error('Failed to save strategy:', e);
+        }
+    }
+    _updateStrategyField(field, value) {
+        this._strategy = { ...this._strategy, [field]: value };
+    }
+    render() {
+        if (!this.open)
+            return E;
+        const dialogColor = '#2196F3';
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiWater}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Irrigation Management</h2>
+              <div class="dialog-subtitle">${this.growspaceName}</div>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Tabs -->
+          <div
+            class="tabs-row"
+            style="display: flex; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0;"
+          >
+            <div
+              class="tab-item ${this._activeTab === 'schedules' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'schedules')}
+              style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
+            >
+              <style>
+                .tab-item.active {
+                  border-bottom-color: ${dialogColor} !important;
+                  opacity: 1 !important;
+                }
+                .tab-item:hover {
+                  opacity: 1 !important;
+                  background: rgba(255, 255, 255, 0.05);
+                }
+              </style>
+              Schedules
+            </div>
+            <div
+              class="tab-item ${this._activeTab === 'steering' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'steering')}
+              style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
+            >
+              Crop Steering (VWC)
+            </div>
+          </div>
+
+          <div class="dialog-body">
+            ${this._activeTab === 'schedules'
+            ? this._renderSchedulesTab(dialogColor)
+            : this._renderSteeringTab(dialogColor)}
+          </div>
+
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close}>Close</button>
+            ${this._activeTab === 'steering'
+            ? x `
+                  <button
+                    class="md3-button primary"
+                    style="background: ${dialogColor};"
+                    @click=${this._saveStrategy}
+                  >
+                    Save Strategy
+                  </button>
+                `
+            : ''}
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    _renderSchedulesTab(color) {
+        return x `
+      ${this._renderScheduleSection('Irrigation Schedule', this._irrigation_times, this._irrigation_duration, 'irrigation', color)}
+      ${this._renderScheduleSection('Drain Schedule', this._drain_times, this._drain_duration, 'drain', '#FF9800')}
+    `;
+    }
+    _renderSteeringTab(color) {
+        return x `
+      <div class="detail-card">
+        <h3 style="margin-top: 0;">Crop Steering Configuration</h3>
+        <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 20px;">
+          Enable logic-based irrigation based on volumetric water content (VWC) targets. Overrides
+          basic schedules when active.
+        </p>
+
+        <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div
+            style="grid-column: span 2; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;"
+          >
+            <span>Enable VWC Steering</span>
+            <md3-switch
+              .checked=${this._strategy.enabled}
+              @change=${(e) => this._updateStrategyField('enabled', e.target.checked)}
+            ></md3-switch>
+          </div>
+
+          <div
+            style="grid-column: span 2; border-bottom: 1px solid rgba(255,255,255,0.1); margin: 8px 0;"
+          ></div>
+          <h4 style="grid-column: span 2; margin: 4px 0;">Targets</h4>
+
+          <md3-number-input
+            label="Target VWC (%)"
+            .value=${this._strategy.target_vwc_percent}
+            @change=${(e) => this._updateStrategyField('target_vwc_percent', parseFloat(e.detail))}
+          ></md3-number-input>
+
+          <md3-number-input
+            label="Dryback (%)"
+            .value=${this._strategy.maintenance_dryback_percent}
+            @change=${(e) => this._updateStrategyField('maintenance_dryback_percent', parseFloat(e.detail))}
+          ></md3-number-input>
+
+          <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Timing</h4>
+
+          <md3-text-input
+            label="Lights On Time"
+            type="time"
+            .value=${this._strategy.lights_on_time}
+            @change=${(e) => this._updateStrategyField('lights_on_time', e.target.value || e.detail)}
+          ></md3-text-input>
+
+          <md3-number-input
+            label="P0 Duration (min)"
+            .value=${this._strategy.p0_duration_minutes}
+            @change=${(e) => this._updateStrategyField('p0_duration_minutes', parseInt(e.detail))}
+          ></md3-number-input>
+
+          <md3-number-input
+            label="P2 Stop Buffer (min)"
+            .value=${this._strategy.p2_stop_before_lights_off_minutes}
+            @change=${(e) => this._updateStrategyField('p2_stop_before_lights_off_minutes', parseInt(e.detail))}
+          ></md3-number-input>
+
+          <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Dosing</h4>
+
+          <md3-number-input
+            label="Shot Duration (sec)"
+            .value=${this._strategy.shot_duration_seconds}
+            @change=${(e) => this._updateStrategyField('shot_duration_seconds', parseInt(e.detail))}
+          ></md3-number-input>
+
+          <md3-number-input
+            label="Shot Interval (min)"
+            .value=${this._strategy.shot_interval_minutes}
+            @change=${(e) => this._updateStrategyField('shot_interval_minutes', parseInt(e.detail))}
+          ></md3-number-input>
+        </div>
+      </div>
+    `;
+    }
+    _renderScheduleSection(title, times, defaultDuration, type, color) {
+        const addingTime = type === 'irrigation' ? this._adding_irrigation_time : this._adding_drain_time;
+        return x `
+      <div class="detail-card">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"
+        >
+          <h3 style="margin: 0;">${title}</h3>
+          <button
+            @click=${(e) => {
+            const container = e.target
+                .closest('.detail-card')
+                ?.querySelector(`.${type}-time-bar`);
+            if (container) {
+                const rect = container.getBoundingClientRect();
+                type === 'irrigation'
+                    ? this._startAddingIrrigationTime(rect.width / 2, rect.width)
+                    : this._startAddingDrainTime(rect.width / 2, rect.width);
+            }
+        }}
+            class="md3-button primary"
+            style="background: ${color};"
+          >
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiPlus}"></path>
+            </svg>
+            ADD TIME
+          </button>
+        </div>
+
+        <div
+          class="${type}-time-bar time-bar-container"
+          @click=${(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            type === 'irrigation'
+                ? this._startAddingIrrigationTime(x, rect.width)
+                : this._startAddingDrainTime(x, rect.width);
+        }}
+          style="border: 2px solid ${color}40;"
+        >
+          ${Array.from({ length: 25 }, (_, i) => i).map((hour) => x `
+              <div
+                class="time-tick ${hour % 6 === 0 ? 'major' : ''}"
+                style="left: ${(hour / 24) * 100}%;"
+              >
+                ${hour % 3 === 0
+            ? x ` <span class="time-label">${hour.toString().padStart(2, '0')}:00</span> `
+            : ''}
+              </div>
+            `)}
+          ${times.map((t) => {
+            const [hours, minutes] = t.time.split(':').map(Number);
+            const position = ((hours + minutes / 60) / 24) * 100;
+            return x `
+              <div
+                class="chart-marker"
+                @click=${(e) => {
+                e.stopPropagation();
+                if (confirm(`Remove ${type} time ${t.time}?`)) {
+                    type === 'irrigation'
+                        ? this._removeIrrigationTime(t.time)
+                        : this._removeDrainTime(t.time);
+                }
+            }}
+                style="left: ${position}%; background: ${color}; box-shadow: 0 0 8px ${color};"
+                title="${t.time} | Duration: ${t.duration || defaultDuration}seconds"
+              >
+                <div class="chart-tooltip" style="background: ${color};">
+                  ${t.time} | ${t.duration || defaultDuration}s
+                </div>
+              </div>
+            `;
+        })}
+        </div>
+
+        <div class="legend-row">
+          <span>00:00</span>
+          <span>06:00</span>
+          <span>12:00</span>
+          <span>18:00</span>
+          <span>24:00</span>
+        </div>
+
+        ${addingTime
+            ? x `
+              <div
+                class="overlay-backdrop"
+                @click=${() => type === 'irrigation'
+                ? (this._adding_irrigation_time = undefined)
+                : (this._adding_drain_time = undefined)}
+              >
+                <div
+                  class="detail-card"
+                  style="max-width: 400px; margin: 0; background: #2d2d2d; width: 90%;"
+                  @click=${(e) => e.stopPropagation()}
+                >
+                  <h3>Add ${title} Time</h3>
+
+                  <md3-text-input
+                    label="Time"
+                    type="time"
+                    .value=${addingTime.time}
+                    @change=${(e) => {
+                const val = e.target.value || e.detail; // md3-text-input uses detail
+                if (type === 'irrigation' && this._adding_irrigation_time)
+                    this._adding_irrigation_time = {
+                        ...this._adding_irrigation_time,
+                        time: val,
+                    };
+                if (type === 'drain' && this._adding_drain_time)
+                    this._adding_drain_time = { ...this._adding_drain_time, time: val };
+            }}
+                  ></md3-text-input>
+
+                  <md3-number-input
+                    label="Duration (seconds)"
+                    .value=${addingTime.duration}
+                    .min=${1}
+                    @change=${(e) => {
+                const val = parseInt(e.detail);
+                if (!isNaN(val)) {
+                    if (type === 'irrigation' && this._adding_irrigation_time)
+                        this._adding_irrigation_time = {
+                            ...this._adding_irrigation_time,
+                            duration: val,
+                        };
+                    if (type === 'drain' && this._adding_drain_time)
+                        this._adding_drain_time = { ...this._adding_drain_time, duration: val };
+                }
+            }}
+                  ></md3-number-input>
+
+                  <div class="button-group">
+                    <button
+                      class="md3-button tonal"
+                      @click=${() => type === 'irrigation'
+                ? (this._adding_irrigation_time = undefined)
+                : (this._adding_drain_time = undefined)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      class="md3-button primary"
+                      @click=${() => {
+                type === 'irrigation'
+                    ? this._addIrrigationTime(addingTime.time, addingTime.duration)
+                    : this._addDrainTime(addingTime.time, addingTime.duration);
+            }}
+                      style="background: ${color};"
+                    >
+                      Add Schedule
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `
+            : ''}
+      </div>
+    `;
+    }
+};
+IrrigationDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        --mdc-dialog-min-width: 400px;
+        --mdc-dialog-max-width: 1000px;
+      }
+
+      /* Overrides/Specific Layouts */
+      .dialog-body {
+        padding: 24px;
+        overflow-y: auto;
+        max-height: 70vh;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      /* Time Bar Visualization */
+      .time-bar-container {
+        position: relative;
+        height: 80px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        cursor: crosshair;
+      }
+
+      .time-tick {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        border-left: 1px solid rgba(255, 255, 255, 0.05);
+        pointer-events: none;
+      }
+      .time-tick.major {
+        border-left-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .time-label {
+        position: absolute;
+        bottom: -22px;
+        left: -12px;
+        font-size: 0.7rem;
+        color: var(--secondary-text-color);
+      }
+
+      .chart-marker {
+        position: absolute;
+        top: 10%;
+        bottom: 10%;
+        width: 4px;
+        cursor: pointer;
+        border-radius: 2px;
+      }
+
+      .chart-tooltip {
+        position: absolute;
+        left: 8px;
+        top: -24px;
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        z-index: 10;
+      }
+
+      .legend-row {
+        margin-top: 30px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.7rem;
+        color: var(--secondary-text-color);
+      }
+
+      .overlay-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true }),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false }),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "device", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "growspaceName", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_irrigation_pump_entity", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_drain_pump_entity", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_irrigation_duration", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_drain_duration", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Array)
+], IrrigationDialog.prototype, "_irrigation_times", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Array)
+], IrrigationDialog.prototype, "_drain_times", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_adding_irrigation_time", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_adding_drain_time", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", String)
+], IrrigationDialog.prototype, "_activeTab", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_strategy", void 0);
+IrrigationDialog = __decorate([
+    t$2('irrigation-dialog')
+], IrrigationDialog);
+
+class GrowspaceLogbookController {
+    constructor(hass) {
+        this.hass = hass;
+    }
+    async fetchEventLog(growspaceId) {
+        if (!this.hass) {
+            console.warn('Home Assistant instance not available');
+            return [];
+        }
+        try {
+            const response = await this.hass.callWS({
+                type: 'growspace_manager/get_log',
+                growspace_id: growspaceId,
+            });
+            return response[growspaceId] || [];
+        }
+        catch (e) {
+            console.error('Error fetching event log:', e);
+            return [];
+        }
+    }
+}
+
+let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._events = [];
+        this._isLoading = false;
+        this._activeFilter = 'all';
+    }
+    firstUpdated() {
+        this._initController();
+    }
+    _getSeverityColor(severity, sensorType) {
+        if (sensorType?.toLowerCase() === 'optimal') {
+            if (severity >= 0.9)
+                return 'var(--success-color, #4CAF50)';
+            if (severity >= 0.75)
+                return 'var(--warning-color)';
+            return 'var(--error-color)';
+        }
+        // Default logic (High severity = Bad)
+        if (severity >= 0.9)
+            return 'var(--error-color)';
+        if (severity >= 0.75)
+            return 'var(--warning-color)';
+        return 'var(--primary-text-color)';
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('hass') && !this._controller) {
+            this._initController();
+        }
+        if (changedProps.has('growspaceId')) {
+            this._fetchEvents();
+        }
+    }
+    _initController() {
+        if (this.hass && !this._controller) {
+            this._controller = new GrowspaceLogbookController(this.hass);
+            this._fetchEvents();
+        }
+    }
+    async _fetchEvents() {
+        if (!this._controller || !this.growspaceId)
+            return;
+        this._isLoading = true;
+        try {
+            this._events = await this._controller.fetchEventLog(this.growspaceId);
+        }
+        finally {
+            this._isLoading = false;
+        }
+    }
+    _formatDuration(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}m ${secs}s`;
+    }
+    _formatProb(val) {
+        if (val === undefined || val === null || isNaN(val)) {
+            return '--%';
+        }
+        return `${Math.round(Number(val) * 100)}%`;
+    }
+    _formatTime(isoString) {
+        try {
+            const date = new Date(isoString);
+            return date.toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+        }
+        catch {
+            return isoString;
+        }
+    }
+    render() {
+        if (this._isLoading) {
+            return x `<div class="empty-state">Loading events...</div>`;
+        }
+        const allEvents = this._events || [];
+        // Filter logic
+        let filteredEvents = allEvents;
+        if (this._activeFilter === 'alerts') {
+            filteredEvents = allEvents.filter((e) => e.category === 'alert' || e.severity >= 0.75);
+        }
+        else if (this._activeFilter === 'irrigation') {
+            filteredEvents = allEvents.filter((e) => e.category === 'irrigation' || ['irrigation', 'drain'].includes(e.sensor_type));
+        }
+        else if (this._activeFilter === 'environment') {
+            filteredEvents = allEvents.filter((e) => ['temperature', 'humidity', 'vpd', 'co2'].includes(e.sensor_type));
+        }
+        // Sort by time descending (newest first)
+        const sortedEvents = [...filteredEvents].sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+        const filters = [
+            { id: 'all', label: 'All' },
+            { id: 'alerts', label: 'Alerts' },
+            { id: 'irrigation', label: 'Irrigation' },
+            { id: 'environment', label: 'Environment' },
+        ];
+        return x `
+      <div class="filter-bar">
+        ${filters.map((filter) => x `
+            <div
+              class="filter-chip ${this._activeFilter === filter.id ? 'active' : ''}"
+              @click=${() => (this._activeFilter = filter.id)}
+            >
+              ${filter.label}
+            </div>
+          `)}
+      </div>
+
+      <div class="log-container">
+        ${sortedEvents.length > 0
+            ? sortedEvents.map((event) => x `
+                <div class="event-card">
+                  <div class="event-header">
+                    <span class="event-time">${this._formatTime(event.start_time)}</span>
+                    <span class="event-duration">${this._formatDuration(event.duration_sec)}</span>
+                  </div>
+
+                  <div class="event-details">
+                    <div>
+                      <div class="event-type">${event.sensor_type.replace(/_/g, ' ')}</div>
+
+                      ${event.reasons && event.reasons.length > 0
+                ? x `
+                            <div class="event-reasons">
+                              ${event.reasons.map((reason) => x `<span class="reason-badge">${reason}</span>`)}
+                            </div>
+                          `
+                : E}
+                    </div>
+
+                    ${event.category === 'alert'
+                ? x `
+                          <div
+                            class="event-probability"
+                            style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}"
+                          >
+                            ${this._formatProb(event.severity)}
+                          </div>
+                        `
+                : x `
+                          <div class="event-probability">
+                            <ha-icon icon="mdi:water"></ha-icon>
+                          </div>
+                        `}
+                  </div>
+                </div>
+              `)
+            : x `
+              <div class="empty-state">
+                No events found for "${filters.find((f) => f.id === this._activeFilter)?.label}".
+              </div>
+            `}
+      </div>
+    `;
+    }
+};
+GrowspaceLogbook.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+        height: 100%;
+        overflow: hidden;
+      }
+      .log-container {
+        height: 100%;
+        overflow-y: auto;
+        padding-right: 4px; /* Space for scrollbar */
+      }
+      .log-container::-webkit-scrollbar {
+        width: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+      }
+      .log-container::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 4px;
+      }
+      .event-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .event-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .event-time {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        font-weight: 500;
+        color: var(--primary-text-color);
+      }
+      .event-duration {
+        font-size: 0.85rem;
+        opacity: 0.6;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 8px;
+        border-radius: 12px;
+      }
+      .event-details {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: start;
+      }
+      .event-type {
+        font-weight: 600;
+        color: var(--accent-color, #4caf50);
+        margin-bottom: 4px;
+        text-transform: capitalize;
+      }
+      .event-probability {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary-text-color);
+        text-align: right;
+      }
+      .event-reasons {
+        font-size: 0.85rem;
+        opacity: 0.7;
+        margin-top: 8px;
+        line-height: 1.4;
+      }
+      .reason-badge {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin-right: 6px;
+        margin-bottom: 4px;
+      }
+      .filter-bar {
+        display: flex;
+        gap: 8px;
+        padding: 0 4px 12px 4px;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE/Edge */
+      }
+      .filter-bar::-webkit-scrollbar {
+        display: none; /* Chrome/Safari/Opera */
+      }
+      .filter-chip {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: var(--primary-text-color);
+        opacity: 0.7;
+        flex-shrink: 0;
+      }
+      .filter-chip.active {
+        background: var(--accent-color, #4caf50);
+        color: white;
+        opacity: 1;
+        border-color: transparent;
+        font-weight: 500;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+      .filter-chip:hover:not(.active) {
+        background: rgba(255, 255, 255, 0.1);
+        opacity: 0.9;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        opacity: 0.5;
+        font-style: italic;
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true }),
+    __metadata("design:type", Object)
+], GrowspaceLogbook.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", String)
+], GrowspaceLogbook.prototype, "growspaceId", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Array)
+], GrowspaceLogbook.prototype, "_events", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspaceLogbook.prototype, "_isLoading", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspaceLogbook.prototype, "_activeFilter", void 0);
+GrowspaceLogbook = __decorate([
+    t$2('growspace-logbook')
+], GrowspaceLogbook);
+
+let LogbookDialog = class LogbookDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceId = '';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    render() {
+        if (!this.open)
+            return x ``;
+        return x `
+      <ha-dialog .open=${this.open} @closed=${this._close} hideActions .heading=${true}>
+        <div slot="heading" class="dialog-header">
+          <h2 class="dialog-title">Events Logbook</h2>
+          <button
+            class="md3-button text"
+            @click=${this._close}
+            style="min-width:auto; padding:8px;"
+          >
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiClose}"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="content-wrapper">
+          <growspace-logbook
+            .hass=${this.hass}
+            .growspaceId=${this.growspaceId}
+          ></growspace-logbook>
+        </div>
+      </ha-dialog>
+    `;
+    }
+};
+LogbookDialog.styles = [
+    dialogStyles,
+    i$6 `
+      ha-dialog {
+        --mdc-dialog-min-width: 90vw;
+        --mdc-dialog-max-width: 90vw;
+        --mdc-dialog-min-height: 80vh;
+        --mdc-dialog-max-height: 90vh;
+      }
+
+      @media (min-width: 600px) {
+        ha-dialog {
+          --mdc-dialog-min-width: 600px;
+          --mdc-dialog-max-width: 800px;
+        }
+      }
+
+      .dialog-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .content-wrapper {
+        height: 70vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      growspace-logbook {
+        flex: 1;
+        overflow: hidden;
+        margin-top: 16px;
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true }),
+    __metadata("design:type", Object)
+], LogbookDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], LogbookDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", Object)
+], LogbookDialog.prototype, "growspaceId", void 0);
+LogbookDialog = __decorate([
+    t$2('logbook-dialog')
+], LogbookDialog);
+
+let DialogHost = class DialogHost extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.devices = [];
+        this.strainLibrary = [];
+    }
+    render() {
+        if (!this.store)
+            return x ``;
+        const active = this.activeDialogState || this.store.state.activeDialog;
+        console.log('[DialogHost] Rendering with active type:', active.type);
+        if (active.type === 'NONE')
+            return x ``;
+        const strainLibrary = this.strainLibrary || [];
+        const devices = this.devices || this.store.state.devices;
+        const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
+        // Prepare options for select dropdowns if needed
+        const growspaceOptions = {};
+        devices.forEach((d) => {
+            growspaceOptions[d.device_id] = d.name;
+        });
+        switch (active.type) {
+            case 'ADD_PLANT':
+                return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
+            case 'PLANT_OVERVIEW':
+                return this._renderPlantOverviewDialog(active, growspaceOptions);
+            case 'STRAIN_LIBRARY':
+                return this._renderStrainLibraryDialog(active, strainLibrary);
+            case 'CONFIG':
+                return this._renderConfigDialog(active, growspaceOptions);
+            case 'GROW_MASTER':
+                return this._renderGrowMasterDialog(active);
+            case 'STRAIN_RECOMMENDATION':
+                return this._renderStrainRecommendationDialog(active);
+            case 'IRRIGATION':
+                return this._renderIrrigationDialog(active, selectedDeviceData);
+            case 'LOGBOOK':
+                return this._renderLogbookDialog(active);
+            default:
+                return x ``;
+        }
+    }
+    _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
+        if (active.type !== 'ADD_PLANT')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+        <add-plant-dialog
+            .open=${true}
+            .strainLibrary=${strainLibrary}
+            .row=${dialogState.row}
+            .col=${dialogState.col}
+            .growspaceName=${selectedDeviceData?.name || ''}
+            @close=${() => this.store.closeActiveDialog()}
+            @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
+        ></add-plant-dialog>
+        `;
+    }
+    _renderPlantOverviewDialog(active, growspaceOptions) {
+        if (active.type !== 'PLANT_OVERVIEW')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+        <plant-overview-dialog
+            .open=${true}
+            .plant=${dialogState.plant}
+            .editedAttributes=${dialogState.editedAttributes}
+            .activeTab=${dialogState.activeTab}
+            .selectedPlantIds=${dialogState.selectedPlantIds}
+            .growspaceOptions=${growspaceOptions}
+            @close=${() => this.store.closeActiveDialog()}
+            @update-plant=${(e) => this.store.updatePlantFromDialog({
+            plant: dialogState.plant,
+            editedAttributes: e.detail, // Event detail is the attributes object
+            selectedPlantIds: dialogState.selectedPlantIds
+        })}
+            @delete-plant=${(e) => this.store.handleDeletePlant(e.detail.plantId)}
+            @harvest-plant=${(e) => this.store.harvestPlant(e.detail.plant)}
+            @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
+            @take-clone=${(e) => this.store.clonePlant(e.detail.plant, e.detail.numClones)}
+            @move-clone=${(e) => this.store.movePlantToGrowspace(e.detail.plant, e.detail.targetGrowspace)}
+        ></plant-overview-dialog>
+        `;
+    }
+    _renderStrainLibraryDialog(active, strainLibrary) {
+        if (active.type !== 'STRAIN_LIBRARY')
+            return x ``;
+        return x `
+        <strain-library-dialog
+            .open=${true}
+            .strains=${strainLibrary}
+            @close=${() => this.store.closeActiveDialog()}
+            @save-strain=${(e) => this.store.addStrain(e.detail)}
+            @delete-strain=${(e) => this.store.removeStrain(e.detail.key)}
+            @import-library=${(e) => this._performImport(e.detail.file, e.detail.replace)}
+            @export-library=${() => this.store.handleExportLibrary()}
+        ></strain-library-dialog>
+        `;
+    }
+    async _performImport(file, replace) {
+        if (!file)
+            return;
+        try {
+            const result = await this.store.dataService.importStrainLibrary(file, replace);
+            this.store.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
+            await this.store.fetchStrainLibrary();
+        }
+        catch (err) {
+            console.error('Import failed:', err);
+            this.store.showToast(`Import failed: ${err.message}`, 'error');
+        }
+    }
+    _renderConfigDialog(active, growspaceOptions) {
+        if (active.type !== 'CONFIG')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+        <config-dialog
+            .open=${true}
+            .hass=${this.hass}
+            .devices=${this.store.state.devices}
+            .currentTab=${dialogState.currentTab}
+            .environmentData=${dialogState.environmentData}
+            .growspaceOptions=${growspaceOptions}
+            @close=${() => this.store.closeActiveDialog()}
+            @add-growspace-submit=${(e) => this.store.handleAddGrowspace(e.detail)}
+            @edit-growspace-submit=${(e) => this.store.handleUpdateGrowspace(e.detail)}
+            @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
+        ></config-dialog>
+        `;
+    }
+    async _handleEnvironmentConfig(detail) {
+        const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold, } = detail;
+        if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
+            this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
+            return;
+        }
+        try {
+            await this.store.dataService.configureEnvironment({
+                growspace_id: selectedGrowspaceId,
+                temperature_sensor: temp_sensor,
+                humidity_sensor,
+                vpd_sensor: vpd_sensor || undefined,
+                co2_sensor: co2_sensor || undefined,
+                circulation_fan: circulation_fan || undefined,
+                stress_threshold,
+                mold_threshold,
+            });
+            this.store.showToast('Environment configured successfully!', 'success');
+            await this.store.refreshData();
+            this.store.closeActiveDialog();
+        }
+        catch (e) {
+            this.store.showToast(`Error: ${e.message}`, 'error');
+        }
+    }
+    _renderGrowMasterDialog(active) {
+        if (active.type !== 'GROW_MASTER')
+            return x ``;
+        const dialogState = active.payload;
+        // Determine stress state (logic moved from card or duplicated/simplified?)
+        // Ideally store should calculate this derived state or pass it in payload.
+        // For now, I'll access hass via store? No, store has hass but it's not reactive property of DialogHost
+        // But store.hass IS available.
+        let isStressed = false;
+        let personality;
+        if (this.store.state.selectedDevice && this.store.hass) {
+            const id = this.store.state.selectedDevice;
+            const stressEntityIds = [
+                `binary_sensor.${id}_plants_under_stress`,
+                `binary_sensor.${id}_stress`,
+                `binary_sensor.growspace_manager_${id}_stress`,
+            ];
+            for (const eid of stressEntityIds) {
+                const ent = this.store.hass.states[eid];
+                if (ent && ent.state === 'on') {
+                    isStressed = true;
+                    break;
+                }
+            }
+            const manager = this.store.hass.states['sensor.growspace_manager'];
+            if (manager && manager.attributes && manager.attributes.ai_settings) {
+                personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
+            }
+        }
+        return x `
+        <grow-master-dialog
+            .open=${true}
+            .isStressed=${isStressed}
+            .personality=${personality}
+            .isLoading=${dialogState.isLoading}
+            .response=${dialogState.response}
+            @close=${() => this.store.closeActiveDialog()}
+            @analyze-growspace=${(e) => this.store.analyzeGrowspace(e.detail.query, false)}
+            @analyze-all-growspaces=${(e) => this.store.analyzeGrowspace(e.detail.query, true)}
+        ></grow-master-dialog>
+        `;
+    }
+    _renderStrainRecommendationDialog(active) {
+        if (active.type !== 'STRAIN_RECOMMENDATION')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+        <strain-recommendation-dialog
+            .open=${true}
+            .isLoading=${dialogState.isLoading}
+            .response=${dialogState.response}
+            @close=${() => this.store.closeActiveDialog()}
+            @get-recommendation=${(e) => this.store.getStrainRecommendation(e.detail.query)}
+        ></strain-recommendation-dialog>
+        `;
+    }
+    _renderIrrigationDialog(active, selectedDeviceData) {
+        if (active.type !== 'IRRIGATION')
+            return x ``;
+        return x `
+        <irrigation-dialog
+            .open=${true}
+            .device=${selectedDeviceData}
+            .growspaceName=${selectedDeviceData?.name || ''}
+            @close=${() => this.store.closeActiveDialog()}
+            @closed=${() => this.store.closeActiveDialog()}
+        ></irrigation-dialog>
+        `;
+    }
+    _renderLogbookDialog(active) {
+        if (active.type !== 'LOGBOOK')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+        <logbook-dialog
+            .open=${true}
+            .growspaceId=${dialogState.growspaceId}
+            @close=${() => this.store.closeActiveDialog()}
+        ></logbook-dialog>
+        `;
+    }
+};
+__decorate([
+    c$2({ context: hassContext, subscribe: true }),
+    __metadata("design:type", Object)
+], DialogHost.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext, subscribe: true }),
+    __metadata("design:type", GrowspaceStore)
+], DialogHost.prototype, "store", void 0);
+__decorate([
+    n$5({ attribute: false }),
+    __metadata("design:type", Object)
+], DialogHost.prototype, "activeDialogState", void 0);
+__decorate([
+    n$5({ attribute: false }),
+    __metadata("design:type", Array)
+], DialogHost.prototype, "devices", void 0);
+__decorate([
+    c$2({ context: strainLibraryContext, subscribe: true }),
+    __metadata("design:type", Array)
+], DialogHost.prototype, "strainLibrary", void 0);
+DialogHost = __decorate([
+    t$2('growspace-dialog-host')
+], DialogHost);
+
+let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.strainLibrary = [];
+        this.isEditMode = false;
+        this.selected = false;
+        this._displayData = null;
+        this._isDraggingMobile = false;
+        this._startX = 0;
+        this._startY = 0;
+        this._initialLeft = 0;
+        this._initialTop = 0;
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('plant') || changedProps.has('strainLibrary')) {
+            this._calculateDisplayData();
+        }
+    }
+    _calculateDisplayData() {
+        if (!this.plant) {
+            this._displayData = null;
+            return;
+        }
+        const plant = this.plant;
+        const stageColor = PlantUtils.getPlantStageColor(plant.state);
+        const strainName = plant.attributes?.strain || 'Unknown Strain';
+        const pheno = plant.attributes?.phenotype || '';
+        // Image logic
+        let imageUrl;
+        let imageCropMeta;
+        const library = this.strainLibrary || [];
+        if (strainName !== 'Unknown Strain') {
+            const phenoMatch = library.find((s) => s.strain === strainName && s.phenotype === pheno);
+            if (phenoMatch && phenoMatch.image) {
+                imageUrl = phenoMatch.image;
+                imageCropMeta = phenoMatch.image_crop_meta;
+            }
+            else {
+                const strainMatch = library.find((s) => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
+                if (strainMatch && strainMatch.image) {
+                    imageUrl = strainMatch.image;
+                    imageCropMeta = strainMatch.image_crop_meta;
+                }
+                else if (!imageUrl) {
+                    const anyMatch = library.find((s) => s.strain === strainName && s.image);
+                    if (anyMatch) {
+                        imageUrl = anyMatch.image;
+                        imageCropMeta = anyMatch.image_crop_meta;
+                    }
+                }
+            }
+        }
+        // Stages logic
+        const days = [
+            {
+                days: plant.attributes?.seedling_days,
+                icon: mdiSprout,
+                title: 'Seedling',
+                stage: PlantStage.SEEDLING,
+            },
+            {
+                days: plant.attributes?.mother_days,
+                icon: mdiSprout,
+                title: 'Mother',
+                stage: PlantStage.MOTHER,
+            },
+            {
+                days: plant.attributes?.clone_days,
+                icon: mdiSprout,
+                title: 'Clone',
+                stage: PlantStage.CLONE,
+            },
+            { days: plant.attributes?.veg_days, icon: mdiSprout, title: 'Veg', stage: PlantStage.VEG },
+            {
+                days: plant.attributes?.flower_days,
+                icon: mdiFlower,
+                title: 'Flower',
+                stage: PlantStage.FLOWER,
+            },
+            { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: 'Dry', stage: PlantStage.DRY },
+            {
+                days: plant.attributes?.cure_days,
+                icon: mdiCannabis,
+                title: 'Cure',
+                stage: PlantStage.CURE,
+            },
+        ].filter((d) => d.days !== undefined && d.days !== null);
+        const currentStage = (plant.state || '').toLowerCase();
+        let visibleDays = days.filter((d) => d.days);
+        if (currentStage === PlantStage.DRY) {
+            visibleDays = visibleDays.filter((d) => d.stage === PlantStage.DRY);
+        }
+        else if (currentStage === PlantStage.CURE) {
+            visibleDays = visibleDays.filter((d) => d.stage === PlantStage.CURE);
+        }
+        const normalizedCurrent = currentStage === 'veg' || currentStage === 'vegetative' ? PlantStage.VEG : currentStage;
+        const stages = visibleDays.map((d) => ({
+            days: d.days,
+            icon: d.icon,
+            title: d.title,
+            stage: d.stage,
+            isCurrent: d.stage === normalizedCurrent,
+            color: PlantUtils.getPlantStageColor(d.stage),
+        }));
+        this._displayData = {
+            stageColor,
+            strainName,
+            pheno,
+            imageUrl,
+            imageCropMeta,
+            stages,
+        };
+    }
+    _handleTouchStart(e) {
+        if (this.isEditMode)
+            return;
+        // Only single touch
+        if (e.touches.length !== 1)
+            return;
+        this._startX = e.touches[0].clientX;
+        this._startY = e.touches[0].clientY;
+        const card = this.shadowRoot?.querySelector('.plant-card-rich');
+        const rect = card.getBoundingClientRect();
+        this._initialLeft = rect.left;
+        this._initialTop = rect.top;
+        this._longPressTimer = window.setTimeout(() => {
+            this._startMobileDrag(e);
+        }, 500);
+    }
+    _handleTouchMove(e) {
+        if (this._isDraggingMobile) {
+            e.preventDefault(); // Stop scrolling
+            const touch = e.touches[0];
+            const card = this.shadowRoot?.querySelector('.plant-card-rich');
+            const deltaX = touch.clientX - this._startX;
+            const deltaY = touch.clientY - this._startY;
+            card.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.05)`;
+        }
+        else {
+            // If moved significantly before timer fires, cancel timer
+            const touch = e.touches[0];
+            if (Math.abs(touch.clientX - this._startX) > 10 ||
+                Math.abs(touch.clientY - this._startY) > 10) {
+                clearTimeout(this._longPressTimer);
+            }
+        }
+    }
+    _handleTouchEnd(e) {
+        clearTimeout(this._longPressTimer);
+        if (this._isDraggingMobile) {
+            this._endMobileDrag(e);
+        }
+    }
+    _startMobileDrag(e) {
+        this._isDraggingMobile = true;
+        const card = this.shadowRoot?.querySelector('.plant-card-rich');
+        card.classList.add('dragging-mobile');
+        // Dispatch event to notify grid/parent
+        this.dispatchEvent(new CustomEvent('mobile-drag-start', {
+            detail: { plant: this.plant },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _endMobileDrag(e) {
+        this._isDraggingMobile = false;
+        const card = this.shadowRoot?.querySelector('.plant-card-rich');
+        card.classList.remove('dragging-mobile');
+        card.style.transform = '';
+        const touch = e.changedTouches[0];
+        this.dispatchEvent(new CustomEvent('mobile-drop', {
+            detail: {
+                x: touch.clientX,
+                y: touch.clientY,
+                plant: this.plant,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _handleDragStart(e) {
+        if (this.isEditMode) {
+            e.preventDefault();
+            return;
+        }
+        const target = e.target;
+        target.classList.add('dragging');
+        if (e.dataTransfer) {
+            e.dataTransfer.setData('text/plain', JSON.stringify({ id: this.plant.entity_id }));
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        // Dispatch event to parent to track dragged plant state
+        this.dispatchEvent(new CustomEvent('plant-drag-start', {
+            detail: { plant: this.plant },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _handleDragEnd(e) {
+        const target = e.target;
+        target.classList.remove('dragging');
+    }
+    _handleDrop(e) {
+        e.preventDefault();
+        if (this.isEditMode)
+            return;
+        this.dispatchEvent(new CustomEvent('plant-drop', {
+            detail: {
+                originalEvent: e,
+                row: this.row,
+                col: this.col,
+                plant: this.plant,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _handleDragOver(e) {
+        e.preventDefault();
+        // Optional: Add visual feedback
+    }
+    _handleClick() {
+        this.dispatchEvent(new CustomEvent('plant-click', {
+            detail: { plant: this.plant },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _toggleSelection(e) {
+        e.stopPropagation();
+        this.dispatchEvent(new CustomEvent('plant-toggle-selection', {
+            detail: { plant: this.plant },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    renderPlantDaysRich(stages) {
+        return x `
+      ${stages.map((d) => {
+            // Logic for classMap if needed
+            return x `
+          <div class="pc-stat-item ${d.isCurrent ? 'current-stage' : ''}">
+            <svg style="color: ${d.color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
+            <div class="pc-stat-text">${d.days}d</div>
+          </div>
+        `;
+        })}
+    `;
+    }
+    render() {
+        if (!this.plant || !this._displayData)
+            return x ``;
+        const { stageColor, strainName, pheno, imageUrl, imageCropMeta, stages } = this._displayData;
+        return x `
+      <div
+        class="plant-card-rich"
+        style="--stage-color: ${stageColor}"
+        draggable="true"
+        @dragstart=${this._handleDragStart}
+        @dragend=${this._handleDragEnd}
+        @dragover=${this._handleDragOver}
+        @drop=${this._handleDrop}
+        @touchstart=${this._handleTouchStart}
+        @touchmove=${this._handleTouchMove}
+        @touchend=${this._handleTouchEnd}
+        @click=${this._handleClick}
+      >
+        ${imageUrl
+            ? x `
+              <img
+                class="plant-card-bg"
+                src="${imageUrl}"
+                loading="lazy"
+                alt="${strainName}"
+                style="${PlantUtils.getImgStyle(imageCropMeta)}"
+              />
+              <div class="plant-card-overlay"></div>
+            `
+            : ''}
+        ${this.isEditMode
+            ? x `
+              <div
+                class="plant-card-checkbox ${this.selected ? 'selected' : ''}"
+                @click=${this._toggleSelection}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  style="width: 24px; height: 24px; fill: ${this.selected
+                ? 'var(--primary-color)'
+                : 'rgba(255,255,255,0.7)'};"
+                >
+                  <path d="${this.selected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
+                </svg>
+              </div>
+            `
+            : ''}
+
+        <div class="plant-card-content">
+          <div class="pc-info">
+            <div class="pc-strain-name" title="${strainName}">${strainName}</div>
+            ${pheno ? x `<div class="pc-pheno">${pheno}</div>` : ''}
+            <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
+          </div>
+
+          <div class="pc-stats">${this.renderPlantDaysRich(stages)}</div>
+        </div>
+      </div>
+    `;
+    }
+};
+GrowspacePlantCard.styles = i$6 `
+    :host {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .plant-card-rich {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      border-radius: 16px;
+      overflow: hidden;
+      /* Default background if no image */
+      background: var(--ha-card-background, rgba(255, 255, 255, 0.05));
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      box-shadow: var(--ha-card-box-shadow, 0 4px 6px rgba(0, 0, 0, 0.1));
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      aspect-ratio: 1;
+      box-sizing: border-box;
+      color: var(--primary-text-color);
+    }
+
+    .plant-card-rich:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      border-color: var(--primary-color, rgba(255, 255, 255, 0.2));
+    }
+    .plant-card-rich:focus {
+      outline: 2px solid var(--primary-color, #22c55e);
+      outline-offset: 2px;
+    }
+
+    .plant-card-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      z-index: 0;
+    }
+
+    .plant-card-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.9) 0%,
+        rgba(0, 0, 0, 0.6) 50%,
+        rgba(0, 0, 0, 0.3) 100%
+      );
+      z-index: 1;
+    }
+
+    .plant-card-checkbox {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 50%;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .plant-card-checkbox:hover {
+      background: rgba(0, 0, 0, 0.8);
+      transform: scale(1.1);
+    }
+
+    .plant-card-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 16px;
+      height: 100%;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    .pc-info {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .pc-strain-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary-text-color, #fff);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    .pc-pheno {
+      font-size: 0.9rem;
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+      font-weight: 500;
+    }
+
+    .pc-stage {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 8px;
+      color: var(--stage-color);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+      text-transform: capitalize;
+    }
+
+    .pc-stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0 12px;
+      box-sizing: border-box;
+    }
+
+    .pc-stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pc-stat-item svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .pc-stat-text {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--primary-text-color, #fff);
+    }
+
+    .current-stage {
+      /* Add any specific styles for current stage if needed */
+    }
+
+    .plant-card-rich.dragging {
+      opacity: 0.5;
+      transform: rotate(5deg);
+    }
+
+    .plant-card-rich.dragging-mobile {
+      opacity: 0.8;
+      transform: scale(1.05);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      pointer-events: none; /* Let events pass through to grid for elementFromPoint */
+    }
+  `;
+__decorate([
+    n$5({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspacePlantCard.prototype, "plant", void 0);
+__decorate([
+    n$5({ type: Number }),
+    __metadata("design:type", Number)
+], GrowspacePlantCard.prototype, "row", void 0);
+__decorate([
+    n$5({ type: Number }),
+    __metadata("design:type", Number)
+], GrowspacePlantCard.prototype, "col", void 0);
+__decorate([
+    c$2({ context: strainLibraryContext, subscribe: true }),
+    n$5({ attribute: false }),
+    __metadata("design:type", Array)
+], GrowspacePlantCard.prototype, "strainLibrary", void 0);
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], GrowspacePlantCard.prototype, "isEditMode", void 0);
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], GrowspacePlantCard.prototype, "selected", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], GrowspacePlantCard.prototype, "_displayData", void 0);
+GrowspacePlantCard = __decorate([
+    t$2('growspace-plant-card')
+], GrowspacePlantCard);
+
+let GrowspaceChip = class GrowspaceChip extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.icon = '';
+        this.label = '';
+        this.value = undefined;
+        this.status = '';
+        this.active = false;
+        this.linked = false;
+        this.tooltip = '';
+    }
+    render() {
+        // Determine classes based on meaningful status string
+        const statusClass = this.status ? `status-${this.status}` : '';
+        return x `
+      <div class="stat-chip ${statusClass}" title="${this.tooltip}">
+        <div class="icon">
+          <svg viewBox="0 0 24 24"><path d="${this.icon}"></path></svg>
+        </div>
+        ${this.label ? x `${this.label}: ` : ''}${this.value}
+        ${this.linked
+            ? x `
+              <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">
+                <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
+              </div>
+            `
+            : ''}
+      </div>
+    `;
+    }
+    _handleLinkClick(e) {
+        e.stopPropagation();
+        this.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
+    }
+};
+GrowspaceChip.styles = i$6 `
+    :host {
+      display: inline-flex;
+      vertical-align: middle;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 8px 16px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      user-select: none;
+      flex-shrink: 0;
+      white-space: nowrap;
+      touch-action: auto;
+    }
+
+    /* Status Colors */
+    @keyframes pulse-red {
+      0% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+      }
+    }
+
+    .stat-chip.status-optimal {
+      color: #2e7d32 !important;
+      background: rgba(46, 125, 50, 0.1) !important;
+    }
+
+    .stat-chip.status-warning {
+      color: #ffa726 !important;
+      border-color: rgba(255, 167, 38, 0.5) !important;
+      background: rgba(255, 167, 38, 0.1) !important;
+    }
+
+    .stat-chip.status-danger {
+      color: #ef5350 !important;
+      border-color: rgba(239, 83, 80, 0.5) !important;
+      background: rgba(239, 83, 80, 0.1) !important;
+      animation: pulse-red 2s infinite;
+    }
+
+    .stat-chip:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    :host([active]) .stat-chip {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      color: #fff;
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+      display: flex;
+    }
+
+    .icon svg {
+      width: 100%;
+      height: 100%;
+      fill: currentColor;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .link-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      margin-left: -8px;
+      margin-right: -8px;
+      opacity: 0.8;
+      cursor: pointer;
+    }
+
+    .link-icon svg {
+      width: 100%;
+      height: 100%;
+      fill: var(--primary-color, #03a9f4);
+    }
+  `;
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", Object)
+], GrowspaceChip.prototype, "icon", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", Object)
+], GrowspaceChip.prototype, "label", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", Object)
+], GrowspaceChip.prototype, "value", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", String)
+], GrowspaceChip.prototype, "status", void 0);
+__decorate([
+    n$5({ type: Boolean, reflect: true }),
+    __metadata("design:type", Object)
+], GrowspaceChip.prototype, "active", void 0);
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], GrowspaceChip.prototype, "linked", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", Object)
+], GrowspaceChip.prototype, "tooltip", void 0);
+GrowspaceChip = __decorate([
+    t$2('growspace-chip')
+], GrowspaceChip);
+
 // these aren't really private, but nor are they really useful to document
 
 /**
@@ -143,177 +10381,177 @@ class ZoneIsAbstractError extends LuxonError {
  * @private
  */
 
-const n$8 = "numeric",
-  s$8 = "short",
-  l$2 = "long";
+const n = "numeric",
+  s = "short",
+  l = "long";
 
 const DATE_SHORT = {
-  year: n$8,
-  month: n$8,
-  day: n$8,
+  year: n,
+  month: n,
+  day: n,
 };
 
 const DATE_MED = {
-  year: n$8,
-  month: s$8,
-  day: n$8,
+  year: n,
+  month: s,
+  day: n,
 };
 
 const DATE_MED_WITH_WEEKDAY = {
-  year: n$8,
-  month: s$8,
-  day: n$8,
-  weekday: s$8,
+  year: n,
+  month: s,
+  day: n,
+  weekday: s,
 };
 
 const DATE_FULL = {
-  year: n$8,
-  month: l$2,
-  day: n$8,
+  year: n,
+  month: l,
+  day: n,
 };
 
 const DATE_HUGE = {
-  year: n$8,
-  month: l$2,
-  day: n$8,
-  weekday: l$2,
+  year: n,
+  month: l,
+  day: n,
+  weekday: l,
 };
 
 const TIME_SIMPLE = {
-  hour: n$8,
-  minute: n$8,
+  hour: n,
+  minute: n,
 };
 
 const TIME_WITH_SECONDS = {
-  hour: n$8,
-  minute: n$8,
-  second: n$8,
+  hour: n,
+  minute: n,
+  second: n,
 };
 
 const TIME_WITH_SHORT_OFFSET = {
-  hour: n$8,
-  minute: n$8,
-  second: n$8,
-  timeZoneName: s$8,
+  hour: n,
+  minute: n,
+  second: n,
+  timeZoneName: s,
 };
 
 const TIME_WITH_LONG_OFFSET = {
-  hour: n$8,
-  minute: n$8,
-  second: n$8,
-  timeZoneName: l$2,
+  hour: n,
+  minute: n,
+  second: n,
+  timeZoneName: l,
 };
 
 const TIME_24_SIMPLE = {
-  hour: n$8,
-  minute: n$8,
+  hour: n,
+  minute: n,
   hourCycle: "h23",
 };
 
 const TIME_24_WITH_SECONDS = {
-  hour: n$8,
-  minute: n$8,
-  second: n$8,
+  hour: n,
+  minute: n,
+  second: n,
   hourCycle: "h23",
 };
 
 const TIME_24_WITH_SHORT_OFFSET = {
-  hour: n$8,
-  minute: n$8,
-  second: n$8,
+  hour: n,
+  minute: n,
+  second: n,
   hourCycle: "h23",
-  timeZoneName: s$8,
+  timeZoneName: s,
 };
 
 const TIME_24_WITH_LONG_OFFSET = {
-  hour: n$8,
-  minute: n$8,
-  second: n$8,
+  hour: n,
+  minute: n,
+  second: n,
   hourCycle: "h23",
-  timeZoneName: l$2,
+  timeZoneName: l,
 };
 
 const DATETIME_SHORT = {
-  year: n$8,
-  month: n$8,
-  day: n$8,
-  hour: n$8,
-  minute: n$8,
+  year: n,
+  month: n,
+  day: n,
+  hour: n,
+  minute: n,
 };
 
 const DATETIME_SHORT_WITH_SECONDS = {
-  year: n$8,
-  month: n$8,
-  day: n$8,
-  hour: n$8,
-  minute: n$8,
-  second: n$8,
+  year: n,
+  month: n,
+  day: n,
+  hour: n,
+  minute: n,
+  second: n,
 };
 
 const DATETIME_MED = {
-  year: n$8,
-  month: s$8,
-  day: n$8,
-  hour: n$8,
-  minute: n$8,
+  year: n,
+  month: s,
+  day: n,
+  hour: n,
+  minute: n,
 };
 
 const DATETIME_MED_WITH_SECONDS = {
-  year: n$8,
-  month: s$8,
-  day: n$8,
-  hour: n$8,
-  minute: n$8,
-  second: n$8,
+  year: n,
+  month: s,
+  day: n,
+  hour: n,
+  minute: n,
+  second: n,
 };
 
 const DATETIME_MED_WITH_WEEKDAY = {
-  year: n$8,
-  month: s$8,
-  day: n$8,
-  weekday: s$8,
-  hour: n$8,
-  minute: n$8,
+  year: n,
+  month: s,
+  day: n,
+  weekday: s,
+  hour: n,
+  minute: n,
 };
 
 const DATETIME_FULL = {
-  year: n$8,
-  month: l$2,
-  day: n$8,
-  hour: n$8,
-  minute: n$8,
-  timeZoneName: s$8,
+  year: n,
+  month: l,
+  day: n,
+  hour: n,
+  minute: n,
+  timeZoneName: s,
 };
 
 const DATETIME_FULL_WITH_SECONDS = {
-  year: n$8,
-  month: l$2,
-  day: n$8,
-  hour: n$8,
-  minute: n$8,
-  second: n$8,
-  timeZoneName: s$8,
+  year: n,
+  month: l,
+  day: n,
+  hour: n,
+  minute: n,
+  second: n,
+  timeZoneName: s,
 };
 
 const DATETIME_HUGE = {
-  year: n$8,
-  month: l$2,
-  day: n$8,
-  weekday: l$2,
-  hour: n$8,
-  minute: n$8,
-  timeZoneName: l$2,
+  year: n,
+  month: l,
+  day: n,
+  weekday: l,
+  hour: n,
+  minute: n,
+  timeZoneName: l,
 };
 
 const DATETIME_HUGE_WITH_SECONDS = {
-  year: n$8,
-  month: l$2,
-  day: n$8,
-  weekday: l$2,
-  hour: n$8,
-  minute: n$8,
-  second: n$8,
-  timeZoneName: l$2,
+  year: n,
+  month: l,
+  day: n,
+  weekday: l,
+  hour: n,
+  minute: n,
+  second: n,
+  timeZoneName: l,
 };
 
 /**
@@ -8206,387 +18444,6 @@ function friendlyDateTime(dateTimeish) {
   }
 }
 
-[
-    PlantStage.SEEDLING,
-    PlantStage.MOTHER,
-    PlantStage.CLONE,
-    PlantStage.VEG,
-    PlantStage.FLOWER,
-    PlantStage.DRY,
-    PlantStage.CURE,
-];
-class PlantUtils {
-    static normalizeStage(state) {
-        const lower = state.toLowerCase();
-        if (lower === 'veg' || lower === 'vegetative')
-            return PlantStage.VEG;
-        if (lower === 'mom')
-            return PlantStage.MOTHER;
-        // Add other aliases if necessary
-        return lower;
-    }
-    static getPlantStageColor(state) {
-        const key = this.normalizeStage(state);
-        return this.stageColors[key] ?? '#757575';
-    }
-    static getPlantStageIcon(state) {
-        const key = this.normalizeStage(state);
-        return this.stageIcons[key] ?? mdiSprout;
-    }
-    // --- helpers at the top ---
-    static getPlantStage(plant) {
-        const attrs = plant?.attributes ?? {};
-        const now = new Date();
-        if (attrs.cure_start)
-            return PlantStage.CURE;
-        if (attrs.dry_start)
-            return PlantStage.DRY;
-        if (attrs.mom_start)
-            return PlantStage.MOTHER;
-        if (attrs.clone_start)
-            return PlantStage.CLONE;
-        if (attrs.flower_start && new Date(attrs.flower_start) <= now)
-            return PlantStage.FLOWER;
-        if (attrs.veg_start && new Date(attrs.veg_start) <= now)
-            return PlantStage.VEG;
-        return PlantStage.SEEDLING;
-    }
-    static calculatePlantAge(plant) {
-        if (!plant || !plant.attributes)
-            return 0;
-        const stage = this.getPlantStage(plant);
-        const attrs = plant.attributes;
-        let startStr;
-        switch (stage) {
-            case PlantStage.FLOWER:
-                startStr = attrs.flower_start;
-                break;
-            case PlantStage.VEG:
-                startStr = attrs.veg_start;
-                break;
-            case PlantStage.MOTHER:
-                startStr = attrs.mom_start;
-                break;
-            case PlantStage.CLONE:
-                startStr = attrs.clone_start;
-                break;
-            case PlantStage.DRY:
-                startStr = attrs.dry_start;
-                break;
-            case PlantStage.CURE:
-                startStr = attrs.cure_start;
-                break;
-            case PlantStage.SEEDLING:
-                startStr = attrs.planted_date;
-                break;
-        }
-        if (!startStr)
-            return 0;
-        const start = new Date(startStr);
-        const now = new Date();
-        if (isNaN(start.getTime()))
-            return 0;
-        const diff = now.getTime() - start.getTime();
-        return Math.floor(diff / (1000 * 60 * 60 * 24));
-    }
-    static createGridLayout(plants, rows, cols) {
-        const grid = Array.from({ length: rows }, () => Array.from({ length: cols }, () => null));
-        plants.forEach((plant) => {
-            const row = (plant.attributes?.row ?? 1) - 1;
-            const col = (plant.attributes?.col ?? 1) - 1;
-            if (row >= 0 && row < rows && col >= 0 && col < cols) {
-                grid[row][col] = plant;
-            }
-        });
-        return { rows, cols, grid };
-    }
-    static findFirstAvailableSlot(plants, rows, cols) {
-        const occupied = new Set();
-        plants.forEach((p) => {
-            if (p.attributes.row !== undefined && p.attributes.col !== undefined) {
-                occupied.add(`${p.attributes.row},${p.attributes.col}`);
-            }
-        });
-        for (let r = 1; r <= rows; r++) {
-            for (let c = 1; c <= cols; c++) {
-                if (!occupied.has(`${r},${c}`)) {
-                    return { row: r, col: c };
-                }
-            }
-        }
-        // Default to first slot if full
-        return { row: 1, col: 1 };
-    }
-    static calculateEffectiveRows(device) {
-        const { type, plants, plants_per_row, rows } = device;
-        // Use strict type check instead of magic string comparison
-        if (this.DYNAMIC_ROW_TYPES.includes(type)) {
-            if (plants.length === 0)
-                return 1;
-            const maxRowUsed = Math.max(...plants.map((p) => p.attributes?.row || 1));
-            const lastRowCount = plants.filter((p) => (p.attributes?.row || 1) === maxRowUsed).length;
-            return lastRowCount >= plants_per_row ? maxRowUsed + 1 : maxRowUsed;
-        }
-        return rows;
-    }
-    /**
-     * Converts a datetime-local input string (YYYY-MM-DDTHH:mm) to ISO string
-     * Returns null if input is empty or invalid
-     */
-    static parseDateTimeLocal(value) {
-        if (!value)
-            return undefined;
-        try {
-            // Append ":00" if only HH:MM is provided
-            const isoString = value.length === 16 ? value + ':00' : value;
-            const dt = new Date(isoString);
-            if (isNaN(dt.getTime()))
-                return undefined;
-            // Format as YYYY-MM-DDTHH:MM:SS (no Z)
-            const yyyy = dt.getFullYear();
-            const mm = String(dt.getMonth() + 1).padStart(2, '0');
-            const dd = String(dt.getDate()).padStart(2, '0');
-            const hh = String(dt.getHours()).padStart(2, '0');
-            const min = String(dt.getMinutes()).padStart(2, '0');
-            const sec = String(dt.getSeconds()).padStart(2, '0');
-            return `${yyyy}-${mm}-${dd}T${hh}:${min}:${sec}`;
-        }
-        catch {
-            return undefined;
-        }
-    }
-    /**
-     * Extracts YYYY-MM-DD from a date string or datetime-local string
-     */
-    static formatDateForBackend(value) {
-        if (!value)
-            return undefined;
-        try {
-            // If it's already roughly ISO format, extracting the first part is safest
-            // if we assume the user entered local time in the datetime-local input.
-            const parts = value.split('T');
-            if (parts.length > 0 && parts[0].match(/^\d{4}-\d{2}-\d{2}$/)) {
-                return parts[0];
-            }
-            // Fallback to parsing if format is unexpected
-            const dt = new Date(value);
-            if (isNaN(dt.getTime()))
-                return undefined;
-            const yyyy = dt.getFullYear();
-            const mm = String(dt.getMonth() + 1).padStart(2, '0');
-            const dd = String(dt.getDate()).padStart(2, '0');
-            return `${yyyy}-${mm}-${dd}`;
-        }
-        catch {
-            return undefined;
-        }
-    }
-    /**
-     * Maps dialog-edited attributes to API-ready payload.
-     * Pure function - no side effects.
-     * @param editedAttributes - Attributes from the plant overview dialog
-     * @param isBulkEdit - Whether multiple plants are being edited
-     * @returns Object ready for API call
-     */
-    static mapDialogToApiPayload(editedAttributes, isBulkEdit) {
-        const payload = {};
-        const fieldsToProcess = isBulkEdit
-            ? [...this.DATE_FIELDS]
-            : ['strain', 'phenotype', 'row', 'col', ...this.DATE_FIELDS];
-        fieldsToProcess.forEach((field) => {
-            if (editedAttributes[field] !== undefined) {
-                if (this.DATE_FIELDS.includes(field)) {
-                    const val = String(editedAttributes[field] || '');
-                    if (!val || val === 'null' || val === 'undefined') {
-                        payload[field] = null;
-                    }
-                    else {
-                        const formattedDate = this.formatDateForBackend(val);
-                        if (formattedDate) {
-                            payload[field] = formattedDate;
-                        }
-                    }
-                }
-                else {
-                    if (editedAttributes[field] !== null) {
-                        payload[field] = editedAttributes[field];
-                    }
-                }
-            }
-        });
-        // Remove position fields for bulk edits
-        if (isBulkEdit) {
-            delete payload.row;
-            delete payload.col;
-        }
-        return payload;
-    }
-    static getCurrentDateTime() {
-        const now = new Date();
-        const pad = (n) => n.toString().padStart(2, '0');
-        return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:00`;
-    }
-    /**
-     * Formats a date string (YYYY-MM-DD or ISO) to YYYY-MM-DDThh:mm for datetime-local inputs
-     */
-    static toDateTimeLocal(value) {
-        if (!value)
-            return '';
-        try {
-            const dt = new Date(value);
-            if (isNaN(dt.getTime()))
-                return '';
-            const pad = (n) => n.toString().padStart(2, '0');
-            const yyyy = dt.getFullYear();
-            const mm = pad(dt.getMonth() + 1);
-            const dd = pad(dt.getDate());
-            const hh = pad(dt.getHours());
-            const min = pad(dt.getMinutes());
-            return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-        }
-        catch {
-            return '';
-        }
-    }
-    static getDominantStage(plants) {
-        if (!plants || plants.length === 0)
-            return null;
-        // Defined priority: Cure > Dry > Flower > Vegetative > Clone > Mother > Seedling
-        // Lower index = higher priority
-        const priority = [
-            PlantStage.CURE,
-            PlantStage.DRY,
-            PlantStage.FLOWER,
-            PlantStage.VEG,
-            PlantStage.CLONE,
-            PlantStage.MOTHER,
-            PlantStage.SEEDLING,
-        ];
-        // Find the highest priority stage present in the plants
-        let bestStage = null;
-        let maxDays = 0;
-        // Group plants by normalized stage
-        const plantsByStage = {};
-        for (const plant of plants) {
-            // Use plant.state directly if possible, or calculate it
-            // plant.state usually contains the stage string
-            const stage = this.normalizeStage(plant.state || this.getPlantStage(plant));
-            if (!plantsByStage[stage])
-                plantsByStage[stage] = [];
-            plantsByStage[stage].push(plant);
-        }
-        // Iterate priority list to find the first matching stage
-        for (const stage of priority) {
-            if (plantsByStage[stage] && plantsByStage[stage].length > 0) {
-                bestStage = stage;
-                // Find max days for this stage
-                // Map stage to attribute key
-                const daysKey = `${stage === PlantStage.VEG ? 'veg' : stage}_days`;
-                const daysValues = plantsByStage[stage].map((p) => {
-                    const val = p.attributes[daysKey];
-                    return typeof val === 'number' ? val : 0;
-                });
-                maxDays = Math.max(...daysValues);
-                break;
-            }
-        }
-        if (!bestStage)
-            return null;
-        return { stage: bestStage, days: maxDays };
-    }
-    /**
-     * Compresses and resizes an image file.
-     * @param file The file object from input.
-     * @param maxWidth Maximum width in pixels.
-     * @param maxHeight Maximum height in pixels.
-     * @param quality Quality between 0 and 1.
-     * @returns Promise resolving to base64 string.
-     */
-    static compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (event) => {
-                const img = new Image();
-                img.src = event.target?.result;
-                img.onload = () => {
-                    let width = img.width;
-                    let height = img.height;
-                    // Calculate new dimensions
-                    if (width > height) {
-                        if (width > maxWidth) {
-                            height = Math.round((height * maxWidth) / width);
-                            width = maxWidth;
-                        }
-                    }
-                    else {
-                        if (height > maxHeight) {
-                            width = Math.round((width * maxHeight) / height);
-                            height = maxHeight;
-                        }
-                    }
-                    const canvas = document.createElement('canvas');
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) {
-                        reject(new Error('Failed to get canvas context'));
-                        return;
-                    }
-                    ctx.drawImage(img, 0, 0, width, height);
-                    // Get base64 string
-                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
-                    resolve(dataUrl);
-                };
-                img.onerror = (err) => reject(err);
-            };
-            reader.onerror = (err) => reject(err);
-        });
-    }
-    static preloadImage(url) {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.src = url;
-            img.onload = () => resolve();
-            img.onerror = () => reject();
-        });
-    }
-    static getImgStyle(meta) {
-        if (!meta)
-            return 'width: 100%; height: 100%; object-fit: cover;';
-        return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
-    }
-}
-PlantUtils.stageColors = {
-    [PlantStage.MOTHER]: '#E91E63',
-    [PlantStage.CLONE]: '#FF5722',
-    [PlantStage.SEEDLING]: '#4CAF50',
-    [PlantStage.VEG]: '#8BC34A',
-    [PlantStage.FLOWER]: '#FF9800',
-    [PlantStage.DRY]: '#795548',
-    [PlantStage.CURE]: '#9C27B0',
-};
-PlantUtils.stageIcons = {
-    [PlantStage.MOTHER]: mdiSprout,
-    [PlantStage.CLONE]: mdiSprout,
-    [PlantStage.SEEDLING]: mdiSprout,
-    [PlantStage.VEG]: mdiSprout,
-    [PlantStage.FLOWER]: mdiFlower,
-    [PlantStage.DRY]: mdiHairDryer,
-    [PlantStage.CURE]: mdiCannabis,
-};
-/** Growspace types that support dynamic row expansion */
-PlantUtils.DYNAMIC_ROW_TYPES = ['dry', 'cure', 'mother', 'clone'];
-/** Date fields used for plant lifecycle */
-PlantUtils.DATE_FIELDS = [
-    'seedling_start',
-    'mother_start',
-    'clone_start',
-    'veg_start',
-    'flower_start',
-    'dry_start',
-    'cure_start',
-];
 class MetricsUtils {
     static _getAttributeValue(ent, key) {
         if (!ent || !ent.attributes)
@@ -8767,9953 +18624,6 @@ class MetricsUtils {
         return { mainChips, deviceChips, dominant, envAttrs };
     }
 }
-
-class GrowspaceAdapter {
-    static transformGrowspace(overview, wsData = null) {
-        const attributes = overview.attributes;
-        const growspaceId = attributes.growspace_id;
-        const name = attributes.friendly_name || `Growspace ${growspaceId}`;
-        const type = attributes.type ??
-            (name.toLowerCase().includes('dry')
-                ? 'dry'
-                : name.toLowerCase().includes('cure')
-                    ? 'cure'
-                    : 'normal');
-        // 1. Check for missing data (empty state fix)
-        // If we have no WS data AND the attributes grid is empty/undefined, allow returning null/simulating loading
-        // We return null so the caller can filter this out and keep the previous state or show loading
-        if (!wsData && (!attributes.grid || Object.keys(attributes.grid).length === 0)) {
-            return null; // Cast to avoid changing return type signature broadly if strictly typed, but better handled by caller check
-        }
-        // Prefer WS data for grid, fallback to attributes.grid (legacy/fallback)
-        const grid = wsData?.grid || attributes.grid || {};
-        const plants = [];
-        Object.entries(grid).forEach(([key, slot]) => {
-            if (slot) {
-                // Fix: Use the stable entity_id from backend if available, fallback to unknown (never guess)
-                const entityId = slot.entity_id || 'unknown';
-                // Extract row/col from key "position_R_C"
-                let row;
-                let col;
-                const parts = key.split('_');
-                if (parts.length === 3) {
-                    row = parseInt(parts[1]);
-                    col = parseInt(parts[2]);
-                }
-                plants.push({
-                    entity_id: entityId,
-                    state: slot.stage || 'unknown',
-                    attributes: {
-                        ...slot,
-                        growspace_id: growspaceId,
-                        friendly_name: `${slot.strain} ${slot.phenotype}`,
-                        stage: slot.stage,
-                        row,
-                        col,
-                    },
-                    last_changed: '',
-                    last_updated: '',
-                    context: { id: '', parent_id: null, user_id: null },
-                });
-            }
-        });
-        // Extract enhanced metrics from WS data or attributes
-        const bioMetrics = wsData
-            ? {
-                vpd_status: wsData.vpd_status,
-                vpd_target_min: wsData.vpd_target_min,
-                vpd_target_max: wsData.vpd_target_max,
-                vpd_danger_min: wsData.vpd_danger_min,
-                vpd_danger_max: wsData.vpd_danger_max,
-                granular_stage: wsData.granular_stage,
-                is_day: wsData.is_day,
-                veg_week: wsData.veg_week,
-                flower_week: wsData.flower_week,
-                // Added per request:
-                air_exchange: wsData.air_exchange,
-            }
-            : {
-                // Fallback to attributes if WS failed or not used (though we removed them from backend)
-                vpd_status: attributes.vpd_status,
-                vpd_target_min: attributes.vpd_target_min,
-                vpd_target_max: attributes.vpd_target_max,
-                granular_stage: attributes.granular_stage,
-                is_day: attributes.is_day,
-                air_exchange: attributes.air_exchange,
-            };
-        // Extract irrigation times from nested config in WS data
-        const rawIrrigation = wsData?.irrigation_config?.irrigation_times || attributes.irrigation_times || [];
-        const irrigationTimes = Array.isArray(rawIrrigation)
-            ? rawIrrigation.map((t) => (typeof t === 'string' ? { time: t } : t))
-            : [];
-        const rawDrain = wsData?.irrigation_config?.drain_times || attributes.drain_times || [];
-        const drainTimes = Array.isArray(rawDrain)
-            ? rawDrain.map((t) => (typeof t === 'string' ? { time: t } : t))
-            : [];
-        // Environment attributes
-        const envAttrs = wsData
-            ? {
-                temperature_sensor: wsData.temperature_sensor,
-                humidity_sensor: wsData.humidity_sensor,
-                vpd_sensor: wsData.vpd_sensor,
-                co2_sensor: wsData.co2_sensor,
-                soil_moisture_sensor: wsData.soil_moisture_sensor,
-                dehumidifier_entity: wsData.dehumidifier_entity,
-                humidifier_entity: wsData.humidifier_entity,
-                exhaust_entity: wsData.exhaust_entity,
-                exhaust_sensor: wsData.exhaust_sensor,
-                humidifier_sensor: wsData.humidifier_sensor,
-                circulation_fan_entity: wsData.circulation_fan_entity,
-                light_sensor: wsData.light_sensor,
-                dehumidifier_control_enabled: wsData.dehumidifier_control_enabled,
-                // Added per request:
-                dehumidifier_humidity: wsData.dehumidifier_humidity,
-                dehumidifier_current_humidity: wsData.dehumidifier_current_humidity,
-                dehumidifier_mode: wsData.dehumidifier_mode,
-                vpd: wsData.vpd,
-            }
-            : {
-                // Fallback
-                temperature_sensor: attributes.temperature_sensor,
-                humidity_sensor: attributes.humidity_sensor,
-                vpd_sensor: attributes.vpd_sensor,
-                co2_sensor: attributes.co2_sensor,
-                soil_moisture_sensor: attributes.soil_moisture_sensor,
-                light_sensor: attributes.light_sensor,
-                exhaust_entity: attributes.exhaust_entity,
-                exhaust_sensor: attributes.exhaust_sensor,
-                humidifier_entity: attributes.humidifier_entity,
-                humidifier_sensor: attributes.humidifier_sensor,
-                circulation_fan_entity: attributes.circulation_fan_entity,
-                dehumidifier_entity: attributes.dehumidifier_entity,
-                dehumidifier_control_enabled: attributes.dehumidifier_control_enabled,
-            };
-        const irrigationConfig = wsData
-            ? wsData.irrigation_config
-            : {
-                irrigation_pump_entity: attributes.irrigation_pump_entity,
-                drain_pump_entity: attributes.drain_pump_entity,
-                irrigation_duration: attributes.irrigation_duration,
-                drain_duration: attributes.drain_duration,
-            };
-        const irrigationStrategy = wsData ? wsData.irrigation_strategy : attributes.irrigation_strategy;
-        return createGrowspaceDevice({
-            device_id: growspaceId,
-            overview_entity_id: overview.entity_id,
-            name,
-            plants,
-            rows: attributes.rows ?? 3,
-            plants_per_row: attributes.plants_per_row ?? 3,
-            type,
-            last_updated: overview.last_updated,
-            biological_metrics: bioMetrics,
-            irrigation_times: irrigationTimes,
-            drain_times: drainTimes,
-            irrigation_config: irrigationConfig,
-            irrigation_strategy: irrigationStrategy,
-            environment_attributes: envAttrs,
-            // Pass through new statistics
-            max_veg_days: wsData?.max_veg_days,
-            max_flower_days: wsData?.max_flower_days,
-            total_plants: wsData?.total_plants,
-            max_stage_summary: wsData?.max_stage_summary,
-        });
-    }
-    /**
-     * @deprecated Relies on attributes that are often empty. Use DataService.getGrowspaceDevices instead which uses WS data.
-     */
-    static transformToDevices(allStates) {
-        // Legacy method - might be unused after refactor, but kept for safety if needed
-        // Assuming no WS data available here, so grid comes from attributes (which might be empty now)
-        const overviewSensors = allStates.filter((entity) => {
-            const attrs = entity.attributes;
-            return (entity.entity_id.startsWith('sensor.') &&
-                attrs.growspace_id !== undefined &&
-                attrs.rows !== undefined &&
-                attrs.plants_per_row !== undefined &&
-                attrs.row === undefined &&
-                attrs.col === undefined);
-        });
-        return overviewSensors.map((overview) => this.transformGrowspace(overview, null));
-    }
-}
-
-const METRIC_SORT_ORDER = [
-    'temperature',
-    'humidity',
-    'vpd',
-    'co2',
-    'light',
-    'soil_moisture',
-    'irrigation',
-    'drain',
-    'optimal',
-    'exhaust',
-    'circulation_fan',
-    'humidifier',
-    'dehumidifier',
-];
-const METRIC_CONFIG = {
-    temperature: { color: '#ff5252', title: 'Temperature', unit: '°C', icon: mdiThermometer },
-    humidity: { color: '#2196f3', title: 'Humidity', unit: '%', icon: mdiWaterPercent },
-    vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa', icon: mdiCloudOutline },
-    calculated_vpd: { color: '#ab47bc', title: 'Calc. VPD', unit: 'kPa', icon: mdiCalculator },
-    co2: { color: '#4caf50', title: 'CO2', unit: 'ppm', icon: mdiWeatherCloudy },
-    air_exchange: { color: '#8d6e63', title: 'Air Exchange', unit: 'm³/h', icon: mdiAirFilter },
-    soil_moisture: { color: '#03a9f4', title: 'Soil Moisture', unit: '%', icon: mdiWaterPercent },
-    light: { color: '#ffc107', title: 'Light', unit: 'state', icon: mdiLightbulbOn, type: 'step' },
-    irrigation: {
-        color: '#03a9f4',
-        title: 'Irrigation',
-        unit: 'state',
-        icon: mdiWater,
-        type: 'step',
-    },
-    drain: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: 'step' },
-    exhaust: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
-    circulation_fan: {
-        color: '#607d8b',
-        title: 'Circulation Fan',
-        unit: '',
-        icon: mdiFan,
-    },
-    humidifier: { color: '#607d8b', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
-    dehumidifier: {
-        color: '#009688',
-        title: 'Dehumidifier',
-        unit: 'state',
-        icon: mdiAirHumidifierOff,
-        type: 'step',
-    },
-    optimal: {
-        color: '#4caf50',
-        title: 'Optimal Conditions',
-        unit: 'state',
-        icon: mdiRadioboxMarked,
-        type: 'step',
-    },
-};
-const DEFAULT_METRIC_CONFIG = {
-    color: '#fff',
-    title: 'Unknown',
-    unit: '',
-    icon: mdiMagnify,
-    type: 'line',
-};
-const SENSOR_CHART_DEFAULTS = {
-    exhaust: { min: 0, max: 10, disablePadding: true, unit: 'state' },
-    dehumidifier: { min: 0, max: 1, disablePadding: true, binary: true },
-    humidifier: { min: 0, max: 10, disablePadding: true, unit: 'state' },
-    circulation_fan: { min: 0, max: 10, disablePadding: true, unit: 'state' },
-    optimizer: { min: 0, max: 1, disablePadding: true, binary: true, unit: 'state' },
-};
-/**
- * Maps metric keys to their entity attribute keys in GrowspaceDevice.environment_attributes
- * and GrowspaceDevice.irrigation_config. Used by header chips and history controller.
- */
-const METRIC_ENTITY_KEYS = {
-    temperature: { primary: 'temperature_sensor' },
-    humidity: { primary: 'humidity_sensor' },
-    vpd: { primary: 'vpd_sensor' },
-    co2: { primary: 'co2_sensor' },
-    exhaust: { primary: 'exhaust_sensor', fallback: 'exhaust_entity' },
-    humidifier: { primary: 'humidifier_sensor', fallback: 'humidifier_entity' },
-    dehumidifier: { primary: 'dehumidifier_entity' },
-    circulation_fan: { primary: 'circulation_fan_entity' },
-    light: { primary: 'light_sensor' },
-    soil_moisture: { primary: 'soil_moisture_sensor' },
-    irrigation: { primary: 'irrigation_pump_entity', source: 'irrigation' },
-    drain: { primary: 'drain_pump_entity', source: 'irrigation' },
-};
-const DOMAIN = 'growspace_manager';
-const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
-const SERVICES = {
-    GET_STRAIN_LIBRARY: 'get_strain_library',
-    ADD_PLANT: 'add_plant',
-    UPDATE_PLANT: 'update_plant',
-    REMOVE_PLANT: 'remove_plant',
-    HARVEST_PLANT: 'harvest_plant',
-    TAKE_CLONE: 'take_clone',
-    SWITCH_PLANTS: 'switch_plants',
-    MOVE_CLONE: 'move_clone',
-    SET_DEHUMIDIFIER_CONTROL: 'set_dehumidifier_control',
-    SET_IRRIGATION_SETTINGS: 'set_irrigation_settings',
-    ADD_IRRIGATION_TIME: 'add_irrigation_time',
-    REMOVE_IRRIGATION_TIME: 'remove_irrigation_time',
-    SET_IRRIGATION_STRATEGY: 'set_irrigation_strategy',
-    ADD_DRAIN_TIME: 'add_drain_time',
-    REMOVE_DRAIN_TIME: 'remove_drain_time',
-    EXPORT_STRAIN_LIBRARY: 'export_strain_library',
-    ADD_STRAIN: 'add_strain',
-    REMOVE_STRAIN: 'remove_strain',
-    CLEAR_STRAIN_LIBRARY: 'clear_strain_library',
-    ADD_GROWSPACE: 'add_growspace',
-    UPDATE_GROWSPACE: 'update_growspace',
-    REMOVE_GROWSPACE: 'remove_growspace',
-    CONFIGURE_ENVIRONMENT: 'configure_environment',
-    ASK_GROW_ADVICE: 'ask_grow_advice',
-    ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
-    STRAIN_RECOMMENDATION: 'strain_recommendation',
-};
-
-class DataService {
-    constructor(hass) {
-        // Cache for transformed devices to avoid expensive re-parsing on every HASS update
-        this._deviceCache = new Map();
-        if (hass) {
-            this.hass = hass;
-        }
-    }
-    updateHass(hass) {
-        this.hass = hass;
-    }
-    async fetchGrowspaceData(growspaceId) {
-        if (!this.hass)
-            return null;
-        try {
-            const result = await this.hass.connection.sendMessagePromise({
-                type: WS_TYPE_GET_DATA,
-                growspace_id: growspaceId,
-            });
-            return result;
-        }
-        catch (err) {
-            console.error('[DataService:fetchGrowspaceData] Error:', err);
-            // Fallback: If WS fails, we return null, and adapter will try to use attributes (which might be empty for heavy data)
-            return null;
-        }
-    }
-    getGrowspaceDevices(wsDataMap = {}) {
-        if (!this.hass) {
-            // console.log('[DataService] getGrowspaceDevices: no hass');
-            return [];
-        }
-        const allStates = Object.values(this.hass.states);
-        const overviewSensors = allStates.filter((s) => s.entity_id.startsWith('sensor.') &&
-            s.attributes.growspace_id !== undefined &&
-            s.attributes.plants_per_row !== undefined &&
-            s.attributes.row === undefined &&
-            s.attributes.col === undefined);
-        /*
-        console.log(
-          '[DataService] getGrowspaceDevices: found',
-          overviewSensors.length,
-          'sensors, total states:',
-          allStates.length
-        );
-        */
-        const activeEntityIds = new Set();
-        const devices = overviewSensors
-            .map((sensor) => {
-            const growspaceId = sensor.attributes.growspace_id;
-            const wsData = wsDataMap[growspaceId] || null;
-            // Cache Check
-            const cached = this._deviceCache.get(sensor.entity_id);
-            if (cached && cached.entity === sensor && cached.wsData === wsData) {
-                activeEntityIds.add(sensor.entity_id);
-                return cached.result;
-            }
-            // Cache Miss - Reprocess
-            const device = GrowspaceAdapter.transformGrowspace(sensor, wsData);
-            if (device) {
-                this._deviceCache.set(sensor.entity_id, { entity: sensor, wsData, result: device });
-                activeEntityIds.add(sensor.entity_id);
-            }
-            return device;
-        })
-            .filter((device) => device !== null);
-        // Cleanup cache for removed entities
-        if (this._deviceCache.size > activeEntityIds.size) {
-            for (const id of this._deviceCache.keys()) {
-                if (!activeEntityIds.has(id)) {
-                    this._deviceCache.delete(id);
-                }
-            }
-        }
-        return devices;
-    }
-    getGrowspaceId(entity) {
-        // Plant entities expose growspace_id directly
-        return entity.attributes?.growspace_id || 'unknown';
-    }
-    getStrainLibrary() {
-        const allStates = Object.values(this.hass.states);
-        const strainSensor = allStates.find((s) => s.attributes?.strains !== undefined && s.attributes?.strains !== null);
-        const rawStrains = strainSensor?.attributes?.strains;
-        // If no sensor data, return empty (let dialog handle service call)
-        if (!rawStrains) {
-            console.warn('[DataService] No strain data in sensor attributes');
-            return [];
-        }
-        // Existing parsing logic...
-        if (Array.isArray(rawStrains)) {
-            return rawStrains.map((s) => ({
-                strain: s,
-                phenotype: '',
-                key: `${s}|default`,
-            }));
-        }
-        if (typeof rawStrains === 'object') {
-            const results = [];
-            for (const [strainName, strainData] of Object.entries(rawStrains)) {
-                const meta = strainData.meta || {};
-                const phenotypes = strainData.phenotypes || {};
-                Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
-                    results.push({
-                        strain: strainName,
-                        phenotype: phenoName,
-                        key: `${strainName}|${phenoName}`,
-                        breeder: meta.breeder,
-                        type: meta.type,
-                        lineage: meta.lineage,
-                        sex: meta.sex,
-                        sativa_percentage: meta.sativa_percentage,
-                        indica_percentage: meta.indica_percentage,
-                        description: phenoData.description,
-                        image: phenoData.image_path,
-                        image_crop_meta: phenoData.image_crop_meta,
-                        flowering_days_min: phenoData.flower_days_min,
-                        flowering_days_max: phenoData.flower_days_max,
-                    });
-                });
-            }
-            return results.sort((a, b) => {
-                const strainComp = a.strain.localeCompare(b.strain);
-                if (strainComp !== 0)
-                    return strainComp;
-                return (a.phenotype || '').localeCompare(b.phenotype || '');
-            });
-        }
-        return [];
-    }
-    async fetchStrainLibrary() {
-        console.log('[DataService:fetchStrainLibrary] Fetching strain library via API');
-        try {
-            const serviceResponse = await this.hass.connection.sendMessagePromise({
-                type: 'call_service',
-                domain: DOMAIN,
-                service: SERVICES.GET_STRAIN_LIBRARY,
-                service_data: {},
-                return_response: true,
-            });
-            const rawStrains = serviceResponse?.response || serviceResponse || {};
-            const currentStrains = [];
-            console.log('[DataService:fetchStrainLibrary] Raw response:', rawStrains);
-            Object.entries(rawStrains).forEach(([strainName, data]) => {
-                if (strainName === 'response')
-                    return; // unexpected wrapper?
-                const meta = data.meta || {};
-                const phenotypes = data.phenotypes || {};
-                Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
-                    currentStrains.push({
-                        strain: strainName,
-                        phenotype: phenoName,
-                        key: `${strainName}|${phenoName}`,
-                        breeder: meta.breeder,
-                        type: meta.type,
-                        lineage: meta.lineage,
-                        sex: meta.sex,
-                        sativa_percentage: meta.sativa_percentage,
-                        indica_percentage: meta.indica_percentage,
-                        description: phenoData.description,
-                        image: phenoData.image_path,
-                        image_crop_meta: phenoData.image_crop_meta,
-                        flowering_days_min: phenoData.flower_days_min,
-                        flowering_days_max: phenoData.flower_days_max,
-                    });
-                });
-            });
-            return currentStrains;
-        }
-        catch (e) {
-            console.error('Failed to fetch strain library for grid:', e);
-            return [];
-        }
-    }
-    async getHistory(entityId, startTime, endTime) {
-        if (!this.hass)
-            return [];
-        const startStr = startTime.toISOString();
-        let url = `history/period/${startStr}?filter_entity_id=${entityId}`;
-        if (endTime) {
-            url += `&end_time=${endTime.toISOString()}`;
-        }
-        try {
-            const res = await this.hass.callApi('GET', url);
-            return res && res.length > 0 ? res[0] : [];
-        }
-        catch (err) {
-            console.error('Error fetching history:', err);
-            return [];
-        }
-    }
-    // Service calls
-    async addPlant(params) {
-        console.log('[DataService:addPlant] Sending payload:', params);
-        try {
-            if (params.growspace_id === 'mother' || params.growspace_id === 'mother_overview') {
-                params.mother_start = new Date().toISOString().split('T')[0];
-            }
-            if (params.growspace_id === 'clone' || params.growspace_id === 'clone_overview') {
-                params.clone_start = new Date().toISOString().split('T')[0];
-            }
-            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_PLANT, params);
-            console.log('[DataService:addPlant] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:addPlant] Error:', err);
-            throw err;
-        }
-    }
-    async updatePlant(params) {
-        console.log('[DataService:updatePlant] Sending payload:', params);
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
-            console.log('[DataService:updatePlant] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:updatePlant] Error:', err);
-            throw err;
-        }
-    }
-    async removePlant(plantId) {
-        console.log('[DataService:removePlant] Removing plant_id:', plantId);
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_PLANT, { plant_id: plantId });
-            console.log('[DataService:removePlant] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:removePlant] Error:', err);
-            throw err;
-        }
-    }
-    async harvestPlant(plantId, target = 'dry') {
-        console.log('[DataService:harvestPlant] Harvesting plant:', plantId, '→ target:', target);
-        try {
-            const payload = {
-                plant_id: plantId,
-                target_growspace_id: target // Pass the ID directly
-            };
-            // Legacy mapping if needed (optional safety)
-            const hint = (target || '').toLowerCase();
-            if (hint.includes('dry') && target !== 'dry')
-                payload.target_growspace_id = 'dry';
-            if (hint.includes('cure') && target !== 'cure')
-                payload.target_growspace_id = 'cure';
-            if (hint.includes('mother') && target !== 'mother')
-                payload.target_growspace_id = 'mother';
-            if (hint.includes('clone') && target !== 'clone')
-                payload.target_growspace_id = 'clone';
-            const res = await this.hass.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
-            console.log('[DataService:harvestPlant] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:harvestPlant] Error:', err);
-            throw err;
-        }
-    }
-    async takeClone(params) {
-        console.log('[DataService:takeClone] Cloning plant:', params);
-        try {
-            // Ensure target_growspace_id is set if not provided (though backend handles 'clone' default)
-            const payload = { ...params };
-            if (!payload.target_growspace_id)
-                delete payload.target_growspace_id;
-            const res = await this.hass.callService(DOMAIN, SERVICES.TAKE_CLONE, payload);
-            console.log('[DataService:takeClone] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:takeClone] Error:', err);
-            throw err;
-        }
-    }
-    async moveClone(plantId, targetGrowspaceId, transitionDate) {
-        console.log('[DataService:moveClone] Moving clone:', plantId, 'to', targetGrowspaceId);
-        try {
-            const payload = {
-                plant_id: plantId,
-                target_growspace_id: targetGrowspaceId,
-            };
-            if (transitionDate) {
-                payload.transition_date = transitionDate;
-            }
-            const res = await this.hass.callService(DOMAIN, SERVICES.MOVE_CLONE, payload);
-            console.log('[DataService:moveClone] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:moveClone] Error:', err);
-            throw err;
-        }
-    }
-    async swapPlants(plant1Id, plant2Id) {
-        console.log(`[DataService:swapPlants] Swapping plants: ${plant1Id} and ${plant2Id}`);
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.SWITCH_PLANTS, {
-                plant1_id: plant1Id,
-                plant2_id: plant2Id,
-            });
-            console.log('[DataService:swapPlants] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:swapPlants] Error:', err);
-            throw err;
-        }
-    }
-    async setDehumidifierControl(growspaceId, enabled) {
-        console.log(`[DataService:setDehumidifierControl] Setting dehumidifier control for ${growspaceId} to ${enabled}`);
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.SET_DEHUMIDIFIER_CONTROL, {
-                growspace_id: growspaceId,
-                enabled,
-            });
-            console.log('[DataService:setDehumidifierControl] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:setDehumidifierControl] Error:', err);
-            throw err;
-        }
-    }
-    async setIrrigationSettings(params) {
-        console.log('[DataService:setIrrigationSettings] Setting irrigation settings:', params);
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, params);
-            console.log('[DataService:setIrrigationSettings] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:setIrrigationSettings] Error:', err);
-            throw err;
-        }
-    }
-    async addIrrigationTime(params) {
-        console.log('[DataService:addIrrigationTime] Adding irrigation time:', params);
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, params);
-            console.log('[DataService:addIrrigationTime] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:addIrrigationTime] Error:', err);
-            throw err;
-        }
-    }
-    async removeIrrigationTime(params) {
-        console.log('[DataService:removeIrrigationTime] Removing irrigation time:', params);
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, params);
-            console.log('[DataService:removeIrrigationTime] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:removeIrrigationTime] Error:', err);
-            throw err;
-        }
-    }
-    async setIrrigationStrategy(growspaceId, strategy) {
-        console.log('[DataService:setIrrigationStrategy] Setting strategy:', strategy);
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, {
-                growspace_id: growspaceId,
-                ...strategy,
-            });
-            console.log('[DataService:setIrrigationStrategy] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:setIrrigationStrategy] Error:', err);
-            throw err;
-        }
-    }
-    async addDrainTime(params) {
-        console.log('[DataService:addDrainTime] Adding drain time:', params);
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, params);
-            console.log('[DataService:addDrainTime] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:addDrainTime] Error:', err);
-            throw err;
-        }
-    }
-    async removeDrainTime(params) {
-        console.log('[DataService:removeDrainTime] Removing drain time:', params);
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, params);
-            console.log('[DataService:removeDrainTime] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:removeDrainTime] Error:', err);
-            throw err;
-        }
-    }
-    async exportStrainLibrary() {
-        console.log('[DataService:exportStrainLibrary] Exporting strain library');
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.EXPORT_STRAIN_LIBRARY);
-            console.log('[DataService:exportStrainLibrary] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:exportStrainLibrary] Error:', err);
-            throw err;
-        }
-    }
-    async addStrain(data) {
-        console.log('[DataService:addStrain] Adding strain:', data);
-        try {
-            const payload = { ...data };
-            // Clean undefined keys
-            Object.keys(payload).forEach((key) => {
-                if (payload[key] === undefined) {
-                    delete payload[key];
-                }
-            });
-            if (data.image) {
-                if (data.image.startsWith('data:')) {
-                    // It's a base64 string (new upload)
-                    payload.image_base64 = data.image;
-                    delete payload.image; // Backend expects image_base64
-                }
-                else {
-                    // It's a path (existing image) - Backend schema doesn't explicitly list image_path,
-                    // but we'll try to send it if the backend supports it dynamically,
-                    // or we might need to omit it if it's just for local display.
-                    // Checking services.yaml, only image_base64 is listed.
-                    // We will assume image_path is not supported for add_strain and omit it to avoid schema errors.
-                    // payload.image_path = data.image;
-                    delete payload.image;
-                }
-            }
-            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_STRAIN, payload);
-            console.log('[DataService:addStrain] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:addStrain] Error:', err);
-            throw err;
-        }
-    }
-    async removeStrain(strain, phenotype) {
-        console.log('[DataService:removeStrain] Removing strain:', strain, phenotype);
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_STRAIN, {
-                strain,
-                phenotype,
-            });
-            console.log('[DataService:removeStrain] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:removeStrain] Error:', err);
-            throw err;
-        }
-    }
-    async importStrainLibrary(file, replace) {
-        console.log('[DataService:importStrainLibrary] Importing strain library ZIP via HTTP. Replace:', replace);
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('replace', replace.toString());
-        try {
-            const response = await this.hass.fetchWithAuth('/api/growspace_manager/import_strains', {
-                method: 'POST',
-                body: formData,
-            });
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(errorText || response.statusText);
-            }
-            const result = await response.json();
-            console.log('[DataService:importStrainLibrary] Response:', result);
-            if (result.success) {
-                return result;
-            }
-            else {
-                throw new Error(result.error || 'Unknown import error');
-            }
-        }
-        catch (err) {
-            console.error('[DataService:importStrainLibrary] Error:', err);
-            throw err;
-        }
-    }
-    async clearStrainLibrary() {
-        console.log('[DataService:clearStrainLibrary] Clearing library');
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.CLEAR_STRAIN_LIBRARY);
-            console.log('[DataService:clearStrainLibrary] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:clearStrainLibrary] Error:', err);
-            throw err;
-        }
-    }
-    // Configuration Services
-    async addGrowspace(data) {
-        console.log('[DataService:addGrowspace] Adding growspace:', data);
-        try {
-            const payload = {
-                name: data.name,
-                rows: data.rows,
-                plants_per_row: data.plants_per_row,
-                notification_target: data.notification_service, // Map to backend field
-            };
-            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
-            console.log('[DataService:addGrowspace] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:addGrowspace] Error:', err);
-            throw err;
-        }
-    }
-    async updateGrowspace(data) {
-        console.log('[DataService:updateGrowspace] Updating growspace:', data);
-        try {
-            const payload = {
-                growspace_id: data.growspace_id,
-            };
-            if (data.name)
-                payload.name = data.name;
-            if (data.rows)
-                payload.rows = data.rows;
-            if (data.plants_per_row)
-                payload.plants_per_row = data.plants_per_row;
-            if (data.notification_service)
-                payload.notification_target = data.notification_service;
-            const res = await this.hass.callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
-            console.log('[DataService:updateGrowspace] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:updateGrowspace] Error:', err);
-            throw err;
-        }
-    }
-    async removeGrowspace(growspaceId) {
-        console.log('[DataService:removeGrowspace] Removing growspace:', growspaceId);
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
-                growspace_id: growspaceId,
-            });
-            console.log('[DataService:removeGrowspace] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:removeGrowspace] Error:', err);
-            throw err;
-        }
-    }
-    async configureEnvironment(data) {
-        console.log('[DataService:configureEnvironment] Configuring sensors:', data);
-        try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, data);
-            console.log('[DataService:configureEnvironment] Response:', res);
-            return res;
-        }
-        catch (err) {
-            console.error('[DataService:configureEnvironment] Error:', err);
-            throw err;
-        }
-    }
-    async askGrowAdvice(growspaceId, userQuery) {
-        console.log('[DataService:askGrowAdvice] Asking advice for:', growspaceId, userQuery);
-        try {
-            // UPDATED: Use sendMessagePromise to send return_response=true
-            return await this.hass.connection.sendMessagePromise({
-                type: 'call_service',
-                domain: DOMAIN,
-                service: SERVICES.ASK_GROW_ADVICE,
-                service_data: {
-                    growspace_id: growspaceId,
-                    user_query: userQuery,
-                },
-                return_response: true,
-            });
-        }
-        catch (err) {
-            console.error('[DataService:askGrowAdvice] Error:', err);
-            throw err;
-        }
-    }
-    async analyzeAllGrowspaces() {
-        console.log('[DataService:analyzeAllGrowspaces] Analyzing all growspaces');
-        try {
-            return await this.hass.connection.sendMessagePromise({
-                type: 'call_service',
-                domain: DOMAIN,
-                service: SERVICES.ANALYZE_ALL_GROWSPACES,
-                service_data: {},
-                return_response: true,
-            });
-        }
-        catch (err) {
-            console.error('[DataService:analyzeAllGrowspaces] Error:', err);
-            throw err;
-        }
-    }
-    async getStrainRecommendation(userQuery) {
-        console.log('[DataService:getStrainRecommendation] Getting strain recommendation for:', userQuery);
-        try {
-            return await this.hass.connection.sendMessagePromise({
-                type: 'call_service',
-                domain: DOMAIN,
-                service: SERVICES.STRAIN_RECOMMENDATION,
-                service_data: {
-                    user_query: userQuery,
-                },
-                return_response: true,
-            });
-        }
-        catch (err) {
-            console.error('[DataService:getStrainRecommendation] Error:', err);
-            throw err;
-        }
-    }
-}
-
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
-
-function __decorate(decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-}
-
-function __metadata(metadataKey, metadataValue) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
-}
-
-typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
-    var e = new Error(message);
-    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
-};
-
-/**
- * @license
- * Copyright 2019 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const t$4=globalThis,e$7=t$4.ShadowRoot&&(void 0===t$4.ShadyCSS||t$4.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$7=Symbol(),o$7=new WeakMap;class n$7{constructor(t,e,o){if(this._$cssResult$=!0,o!==s$7)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$7&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$7.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$7.set(s,t));}return t}toString(){return this.cssText}}const r$6=t=>new n$7("string"==typeof t?t:t+"",void 0,s$7),i$6=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$7(o,t,s$7)},S$1=(s,o)=>{if(e$7)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$4.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$5=e$7?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$6(e)})(t):t;
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const{is:i$5,defineProperty:e$6,getOwnPropertyDescriptor:h$3,getOwnPropertyNames:r$5,getOwnPropertySymbols:o$6,getPrototypeOf:n$6}=Object,a$1=globalThis,c$4=a$1.trustedTypes,l$1=c$4?c$4.emptyScript:"",p$2=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$3={toAttribute(t,s){switch(s){case Boolean:t=t?l$1:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$3=(t,s)=>!i$5(t,s),b$1={attribute:!0,type:String,converter:u$3,reflect:!1,useDefault:!1,hasChanged:f$3};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;class y$1 extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=!0),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$6(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$3(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$6(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$5(t),...o$6(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$5(s));}else void 0!==s&&i.push(c$5(s));return i}static _$Eu(t,s){const i=s.attribute;return !1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&!0===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$3).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$3;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$3)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);}!1===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),!0!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),!0===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=!0;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];!0!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=!1;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=!1,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return !0}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}}y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$2?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const t$3=globalThis,i$4=t$3.trustedTypes,s$6=i$4?i$4.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$5="$lit$",h$2=`lit$${Math.random().toFixed(9).slice(2)}$`,o$5="?"+h$2,n$5=`<${o$5}>`,r$4=document,l=()=>r$4.createComment(""),c$3=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u$2=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f$2=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v$1=/-->/g,_=/>/g,m$1=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p$1=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$4.createTreeWalker(r$4,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$6?s$6.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f$2;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f$2?"!--"===u[1]?c=v$1:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m$1):void 0!==u[3]&&(c=m$1):c===m$1?">"===u[0]?(c=r??f$2,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m$1:'"'===u[3]?g:p$1):c===g||c===p$1?c=m$1:c===v$1||c===_?c=f$2:(c=m$1,r=void 0);const x=c===m$1&&t[i+1].startsWith("/>")?" ":"";l+=c===f$2?s+n$5:d>=0?(o.push(a),s.slice(0,d)+e$5+s.slice(d)+h$2+x):s+h$2+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e$5)){const i=v[a++],s=r.getAttribute(t).split(h$2),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h$2)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h$2),s=t.length-1;if(s>0){r.textContent=i$4?i$4.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l());}}}else if(8===r.nodeType)if(r.data===o$5)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h$2,t+1));)d.push({type:7,index:c}),t+=h$2.length-1;}c++;}}static createElement(t,i){const s=r$4.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c$3(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(!1),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}class M$1{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$4).importNode(i,!0);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$4,e}p(t){let i=0;for(const s of this._$AV)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??!0;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c$3(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u$2(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c$3(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$4.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M$1(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l()),this.O(l()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(!1,!0,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=!1;if(void 0===h)t=S(this,t,i,0),o=!c$3(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c$3(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const Z={M:e$5,P:h$2,A:o$5,C:1,L:V,R:M$1,D:u$2,V:S,I:R,H:k,N:I,U:L,B:H,F:z},j=t$3.litHtmlPolyfillSupport;j?.(N,R),(t$3.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l(),t),t,void 0,s??{});}return h._$AI(t),h};
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const s$5=globalThis;class i$3 extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=B(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1);}render(){return T}}i$3._$litElement$=!0,i$3["finalized"]=!0,s$5.litElementHydrateSupport?.({LitElement:i$3});const o$4=s$5.litElementPolyfillSupport;o$4?.({LitElement:i$3});(s$5.litElementVersions??=[]).push("4.2.1");
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const t$2=t=>(e,o)=>{void 0!==o?o.addInitializer((()=>{customElements.define(t,e);})):customElements.define(t,e);};
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const o$3={attribute:!0,type:String,converter:u$3,reflect:!1,hasChanged:f$3},r$3=(t=o$3,e,r)=>{const{kind:n,metadata:i}=r;let s=globalThis.litPropertyMetadata.get(i);if(void 0===s&&globalThis.litPropertyMetadata.set(i,s=new Map),"setter"===n&&((t=Object.create(t)).wrapped=!0),s.set(r.name,t),"accessor"===n){const{name:o}=r;return {set(r){const n=e.get.call(this);e.set.call(this,r),this.requestUpdate(o,n,t);},init(e){return void 0!==e&&this.C(o,void 0,t,e),e}}}if("setter"===n){const{name:o}=r;return function(r){const n=this[o];e.call(this,r),this.requestUpdate(o,n,t);}}throw Error("Unsupported decorator location: "+n)};function n$4(t){return (e,o)=>"object"==typeof o?r$3(t,e,o):((t,e,o)=>{const r=e.hasOwnProperty(o);return e.constructor.createProperty(o,t),r?Object.getOwnPropertyDescriptor(e,o):void 0})(t,e,o)}
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */function r$2(r){return n$4({...r,state:!0,attribute:!1})}
-
-/**
- * @license
- * Copyright 2021 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-class s$4 extends Event{constructor(s,t,e,o){super("context-request",{bubbles:!0,composed:!0}),this.context=s,this.contextTarget=t,this.callback=e,this.subscribe=o??!1;}}
-
-/**
- * @license
- * Copyright 2021 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-function n$3(n){return n}
-
-/**
- * @license
- * Copyright 2021 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */class s$3{constructor(t,s,i,h){if(this.subscribe=!1,this.provided=!1,this.value=void 0,this.t=(t,s)=>{this.unsubscribe&&(this.unsubscribe!==s&&(this.provided=!1,this.unsubscribe()),this.subscribe||this.unsubscribe()),this.value=t,this.host.requestUpdate(),this.provided&&!this.subscribe||(this.provided=!0,this.callback&&this.callback(t,s)),this.unsubscribe=s;},this.host=t,void 0!==s.context){const t=s;this.context=t.context,this.callback=t.callback,this.subscribe=t.subscribe??!1;}else this.context=s,this.callback=i,this.subscribe=h??!1;this.host.addController(this);}hostConnected(){this.dispatchRequest();}hostDisconnected(){this.unsubscribe&&(this.unsubscribe(),this.unsubscribe=void 0);}dispatchRequest(){this.host.dispatchEvent(new s$4(this.context,this.host,this.t,this.subscribe));}}
-
-/**
- * @license
- * Copyright 2021 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-class s$2{get value(){return this.o}set value(s){this.setValue(s);}setValue(s,t=!1){const i=t||!Object.is(s,this.o);this.o=s,i&&this.updateObservers();}constructor(s){this.subscriptions=new Map,this.updateObservers=()=>{for(const[s,{disposer:t}]of this.subscriptions)s(this.o,t);},void 0!==s&&(this.value=s);}addCallback(s,t,i){if(!i)return void s(this.value);this.subscriptions.has(s)||this.subscriptions.set(s,{disposer:()=>{this.subscriptions.delete(s);},consumerHost:t});const{disposer:h}=this.subscriptions.get(s);s(this.value,h);}clearCallbacks(){this.subscriptions.clear();}}
-
-/**
- * @license
- * Copyright 2021 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */class e$4 extends Event{constructor(t,s){super("context-provider",{bubbles:!0,composed:!0}),this.context=t,this.contextTarget=s;}}class i$2 extends s$2{constructor(s,e,i){super(void 0!==e.context?e.initialValue:i),this.onContextRequest=t=>{if(t.context!==this.context)return;const s=t.contextTarget??t.composedPath()[0];s!==this.host&&(t.stopPropagation(),this.addCallback(t.callback,s,t.subscribe));},this.onProviderRequest=s=>{if(s.context!==this.context)return;if((s.contextTarget??s.composedPath()[0])===this.host)return;const e=new Set;for(const[s,{consumerHost:i}]of this.subscriptions)e.has(s)||(e.add(s),i.dispatchEvent(new s$4(this.context,i,s,!0)));s.stopPropagation();},this.host=s,void 0!==e.context?this.context=e.context:this.context=e,this.attachListeners(),this.host.addController?.(this);}attachListeners(){this.host.addEventListener("context-request",this.onContextRequest),this.host.addEventListener("context-provider",this.onProviderRequest);}hostConnected(){this.host.dispatchEvent(new e$4(this.context,this.host));}}
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */function e$3({context:e}){return (n,i)=>{const r=new WeakMap;if("object"==typeof i)return {get(){return n.get.call(this)},set(t){return r.get(this).setValue(t),n.set.call(this,t)},init(n){return r.set(this,new i$2(this,{context:e,initialValue:n})),n}};{n.constructor.addInitializer((n=>{r.set(n,new i$2(n,{context:e}));}));const o=Object.getOwnPropertyDescriptor(n,i);let s;if(void 0===o){const t=new WeakMap;s={get(){return t.get(this)},set(e){r.get(this).setValue(e),t.set(this,e);},configurable:!0,enumerable:!0};}else {const t=o.set;s={...o,set(e){r.get(this).setValue(e),t?.call(this,e);}};}return void Object.defineProperty(n,i,s)}}}
-
-/**
- * @license
- * Copyright 2022 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */function c$2({context:c,subscribe:e}){return (o,n)=>{"object"==typeof n?n.addInitializer((function(){new s$3(this,{context:c,callback:t=>{o.set.call(this,t);},subscribe:e});})):o.constructor.addInitializer((o=>{new s$3(o,{context:c,callback:t=>{o[n]=t;},subscribe:e});}));}}
-
-const hassContext = n$3('hass');
-const configContext = n$3('config');
-const strainLibraryContext = n$3('strain-library');
-const storeContext = n$3('store');
-const historyContext = n$3('growspace-history-controller');
-
-const variables = i$6 `
-  :host {
-    /* MD3 Color System */
-    --primary-gradient: linear-gradient(135deg, #4caf50, #45a049);
-    --secondary-gradient: linear-gradient(135deg, #2196f3, #1976d2);
-    --danger-gradient: linear-gradient(135deg, #f44336, #d32f2f);
-
-    /* MD3 Elevation Levels */
-    --md3-elevation-level0: none;
-    --md3-elevation-level1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
-    --md3-elevation-level2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
-    --md3-elevation-level3: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
-    --md3-elevation-level4: 0 6px 10px 4px rgba(0, 0, 0, 0.15), 0 2px 3px rgba(0, 0, 0, 0.3);
-    --md3-elevation-level5: 0 8px 12px 6px rgba(0, 0, 0, 0.15), 0 4px 4px rgba(0, 0, 0, 0.3);
-
-    --surface-elevation: var(--md3-elevation-level1);
-    --surface-elevation-hover: var(--md3-elevation-level2);
-
-    /* Spacing (MD3 spacing system) */
-    --spacing-xs: 4px;
-    --spacing-sm: 8px;
-    --spacing-md: 16px;
-    --spacing-lg: 24px;
-    --spacing-xl: 32px;
-
-    /* Border Radius (MD3 shape system) */
-    --border-radius-xs: 4px;
-    --border-radius-sm: 8px;
-    --border-radius-md: 12px;
-    --border-radius-lg: 16px;
-    --border-radius-xl: 28px;
-    --border-radius: 12px; /* Default */
-
-    /* MD3 Typography Scale */
-    --font-size-xs: 0.6875rem; /* 11px */
-    --font-size-sm: 0.875rem; /* 14px - Body Small */
-    --font-size-md: 1rem; /* 16px - Body Medium */
-    --font-size-lg: 1.25rem; /* 20px - Title Large */
-    --font-size-xl: 1.5rem; /* 24px - Headline Small */
-
-    /* Font Weights */
-    --font-weight-regular: 400;
-    --font-weight-medium: 500;
-    --font-weight-bold: 700;
-
-    /* MD3 Motion Tokens */
-    --md3-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
-    --md3-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
-    --md3-motion-duration-short1: 50ms;
-    --md3-motion-duration-short2: 100ms;
-    --md3-motion-duration-short3: 150ms;
-    --md3-motion-duration-short4: 200ms;
-    --md3-motion-duration-medium1: 250ms;
-    --md3-motion-duration-medium2: 300ms;
-    --md3-motion-duration-long1: 400ms;
-    --md3-motion-duration-long2: 500ms;
-
-    /* Growspace Theme Colors */
-    --growspace-card-bg: var(--card-background-color, #1e1e1e);
-    --growspace-card-text: var(--primary-text-color, #fff);
-    --growspace-card-accent: var(--primary-color, #4caf50);
-    --growspace-empty-bg: rgba(255, 255, 255, 0.05);
-    --growspace-empty-bg-hover: rgba(255, 255, 255, 0.1);
-    --plant-border-color-default: #2196f3;
-
-    /* Card Shadows (using MD3 elevation) */
-    --card-shadow: var(--md3-elevation-level1);
-    --card-shadow-hover: var(--md3-elevation-level2);
-
-    /* Transitions (using MD3 motion) */
-    --transition: all var(--md3-motion-duration-short4) var(--md3-motion-easing-standard);
-    --transition-fast: all var(--md3-motion-duration-short2) var(--md3-motion-easing-standard);
-    --transition-medium: all var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);
-
-    /* Divider */
-    --divider-color: rgba(255, 255, 255, 0.12);
-
-    /* Plant Stage Colors */
-    --stage-veg: #4caf50;
-    --stage-flower: #ff9800;
-    --stage-dry: #9c27b0;
-    --stage-cure: #2196f3;
-
-    /* Error/Warning Colors */
-    --error-color: #f44336;
-    --error-bg: rgba(244, 67, 54, 0.1);
-    --error-border: rgba(244, 67, 54, 0.3);
-
-    /* Strain Dialog */
-    --strain-dialog-bg: var(--ha-card-background, #1e1e1e);
-    --strain-dialog-color: var(--primary-text-color, #fff);
-    --strain-border-color: #4caf50;
-    --strain-input-bg: #2a2a2a;
-    --strain-input-border: #3a3a3a;
-
-    /* Light Color */
-    --primary-light-color: #ffeb3b;
-  }
-`;
-
-class GrowspaceHistoryController {
-    /** @deprecated Use historyCache['main'] instead */
-    get historyData() {
-        return this.historyCache.main || null;
-    }
-    set historyData(value) {
-        this.historyCache.main = value || [];
-    }
-    /** @deprecated Use historyCache['optimal'] instead */
-    get optimalHistory() {
-        return this.historyCache.optimal || null;
-    }
-    set optimalHistory(value) {
-        this.historyCache.optimal = value || [];
-    }
-    // Backward compatibility getters for existing code that reads these properties
-    get temperatureHistory() {
-        return this.historyCache.temperature || null;
-    }
-    get humidityHistory() {
-        return this.historyCache.humidity || null;
-    }
-    get vpdHistory() {
-        return this.historyCache.vpd || null;
-    }
-    get co2History() {
-        return this.historyCache.co2 || null;
-    }
-    get lightHistory() {
-        return this.historyCache.light || null;
-    }
-    get soilMoistureHistory() {
-        return this.historyCache.soil_moisture || null;
-    }
-    get exhaustHistory() {
-        return this.historyCache.exhaust || null;
-    }
-    get humidifierHistory() {
-        return this.historyCache.humidifier || null;
-    }
-    get dehumidifierHistory() {
-        return this.historyCache.dehumidifier || null;
-    }
-    get circulationFanHistory() {
-        return this.historyCache.circulation_fan || null;
-    }
-    get irrigationHistory() {
-        return this.historyCache.irrigation || null;
-    }
-    get drainHistory() {
-        return this.historyCache.drain || null;
-    }
-    /** Returns all sensor histories as a combined object for analytics component */
-    get combinedHistory() {
-        return {
-            temperature: this.historyCache.temperature || [],
-            humidity: this.historyCache.humidity || [],
-            vpd: this.historyCache.vpd || [],
-            co2: this.historyCache.co2 || [],
-            dehumidifier: this.historyCache.dehumidifier || [],
-            exhaust: this.historyCache.exhaust || [],
-            humidifier: this.historyCache.humidifier || [],
-            circulation_fan: this.historyCache.circulation_fan || [],
-            soil_moisture: this.historyCache.soil_moisture || [],
-            light: this.historyCache.light || [],
-            irrigation: this.historyCache.irrigation || [],
-            drain: this.historyCache.drain || [],
-            optimal: this.historyCache.optimal || [],
-        };
-    }
-    constructor(host) {
-        /**
-         * Unified history cache keyed by metric name.
-         * Replaces individual properties like temperatureHistory, humidityHistory, etc.
-         * Access via: this.historyCache['temperature'], this.historyCache['vpd'], etc.
-         */
-        this.historyCache = {};
-        this.activeEnvGraphs = new Set();
-        this.linkedGraphGroups = [];
-        this.graphRanges = {};
-        this._listeners = [];
-        this._prevSelectedDevice = null;
-        (this.host = host).addController(this);
-    }
-    addListener(callback) {
-        this._listeners.push(callback);
-    }
-    removeListener(callback) {
-        this._listeners = this._listeners.filter(l => l !== callback);
-    }
-    _notifyUpdate() {
-        this.host.requestUpdate();
-        this._listeners.forEach(cb => cb());
-    }
-    hostConnected() {
-        // Initial fetch if needed, though hostUpdated usually handles it
-    }
-    hostUpdated() {
-        // We can check if we need to refetch based on changes.
-        // However, without keeping track of previous state, we might over-fetch.
-        // The original card fetched in `updated` checking `changedProps.has('selectedDevice')`.
-        // ReactiveController doesn't get `changedProps` in `hostUpdated`.
-        // We might need to rely on explicit calls or manual caching.
-        // But the user said "Listen for changes... to automatically re-fetch".
-        // We can store prevSelectedDevice.
-    }
-    initFetch() {
-        // Called manually from firstUpdated if needed
-        this._fetchHistory();
-    }
-    async hostUpdate() {
-        // Logic to detect changes if possible, or we rely on hostUpdated
-        if (this.host.selectedDevice !== this._prevSelectedDevice) {
-            this._prevSelectedDevice = this.host.selectedDevice;
-            const range = this.getRange();
-            await this._fetchHistory(range);
-            this.refreshSecondaryHistories(range);
-        }
-    }
-    getRange() {
-        return this.host.selectedDevice ? this.graphRanges[this.host.selectedDevice] || '24h' : '24h';
-    }
-    setGraphRange(range) {
-        if (!this.host.selectedDevice)
-            return;
-        this.graphRanges = {
-            ...this.graphRanges,
-            [this.host.selectedDevice]: range,
-        };
-        this._notifyUpdate();
-        this._fetchHistory(range);
-        this.refreshSecondaryHistories(range);
-    }
-    toggleEnvGraph(details) {
-        const { metric } = details;
-        const newSet = new Set(this.activeEnvGraphs);
-        if (newSet.has(metric)) {
-            newSet.delete(metric);
-        }
-        else {
-            newSet.add(metric);
-            // Fetch history for this metric using generic method
-            const range = this.getRange();
-            this._fetchMetricHistory(metric, range);
-        }
-        this.activeEnvGraphs = newSet;
-        this._notifyUpdate();
-    }
-    linkGraphs(metric1, metric2) {
-        // Check if already linked
-        const existingGroupIndex = this.linkedGraphGroups.findIndex((group) => group.includes(metric1) || group.includes(metric2));
-        const newGroups = [...this.linkedGraphGroups];
-        if (existingGroupIndex >= 0) {
-            // Add unique
-            const group = new Set(newGroups[existingGroupIndex]);
-            group.add(metric1);
-            group.add(metric2);
-            newGroups[existingGroupIndex] = Array.from(group);
-        }
-        else {
-            // Create new group
-            newGroups.push([metric1, metric2]);
-        }
-        this.linkedGraphGroups = newGroups;
-        // Auto-activate both metrics so the linked graph displays immediately
-        const newActive = new Set(this.activeEnvGraphs);
-        newActive.add(metric1);
-        newActive.add(metric2);
-        this.activeEnvGraphs = newActive;
-        this._notifyUpdate();
-    }
-    unlinkGraphGroup(index) {
-        if (index >= 0 && index < this.linkedGraphGroups.length) {
-            const newGroups = [...this.linkedGraphGroups];
-            newGroups.splice(index, 1);
-            this.linkedGraphGroups = newGroups;
-            this._notifyUpdate();
-        }
-    }
-    clearAllLinks() {
-        this.linkedGraphGroups = [];
-        this._notifyUpdate();
-    }
-    unlinkGraphMetric(metric) {
-        this.linkedGraphGroups = this.linkedGraphGroups
-            .map((group) => group.filter((m) => m !== metric))
-            .filter((group) => group.length > 1);
-        this._notifyUpdate();
-    }
-    /**
-     * Refreshes history data for all currently active environment graphs.
-     */
-    refreshSecondaryHistories(range) {
-        for (const metricKey of this.activeEnvGraphs) {
-            // Skip 'main' and 'optimal' as those are fetched by _fetchHistory
-            if (metricKey === 'main' || metricKey === 'optimal')
-                continue;
-            this._fetchMetricHistory(metricKey, range);
-        }
-    }
-    async _fetchHistory(range = '24h') {
-        console.log('[HistoryController] _fetchHistory called with range:', range);
-        if (!this.host.hass || !this.host.selectedDevice) {
-            console.log('[HistoryController] Aborting: no hass or selectedDevice', {
-                hasHass: !!this.host.hass,
-                selectedDevice: this.host.selectedDevice,
-            });
-            return;
-        }
-        // Use pre-loaded devices from store instead of fetching independently
-        const devices = this.host.devices;
-        console.log('[HistoryController] selectedDevice:', this.host.selectedDevice, 'available devices:', devices.map((d) => ({ device_id: d.device_id, name: d.name })));
-        const device = devices.find((d) => d.device_id === this.host.selectedDevice);
-        if (!device) {
-            console.log('[HistoryController] Aborting: device not found. Looking for:', this.host.selectedDevice);
-            return;
-        }
-        const { start, end } = this.calculateTimeRange(range);
-        console.log('[HistoryController] Fetching history for device:', device.name, 'entity:', device.overview_entity_id);
-        // 1. Fetch Main Sensor History (Temp, Humidity, VPD, etc.)
-        if (device.overview_entity_id) {
-            try {
-                const history = await this.host.dataService.getHistory(device.overview_entity_id, start, end);
-                console.log('[HistoryController] History fetched, length:', history?.length || 0, 'sample:', history?.[0] ? JSON.stringify(history[0]).slice(0, 300) : 'empty');
-                this.historyData = history;
-            }
-            catch (e) {
-                console.error('Failed to fetch main sensor history', e);
-            }
-        }
-        else {
-            console.log('[HistoryController] No overview_entity_id on device');
-        }
-        // 2. Fetch Optimal Conditions Binary Sensor History
-        let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-        if (device.overview_entity_id) {
-            slug = device.overview_entity_id.replace('sensor.', '');
-        }
-        let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
-        if (slug === 'cure') {
-            envEntityId = `binary_sensor.cure_optimal_curing`;
-        }
-        else if (slug === 'dry') {
-            envEntityId = `binary_sensor.dry_optimal_drying`;
-        }
-        try {
-            const history = await this.host.dataService.getHistory(envEntityId, start, end);
-            this.optimalHistory = history;
-        }
-        catch (e) {
-            console.error('Failed to fetch optimal history', e);
-        }
-        // 3. Fetch individual environment sensor histories (since env data moved to WebSocket)
-        const envAttrs = device.environment_attributes || {};
-        // Temperature
-        if (envAttrs.temperature_sensor) {
-            try {
-                const history = await this.host.dataService.getHistory(envAttrs.temperature_sensor, start, end);
-                console.log('[HistoryController] Temperature history fetched from', envAttrs.temperature_sensor, 'length:', history?.length || 0);
-                this.historyCache.temperature = history || [];
-            }
-            catch (e) {
-                console.error('Failed to fetch temperature history', e);
-            }
-        }
-        // Humidity
-        if (envAttrs.humidity_sensor) {
-            try {
-                const history = await this.host.dataService.getHistory(envAttrs.humidity_sensor, start, end);
-                console.log('[HistoryController] Humidity history fetched from', envAttrs.humidity_sensor, 'length:', history?.length || 0);
-                this.historyCache.humidity = history || [];
-            }
-            catch (e) {
-                console.error('Failed to fetch humidity history', e);
-            }
-        }
-        // VPD
-        if (envAttrs.vpd_sensor) {
-            try {
-                const history = await this.host.dataService.getHistory(envAttrs.vpd_sensor, start, end);
-                console.log('[HistoryController] VPD history fetched from', envAttrs.vpd_sensor, 'length:', history?.length || 0);
-                this.historyCache.vpd = history || [];
-            }
-            catch (e) {
-                console.error('Failed to fetch VPD history', e);
-            }
-        }
-        // CO2
-        if (envAttrs.co2_sensor) {
-            try {
-                const history = await this.host.dataService.getHistory(envAttrs.co2_sensor, start, end);
-                console.log('[HistoryController] CO2 history fetched from', envAttrs.co2_sensor, 'length:', history?.length || 0);
-                this.historyCache.co2 = history || [];
-            }
-            catch (e) {
-                console.error('Failed to fetch CO2 history', e);
-            }
-        }
-        // Light
-        if (envAttrs.light_sensor) {
-            try {
-                const history = await this.host.dataService.getHistory(envAttrs.light_sensor, start, end);
-                console.log('[HistoryController] Light history fetched from', envAttrs.light_sensor, 'length:', history?.length || 0);
-                this.historyCache.light = history || [];
-            }
-            catch (e) {
-                console.error('Failed to fetch Light history', e);
-            }
-        }
-        // Soil Moisture
-        if (envAttrs.soil_moisture_sensor) {
-            try {
-                const history = await this.host.dataService.getHistory(envAttrs.soil_moisture_sensor, start, end);
-                console.log('[HistoryController] Soil Moisture history fetched from', envAttrs.soil_moisture_sensor, 'length:', history?.length || 0);
-                this.historyCache.soil_moisture = history || [];
-            }
-            catch (e) {
-                console.error('Failed to fetch soil moisture history', e);
-            }
-        }
-        // Fallback: If light history is missing but we have optimal history, try to derive it from 'is_lights_on' attribute
-        const lightHistory = this.historyCache.light;
-        const optimalHistory = this.historyCache.optimal;
-        if ((!lightHistory || lightHistory.length === 0) &&
-            optimalHistory &&
-            optimalHistory.length > 0) {
-            console.log('[HistoryController] Synthesizing Light history from Optimal attributes');
-            this.historyCache.light = optimalHistory.map((h) => ({
-                ...h,
-                entity_id: 'derived_light',
-                state: h.attributes?.is_lights_on ? 'on' : 'off',
-                attributes: {},
-            }));
-        }
-        this.host.requestUpdate();
-    }
-    /**
-     * Generic method to fetch history for any metric.
-     * Uses METRIC_ENTITY_KEYS to resolve the entity ID from device attributes.
-     */
-    async _fetchMetricHistory(metricKey, range) {
-        const device = this.host.devices.find((d) => d.device_id === this.host.selectedDevice);
-        if (!device)
-            return;
-        const entityId = this.getEntityIdForMetric(device, metricKey);
-        if (!entityId) {
-            console.log(`[HistoryController] No entity ID found for metric: ${metricKey}`);
-            return;
-        }
-        const { start, end } = this.calculateTimeRange(range);
-        try {
-            const history = await this.host.dataService.getHistory(entityId, start, end);
-            console.log(`[HistoryController] ${metricKey} history fetched from ${entityId}, length: ${history?.length || 0}`);
-            this.historyCache[metricKey] = history || [];
-            this.host.requestUpdate();
-        }
-        catch (e) {
-            console.error(`Failed to fetch ${metricKey} history`, e);
-        }
-    }
-    /**
-     * Resolves the entity ID for a given metric using METRIC_ENTITY_KEYS mapping.
-     */
-    getEntityIdForMetric(device, metricKey) {
-        const mapping = METRIC_ENTITY_KEYS[metricKey];
-        if (!mapping)
-            return null;
-        // Check based on source type
-        if (mapping.source === 'irrigation') {
-            const entityId = device.irrigation_config?.[mapping.primary];
-            if (entityId)
-                return entityId;
-            // Fallback: If not found in irrigation_config, continue to check environment_attributes/etc below
-        }
-        // Default: environment_attributes
-        const envAttrs = device.environment_attributes || {};
-        let entityId = envAttrs[mapping.primary];
-        // Try fallback if primary not found
-        if (!entityId && mapping.fallback) {
-            entityId = envAttrs[mapping.fallback];
-        }
-        return entityId || null;
-    }
-    // Legacy method kept for compatibility - prefer getEntityIdForMetric instead
-    getRelatedEntityId(attribute) {
-        if (!this.host.hass || !this.host.selectedDevice)
-            return { device: null, entityId: null };
-        const devices = this.host.devices;
-        const device = devices.find((d) => d.device_id === this.host.selectedDevice);
-        if (!device)
-            return { device: null, entityId: null };
-        let entityId = device.environment_attributes?.[attribute];
-        if (entityId)
-            return { device, entityId };
-        // Fallback logic
-        if (attribute.endsWith('_entity')) {
-            const sensorAttr = attribute.replace('_entity', '_sensor');
-            entityId =
-                device.environment_attributes?.[sensorAttr];
-        }
-        else if (attribute.endsWith('_sensor')) {
-            const entityAttr = attribute.replace('_sensor', '_entity');
-            entityId =
-                device.environment_attributes?.[entityAttr];
-        }
-        return { device, entityId };
-    }
-    calculateTimeRange(range) {
-        const now = new Date();
-        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        switch (range) {
-            case '1h':
-                startTime = new Date(now.getTime() - 60 * 60 * 1000);
-                break;
-            case '6h':
-                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-                break;
-            case '7d':
-                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                break;
-        }
-        return { start: startTime, end: now };
-    }
-}
-
-/**
- * @license
- * Copyright 2020 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const {I:t$1}=Z,f$1=o=>void 0===o.strings,r$1=()=>document.createComment(""),s$1=(o,i,n)=>{const e=o._$AA.parentNode,l=void 0===i?o._$AB:i._$AA;if(void 0===n){const i=e.insertBefore(r$1(),l),d=e.insertBefore(r$1(),l);n=new t$1(i,d,o,o.options);}else {const t=n._$AB.nextSibling,i=n._$AM,d=i!==o;if(d){let t;n._$AQ?.(o),n._$AM=o,void 0!==n._$AP&&(t=o._$AU)!==i._$AU&&n._$AP(t);}if(t!==l||d){let o=n._$AA;for(;o!==t;){const t=o.nextSibling;e.insertBefore(o,l),o=t;}}}return n},v=(o,t,i=o)=>(o._$AI(t,i),o),u$1={},m=(o,t=u$1)=>o._$AH=t,p=o=>o._$AH,M=o=>{o._$AR(),o._$AA.remove();};
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const t={ATTRIBUTE:1,CHILD:2,PROPERTY:3,BOOLEAN_ATTRIBUTE:4,EVENT:5,ELEMENT:6},e$2=t=>(...e)=>({_$litDirective$:t,values:e});class i$1{constructor(t){}get _$AU(){return this._$AM._$AU}_$AT(t,e,i){this._$Ct=t,this._$AM=e,this._$Ci=i;}_$AS(t,e){return this.update(t,e)}update(t,e){return this.render(...e)}}
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const s=(i,t)=>{const e=i._$AN;if(void 0===e)return !1;for(const i of e)i._$AO?.(t,!1),s(i,t);return !0},o$2=i=>{let t,e;do{if(void 0===(t=i._$AM))break;e=t._$AN,e.delete(i),i=t;}while(0===e?.size)},r=i=>{for(let t;t=i._$AM;i=t){let e=t._$AN;if(void 0===e)t._$AN=e=new Set;else if(e.has(i))break;e.add(i),c$1(t);}};function h$1(i){void 0!==this._$AN?(o$2(this),this._$AM=i,r(this)):this._$AM=i;}function n$2(i,t=!1,e=0){const r=this._$AH,h=this._$AN;if(void 0!==h&&0!==h.size)if(t)if(Array.isArray(r))for(let i=e;i<r.length;i++)s(r[i],!1),o$2(r[i]);else null!=r&&(s(r,!1),o$2(r));else s(this,i);}const c$1=i=>{i.type==t.CHILD&&(i._$AP??=n$2,i._$AQ??=h$1);};class f extends i$1{constructor(){super(...arguments),this._$AN=void 0;}_$AT(i,t,e){super._$AT(i,t,e),r(this),this.isConnected=i._$AU;}_$AO(i,t=!0){i!==this.isConnected&&(this.isConnected=i,i?this.reconnected?.():this.disconnected?.()),t&&(s(this,i),o$2(this));}setValue(t){if(f$1(this._$Ct))this._$Ct._$AI(t,this);else {const i=[...this._$Ct._$AH];i[this._$Ci]=t,this._$Ct._$AI(i,this,0);}}disconnected(){}reconnected(){}}
-
-/**
- * @license
- * Copyright 2020 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const e$1=()=>new h;class h{}const o$1=new WeakMap,n$1=e$2(class extends f{render(i){return E}update(i,[s]){const e=s!==this.G;return e&&void 0!==this.G&&this.rt(void 0),(e||this.lt!==this.ct)&&(this.G=s,this.ht=i.options?.host,this.rt(this.ct=i.element)),E}rt(t){if(this.isConnected||(t=void 0),"function"==typeof this.G){const i=this.ht??globalThis;let s=o$1.get(i);void 0===s&&(s=new WeakMap,o$1.set(i,s)),void 0!==s.get(this.G)&&this.G.call(this.ht,void 0),s.set(this.G,t),void 0!==t&&this.G.call(this.ht,t);}else this.G.value=t;}get lt(){return "function"==typeof this.G?o$1.get(this.ht??globalThis)?.get(this.G):this.G?.value}disconnected(){this.lt===this.ct&&this.rt(void 0);}reconnected(){this.rt(this.ct);}});
-
-/**
- * @license
- * Copyright 2018 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const e=e$2(class extends i$1{constructor(t$1){if(super(t$1),t$1.type!==t.ATTRIBUTE||"class"!==t$1.name||t$1.strings?.length>2)throw Error("`classMap()` can only be used in the `class` attribute and must be the only part in the attribute.")}render(t){return " "+Object.keys(t).filter((s=>t[s])).join(" ")+" "}update(s,[i]){if(void 0===this.st){this.st=new Set,void 0!==s.strings&&(this.nt=new Set(s.strings.join(" ").split(/\s/).filter((t=>""!==t))));for(const t in i)i[t]&&!this.nt?.has(t)&&this.st.add(t);return this.render(i)}const r=s.element.classList;for(const t of this.st)t in i||(r.remove(t),this.st.delete(t));for(const t in i){const s=!!i[t];s===this.st.has(t)||this.nt?.has(t)||(s?(r.add(t),this.st.add(t)):(r.remove(t),this.st.delete(t)));}return T}});
-
-/**
- * @license
- * Copyright 2018 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const n="important",i=" !"+n,o=e$2(class extends i$1{constructor(t$1){if(super(t$1),t$1.type!==t.ATTRIBUTE||"style"!==t$1.name||t$1.strings?.length>2)throw Error("The `styleMap` directive must be used in the `style` attribute and must be the only part in the attribute.")}render(t){return Object.keys(t).reduce(((e,r)=>{const s=t[r];return null==s?e:e+`${r=r.includes("-")?r:r.replace(/(?:^(webkit|moz|ms|o)|)(?=[A-Z])/g,"-$&").toLowerCase()}:${s};`}),"")}update(e,[r]){const{style:s}=e.element;if(void 0===this.ft)return this.ft=new Set(Object.keys(r)),this.render(r);for(const t of this.ft)null==r[t]&&(this.ft.delete(t),t.includes("-")?s.removeProperty(t):s[t]=null);for(const t in r){const e=r[t];if(null!=e){this.ft.add(t);const r="string"==typeof e&&e.endsWith(i);t.includes("-")||r?s.setProperty(t,r?e.slice(0,-11):e,r?n:""):s[t]=e;}}return T}});
-
-class GraphDataTransformer {
-    /**
-     * Transforms start/end time events into a time-series of 0/1 data points for a step graph.
-     *
-     * @param times Array of event objects with time string "HH:MM" and duration in seconds.
-     * @param startTime The start time of the graph window (ms timestamp).
-     * @param endTime The end time of the graph window (ms timestamp) - usually "now".
-     * @returns Array of GraphDataPoint
-     */
-    static transformEventsToTimeSeries(times, startTime, endTime) {
-        const dataPoints = [];
-        if (!times || !Array.isArray(times)) {
-            return dataPoints;
-        }
-        const events = [];
-        // We look at reference days covering the window
-        // The window might span multiple calendar days, so we check "now" and "startTime" days
-        // A safer approach for short windows (<= 7 days) is to iterate daily,
-        // but the original logic just checked simplistic referenceDays.
-        // We will preserve the original logic's intent but robustify if needed.
-        // Original used: const referenceDays = [new Date(now), new Date(startTime)];
-        const now = new Date(endTime);
-        const start = new Date(startTime);
-        const referenceDays = [now, start];
-        times.forEach((t) => {
-            const [h, m] = t.time.split(':').map(Number);
-            const duration = (t.duration || 60) * 1000;
-            const durationSeconds = duration / 1000;
-            let durationStr = `${durationSeconds}s`;
-            if (durationSeconds >= 60)
-                durationStr = `${Math.round(durationSeconds / 60)}m`;
-            referenceDays.forEach((refDay) => {
-                const eventStart = new Date(refDay);
-                eventStart.setHours(h, m, 0, 0);
-                const eventEnd = new Date(eventStart.getTime() + duration);
-                // Check overlap with window [startTime, endTime]
-                if (eventEnd.getTime() > startTime && eventStart.getTime() < endTime) {
-                    events.push({
-                        start: Math.max(eventStart.getTime(), startTime),
-                        end: Math.min(eventEnd.getTime(), endTime),
-                        durationStr,
-                    });
-                }
-            });
-        });
-        events.sort((a, b) => a.start - b.start);
-        // Initial point
-        dataPoints.push({ time: startTime, value: 0 });
-        events.forEach((ev) => {
-            // "Step" up 1ms before
-            dataPoints.push({ time: ev.start - 1, value: 0 });
-            // Start of event
-            dataPoints.push({ time: ev.start, value: 1, meta: { duration: ev.durationStr } });
-            // End of event
-            dataPoints.push({ time: ev.end, value: 1, meta: { duration: ev.durationStr } });
-            // "Step" down 1ms after
-            dataPoints.push({ time: ev.end + 1, value: 0 });
-        });
-        // Final point
-        dataPoints.push({ time: endTime, value: 0 });
-        return dataPoints;
-    }
-    static synthesizeLiveDataPoint(metricKey, overviewEntity, now, lastDataPoint) {
-        if (metricKey === 'dehumidifier') {
-            if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
-                const state = overviewEntity.attributes.dehumidifier_state;
-                const val = state === 'on' || state === 'true' || state === '1' ? 1 : 0;
-                return { time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } };
-            }
-        }
-        else if (metricKey === 'exhaust' || metricKey === 'humidifier') {
-            const val = metricKey === 'exhaust'
-                ? overviewEntity?.attributes?.exhaust_value
-                : overviewEntity?.attributes?.humidifier_value;
-            if (val !== undefined) {
-                let numVal = parseFloat(val);
-                let meta;
-                if (isNaN(numVal)) {
-                    if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') {
-                        numVal = 1;
-                        meta = { state: 'ON' };
-                    }
-                    else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') {
-                        numVal = 0;
-                        meta = { state: 'OFF' };
-                    }
-                }
-                if (!isNaN(numVal)) {
-                    return { time: now.getTime(), value: numVal, meta };
-                }
-            }
-        }
-        // Generic fallback: extend last value
-        if (lastDataPoint) {
-            return { time: now.getTime(), value: lastDataPoint.value, meta: lastDataPoint.meta };
-        }
-        return null;
-    }
-    static normalizeSensorValue(ent, key) {
-        const s = ent.state;
-        if (s === 'unavailable' || s === 'unknown')
-            return undefined;
-        if (key === 'dehumidifier') {
-            return s === 'on' || s === 'true' || s === '1' || s === 'heating' || s === 'drying' ? 1 : 0;
-        }
-        if (key === 'light') {
-            // Text based check
-            if (s === 'on' || s === 'true')
-                return 1;
-            if (s === 'off' || s === 'false')
-                return 0;
-            // Numeric check for dimmers/percentages (0 = off, >0 = on)
-            const val = parseFloat(s);
-            if (!isNaN(val)) {
-                return val > 0 ? 1 : 0;
-            }
-            return 0;
-        }
-        const val = parseFloat(s);
-        if (isNaN(val)) {
-            // Try to handle ON/OFF for 0-10 sensors if state comes as text?
-            // Usually they are numbers, but just in case
-            if (s === 'on')
-                return 1;
-            if (s === 'off')
-                return 0;
-            return undefined;
-        }
-        return val;
-    }
-}
-
-let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.sensorHistory = {};
-        this.metricKey = '';
-        this.unit = '';
-        this.color = '#ffffff';
-        this.title = '';
-        this.icon = mdiMagnify;
-        this.range = '24h';
-        this.type = 'line';
-        // For combined graphs
-        this.metrics = [];
-        this.isCombined = false;
-        this.metricConfig = {};
-        this._activeTooltip = null;
-        this._hoverTime = null;
-        this._canScrollLeft = false;
-        this._canScrollRight = false;
-        this._renderSeries = []; // Cached series renamed for clarity
-        this._chipsContainerRef = e$1();
-    }
-    _scrollChips(direction) {
-        const container = this._chipsContainerRef.value;
-        if (container) {
-            container.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
-        }
-    }
-    _checkScroll() {
-        const container = this._chipsContainerRef.value;
-        if (container) {
-            this._canScrollLeft = container.scrollLeft > 1;
-            this._canScrollRight =
-                container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
-        }
-    }
-    firstUpdated() {
-        const container = this._chipsContainerRef.value;
-        if (container) {
-            container.addEventListener('scroll', () => this._checkScroll());
-            this._resizeObserver = new ResizeObserver(() => this._checkScroll());
-            this._resizeObserver.observe(container);
-            setTimeout(() => this._checkScroll(), 100);
-        }
-    }
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        if (this._resizeObserver) {
-            this._resizeObserver.disconnect();
-        }
-    }
-    _computeGraphSeries(width, height, startTime, durationMillis, now) {
-        const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
-        const seriesList = [];
-        metricKeys.forEach((key) => {
-            const config = this.metricConfig[key] || {
-                color: this.isCombined ? METRIC_CONFIG[key]?.color || '#ffffff' : this.color,
-                title: this.isCombined ? METRIC_CONFIG[key]?.title || key : this.title,
-                unit: this.isCombined ? METRIC_CONFIG[key]?.unit || '' : this.unit,
-                icon: this.isCombined ? METRIC_CONFIG[key]?.icon || '' : this.icon,
-            };
-            const historySource = this.sensorHistory[key] || [];
-            const dataPoints = [];
-            if (key === 'optimal' && historySource.length > 0) {
-                // Optimal logic (Step Graph for Binary Sensor)
-                const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
-                let initialState = sortedHistory[0];
-                for (const h of sortedHistory) {
-                    const t = new Date(h.last_changed).getTime();
-                    if (t > startTime.getTime())
-                        break;
-                    initialState = h;
-                }
-                if (initialState) {
-                    const val = initialState.state === 'on' ? 1 : 0;
-                    dataPoints.push({ time: startTime.getTime(), value: val });
-                }
-                sortedHistory.forEach((h) => {
-                    const t = new Date(h.last_changed).getTime();
-                    if (t <= startTime.getTime())
-                        return;
-                    const val = h.state === 'on' ? 1 : 0;
-                    const reasons = h.attributes?.reasons;
-                    dataPoints.push({ time: t, value: val, meta: reasons ? { reasons } : undefined });
-                });
-                // Extend to NOW
-                if (dataPoints.length > 0) {
-                    const last = dataPoints[dataPoints.length - 1];
-                    dataPoints.push({ time: now.getTime(), value: last.value });
-                }
-            }
-            else if (historySource.length > 0) {
-                // Standard Sensor Logic
-                const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
-                let initialState = sortedHistory[0];
-                for (const h of sortedHistory) {
-                    const t = new Date(h.last_changed).getTime();
-                    if (t > startTime.getTime())
-                        break;
-                    initialState = h;
-                }
-                if (initialState) {
-                    const val = GraphDataTransformer.normalizeSensorValue(initialState, key);
-                    if (val !== undefined) {
-                        dataPoints.push({ time: startTime.getTime(), value: val });
-                    }
-                }
-                sortedHistory.forEach((h) => {
-                    const t = new Date(h.last_changed).getTime();
-                    if (t <= startTime.getTime())
-                        return;
-                    const val = GraphDataTransformer.normalizeSensorValue(h, key);
-                    if (val !== undefined) {
-                        dataPoints.push({ time: t, value: val });
-                    }
-                });
-                // Synthesize live point
-                const livePoint = GraphDataTransformer.synthesizeLiveDataPoint(key, this.device?.overview_entity_id ? { attributes: this.device } : null, now, dataPoints[dataPoints.length - 1]);
-                if (livePoint) {
-                    dataPoints.push(livePoint);
-                }
-                else if (dataPoints.length > 0) {
-                    const last = dataPoints[dataPoints.length - 1];
-                    dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
-                }
-            }
-            if (dataPoints.length > 0) {
-                let min = Math.min(...dataPoints.map((d) => d.value));
-                let max = Math.max(...dataPoints.map((d) => d.value));
-                const sum = dataPoints.reduce((acc, curr) => acc + curr.value, 0);
-                const avg = sum / dataPoints.length;
-                // Enforce specific ranges
-                if (key === 'exhaust' || key === 'humidifier' || key === 'circulation_fan') {
-                    min = 0;
-                    max = 10;
-                }
-                else if (key === 'dehumidifier') {
-                    min = 0;
-                    max = 1;
-                }
-                else if (config.type === 'step') {
-                    min = 0;
-                    max = 1;
-                } // Step graphs (optimal, irrigation, drain, light) are binary
-                // Add padding for single graphs only
-                if (!this.isCombined && max === min && config.type !== 'step') {
-                    max += 1;
-                    min -= 1;
-                }
-                const paddedRange = max - min || 1;
-                let pathStr = '';
-                if (config.type === 'step') {
-                    // Step Path
-                    const stepPoints = [];
-                    if (dataPoints.length > 0) {
-                        const startX = ((dataPoints[0].time - startTime.getTime()) / durationMillis) * width;
-                        const startY = height - ((dataPoints[0].value - min) / paddedRange) * height;
-                        stepPoints.push([startX, startY]);
-                        for (let i = 1; i < dataPoints.length; i++) {
-                            const p = dataPoints[i];
-                            const x = ((p.time - startTime.getTime()) / durationMillis) * width;
-                            const y = height - ((p.value - min) / paddedRange) * height;
-                            // Step: H then V
-                            stepPoints.push([x, stepPoints[stepPoints.length - 1][1]]);
-                            stepPoints.push([x, y]);
-                        }
-                    }
-                    pathStr = `M ${stepPoints.map((p) => `${p[0]},${p[1]}`).join(' L ')}`;
-                }
-                else {
-                    // Line Path
-                    const points = dataPoints.map((p) => {
-                        const x = ((p.time - startTime.getTime()) / durationMillis) * width;
-                        const y = height - ((p.value - min) / paddedRange) * height;
-                        return [x, y];
-                    });
-                    pathStr = `M ${points.map((p) => `${p[0]},${p[1]}`).join(' L ')}`;
-                }
-                seriesList.push({
-                    id: key,
-                    title: config.title || key,
-                    color: config.color || '#fff',
-                    unit: config.unit || '',
-                    icon: config.icon || '',
-                    points: dataPoints,
-                    min,
-                    max,
-                    avg,
-                    path: pathStr,
-                    fillType: this.isCombined ? 'flat' : 'gradient',
-                });
-            }
-        });
-        return seriesList;
-    }
-    render() {
-        if (!this.device)
-            return x ``;
-        // Dimensions (internal SVG coords)
-        const width = 800;
-        const height = 200;
-        const durationMillis = this._getDurationMillis(this.range);
-        const now = new Date(); // Only for display math if needed, but series are cached
-        const startTime = new Date(now.getTime() - durationMillis);
-        // Use cached render series
-        const series = this._renderSeries;
-        if (series.length === 0) {
-            return x `
-        <div class="gs-env-graph-card">
-          <div class="gs-env-graph-header">
-            <div style="display:flex; align-items:center; gap:8px;">
-              ${this.icon ? x `<ha-icon .icon=${this.icon}></ha-icon>` : ''}
-              <span>${this.title || 'Graph'}</span>
-            </div>
-            <span style="color: #666; font-size: 0.9em;">No Data</span>
-          </div>
-          <div
-            class="gs-env-chart-container"
-            style="display: flex; align-items: center; justify-content: center; color: #444;"
-          >
-            No history data available for ${this.range}
-          </div>
-        </div>
-      `;
-        }
-        return x `
-      <div class="gs-env-graph-card">
-        ${this.isCombined
-            ? this._renderCombinedHeader(series)
-            : this._renderSingleHeader(series[0])}
-
-        <div
-          class="gs-env-chart-container"
-          @mousemove=${(e) => this._handleGraphHover(e, series, startTime, durationMillis, width)}
-          @mouseleave=${() => {
-            this._activeTooltip = null;
-            this._hoverTime = null;
-        }}
-        >
-          ${this._renderTooltip()}
-          ${!this.isCombined
-            ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit)
-            : ''}
-          ${this._renderXAxisHTML(this.range)}
-
-          <svg
-            viewBox="0 0 ${width} ${height}"
-            preserveAspectRatio="none"
-            style="width: 100%; height: 100%; overflow: visible; display: block;"
-          >
-            ${this._renderGrid(width, height)}
-            ${series.map((s) => {
-            if (s.fillType === 'gradient') {
-                return b `
-                                    <defs>
-                                        ${this._renderGradient(s.id, s.color)}
-                                    </defs>
-                                    <path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />
-                                    <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2.5" />
-                                `;
-            }
-            else {
-                return b `
-                                     <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" />
-                                     <!-- Optional: light fill for combined -->
-                                     <path d="${s.path} V ${height} H ${s.points.length > 0 ? ((s.points[0].time - startTime.getTime()) / durationMillis) * width : 0} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />
-                                `;
-            }
-        })}
-          </svg>
-        </div>
-      </div>
-    `;
-    }
-    _renderSingleHeader(series) {
-        let valStr = '-';
-        if (series.points.length > 0) {
-            const lastPoint = series.points[series.points.length - 1];
-            const val = lastPoint.value;
-            const defaults = SENSOR_CHART_DEFAULTS[series.id];
-            const isBinary = defaults?.binary === true ||
-                (series.unit === 'state' && defaults?.max === undefined) ||
-                series.id === 'optimal' ||
-                series.id === 'dehumidifier';
-            if (isBinary) {
-                if (series.id === 'optimal') {
-                    valStr = val === 1 ? 'Optimal' : lastPoint.meta?.reasons || 'Not Optimal';
-                }
-                else {
-                    valStr = val === 1 ? 'ON' : 'OFF';
-                }
-            }
-            else if ((series.id === 'exhaust' || series.id === 'humidifier') && lastPoint.meta?.state) {
-                valStr = lastPoint.meta.state;
-            }
-            else {
-                valStr = `${val.toFixed(1)} ${series.unit}`;
-            }
-        }
-        return x `
-      <div
-        class="gs-env-graph-header"
-        @click=${() => this.dispatchEvent(new CustomEvent('toggle-graph', { detail: series.id, bubbles: true, composed: true }))}
-      >
-        <div style="display:flex; align-items:center; gap:8px;">
-          <div
-            style="width: 24px; height: 24px; color: ${series.color}; display: flex; align-items: center; justify-content: center;"
-          >
-            <svg viewBox="0 0 24 24" style="width: 100%; height: 100%; fill: currentColor;">
-              <path d="${series.icon || this.icon}"></path>
-            </svg>
-          </div>
-          <span style="color: ${series.color}; font-weight: 500;">${series.title}</span>
-        </div>
-        <div style="text-align: right;">
-          <div style="font-size: 1.2em; font-weight: bold; color: ${series.color};">${valStr}</div>
-        </div>
-      </div>
-    `;
-    }
-    _renderCombinedHeader(seriesList) {
-        return x `
-      <div class="gs-env-graph-header">
-        <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
-          ${this._canScrollLeft
-            ? x `
-                <div
-                  class="scroll-nav left"
-                  @click=${(e) => {
-                e.stopPropagation();
-                this._scrollChips('left');
-            }}
-                >
-                  <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
-                </div>
-              `
-            : ''}
-
-          <div
-            class="chips-scroll-container"
-            ${n$1(this._chipsContainerRef)}
-            @click=${(e) => e.stopPropagation()}
-          >
-            ${seriesList.map((s) => x `
-                <div
-                  class=${e({
-            'gs-legend-item': true,
-            'mask-left': this._canScrollLeft,
-            'mask-right': this._canScrollRight,
-        })}
-                  @click=${(e) => {
-            e.stopPropagation();
-            this.dispatchEvent(new CustomEvent('unlink-graph', { detail: s.id, bubbles: true, composed: true }));
-        }}
-                >
-                  <span
-                    style="display:inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${s.color}; margin-right: 6px; flex-shrink: 0;"
-                  ></span>
-                  ${s.icon
-            ? x `
-                        <div
-                          style="width: 16px; height: 16px; color: ${s.color}; margin-right: 4px; display: inline-flex;"
-                        >
-                          <svg
-                            viewBox="0 0 24 24"
-                            style="width: 100%; height: 100%; fill: currentColor;"
-                          >
-                            <path d="${s.icon}"></path>
-                          </svg>
-                        </div>
-                      `
-            : ''}
-                  <span style="color: ${s.color}; font-weight: 500;">${s.title}</span>
-                </div>
-              `)}
-          </div>
-
-          ${this._canScrollRight
-            ? x `
-                <div
-                  class="scroll-nav right"
-                  @click=${(e) => {
-                e.stopPropagation();
-                this._scrollChips('right');
-            }}
-                >
-                  <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
-                </div>
-              `
-            : ''}
-        </div>
-
-        </div>
-
-        <div style="display:flex; gap: 8px; margin-left: 8px; flex-shrink: 0;">
-          ${this.isCombined
-            ? x `
-                <ha-icon-button
-                  .path=${mdiLink}
-                  @click=${() => this.dispatchEvent(new CustomEvent('unlink-graphs', { detail: -1, bubbles: true, composed: true }))}
-                  title="Unlink Graphs"
-                ></ha-icon-button>
-              `
-            : ''}
-        </div>
-      </div>
-    `;
-    }
-    _renderTooltip() {
-        if (!this._activeTooltip)
-            return x ``;
-        const { x: x$1, time, items } = this._activeTooltip;
-        return x `
-      <div class="gs-tooltip" style=${o({ left: `${x$1}px`, top: '0' })}>
-        <div
-          style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 2px;"
-        >
-          ${time}
-        </div>
-        ${items.map((i) => x `
-            <div
-              style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px;"
-            >
-              <span style="color: ${i.color};">${i.title}:</span>
-              <span style="font-family: monospace; font-weight: bold;">${i.value}</span>
-            </div>
-          `)}
-      </div>
-      <!-- Cursor Line -->
-      <div
-        class="gs-cursor-line"
-        style=${o({
-            left: `${x$1}px`,
-            height: '100%',
-            top: '0',
-            position: 'absolute',
-            borderLeft: '1px dashed rgba(255,255,255,0.3)',
-            pointerEvents: 'none',
-        })}
-      ></div>
-    `;
-    }
-    _renderGrid(width, height) {
-        return b `
-            <!-- Simple Grid -->
-            <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
-            <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
-            <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="#333" stroke-width="0.5" stroke-dasharray="4 4" />
-        `;
-    }
-    _renderGradient(key, color) {
-        return b `
-            <linearGradient id="grad-${key}" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="${color}" stop-opacity="0.4" />
-                <stop offset="100%" stop-color="${color}" stop-opacity="0" />
-            </linearGradient>
-        `;
-    }
-    _renderXAxisHTML(range) {
-        // Render X-Axis labels as HTML overlay
-        // Container padding: 20px 40px 30px 50px (top right bottom left)
-        // Labels usually at bottom. Bottom padding 30px is for these labels.
-        // We want them effectively at bottom: 10px?
-        const labelStyle = 'position: absolute; bottom: 8px; font-size: 10px; color: #666; line-height: 1; pointer-events: none;';
-        return x `
-      <div style="${labelStyle} left: 50px;">-${range}</div>
-      <div style="${labelStyle} right: 40px;">Now</div>
-    `;
-    }
-    _renderYAxisHTML(min, max, unit) {
-        // Render Y-Axis labels as HTML overlay to avoid SVG scaling distortion
-        // Container has padding: 20px 40px 30px 50px
-        // Top label at top of graph area (20px)
-        // Bottom label at bottom of graph area (20px + 100% height = approx bottom)
-        // Graph area height is 180px, defined by container height (which is content-box by default?)
-        // Let's assume standard box model. Height 180px is strictly the graph area?
-        // No, CSS says height: 180px and padding.
-        // If box-sizing is border-box (common in frameworks), height 180 includes padding. Graph area = 180 - 20 - 30 = 130px.
-        // If box-sizing is content-box (default), height 180 is graph area.
-        // In HA/Lit, usually we rely on user agent defaults unless reset.
-        // Let's assume content-box for now as that's standard CSS.
-        // Even if it's border-box, we can use percentages.
-        const labelStyle = 'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: #aaa; line-height: 1; pointer-events: none;';
-        if (unit === 'state' || (max === 1 && min === 0)) {
-            return x `
-        <div style="${labelStyle} top: 20px;">ON</div>
-        <div style="${labelStyle} bottom: 30px;">OFF</div>
-      `;
-        }
-        return x `
-      <div style="${labelStyle} top: 20px;">${max}${unit}</div>
-      <div style="${labelStyle} top: 50%; transform: translateY(-5px);">
-        ${((max + min) / 2).toFixed(1)}
-      </div>
-      <div style="${labelStyle} bottom: 30px;">${min}${unit}</div>
-    `;
-    }
-    _getDurationMillis(range) {
-        if (range === '1h')
-            return 60 * 60 * 1000;
-        if (range === '6h')
-            return 6 * 60 * 60 * 1000;
-        if (range === '7d')
-            return 7 * 24 * 60 * 60 * 1000;
-        return 24 * 60 * 60 * 1000;
-    }
-    _toggleEnvGraph() {
-        this.dispatchEvent(new CustomEvent('toggle-graph', { detail: this.metricKey, bubbles: true, composed: true }));
-    }
-    _unlinkGraphs(groupIndex) {
-        this.dispatchEvent(new CustomEvent('unlink-graphs', { detail: groupIndex, bubbles: true, composed: true }));
-    }
-    willUpdate(changedProperties) {
-        if (changedProperties.has('device') ||
-            changedProperties.has('sensorHistory') ||
-            changedProperties.has('range') ||
-            changedProperties.has('metricKey') ||
-            changedProperties.has('metrics') ||
-            changedProperties.has('isCombined') ||
-            changedProperties.has('metricConfig') ||
-            changedProperties.has('type') ||
-            changedProperties.has('color') ||
-            changedProperties.has('unit') ||
-            changedProperties.has('title') ||
-            changedProperties.has('icon')) {
-            const durationMillis = this._getDurationMillis(this.range);
-            const now = new Date();
-            const startTime = new Date(now.getTime() - durationMillis);
-            const width = 800;
-            const height = 200;
-            this._renderSeries = this._computeGraphSeries(width, height, startTime, durationMillis, now);
-        }
-    }
-    _handleGraphHover(e, seriesList, startTime, durationMillis, width) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const contentWidth = rect.width - 90; // 50px left + 40px right padding
-        const relX = Math.max(0, Math.min(1, (e.clientX - rect.left - 50) / contentWidth));
-        const hoverTime = startTime.getTime() + relX * durationMillis;
-        // Find closest points and format values
-        const items = seriesList.map((s) => {
-            // Binary search (nearest neighbor)
-            const searchTime = hoverTime;
-            let closest = s.points[0];
-            let minDiff = Number.MAX_VALUE;
-            let lo = 0;
-            let hi = s.points.length - 1;
-            if (s.points.length > 0) {
-                while (lo < hi) {
-                    const mid = Math.floor((lo + hi) / 2);
-                    if (s.points[mid].time < searchTime) {
-                        lo = mid + 1;
-                    }
-                    else {
-                        hi = mid;
-                    }
-                }
-                const candidates = [lo, lo - 1, lo + 1].filter((i) => i >= 0 && i < s.points.length);
-                candidates.forEach((i) => {
-                    const p = s.points[i];
-                    const diff = Math.abs(p.time - searchTime);
-                    if (diff < minDiff) {
-                        minDiff = diff;
-                        closest = p;
-                    }
-                });
-            }
-            // Format Value
-            const defaults = SENSOR_CHART_DEFAULTS[s.id];
-            const isBinary = defaults?.binary === true ||
-                (s.unit === 'state' && defaults?.max === undefined) ||
-                s.id === 'optimal' ||
-                s.id === 'dehumidifier';
-            let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
-            if (isBinary) {
-                if (s.id === 'optimal') {
-                    if (closest.value === 1)
-                        valStr = 'Optimal';
-                    else
-                        valStr = closest.meta?.reasons || 'Not Optimal';
-                }
-                else if (s.id === 'dehumidifier') {
-                    valStr = closest.value === 1 ? 'ON' : 'OFF';
-                }
-                else {
-                    valStr = closest.value === 1 ? 'ON' : 'OFF';
-                }
-            }
-            else if ((s.id === 'exhaust' || s.id === 'humidifier') && closest.meta?.state) {
-                valStr = closest.meta.state;
-            }
-            return { title: s.title, value: valStr, color: s.color };
-        });
-        const locale = this.hass?.locale?.language || undefined;
-        const timeStr = new Date(hoverTime).toLocaleTimeString(locale, {
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-        this._activeTooltip = {
-            id: 'hover',
-            x: e.clientX - rect.left,
-            time: timeStr,
-            items,
-        };
-        this._hoverTime = hoverTime;
-    }
-    _formatTime(date) {
-        const locale = this.hass?.locale?.language || undefined;
-        return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-    }
-};
-GrowspaceEnvChart.styles = i$6 `
-    :host {
-      display: block;
-      position: relative;
-    }
-
-    .gs-env-graph-card {
-      margin-top: 12px;
-      background: #1a1a1a;
-      border-radius: 12px;
-      padding: 16px;
-    }
-
-    .gs-env-graph-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      cursor: pointer;
-    }
-
-    .gs-env-chart-container {
-      position: relative;
-      height: 180px;
-      background: #0d0d0d;
-      border-radius: 8px;
-      padding: 20px 40px 30px 50px;
-      cursor: crosshair;
-    }
-
-    .gs-tooltip {
-      position: absolute;
-      background: rgba(30, 30, 35, 0.9);
-      color: #fff;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 0.75rem;
-      pointer-events: none;
-      transform: translate(-50%, 0);
-      z-index: 1000;
-      white-space: nowrap;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-      line-height: 1.4;
-      text-align: center;
-    }
-
-    .gs-cursor-line {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 1px;
-      background: rgba(255, 255, 255, 0.3);
-      pointer-events: none;
-      z-index: 5;
-      border-left: 1px dashed rgba(255, 255, 255, 0.5);
-    }
-
-    .gs-legend-item {
-      display: flex;
-      align-items: center;
-      margin-right: 12px;
-      font-size: 0.85rem;
-      cursor: pointer;
-      opacity: 0.8;
-      transition: opacity 0.2s;
-    }
-
-    .gs-legend-item:hover {
-      opacity: 1;
-    }
-
-    .chips-scroll-container {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      overflow-x: auto;
-      white-space: nowrap;
-      scrollbar-width: none; /* Firefox */
-      -ms-overflow-style: none; /* IE/Edge */
-      scroll-behavior: smooth;
-      flex: 1;
-      min-width: 0;
-      /* Removed static mask */
-      padding: 0 10px;
-      transition: mask-image 0.3s;
-    }
-
-    .chips-scroll-container.mask-right {
-      mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%);
-      -webkit-mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%);
-    }
-
-    .chips-scroll-container.mask-left {
-      mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%);
-      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%);
-    }
-
-    .chips-scroll-container.mask-left.mask-right {
-      mask-image: linear-gradient(
-        to right,
-        transparent 0%,
-        black 30px,
-        black calc(100% - 30px),
-        transparent 100%
-      );
-      -webkit-mask-image: linear-gradient(
-        to right,
-        transparent 0%,
-        black 30px,
-        black calc(100% - 30px),
-        transparent 100%
-      );
-    }
-
-    .chips-scroll-container::-webkit-scrollbar {
-      display: none;
-    }
-
-    .scroll-nav {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      opacity: 0.5;
-      transition: opacity 0.2s;
-      min-width: 24px;
-      color: #fff;
-    }
-
-    .scroll-nav:hover {
-      opacity: 1;
-    }
-
-    .scroll-nav svg {
-      width: 24px;
-      height: 24px;
-      fill: currentColor;
-    }
-
-    @media (pointer: coarse) {
-      .scroll-nav {
-        display: none;
-      }
-    }
-  `;
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "hass", void 0);
-__decorate([
-    n$4({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "device", void 0);
-__decorate([
-    n$4({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "sensorHistory", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "metricKey", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "unit", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "color", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "title", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "icon", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", String)
-], GrowspaceEnvChart.prototype, "range", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", String)
-], GrowspaceEnvChart.prototype, "type", void 0);
-__decorate([
-    n$4({ type: Array }),
-    __metadata("design:type", Array)
-], GrowspaceEnvChart.prototype, "metrics", void 0);
-__decorate([
-    n$4({ type: Boolean }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "isCombined", void 0);
-__decorate([
-    n$4({ type: Object }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "metricConfig", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "_activeTooltip", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "_hoverTime", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "_canScrollLeft", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "_canScrollRight", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Array)
-], GrowspaceEnvChart.prototype, "_renderSeries", void 0);
-GrowspaceEnvChart = __decorate([
-    t$2('growspace-env-chart')
-], GrowspaceEnvChart);
-
-class PlantClickEvent extends CustomEvent {
-    constructor(plant) {
-        super(PlantClickEvent.TYPE, {
-            detail: { plant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-PlantClickEvent.TYPE = 'plant-click';
-class AddPlantClickEvent extends CustomEvent {
-    constructor(row, col) {
-        super(AddPlantClickEvent.TYPE, {
-            detail: { row, col },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-AddPlantClickEvent.TYPE = 'add-plant-click';
-class PlantDropEvent extends CustomEvent {
-    constructor(originalEvent, targetRow, targetCol, targetPlant, sourcePlant) {
-        super(PlantDropEvent.TYPE, {
-            detail: { originalEvent, targetRow, targetCol, targetPlant, sourcePlant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-PlantDropEvent.TYPE = 'plant-drop';
-class SelectionChangedEvent extends CustomEvent {
-    constructor(selectedPlants) {
-        super(SelectionChangedEvent.TYPE, {
-            detail: { selectedPlants },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-SelectionChangedEvent.TYPE = 'selection-changed';
-class UpdatePlantEvent extends CustomEvent {
-    constructor(updates) {
-        super(UpdatePlantEvent.TYPE, {
-            detail: updates,
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-UpdatePlantEvent.TYPE = 'update-plant';
-class DeletePlantEvent extends CustomEvent {
-    constructor(plantId) {
-        super(DeletePlantEvent.TYPE, {
-            detail: { plantId },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-DeletePlantEvent.TYPE = 'delete-plant';
-class HarvestPlantEvent extends CustomEvent {
-    constructor(plant) {
-        super(HarvestPlantEvent.TYPE, {
-            detail: { plant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-HarvestPlantEvent.TYPE = 'harvest-plant';
-class FinishDryingEvent extends CustomEvent {
-    constructor(plant) {
-        super(FinishDryingEvent.TYPE, {
-            detail: { plant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-FinishDryingEvent.TYPE = 'finish-drying';
-class TakeCloneEvent extends CustomEvent {
-    constructor(plant, numClones) {
-        super(TakeCloneEvent.TYPE, {
-            detail: { plant, numClones },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-TakeCloneEvent.TYPE = 'take-clone';
-class MoveCloneEvent extends CustomEvent {
-    constructor(plant, targetGrowspace) {
-        super(MoveCloneEvent.TYPE, {
-            detail: { plant, targetGrowspace },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-MoveCloneEvent.TYPE = 'move-clone';
-class LibraryExportReadyEvent extends CustomEvent {
-    constructor(url) {
-        super(LibraryExportReadyEvent.TYPE, {
-            detail: { url },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-LibraryExportReadyEvent.TYPE = 'library-export-ready';
-
-class GrowspaceStore {
-    constructor(host) {
-        // State
-        this.state = {
-            selectedDevice: null,
-            strainLibrary: [],
-            activeDialog: { type: 'NONE' },
-            isEditMode: false,
-            selectedPlants: new Set(),
-            optimisticDeletedPlantIds: new Set(),
-            focusedPlantIndex: -1,
-            menuOpen: false,
-            notification: null,
-            isCompactView: false,
-            defaultApplied: false,
-            isLoading: true,
-            devices: [],
-        };
-        this.wsDataCache = {};
-        this._isFetchingWS = false;
-        this.handleTakeClone = (motherPlant, numClones) => {
-            const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
-            this.dataService
-                .takeClone({
-                mother_plant_id: plantId,
-                num_clones: numClones,
-            })
-                .then(() => {
-                console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
-            })
-                .catch((error) => {
-                console.error(`Failed to take clone: ${error.message}`);
-            });
-        };
-        this.host = host;
-        host.addController(this);
-        // Wrap state in a proxy to auto-trigger updates
-        this.state = new Proxy(this.state, {
-            set: (target, prop, value) => {
-                const oldVal = target[prop];
-                if (oldVal !== value) {
-                    // Use type assertion to avoid 'any' is not assignable to 'never' error
-                    target[prop] = value;
-                    this.host.requestUpdate();
-                }
-                return true;
-            }
-        });
-        console.log('GrowspaceStore initialized with Reactive Proxy');
-        this.dataService = new DataService();
-    }
-    hostConnected() {
-        // Lifecycle hook
-        // We can't subscribe here because hass might not be set yet.
-        // Logic handled in updateHass/subscribe
-    }
-    hostDisconnected() {
-        if (this._unsubEvents) {
-            this._unsubEvents();
-            this._unsubEvents = undefined;
-        }
-    }
-    updateHass(hass) {
-        this.hass = hass;
-        this.dataService.updateHass(hass);
-        this._ensureEventSubscription();
-        // If cache empty, fetch initial
-        if (Object.keys(this.wsDataCache).length === 0 && !this._isFetchingWS) {
-            this._refreshGrowspaceData();
-        }
-        else {
-            // Just re-calculate derived state (sync) because entities might have changed
-            this._updateDevicesState();
-        }
-        if (!this.state.selectedDevice && this.state.devices.length > 0) {
-            this.state.selectedDevice = this.state.devices[0].device_id;
-            // Ensure the UI knows we are ready to display
-            if (this.state.isLoading) {
-                this.state.isLoading = false;
-            }
-        }
-        this.pruneOptimisticDeletions();
-    }
-    async _ensureEventSubscription() {
-        if (this._unsubEvents || !this.hass)
-            return;
-        try {
-            this._unsubEvents = await this.hass.connection.subscribeEvents(() => this._refreshGrowspaceData(), // specific logic to handle event payload? Msg is empty usually.
-            'growspace_manager_updated');
-        }
-        catch (err) {
-            console.error('Failed to subscribe to growspace events', err);
-        }
-    }
-    async refreshData() {
-        await this._refreshGrowspaceData();
-    }
-    async _refreshGrowspaceData() {
-        if (!this.hass || this._isFetchingWS)
-            return;
-        this._isFetchingWS = true;
-        // Show loading spinner if we have no devices yet
-        if (this.state.devices.length === 0) {
-            this.state.isLoading = true;
-        }
-        try {
-            // fetchGrowspaceData without ID should return all data
-            const data = await this.dataService.fetchGrowspaceData();
-            this.wsDataCache = data || {};
-            this._updateDevicesState();
-        }
-        catch (e) {
-            console.error('Failed to fetch growspace data', e);
-        }
-        finally {
-            this._isFetchingWS = false;
-            // Only clear loading if we didn't find any devices OR if we already have a selection
-            // If we found devices but no selection, wait for auto-select logic in updateHass/initialize
-            if (this.state.devices.length === 0 || this.state.selectedDevice) {
-                this.state.isLoading = false;
-            }
-        }
-    }
-    _updateDevicesState() {
-        const devices = this.dataService.getGrowspaceDevices(this.wsDataCache);
-        this.state.devices = devices;
-        // Auto-select if needed (handles initial load race condition where updateHass hasn't run yet)
-        if (!this.state.selectedDevice && devices.length > 0) {
-            this.state.selectedDevice = devices[0].device_id;
-        }
-    }
-    requestUpdate() {
-        this.host.requestUpdate();
-    }
-    // --- Actions / Logic ---
-    // State Setters
-    setIsCompactView(value) {
-        this.state.isCompactView = value;
-    }
-    setDefaultApplied(value) {
-        this.state.defaultApplied = value;
-    }
-    showToast(message, type = 'info') {
-        this.state.notification = { message, type };
-        setTimeout(() => {
-            this.state.notification = null;
-        }, 4000);
-    }
-    initializeSelectedDevice(config) {
-        // Update compact view from config if not already set (or always?)
-        if (config?.compact !== undefined) {
-            this.state.isCompactView = config.compact;
-        }
-        const devices = this.state.devices;
-        if (!devices.length || this.state.selectedDevice)
-            return;
-        // Try to apply default from config
-        if (config?.default_growspace) {
-            const defaultDevice = devices.find((d) => d.device_id === config.default_growspace || d.name === config.default_growspace);
-            if (defaultDevice) {
-                this.state.selectedDevice = defaultDevice.device_id;
-                this.state.defaultApplied = true;
-                return;
-            }
-        }
-        // Fallback to first device
-        this.state.selectedDevice = devices[0].device_id;
-    }
-    // ...
-    fetchStrainLibrary(force = false) {
-        return this._fetchStrainLibraryImpl(force);
-    }
-    async _fetchStrainLibraryImpl(force) {
-        if (!this.hass)
-            return;
-        const CACHE_KEY = 'growspace_strain_library_v2';
-        const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
-        // 1. Try to load from cache
-        const cachedRaw = localStorage.getItem(CACHE_KEY);
-        let usedCache = false;
-        if (!force && cachedRaw) {
-            try {
-                const cache = JSON.parse(cachedRaw);
-                const age = Date.now() - (cache.timestamp || 0);
-                if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
-                    this.state.strainLibrary = cache.data;
-                    usedCache = true;
-                }
-            }
-            catch (e) {
-                console.warn('Failed to parse cached strain library', e);
-                localStorage.removeItem(CACHE_KEY); // Clear bad cache
-            }
-        }
-        // 2. Fetch from backend if no cache or invalid
-        if (!usedCache) {
-            try {
-                const currentStrains = await this.dataService.fetchStrainLibrary();
-                if (Array.isArray(currentStrains)) {
-                    this.state.strainLibrary = currentStrains;
-                    // Update cache
-                    const cacheData = {
-                        version: 2,
-                        timestamp: Date.now(),
-                        data: currentStrains,
-                    };
-                    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-                }
-            }
-            catch (e) {
-                console.error('Failed to fetch strain library:', e);
-            }
-        }
-    }
-    handleKeyboardNavigation(key) {
-        if (this.state.isEditMode && key === 'Escape') {
-            this.exitEditMode();
-            return;
-        }
-        if (!this.state.selectedDevice)
-            return;
-        const devices = this.state.devices;
-        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
-        if (!device)
-            return;
-        const plants = device.plants.filter((p) => !this.state.optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
-        if (plants.length === 0)
-            return;
-        if (key === 'ArrowRight') {
-            this.setFocusedPlantIndex((this.state.focusedPlantIndex + 1) % plants.length);
-        }
-        else if (key === 'ArrowLeft') {
-            this.setFocusedPlantIndex((this.state.focusedPlantIndex - 1 + plants.length) % plants.length);
-        }
-        else if (key === 'Enter' || key === ' ') {
-            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
-                this.handlePlantClick(plants[this.state.focusedPlantIndex]);
-            }
-        }
-        else if (key === 'Delete' || key === 'Backspace') {
-            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
-                const focusedPlant = plants[this.state.focusedPlantIndex];
-                if (focusedPlant) {
-                    this.handleDeletePlant(focusedPlant.entity_id);
-                }
-            }
-            else if (this.state.selectedPlants.size > 0) {
-                // If multiple plants are selected, delete them
-                this.handleDeletePlant(Array.from(this.state.selectedPlants));
-            }
-        }
-    }
-    handleDeviceChange(deviceId) {
-        this.state.selectedDevice = deviceId;
-    }
-    togglePlantSelection(plantOrId) {
-        const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
-        if (!plantId)
-            return;
-        const newSet = new Set(this.state.selectedPlants);
-        if (newSet.has(plantId)) {
-            newSet.delete(plantId);
-        }
-        else {
-            newSet.add(plantId);
-        }
-        this.state.selectedPlants = newSet;
-    }
-    selectAllPlants() {
-        if (!this.state.selectedDevice)
-            return;
-        const devices = this.state.devices;
-        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
-        if (selectedDeviceData && selectedDeviceData.plants) {
-            selectedDeviceData.plants.forEach((plant) => {
-                const pId = plant.attributes.plant_id;
-                if (pId && !this.state.optimisticDeletedPlantIds.has(pId)) {
-                    this.state.selectedPlants.add(pId);
-                }
-            });
-            // Force update to trigger proxy set trap on a property if we mutated distinct property? 
-            // Actually Set and Map mutations don't trigger proxy 'set'.
-            // We must reassign the Set to trigger the proxy trap.
-            this.state.selectedPlants = new Set(this.state.selectedPlants);
-        }
-    }
-    setSelectedPlants(plantIds) {
-        this.state.selectedPlants = new Set(plantIds);
-    }
-    setFocusedPlantIndex(index) {
-        this.state.focusedPlantIndex = index;
-    }
-    clearPlantSelection() {
-        this.state.selectedPlants = new Set();
-    }
-    exitEditMode() {
-        this.state.isEditMode = false;
-        this.state.selectedPlants = new Set();
-    }
-    setEditMode(value) {
-        this.state.isEditMode = value;
-    }
-    setMenuOpen(value) {
-        this.state.menuOpen = value;
-    }
-    setActiveDialog(dialogState) {
-        this.state.activeDialog = dialogState;
-    }
-    closeActiveDialog() {
-        this.state.activeDialog = { type: 'NONE' };
-    }
-    handlePlantClick(plant) {
-        if (this.state.isEditMode && this.state.selectedPlants.size > 0) {
-            const plantId = plant.attributes.plant_id;
-            if (plantId && !this.state.selectedPlants.has(plantId)) {
-                this.togglePlantSelection(plantId);
-            }
-            this.openPlantOverviewDialog(plant, Array.from(this.state.selectedPlants));
-        }
-        else {
-            this.openPlantOverviewDialog(plant);
-        }
-    }
-    openPlantOverviewDialog(plant, selectedIds) {
-        this.state.activeDialog = {
-            type: 'PLANT_OVERVIEW',
-            payload: {
-                plant,
-                editedAttributes: { ...plant.attributes },
-                activeTab: 'dashboard',
-                selectedPlantIds: selectedIds,
-            },
-        };
-    }
-    async updatePlantFromDialog(dialogState) {
-        const { plant, editedAttributes, selectedPlantIds } = dialogState;
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
-        const isBulkEdit = targetIds.length > 1;
-        // Use extracted pure function for payload generation
-        const payloadTemplate = PlantUtils.mapDialogToApiPayload(editedAttributes, isBulkEdit);
-        try {
-            const updatePromises = targetIds.map((id) => {
-                const payload = { ...payloadTemplate, plant_id: id };
-                return this.dataService.updatePlant(payload);
-            });
-            await Promise.all(updatePromises);
-            this.closeActiveDialog();
-            if (this.state.isEditMode) {
-                this.state.selectedPlants = new Set();
-                this.state.isEditMode = false;
-            }
-        }
-        catch (err) {
-            console.error('Error updating plant(s):', err);
-        }
-    }
-    async updatePlant(plantId, updates) {
-        try {
-            await this.dataService.updatePlant({ plant_id: plantId, ...updates });
-            this.showToast('Plant updated', 'success');
-            // Dialog might stay open or close? Usually stay open for overview.
-        }
-        catch (e) {
-            console.error('Failed to update plant:', e);
-            this.showToast(`Failed to update plant: ${e.message}`, 'error');
-        }
-    }
-    async handleDeletePlant(plantId) {
-        const ids = Array.isArray(plantId) ? plantId : [plantId];
-        const newOptimistic = new Set(this.state.optimisticDeletedPlantIds);
-        ids.forEach((id) => newOptimistic.add(id));
-        this.state.optimisticDeletedPlantIds = newOptimistic;
-        try {
-            // Check if backend supports bulk delete? If not, loop.
-            // Assuming dataService.deletePlant takes one ID.
-            await Promise.all(ids.map((id) => this.dataService.removePlant(id)));
-            this.showToast('Plant(s) deleted', 'success');
-            // Do NOT remove from optimistic set here.
-            // We wait for updateHass/pruneOptimisticDeletions to confirm they are gone from HA state.
-            ids.forEach((id) => {
-                this.state.selectedPlants.delete(id);
-            });
-            if (this.state.activeDialog.type === 'PLANT_OVERVIEW') {
-                this.closeActiveDialog();
-            }
-            this.updateGrid();
-        }
-        catch (e) {
-            console.error('Failed to delete plant:', e);
-            this.showToast(`Failed to delete: ${e.message}`, 'error');
-            const revertedOptimistic = new Set(this.state.optimisticDeletedPlantIds);
-            ids.forEach((id) => revertedOptimistic.delete(id));
-            this.state.optimisticDeletedPlantIds = revertedOptimistic;
-        }
-    }
-    pruneOptimisticDeletions() {
-        if (this.state.optimisticDeletedPlantIds.size === 0)
-            return;
-        const allPlantIds = new Set();
-        const devices = this.state.devices;
-        devices.forEach((d) => d.plants.forEach((p) => allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))));
-        const toRemove = new Set();
-        this.state.optimisticDeletedPlantIds.forEach((id) => {
-            // If the plant ID is NOT in the current data, it means deletion is confirmed/propagated.
-            // So we can stop masking it.
-            if (!allPlantIds.has(id)) {
-                toRemove.add(id);
-            }
-        });
-        if (toRemove.size > 0) {
-            const newOptimistic = new Set(this.state.optimisticDeletedPlantIds);
-            toRemove.forEach((id) => newOptimistic.delete(id));
-            this.state.optimisticDeletedPlantIds = newOptimistic;
-        }
-    }
-    async handleMovePlantToNextStage(plant) {
-        const stage = plant.attributes?.stage;
-        let targetGrowspace = '';
-        const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
-        if (!stage || !movableStages.has(stage)) {
-            this.showToast('Plant must be in mother or flower or dry or cure stage to move. stage is ' + stage, 'error');
-            return;
-        }
-        if (stage === 'flower') {
-            targetGrowspace = 'dry';
-        }
-        else if (stage === 'dry') {
-            targetGrowspace = 'cure';
-        }
-        else if (stage === 'mother') {
-            targetGrowspace = 'clone';
-        }
-        else {
-            console.error('Unknown stage, cannot move plant', targetGrowspace);
-            targetGrowspace = 'error';
-        }
-        try {
-            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-            await this.dataService.harvestPlant(plantId, targetGrowspace);
-            this.closeActiveDialog();
-        }
-        catch (err) {
-            console.error('Error moving plant to next stage:', err);
-        }
-    }
-    async movePlantToGrowspace(plant, targetGrowspace) {
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        const currentStage = plant.attributes?.stage || 'unknown';
-        try {
-            if (currentStage === 'clone') {
-                // Clones use specific service to handle transition to Veg
-                await this.dataService.moveClone(plantId, targetGrowspace);
-            }
-            else {
-                // Other stages use harvest loop (flower->dry->cure etc)
-                await this.dataService.harvestPlant(plantId, targetGrowspace);
-            }
-            this.showToast(`Plant moved to ${targetGrowspace}`, 'success');
-            await this.refreshData();
-            this.closeActiveDialog();
-        }
-        catch (err) {
-            console.error('Error moving plant:', err);
-            this.showToast(`Failed to move plant: ${err.message}`, 'error');
-        }
-    }
-    async addStrain(strainData) {
-        if (!strainData.strain)
-            return;
-        const payload = {
-            strain: strainData.strain,
-            phenotype: strainData.phenotype,
-            breeder: strainData.breeder,
-            type: strainData.type,
-            flowering_days_min: strainData.flowering_days_min
-                ? Number(strainData.flowering_days_min)
-                : undefined,
-            flowering_days_max: strainData.flowering_days_max
-                ? Number(strainData.flowering_days_max)
-                : undefined,
-            lineage: strainData.lineage,
-            sex: strainData.sex,
-            description: strainData.description,
-            image: strainData.image,
-            image_crop_meta: strainData.image_crop_meta,
-            sativa_percentage: strainData.sativa_percentage,
-            indica_percentage: strainData.indica_percentage,
-        };
-        try {
-            await this.dataService.addStrain(payload);
-            this.showToast('Strain saved successfully!', 'success');
-            await this.fetchStrainLibrary(true);
-        }
-        catch (err) {
-            console.error('Error adding strain:', err);
-        }
-    }
-    async removeStrain(strainKey) {
-        try {
-            const parts = strainKey.split('|');
-            const strain = parts[0];
-            const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
-            await this.dataService.removeStrain(strain, phenotype);
-            if (this.state.strainLibrary) {
-                this.state.strainLibrary = this.state.strainLibrary.filter((s) => s.key !== strainKey);
-            }
-            await this.fetchStrainLibrary(true);
-        }
-        catch (err) {
-            console.error('Error removing strain:', err);
-        }
-    }
-    updateGrid() {
-        // Force refresh from HA
-        if (this.hass) {
-            this.dataService.updateHass(this.hass);
-        }
-        // Trigger generic request update, but also maybe refresh WS data if we expect backend changes?
-        // Actions usually trigger backend changes which fire growspace_updated, so subscription handles it.
-        this.requestUpdate();
-    }
-    async handleDrop(targetRow, targetCol, targetPlant, sourcePlant) {
-        if (!sourcePlant || !this.state.selectedDevice)
-            return;
-        try {
-            if (targetPlant) {
-                const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
-                const targetId = targetPlant.attributes.plant_id || targetPlant.entity_id.replace('sensor.', '');
-                if (sourceId === targetId)
-                    return;
-                await this.dataService.swapPlants(sourceId, targetId);
-                this.updateGrid();
-            }
-            else {
-                await this.movePlant(sourcePlant, targetRow, targetCol);
-            }
-        }
-        catch (err) {
-            console.error('Error during drag-and-drop:', err);
-        }
-    }
-    async movePlant(plant, newRow, newCol) {
-        try {
-            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-            await this.dataService.updatePlant({
-                plant_id: plantId,
-                row: newRow,
-                col: newCol,
-            });
-            this.updateGrid();
-        }
-        catch (err) {
-            console.error('Error moving plant:', err);
-        }
-    }
-    async handleAddGrowspace(detail) {
-        const { name, rows, plants_per_row, notification_service } = detail;
-        if (!name) {
-            this.showToast('Name is required', 'error');
-            return;
-        }
-        try {
-            await this.dataService.addGrowspace({
-                name,
-                rows: rows || 4,
-                plants_per_row: plants_per_row || 4,
-                notification_service: notification_service || 'mobile_app_notify',
-            });
-            this.showToast('Growspace added successfully!', 'success');
-            await this.refreshData();
-            this.closeActiveDialog();
-        }
-        catch (e) {
-            this.showToast(`Error: ${e.message}`, 'error');
-        }
-    }
-    async handleUpdateGrowspace(detail) {
-        console.log('[GrowspaceStore] handleUpdateGrowspace', detail);
-        try {
-            await this.dataService.updateGrowspace({
-                growspace_id: detail.growspace_id,
-                name: detail.name,
-                rows: detail.rows,
-                plants_per_row: detail.plants_per_row,
-            });
-            this.showToast('Growspace updated successfully', 'success');
-            await this.refreshData();
-            this.closeActiveDialog();
-        }
-        catch (e) {
-            console.error('[GrowspaceStore] Update failed:', e);
-            this.showToast(`Failed to update growspace: ${e.message}`, 'error');
-        }
-    }
-    async harvestPlant(plant) {
-        await this.handleMovePlantToNextStage(plant);
-    }
-    async finishDryingPlant(plant) {
-        await this.handleMovePlantToNextStage(plant);
-    }
-    openAddPlantDialog(row, col) {
-        console.log('[GrowspaceStore] openAddPlantDialog called', { row, col });
-        // If row/col specified, use them (clicked from grid)
-        if (row !== undefined && col !== undefined) {
-            this.fetchStrainLibrary();
-            this.setActiveDialog({
-                type: 'ADD_PLANT',
-                payload: { row, col },
-            });
-            return;
-        }
-        // Auto-find free slot if not specified
-        if (!this.state.selectedDevice) {
-            console.warn('[GrowspaceStore] No selected device for Add Plant');
-            return;
-        }
-        const devices = this.state.devices;
-        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
-        if (device) {
-            const rows = device.rows || 4;
-            const cols = device.plants_per_row || 4;
-            const { row: targetRow, col: targetCol } = PlantUtils.findFirstAvailableSlot(device.plants || [], rows, cols);
-            console.log('[GrowspaceStore] Found slot', { targetRow, targetCol });
-            // If full, default to 1,1 or last found (let backend reject or user change)
-            this.fetchStrainLibrary();
-            // Convert 1-based backend coordinates to 0-based dialog coordinates
-            this.setActiveDialog({
-                type: 'ADD_PLANT',
-                payload: { row: targetRow - 1, col: targetCol - 1 },
-            });
-            console.log('[GrowspaceStore] Set Active Dialog ADD_PLANT');
-        }
-    }
-    async clonePlant(plant, numClones) {
-        await this.handleTakeClone(plant, numClones);
-    }
-    async confirmAddPlant(detail) {
-        const devices = this.state.devices;
-        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
-        if (!selectedDeviceData)
-            return;
-        // Convert 0-based dialog coordinates to 1-based backend coordinates
-        const row = detail.row + 1;
-        const col = detail.col + 1;
-        const { strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start, } = detail;
-        if (!strain) {
-            this.showToast('Please select a strain', 'error');
-            return;
-        }
-        try {
-            await this.dataService.addPlant({
-                growspace_id: selectedDeviceData.device_id,
-                strain,
-                phenotype: phenotype || '',
-                row,
-                col,
-                veg_start,
-                flower_start,
-                seedling_start,
-                mother_start,
-                clone_start,
-                dry_start,
-                cure_start,
-            });
-            this.showToast('Plant added successfully', 'success');
-            this.closeActiveDialog();
-        }
-        catch (e) {
-            console.error(e);
-            this.showToast('Failed to add plant', 'error');
-        }
-    }
-    async analyzeGrowspace(query, isGlobal = false) {
-        const dialogPayload = this.state.activeDialog.type === 'GROW_MASTER' ? this.state.activeDialog.payload : null;
-        if (!dialogPayload)
-            return;
-        // Update dialog state to loading
-        this.setActiveDialog({
-            type: 'GROW_MASTER',
-            payload: { ...dialogPayload, isLoading: true, response: null },
-        });
-        try {
-            let result;
-            if (isGlobal || dialogPayload.mode === 'all') {
-                result = await this.dataService.analyzeAllGrowspaces();
-            }
-            else {
-                result = await this.dataService.askGrowAdvice(this.state.selectedDevice || '', query);
-            }
-            const responseText = typeof result.response === 'string'
-                ? result.response
-                : result.response?.response || JSON.stringify(result);
-            this.setActiveDialog({
-                type: 'GROW_MASTER',
-                payload: { ...dialogPayload, isLoading: false, response: responseText },
-            });
-        }
-        catch (err) {
-            console.error('Error asking Grow Master:', err);
-            this.setActiveDialog({
-                type: 'GROW_MASTER',
-                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
-            });
-        }
-    }
-    async getStrainRecommendation(userQuery) {
-        const dialogPayload = this.state.activeDialog.type === 'STRAIN_RECOMMENDATION'
-            ? this.state.activeDialog.payload
-            : null;
-        if (!dialogPayload)
-            return;
-        this.setActiveDialog({
-            type: 'STRAIN_RECOMMENDATION',
-            payload: { ...dialogPayload, isLoading: true, response: null },
-        });
-        try {
-            const result = await this.dataService.getStrainRecommendation(userQuery);
-            const responseText = typeof result.response === 'string' ? result.response : JSON.stringify(result);
-            this.setActiveDialog({
-                type: 'STRAIN_RECOMMENDATION',
-                payload: { ...dialogPayload, isLoading: false, response: responseText },
-            });
-        }
-        catch (err) {
-            console.error('Error getting strain recommendation:', err);
-            this.setActiveDialog({
-                type: 'STRAIN_RECOMMENDATION',
-                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
-            });
-        }
-    }
-    openStrainRecommendationDialog() {
-        this.setActiveDialog({
-            type: 'STRAIN_RECOMMENDATION',
-            payload: {
-                isLoading: false,
-                response: null,
-            },
-        });
-    }
-    openLogbookDialog() {
-        if (!this.state.selectedDevice)
-            return;
-        this.setActiveDialog({
-            type: 'LOGBOOK',
-            payload: {
-                growspaceId: this.state.selectedDevice,
-            },
-        });
-    }
-    handleExportLibrary() {
-        // Logic needs to be adapted since event subscription on HASS connection is component specific?
-        // Actually we can do it here if we assume `hass` is available.
-        // But `subscribeEvents` is on `hass.connection`.
-        // We can emit a custom event or just implement the logic here.
-        // The download part triggers a browser action (window location or anchor click).
-        // It's better to keep DOM interaction like download in the component?
-        // Or pass a callback.
-        // I'll keep it simple: Implement logic here, but for the download part, creating an element on document
-        // might be slightly unclean in a store but it works.
-        this._handleExportLibraryLogic();
-    }
-    async _handleExportLibraryLogic() {
-        if (!this.hass)
-            return;
-        const unsubscribe = await this.hass.connection.subscribeEvents((event) => {
-            if (event.data && event.data.url) {
-                // Dispatch event to view layer for DOM-based download
-                this.host.dispatchEvent(new LibraryExportReadyEvent(event.data.url));
-                unsubscribe();
-            }
-        }, 'growspace_manager_strain_library_exported');
-        try {
-            await this.dataService.exportStrainLibrary();
-            this.showToast('Export started...', 'info');
-        }
-        catch (err) {
-            console.error('Failed to call export service', err);
-            unsubscribe();
-        }
-    }
-    async toggleDehumidifierControl(deviceId) {
-        const device = this.state.devices.find((d) => d.device_id === deviceId);
-        if (!device || !device.overview_entity_id || !this.hass)
-            return;
-        const stateObj = this.hass.states[device.overview_entity_id];
-        const attrs = stateObj?.attributes || {};
-        const currentStatus = attrs.dehumidifier_control_enabled === true;
-        try {
-            await this.dataService.setDehumidifierControl(deviceId, !currentStatus);
-            console.log(`Toggled dehumidifier control to ${!currentStatus} for ${deviceId}`);
-            this.showToast(`Dehumidifier control ${!currentStatus ? 'enabled' : 'disabled'}`, 'success');
-        }
-        catch (err) {
-            console.error('Failed to toggle dehumidifier control:', err);
-            this.showToast(`Failed to toggle dehumidifier: ${err.message}`, 'error');
-        }
-    }
-    async performImport(file, replace) {
-        if (!file)
-            return;
-        try {
-            const result = await this.dataService.importStrainLibrary(file, replace);
-            this.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
-            await this.fetchStrainLibrary(true);
-        }
-        catch (err) {
-            console.error('Import failed:', err);
-            this.showToast(`Import failed: ${err.message}`, 'error');
-        }
-    }
-}
-
-const sharedStyles = i$6 `
-  /* --- Glassmorphism Surfaces --- */
-  .glass-surface {
-    background: rgba(20, 20, 24, 0.6);
-    background-image: linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.03) 0%,
-      rgba(255, 255, 255, 0.01) 100%
-    );
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow:
-      0 4px 24px -1px rgba(0, 0, 0, 0.2),
-      0 0 0 1px rgba(255, 255, 255, 0.02) inset;
-    color: var(--primary-text-color, #fff);
-  }
-
-  .glass-panel {
-    border-radius: var(--border-radius-xl, 28px);
-    padding: var(--spacing-lg, 24px);
-  }
-
-  .glass-dialog-container {
-    border-radius: var(--border-radius-lg, 16px);
-    overflow: hidden;
-    background: rgba(20, 20, 20, 0.85); /* Slightly darker for dialogs */
-    backdrop-filter: blur(16px);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  }
-
-  /* --- Cards --- */
-  .detail-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius-md, 12px);
-    padding: var(--spacing-md, 16px);
-  }
-
-
-`;
-
-const uiStyles = i$6 `
-  /* --- MD3 Buttons --- */
-  .md3-button {
-    height: 40px;
-    padding: 0 24px;
-    border-radius: 20px; /* Full-rounded MD3 style */
-    border: none;
-    font-family: 'Roboto', sans-serif;
-    font-weight: 500;
-    font-size: 0.875rem;
-    letter-spacing: 0.1px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-    text-transform: none;
-    position: relative;
-    overflow: hidden;
-    user-select: none;
-    outline: none;
-    background: transparent;
-    color: var(--primary-text-color, #fff);
-  }
-
-  /* MD3 State Layer Effect */
-  .md3-button::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: currentColor;
-    opacity: 0;
-    transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
-    pointer-events: none;
-  }
-
-  .md3-button:hover::before {
-    opacity: 0.08;
-  }
-
-  .md3-button:focus-visible::before {
-    opacity: 0.12;
-  }
-
-  .md3-button:active::before {
-    opacity: 0.12;
-  }
-
-  /* Focus visible state for accessibility */
-  .md3-button:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-  }
-
-  /* Primary Filled Button */
-  .md3-button.primary {
-    background: var(--primary-color, #4caf50);
-    color: var(--text-primary-color, #fff);
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.3),
-      0 1px 3px 1px rgba(0, 0, 0, 0.15);
-  }
-
-  .md3-button.primary:hover {
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.3),
-      0 2px 6px 2px rgba(0, 0, 0, 0.15);
-  }
-
-  .md3-button.primary:active {
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.3),
-      0 1px 3px 1px rgba(0, 0, 0, 0.15);
-  }
-
-  /* Tonal Button (MD3 Filled Tonal variant) */
-  .md3-button.tonal {
-    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
-    color: var(--primary-color, #4caf50);
-  }
-
-  .md3-button.tonal:hover {
-    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.16);
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.3),
-      0 1px 3px 1px rgba(0, 0, 0, 0.15);
-  }
-
-  .md3-button.tonal:active {
-    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
-  }
-
-  /* Text Button */
-  .md3-button.text {
-    background: transparent;
-    color: var(--primary-color, #4caf50);
-    padding: 0 12px;
-  }
-
-  .md3-button.text:hover {
-    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.08);
-  }
-
-  .md3-button.text:active {
-    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.12);
-  }
-
-  /* Danger/Error Button (Outlined variant with error color) */
-  .md3-button.danger {
-    background: transparent;
-    color: var(--error-color, #f44336);
-    border: 1px solid currentColor;
-  }
-
-  .md3-button.danger::before {
-    background: var(--error-color, #f44336);
-  }
-
-  .md3-button.danger:hover {
-    background: rgba(244, 67, 54, 0.08);
-    border-color: var(--error-color, #f44336);
-  }
-
-  .md3-button.danger:active {
-    background: rgba(244, 67, 54, 0.12);
-  }
-
-  .md3-button.danger:focus-visible {
-    outline-color: var(--error-color, #f44336);
-  }
-
-  /* Disabled state */
-  .md3-button:disabled {
-    opacity: 0.38;
-    cursor: not-allowed;
-    box-shadow: none;
-  }
-
-  .md3-button:disabled::before {
-    display: none;
-  }
-
-  .button-group {
-    display: flex;
-    gap: var(--spacing-sm);
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    margin-top: var(--spacing-lg);
-  }
-
-  /* --- MD3 Inputs --- */
-  .md3-input-group {
-    position: relative;
-    margin-bottom: 20px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 4px 4px 0 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
-    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-  }
-
-  .md3-input-group:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-bottom-color: rgba(255, 255, 255, 0.9);
-  }
-
-  .md3-input-group:focus-within {
-    background: rgba(255, 255, 255, 0.08);
-    border-bottom: 2px solid var(--primary-color, #4caf50);
-  }
-
-  /* Error state for inputs */
-  .md3-input-group.error {
-    border-bottom-color: var(--error-color, #f44336);
-  }
-
-  .md3-input-group.error .md3-label {
-    color: var(--error-color, #f44336);
-  }
-
-  .md3-label {
-    position: absolute;
-    left: 16px;
-    top: 8px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.6);
-    pointer-events: none;
-    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-    letter-spacing: 0.4px;
-  }
-
-  .md3-input-group:focus-within .md3-label {
-    color: var(--primary-color, #4caf50);
-  }
-
-  .md3-input {
-    width: 100%;
-    padding: 24px 16px 8px;
-    border: none;
-    background: transparent;
-    color: #ffffff;
-    font-size: 1rem;
-    font-family: 'Roboto', sans-serif;
-    box-sizing: border-box;
-    outline: none;
-  }
-
-  .md3-input::placeholder {
-    color: rgba(255, 255, 255, 0.38);
-    opacity: 1;
-  }
-
-  .md3-input:focus {
-    outline: none;
-  }
-
-  .md3-input:disabled {
-    color: rgba(255, 255, 255, 0.38);
-    cursor: not-allowed;
-  }
-
-  .md3-input-group:has(.md3-input:disabled) {
-    background: rgba(255, 255, 255, 0.02);
-    border-bottom-style: dotted;
-  }
-
-  .md3-supporting-text {
-    padding: 4px 16px 0;
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.6);
-    letter-spacing: 0.4px;
-  }
-
-  .md3-supporting-text.error {
-    color: var(--error-color, #f44336);
-  }
-
-  /* --- Glass Dialog Container --- */
-  .glass-dialog-container {
-    background: var(--growspace-card-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    border-radius: 28px; /* MD3 extra large rounding */
-    padding: var(--spacing-lg);
-    color: #ffffff; /* Force white text for contrast against dark glass */
-    margin: -24px; /* Counteract default dialog padding if necessary */
-    min-width: 320px;
-  }
-
-  /* --- Toast Notification --- */
-  .toast-notification {
-    position: absolute;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #323232;
-    color: #fff;
-    padding: 12px 24px;
-    border-radius: 24px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    z-index: 100;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: slideUpFade 0.3s ease-out;
-    min-width: 200px;
-    text-align: center;
-  }
-
-  .toast-notification.success {
-    background: var(--success-color, #4caf50);
-    color: #fff;
-  }
-
-  .toast-notification.error {
-    background: var(--error-color, #f44336);
-    color: #fff;
-  }
-
-  @keyframes slideUpFade {
-    from {
-      opacity: 0;
-      transform: translate(-50%, 20px);
-    }
-    to {
-      opacity: 1;
-      transform: translate(-50%, 0);
-    }
-  }
-
-  /* --- Loading --- */
-  .loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 200px;
-  }
-
-  .loading-spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid rgba(255, 255, 255, 0.1);
-    border-left-color: var(--primary-color, #4caf50);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-`;
-
-const dialogStyles = [
-    sharedStyles,
-    uiStyles,
-    i$6 `
-  .glass-dialog-container {
-    display: flex;
-    flex-direction: column;
-    max-height: 85vh;
-    color: #fff;
-    font-family: 'Roboto', sans-serif;
-    /* Background/Shadow handled by sharedStyles, but specific flex layout kept here */
-  }
-
-  /* Restored from 1.0.24.3.0 */
-  .dialog-content-grid {
-    padding: 24px;
-    overflow-y: auto;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 16px;
-  }
-
-  .dialog-header {
-    display: flex;
-    align-items: center;
-    padding: 16px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.2);
-  }
-
-  .dialog-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 16px;
-    color: var(--stage-color, #4caf50);
-  }
-
-  .dialog-title-group {
-    flex: 1;
-  }
-
-  .dialog-title {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 500;
-  }
-
-  .dialog-subtitle {
-    font-size: 0.85rem;
-    opacity: 0.7;
-    margin-top: 2px;
-  }
-
-  .detail-card h3 {
-    margin-top: 0;
-    margin-bottom: 16px;
-    font-size: 1rem;
-    font-weight: 500;
-    opacity: 0.9;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: 8px;
-  }
-
-  .button-group {
-    padding: 16px 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.2);
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .row-col-grid {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-  .row-col-grid > * {
-    flex: 1;
-    min-width: 0;
-  }
-
-  @media (max-width: 450px) {
-    .glass-dialog-container {
-      width: 100vw;
-      max-width: 100%;
-      height: 100vh;
-      border-radius: 0;
-    }
-    .button-group {
-      justify-content: center;
-    }
-    .md3-button {
-      flex: 1 1 auto;
-      min-width: 100px;
-    }
-    .dialog-header {
-      padding: 12px 16px;
-    }
-
-    /* Restored responsive rules */
-    .dialog-content-grid {
-      flex: 1;
-      min-height: 0;
-      padding: 8px;
-    }
-    .dialog-header .md3-button.text {
-      flex: 0;
-    }
-    .detail-card .md3-button {
-      flex: 1 1 1;
-    }
-  }
-`
-];
-
-let Md3TextInput = class Md3TextInput extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.label = '';
-        this.value = '';
-        this.type = 'text';
-        this.placeholder = '';
-        this.list = '';
-    }
-    _handleInput(e) {
-        const value = e.target.value;
-        this.value = value;
-        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
-    }
-    render() {
-        return x `
-      <div class="md3-input-group">
-        <label class="md3-label">${this.label}</label>
-        <input
-          .type=${this.type}
-          class="md3-input"
-          .value=${this.value}
-          .placeholder=${this.placeholder}
-          list=${this.list}
-          @input=${this._handleInput}
-        />
-      </div>
-    `;
-    }
-};
-Md3TextInput.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-        width: 100%;
-      }
-    `,
-];
-__decorate([
-    n$4(),
-    __metadata("design:type", Object)
-], Md3TextInput.prototype, "label", void 0);
-__decorate([
-    n$4(),
-    __metadata("design:type", Object)
-], Md3TextInput.prototype, "value", void 0);
-__decorate([
-    n$4(),
-    __metadata("design:type", Object)
-], Md3TextInput.prototype, "type", void 0);
-__decorate([
-    n$4(),
-    __metadata("design:type", Object)
-], Md3TextInput.prototype, "placeholder", void 0);
-__decorate([
-    n$4(),
-    __metadata("design:type", Object)
-], Md3TextInput.prototype, "list", void 0);
-Md3TextInput = __decorate([
-    t$2('md3-text-input')
-], Md3TextInput);
-
-let Md3NumberInput = class Md3NumberInput extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.label = '';
-        this.value = 0;
-        this.min = 0;
-        this.placeholder = '';
-    }
-    _handleInput(e) {
-        const value = e.target.value;
-        this.value = Number(value);
-        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
-    }
-    render() {
-        return x `
-      <div class="md3-input-group">
-        <label class="md3-label">${this.label}</label>
-        <input
-          type="number"
-          class="md3-input"
-          .min=${this.min}
-          .max=${this.max}
-          .value=${this.value}
-          .placeholder=${this.placeholder}
-          @input=${this._handleInput}
-        />
-      </div>
-    `;
-    }
-};
-Md3NumberInput.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-        width: 100%;
-      }
-    `,
-];
-__decorate([
-    n$4(),
-    __metadata("design:type", Object)
-], Md3NumberInput.prototype, "label", void 0);
-__decorate([
-    n$4({ type: Number }),
-    __metadata("design:type", Object)
-], Md3NumberInput.prototype, "value", void 0);
-__decorate([
-    n$4({ type: Number }),
-    __metadata("design:type", Object)
-], Md3NumberInput.prototype, "min", void 0);
-__decorate([
-    n$4({ type: Number }),
-    __metadata("design:type", Number)
-], Md3NumberInput.prototype, "max", void 0);
-__decorate([
-    n$4(),
-    __metadata("design:type", Object)
-], Md3NumberInput.prototype, "placeholder", void 0);
-Md3NumberInput = __decorate([
-    t$2('md3-number-input')
-], Md3NumberInput);
-
-let Md3Select = class Md3Select extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.label = '';
-        this.value = '';
-        this.options = [];
-    }
-    _handleChange(e) {
-        const value = e.target.value;
-        this.value = value;
-        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
-    }
-    render() {
-        return x `
-      <div class="md3-input-group">
-        <label class="md3-label">${this.label}</label>
-        <select class="md3-input" .value=${this.value} @change=${this._handleChange}>
-          <option value="">Select...</option>
-          ${this.options.map((opt) => {
-            const label = typeof opt === 'string' ? opt : opt.label;
-            const val = typeof opt === 'string' ? opt : opt.value;
-            return x `<option value="${val}" ?selected=${val === this.value}>${label}</option>`;
-        })}
-        </select>
-      </div>
-    `;
-    }
-};
-Md3Select.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-        width: 100%;
-      }
-    `,
-];
-__decorate([
-    n$4(),
-    __metadata("design:type", Object)
-], Md3Select.prototype, "label", void 0);
-__decorate([
-    n$4(),
-    __metadata("design:type", Object)
-], Md3Select.prototype, "value", void 0);
-__decorate([
-    n$4({ type: Array }),
-    __metadata("design:type", Array)
-], Md3Select.prototype, "options", void 0);
-Md3Select = __decorate([
-    t$2('md3-select')
-], Md3Select);
-
-let Md3DateInput = class Md3DateInput extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.label = '';
-        this.value = '';
-        this.time = false; // if true, uses datetime-local
-    }
-    _handleInput(e) {
-        const value = e.target.value;
-        this.value = value;
-        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
-    }
-    render() {
-        let formattedValue = this.value;
-        if (this.time) {
-            formattedValue = PlantUtils.toDateTimeLocal(this.value);
-        }
-        else {
-            formattedValue = this.value ? this.value.split('T')[0] : '';
-        }
-        return x `
-      <div class="md3-input-group">
-        <label class="md3-label">${this.label}</label>
-        <input
-          .type=${this.time ? 'datetime-local' : 'date'}
-          class="md3-input"
-          .value=${formattedValue}
-          @input=${this._handleInput}
-          @click=${(e) => e.target.showPicker()}
-        />
-      </div>
-    `;
-    }
-};
-Md3DateInput.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-        width: 100%;
-      }
-    `,
-];
-__decorate([
-    n$4(),
-    __metadata("design:type", Object)
-], Md3DateInput.prototype, "label", void 0);
-__decorate([
-    n$4(),
-    __metadata("design:type", Object)
-], Md3DateInput.prototype, "value", void 0);
-__decorate([
-    n$4({ type: Boolean }),
-    __metadata("design:type", Object)
-], Md3DateInput.prototype, "time", void 0);
-Md3DateInput = __decorate([
-    t$2('md3-date-input')
-], Md3DateInput);
-
-let AddPlantDialog = class AddPlantDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.strainLibrary = [];
-        this.growspaceName = '';
-        this.open = false;
-        // Initialize with values passed via methods or defaults
-        this.strain = '';
-        this.phenotype = '';
-        this.row = 0;
-        this.col = 0;
-        // Date fields
-        this.veg_start = '';
-        this.flower_start = '';
-        this.seedling_start = '';
-        this.mother_start = '';
-        this.clone_start = '';
-        this.dry_start = '';
-        this.cure_start = '';
-    }
-    // Provide a method to set initial data from parent if needed
-    setInitialState(row, col, strain = '', phenotype = '') {
-        this.row = row;
-        this.col = col;
-        this.strain = strain;
-        this.phenotype = phenotype;
-        // resetting dates
-        this.veg_start = '';
-        this.flower_start = '';
-        this.seedling_start = '';
-        this.mother_start = '';
-        this.clone_start = '';
-        this.dry_start = '';
-        this.cure_start = '';
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
-    _confirm() {
-        const payload = {
-            row: this.row,
-            col: this.col,
-            strain: this.strain,
-            phenotype: this.phenotype,
-            veg_start: this.veg_start,
-            flower_start: this.flower_start,
-            seedling_start: this.seedling_start,
-            mother_start: this.mother_start,
-            clone_start: this.clone_start,
-            dry_start: this.dry_start,
-            cure_start: this.cure_start,
-        };
-        this.dispatchEvent(new CustomEvent('add-plant-submit', {
-            detail: payload,
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    render() {
-        console.log('[AddPlantDialog] render called, open:', this.open, 'strains:', this.strainLibrary?.length);
-        if (!this.open)
-            return x ``;
-        const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
-        return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
-      >
-        <div class="glass-dialog-container">
-          <!-- HEADER -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiSprout}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Add New Plant</h2>
-              <div class="dialog-subtitle">Enter plant details below</div>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${this._close}
-              style="min-width: auto; padding: 8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
-          <div class="overview-grid">
-            <!-- IDENTITY CARD -->
-            <div class="detail-card">
-              <h3>Identity & Location</h3>
-              <md3-select
-                label="Strain *"
-                .value=${this.strain}
-                .options=${uniqueStrains}
-                @change=${(e) => (this.strain = e.detail)}
-              ></md3-select>
-              <md3-text-input
-                label="Phenotype"
-                .value=${this.phenotype}
-                @change=${(e) => (this.phenotype = e.detail)}
-              ></md3-text-input>
-              <div class="row-col-grid">
-                <md3-number-input
-                  label="Row"
-                  .value=${this.row + 1}
-                  @change=${(e) => (this.row = parseInt(e.detail) - 1)}
-                ></md3-number-input>
-                <md3-number-input
-                  label="Col"
-                  .value=${this.col + 1}
-                  @change=${(e) => (this.col = parseInt(e.detail) - 1)}
-                ></md3-number-input>
-              </div>
-            </div>
-
-            <!-- TIMELINE CARD -->
-            <div class="detail-card">
-              <h3>Timeline</h3>
-              ${this.renderTimelineContent()}
-            </div>
-          </div>
-
-          <!-- ACTION BUTTONS -->
-          <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
-            <button class="md3-button primary" @click=${this._confirm}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiSprout}"></path>
-              </svg>
-              Add Plant
-            </button>
-          </div>
-        </div>
-      </ha-dialog>
-    `;
-    }
-    renderTimelineContent() {
-        const name = this.growspaceName.toLowerCase();
-        if (name.includes('mother')) {
-            return x `<md3-date-input
-        label="Mother Start"
-        .value=${this.mother_start}
-        @change=${(e) => (this.mother_start = e.detail)}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('clone')) {
-            return x `<md3-date-input
-        label="Clone Start"
-        .value=${this.clone_start}
-        @change=${(e) => (this.clone_start = e.detail)}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('dry')) {
-            return x `<md3-date-input
-        label="Dry Start"
-        .value=${this.dry_start}
-        @change=${(e) => (this.dry_start = e.detail)}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('cure')) {
-            return x `<md3-date-input
-        label="Cure Start"
-        .value=${this.cure_start}
-        @change=${(e) => (this.cure_start = e.detail)}
-      ></md3-date-input>`;
-        }
-        else {
-            return x `
-        <md3-date-input
-          label="Seedling Start"
-          .value=${this.seedling_start}
-          @change=${(e) => (this.seedling_start = e.detail)}
-        ></md3-date-input>
-        <md3-date-input
-          label="Veg Start"
-          .value=${this.veg_start}
-          @change=${(e) => (this.veg_start = e.detail)}
-        ></md3-date-input>
-        <md3-date-input
-          label="Flower Start"
-          .value=${this.flower_start}
-          @change=${(e) => (this.flower_start = e.detail)}
-        ></md3-date-input>
-      `;
-        }
-    }
-};
-AddPlantDialog.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-      }
-      .overview-grid {
-        padding: 24px;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      @media (max-width: 450px) {
-        .overview-grid {
-          flex: 1;
-          min-height: 0;
-          padding: 16px;
-        }
-      }
-    `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "hass", void 0);
-__decorate([
-    n$4({ type: Array }),
-    __metadata("design:type", Array)
-], AddPlantDialog.prototype, "strainLibrary", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "growspaceName", void 0);
-__decorate([
-    n$4({ type: Boolean, reflect: true }),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "open", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "strain", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "phenotype", void 0);
-__decorate([
-    n$4({ type: Number }),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "row", void 0);
-__decorate([
-    n$4({ type: Number }),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "col", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "veg_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "flower_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "seedling_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "mother_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "clone_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "dry_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "cure_start", void 0);
-AddPlantDialog = __decorate([
-    t$2('add-plant-dialog')
-], AddPlantDialog);
-
-let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.growspaceOptions = {};
-        this.editedAttributes = {};
-        this.isEditing = true;
-        this.showAllDates = false;
-        this.cloneTargetId = '';
-        this._showDeleteConfirmation = false;
-    }
-    willUpdate(changedProps) {
-        if (changedProps.has('dialog') && this.dialog) {
-            this.plant = this.dialog.plant;
-            this.editedAttributes = this.dialog.editedAttributes || {
-                strain: this.plant?.attributes.strain,
-                phenotype: this.plant?.attributes.phenotype,
-                row: this.plant?.attributes.row,
-                col: this.plant?.attributes.col,
-                stage: this.plant?.state,
-                veg_start: this.plant?.attributes.veg_start,
-                flower_start: this.plant?.attributes.flower_start,
-                seedling_start: this.plant?.attributes.seedling_start,
-                mother_start: this.plant?.attributes.mother_start,
-                clone_start: this.plant?.attributes.clone_start,
-                dry_start: this.plant?.attributes.dry_start,
-                cure_start: this.plant?.attributes.cure_start,
-            };
-            this.cloneTargetId = '';
-        }
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close'));
-    }
-    _update() {
-        this.dispatchEvent(new UpdatePlantEvent(this.editedAttributes));
-    }
-    _delete(plantId) {
-        this._showDeleteConfirmation = true;
-    }
-    _confirmDelete() {
-        if (this.plant) {
-            const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-            this.dispatchEvent(new DeletePlantEvent(plantId));
-            this._showDeleteConfirmation = false;
-            this._close();
-        }
-    }
-    _cancelDelete() {
-        this._showDeleteConfirmation = false;
-    }
-    _harvest(plant) {
-        this.dispatchEvent(new HarvestPlantEvent(plant));
-    }
-    _finishDrying(plant) {
-        this.dispatchEvent(new FinishDryingEvent(plant));
-    }
-    _takeClone(plant, numClones) {
-        this.dispatchEvent(new TakeCloneEvent(plant, numClones));
-    }
-    _moveClone(plant) {
-        if (!this.cloneTargetId) {
-            // alert is not ideal but keeping for now as per previous logic
-            alert('Select a growspace');
-            return;
-        }
-        this.dispatchEvent(new MoveCloneEvent(plant, this.cloneTargetId));
-    }
-    _attributeChange(key, value) {
-        this.editedAttributes = { ...this.editedAttributes, [key]: value };
-        this.requestUpdate();
-    }
-    _toggleShowAllDates() {
-        this.showAllDates = !this.showAllDates;
-    }
-    _renderStatItem(label, value, unit = '') {
-        if (value === undefined || value === null || value === '')
-            return E;
-        return x `
-      <div class="stat-item">
-        <span class="stat-value">${value} ${unit}</span>
-        <span class="stat-label">${label}</span>
-      </div>
-    `;
-    }
-    _renderPlantStats(plant) {
-        if (!plant.attributes)
-            return E;
-        const currentStage = (plant.state || '').toLowerCase();
-        const normalize = (s) => {
-            if (s === 'veg' || s === 'vegetative')
-                return PlantStage.VEG;
-            if (s === 'mom')
-                return PlantStage.MOTHER;
-            return s;
-        };
-        const normCurrent = normalize(currentStage);
-        const stats = [
-            {
-                label: 'Vegetative Stage',
-                value: plant.attributes.veg_days,
-                unit: 'days',
-                stage: PlantStage.VEG,
-            },
-            {
-                label: 'Flowering Stage',
-                value: plant.attributes.flower_days,
-                unit: 'days',
-                stage: PlantStage.FLOWER,
-            },
-            {
-                label: 'Mother Stage',
-                value: plant.attributes.mom_days,
-                unit: 'days',
-                stage: PlantStage.MOTHER,
-            },
-            {
-                label: 'Clone Stage',
-                value: plant.attributes.clone_days,
-                unit: 'days',
-                stage: PlantStage.CLONE,
-            },
-            {
-                label: 'Drying Stage',
-                value: plant.attributes.dry_days,
-                unit: 'days',
-                stage: PlantStage.DRY,
-            },
-            {
-                label: 'Curing Stage',
-                value: plant.attributes.cure_days,
-                unit: 'days',
-                stage: PlantStage.CURE,
-            },
-        ].filter((s) => {
-            if (s.value === undefined || s.value === null)
-                return false;
-            const val = Number(s.value);
-            if (val > 0)
-                return true;
-            // Show if 0 but it's the current stage
-            return s.stage === normCurrent;
-        });
-        if (stats.length === 0)
-            return E;
-        return x `
-      <div class="detail-card">
-        <h3>Days in Stage</h3>
-        <div class="stat-grid">
-          ${stats.map((s) => this._renderStatItem(s.label, s.value, s.unit))}
-        </div>
-      </div>
-    `;
-    }
-    _renderDeleteOverlay() {
-        return x `
-      <div
-        class="dialog-overlay"
-        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:100; display:flex; align-items:center; justify-content:center;"
-      >
-        <div class="glass-dialog-container" style="width: 350px; height: auto; padding: 24px;">
-          <h2 class="dialog-title" style="margin-bottom:12px">Confirm Deletion</h2>
-          <p
-            style="color:rgba(255,255,255,0.7); margin-bottom:24px; font-size: 1rem; line-height: 1.5;"
-          >
-            Are you sure you want to delete this plant? This action cannot be undone.
-          </p>
-          <div style="display:flex; justify-content:flex-end; gap:12px">
-            <button class="md3-button tonal" @click=${this._cancelDelete}>Cancel</button>
-            <button class="md3-button danger" @click=${this._confirmDelete}>
-              <svg
-                style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
-                viewBox="0 0 24 24"
-              >
-                <path d="${mdiDelete}"></path>
-              </svg>
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-    }
-    render() {
-        if (!this.plant)
-            return x ``;
-        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-        const stageColor = PlantUtils.getPlantStageColor(this.plant.state);
-        const stageIcon = PlantUtils.getPlantStageIcon(this.plant.state);
-        return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
-      >
-        <div class="glass-dialog-container" style="--stage-color: ${stageColor}">
-          ${this._showDeleteConfirmation ? this._renderDeleteOverlay() : E}
-
-          <!-- HEADER -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${stageIcon}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">${this.editedAttributes.strain || 'Unknown Strain'}</h2>
-              <div class="dialog-subtitle">
-                ${this.plant.state} Stage • ${this.editedAttributes.phenotype || 'No Phenotype'}
-              </div>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${this._close}
-              style="min-width: auto; padding: 8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
-          <div class="overview-grid">
-            <!-- IDENTITY & LOCATION CARD -->
-            <div class="detail-card">
-              <h3>Identity & Location</h3>
-              ${this.isEditing
-            ? x `
-                    <md3-text-input
-                      label="Strain Name"
-                      .value=${this.editedAttributes.strain || ''}
-                      @change=${(e) => this._attributeChange('strain', e.detail)}
-                    ></md3-text-input>
-                    <md3-text-input
-                      label="Phenotype"
-                      .value=${this.editedAttributes.phenotype || ''}
-                      @change=${(e) => this._attributeChange('phenotype', e.detail)}
-                    ></md3-text-input>
-
-                    <div style="display:flex; gap:16px;">
-                      <md3-number-input
-                        label="Row"
-                        .value=${this.editedAttributes.row ?? ''}
-                        @change=${(e) => this._attributeChange('row', e.detail)}
-                      ></md3-number-input>
-                      <md3-number-input
-                        label="Column"
-                        .value=${this.editedAttributes.col ?? ''}
-                        @change=${(e) => this._attributeChange('col', e.detail)}
-                      ></md3-number-input>
-                    </div>
-                  `
-            : x `
-                    <div class="stat-grid">
-                      <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes.strain}</span>
-                        <span class="stat-label">Strain</span>
-                      </div>
-                      <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes.phenotype || 'N/A'}</span>
-                        <span class="stat-label">Phenotype</span>
-                      </div>
-                      <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes.row ?? '-'}</span>
-                        <span class="stat-label">Row</span>
-                      </div>
-                      <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes.col ?? '-'}</span>
-                        <span class="stat-label">Col</span>
-                      </div>
-                    </div>
-                  `}
-            </div>
-            <!-- STATS CARD -->
-            ${this._renderPlantStats(this.plant)}
-
-            <!-- TIMELINE CARD -->
-            <div class="detail-card">
-              <div
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
-              >
-                <h3 style="margin: 0;">Timeline</h3>
-                <button
-                  class="md3-button text"
-                  style="min-width: auto; padding: 4px;"
-                  @click=${this._toggleShowAllDates}
-                >
-                  <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiPencil}"></path>
-                  </svg>
-                </button>
-              </div>
-
-              ${this.showAllDates
-            ? x `
-                    <md3-date-input
-                      label="Seedling Start"
-                      .value=${this.editedAttributes.seedling_start ?? ''}
-                      ?time=${true}
-                      @change=${(e) => this._attributeChange('seedling_start', e.detail)}
-                    ></md3-date-input>
-                    <md3-date-input
-                      label="Mother Start"
-                      .value=${this.editedAttributes.mother_start ?? ''}
-                      ?time=${true}
-                      @change=${(e) => this._attributeChange('mother_start', e.detail)}
-                    ></md3-date-input>
-                    <md3-date-input
-                      label="Clone Start"
-                      .value=${this.editedAttributes.clone_start ?? ''}
-                      ?time=${true}
-                      @change=${(e) => this._attributeChange('clone_start', e.detail)}
-                    ></md3-date-input>
-                    <md3-date-input
-                      label="Vegetative Start"
-                      .value=${this.editedAttributes.veg_start ?? ''}
-                      ?time=${true}
-                      @change=${(e) => this._attributeChange('veg_start', e.detail)}
-                    ></md3-date-input>
-                    <md3-date-input
-                      label="Flower Start"
-                      .value=${this.editedAttributes.flower_start ?? ''}
-                      ?time=${true}
-                      @change=${(e) => this._attributeChange('flower_start', e.detail)}
-                    ></md3-date-input>
-                    <md3-date-input
-                      label="Dry Start"
-                      .value=${this.editedAttributes.dry_start ?? ''}
-                      ?time=${true}
-                      @change=${(e) => this._attributeChange('dry_start', e.detail)}
-                    ></md3-date-input>
-                    <md3-date-input
-                      label="Cure Start"
-                      .value=${this.editedAttributes.cure_start ?? ''}
-                      ?time=${true}
-                      @change=${(e) => this._attributeChange('cure_start', e.detail)}
-                    ></md3-date-input>
-                  `
-            : x `
-                    ${this.editedAttributes.stage === PlantStage.MOTHER
-                ? x `
-                          <md3-date-input
-                            label="Mother Start"
-                            .value=${this.editedAttributes.mother_start ?? ''}
-                            ?time=${true}
-                            @change=${(e) => this._attributeChange('mother_start', e.detail)}
-                          ></md3-date-input>
-                        `
-                : E}
-                    ${this.editedAttributes.stage === PlantStage.CLONE
-                ? x `
-                          <md3-date-input
-                            label="Clone Start"
-                            .value=${this.editedAttributes.clone_start ?? ''}
-                            ?time=${true}
-                            @change=${(e) => this._attributeChange('clone_start', e.detail)}
-                          ></md3-date-input>
-                        `
-                : E}
-                    ${this.editedAttributes.stage === PlantStage.VEG ||
-                this.editedAttributes.stage === PlantStage.FLOWER
-                ? x `
-                          <md3-date-input
-                            label="Vegetative Start"
-                            .value=${this.editedAttributes.veg_start ?? ''}
-                            ?time=${true}
-                            @change=${(e) => this._attributeChange('veg_start', e.detail)}
-                          ></md3-date-input>
-                        `
-                : E}
-                    ${this.editedAttributes.stage === PlantStage.FLOWER
-                ? x `
-                          <md3-date-input
-                            label="Flower Start"
-                            .value=${this.editedAttributes.flower_start ?? ''}
-                            ?time=${true}
-                            @change=${(e) => this._attributeChange('flower_start', e.detail)}
-                          ></md3-date-input>
-                        `
-                : E}
-                    ${this.editedAttributes.stage === PlantStage.DRY ||
-                this.editedAttributes.stage === PlantStage.CURE
-                ? x `
-                          <md3-date-input
-                            label="Dry Start"
-                            .value=${this.editedAttributes.dry_start ?? ''}
-                            ?time=${true}
-                            @change=${(e) => this._attributeChange('dry_start', e.detail)}
-                          ></md3-date-input>
-                        `
-                : E}
-                    ${this.editedAttributes.stage === PlantStage.CURE
-                ? x `
-                          <md3-date-input
-                            label="Cure Start"
-                            .value=${this.editedAttributes.cure_start ?? ''}
-                            ?time=${true}
-                            @change=${(e) => this._attributeChange('cure_start', e.detail)}
-                          ></md3-date-input>
-                        `
-                : E}
-                  `}
-            </div>
-          </div>
-
-          <!-- ACTION BUTTONS -->
-          <div class="button-group" style="padding: 16px 24px;">
-            <button class="md3-button danger" @click=${() => this._delete(plantId)}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiDelete}"></path>
-              </svg>
-              Delete
-            </button>
-
-            <button class="md3-button tonal" @click=${this._update}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiCheck}"></path>
-              </svg>
-              Save
-            </button>
-
-            <!-- DYNAMIC ACTIONS -->
-            ${this.plant.state.toLowerCase() === PlantStage.MOTHER
-            ? x `
-                  <div
-                    class="take-clone-container"
-                    style="display:contents;"
-                    data-plant-id="${this.plant.entity_id}"
-                  >
-                    <md3-number-input
-                      .min=${1}
-                      .max=${10}
-                      .value=${1}
-                      id="clone-count-input"
-                      style="width: 80px;"
-                    ></md3-number-input>
-                    <button
-                      class="md3-button primary"
-                      @click=${(e) => {
-                const btn = e.currentTarget;
-                const container = btn.parentElement;
-                const inputEl = container?.querySelector('md3-number-input');
-                const numClones = inputEl ? Number(inputEl.value) : 1;
-                this._takeClone(this.plant, numClones);
-            }}
-                    >
-                      <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                        <path d="${mdiContentCopy}"></path>
-                      </svg>
-                      Take Clone
-                    </button>
-                  </div>
-                `
-            : E}
-            ${this.plant.state.toLowerCase() === PlantStage.FLOWER
-            ? x `
-                  <button class="md3-button primary" @click=${() => this._harvest(this.plant)}>
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                      <path d="${mdiFlower}"></path>
-                    </svg>
-                    Harvest
-                  </button>
-                `
-            : E}
-            ${this.plant.state.toLowerCase() === PlantStage.DRY
-            ? x `
-                  <button
-                    class="md3-button primary"
-                    @click=${() => this._finishDrying(this.plant)}
-                  >
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                      <path d="${mdiCannabis}"></path>
-                    </svg>
-                    Finish Drying
-                  </button>
-                `
-            : E}
-            ${this.plant.state.toLowerCase() === PlantStage.CLONE
-            ? x `
-                  <div style="display:contents; display:flex; gap: 8px; align-items: center;">
-                    <md3-select
-                      .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({
-                label: name,
-                value: id,
-            }))}
-                      .value=${this.cloneTargetId}
-                      @change=${(e) => (this.cloneTargetId = e.detail)}
-                      style="min-width: 150px;"
-                    ></md3-select>
-                    <button class="md3-button primary" @click=${() => this._moveClone(this.plant)}>
-                      <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                        <path d="${mdiArrowRight}"></path>
-                      </svg>
-                      Move
-                    </button>
-                  </div>
-                `
-            : E}
-          </div>
-        </div>
-      </ha-dialog>
-    `;
-    }
-};
-PlantOverviewDialog.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-      }
-
-      .overview-grid {
-        padding: 24px;
-        overflow-y: auto;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 16px;
-      }
-
-      /* Timeline Styles */
-      .timeline {
-        position: relative;
-        padding-left: 24px;
-        border-left: 2px solid rgba(255, 255, 255, 0.1);
-        margin-top: 16px;
-      }
-      .timeline-event {
-        margin-bottom: 24px;
-        position: relative;
-      }
-      .timeline-event::before {
-        content: '';
-        position: absolute;
-        left: -31px;
-        top: 0;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: var(--event-color, #4caf50);
-        border: 2px solid #2c2c2c;
-      }
-      .timeline-date {
-        font-size: 0.8rem;
-        opacity: 0.6;
-        margin-bottom: 4px;
-      }
-      .timeline-content {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
-        padding: 12px;
-      }
-
-      /* Stat Grid */
-      .stat-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        gap: 12px;
-      }
-      .stat-item {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
-        padding: 12px;
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-      }
-      .stat-value {
-        font-size: 1.1rem;
-        font-weight: 500;
-      }
-      .stat-label {
-        font-size: 0.75rem;
-        opacity: 0.7;
-      }
-
-      /* Image Gallery */
-      .image-gallery {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-        gap: 8px;
-        margin-top: 12px;
-      }
-      .plant-image {
-        width: 100%;
-        aspect-ratio: 1;
-        object-fit: cover;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: transform 0.2s;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-      }
-      .plant-image:hover {
-        transform: scale(1.05);
-      }
-
-      .md3-input-group {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        flex: 1;
-        margin-bottom: 12px;
-      }
-
-      @media (max-width: 600px) {
-        .overview-grid {
-          grid-template-columns: 1fr;
-          padding: 16px;
-        }
-      }
-      @media (max-width: 450px) {
-        .glass-dialog-container {
-          border-radius: 0;
-          width: 100vw;
-          height: 100vh;
-          max-width: 100%;
-        }
-        .overview-grid {
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-        }
-        .dialog-header {
-          padding: 12px 16px;
-        }
-      }
-    `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "hass", void 0);
-__decorate([
-    n$4({ type: Boolean, reflect: true }),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "open", void 0);
-__decorate([
-    n$4({ attribute: false }),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "dialog", void 0);
-__decorate([
-    n$4({ type: Object }),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "plant", void 0);
-__decorate([
-    n$4({ type: Object }),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "growspaceOptions", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "editedAttributes", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "isEditing", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "showAllDates", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "cloneTargetId", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "_showDeleteConfirmation", void 0);
-PlantOverviewDialog = __decorate([
-    t$2('plant-overview-dialog')
-], PlantOverviewDialog);
-
-let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.strains = [];
-        this._view = 'browse';
-        this._searchQuery = '';
-        this._editorState = {};
-        this._isCropping = false;
-        this._isImageSelectorOpen = false;
-        this._importDialogOpen = false;
-        this._mobileMenuOpen = false;
-        this._pendingDeleteKey = null;
-        this._importReplace = false;
-        // Pagination State
-        this._currentPage = 1;
-        this.ITEMS_PER_PAGE = 15;
-    }
-    _startEdit(strain) {
-        if (strain) {
-            this._editorState = { ...strain };
-        }
-        else {
-            this._editorState = {
-                strain: '',
-                phenotype: '',
-                breeder: '',
-                type: 'Hybrid',
-                flowering_days_min: 60,
-                flowering_days_max: 70,
-                lineage: '',
-                sex: 'Feminized',
-                description: '',
-                image: '',
-                sativa_percentage: 50,
-                indica_percentage: 50,
-            };
-        }
-        this._view = 'editor';
-    }
-    _handleSave() {
-        if (!this._editorState.strain)
-            return;
-        this.dispatchEvent(new CustomEvent('save-strain', { detail: this._editorState }));
-        this._view = 'browse';
-    }
-    _handleDelete(key) {
-        this._pendingDeleteKey = key;
-    }
-    _confirmDelete() {
-        if (this._pendingDeleteKey) {
-            this.dispatchEvent(new CustomEvent('delete-strain', { detail: { key: this._pendingDeleteKey } }));
-            this._pendingDeleteKey = null;
-        }
-    }
-    _cancelDelete() {
-        this._pendingDeleteKey = null;
-    }
-    _handleEditorChange(field, value) {
-        this._editorState = { ...this._editorState, [field]: value };
-    }
-    _toggleCropMode(active) {
-        this._isCropping = active;
-    }
-    _toggleImageSelector(isOpen) {
-        this._isImageSelectorOpen = isOpen;
-    }
-    _handleSelectLibraryImage(imageUrl) {
-        this._editorState = { ...this._editorState, image: imageUrl };
-        // Find existing crop meta
-        const existing = this.strains.find((s) => s.image === imageUrl && !!s.image_crop_meta);
-        if (existing && existing.image_crop_meta) {
-            this._editorState.image_crop_meta = { ...existing.image_crop_meta };
-        }
-        else {
-            delete this._editorState.image_crop_meta;
-        }
-        this._isImageSelectorOpen = false;
-    }
-    _handleImportFile() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.zip';
-        input.onchange = (e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-                this.dispatchEvent(new CustomEvent('import-library', {
-                    detail: { file, replace: this._importReplace },
-                }));
-                this._importDialogOpen = false;
-            }
-        };
-        input.click();
-    }
-    getCropStyle(image, meta) {
-        if (!meta)
-            return `background-image: url('${image}')`;
-        return `
-      background-image: url('${image}');
-      background-size: ${meta.scale * 100}%;
-      background-position: ${meta.x}% ${meta.y}%;
-    `;
-    }
-    getImgStyle(meta) {
-        if (!meta)
-            return 'width: 100%; height: 100%; object-fit: cover;';
-        return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
-    }
-    render() {
-        if (!this.open)
-            return E;
-        return x `
-      <ha-dialog
-        open
-        @closed=${() => this.dispatchEvent(new CustomEvent('close'))}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
-      >
-        <div class="glass-dialog-container">
-          ${this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView()}
-        </div>
-
-        ${this._isCropping ? this.renderCropOverlay() : E}
-        ${this._isImageSelectorOpen ? this.renderImageSelector() : E}
-        ${this._importDialogOpen ? this.renderImportDialog() : E}
-        ${this._pendingDeleteKey ? this.renderDeleteConfirmation() : E}
-      </ha-dialog>
-    `;
-    }
-    renderBrowseView() {
-        const query = this._searchQuery.toLowerCase();
-        const filteredStrains = this.strains.filter((s) => s.strain.toLowerCase().includes(query) ||
-            (s.breeder && s.breeder.toLowerCase().includes(query)) ||
-            (s.phenotype && s.phenotype.toLowerCase().includes(query))).sort((a, b) => a.strain.localeCompare(b.strain));
-        // Pagination Logic
-        const totalPages = Math.ceil(filteredStrains.length / this.ITEMS_PER_PAGE);
-        if (this._currentPage > totalPages && totalPages > 0) {
-            this._currentPage = totalPages;
-        }
-        if (this._currentPage < 1)
-            this._currentPage = 1;
-        const startIndex = (this._currentPage - 1) * this.ITEMS_PER_PAGE;
-        const paginatedStrains = filteredStrains.slice(startIndex, startIndex + this.ITEMS_PER_PAGE);
-        return x `
-      <div class="dialog-header">
-        <div class="dialog-icon">
-          <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiLeaf}"></path>
-          </svg>
-        </div>
-        <div class="dialog-title-group">
-          <h2 class="dialog-title">Strain Library</h2>
-        </div>
-
-        <div class="header-actions" style="display:flex; gap:8px;">
-          <button
-            class="md3-button text"
-            @click=${() => (this._mobileMenuOpen = !this._mobileMenuOpen)}
-            style="min-width:auto; padding:8px; display: none;"
-          >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiDotsVertical}"></path>
-            </svg>
-          </button>
-          <style>
-            @media (max-width: 600px) {
-              button[style*='mdiDotsVertical'] {
-                display: flex !important;
-              }
-            }
-          </style>
-
-          <button
-            class="md3-button text"
-            @click=${() => this.dispatchEvent(new CustomEvent('close'))}
-            style="min-width:auto; padding:8px;"
-          >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiClose}"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <div class="sd-content">
-        <div class="search-bar-container">
-          <div class="search-input-wrapper">
-            <md3-text-input
-              placeholder="Search Strains by Name, Breeder..."
-              .value=${this._searchQuery}
-              @change=${(e) => {
-            this._searchQuery = e.detail;
-            this._currentPage = 1;
-        }}
-            ></md3-text-input>
-          </div>
-        </div>
-
-        <div class="sd-grid">
-          ${paginatedStrains.map((strain) => this.renderStrainCard(strain))}
-        </div>
-
-        ${filteredStrains.length === 0
-            ? x `
-              <div style="text-align:center; padding: 40px; color: var(--secondary-text-color);">
-                <svg
-                  style="width:48px;height:48px;fill:currentColor; opacity:0.5;"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="${mdiMagnify}"></path>
-                </svg>
-                <p>No strains found matching "${query}"</p>
-              </div>
-            `
-            : E}
-        ${totalPages > 1
-            ? x `
-              <div class="pagination-container">
-                <button
-                  class="pagination-btn"
-                  ?disabled=${this._currentPage === 1}
-                  @click=${() => this._currentPage--}
-                >
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiChevronLeft}"></path>
-                  </svg>
-                </button>
-                <span class="pagination-text">Page ${this._currentPage} of ${totalPages}</span>
-                <button
-                  class="pagination-btn"
-                  ?disabled=${this._currentPage === totalPages}
-                  @click=${() => this._currentPage++}
-                >
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiChevronRight}"></path>
-                  </svg>
-                </button>
-              </div>
-            `
-            : E}
-      </div>
-
-      <!-- Mobile Menu Dropdown -->
-      ${this._mobileMenuOpen
-            ? x `
-            <div class="menu-overlay" @click=${() => (this._mobileMenuOpen = false)}></div>
-            <div class="mobile-menu">
-              <div
-                class="mobile-menu-item"
-                @click=${() => {
-                this.dispatchEvent(new CustomEvent('get-recommendation'));
-                this._mobileMenuOpen = false;
-            }}
-              >
-                <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg> Get Recommendation
-              </div>
-              <div
-                class="mobile-menu-item"
-                @click=${() => {
-                this._importDialogOpen = true;
-                this._mobileMenuOpen = false;
-            }}
-              >
-                <svg viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg> Import Strains
-              </div>
-              <div
-                class="mobile-menu-item"
-                @click=${() => {
-                this.dispatchEvent(new CustomEvent('export-library'));
-                this._mobileMenuOpen = false;
-            }}
-              >
-                <svg viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg> Export Strains
-              </div>
-            </div>
-          `
-            : E}
-
-      <!-- Mobile FAB -->
-      <button class="fab-btn" @click=${() => this._startEdit()}>
-        <svg style="fill:currentColor; width: 24px; height: 24px;" viewBox="0 0 24 24">
-          <path d="${mdiPlus}"></path>
-        </svg>
-      </button>
-
-      <div class="sd-footer">
-        <button
-          class="md3-button tonal"
-          @click=${() => this.dispatchEvent(new CustomEvent('get-recommendation'))}
-        >
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiBrain}"></path>
-          </svg>
-          Get Recommendation
-        </button>
-        <button class="md3-button tonal" @click=${() => (this._importDialogOpen = true)}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiCloudUpload}"></path>
-          </svg>
-          Import Strains
-        </button>
-        <button
-          class="md3-button tonal"
-          @click=${() => this.dispatchEvent(new CustomEvent('export-library'))}
-        >
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiDownload}"></path>
-          </svg>
-          Export Strains
-        </button>
-        <button class="md3-button primary" @click=${() => this._startEdit()}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiPlus}"></path>
-          </svg>
-          New Strain
-        </button>
-      </div>
-    `;
-    }
-    renderStrainCard(strain) {
-        let typeIcon = mdiLeaf;
-        const typeLabel = strain.type || 'Unknown';
-        const lowerType = (strain.type || '').toLowerCase();
-        if (lowerType.includes('indica'))
-            typeIcon = mdiWeatherNight;
-        else if (lowerType.includes('sativa'))
-            typeIcon = mdiWeatherSunny;
-        else if (lowerType.includes('hybrid'))
-            typeIcon = mdiTuneVariant;
-        return x `
-      <div class="strain-card" @click=${() => this._startEdit(strain)}>
-        <div class="sc-thumb">
-          ${strain.image
-            ? x `<img
-                src="${strain.image}"
-                loading="lazy"
-                alt="${strain.strain}"
-                style="${this.getImgStyle(strain.image_crop_meta)}"
-              />`
-            : x `<svg
-                style="width:48px;height:48px;opacity:0.2;fill:currentColor;"
-                viewBox="0 0 24 24"
-              >
-                <path d="${mdiLeaf}"></path>
-              </svg>`}
-          <div class="sc-actions">
-            <button
-              class="sc-action-btn"
-              @click=${(e) => {
-            e.stopPropagation();
-            this._handleDelete(strain.key);
-        }}
-            >
-              <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiDelete}"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-        <div class="sc-content">
-          <h3 class="sc-title">
-            ${strain.strain} ${strain.phenotype ? `(${strain.phenotype})` : ''}
-          </h3>
-          <div class="sc-type-row">
-            <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${typeIcon}"></path>
-            </svg>
-            <span>${typeLabel}</span>
-          </div>
-          <div class="sc-meta">
-            ${strain.flowering_days_min
-            ? x `<span
-                  >Flowering: ${strain.flowering_days_min}-${strain.flowering_days_max || '?'}
-                  Days</span
-                >`
-            : E}
-            ${strain.breeder ? x `<span>Breeder: ${strain.breeder}</span>` : E}
-          </div>
-        </div>
-      </div>
-    `;
-    }
-    renderEditorView() {
-        const s = this._editorState;
-        const isEdit = !!s.strain &&
-            this.strains.some((ex) => ex.strain === s.strain && ex.phenotype === s.phenotype);
-        const uniqueStrains = [...new Set(this.strains.map((st) => st.strain).filter(Boolean))].sort();
-        const uniqueBreeders = [
-            ...new Set(this.strains.map((st) => st.breeder).filter(Boolean)),
-        ].sort();
-        const handleFileChange = (e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-                PlantUtils.compressImage(file)
-                    .then((base64) => this._handleEditorChange('image', base64))
-                    .catch((err) => console.error('Error compressing image:', err));
-            }
-        };
-        return x `
-      <datalist id="strain-suggestions">
-        ${uniqueStrains.map((name) => x `<option value="${name}"></option>`)}
-      </datalist>
-      <datalist id="breeder-suggestions">
-        ${uniqueBreeders.map((name) => x `<option value="${name}"></option>`)}
-      </datalist>
-
-      <div class="dialog-header">
-        <div style="display:flex; align-items:center; gap:16px;">
-          <button
-            class="md3-button tonal"
-            style="padding: 0 12px; height: 32px;"
-            @click=${() => (this._view = 'browse')}
-          >
-            <svg
-              style="width:18px;height:18px;fill:currentColor; margin-right:4px;"
-              viewBox="0 0 24 24"
-            >
-              <path d="${mdiArrowLeft}"></path>
-            </svg>
-            Back
-          </button>
-          <h2 class="dialog-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
-        </div>
-        <button
-          class="md3-button text"
-          @click=${() => this.dispatchEvent(new CustomEvent('close'))}
-          style="min-width:auto; padding:8px;"
-        >
-          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiClose}"></path>
-          </svg>
-        </button>
-      </div>
-
-      <div class="sd-content">
-        <div class="editor-layout">
-          <!-- LEFT COL: IDENTITY -->
-          <div class="editor-col">
-            <div
-              class="photo-upload-area"
-              @click=${(e) => {
-            const target = e.target;
-            if (!target.closest('.crop-btn') &&
-                !target.closest('.select-library-btn') &&
-                !target.closest('.md3-button')) {
-                e.currentTarget.querySelector('input')?.click();
-            }
-        }}
-              @dragover=${(e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'copy';
-        }}
-              @drop=${(e) => {
-            e.preventDefault();
-            const file = e.dataTransfer?.files[0];
-            if (file) {
-                PlantUtils.compressImage(file)
-                    .then((base64) => this._handleEditorChange('image', base64))
-                    .catch((err) => console.error('Error compressing image:', err));
-            }
-        }}
-            >
-              <button
-                class="select-library-btn"
-                @click=${(e) => {
-            e.stopPropagation();
-            this._toggleImageSelector(true);
-        }}
-              >
-                <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiViewDashboard}"></path>
-                </svg>
-                Select from Library
-              </button>
-
-              ${s.image
-            ? x `
-                    ${s.image_crop_meta
-                ? x `<div
-                          style="width:100%; height:100%; border-radius:10px; ${this.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"
-                        ></div>`
-                : x `<img
-                          src="${s.image}"
-                          style="width:100%; height:100%; object-fit:cover; border-radius:10px;"
-                        />`}
-
-                    <div style="position:absolute; bottom:8px; right:8px; display:flex; gap:8px;">
-                      <button
-                        class="crop-btn"
-                        style="background:rgba(0,0,0,0.6); border:none; padding:6px; border-radius:50%; cursor:pointer; color:white;"
-                        @click=${(e) => {
-                e.stopPropagation();
-                this._toggleCropMode(true);
-            }}
-                        title="Crop Image"
-                      >
-                        <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                          <path d="${mdiContentCopy}"></path>
-                        </svg>
-                      </button>
-                      <div
-                        style="background:rgba(0,0,0,0.6); padding:6px; border-radius:50%; pointer-events:none;"
-                      >
-                        <svg style="width:18px;height:18px;fill:white;" viewBox="0 0 24 24">
-                          <path d="${mdiPencil}"></path>
-                        </svg>
-                      </div>
-                    </div>
-                  `
-            : x `
-                    <div style="display: flex; gap: 16px; align-items: center;">
-                      <div
-                        style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
-                      >
-                        <button
-                          class="md3-button tonal"
-                          @click=${(e) => e.currentTarget
-                .nextElementSibling.click()}
-                        >
-                          <svg
-                            style="width:24px;height:24px;fill:currentColor;"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="${mdiCamera}"></path>
-                          </svg>
-                          Camera
-                        </button>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          style="display:none"
-                          @change=${handleFileChange}
-                        />
-                      </div>
-
-                      <div
-                        style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
-                      >
-                        <button
-                          class="md3-button tonal"
-                          @click=${(e) => e.currentTarget
-                .nextElementSibling.click()}
-                        >
-                          <svg
-                            style="width:24px;height:24px;fill:currentColor;"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="${mdiImage}"></path>
-                          </svg>
-                          Gallery
-                        </button>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style="display:none"
-                          @change=${handleFileChange}
-                        />
-                      </div>
-                    </div>
-                    <span style="font-size:0.8rem; margin-top:12px; opacity: 0.7;"
-                      >(Or Drag & Drop)</span
-                    >
-                  `}
-            </div>
-
-            <div class="sd-form-group">
-              <label class="sd-label">Strain Name *</label>
-              <input
-                type="text"
-                class="sd-input"
-                list="strain-suggestions"
-                .value=${s.strain || ''}
-                @input=${(e) => this._handleEditorChange('strain', e.target.value)}
-              />
-            </div>
-
-            <div class="sd-form-group">
-              <label class="sd-label">Phenotype</label>
-              <input
-                type="text"
-                class="sd-input"
-                placeholder="e.g. #1 (Optional)"
-                .value=${s.phenotype || ''}
-                @input=${(e) => this._handleEditorChange('phenotype', e.target.value)}
-              />
-            </div>
-
-            <div class="sd-form-group">
-              <label class="sd-label">Breeder/Seedbank</label>
-              <input
-                type="text"
-                class="sd-input"
-                list="breeder-suggestions"
-                .value=${s.breeder || ''}
-                @input=${(e) => this._handleEditorChange('breeder', e.target.value)}
-              />
-            </div>
-          </div>
-
-          <!-- RIGHT COL: GENETICS -->
-          <div class="editor-col">
-            <div class="sd-form-group">
-              <label class="sd-label">Type *</label>
-              <div class="type-selector-grid">
-                ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map((t) => {
-            let icon = mdiLeaf;
-            if (t === 'Indica')
-                icon = mdiWeatherNight;
-            if (t === 'Sativa')
-                icon = mdiWeatherSunny;
-            if (t === 'Hybrid')
-                icon = mdiTuneVariant;
-            const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
-            return x `
-                    <div
-                      class="type-option ${isActive ? 'active' : ''}"
-                      @click=${() => this._handleEditorChange('type', t)}
-                    >
-                      <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-                      <span class="type-label" style="font-size:0.85rem; font-weight:500;"
-                        >${t}</span
-                      >
-                    </div>
-                  `;
-        })}
-              </div>
-            </div>
-
-            ${(s.type || '').toLowerCase() === 'hybrid'
-            ? x `
-                  <div style="margin-bottom: 20px;">
-                    <label
-                      class="md3-label"
-                      style="display:block; margin-bottom:8px; color:var(--secondary-text-color);"
-                      >Hybrid Composition (%)</label
-                    >
-                    <div
-                      class="hg-container"
-                      style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;"
-                    >
-                      <div class="hg-labels">
-                        <div
-                          class="hg-input-label"
-                          style="display:flex; align-items:center; gap:4px;"
-                        >
-                          <span>Indica:</span>
-                          <input
-                            class="hg-num-input"
-                            type="number"
-                            min="0"
-                            max="100"
-                            .value=${s.indica_percentage || 0}
-                            @input=${(e) => {
-                let val = Math.floor(parseFloat(e.target.value)) || 0;
-                if (val < 0)
-                    val = 0;
-                if (val > 100)
-                    val = 100;
-                this._handleEditorChange('indica_percentage', val);
-                this._handleEditorChange('sativa_percentage', 100 - val);
-            }}
-                          />
-                          <span>%</span>
-                        </div>
-                        <div
-                          class="hg-input-label"
-                          style="display:flex; align-items:center; gap:4px;"
-                        >
-                          <span>Sativa:</span>
-                          <input
-                            class="hg-num-input"
-                            type="number"
-                            min="0"
-                            max="100"
-                            .value=${s.sativa_percentage || 0}
-                            @input=${(e) => {
-                let val = Math.floor(parseFloat(e.target.value)) || 0;
-                if (val < 0)
-                    val = 0;
-                if (val > 100)
-                    val = 100;
-                this._handleEditorChange('sativa_percentage', val);
-                this._handleEditorChange('indica_percentage', 100 - val);
-            }}
-                          />
-                          <span>%</span>
-                        </div>
-                      </div>
-
-                      <div
-                        class="hg-bar-track"
-                        @click=${(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                let percent = Math.round((x / rect.width) * 100);
-                if (percent < 0)
-                    percent = 0;
-                if (percent > 100)
-                    percent = 100;
-                this._handleEditorChange('indica_percentage', percent);
-                this._handleEditorChange('sativa_percentage', 100 - percent);
-            }}
-                      >
-                        <div
-                          class="hg-bar-indica"
-                          style="width: ${s.indica_percentage || 0}%"
-                        ></div>
-                        <div class="hg-bar-sativa"></div>
-                        <div class="hg-tick" style="left: 25%"></div>
-                        <div class="hg-tick" style="left: 50%"></div>
-                        <div class="hg-tick" style="left: 75%"></div>
-                      </div>
-                    </div>
-                  </div>
-                `
-            : E}
-
-            <div class="sd-form-group">
-              <label class="sd-label">Flowering Time (Days)</label>
-              <div style="display:flex; gap:16px;">
-                <input
-                  type="number"
-                  class="sd-input"
-                  placeholder="Min"
-                  .value=${s.flowering_days_min || ''}
-                  @input=${(e) => this._handleEditorChange('flowering_days_min', e.target.value)}
-                />
-                <input
-                  type="number"
-                  class="sd-input"
-                  placeholder="Max"
-                  .value=${s.flowering_days_max || ''}
-                  @input=${(e) => this._handleEditorChange('flowering_days_max', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div class="sd-form-group">
-              <label class="sd-label">Lineage</label>
-              <input
-                type="text"
-                class="sd-input"
-                .value=${s.lineage || ''}
-                @input=${(e) => this._handleEditorChange('lineage', e.target.value)}
-              />
-            </div>
-
-            <div class="sd-form-group">
-              <label class="sd-label">Sex</label>
-              <div style="display:flex; gap:20px; padding: 8px 0;">
-                ${['Feminized', 'Regular'].map((sex) => x `
-                    <label
-                      style="display:flex; align-items:center; gap:8px; cursor:pointer; color:white;"
-                    >
-                      <input
-                        type="radio"
-                        name="sex_radio"
-                        .checked=${s.sex === sex}
-                        @change=${() => this._handleEditorChange('sex', sex)}
-                        style="accent-color: var(--accent-green); transform: scale(1.2);"
-                      />
-                      ${sex}
-                    </label>
-                  `)}
-              </div>
-            </div>
-
-            <div class="sd-form-group">
-              <label class="sd-label">Description</label>
-              <textarea
-                class="sd-textarea"
-                .value=${s.description || ''}
-                @input=${(e) => this._handleEditorChange('description', e.target.value)}
-              ></textarea>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="sd-footer" style="justify-content: space-between;">
-        ${s.key
-            ? x `
-              <button
-                class="md3-button text"
-                style="color: var(--error-color, #f44336);"
-                @click=${() => this._handleDelete(s.key)}
-              >
-                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiDelete}"></path>
-                </svg>
-                Delete
-              </button>
-            `
-            : x `<div></div>`}
-
-        <div style="display:flex; gap:12px;">
-          <button class="md3-button tonal" @click=${() => (this._view = 'browse')}>Cancel</button>
-          <button class="md3-button primary" @click=${() => this._handleSave()}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiCheck}"></path>
-            </svg>
-            Save Strain
-          </button>
-        </div>
-      </div>
-    `;
-    }
-    renderCropOverlay() {
-        const s = this._editorState;
-        if (!s.image)
-            return E;
-        const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
-        const handleWheel = (e) => {
-            e.preventDefault();
-            const delta = e.deltaY * -0.001;
-            const newScale = Math.min(Math.max(meta.scale + delta, 1), 5);
-            this._handleEditorChange('image_crop_meta', { ...meta, scale: newScale });
-        };
-        const handleMouseDown = (e) => {
-            const startX = e.clientX;
-            const startY = e.clientY;
-            const startMetaX = meta.x;
-            const startMetaY = meta.y;
-            const onMouseMove = (ev) => {
-                const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
-                const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
-                const newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
-                const newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
-                this._handleEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
-            };
-            const onMouseUp = () => {
-                window.removeEventListener('mousemove', onMouseMove);
-                window.removeEventListener('mouseup', onMouseUp);
-            };
-            window.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('mouseup', onMouseUp);
-        };
-        return x `
-      <div class="crop-overlay">
-        <h3 style="color:white; margin-bottom:20px;">Adjust Image</h3>
-        <div
-          class="crop-viewport"
-          @wheel=${handleWheel}
-          @mousedown=${handleMouseDown}
-          @dragstart=${(e) => e.preventDefault()}
-        >
-          <div
-            style="width: 100%; height: 100%;
-              background-image: url('${s.image}');
-              background-size: ${meta.scale * 100}%;
-              background-position: ${meta.x}% ${meta.y}%;
-              background-repeat: no-repeat;
-              pointer-events: none;"
-          ></div>
-        </div>
-
-        <div class="crop-controls">
-          <div style="display:flex; justify-content:space-between; color:#ccc; font-size:0.8rem;">
-            <span>Zoom: ${(meta.scale * 100).toFixed(0)}%</span>
-          </div>
-          <input
-            type="range"
-            class="crop-slider"
-            min="1"
-            max="5"
-            step="0.1"
-            .value=${meta.scale.toString()}
-            @input=${(e) => this._handleEditorChange('image_crop_meta', {
-            ...meta,
-            scale: parseFloat(e.target.value),
-        })}
-          />
-
-          <div style="display:flex; gap:12px; margin-top:12px;">
-            <button
-              class="md3-button tonal"
-              style="flex:1"
-              @click=${() => this._toggleCropMode(false)}
-            >
-              Done
-            </button>
-          </div>
-          <div style="text-align:center; font-size:0.8rem; color:#888; margin-top:8px;">
-            Drag to pan • Scroll to zoom
-          </div>
-        </div>
-      </div>
-    `;
-    }
-    renderImageSelector() {
-        const imageMap = new Map();
-        this.strains.forEach((s) => {
-            if (s.image) {
-                if (!imageMap.has(s.image)) {
-                    imageMap.set(s.image, []);
-                }
-                imageMap.get(s.image).push({ strain: s.strain, phenotype: s.phenotype || '' });
-            }
-        });
-        return x `
-      <div class="crop-overlay">
-        <div
-          class="glass-dialog-container"
-          style="width: 80%; max-width: 800px; height: 80%; max-height: 600px;"
-        >
-          <div class="dialog-header">
-            <h2 class="dialog-title">Select from Library</h2>
-            <button
-              class="md3-button text"
-              @click=${() => this._toggleImageSelector(false)}
-              style="min-width:auto; padding:8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-          <div class="sd-content" style="overflow-y: auto;">
-            <div
-              style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;"
-            >
-              ${[...imageMap.entries()].map(([img, infoList]) => x `
-                  <div
-                    style="aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative;"
-                    @click=${() => this._handleSelectLibraryImage(img)}
-                  >
-                    <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" />
-                    <div
-                      style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 8px; font-size: 0.75rem; color: white;"
-                    >
-                      ${infoList.map((info, index) => x `
-                          <div
-                            style="${index < infoList.length - 1
-            ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);'
-            : ''}"
-                          >
-                            <div style="font-weight: 700;">Strain: ${info.strain}</div>
-                            <div style="opacity: 0.9;">Pheno: ${info.phenotype || 'N/A'}</div>
-                          </div>
-                        `)}
-                    </div>
-                  </div>
-                `)}
-            </div>
-            ${imageMap.size === 0
-            ? x `<p
-                  style="text-align: center; color: var(--secondary-text-color); margin-top: 40px;"
-                >
-                  No images found in library.
-                </p>`
-            : E}
-          </div>
-        </div>
-      </div>
-    `;
-    }
-    renderImportDialog() {
-        return x `
-      <div class="crop-overlay">
-        <div class="glass-dialog-container" style="width: 400px; max-width: 90vw; height: auto;">
-          <div class="dialog-header">
-            <h2 class="dialog-title">Import Strains</h2>
-            <button
-              class="md3-button text"
-              @click=${() => (this._importDialogOpen = false)}
-              style="min-width:auto; padding:8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
-          <div style="padding: 24px;">
-            <div
-              style="font-size: 0.9rem; color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 20px;"
-            >
-              Select a ZIP file containing your strain library export. You can either merge the new
-              strains with your existing library or replace it entirely.
-            </div>
-
-            <div
-              style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"
-            >
-              <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
-                <input
-                  type="radio"
-                  name="import_mode"
-                  .checked=${!this._importReplace}
-                  @change=${() => (this._importReplace = false)}
-                  style="accent-color: var(--accent-green); transform: scale(1.2);"
-                />
-                <div>
-                  <div style="font-weight: 600;">Merge</div>
-                  <div style="font-size: 0.8rem; color: var(--secondary-text-color);">
-                    Add new strains, keep existing ones.
-                  </div>
-                </div>
-              </label>
-
-              <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 12px 0;"></div>
-
-              <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
-                <input
-                  type="radio"
-                  name="import_mode"
-                  .checked=${this._importReplace}
-                  @change=${() => (this._importReplace = true)}
-                  style="accent-color: var(--accent-green); transform: scale(1.2);"
-                />
-                <div>
-                  <div style="font-weight: 600;">Replace</div>
-                  <div style="font-size: 0.8rem; color: var(--secondary-text-color);">
-                    Overwrite entire library with import.
-                  </div>
-                </div>
-              </label>
-            </div>
-
-            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
-              <button class="md3-button tonal" @click=${() => (this._importDialogOpen = false)}>
-                Cancel
-              </button>
-              <button class="md3-button primary" @click=${() => this._handleImportFile()}>
-                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiCloudUpload}"></path>
-                </svg>
-                Select File
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-    }
-    renderDeleteConfirmation() {
-        return x `
-      <div class="crop-overlay">
-        <div
-          class="glass-dialog-container"
-          style="width: 400px; height: auto; padding: 24px; display: flex; flex-direction: column;"
-        >
-          <h2 class="dialog-title">Delete Strain?</h2>
-          <p
-            style="color: var(--secondary-text-color); margin: 16px 0; font-size: 1rem; line-height: 1.5;"
-          >
-            Are you sure you want to delete this strain? This action cannot be undone.
-          </p>
-          <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
-            <button class="md3-button tonal" @click=${this._cancelDelete}>Cancel</button>
-            <button class="md3-button text" style="color: #f44336;" @click=${this._confirmDelete}>
-              <svg
-                style="width:18px;height:18px;fill:currentColor;margin-right:8px;"
-                viewBox="0 0 24 24"
-              >
-                <path d="${mdiDelete}"></path>
-              </svg>
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-    }
-};
-StrainLibraryDialog.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        --accent-green: #4caf50;
-        /* Using dialogStyles variables where possible */
-      }
-
-      ha-dialog {
-        --mdc-dialog-min-width: 80vw;
-        --mdc-dialog-max-width: 95vw;
-        --dialog-surface-margin: 24px;
-        --dialog-content-padding: 0;
-        --dialog-scrollable-header-padding: 0;
-      }
-
-      /* Additional specific styles */
-
-      /* Layout Overrides */
-      .strain-dialog-container {
-        @apply .glass-dialog-container;
-        /* Since we can't use @apply in standard css without processor, we must duplicate or rely on .glass-dialog-container class in render */
-        /* But we will use the class in render */
-      }
-
-      .glass-dialog-container {
-        width: 80vw;
-        max-width: 95vw;
-        height: 85vh;
-      }
-
-      .sd-content {
-        padding: 24px;
-        overflow-y: auto;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .sd-footer {
-        padding: 16px 24px;
-        background: rgba(0, 0, 0, 0.2);
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-      }
-
-      /* GRID & CARDS */
-      .sd-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 20px;
-      }
-      .strain-card {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        transition: all 0.3s ease;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        cursor: pointer;
-      }
-      .strain-card:hover {
-        border-color: var(--accent-green);
-        transform: translateY(-4px);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-      }
-      .sc-thumb {
-        height: 180px;
-        background: #222;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #444;
-        position: relative;
-      }
-      .sc-thumb img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-      .sc-content {
-        padding: 16px;
-        flex: 1;
-      }
-      .sc-title {
-        font-size: 1.1rem;
-        font-weight: 700;
-        margin: 0 0 4px 0;
-        color: #fff;
-      }
-      .sc-type-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        color: var(--accent-green);
-        font-size: 0.85rem;
-        font-weight: 600;
-        margin-bottom: 12px;
-      }
-      .sc-meta {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        font-size: 0.8rem;
-        color: var(--secondary-text-color);
-      }
-      .sc-actions {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        display: flex;
-        gap: 8px;
-        opacity: 0;
-        transition: opacity 0.2s;
-      }
-      .strain-card:hover .sc-actions {
-        opacity: 1;
-      }
-      @media (hover: none) {
-        .sc-actions {
-          opacity: 1;
-        }
-      }
-      .sc-action-btn {
-        background: rgba(0, 0, 0, 0.6);
-        border: none;
-        border-radius: 50%;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        cursor: pointer;
-      }
-      .sc-action-btn:hover {
-        background: var(--accent-green);
-      }
-
-      /* SEARCH BAR */
-      .search-bar-container {
-        margin-bottom: 24px;
-      }
-      .search-input-wrapper {
-        position: relative;
-        margin-bottom: 12px;
-      }
-      .search-input-wrapper svg {
-        position: absolute;
-        left: 16px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 20px;
-        height: 20px;
-        fill: var(--secondary-text-color);
-        pointer-events: none;
-      }
-      .search-bar-input {
-        width: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 14px 14px 14px 48px;
-        color: #fff;
-        font-size: 1rem;
-        outline: none;
-        box-sizing: border-box;
-        font-family: inherit;
-      }
-      .search-bar-input:focus {
-        border-color: var(--accent-green);
-        background: rgba(255, 255, 255, 0.08);
-      }
-
-      /* FORMS */
-      .sd-form-group {
-        margin-bottom: 20px;
-      }
-      .sd-label {
-        display: block;
-        color: var(--secondary-text-color);
-        font-size: 0.85rem;
-        margin-bottom: 8px;
-        font-weight: 500;
-      }
-      .sd-input,
-      .sd-textarea,
-      .sd-select {
-        width: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        padding: 12px 16px;
-        color: #fff;
-        font-size: 0.95rem;
-        outline: none;
-        transition: border-color 0.2s;
-        box-sizing: border-box;
-      }
-      .sd-input:focus,
-      .sd-textarea:focus,
-      .sd-select:focus {
-        border-color: var(--accent-green);
-      }
-      .sd-textarea {
-        resize: vertical;
-        min-height: 100px;
-      }
-
-      /* EDITOR LAYOUT */
-      .editor-layout {
-        display: grid;
-        grid-template-columns: 1fr 1.5fr;
-        gap: 32px;
-      }
-
-      /* PHOTO UPLOAD */
-      .photo-upload-area {
-        border: 2px dashed rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.02);
-        height: 240px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: var(--secondary-text-color);
-        cursor: pointer;
-        transition: all 0.2s;
-        margin-bottom: 20px;
-        position: relative;
-        overflow: hidden;
-      }
-      .photo-upload-area:hover {
-        border-color: var(--accent-green);
-        background: rgba(76, 175, 80, 0.05);
-      }
-      .select-library-btn {
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        background: rgba(0, 0, 0, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #fff;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        z-index: 10;
-        cursor: pointer;
-      }
-      .select-library-btn:hover {
-        background: var(--accent-green);
-        border-color: var(--accent-green);
-      }
-
-      /* Crop Overlay */
-      .crop-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.9);
-        z-index: 1000;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-      }
-      .crop-viewport {
-        width: 300px;
-        height: 300px;
-        border: 2px solid var(--accent-green);
-        overflow: hidden;
-        position: relative;
-        cursor: move;
-        box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.7);
-      }
-      .crop-controls {
-        margin-top: 20px;
-        width: 300px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      .crop-slider {
-        width: 100%;
-        accent-color: var(--accent-green);
-      }
-
-      /* Type Selector */
-      .type-selector-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-      .type-option {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        padding: 16px;
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.2s;
-        text-align: center;
-      }
-      .type-option:hover {
-        border-color: #666;
-      }
-      .type-option.active {
-        background: rgba(76, 175, 80, 0.1);
-        border-color: var(--accent-green);
-        color: #fff;
-      }
-      .type-option svg {
-        width: 28px;
-        height: 28px;
-        fill: var(--secondary-text-color);
-      }
-      .type-option.active svg {
-        fill: var(--accent-green);
-      }
-
-      /* Hybrid Graph */
-      .hg-container {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        width: 100%;
-        margin-top: 8px;
-        font-family: 'Roboto', sans-serif;
-      }
-      .hg-labels {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: #fff;
-        margin-bottom: 2px;
-      }
-      .hg-bar-track {
-        height: 18px;
-        width: 100%;
-        background: #333;
-        border-radius: 2px;
-        position: relative;
-        overflow: hidden;
-        display: flex;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        cursor: pointer;
-      }
-      .hg-bar-indica {
-        background: #8b5cf6; /* Purple */
-        height: 100%;
-        transition: width 0.2s ease;
-      }
-      .hg-bar-sativa {
-        background: #eab308; /* Yellow */
-        height: 100%;
-        flex: 1;
-        transition: width 0.2s ease;
-      }
-      .hg-tick {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 1px;
-        background: rgba(255, 255, 255, 0.4);
-        pointer-events: none;
-      }
-
-      .hg-num-input {
-        background: transparent;
-        border: none;
-        border-bottom: 1px solid var(--secondary-text-color);
-        color: #fff;
-        width: 36px;
-        text-align: center;
-        font-size: 0.75rem;
-        font-weight: 700;
-        padding: 0;
-      }
-      .hg-num-input:focus {
-        outline: none;
-        border-bottom-color: var(--accent-green);
-      }
-
-      /* Pagination */
-      .pagination-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 16px;
-        margin-top: 24px;
-        padding-bottom: 8px;
-      }
-      .pagination-text {
-        color: var(--secondary-text-color);
-        font-size: 0.9rem;
-        font-weight: 500;
-      }
-      .pagination-btn {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #fff;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-      .pagination-btn:hover:not(:disabled) {
-        border-color: var(--accent-green);
-        color: var(--accent-green);
-        background: rgba(255, 255, 255, 0.1);
-      }
-      .pagination-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        border-color: transparent;
-      }
-
-      /* Mobile Responsive */
-      @media (max-width: 600px) {
-        ha-dialog {
-          --mdc-dialog-min-width: 95vw;
-          --mdc-dialog-max-width: 95vw;
-        }
-        .glass-dialog-container {
-          width: 95vw;
-          height: 90vh;
-          max-width: 95vw;
-        }
-        .sd-header {
-          padding: 16px;
-        }
-        .sd-content {
-          padding: 16px;
-        }
-        .sd-grid {
-          grid-template-columns: 1fr;
-        }
-        .sd-footer {
-          display: none;
-        }
-        .fab-btn {
-          display: flex;
-        }
-        .editor-layout {
-          grid-template-columns: 1fr;
-        }
-      }
-      .fab-btn {
-        position: absolute;
-        bottom: 24px;
-        right: 24px;
-        width: 56px;
-        height: 56px;
-        border-radius: 16px;
-        background: var(--accent-green);
-        color: #fff;
-        border: none;
-        box-shadow: 0 4px 8px 3px rgba(0, 0, 0, 0.15);
-        display: none; /* Hidden on desktop */
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 20;
-      }
-
-      .sd-textarea {
-        width: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        padding: 12px;
-        color: #fff;
-        font-family: inherit;
-        resize: vertical;
-        box-sizing: border-box;
-        font-size: 1rem;
-      }
-      .sd-textarea:focus {
-        border-color: var(--accent-green);
-        outline: none;
-        background: rgba(255, 255, 255, 0.08);
-      }
-
-      /* Mobile menu */
-      .mobile-menu {
-        position: absolute;
-        top: 60px;
-        right: 16px;
-        background: #2d2d2d;
-        border-radius: 4px;
-        padding: 8px 0;
-        min-width: 200px;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
-        z-index: 30;
-      }
-      .mobile-menu-item {
-        padding: 12px 16px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        color: #fff;
-        cursor: pointer;
-      }
-      .mobile-menu-item:hover {
-        background: rgba(255, 255, 255, 0.08);
-      }
-      .mobile-menu-item svg {
-        width: 20px;
-        height: 20px;
-        fill: var(--secondary-text-color);
-      }
-      .menu-overlay {
-        position: absolute;
-        inset: 0;
-        z-index: 25;
-      }
-    `,
-];
-__decorate([
-    n$4({ type: Boolean }),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "open", void 0);
-__decorate([
-    n$4({ type: Array }),
-    __metadata("design:type", Array)
-], StrainLibraryDialog.prototype, "strains", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", String)
-], StrainLibraryDialog.prototype, "_view", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_searchQuery", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_editorState", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_isCropping", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_isImageSelectorOpen", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_importDialogOpen", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_mobileMenuOpen", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_pendingDeleteKey", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_importReplace", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_currentPage", void 0);
-StrainLibraryDialog = __decorate([
-    t$2('strain-library-dialog')
-], StrainLibraryDialog);
-
-let ConfigDialog = class ConfigDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.growspaceOptions = {};
-        this.devices = [];
-        this.initialTab = 'environment';
-        this.currentTab = 'environment';
-        this._initialStateApplied = false;
-        // Add Growspace Data
-        this.add_name = '';
-        this.add_rows = 4;
-        this.add_plants_per_row = 4;
-        this.add_notification_service = 'mobile_app_notify';
-        // Edit Growspace Data
-        this.edit_selectedId = '';
-        this.edit_name = '';
-        this.edit_rows = 0;
-        this.edit_plants_per_row = 0;
-        // Environment Data
-        this.env_selectedGrowspaceId = '';
-        this.env_temp_sensor = '';
-        this.env_humidity_sensor = '';
-        this.env_vpd_sensor = '';
-        this.env_co2_sensor = '';
-        this.env_circulation_fan = '';
-        this.env_stress_threshold = 0.8;
-        this.env_mold_threshold = 0.8;
-        this._showDeleteConfirm = false;
-    }
-    updated(changedProperties) {
-        super.updated(changedProperties);
-        // Apply initial tab state only once when dialog opens
-        if (changedProperties.has('open')) {
-            if (this.open) {
-                if (!this._initialStateApplied) {
-                    if (this.currentTab) ;
-                    this._initialStateApplied = true;
-                }
-            }
-            else if (!this.open) {
-                // Reset flag when dialog closes so next open respects initialTab again
-                this._initialStateApplied = false;
-            }
-        }
-    }
-    // Provide initial state setting from parent
-    setInitialState(currentTab = 'environment', environmentData) {
-        this.currentTab = currentTab;
-        if (environmentData) {
-            this.env_selectedGrowspaceId = environmentData.selectedGrowspaceId;
-            this.env_temp_sensor = environmentData.temp_sensor;
-            this.env_humidity_sensor = environmentData.humidity_sensor;
-            this.env_vpd_sensor = environmentData.vpd_sensor;
-            this.env_co2_sensor = environmentData.co2_sensor;
-            this.env_circulation_fan = environmentData.circulation_fan;
-            this.env_stress_threshold = environmentData.stress_threshold;
-            this.env_mold_threshold = environmentData.mold_threshold;
-        }
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
-    _switchTab(tab) {
-        this.currentTab = tab;
-    }
-    // --- Submission Handlers ---
-    _submitAddGrowspace() {
-        this.dispatchEvent(new CustomEvent('add-growspace-submit', {
-            detail: {
-                name: this.add_name,
-                rows: this.add_rows,
-                plants_per_row: this.add_plants_per_row,
-                notification_service: this.add_notification_service,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _submitEnvironment() {
-        this.dispatchEvent(new CustomEvent('configure-environment-submit', {
-            detail: {
-                selectedGrowspaceId: this.env_selectedGrowspaceId,
-                temp_sensor: this.env_temp_sensor,
-                humidity_sensor: this.env_humidity_sensor,
-                vpd_sensor: this.env_vpd_sensor,
-                co2_sensor: this.env_co2_sensor,
-                circulation_fan: this.env_circulation_fan,
-                stress_threshold: this.env_stress_threshold,
-                mold_threshold: this.env_mold_threshold,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _submitEditGrowspace() {
-        if (!this.edit_selectedId)
-            return;
-        this.dispatchEvent(new CustomEvent('edit-growspace-submit', {
-            detail: {
-                growspace_id: this.edit_selectedId,
-                name: this.edit_name,
-                rows: this.edit_rows,
-                plants_per_row: this.edit_plants_per_row,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _submitDeleteGrowspace() {
-        if (!this.edit_selectedId)
-            return;
-        this._showDeleteConfirm = true;
-    }
-    _confirmDeleteGrowspace() {
-        this.dispatchEvent(new CustomEvent('delete-growspace-submit', {
-            detail: {
-                growspace_id: this.edit_selectedId,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-        // Reset selection after delete
-        this.edit_selectedId = '';
-        this.edit_name = '';
-        this.edit_rows = 0;
-        this.edit_plants_per_row = 0;
-        this._showDeleteConfirm = false;
-    }
-    _cancelDeleteGrowspace() {
-        this._showDeleteConfirm = false;
-    }
-    _handleEditSelection(e) {
-        const growspaceId = e.target.value;
-        this.edit_selectedId = growspaceId;
-        if (growspaceId && this.devices) {
-            const device = this.devices.find((d) => d.device_id === growspaceId);
-            if (device) {
-                this.edit_name = device.name;
-                this.edit_rows = device.rows || 4;
-                this.edit_plants_per_row = device.plants_per_row || 4;
-            }
-        }
-    }
-    render() {
-        if (!this.open)
-            return x ``;
-        return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
-      >
-        <div class="glass-dialog-container">
-          <!-- Header -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiCog}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Configuration</h2>
-              <div class="dialog-subtitle">Manage growspaces & settings</div>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${this._close}
-              style="min-width: auto; padding: 8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
-          <!-- Tabs -->
-          <div class="config-tabs">
-            <div
-              class="config-tab ${this.currentTab === 'add_growspace' ? 'active' : ''}"
-              @click=${() => this._switchTab('add_growspace')}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
-              Add Growspace
-            </div>
-            <div
-              class="config-tab ${this.currentTab === 'edit_growspace' ? 'active' : ''}"
-              @click=${() => this._switchTab('edit_growspace')}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-              Edit Growspace
-            </div>
-            <div
-              class="config-tab ${this.currentTab === 'environment' ? 'active' : ''}"
-              @click=${() => this._switchTab('environment')}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
-              Environment
-            </div>
-          </div>
-
-          <!-- Content -->
-          <div class="config-content">
-            ${this.currentTab === 'add_growspace' ? this.renderAddGrowspaceTab() : E}
-            ${this.currentTab === 'edit_growspace' ? this.renderEditGrowspaceTab() : E}
-            ${this.currentTab === 'environment' ? this.renderEnvironmentTab() : E}
-          </div>
-
-          <!-- Actions -->
-          <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
-            ${this.currentTab === 'add_growspace'
-            ? x `
-                  <button class="md3-button primary" @click=${this._submitAddGrowspace}>
-                    Add Growspace
-                  </button>
-                `
-            : E}
-            ${this.currentTab === 'environment'
-            ? x `
-                  <button class="md3-button primary" @click=${this._submitEnvironment}>
-                    Save Sensors
-                  </button>
-                `
-            : E}
-            ${this.currentTab === 'edit_growspace' && !this._showDeleteConfirm
-            ? x `
-                  <button
-                    class="md3-button tonal error"
-                    @click=${this._submitDeleteGrowspace}
-                    ?disabled=${!this.edit_selectedId}
-                  >
-                    <svg
-                      style="width:18px;height:18px;fill:currentColor;margin-right:8px"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="${mdiDelete}"></path>
-                    </svg>
-                    Delete
-                  </button>
-                  <button
-                    class="md3-button primary"
-                    @click=${this._submitEditGrowspace}
-                    ?disabled=${!this.edit_selectedId}
-                  >
-                    Save Changes
-                  </button>
-                `
-            : E}
-          </div>
-        </div>
-      </ha-dialog>
-    `;
-    }
-    renderAddGrowspaceTab() {
-        return x `
-      <div style="display:flex; flex-direction:column; gap:20px;">
-        <div class="detail-card">
-          <h3>New Growspace Details</h3>
-          <md3-text-input
-            label="Growspace Name"
-            .value=${this.add_name}
-            @change=${(e) => (this.add_name = e.detail)}
-          ></md3-text-input>
-          <div class="row-col-grid">
-            <md3-number-input
-              label="Rows"
-              .value=${this.add_rows}
-              @change=${(e) => (this.add_rows = parseInt(e.detail))}
-            ></md3-number-input>
-            <md3-number-input
-              label="Plants per Row"
-              .value=${this.add_plants_per_row}
-              @change=${(e) => (this.add_plants_per_row = parseInt(e.detail))}
-            ></md3-number-input>
-          </div>
-          <md3-text-input
-            label="Notification Service (Optional)"
-            .value=${this.add_notification_service}
-            @change=${(e) => (this.add_notification_service = e.detail)}
-          ></md3-text-input>
-        </div>
-      </div>
-    `;
-    }
-    // Add helper to filter entities
-    _getEntities(domains, deviceClass) {
-        if (!this.hass)
-            return [];
-        return Object.values(this.hass.states)
-            .filter((stateObj) => {
-            const domain = stateObj.entity_id.split('.')[0];
-            if (!domains.includes(domain))
-                return false;
-            // If deviceClass is provided, match strictly. If null, match any (or no) device class.
-            if (deviceClass !== null) {
-                return stateObj.attributes.device_class === deviceClass;
-            }
-            return true;
-        })
-            .sort((a, b) => (a.attributes.friendly_name || a.entity_id).localeCompare(b.attributes.friendly_name || b.entity_id));
-    }
-    // Add helper to render selects
-    _renderEntitySelect(label, value, domains, deviceClass, changeHandler) {
-        const entities = this._getEntities(domains, deviceClass);
-        return x `
-      <div class="md3-input-group">
-        <label class="md3-label">${label}</label>
-        <select class="md3-input" .value=${value} @change=${changeHandler}>
-          <option value="">Select Entity...</option>
-          ${entities.map((e) => x `<option value="${e.entity_id}" ?selected=${e.entity_id === value}>
-                ${e.attributes.friendly_name || e.entity_id} (${e.entity_id})
-              </option>`)}
-        </select>
-      </div>
-    `;
-    }
-    renderEditGrowspaceTab() {
-        if (this._showDeleteConfirm) {
-            return x `
-        <div class="detail-card" style="text-align: center; padding: 40px 20px;">
-          <h3 style="color: var(--error-color, #ff5252);">Delete Growspace?</h3>
-          <p style="margin-bottom: 30px; color: rgba(255,255,255,0.7);">
-            Are you sure you want to delete "<strong>${this.edit_name}</strong>"?<br />
-            This will remove all associated plants and history.<br />
-            This action cannot be undone.
-          </p>
-          <div class="button-group" style="justify-content: center; gap: 16px;">
-            <button class="md3-button tonal" @click=${this._cancelDeleteGrowspace}>Cancel</button>
-            <button class="md3-button primary error" @click=${this._confirmDeleteGrowspace}>
-              Confirm Delete
-            </button>
-          </div>
-        </div>
-      `;
-        }
-        return x `
-      <div style="display:flex; flex-direction:column; gap:20px;">
-        <div class="detail-card">
-          <h3>Select Growspace to Edit</h3>
-          <div class="md3-input-group">
-            <label class="md3-label">Growspace</label>
-            <select
-              class="md3-input"
-              .value=${this.edit_selectedId}
-              @change=${this._handleEditSelection}
-            >
-              <option value="">Select...</option>
-              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
-            </select>
-          </div>
-        </div>
-
-        ${this.edit_selectedId
-            ? x `
-              <div class="detail-card">
-                <h3>Edit Details</h3>
-                <md3-text-input
-                  label="Growspace Name"
-                  .value=${this.edit_name}
-                  @change=${(e) => (this.edit_name = e.detail)}
-                ></md3-text-input>
-                <div class="row-col-grid">
-                  <md3-number-input
-                    label="Rows"
-                    .value=${this.edit_rows}
-                    @change=${(e) => (this.edit_rows = parseInt(e.detail))}
-                  ></md3-number-input>
-                  <md3-number-input
-                    label="Plants per Row"
-                    .value=${this.edit_plants_per_row}
-                    @change=${(e) => (this.edit_plants_per_row = parseInt(e.detail))}
-                  ></md3-number-input>
-                </div>
-              </div>
-            `
-            : x `
-              <div style="text-align:center; padding: 20px; color: rgba(255,255,255,0.5);">
-                Please select a growspace to edit.
-              </div>
-            `}
-      </div>
-    `;
-    }
-    renderEnvironmentTab() {
-        return x `
-      <div style="display:flex; flex-direction:column; gap:20px;">
-        <div class="detail-card">
-          <h3>Select Target</h3>
-          <div class="md3-input-group">
-            <label class="md3-label">Growspace</label>
-            <select
-              class="md3-input"
-              .value=${this.env_selectedGrowspaceId}
-              @change=${(e) => (this.env_selectedGrowspaceId = e.target.value)}
-            >
-              <option value="">Select...</option>
-              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
-            </select>
-          </div>
-        </div>
-
-        <div class="detail-card">
-          <h3>Sensors</h3>
-          ${this._renderEntitySelect('Temperature Sensor', this.env_temp_sensor, ['sensor', 'input_number'], 'temperature', (e) => (this.env_temp_sensor = e.target.value))}
-          ${this._renderEntitySelect('Humidity Sensor', this.env_humidity_sensor, ['sensor', 'input_number'], 'humidity', (e) => (this.env_humidity_sensor = e.target.value))}
-          ${this._renderEntitySelect('VPD Sensor (Optional)', this.env_vpd_sensor, ['sensor', 'input_number'], 'pressure', (e) => (this.env_vpd_sensor = e.target.value))}
-        </div>
-
-        <div class="detail-card">
-          <h3>Optional</h3>
-          ${this._renderEntitySelect('CO2 Sensor', this.env_co2_sensor, ['sensor', 'input_number'], 'carbon_dioxide', (e) => (this.env_co2_sensor = e.target.value))}
-          ${this._renderEntitySelect('Circulation Fan / Switch', this.env_circulation_fan, ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'], null, (e) => (this.env_circulation_fan = e.target.value))}
-        </div>
-
-        <div class="detail-card">
-          <h3>Thresholds</h3>
-          <md3-number-input
-            label="Stress Threshold (0.0-1.0)"
-            .value=${this.env_stress_threshold}
-            @change=${(e) => (this.env_stress_threshold = parseFloat(e.detail))}
-          ></md3-number-input>
-          <md3-number-input
-            label="Mold Threshold (0.0-1.0)"
-            .value=${this.env_mold_threshold}
-            @change=${(e) => (this.env_mold_threshold = parseFloat(e.detail))}
-          ></md3-number-input>
-        </div>
-      </div>
-    `;
-    }
-};
-ConfigDialog.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-      }
-
-      /* Config Tabs Specific */
-      .glass-dialog-container {
-        min-width: 0;
-        max-width: 95vw;
-        height: 700px;
-        max-height: 90vh;
-      }
-      .config-tabs {
-        display: flex;
-        padding: 0 16px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        background: transparent;
-      }
-      .config-tab {
-        flex: 1 1 0px;
-        width: 0;
-        min-width: 0;
-        padding: 16px 8px;
-        text-align: center;
-        cursor: pointer;
-        color: rgba(255, 255, 255, 0.5);
-        border-bottom: 2px solid transparent;
-        transition: all 0.2s;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.8rem;
-        font-weight: 500;
-        background: transparent;
-        flex-shrink: 0;
-      }
-      .config-tab svg {
-        width: 24px;
-        height: 24px;
-        margin-bottom: 4px;
-        fill: currentColor;
-      }
-      .config-tab:hover {
-        color: #fff;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 8px 8px 0 0;
-      }
-      .config-tab.active {
-        color: var(--primary-color, #4caf50);
-        border-bottom-color: var(--primary-color, #4caf50);
-      }
-      .config-content {
-        padding: 24px;
-        overflow-y: auto;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        min-height: 0;
-      }
-
-      @media (max-width: 450px) {
-        .glass-dialog-container {
-          width: 100vw;
-          max-width: 100%;
-          height: 100vh;
-          border-radius: 0;
-        }
-        .config-content {
-          padding: 16px;
-        }
-      }
-    `,
-];
-__decorate([
-    n$4({ type: Boolean, reflect: true }),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "open", void 0);
-__decorate([
-    n$4({ attribute: false }),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "hass", void 0);
-__decorate([
-    n$4({ type: Object }),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "growspaceOptions", void 0);
-__decorate([
-    n$4({ attribute: false }),
-    __metadata("design:type", Array)
-], ConfigDialog.prototype, "devices", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", String)
-], ConfigDialog.prototype, "initialTab", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", String)
-], ConfigDialog.prototype, "currentTab", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "add_name", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "add_rows", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "add_plants_per_row", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "add_notification_service", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "edit_selectedId", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "edit_name", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "edit_rows", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "edit_plants_per_row", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_selectedGrowspaceId", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_temp_sensor", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_humidity_sensor", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_vpd_sensor", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_co2_sensor", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_circulation_fan", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_stress_threshold", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_mold_threshold", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "_showDeleteConfirm", void 0);
-ConfigDialog = __decorate([
-    t$2('config-dialog')
-], ConfigDialog);
-
-let GrowMasterDialog = class GrowMasterDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        // Props from parent
-        this.isStressed = false;
-        this.isLoading = false;
-        this.response = null;
-        this.userQuery = '';
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
-    _analyze() {
-        this.dispatchEvent(new CustomEvent('analyze-growspace', {
-            detail: { query: this.userQuery },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _analyzeAll() {
-        this.dispatchEvent(new CustomEvent('analyze-all-growspaces', {
-            detail: { query: this.userQuery },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    render() {
-        if (!this.open)
-            return x ``;
-        const borderColor = this.isStressed ? '#FF9800' : '#4CAF50';
-        const title = this.personality ? `Ask the ${this.personality}` : 'Ask the Grow Master';
-        return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
-      >
-        <div class="glass-dialog-container" style="border-color: ${borderColor}">
-          <div class="dialog-header">
-            <div class="dialog-icon" style="color: ${borderColor}">
-              <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiBrain}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">${title}</h2>
-              <div class="dialog-subtitle">
-                ${this.isStressed ? 'Warning: Plant Stress Detected' : 'All systems normal'}
-              </div>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${this._close}
-              style="min-width:auto; padding:8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
-          <div class="content-padding">
-            <!-- Input Area -->
-            <div class="md3-input-group">
-              <label class="md3-label">Your Question</label>
-              <textarea
-                class="sd-textarea"
-                placeholder="Ask about this growspace..."
-                .value=${this.userQuery}
-                @input=${(e) => (this.userQuery = e.target.value)}
-                style="min-height: 80px;"
-              ></textarea>
-            </div>
-
-            <!-- Action -->
-            <div class="button-group" style="padding: 12px 0; justify-content: flex-end;">
-              <button
-                class="md3-button tonal"
-                @click=${this._analyzeAll}
-                ?disabled=${this.isLoading}
-                style="opacity: ${this.isLoading ? 0.7 : 1}"
-              >
-                Analyze All
-              </button>
-              <button
-                class="md3-button primary"
-                @click=${this._analyze}
-                ?disabled=${this.isLoading}
-                style="opacity: ${this.isLoading ? 0.7 : 1}"
-              >
-                ${this.isLoading ? 'Analyzing...' : 'Analyze Environment'}
-              </button>
-            </div>
-
-            <!-- Response Area -->
-            ${this.isLoading
-            ? x `
-                  <div class="gm-loading">
-                    <svg class="spinner" viewBox="0 0 24 24">
-                      <path d="${mdiLoading}" fill="currentColor"></path>
-                    </svg>
-                    <span>Consulting the archives...</span>
-                  </div>
-                `
-            : E}
-            ${!this.isLoading && this.response
-            ? x `
-                  <div class="gm-response-box" style="border: 2px solid ${borderColor};">
-                    ${this.response}
-                  </div>
-                `
-            : E}
-          </div>
-        </div>
-      </ha-dialog>
-    `;
-    }
-};
-GrowMasterDialog.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-      }
-
-      /* Specific overrides or additions */
-      .gm-response-box {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 16px;
-        padding: 20px;
-        line-height: 1.6;
-        font-size: 0.95rem;
-        white-space: pre-wrap;
-        position: relative;
-        margin-top: 20px;
-      }
-      .gm-loading {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 40px;
-        color: rgba(255, 255, 255, 0.7);
-        gap: 12px;
-      }
-      @keyframes spin {
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-      .spinner {
-        animation: spin 1s linear infinite;
-        width: 24px;
-        height: 24px;
-      }
-
-      .sd-textarea {
-        width: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        padding: 12px;
-        color: #fff;
-        font-family: inherit;
-        resize: vertical;
-        box-sizing: border-box;
-        font-size: 1rem;
-      }
-      .sd-textarea:focus {
-        outline: none;
-        border-color: #4caf50;
-        background: rgba(255, 255, 255, 0.08);
-      }
-
-      .content-padding {
-        padding: 24px;
-        overflow-y: auto;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      }
-    `,
-];
-__decorate([
-    n$4({ type: Boolean, reflect: true }),
-    __metadata("design:type", Object)
-], GrowMasterDialog.prototype, "open", void 0);
-__decorate([
-    n$4({ type: Boolean }),
-    __metadata("design:type", Object)
-], GrowMasterDialog.prototype, "isStressed", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", String)
-], GrowMasterDialog.prototype, "personality", void 0);
-__decorate([
-    n$4({ type: Boolean }),
-    __metadata("design:type", Object)
-], GrowMasterDialog.prototype, "isLoading", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", Object)
-], GrowMasterDialog.prototype, "response", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowMasterDialog.prototype, "userQuery", void 0);
-GrowMasterDialog = __decorate([
-    t$2('grow-master-dialog')
-], GrowMasterDialog);
-
-let StrainRecommendationDialog = class StrainRecommendationDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.isLoading = false;
-        this.response = null;
-        this.userQuery = '';
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
-    _handleGetRecommendation() {
-        this.dispatchEvent(new CustomEvent('get-recommendation', {
-            detail: { query: this.userQuery },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    render() {
-        if (!this.open)
-            return E;
-        return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
-      >
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon" style="color: #4CAF50">
-              <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiBrain}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Get Strain Recommendation</h2>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${this._close}
-              style="min-width:auto; padding:8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
-          <div class="content-padding">
-            <!-- Input Area -->
-            <div class="md3-input-group">
-              <label class="md3-label">Your Preferences</label>
-              <textarea
-                class="sd-textarea"
-                placeholder="e.g., something fruity and good for daytime use..."
-                .value=${this.userQuery}
-                @input=${(e) => (this.userQuery = e.target.value)}
-                style="min-height: 80px;"
-              ></textarea>
-            </div>
-
-            <!-- Action -->
-            <div class="button-group" style="padding: 0; justify-content: flex-end;">
-              <button class="md3-button tonal" @click=${this._close}>Cancel</button>
-              <button
-                class="md3-button primary"
-                @click=${this._handleGetRecommendation}
-                ?disabled=${this.isLoading}
-                style="opacity: ${this.isLoading ? 0.7 : 1}"
-              >
-                ${this.isLoading ? 'Getting Recommendation...' : 'Get Recommendation'}
-              </button>
-            </div>
-
-            ${this.isLoading
-            ? x `
-                  <div class="gm-loading">
-                    <svg class="spinner" viewBox="0 0 24 24">
-                      <path d="${mdiLoading}" fill="currentColor"></path>
-                    </svg>
-                    <span>Consulting the archives...</span>
-                  </div>
-                `
-            : E}
-            ${!this.isLoading && this.response
-            ? x ` <div class="gm-response-box">${this.response}</div> `
-            : E}
-          </div>
-        </div>
-      </ha-dialog>
-    `;
-    }
-};
-StrainRecommendationDialog.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-      }
-      .content-padding {
-        padding: 24px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      .sd-textarea {
-        width: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        color: #fff;
-        padding: 12px;
-        font-family: inherit;
-        resize: vertical;
-        box-sizing: border-box;
-        font-size: 1rem;
-      }
-      .sd-textarea:focus {
-        outline: none;
-        border-color: #4caf50;
-        background: rgba(255, 255, 255, 0.08);
-      }
-      .gm-loading {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 40px;
-        color: rgba(255, 255, 255, 0.7);
-        gap: 12px;
-      }
-      .spinner {
-        width: 24px;
-        height: 24px;
-        animation: spin 1s linear infinite;
-      }
-      @keyframes spin {
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-      .gm-response-box {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        padding: 16px;
-        line-height: 1.5;
-        white-space: pre-wrap;
-        margin-top: 16px;
-      }
-    `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], StrainRecommendationDialog.prototype, "hass", void 0);
-__decorate([
-    n$4({ type: Boolean }),
-    __metadata("design:type", Object)
-], StrainRecommendationDialog.prototype, "open", void 0);
-__decorate([
-    n$4({ type: Boolean }),
-    __metadata("design:type", Object)
-], StrainRecommendationDialog.prototype, "isLoading", void 0);
-__decorate([
-    n$4({ attribute: false }),
-    __metadata("design:type", Object)
-], StrainRecommendationDialog.prototype, "response", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", String)
-], StrainRecommendationDialog.prototype, "userQuery", void 0);
-StrainRecommendationDialog = __decorate([
-    t$2('strain-recommendation-dialog')
-], StrainRecommendationDialog);
-
-let Md3Switch = class Md3Switch extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.checked = false;
-        this.disabled = false;
-    }
-    _handleClick() {
-        if (this.disabled)
-            return;
-        this.checked = !this.checked;
-        this.dispatchEvent(new CustomEvent('change', {
-            detail: { checked: this.checked },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    render() {
-        return x `
-      <button
-        role="switch"
-        aria-checked=${this.checked}
-        @click=${this._handleClick}
-        ?disabled=${this.disabled}
-      >
-        <div class="handle"></div>
-      </button>
-    `;
-    }
-};
-Md3Switch.styles = i$6 `
-    :host {
-      display: inline-block;
-      vertical-align: middle;
-      --md-switch-width: 52px;
-      --md-switch-height: 32px;
-      --md-switch-handle-size: 24px;
-      --md-switch-track-color-on: var(--primary-color, #2196f3);
-      --md-switch-track-color-off: rgba(255, 255, 255, 0.1);
-      --md-switch-handle-color: #fff;
-    }
-
-    button {
-      all: unset;
-      position: relative;
-      width: var(--md-switch-width);
-      height: var(--md-switch-height);
-      border-radius: calc(var(--md-switch-height) / 2);
-      background: var(--md-switch-track-color-off);
-      cursor: pointer;
-      transition: background-color 0.2s;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-sizing: border-box;
-    }
-
-    :host([checked]) button {
-      background: var(--md-switch-track-color-on);
-      border-color: transparent;
-    }
-
-    .handle {
-      position: absolute;
-      top: 50%;
-      left: 4px;
-      transform: translateY(-50%);
-      width: var(--md-switch-handle-size);
-      height: var(--md-switch-handle-size);
-      background: var(--md-switch-handle-color);
-      border-radius: 50%;
-      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-    }
-
-    :host([checked]) .handle {
-      transform: translate(20px, -50%); /* 52 - 4 - 24 - 4 = 20px move */
-    }
-  `;
-__decorate([
-    n$4({ type: Boolean }),
-    __metadata("design:type", Object)
-], Md3Switch.prototype, "checked", void 0);
-__decorate([
-    n$4({ type: Boolean }),
-    __metadata("design:type", Object)
-], Md3Switch.prototype, "disabled", void 0);
-Md3Switch = __decorate([
-    t$2('md3-switch')
-], Md3Switch);
-
-let IrrigationDialog = class IrrigationDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.growspaceName = '';
-        this._irrigation_pump_entity = '';
-        this._drain_pump_entity = '';
-        this._irrigation_duration = 60;
-        this._drain_duration = 60;
-        this._irrigation_times = [];
-        this._drain_times = [];
-        this._activeTab = 'schedules';
-        this._strategy = {};
-    }
-    willUpdate(changedProps) {
-        if ((changedProps.has('open') && this.open) || (changedProps.has('device') && this.device)) {
-            this._initializeState();
-        }
-        if (this.hass && (changedProps.has('hass') || !this._dataService)) {
-            this._dataService = new DataService(this.hass);
-        }
-    }
-    _initializeState() {
-        if (!this.device)
-            return;
-        const config = this.device.irrigation_config || {};
-        this._irrigation_pump_entity = config.irrigation_pump_entity || '';
-        this._drain_pump_entity = config.drain_pump_entity || '';
-        this._irrigation_duration = config.irrigation_duration || 60;
-        this._drain_duration = config.drain_duration || 60;
-        this._irrigation_times = this.device.irrigation_times || [];
-        this._drain_times = this.device.drain_times || [];
-        console.log('[IrrigationDialog] Initializing State', {
-            device: this.device,
-            irrigation_times: this._irrigation_times,
-            drain_times: this._drain_times,
-            raw_config: config,
-        });
-        // Initialize Strategy
-        const strat = this.device.irrigation_strategy;
-        this._strategy = {
-            enabled: strat?.enabled || false,
-            lights_on_time: strat?.lights_on_time || '06:00:00',
-            p0_duration_minutes: strat?.p0_duration_minutes || 60,
-            p2_stop_before_lights_off_minutes: strat?.p2_stop_before_lights_off_minutes || 120,
-            target_vwc_percent: strat?.target_vwc_percent || 45.0,
-            maintenance_dryback_percent: strat?.maintenance_dryback_percent || 3.0,
-            shot_duration_seconds: strat?.shot_duration_seconds || 15,
-            shot_interval_minutes: strat?.shot_interval_minutes || 15,
-        };
-    }
-    // ... (Keep existing _parseScheduleString, _saveSettings, _addIrrigationTime, etc. - ensure logical flow)
-    _parseScheduleString(scheduleString) {
-        if (Array.isArray(scheduleString))
-            return scheduleString;
-        if (!scheduleString)
-            return [];
-        return scheduleString.split(',').map((t) => {
-            const parts = t.trim().split('|');
-            return {
-                time: parts[0],
-                duration: parts[1] ? parseInt(parts[1]) : undefined,
-            };
-        });
-    }
-    async _saveSettings() {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.setIrrigationSettings({
-                growspace_id: this.device.device_id,
-                irrigation_pump_entity: this._irrigation_pump_entity,
-                drain_pump_entity: this._drain_pump_entity,
-                irrigation_duration: this._irrigation_duration,
-                drain_duration: this._drain_duration,
-            });
-        }
-        catch (e) {
-            console.error('Failed to save settings:', e);
-        }
-    }
-    async _addIrrigationTime(time, duration) {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.addIrrigationTime({
-                growspace_id: this.device.device_id,
-                time,
-                duration: duration || this._irrigation_duration,
-            });
-            // Optimistic update
-            const newTime = { time, duration: duration || this._irrigation_duration };
-            this._irrigation_times = [...this._irrigation_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
-            this._adding_irrigation_time = undefined;
-        }
-        catch (e) {
-            console.error('Failed to add irrigation time:', e);
-        }
-    }
-    async _removeIrrigationTime(time) {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.removeIrrigationTime({
-                growspace_id: this.device.device_id,
-                time,
-            });
-            // Optimistic update
-            this._irrigation_times = this._irrigation_times.filter((t) => t.time !== time);
-        }
-        catch (e) {
-            console.error('Failed to remove irrigation time:', e);
-        }
-    }
-    async _addDrainTime(time, duration) {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.addDrainTime({
-                growspace_id: this.device.device_id,
-                time,
-                duration: duration || this._drain_duration,
-            });
-            // Optimistic update
-            const newTime = { time, duration: duration || this._drain_duration };
-            this._drain_times = [...this._drain_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
-            this._adding_drain_time = undefined;
-        }
-        catch (e) {
-            console.error('Failed to add drain time:', e);
-        }
-    }
-    async _removeDrainTime(time) {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.removeDrainTime({
-                growspace_id: this.device.device_id,
-                time,
-            });
-            // Optimistic update
-            this._drain_times = this._drain_times.filter((t) => t.time !== time);
-        }
-        catch (e) {
-            console.error('Failed to remove drain time:', e);
-        }
-    }
-    _startAddingIrrigationTime(x, width) {
-        const percentage = x / width;
-        const totalMinutes = Math.round(percentage * 24 * 60);
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        this._adding_irrigation_time = {
-            time: timeStr,
-            duration: this._irrigation_duration,
-        };
-    }
-    _startAddingDrainTime(x, width) {
-        const percentage = x / width;
-        const totalMinutes = Math.round(percentage * 24 * 60);
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        this._adding_drain_time = {
-            time: timeStr,
-            duration: this._drain_duration,
-        };
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close'));
-    }
-    async _saveStrategy() {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.setIrrigationStrategy(this.device.device_id, this._strategy);
-        }
-        catch (e) {
-            console.error('Failed to save strategy:', e);
-        }
-    }
-    _updateStrategyField(field, value) {
-        this._strategy = { ...this._strategy, [field]: value };
-    }
-    render() {
-        if (!this.open)
-            return E;
-        const dialogColor = '#2196F3';
-        return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
-      >
-        <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiWater}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Irrigation Management</h2>
-              <div class="dialog-subtitle">${this.growspaceName}</div>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${this._close}
-              style="min-width: auto; padding: 8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
-          <!-- Tabs -->
-          <div
-            class="tabs-row"
-            style="display: flex; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0;"
-          >
-            <div
-              class="tab-item ${this._activeTab === 'schedules' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'schedules')}
-              style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
-            >
-              <style>
-                .tab-item.active {
-                  border-bottom-color: ${dialogColor} !important;
-                  opacity: 1 !important;
-                }
-                .tab-item:hover {
-                  opacity: 1 !important;
-                  background: rgba(255, 255, 255, 0.05);
-                }
-              </style>
-              Schedules
-            </div>
-            <div
-              class="tab-item ${this._activeTab === 'steering' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'steering')}
-              style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
-            >
-              Crop Steering (VWC)
-            </div>
-          </div>
-
-          <div class="dialog-body">
-            ${this._activeTab === 'schedules'
-            ? this._renderSchedulesTab(dialogColor)
-            : this._renderSteeringTab(dialogColor)}
-          </div>
-
-          <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close}>Close</button>
-            ${this._activeTab === 'steering'
-            ? x `
-                  <button
-                    class="md3-button primary"
-                    style="background: ${dialogColor};"
-                    @click=${this._saveStrategy}
-                  >
-                    Save Strategy
-                  </button>
-                `
-            : ''}
-          </div>
-        </div>
-      </ha-dialog>
-    `;
-    }
-    _renderSchedulesTab(color) {
-        return x `
-      ${this._renderScheduleSection('Irrigation Schedule', this._irrigation_times, this._irrigation_duration, 'irrigation', color)}
-      ${this._renderScheduleSection('Drain Schedule', this._drain_times, this._drain_duration, 'drain', '#FF9800')}
-    `;
-    }
-    _renderSteeringTab(color) {
-        return x `
-      <div class="detail-card">
-        <h3 style="margin-top: 0;">Crop Steering Configuration</h3>
-        <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 20px;">
-          Enable logic-based irrigation based on volumetric water content (VWC) targets. Overrides
-          basic schedules when active.
-        </p>
-
-        <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-          <div
-            style="grid-column: span 2; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;"
-          >
-            <span>Enable VWC Steering</span>
-            <md3-switch
-              .checked=${this._strategy.enabled}
-              @change=${(e) => this._updateStrategyField('enabled', e.target.checked)}
-            ></md3-switch>
-          </div>
-
-          <div
-            style="grid-column: span 2; border-bottom: 1px solid rgba(255,255,255,0.1); margin: 8px 0;"
-          ></div>
-          <h4 style="grid-column: span 2; margin: 4px 0;">Targets</h4>
-
-          <md3-number-input
-            label="Target VWC (%)"
-            .value=${this._strategy.target_vwc_percent}
-            @change=${(e) => this._updateStrategyField('target_vwc_percent', parseFloat(e.detail))}
-          ></md3-number-input>
-
-          <md3-number-input
-            label="Dryback (%)"
-            .value=${this._strategy.maintenance_dryback_percent}
-            @change=${(e) => this._updateStrategyField('maintenance_dryback_percent', parseFloat(e.detail))}
-          ></md3-number-input>
-
-          <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Timing</h4>
-
-          <md3-text-input
-            label="Lights On Time"
-            type="time"
-            .value=${this._strategy.lights_on_time}
-            @change=${(e) => this._updateStrategyField('lights_on_time', e.target.value || e.detail)}
-          ></md3-text-input>
-
-          <md3-number-input
-            label="P0 Duration (min)"
-            .value=${this._strategy.p0_duration_minutes}
-            @change=${(e) => this._updateStrategyField('p0_duration_minutes', parseInt(e.detail))}
-          ></md3-number-input>
-
-          <md3-number-input
-            label="P2 Stop Buffer (min)"
-            .value=${this._strategy.p2_stop_before_lights_off_minutes}
-            @change=${(e) => this._updateStrategyField('p2_stop_before_lights_off_minutes', parseInt(e.detail))}
-          ></md3-number-input>
-
-          <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Dosing</h4>
-
-          <md3-number-input
-            label="Shot Duration (sec)"
-            .value=${this._strategy.shot_duration_seconds}
-            @change=${(e) => this._updateStrategyField('shot_duration_seconds', parseInt(e.detail))}
-          ></md3-number-input>
-
-          <md3-number-input
-            label="Shot Interval (min)"
-            .value=${this._strategy.shot_interval_minutes}
-            @change=${(e) => this._updateStrategyField('shot_interval_minutes', parseInt(e.detail))}
-          ></md3-number-input>
-        </div>
-      </div>
-    `;
-    }
-    _renderScheduleSection(title, times, defaultDuration, type, color) {
-        const addingTime = type === 'irrigation' ? this._adding_irrigation_time : this._adding_drain_time;
-        return x `
-      <div class="detail-card">
-        <div
-          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"
-        >
-          <h3 style="margin: 0;">${title}</h3>
-          <button
-            @click=${(e) => {
-            const container = e.target
-                .closest('.detail-card')
-                ?.querySelector(`.${type}-time-bar`);
-            if (container) {
-                const rect = container.getBoundingClientRect();
-                type === 'irrigation'
-                    ? this._startAddingIrrigationTime(rect.width / 2, rect.width)
-                    : this._startAddingDrainTime(rect.width / 2, rect.width);
-            }
-        }}
-            class="md3-button primary"
-            style="background: ${color};"
-          >
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiPlus}"></path>
-            </svg>
-            ADD TIME
-          </button>
-        </div>
-
-        <div
-          class="${type}-time-bar time-bar-container"
-          @click=${(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            type === 'irrigation'
-                ? this._startAddingIrrigationTime(x, rect.width)
-                : this._startAddingDrainTime(x, rect.width);
-        }}
-          style="border: 2px solid ${color}40;"
-        >
-          ${Array.from({ length: 25 }, (_, i) => i).map((hour) => x `
-              <div
-                class="time-tick ${hour % 6 === 0 ? 'major' : ''}"
-                style="left: ${(hour / 24) * 100}%;"
-              >
-                ${hour % 3 === 0
-            ? x ` <span class="time-label">${hour.toString().padStart(2, '0')}:00</span> `
-            : ''}
-              </div>
-            `)}
-          ${times.map((t) => {
-            const [hours, minutes] = t.time.split(':').map(Number);
-            const position = ((hours + minutes / 60) / 24) * 100;
-            return x `
-              <div
-                class="chart-marker"
-                @click=${(e) => {
-                e.stopPropagation();
-                if (confirm(`Remove ${type} time ${t.time}?`)) {
-                    type === 'irrigation'
-                        ? this._removeIrrigationTime(t.time)
-                        : this._removeDrainTime(t.time);
-                }
-            }}
-                style="left: ${position}%; background: ${color}; box-shadow: 0 0 8px ${color};"
-                title="${t.time} | Duration: ${t.duration || defaultDuration}seconds"
-              >
-                <div class="chart-tooltip" style="background: ${color};">
-                  ${t.time} | ${t.duration || defaultDuration}s
-                </div>
-              </div>
-            `;
-        })}
-        </div>
-
-        <div class="legend-row">
-          <span>00:00</span>
-          <span>06:00</span>
-          <span>12:00</span>
-          <span>18:00</span>
-          <span>24:00</span>
-        </div>
-
-        ${addingTime
-            ? x `
-              <div
-                class="overlay-backdrop"
-                @click=${() => type === 'irrigation'
-                ? (this._adding_irrigation_time = undefined)
-                : (this._adding_drain_time = undefined)}
-              >
-                <div
-                  class="detail-card"
-                  style="max-width: 400px; margin: 0; background: #2d2d2d; width: 90%;"
-                  @click=${(e) => e.stopPropagation()}
-                >
-                  <h3>Add ${title} Time</h3>
-
-                  <md3-text-input
-                    label="Time"
-                    type="time"
-                    .value=${addingTime.time}
-                    @change=${(e) => {
-                const val = e.target.value || e.detail; // md3-text-input uses detail
-                if (type === 'irrigation' && this._adding_irrigation_time)
-                    this._adding_irrigation_time = {
-                        ...this._adding_irrigation_time,
-                        time: val,
-                    };
-                if (type === 'drain' && this._adding_drain_time)
-                    this._adding_drain_time = { ...this._adding_drain_time, time: val };
-            }}
-                  ></md3-text-input>
-
-                  <md3-number-input
-                    label="Duration (seconds)"
-                    .value=${addingTime.duration}
-                    .min=${1}
-                    @change=${(e) => {
-                const val = parseInt(e.detail);
-                if (!isNaN(val)) {
-                    if (type === 'irrigation' && this._adding_irrigation_time)
-                        this._adding_irrigation_time = {
-                            ...this._adding_irrigation_time,
-                            duration: val,
-                        };
-                    if (type === 'drain' && this._adding_drain_time)
-                        this._adding_drain_time = { ...this._adding_drain_time, duration: val };
-                }
-            }}
-                  ></md3-number-input>
-
-                  <div class="button-group">
-                    <button
-                      class="md3-button tonal"
-                      @click=${() => type === 'irrigation'
-                ? (this._adding_irrigation_time = undefined)
-                : (this._adding_drain_time = undefined)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      class="md3-button primary"
-                      @click=${() => {
-                type === 'irrigation'
-                    ? this._addIrrigationTime(addingTime.time, addingTime.duration)
-                    : this._addDrainTime(addingTime.time, addingTime.duration);
-            }}
-                      style="background: ${color};"
-                    >
-                      Add Schedule
-                    </button>
-                  </div>
-                </div>
-              </div>
-            `
-            : ''}
-      </div>
-    `;
-    }
-};
-IrrigationDialog.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        --mdc-dialog-min-width: 400px;
-        --mdc-dialog-max-width: 1000px;
-      }
-
-      /* Overrides/Specific Layouts */
-      .dialog-body {
-        padding: 24px;
-        overflow-y: auto;
-        max-height: 70vh;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
-
-      /* Time Bar Visualization */
-      .time-bar-container {
-        position: relative;
-        height: 80px;
-        background: rgba(0, 0, 0, 0.3);
-        border-radius: 8px;
-        cursor: crosshair;
-      }
-
-      .time-tick {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        border-left: 1px solid rgba(255, 255, 255, 0.05);
-        pointer-events: none;
-      }
-      .time-tick.major {
-        border-left-color: rgba(255, 255, 255, 0.2);
-      }
-
-      .time-label {
-        position: absolute;
-        bottom: -22px;
-        left: -12px;
-        font-size: 0.7rem;
-        color: var(--secondary-text-color);
-      }
-
-      .chart-marker {
-        position: absolute;
-        top: 10%;
-        bottom: 10%;
-        width: 4px;
-        cursor: pointer;
-        border-radius: 2px;
-      }
-
-      .chart-tooltip {
-        position: absolute;
-        left: 8px;
-        top: -24px;
-        color: #fff;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 0.7rem;
-        white-space: nowrap;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        z-index: 10;
-      }
-
-      .legend-row {
-        margin-top: 30px;
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.7rem;
-        color: var(--secondary-text-color);
-      }
-
-      .overlay-backdrop {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-      }
-    `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "hass", void 0);
-__decorate([
-    n$4({ type: Boolean }),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "open", void 0);
-__decorate([
-    n$4({ attribute: false }),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "device", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "growspaceName", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_irrigation_pump_entity", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_drain_pump_entity", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_irrigation_duration", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_drain_duration", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Array)
-], IrrigationDialog.prototype, "_irrigation_times", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Array)
-], IrrigationDialog.prototype, "_drain_times", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_adding_irrigation_time", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_adding_drain_time", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", String)
-], IrrigationDialog.prototype, "_activeTab", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_strategy", void 0);
-IrrigationDialog = __decorate([
-    t$2('irrigation-dialog')
-], IrrigationDialog);
-
-class GrowspaceLogbookController {
-    constructor(hass) {
-        this.hass = hass;
-    }
-    async fetchEventLog(growspaceId) {
-        if (!this.hass) {
-            console.warn('Home Assistant instance not available');
-            return [];
-        }
-        try {
-            const response = await this.hass.callWS({
-                type: 'growspace_manager/get_log',
-                growspace_id: growspaceId,
-            });
-            return response[growspaceId] || [];
-        }
-        catch (e) {
-            console.error('Error fetching event log:', e);
-            return [];
-        }
-    }
-}
-
-let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
-    constructor() {
-        super(...arguments);
-        this._events = [];
-        this._isLoading = false;
-        this._activeFilter = 'all';
-    }
-    firstUpdated() {
-        this._initController();
-    }
-    _getSeverityColor(severity, sensorType) {
-        if (sensorType?.toLowerCase() === 'optimal') {
-            if (severity >= 0.9)
-                return 'var(--success-color, #4CAF50)';
-            if (severity >= 0.75)
-                return 'var(--warning-color)';
-            return 'var(--error-color)';
-        }
-        // Default logic (High severity = Bad)
-        if (severity >= 0.9)
-            return 'var(--error-color)';
-        if (severity >= 0.75)
-            return 'var(--warning-color)';
-        return 'var(--primary-text-color)';
-    }
-    willUpdate(changedProps) {
-        if (changedProps.has('hass') && !this._controller) {
-            this._initController();
-        }
-        if (changedProps.has('growspaceId')) {
-            this._fetchEvents();
-        }
-    }
-    _initController() {
-        if (this.hass && !this._controller) {
-            this._controller = new GrowspaceLogbookController(this.hass);
-            this._fetchEvents();
-        }
-    }
-    async _fetchEvents() {
-        if (!this._controller || !this.growspaceId)
-            return;
-        this._isLoading = true;
-        try {
-            this._events = await this._controller.fetchEventLog(this.growspaceId);
-        }
-        finally {
-            this._isLoading = false;
-        }
-    }
-    _formatDuration(seconds) {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}m ${secs}s`;
-    }
-    _formatProb(val) {
-        if (val === undefined || val === null || isNaN(val)) {
-            return '--%';
-        }
-        return `${Math.round(Number(val) * 100)}%`;
-    }
-    _formatTime(isoString) {
-        try {
-            const date = new Date(isoString);
-            return date.toLocaleString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-            });
-        }
-        catch {
-            return isoString;
-        }
-    }
-    render() {
-        if (this._isLoading) {
-            return x `<div class="empty-state">Loading events...</div>`;
-        }
-        const allEvents = this._events || [];
-        // Filter logic
-        let filteredEvents = allEvents;
-        if (this._activeFilter === 'alerts') {
-            filteredEvents = allEvents.filter((e) => e.category === 'alert' || e.severity >= 0.75);
-        }
-        else if (this._activeFilter === 'irrigation') {
-            filteredEvents = allEvents.filter((e) => e.category === 'irrigation' || ['irrigation', 'drain'].includes(e.sensor_type));
-        }
-        else if (this._activeFilter === 'environment') {
-            filteredEvents = allEvents.filter((e) => ['temperature', 'humidity', 'vpd', 'co2'].includes(e.sensor_type));
-        }
-        // Sort by time descending (newest first)
-        const sortedEvents = [...filteredEvents].sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
-        const filters = [
-            { id: 'all', label: 'All' },
-            { id: 'alerts', label: 'Alerts' },
-            { id: 'irrigation', label: 'Irrigation' },
-            { id: 'environment', label: 'Environment' },
-        ];
-        return x `
-      <div class="filter-bar">
-        ${filters.map((filter) => x `
-            <div
-              class="filter-chip ${this._activeFilter === filter.id ? 'active' : ''}"
-              @click=${() => (this._activeFilter = filter.id)}
-            >
-              ${filter.label}
-            </div>
-          `)}
-      </div>
-
-      <div class="log-container">
-        ${sortedEvents.length > 0
-            ? sortedEvents.map((event) => x `
-                <div class="event-card">
-                  <div class="event-header">
-                    <span class="event-time">${this._formatTime(event.start_time)}</span>
-                    <span class="event-duration">${this._formatDuration(event.duration_sec)}</span>
-                  </div>
-
-                  <div class="event-details">
-                    <div>
-                      <div class="event-type">${event.sensor_type.replace(/_/g, ' ')}</div>
-
-                      ${event.reasons && event.reasons.length > 0
-                ? x `
-                            <div class="event-reasons">
-                              ${event.reasons.map((reason) => x `<span class="reason-badge">${reason}</span>`)}
-                            </div>
-                          `
-                : E}
-                    </div>
-
-                    ${event.category === 'alert'
-                ? x `
-                          <div
-                            class="event-probability"
-                            style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}"
-                          >
-                            ${this._formatProb(event.severity)}
-                          </div>
-                        `
-                : x `
-                          <div class="event-probability">
-                            <ha-icon icon="mdi:water"></ha-icon>
-                          </div>
-                        `}
-                  </div>
-                </div>
-              `)
-            : x `
-              <div class="empty-state">
-                No events found for "${filters.find((f) => f.id === this._activeFilter)?.label}".
-              </div>
-            `}
-      </div>
-    `;
-    }
-};
-GrowspaceLogbook.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-        height: 100%;
-        overflow: hidden;
-      }
-      .log-container {
-        height: 100%;
-        overflow-y: auto;
-        padding-right: 4px; /* Space for scrollbar */
-      }
-      .log-container::-webkit-scrollbar {
-        width: 8px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 4px;
-      }
-      .log-container::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.15);
-        border-radius: 4px;
-      }
-      .event-card {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-      }
-      .event-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-      }
-      .event-time {
-        font-size: 0.9rem;
-        opacity: 0.8;
-        font-weight: 500;
-        color: var(--primary-text-color);
-      }
-      .event-duration {
-        font-size: 0.85rem;
-        opacity: 0.6;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 2px 8px;
-        border-radius: 12px;
-      }
-      .event-details {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 12px;
-        align-items: start;
-      }
-      .event-type {
-        font-weight: 600;
-        color: var(--accent-color, #4caf50);
-        margin-bottom: 4px;
-        text-transform: capitalize;
-      }
-      .event-probability {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: var(--primary-text-color);
-        text-align: right;
-      }
-      .event-reasons {
-        font-size: 0.85rem;
-        opacity: 0.7;
-        margin-top: 8px;
-        line-height: 1.4;
-      }
-      .reason-badge {
-        display: inline-block;
-        background: rgba(255, 255, 255, 0.08);
-        padding: 2px 8px;
-        border-radius: 4px;
-        margin-right: 6px;
-        margin-bottom: 4px;
-      }
-      .filter-bar {
-        display: flex;
-        gap: 8px;
-        padding: 0 4px 12px 4px;
-        overflow-x: auto;
-        white-space: nowrap;
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* IE/Edge */
-      }
-      .filter-bar::-webkit-scrollbar {
-        display: none; /* Chrome/Safari/Opera */
-      }
-      .filter-chip {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 6px 16px;
-        border-radius: 20px;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        color: var(--primary-text-color);
-        opacity: 0.7;
-        flex-shrink: 0;
-      }
-      .filter-chip.active {
-        background: var(--accent-color, #4caf50);
-        color: white;
-        opacity: 1;
-        border-color: transparent;
-        font-weight: 500;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-      }
-      .filter-chip:hover:not(.active) {
-        background: rgba(255, 255, 255, 0.1);
-        opacity: 0.9;
-      }
-      .empty-state {
-        text-align: center;
-        padding: 40px 20px;
-        opacity: 0.5;
-        font-style: italic;
-      }
-    `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], GrowspaceLogbook.prototype, "hass", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", String)
-], GrowspaceLogbook.prototype, "growspaceId", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Array)
-], GrowspaceLogbook.prototype, "_events", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceLogbook.prototype, "_isLoading", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceLogbook.prototype, "_activeFilter", void 0);
-GrowspaceLogbook = __decorate([
-    t$2('growspace-logbook')
-], GrowspaceLogbook);
-
-let LogbookDialog = class LogbookDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.growspaceId = '';
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close'));
-    }
-    render() {
-        if (!this.open)
-            return x ``;
-        return x `
-      <ha-dialog .open=${this.open} @closed=${this._close} hideActions .heading=${true}>
-        <div slot="heading" class="dialog-header">
-          <h2 class="dialog-title">Events Logbook</h2>
-          <button
-            class="md3-button text"
-            @click=${this._close}
-            style="min-width:auto; padding:8px;"
-          >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiClose}"></path>
-            </svg>
-          </button>
-        </div>
-
-        <div class="content-wrapper">
-          <growspace-logbook
-            .hass=${this.hass}
-            .growspaceId=${this.growspaceId}
-          ></growspace-logbook>
-        </div>
-      </ha-dialog>
-    `;
-    }
-};
-LogbookDialog.styles = [
-    dialogStyles,
-    i$6 `
-      ha-dialog {
-        --mdc-dialog-min-width: 90vw;
-        --mdc-dialog-max-width: 90vw;
-        --mdc-dialog-min-height: 80vh;
-        --mdc-dialog-max-height: 90vh;
-      }
-
-      @media (min-width: 600px) {
-        ha-dialog {
-          --mdc-dialog-min-width: 600px;
-          --mdc-dialog-max-width: 800px;
-        }
-      }
-
-      .dialog-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0;
-        padding-bottom: 0;
-      }
-
-      .content-wrapper {
-        height: 70vh;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-
-      growspace-logbook {
-        flex: 1;
-        overflow: hidden;
-        margin-top: 16px;
-      }
-    `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], LogbookDialog.prototype, "hass", void 0);
-__decorate([
-    n$4({ type: Boolean }),
-    __metadata("design:type", Object)
-], LogbookDialog.prototype, "open", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", Object)
-], LogbookDialog.prototype, "growspaceId", void 0);
-LogbookDialog = __decorate([
-    t$2('logbook-dialog')
-], LogbookDialog);
-
-let DialogHost = class DialogHost extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.strainLibrary = [];
-    }
-    render() {
-        if (!this.store)
-            return x ``;
-        const active = this.store.state.activeDialog;
-        console.log('[DialogHost] Rendering with active type:', active.type);
-        if (active.type === 'NONE')
-            return x ``;
-        const strainLibrary = this.strainLibrary || [];
-        const devices = this.store.state.devices;
-        const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
-        // Prepare options for select dropdowns if needed
-        const growspaceOptions = {};
-        devices.forEach((d) => {
-            growspaceOptions[d.device_id] = d.name;
-        });
-        switch (active.type) {
-            case 'ADD_PLANT':
-                return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
-            case 'PLANT_OVERVIEW':
-                return this._renderPlantOverviewDialog(active, growspaceOptions);
-            case 'STRAIN_LIBRARY':
-                return this._renderStrainLibraryDialog(active, strainLibrary);
-            case 'CONFIG':
-                return this._renderConfigDialog(active, growspaceOptions);
-            case 'GROW_MASTER':
-                return this._renderGrowMasterDialog(active);
-            case 'STRAIN_RECOMMENDATION':
-                return this._renderStrainRecommendationDialog(active);
-            case 'IRRIGATION':
-                return this._renderIrrigationDialog(active, selectedDeviceData);
-            case 'LOGBOOK':
-                return this._renderLogbookDialog(active);
-            default:
-                return x ``;
-        }
-    }
-    _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
-        if (active.type !== 'ADD_PLANT')
-            return x ``;
-        const dialogState = active.payload;
-        return x `
-        <add-plant-dialog
-            .open=${true}
-            .strainLibrary=${strainLibrary}
-            .row=${dialogState.row}
-            .col=${dialogState.col}
-            .growspaceName=${selectedDeviceData?.name || ''}
-            @close=${() => this.store.closeActiveDialog()}
-            @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
-        ></add-plant-dialog>
-        `;
-    }
-    _renderPlantOverviewDialog(active, growspaceOptions) {
-        if (active.type !== 'PLANT_OVERVIEW')
-            return x ``;
-        const dialogState = active.payload;
-        return x `
-        <plant-overview-dialog
-            .open=${true}
-            .plant=${dialogState.plant}
-            .editedAttributes=${dialogState.editedAttributes}
-            .activeTab=${dialogState.activeTab}
-            .selectedPlantIds=${dialogState.selectedPlantIds}
-            .growspaceOptions=${growspaceOptions}
-            @close=${() => this.store.closeActiveDialog()}
-            @update-plant=${(e) => this.store.updatePlantFromDialog({
-            plant: dialogState.plant,
-            editedAttributes: e.detail, // Event detail is the attributes object
-            selectedPlantIds: dialogState.selectedPlantIds
-        })}
-            @delete-plant=${(e) => this.store.handleDeletePlant(e.detail.plantId)}
-            @harvest-plant=${(e) => this.store.harvestPlant(e.detail.plant)}
-            @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
-            @take-clone=${(e) => this.store.clonePlant(e.detail.plant, e.detail.numClones)}
-            @move-clone=${(e) => this.store.movePlantToGrowspace(e.detail.plant, e.detail.targetGrowspace)}
-        ></plant-overview-dialog>
-        `;
-    }
-    _renderStrainLibraryDialog(active, strainLibrary) {
-        if (active.type !== 'STRAIN_LIBRARY')
-            return x ``;
-        return x `
-        <strain-library-dialog
-            .open=${true}
-            .strains=${strainLibrary}
-            @close=${() => this.store.closeActiveDialog()}
-            @save-strain=${(e) => this.store.addStrain(e.detail)}
-            @delete-strain=${(e) => this.store.removeStrain(e.detail.key)}
-            @import-library=${(e) => this._performImport(e.detail.file, e.detail.replace)}
-            @export-library=${() => this.store.handleExportLibrary()}
-        ></strain-library-dialog>
-        `;
-    }
-    async _performImport(file, replace) {
-        if (!file)
-            return;
-        try {
-            const result = await this.store.dataService.importStrainLibrary(file, replace);
-            this.store.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
-            await this.store.fetchStrainLibrary();
-        }
-        catch (err) {
-            console.error('Import failed:', err);
-            this.store.showToast(`Import failed: ${err.message}`, 'error');
-        }
-    }
-    _renderConfigDialog(active, growspaceOptions) {
-        if (active.type !== 'CONFIG')
-            return x ``;
-        const dialogState = active.payload;
-        return x `
-        <config-dialog
-            .open=${true}
-            .hass=${this.hass}
-            .devices=${this.store.state.devices}
-            .currentTab=${dialogState.currentTab}
-            .environmentData=${dialogState.environmentData}
-            .growspaceOptions=${growspaceOptions}
-            @close=${() => this.store.closeActiveDialog()}
-            @add-growspace-submit=${(e) => this.store.handleAddGrowspace(e.detail)}
-            @edit-growspace-submit=${(e) => this.store.handleUpdateGrowspace(e.detail)}
-            @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
-        ></config-dialog>
-        `;
-    }
-    async _handleEnvironmentConfig(detail) {
-        const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold, } = detail;
-        if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
-            this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
-            return;
-        }
-        try {
-            await this.store.dataService.configureEnvironment({
-                growspace_id: selectedGrowspaceId,
-                temperature_sensor: temp_sensor,
-                humidity_sensor,
-                vpd_sensor: vpd_sensor || undefined,
-                co2_sensor: co2_sensor || undefined,
-                circulation_fan: circulation_fan || undefined,
-                stress_threshold,
-                mold_threshold,
-            });
-            this.store.showToast('Environment configured successfully!', 'success');
-            await this.store.refreshData();
-            this.store.closeActiveDialog();
-        }
-        catch (e) {
-            this.store.showToast(`Error: ${e.message}`, 'error');
-        }
-    }
-    _renderGrowMasterDialog(active) {
-        if (active.type !== 'GROW_MASTER')
-            return x ``;
-        const dialogState = active.payload;
-        // Determine stress state (logic moved from card or duplicated/simplified?)
-        // Ideally store should calculate this derived state or pass it in payload.
-        // For now, I'll access hass via store? No, store has hass but it's not reactive property of DialogHost
-        // But store.hass IS available.
-        let isStressed = false;
-        let personality;
-        if (this.store.state.selectedDevice && this.store.hass) {
-            const id = this.store.state.selectedDevice;
-            const stressEntityIds = [
-                `binary_sensor.${id}_plants_under_stress`,
-                `binary_sensor.${id}_stress`,
-                `binary_sensor.growspace_manager_${id}_stress`,
-            ];
-            for (const eid of stressEntityIds) {
-                const ent = this.store.hass.states[eid];
-                if (ent && ent.state === 'on') {
-                    isStressed = true;
-                    break;
-                }
-            }
-            const manager = this.store.hass.states['sensor.growspace_manager'];
-            if (manager && manager.attributes && manager.attributes.ai_settings) {
-                personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
-            }
-        }
-        return x `
-        <grow-master-dialog
-            .open=${true}
-            .isStressed=${isStressed}
-            .personality=${personality}
-            .isLoading=${dialogState.isLoading}
-            .response=${dialogState.response}
-            @close=${() => this.store.closeActiveDialog()}
-            @analyze-growspace=${(e) => this.store.analyzeGrowspace(e.detail.query, false)}
-            @analyze-all-growspaces=${(e) => this.store.analyzeGrowspace(e.detail.query, true)}
-        ></grow-master-dialog>
-        `;
-    }
-    _renderStrainRecommendationDialog(active) {
-        if (active.type !== 'STRAIN_RECOMMENDATION')
-            return x ``;
-        const dialogState = active.payload;
-        return x `
-        <strain-recommendation-dialog
-            .open=${true}
-            .isLoading=${dialogState.isLoading}
-            .response=${dialogState.response}
-            @close=${() => this.store.closeActiveDialog()}
-            @get-recommendation=${(e) => this.store.getStrainRecommendation(e.detail.query)}
-        ></strain-recommendation-dialog>
-        `;
-    }
-    _renderIrrigationDialog(active, selectedDeviceData) {
-        if (active.type !== 'IRRIGATION')
-            return x ``;
-        return x `
-        <irrigation-dialog
-            .open=${true}
-            .device=${selectedDeviceData}
-            .growspaceName=${selectedDeviceData?.name || ''}
-            @close=${() => this.store.closeActiveDialog()}
-            @closed=${() => this.store.closeActiveDialog()}
-        ></irrigation-dialog>
-        `;
-    }
-    _renderLogbookDialog(active) {
-        if (active.type !== 'LOGBOOK')
-            return x ``;
-        const dialogState = active.payload;
-        return x `
-        <logbook-dialog
-            .open=${true}
-            .growspaceId=${dialogState.growspaceId}
-            @close=${() => this.store.closeActiveDialog()}
-        ></logbook-dialog>
-        `;
-    }
-};
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], DialogHost.prototype, "hass", void 0);
-__decorate([
-    c$2({ context: storeContext, subscribe: true }),
-    __metadata("design:type", GrowspaceStore)
-], DialogHost.prototype, "store", void 0);
-__decorate([
-    c$2({ context: strainLibraryContext, subscribe: true }),
-    __metadata("design:type", Array)
-], DialogHost.prototype, "strainLibrary", void 0);
-DialogHost = __decorate([
-    t$2('growspace-dialog-host')
-], DialogHost);
-
-let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.strainLibrary = [];
-        this.isEditMode = false;
-        this.selected = false;
-        this._displayData = null;
-        this._isDraggingMobile = false;
-        this._startX = 0;
-        this._startY = 0;
-        this._initialLeft = 0;
-        this._initialTop = 0;
-    }
-    willUpdate(changedProps) {
-        if (changedProps.has('plant') || changedProps.has('strainLibrary')) {
-            this._calculateDisplayData();
-        }
-    }
-    _calculateDisplayData() {
-        if (!this.plant) {
-            this._displayData = null;
-            return;
-        }
-        const plant = this.plant;
-        const stageColor = PlantUtils.getPlantStageColor(plant.state);
-        const strainName = plant.attributes?.strain || 'Unknown Strain';
-        const pheno = plant.attributes?.phenotype || '';
-        // Image logic
-        let imageUrl;
-        let imageCropMeta;
-        const library = this.strainLibrary || [];
-        if (strainName !== 'Unknown Strain') {
-            const phenoMatch = library.find((s) => s.strain === strainName && s.phenotype === pheno);
-            if (phenoMatch && phenoMatch.image) {
-                imageUrl = phenoMatch.image;
-                imageCropMeta = phenoMatch.image_crop_meta;
-            }
-            else {
-                const strainMatch = library.find((s) => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
-                if (strainMatch && strainMatch.image) {
-                    imageUrl = strainMatch.image;
-                    imageCropMeta = strainMatch.image_crop_meta;
-                }
-                else if (!imageUrl) {
-                    const anyMatch = library.find((s) => s.strain === strainName && s.image);
-                    if (anyMatch) {
-                        imageUrl = anyMatch.image;
-                        imageCropMeta = anyMatch.image_crop_meta;
-                    }
-                }
-            }
-        }
-        // Stages logic
-        const days = [
-            {
-                days: plant.attributes?.seedling_days,
-                icon: mdiSprout,
-                title: 'Seedling',
-                stage: PlantStage.SEEDLING,
-            },
-            {
-                days: plant.attributes?.mother_days,
-                icon: mdiSprout,
-                title: 'Mother',
-                stage: PlantStage.MOTHER,
-            },
-            {
-                days: plant.attributes?.clone_days,
-                icon: mdiSprout,
-                title: 'Clone',
-                stage: PlantStage.CLONE,
-            },
-            { days: plant.attributes?.veg_days, icon: mdiSprout, title: 'Veg', stage: PlantStage.VEG },
-            {
-                days: plant.attributes?.flower_days,
-                icon: mdiFlower,
-                title: 'Flower',
-                stage: PlantStage.FLOWER,
-            },
-            { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: 'Dry', stage: PlantStage.DRY },
-            {
-                days: plant.attributes?.cure_days,
-                icon: mdiCannabis,
-                title: 'Cure',
-                stage: PlantStage.CURE,
-            },
-        ].filter((d) => d.days !== undefined && d.days !== null);
-        const currentStage = (plant.state || '').toLowerCase();
-        let visibleDays = days.filter((d) => d.days);
-        if (currentStage === PlantStage.DRY) {
-            visibleDays = visibleDays.filter((d) => d.stage === PlantStage.DRY);
-        }
-        else if (currentStage === PlantStage.CURE) {
-            visibleDays = visibleDays.filter((d) => d.stage === PlantStage.CURE);
-        }
-        const normalizedCurrent = currentStage === 'veg' || currentStage === 'vegetative' ? PlantStage.VEG : currentStage;
-        const stages = visibleDays.map((d) => ({
-            days: d.days,
-            icon: d.icon,
-            title: d.title,
-            stage: d.stage,
-            isCurrent: d.stage === normalizedCurrent,
-            color: PlantUtils.getPlantStageColor(d.stage),
-        }));
-        this._displayData = {
-            stageColor,
-            strainName,
-            pheno,
-            imageUrl,
-            imageCropMeta,
-            stages,
-        };
-    }
-    _handleTouchStart(e) {
-        if (this.isEditMode)
-            return;
-        // Only single touch
-        if (e.touches.length !== 1)
-            return;
-        this._startX = e.touches[0].clientX;
-        this._startY = e.touches[0].clientY;
-        const card = this.shadowRoot?.querySelector('.plant-card-rich');
-        const rect = card.getBoundingClientRect();
-        this._initialLeft = rect.left;
-        this._initialTop = rect.top;
-        this._longPressTimer = window.setTimeout(() => {
-            this._startMobileDrag(e);
-        }, 500);
-    }
-    _handleTouchMove(e) {
-        if (this._isDraggingMobile) {
-            e.preventDefault(); // Stop scrolling
-            const touch = e.touches[0];
-            const card = this.shadowRoot?.querySelector('.plant-card-rich');
-            const deltaX = touch.clientX - this._startX;
-            const deltaY = touch.clientY - this._startY;
-            card.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.05)`;
-        }
-        else {
-            // If moved significantly before timer fires, cancel timer
-            const touch = e.touches[0];
-            if (Math.abs(touch.clientX - this._startX) > 10 ||
-                Math.abs(touch.clientY - this._startY) > 10) {
-                clearTimeout(this._longPressTimer);
-            }
-        }
-    }
-    _handleTouchEnd(e) {
-        clearTimeout(this._longPressTimer);
-        if (this._isDraggingMobile) {
-            this._endMobileDrag(e);
-        }
-    }
-    _startMobileDrag(e) {
-        this._isDraggingMobile = true;
-        const card = this.shadowRoot?.querySelector('.plant-card-rich');
-        card.classList.add('dragging-mobile');
-        // Dispatch event to notify grid/parent
-        this.dispatchEvent(new CustomEvent('mobile-drag-start', {
-            detail: { plant: this.plant },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _endMobileDrag(e) {
-        this._isDraggingMobile = false;
-        const card = this.shadowRoot?.querySelector('.plant-card-rich');
-        card.classList.remove('dragging-mobile');
-        card.style.transform = '';
-        const touch = e.changedTouches[0];
-        this.dispatchEvent(new CustomEvent('mobile-drop', {
-            detail: {
-                x: touch.clientX,
-                y: touch.clientY,
-                plant: this.plant,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _handleDragStart(e) {
-        if (this.isEditMode) {
-            e.preventDefault();
-            return;
-        }
-        const target = e.target;
-        target.classList.add('dragging');
-        if (e.dataTransfer) {
-            e.dataTransfer.setData('text/plain', JSON.stringify({ id: this.plant.entity_id }));
-            e.dataTransfer.effectAllowed = 'move';
-        }
-        // Dispatch event to parent to track dragged plant state
-        this.dispatchEvent(new CustomEvent('plant-drag-start', {
-            detail: { plant: this.plant },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _handleDragEnd(e) {
-        const target = e.target;
-        target.classList.remove('dragging');
-    }
-    _handleDrop(e) {
-        e.preventDefault();
-        if (this.isEditMode)
-            return;
-        this.dispatchEvent(new CustomEvent('plant-drop', {
-            detail: {
-                originalEvent: e,
-                row: this.row,
-                col: this.col,
-                plant: this.plant,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _handleDragOver(e) {
-        e.preventDefault();
-        // Optional: Add visual feedback
-    }
-    _handleClick() {
-        this.dispatchEvent(new CustomEvent('plant-click', {
-            detail: { plant: this.plant },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _toggleSelection(e) {
-        e.stopPropagation();
-        this.dispatchEvent(new CustomEvent('plant-toggle-selection', {
-            detail: { plant: this.plant },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    renderPlantDaysRich(stages) {
-        return x `
-      ${stages.map((d) => {
-            // Logic for classMap if needed
-            return x `
-          <div class="pc-stat-item ${d.isCurrent ? 'current-stage' : ''}">
-            <svg style="color: ${d.color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
-            <div class="pc-stat-text">${d.days}d</div>
-          </div>
-        `;
-        })}
-    `;
-    }
-    render() {
-        if (!this.plant || !this._displayData)
-            return x ``;
-        const { stageColor, strainName, pheno, imageUrl, imageCropMeta, stages } = this._displayData;
-        return x `
-      <div
-        class="plant-card-rich"
-        style="--stage-color: ${stageColor}"
-        draggable="true"
-        @dragstart=${this._handleDragStart}
-        @dragend=${this._handleDragEnd}
-        @dragover=${this._handleDragOver}
-        @drop=${this._handleDrop}
-        @touchstart=${this._handleTouchStart}
-        @touchmove=${this._handleTouchMove}
-        @touchend=${this._handleTouchEnd}
-        @click=${this._handleClick}
-      >
-        ${imageUrl
-            ? x `
-              <img
-                class="plant-card-bg"
-                src="${imageUrl}"
-                loading="lazy"
-                alt="${strainName}"
-                style="${PlantUtils.getImgStyle(imageCropMeta)}"
-              />
-              <div class="plant-card-overlay"></div>
-            `
-            : ''}
-        ${this.isEditMode
-            ? x `
-              <div
-                class="plant-card-checkbox ${this.selected ? 'selected' : ''}"
-                @click=${this._toggleSelection}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  style="width: 24px; height: 24px; fill: ${this.selected
-                ? 'var(--primary-color)'
-                : 'rgba(255,255,255,0.7)'};"
-                >
-                  <path d="${this.selected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
-                </svg>
-              </div>
-            `
-            : ''}
-
-        <div class="plant-card-content">
-          <div class="pc-info">
-            <div class="pc-strain-name" title="${strainName}">${strainName}</div>
-            ${pheno ? x `<div class="pc-pheno">${pheno}</div>` : ''}
-            <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
-          </div>
-
-          <div class="pc-stats">${this.renderPlantDaysRich(stages)}</div>
-        </div>
-      </div>
-    `;
-    }
-};
-GrowspacePlantCard.styles = i$6 `
-    :host {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    .plant-card-rich {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      border-radius: 16px;
-      overflow: hidden;
-      /* Default background if no image */
-      background: var(--ha-card-background, rgba(255, 255, 255, 0.05));
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      box-shadow: var(--ha-card-box-shadow, 0 4px 6px rgba(0, 0, 0, 0.1));
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
-      aspect-ratio: 1;
-      box-sizing: border-box;
-      color: var(--primary-text-color);
-    }
-
-    .plant-card-rich:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-      border-color: var(--primary-color, rgba(255, 255, 255, 0.2));
-    }
-    .plant-card-rich:focus {
-      outline: 2px solid var(--primary-color, #22c55e);
-      outline-offset: 2px;
-    }
-
-    .plant-card-bg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-size: cover;
-      z-index: 0;
-    }
-
-    .plant-card-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(
-        to top,
-        rgba(0, 0, 0, 0.9) 0%,
-        rgba(0, 0, 0, 0.6) 50%,
-        rgba(0, 0, 0, 0.3) 100%
-      );
-      z-index: 1;
-    }
-
-    .plant-card-checkbox {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      z-index: 10;
-      background: rgba(0, 0, 0, 0.5);
-      border-radius: 50%;
-      padding: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .plant-card-checkbox:hover {
-      background: rgba(0, 0, 0, 0.8);
-      transform: scale(1.1);
-    }
-
-    .plant-card-content {
-      position: relative;
-      z-index: 2;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      gap: 16px;
-      height: 100%;
-      padding: 16px;
-      box-sizing: border-box;
-    }
-
-    .pc-info {
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      align-items: center;
-    }
-
-    .pc-strain-name {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--primary-text-color, #fff);
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
-    }
-
-    .pc-pheno {
-      font-size: 0.9rem;
-      color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-      font-weight: 500;
-    }
-
-    .pc-stage {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-top: 8px;
-      color: var(--stage-color);
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-      text-transform: capitalize;
-    }
-
-    .pc-stats {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-      padding: 0 12px;
-      box-sizing: border-box;
-    }
-
-    .pc-stat-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .pc-stat-item svg {
-      width: 24px;
-      height: 24px;
-      fill: currentColor;
-    }
-
-    .pc-stat-text {
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--primary-text-color, #fff);
-    }
-
-    .current-stage {
-      /* Add any specific styles for current stage if needed */
-    }
-
-    .plant-card-rich.dragging {
-      opacity: 0.5;
-      transform: rotate(5deg);
-    }
-
-    .plant-card-rich.dragging-mobile {
-      opacity: 0.8;
-      transform: scale(1.05);
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
-      z-index: 1000;
-      pointer-events: none; /* Let events pass through to grid for elementFromPoint */
-    }
-  `;
-__decorate([
-    n$4({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspacePlantCard.prototype, "plant", void 0);
-__decorate([
-    n$4({ type: Number }),
-    __metadata("design:type", Number)
-], GrowspacePlantCard.prototype, "row", void 0);
-__decorate([
-    n$4({ type: Number }),
-    __metadata("design:type", Number)
-], GrowspacePlantCard.prototype, "col", void 0);
-__decorate([
-    c$2({ context: strainLibraryContext, subscribe: true }),
-    n$4({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspacePlantCard.prototype, "strainLibrary", void 0);
-__decorate([
-    n$4({ type: Boolean }),
-    __metadata("design:type", Object)
-], GrowspacePlantCard.prototype, "isEditMode", void 0);
-__decorate([
-    n$4({ type: Boolean }),
-    __metadata("design:type", Object)
-], GrowspacePlantCard.prototype, "selected", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspacePlantCard.prototype, "_displayData", void 0);
-GrowspacePlantCard = __decorate([
-    t$2('growspace-plant-card')
-], GrowspacePlantCard);
-
-let GrowspaceChip = class GrowspaceChip extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.icon = '';
-        this.label = '';
-        this.value = undefined;
-        this.status = '';
-        this.active = false;
-        this.linked = false;
-        this.tooltip = '';
-    }
-    render() {
-        // Determine classes based on meaningful status string
-        const statusClass = this.status ? `status-${this.status}` : '';
-        return x `
-      <div class="stat-chip ${statusClass}" title="${this.tooltip}">
-        <div class="icon">
-          <svg viewBox="0 0 24 24"><path d="${this.icon}"></path></svg>
-        </div>
-        ${this.label ? x `${this.label}: ` : ''}${this.value}
-        ${this.linked
-            ? x `
-              <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">
-                <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
-              </div>
-            `
-            : ''}
-      </div>
-    `;
-    }
-    _handleLinkClick(e) {
-        e.stopPropagation();
-        this.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
-    }
-};
-GrowspaceChip.styles = i$6 `
-    :host {
-      display: inline-flex;
-      vertical-align: middle;
-      outline: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .stat-chip {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 8px 16px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(8px);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      position: relative;
-      user-select: none;
-      flex-shrink: 0;
-      white-space: nowrap;
-      touch-action: auto;
-    }
-
-    /* Status Colors */
-    @keyframes pulse-red {
-      0% {
-        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
-      }
-      70% {
-        box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
-      }
-      100% {
-        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
-      }
-    }
-
-    .stat-chip.status-optimal {
-      color: #2e7d32 !important;
-      background: rgba(46, 125, 50, 0.1) !important;
-    }
-
-    .stat-chip.status-warning {
-      color: #ffa726 !important;
-      border-color: rgba(255, 167, 38, 0.5) !important;
-      background: rgba(255, 167, 38, 0.1) !important;
-    }
-
-    .stat-chip.status-danger {
-      color: #ef5350 !important;
-      border-color: rgba(239, 83, 80, 0.5) !important;
-      background: rgba(239, 83, 80, 0.1) !important;
-      animation: pulse-red 2s infinite;
-    }
-
-    .stat-chip:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.2);
-      transform: translateY(-1px);
-    }
-
-    :host([active]) .stat-chip {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.4);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      color: #fff;
-    }
-
-    .icon {
-      width: 18px;
-      height: 18px;
-      display: flex;
-    }
-
-    .icon svg {
-      width: 100%;
-      height: 100%;
-      fill: currentColor;
-      opacity: 0.8;
-      pointer-events: none;
-    }
-
-    .link-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      margin-left: -8px;
-      margin-right: -8px;
-      opacity: 0.8;
-      cursor: pointer;
-    }
-
-    .link-icon svg {
-      width: 100%;
-      height: 100%;
-      fill: var(--primary-color, #03a9f4);
-    }
-  `;
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceChip.prototype, "icon", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceChip.prototype, "label", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceChip.prototype, "value", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", String)
-], GrowspaceChip.prototype, "status", void 0);
-__decorate([
-    n$4({ type: Boolean, reflect: true }),
-    __metadata("design:type", Object)
-], GrowspaceChip.prototype, "active", void 0);
-__decorate([
-    n$4({ type: Boolean }),
-    __metadata("design:type", Object)
-], GrowspaceChip.prototype, "linked", void 0);
-__decorate([
-    n$4({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceChip.prototype, "tooltip", void 0);
-GrowspaceChip = __decorate([
-    t$2('growspace-chip')
-], GrowspaceChip);
 
 let GrowspaceHeader = class GrowspaceHeader extends i$3 {
     constructor() {
@@ -19000,7 +18910,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             'mask-left': this._canScrollLeft,
             'mask-right': this._canScrollRight,
         })}
-                  ${n$1(this._chipsContainerRef)}
+                  ${n$2(this._chipsContainerRef)}
                 >
                   ${this._mainChips.map((chip) => x `
                       <growspace-chip
@@ -19622,27 +19532,27 @@ __decorate([
 ], GrowspaceHeader.prototype, "historyController", void 0);
 __decorate([
     c$2({ context: configContext, subscribe: true }),
-    n$4({ attribute: false }),
+    n$5({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "config", void 0);
 __decorate([
-    n$4({ attribute: false }),
+    n$5({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "device", void 0);
 __decorate([
-    n$4({ type: Boolean }),
+    n$5({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "compact", void 0);
 __decorate([
-    n$4({ type: Boolean }),
+    n$5({ type: Boolean }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "isEditMode", void 0);
 __decorate([
-    n$4({ attribute: false }),
+    n$5({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "growspaceOptions", void 0);
 __decorate([
-    n$4({ attribute: false }),
+    n$5({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "historyData", void 0);
 __decorate([
@@ -19702,7 +19612,7 @@ GrowspaceHeader = __decorate([
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const u=(e,s,t)=>{const r=new Map;for(let l=s;l<=t;l++)r.set(e[l],l);return r},c=e$2(class extends i$1{constructor(e){if(super(e),e.type!==t.CHILD)throw Error("repeat() can only be used in text expressions")}dt(e,s,t){let r;void 0===t?t=s:void 0!==s&&(r=s);const l=[],o=[];let i=0;for(const s of e)l[i]=r?r(s,i):i,o[i]=t(s,i),i++;return {values:o,keys:l}}render(e,s,t){return this.dt(e,s,t).values}update(s,[t,r,c]){const d=p(s),{values:p$1,keys:a}=this.dt(t,r,c);if(!Array.isArray(d))return this.ut=a,p$1;const h=this.ut??=[],v$1=[];let m$1,y,x=0,j=d.length-1,k=0,w=p$1.length-1;for(;x<=j&&k<=w;)if(null===d[x])x++;else if(null===d[j])j--;else if(h[x]===a[k])v$1[k]=v(d[x],p$1[k]),x++,k++;else if(h[j]===a[w])v$1[w]=v(d[j],p$1[w]),j--,w--;else if(h[x]===a[w])v$1[w]=v(d[x],p$1[w]),s$1(s,v$1[w+1],d[x]),x++,w--;else if(h[j]===a[k])v$1[k]=v(d[j],p$1[k]),s$1(s,d[x],d[j]),j--,k++;else if(void 0===m$1&&(m$1=u(a,k,w),y=u(h,x,j)),m$1.has(h[x]))if(m$1.has(h[j])){const e=y.get(a[k]),t=void 0!==e?d[e]:null;if(null===t){const e=s$1(s,d[x]);v(e,p$1[k]),v$1[k]=e;}else v$1[k]=v(t,p$1[k]),s$1(s,d[x],t),d[e]=null;k++;}else M(d[j]),j--;else M(d[x]),x++;for(;k<=w;){const e=s$1(s,v$1[w+1]);v(e,p$1[k]),v$1[k++]=e;}for(;x<=j;){const e=d[x++];null!==e&&M(e);}return this.ut=a,m(s,v$1),T}});
+const u=(e,s,t)=>{const r=new Map;for(let l=s;l<=t;l++)r.set(e[l],l);return r},c=e$2(class extends i$1{constructor(e){if(super(e),e.type!==t.CHILD)throw Error("repeat() can only be used in text expressions")}dt(e,s,t){let r;void 0===t?t=s:void 0!==s&&(r=s);const l=[],o=[];let i=0;for(const s of e)l[i]=r?r(s,i):i,o[i]=t(s,i),i++;return {values:o,keys:l}}render(e,s,t){return this.dt(e,s,t).values}update(s,[t,r,c]){const d=p(s),{values:p$1,keys:a}=this.dt(t,r,c);if(!Array.isArray(d))return this.ut=a,p$1;const h=this.ut??=[],v$1=[];let m$1,y,x=0,j=d.length-1,k=0,w=p$1.length-1;for(;x<=j&&k<=w;)if(null===d[x])x++;else if(null===d[j])j--;else if(h[x]===a[k])v$1[k]=v(d[x],p$1[k]),x++,k++;else if(h[j]===a[w])v$1[w]=v(d[j],p$1[w]),j--,w--;else if(h[x]===a[w])v$1[w]=v(d[x],p$1[w]),s$2(s,v$1[w+1],d[x]),x++,w--;else if(h[j]===a[k])v$1[k]=v(d[j],p$1[k]),s$2(s,d[x],d[j]),j--,k++;else if(void 0===m$1&&(m$1=u(a,k,w),y=u(h,x,j)),m$1.has(h[x]))if(m$1.has(h[j])){const e=y.get(a[k]),t=void 0!==e?d[e]:null;if(null===t){const e=s$2(s,d[x]);v(e,p$1[k]),v$1[k]=e;}else v$1[k]=v(t,p$1[k]),s$2(s,d[x],t),d[e]=null;k++;}else M(d[j]),j--;else M(d[x]),x++;for(;k<=w;){const e=s$2(s,v$1[w+1]);v(e,p$1[k]),v$1[k++]=e;}for(;x<=j;){const e=d[x++];null!==e&&M(e);}return this.ut=a,m(s,v$1),T}});
 
 let GrowspaceGrid = class GrowspaceGrid extends i$3 {
     constructor() {
@@ -19807,7 +19717,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
         style="${gridStyle}"
         @mobile-drop=${this._handleMobileDrop}
-        ${n$1(this._gridRef)}
+        ${n$2(this._gridRef)}
       >
         ${this.isLoading ? this.renderSkeletonGrid() : ''}
         ${!this.isLoading
@@ -20135,31 +20045,31 @@ __decorate([
     __metadata("design:type", Function)
 ], GrowspaceGrid.prototype, "store", void 0);
 __decorate([
-    n$4({ type: Array }),
+    n$5({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceGrid.prototype, "plants", void 0);
 __decorate([
-    n$4({ type: Number }),
+    n$5({ type: Number }),
     __metadata("design:type", Number)
 ], GrowspaceGrid.prototype, "rows", void 0);
 __decorate([
-    n$4({ type: Number }),
+    n$5({ type: Number }),
     __metadata("design:type", Number)
 ], GrowspaceGrid.prototype, "cols", void 0);
 __decorate([
-    n$4({ type: Boolean }),
+    n$5({ type: Boolean }),
     __metadata("design:type", Boolean)
 ], GrowspaceGrid.prototype, "isEditMode", void 0);
 __decorate([
-    n$4({ type: Object }),
+    n$5({ type: Object }),
     __metadata("design:type", Set)
 ], GrowspaceGrid.prototype, "selectedPlants", void 0);
 __decorate([
-    n$4({ type: Boolean }),
+    n$5({ type: Boolean }),
     __metadata("design:type", Boolean)
 ], GrowspaceGrid.prototype, "compact", void 0);
 __decorate([
-    n$4({ type: Boolean }),
+    n$5({ type: Boolean }),
     __metadata("design:type", Boolean)
 ], GrowspaceGrid.prototype, "isLoading", void 0);
 GrowspaceGrid = __decorate([
@@ -21328,7 +21238,7 @@ __decorate([
     __metadata("design:type", Function)
 ], GrowspaceAnalytics.prototype, "historyController", void 0);
 __decorate([
-    n$4({ attribute: false }),
+    n$5({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceAnalytics.prototype, "device", void 0);
 __decorate([
@@ -21591,10 +21501,13 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     `;
     }
     renderDialogs() {
-        return x `<growspace-dialog-host></growspace-dialog-host>`;
+        return x `<growspace-dialog-host
+      .activeDialogState=${this.store.state.activeDialog}
+      .devices=${this.store.state.devices}
+    ></growspace-dialog-host>`;
     }
 };
-GrowspaceManagerCard.styles = [variables, sharedStyles, growspaceCardStyles];
+GrowspaceManagerCard.styles = [sharedStyles, uiStyles, growspaceCardStyles]; // Styles
 __decorate([
     e$3({ context: storeContext }),
     __metadata("design:type", Object)
@@ -21610,12 +21523,12 @@ __decorate([
 ], GrowspaceManagerCard.prototype, "_strainLibrary", void 0);
 __decorate([
     e$3({ context: hassContext }),
-    n$4({ attribute: false }),
+    n$5({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCard.prototype, "hass", void 0);
 __decorate([
     e$3({ context: configContext }),
-    n$4({ attribute: false }),
+    n$5({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCard.prototype, "_config", void 0);
 GrowspaceManagerCard = __decorate([
@@ -21719,11 +21632,11 @@ GrowspaceManagerCardEditor.styles = i$6 `
     }
   `;
 __decorate([
-    n$4({ attribute: false }),
+    n$5({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCardEditor.prototype, "hass", void 0);
 __decorate([
-    n$4({ attribute: false }),
+    n$5({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCardEditor.prototype, "_config", void 0);
 __decorate([

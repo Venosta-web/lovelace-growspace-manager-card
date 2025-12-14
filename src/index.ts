@@ -2,7 +2,7 @@
 export * from './types';
 
 // Export utility classes
-export { PlantUtils } from './utils';
+export { PlantUtils } from './utils/plant-utils';
 export { DataService } from './data-service';
 
 // Export main component

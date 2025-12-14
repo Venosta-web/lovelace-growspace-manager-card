@@ -18,7 +18,7 @@ import { variables } from './styles/variables';
 import { GrowspaceManagerCardConfig, PlantEntity, GrowspaceDevice, StrainEntry } from './types';
 import { ActiveDialogState } from './ui-state';
 
-import { PlantUtils } from './utils';
+import { PlantUtils } from './utils/plant-utils';
 import { DataService } from './data-service';
 import {
   GrowspaceHistoryController,
@@ -77,7 +77,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   @property({ attribute: false })
   private _config!: GrowspaceManagerCardConfig;
 
-  static styles: CSSResultGroup = [variables, sharedStyles, growspaceCardStyles];
+  static styles: CSSResultGroup = [sharedStyles, uiStyles, growspaceCardStyles]; // Styles
 
   protected firstUpdated() {
     this.store.updateHass(this.hass);
@@ -292,6 +292,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   }
 
   private renderDialogs(): TemplateResult {
-    return html`<growspace-dialog-host></growspace-dialog-host>`;
+    return html`<growspace-dialog-host
+      .activeDialogState=${this.store.state.activeDialog}
+      .devices=${this.store.state.devices}
+    ></growspace-dialog-host>`;
   }
 }
