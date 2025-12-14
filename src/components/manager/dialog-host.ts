@@ -170,11 +170,13 @@ export class DialogHost extends LitElement {
         <config-dialog
             .open=${true}
             .hass=${this.hass}
+            .devices=${this.store.state.devices}
             .currentTab=${dialogState.currentTab}
             .environmentData=${dialogState.environmentData}
             .growspaceOptions=${growspaceOptions}
             @close=${() => this.store.closeActiveDialog()}
             @add-growspace-submit=${(e: CustomEvent) => this.store.handleAddGrowspace(e.detail)}
+            @edit-growspace-submit=${(e: CustomEvent) => this.store.handleUpdateGrowspace(e.detail)}
             @configure-environment-submit=${(e: CustomEvent) => this._handleEnvironmentConfig(e.detail)}
         ></config-dialog>
         `;

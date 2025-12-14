@@ -3723,6 +3723,24 @@ class GrowspaceStore {
             this.showToast(`Error: ${e.message}`, 'error');
         }
     }
+    async handleUpdateGrowspace(detail) {
+        console.log('[GrowspaceStore] handleUpdateGrowspace', detail);
+        try {
+            await this.dataService.updateGrowspace({
+                growspace_id: detail.growspace_id,
+                name: detail.name,
+                rows: detail.rows,
+                plants_per_row: detail.plants_per_row,
+            });
+            this.showToast('Growspace updated successfully', 'success');
+            await this.refreshData();
+            this.closeActiveDialog();
+        }
+        catch (e) {
+            console.error('[GrowspaceStore] Update failed:', e);
+            this.showToast(`Failed to update growspace: ${e.message}`, 'error');
+        }
+    }
     async harvestPlant(plant) {
         await this.handleMovePlantToNextStage(plant);
     }
@@ -7029,7 +7047,6 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.open = false;
         this.growspaceOptions = {};
         this.devices = [];
-        // Allow parent to set initial tab declaratively
         this.initialTab = 'environment';
         this.currentTab = 'environment';
         this._initialStateApplied = false;
@@ -7058,9 +7075,11 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         super.updated(changedProperties);
         // Apply initial tab state only once when dialog opens
         if (changedProperties.has('open')) {
-            if (this.open && !this._initialStateApplied) {
-                this.currentTab = this.initialTab;
-                this._initialStateApplied = true;
+            if (this.open) {
+                if (!this._initialStateApplied) {
+                    if (this.currentTab) ;
+                    this._initialStateApplied = true;
+                }
             }
             else if (!this.open) {
                 // Reset flag when dialog closes so next open respects initialTab again
@@ -7546,7 +7565,7 @@ __decorate([
     __metadata("design:type", Object)
 ], ConfigDialog.prototype, "growspaceOptions", void 0);
 __decorate([
-    n$5({ type: Array }),
+    n$5({ attribute: false }),
     __metadata("design:type", Array)
 ], ConfigDialog.prototype, "devices", void 0);
 __decorate([
@@ -7554,7 +7573,7 @@ __decorate([
     __metadata("design:type", String)
 ], ConfigDialog.prototype, "initialTab", void 0);
 __decorate([
-    r$2(),
+    n$5({ type: String }),
     __metadata("design:type", String)
 ], ConfigDialog.prototype, "currentTab", void 0);
 __decorate([
@@ -9321,11 +9340,13 @@ let DialogHost = class DialogHost extends i$3 {
         <config-dialog
             .open=${true}
             .hass=${this.hass}
+            .devices=${this.store.state.devices}
             .currentTab=${dialogState.currentTab}
             .environmentData=${dialogState.environmentData}
             .growspaceOptions=${growspaceOptions}
             @close=${() => this.store.closeActiveDialog()}
             @add-growspace-submit=${(e) => this.store.handleAddGrowspace(e.detail)}
+            @edit-growspace-submit=${(e) => this.store.handleUpdateGrowspace(e.detail)}
             @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
         ></config-dialog>
         `;

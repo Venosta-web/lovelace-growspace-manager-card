@@ -723,6 +723,24 @@ export class GrowspaceStore implements ReactiveController {
         }
     }
 
+    async handleUpdateGrowspace(detail: any) {
+        console.log('[GrowspaceStore] handleUpdateGrowspace', detail);
+        try {
+            await this.dataService.updateGrowspace({
+                growspace_id: detail.growspace_id,
+                name: detail.name,
+                rows: detail.rows,
+                plants_per_row: detail.plants_per_row,
+            });
+            this.showToast('Growspace updated successfully', 'success');
+            await this.refreshData();
+            this.closeActiveDialog();
+        } catch (e: any) {
+            console.error('[GrowspaceStore] Update failed:', e);
+            this.showToast(`Failed to update growspace: ${e.message}`, 'error');
+        }
+    }
+
     async harvestPlant(plant: PlantEntity) {
         await this.handleMovePlantToNextStage(plant);
     }

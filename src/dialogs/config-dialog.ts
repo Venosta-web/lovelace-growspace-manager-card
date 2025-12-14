@@ -12,15 +12,21 @@ import { GrowspaceDevice } from '../types';
 @customElement('config-dialog')
 export class ConfigDialog extends LitElement {
   @property({ type: Boolean, reflect: true }) open = false;
-  @property({ attribute: false }) hass!: HomeAssistant;
-  @property({ type: Object }) growspaceOptions: Record<string, string> = {};
-  @property({ type: Array }) devices: GrowspaceDevice[] = [];
 
-  // Allow parent to set initial tab declaratively
+  @property({ attribute: false })
+  public hass!: HomeAssistant;
+
+  @property({ type: Object })
+  growspaceOptions: Record<string, string> = {};
+
+  @property({ attribute: false })
+  public devices: GrowspaceDevice[] = [];
+
   @property({ type: String }) initialTab: 'add_growspace' | 'edit_growspace' | 'environment' =
     'environment';
+  @property({ type: String })
+  public currentTab: 'add_growspace' | 'edit_growspace' | 'environment' = 'environment';
 
-  @state() private currentTab: 'add_growspace' | 'edit_growspace' | 'environment' = 'environment';
   private _initialStateApplied = false;
 
   // Add Growspace Data
@@ -128,9 +134,13 @@ export class ConfigDialog extends LitElement {
 
     // Apply initial tab state only once when dialog opens
     if (changedProperties.has('open')) {
-      if (this.open && !this._initialStateApplied) {
-        this.currentTab = this.initialTab;
-        this._initialStateApplied = true;
+      if (this.open) {
+        if (!this._initialStateApplied) {
+          if (this.currentTab) {
+            // Tab already set via property, nothing to do
+          }
+          this._initialStateApplied = true;
+        }
       } else if (!this.open) {
         // Reset flag when dialog closes so next open respects initialTab again
         this._initialStateApplied = false;
@@ -263,8 +273,8 @@ export class ConfigDialog extends LitElement {
       const device = this.devices.find((d) => d.device_id === growspaceId);
       if (device) {
         this.edit_name = device.name;
-        this.edit_rows = (device as any).rows || 4;
-        this.edit_plants_per_row = (device as any).plants_per_row || 4;
+        this.edit_rows = device.rows || 4;
+        this.edit_plants_per_row = device.plants_per_row || 4;
       }
     }
   }
