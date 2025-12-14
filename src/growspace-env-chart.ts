@@ -328,6 +328,8 @@ export class GrowspaceEnvChart extends LitElement {
 
         // Generate VPD segments for multi-colored rendering
         let vpdSegments: Array<{ path: string; color: string }> | undefined;
+        let seriesColor = config.color || '#fff';
+
         if (key === 'vpd') {
           const thresholds = this._getVpdThresholds();
           const vpdPoints = dataPoints.map((p) => {
@@ -336,12 +338,19 @@ export class GrowspaceEnvChart extends LitElement {
             return { x, y, value: p.value };
           });
           vpdSegments = this._generateVpdSegments(vpdPoints, thresholds);
+
+          // Use current VPD status color for header
+          if (dataPoints.length > 0) {
+            const currentValue = dataPoints[dataPoints.length - 1].value;
+            const currentStatus = this._getVpdStatusForValue(currentValue, thresholds);
+            seriesColor = this._getVpdStatusColor(currentStatus);
+          }
         }
 
         seriesList.push({
           id: key,
           title: config.title || key,
-          color: config.color || '#fff',
+          color: seriesColor,
           unit: config.unit || '',
           icon: config.icon || '',
           points: dataPoints,
