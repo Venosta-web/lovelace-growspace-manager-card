@@ -1,4 +1,4 @@
-import { LitElement, html, css, TemplateResult } from 'lit';
+import { LitElement, html, css, svg, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 
@@ -299,14 +299,6 @@ export class GrowspaceHeader extends LitElement {
       color: rgba(255, 255, 255, 0.6);
       font-weight: 500;
     }
-
-    .hero-icon-label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: auto; /* Push to bottom */
-    }
-
     .hero-icon {
         width: 20px;
         height: 20px;
@@ -335,6 +327,26 @@ export class GrowspaceHeader extends LitElement {
     /* Active graph indication */
     .hero-card.active {
         box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);
+    }
+
+    /* Mini sparkline background for hero cards */
+    .hero-sparkline {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.7;
+    }
+
+    .hero-value-group,
+    .hero-status-bar {
+        position: relative;
+        z-index: 1;
     }
 
     /* --- Secondary Strip (Scrollable) --- */
@@ -755,10 +767,73 @@ export class GrowspaceHeader extends LitElement {
     `;
   }
 
+  /**
+   * Generates an SVG path string for a mini sparkline from history data.
+   * Returns empty string if not enough data points.
+   * Downsamples to ~8 points per hour (192 points on 24h grid) for performance.
+   */
+  private _generateSparklinePath(metricKey: string, width: number, height: number): string {
+    if (!this.historyController) return '';
+
+    const historyData = this.historyController.historyCache[metricKey];
+    if (!historyData || historyData.length < 2) return '';
+
+    // Sort by time and extract numeric values
+    let sortedData = [...historyData]
+      .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
+      .filter(h => {
+        const val = parseFloat(h.state);
+        return !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
+      });
+
+    if (sortedData.length < 2) return '';
+
+    // Downsample to ~192 points (8 per hour on 24h grid) for performance
+    const targetPoints = 192;
+    if (sortedData.length > targetPoints) {
+      const step = Math.ceil(sortedData.length / targetPoints);
+      sortedData = sortedData.filter((_, i) => i % step === 0 || i === sortedData.length - 1);
+    }
+
+    const values = sortedData.map(h => parseFloat(h.state));
+    const times = sortedData.map(h => new Date(h.last_changed).getTime());
+
+    const minVal = Math.min(...values);
+    const maxVal = Math.max(...values);
+    const minTime = Math.min(...times);
+    const maxTime = Math.max(...times);
+
+    const valueRange = maxVal - minVal || 1;
+    const timeRange = maxTime - minTime || 1;
+
+    // Generate SVG path points
+    const points = sortedData.map((h, i) => {
+      const x = ((times[i] - minTime) / timeRange) * width;
+      const y = height - ((values[i] - minVal) / valueRange) * height;
+      return `${x},${y}`;
+    });
+
+    return `M ${points.join(' L ')}`;
+  }
+
+  /**
+   * Gets the sparkline color based on the metric's configured color from METRIC_CONFIG.
+   */
+  private _getSparklineColor(metricKey: string): string {
+    const config = METRIC_CONFIG[metricKey];
+    return config?.color || 'rgba(255, 255, 255, 0.3)';
+  }
+
   private _renderHeroCard(chip: any) {
     const match = String(chip.value || '').match(/^([\d.,]+)\s*(.*)$/);
     const val = match ? match[1] : chip.value;
     const unit = match ? match[2] : '';
+
+    // Generate sparkline path for this metric
+    const sparklineWidth = 140; // Approximate card width
+    const sparklineHeight = 80;  // Approximate card height minus padding
+    const sparklinePath = this._generateSparklinePath(chip.key, sparklineWidth, sparklineHeight);
+    const sparklineColor = this._getSparklineColor(chip.key);
 
     return html`
         <div 
@@ -770,14 +845,37 @@ export class GrowspaceHeader extends LitElement {
             @click=${() => this._toggleEnvGraph(chip.key)}
             title="${chip.tooltip || ''}"
         >
+            <!-- Mini sparkline background -->
+            ${sparklinePath ? html`
+              <svg 
+                class="hero-sparkline" 
+                viewBox="0 0 ${sparklineWidth} ${sparklineHeight}" 
+                preserveAspectRatio="none"
+              >
+                <defs>
+                  <linearGradient id="sparkline-grad-${chip.key}" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="${sparklineColor}" stop-opacity="0.3" />
+                    <stop offset="100%" stop-color="${sparklineColor}" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <path 
+                  d="${sparklinePath} V ${sparklineHeight} H 0 Z" 
+                  fill="url(#sparkline-grad-${chip.key})" 
+                />
+                <path 
+                  d="${sparklinePath}" 
+                  fill="none" 
+                  stroke="${sparklineColor}" 
+                  stroke-width="2" 
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            ` : ''}
+
             <div class="hero-value-group">
                 <span class="hero-value">${val}</span>
                 <span class="hero-unit">${unit}</span>
-            </div>
-            
-            <div class="hero-icon-label">
-                <svg class="hero-icon" viewBox="0 0 24 24"><path d="${chip.icon}"></path></svg>
-                <span class="hero-label">${chip.label || chip.name || chip.key}</span>
             </div>
 
             ${chip.status ? html`<div class="hero-status-bar"></div>` : ''}
