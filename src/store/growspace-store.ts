@@ -174,8 +174,8 @@ export class GrowspaceStore implements ReactiveController {
         this.state.isCompactView = value;
         // Sync viewMode if toggled via old method
         if (value) {
-            this.state.viewMode = 'grid_only';
-        } else if (this.state.viewMode === 'grid_only') {
+            this.state.viewMode = 'compact';
+        } else if (this.state.viewMode === 'compact') {
             this.state.viewMode = 'standard';
         }
     }
@@ -183,14 +183,14 @@ export class GrowspaceStore implements ReactiveController {
     setViewMode(mode: GrowspaceViewMode) {
         this.state.viewMode = mode;
         // Sync legacy flag
-        this.state.isCompactView = mode === 'grid_only';
+        this.state.isCompactView = mode === 'compact';
     }
 
     toggleHeaderExpansion() {
-        if (this.state.viewMode === 'header_only') {
+        if (this.state.viewMode === 'header') {
             this.setViewMode('standard');
         } else {
-            this.setViewMode('header_only');
+            this.setViewMode('header');
         }
     }
 
@@ -211,11 +211,11 @@ export class GrowspaceStore implements ReactiveController {
             this.state.viewMode = config.initial_view_mode;
         } else if (config?.compact) {
             // Backward compatibility
-            this.state.viewMode = 'grid_only';
+            this.state.viewMode = 'compact';
         }
 
         // Sync isCompactView for legacy support/internal use if needed
-        this.state.isCompactView = this.state.viewMode === 'grid_only';
+        this.state.isCompactView = this.state.viewMode === 'compact';
 
         const devices = this.state.devices;
         if (!devices.length || this.state.selectedDevice) return;

@@ -3182,23 +3182,23 @@ class GrowspaceStore {
         this.state.isCompactView = value;
         // Sync viewMode if toggled via old method
         if (value) {
-            this.state.viewMode = 'grid_only';
+            this.state.viewMode = 'compact';
         }
-        else if (this.state.viewMode === 'grid_only') {
+        else if (this.state.viewMode === 'compact') {
             this.state.viewMode = 'standard';
         }
     }
     setViewMode(mode) {
         this.state.viewMode = mode;
         // Sync legacy flag
-        this.state.isCompactView = mode === 'grid_only';
+        this.state.isCompactView = mode === 'compact';
     }
     toggleHeaderExpansion() {
-        if (this.state.viewMode === 'header_only') {
+        if (this.state.viewMode === 'header') {
             this.setViewMode('standard');
         }
         else {
-            this.setViewMode('header_only');
+            this.setViewMode('header');
         }
     }
     setDefaultApplied(value) {
@@ -3217,10 +3217,10 @@ class GrowspaceStore {
         }
         else if (config?.compact) {
             // Backward compatibility
-            this.state.viewMode = 'grid_only';
+            this.state.viewMode = 'compact';
         }
         // Sync isCompactView for legacy support/internal use if needed
-        this.state.isCompactView = this.state.viewMode === 'grid_only';
+        this.state.isCompactView = this.state.viewMode === 'compact';
         const devices = this.state.devices;
         if (!devices.length || this.state.selectedDevice)
             return;
@@ -21222,7 +21222,7 @@ const growspaceCardStyles = i$6 `
   }
 
   /* Header Only Mode */
-  .header-only .expand-handle {
+  .header .expand-handle {
     width: 100%;
     height: 32px;
     display: flex;
@@ -21230,14 +21230,16 @@ const growspaceCardStyles = i$6 `
     justify-content: center;
     cursor: pointer;
     background: rgba(0, 0, 0, 0.2);
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
-    margin-top: 20px; 
+    border-radius: 12px; /* Match collapse handle */
+    margin-top: 8px;     /* Match collapse handle spacing */
     transition: all 0.2s;
     border: 1px solid rgba(255, 255, 255, 0.05);
-    border-top: none;
+    /* Button Reset */
+    padding: 0;
+    outline: none;
+    color: inherit;
   }
-  .header-only .expand-handle:hover {
+  .header .expand-handle:hover {
     background: rgba(var(--rgb-primary-color), 0.1);
     color: var(--primary-color);
   }
@@ -21255,6 +21257,10 @@ const growspaceCardStyles = i$6 `
     margin-top: 8px; /* Spacing from grid */
     transition: all 0.2s;
     border: 1px solid rgba(255, 255, 255, 0.05);
+    /* Button Reset */
+    padding: 0;
+    outline: none;
+    color: inherit;
   }
   .collapse-handle:hover {
     background: rgba(var(--rgb-primary-color), 0.1);
@@ -21578,8 +21584,11 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         this._config = config;
         // handled in initializeSelectedDevice or store setter, but we can set initial state here if store exists?
         // Actually store exists in constructor.
-        if (this._config.compact !== undefined) {
-            this.store.state.isCompactView = this._config.compact;
+        if (this._config.initial_view_mode) ;
+        else if (this._config.compact !== undefined && this._config.compact) {
+            this.store.state.viewMode = 'compact';
+            // Sync legacy
+            this.store.state.isCompactView = true;
         }
     }
     getCardSize() {
@@ -21698,9 +21707,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     }
     renderViewContent(selectedDeviceData, growspaceOptions, grid, effectiveRows) {
         const viewMode = this.store.state.viewMode;
-        if (viewMode === 'grid_only') {
+        if (viewMode === 'compact') {
             return x `
-        <div class="view-mode-container grid-only">
+        <div class="view-mode-container compact">
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
           <button
             class="md3-button compact-exit-fab"
@@ -21714,19 +21723,19 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         </div>
       `;
         }
-        if (viewMode === 'header_only') {
+        if (viewMode === 'header') {
             return x `
-        <div class="view-mode-container header-only">
+        <div class="view-mode-container header">
           <growspace-header
             .device=${selectedDeviceData}
             .growspaceOptions=${growspaceOptions}
             @growspace-changed=${(e) => this.store.handleDeviceChange(e.target.value)}
           ></growspace-header>
-          <div class="expand-handle" @click=${() => this.store.toggleHeaderExpansion()}>
+          <button class="expand-handle" @click=${() => this.store.toggleHeaderExpansion()}>
             <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
               <path d="${mdiChevronDown}"></path>
             </svg>
-          </div>
+          </button>
         </div>
       `;
         }
@@ -21743,13 +21752,13 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
       ${this.renderEditModeBanner()}
       ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
       
-      ${this._config?.initial_view_mode === 'header_only'
+      ${this._config?.initial_view_mode === 'header'
             ? x `
-            <div class="collapse-handle" @click=${() => this.store.toggleHeaderExpansion()}>
+            <button class="collapse-handle" @click=${() => this.store.toggleHeaderExpansion()}>
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiChevronUp}"></path>
               </svg>
-            </div>
+            </button>
           `
             : ''}
     `;
@@ -21852,8 +21861,8 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
           @change=${(e) => this._valueChanged('initial_view_mode', e.target.value)}
         >
           <option value="standard">Standard</option>
-          <option value="grid_only">Compact (Grid Only)</option>
-          <option value="header_only">Header Only (Collapsed)</option>
+          <option value="compact">Compact (Grid Only)</option>
+          <option value="header">Header Only (Collapsed)</option>
         </select>
       </div>
 

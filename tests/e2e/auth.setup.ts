@@ -2,7 +2,7 @@ import { test as setup, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
-const authFile = path.join(__dirname, '../../playwright/.auth/user.json');
+const authFile = path.join(__dirname, '../../.auth/user.json');
 
 setup('authenticate', async ({ page }) => {
     // 1. Navigate
@@ -19,7 +19,7 @@ setup('authenticate', async ({ page }) => {
     await expect(async () => {
         const isLogin = await loginInput.isVisible();
         const isOnboarding = await createHomeBtn.isVisible() || page.url().includes('onboarding');
-        console.log(`Check state: Login=${isLogin}, Onboarding=${isOnboarding}, URL=${page.url()}`);
+        console.log(`Check state: Login = ${isLogin}, Onboarding = ${isOnboarding}, URL = ${page.url()} `);
         expect(isLogin || isOnboarding).toBeTruthy();
     }).toPass({ timeout: 15000 });
 
@@ -51,7 +51,7 @@ setup('authenticate', async ({ page }) => {
             const count = await buttons.count();
             if (count > 0 && await buttons.first().isVisible()) {
                 const text = await buttons.first().innerText();
-                console.log(`Clicking wizard button: ${text}`);
+                console.log(`Clicking wizard button: ${text} `);
                 await buttons.first().click();
                 // specific wait for location detection if we clicked "Detect"
                 // otherwise just a small tick to let the UI update

@@ -90,8 +90,8 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
         this._valueChanged('initial_view_mode', (e.target as HTMLSelectElement).value)}
         >
           <option value="standard">Standard</option>
-          <option value="grid_only">Compact (Grid Only)</option>
-          <option value="header_only">Header Only (Collapsed)</option>
+          <option value="compact">Compact (Grid Only)</option>
+          <option value="header">Header Only (Collapsed)</option>
         </select>
       </div>
 

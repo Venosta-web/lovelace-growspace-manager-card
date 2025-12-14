@@ -18,7 +18,7 @@ export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
   compact?: boolean;
 }
 
-export type GrowspaceViewMode = 'standard' | 'grid_only' | 'header_only';
+export type GrowspaceViewMode = 'standard' | 'compact' | 'header';
 
 // -- Generic Entity Types --
 

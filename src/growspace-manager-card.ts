@@ -137,8 +137,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     this._config = config;
     // handled in initializeSelectedDevice or store setter, but we can set initial state here if store exists?
     // Actually store exists in constructor.
-    if (this._config.compact !== undefined) {
-      this.store.state.isCompactView = this._config.compact;
+    if (this._config.initial_view_mode) {
+      // already valid if matched type
+    } else if (this._config.compact !== undefined && this._config.compact) {
+      this.store.state.viewMode = 'compact';
+      // Sync legacy
+      this.store.state.isCompactView = true;
     }
   }
 
@@ -286,9 +290,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   ): TemplateResult {
     const viewMode = this.store.state.viewMode;
 
-    if (viewMode === 'grid_only') {
+    if (viewMode === 'compact') {
       return html`
-        <div class="view-mode-container grid-only">
+        <div class="view-mode-container compact">
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
           <button
             class="md3-button compact-exit-fab"
@@ -303,19 +307,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       `;
     }
 
-    if (viewMode === 'header_only') {
+    if (viewMode === 'header') {
       return html`
-        <div class="view-mode-container header-only">
+        <div class="view-mode-container header">
           <growspace-header
             .device=${selectedDeviceData}
             .growspaceOptions=${growspaceOptions}
             @growspace-changed=${(e: any) => this.store.handleDeviceChange(e.target.value)}
           ></growspace-header>
-          <div class="expand-handle" @click=${() => this.store.toggleHeaderExpansion()}>
+          <button class="expand-handle" @click=${() => this.store.toggleHeaderExpansion()}>
             <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
               <path d="${mdiChevronDown}"></path>
             </svg>
-          </div>
+          </button>
         </div>
       `;
     }
@@ -333,13 +337,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       ${this.renderEditModeBanner()}
       ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
       
-      ${this._config?.initial_view_mode === 'header_only'
+      ${this._config?.initial_view_mode === 'header'
         ? html`
-            <div class="collapse-handle" @click=${() => this.store.toggleHeaderExpansion()}>
+            <button class="collapse-handle" @click=${() => this.store.toggleHeaderExpansion()}>
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiChevronUp}"></path>
               </svg>
-            </div>
+            </button>
           `
         : ''}
     `;

@@ -112,24 +112,24 @@ describe('GrowspaceStore', () => {
             expect(store.state.isCompactView).toBe(false);
         });
 
-        it('should initialize to header_only from config', () => {
-            store.initializeSelectedDevice({ initial_view_mode: 'header_only' });
-            expect(store.state.viewMode).toBe('header_only');
+        it('should initialize to header from config', () => {
+            store.initializeSelectedDevice({ initial_view_mode: 'header' });
+            expect(store.state.viewMode).toBe('header');
         });
 
-        it('should initialize to grid_only from compact legacy config', () => {
+        it('should initialize to compact from legacy config', () => {
             store.initializeSelectedDevice({ compact: true });
-            expect(store.state.viewMode).toBe('grid_only');
+            expect(store.state.viewMode).toBe('compact');
             // Legacy flag sync
             expect(store.state.isCompactView).toBe(true);
         });
 
         it('should update state when setViewMode is called', () => {
-            store.setViewMode('header_only');
-            expect(store.state.viewMode).toBe('header_only');
+            store.setViewMode('header');
+            expect(store.state.viewMode).toBe('header');
 
-            store.setViewMode('grid_only');
-            expect(store.state.viewMode).toBe('grid_only');
+            store.setViewMode('compact');
+            expect(store.state.viewMode).toBe('compact');
             // Legacy flag sync check
             expect(store.state.isCompactView).toBe(true);
 
@@ -140,19 +140,18 @@ describe('GrowspaceStore', () => {
 
         it('should toggle header expansion correctly', () => {
             // Case 1: Header Only -> Standard
-            store.setViewMode('header_only');
+            store.setViewMode('header');
             store.toggleHeaderExpansion();
             expect(store.state.viewMode).toBe('standard');
 
             // Case 2: Standard -> Header Only
-            // Note: toggleHeaderExpansion currently switches back to header_only if not in header_only
             store.toggleHeaderExpansion();
-            expect(store.state.viewMode).toBe('header_only');
+            expect(store.state.viewMode).toBe('header');
         });
 
         it('should map old setIsCompactView to new View Modes', () => {
             store.setIsCompactView(true);
-            expect(store.state.viewMode).toBe('grid_only');
+            expect(store.state.viewMode).toBe('compact');
 
             store.setIsCompactView(false);
             expect(store.state.viewMode).toBe('standard');

@@ -1013,7 +1013,7 @@ export const growspaceCardStyles = css`
   }
 
   /* Header Only Mode */
-  .header-only .expand-handle {
+  .header .expand-handle {
     width: 100%;
     height: 32px;
     display: flex;
@@ -1021,14 +1021,16 @@ export const growspaceCardStyles = css`
     justify-content: center;
     cursor: pointer;
     background: rgba(0, 0, 0, 0.2);
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
-    margin-top: 20px; 
+    border-radius: 12px; /* Match collapse handle */
+    margin-top: 8px;     /* Match collapse handle spacing */
     transition: all 0.2s;
     border: 1px solid rgba(255, 255, 255, 0.05);
-    border-top: none;
+    /* Button Reset */
+    padding: 0;
+    outline: none;
+    color: inherit;
   }
-  .header-only .expand-handle:hover {
+  .header .expand-handle:hover {
     background: rgba(var(--rgb-primary-color), 0.1);
     color: var(--primary-color);
   }
@@ -1046,6 +1048,10 @@ export const growspaceCardStyles = css`
     margin-top: 8px; /* Spacing from grid */
     transition: all 0.2s;
     border: 1px solid rgba(255, 255, 255, 0.05);
+    /* Button Reset */
+    padding: 0;
+    outline: none;
+    color: inherit;
   }
   .collapse-handle:hover {
     background: rgba(var(--rgb-primary-color), 0.1);
