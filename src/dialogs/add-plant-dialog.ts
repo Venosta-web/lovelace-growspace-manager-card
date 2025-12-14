@@ -103,6 +103,7 @@ export class AddPlantDialog extends LitElement {
   }
 
   render() {
+    console.log('[AddPlantDialog] render called, open:', this.open, 'strains:', this.strainLibrary?.length);
     if (!this.open) return html``;
 
     const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();

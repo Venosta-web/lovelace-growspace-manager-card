@@ -21,18 +21,25 @@ export class DialogHost extends LitElement {
     @property({ attribute: false })
     activeDialogState!: ActiveDialogState;
 
+    @property({ attribute: false })
+    strainLibrary: StrainEntry[] = [];
+
     protected shouldUpdate(changedProps: PropertyValues): boolean {
-        // Update if store is provided, or if activeDialogState changed
-        return !!this.store;
+        // Update if state props changed
+        if (changedProps.has('activeDialogState') || changedProps.has('store')) {
+            return true;
+        }
+        return true; // Default behavior
     }
 
     render() {
         if (!this.store) return html``;
 
         const active = this.store.state.activeDialog;
+        console.log('[DialogHost] Rendering with active type:', active.type);
         if (active.type === 'NONE') return html``;
 
-        const strainLibrary = this.store.state.strainLibrary || [];
+        const strainLibrary = this.strainLibrary || [];
         const devices = this.store.state.devices;
         const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
 
@@ -75,11 +82,11 @@ export class DialogHost extends LitElement {
         <add-plant-dialog
             .open=${true}
             .strainLibrary=${strainLibrary}
-            .targetRow=${dialogState.row}
-            .targetCol=${dialogState.col}
+            .row=${dialogState.row}
+            .col=${dialogState.col}
             .growspaceName=${selectedDeviceData?.name || ''}
             @close=${() => this.store.closeActiveDialog()}
-            @submit=${(e: CustomEvent) => this.store.confirmAddPlant(e.detail)}
+            @add-plant-submit=${(e: CustomEvent) => this.store.confirmAddPlant(e.detail)}
         ></add-plant-dialog>
         `;
     }
@@ -100,7 +107,11 @@ export class DialogHost extends LitElement {
             .growspaceOptions=${growspaceOptions}
             @close=${() => this.store.closeActiveDialog()}
             @update-plant=${(e: CustomEvent) =>
-                this.store.updatePlantFromDialog(e.detail)}
+                this.store.updatePlantFromDialog({
+                    plant: dialogState.plant,
+                    editedAttributes: e.detail, // Event detail is the attributes object
+                    selectedPlantIds: dialogState.selectedPlantIds
+                })}
             @delete-plant=${(e: CustomEvent) =>
                 this.store.handleDeletePlant(e.detail.plantId)}
             @harvest-plant=${(e: CustomEvent) => this.store.harvestPlant(e.detail.plant)}
@@ -147,8 +158,8 @@ export class DialogHost extends LitElement {
             .open=${true}
             .strains=${strainLibrary}
             @close=${() => this.store.closeActiveDialog()}
-            @add-strain=${(e: CustomEvent) => this.store.addStrain(e.detail)}
-            @remove-strain=${(e: CustomEvent) => this.store.removeStrain(e.detail)}
+            @save-strain=${(e: CustomEvent) => this.store.addStrain(e.detail)}
+            @delete-strain=${(e: CustomEvent) => this.store.removeStrain(e.detail.key)}
             @import-library=${(e: CustomEvent) => this._performImport(e.detail.file, e.detail.replace)}
             @export-library=${() => this.store.handleExportLibrary()}
         ></strain-library-dialog>

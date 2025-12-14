@@ -604,6 +604,7 @@ export class GrowspaceStore implements ReactiveController {
 
         try {
             await this.dataService.addStrain(payload);
+            this.showToast('Strain saved successfully!', 'success');
             await this.fetchStrainLibrary(true);
         } catch (err) {
             console.error('Error adding strain:', err);
@@ -709,6 +710,7 @@ export class GrowspaceStore implements ReactiveController {
     }
 
     openAddPlantDialog(row?: number, col?: number) {
+        console.log('[GrowspaceStore] openAddPlantDialog called', { row, col });
         // If row/col specified, use them (clicked from grid)
         if (row !== undefined && col !== undefined) {
             this.fetchStrainLibrary();
@@ -720,7 +722,10 @@ export class GrowspaceStore implements ReactiveController {
         }
 
         // Auto-find free slot if not specified
-        if (!this.state.selectedDevice) return;
+        if (!this.state.selectedDevice) {
+            console.warn('[GrowspaceStore] No selected device for Add Plant');
+            return;
+        }
         const devices = this.state.devices;
         const device = devices.find((d) => d.device_id === this.state.selectedDevice);
 
@@ -733,6 +738,7 @@ export class GrowspaceStore implements ReactiveController {
                 rows,
                 cols
             );
+            console.log('[GrowspaceStore] Found slot', { targetRow, targetCol });
 
             // If full, default to 1,1 or last found (let backend reject or user change)
             this.fetchStrainLibrary();
@@ -741,6 +747,7 @@ export class GrowspaceStore implements ReactiveController {
                 type: 'ADD_PLANT',
                 payload: { row: targetRow - 1, col: targetCol - 1 },
             });
+            console.log('[GrowspaceStore] Set Active Dialog ADD_PLANT');
         }
     }
 
