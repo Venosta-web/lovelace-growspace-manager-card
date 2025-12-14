@@ -2,6 +2,8 @@ import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import { consume } from '@lit/context';
+import { strainLibraryContext } from '../context';
 import {
   mdiSprout,
   mdiFlower,
@@ -36,7 +38,11 @@ export class GrowspacePlantCard extends LitElement {
   @property({ attribute: false }) public plant!: PlantEntity;
   @property({ type: Number }) public row!: number;
   @property({ type: Number }) public col!: number;
-  @property({ attribute: false }) public strainLibrary: StrainEntry[] = [];
+
+  @consume({ context: strainLibraryContext, subscribe: true })
+  @property({ attribute: false })
+  public strainLibrary: StrainEntry[] = [];
+
   @property({ type: Boolean }) public isEditMode = false;
   @property({ type: Boolean }) public selected = false;
 
@@ -244,23 +250,24 @@ export class GrowspacePlantCard extends LitElement {
     // Image logic
     let imageUrl: string | undefined;
     let imageCropMeta: any | undefined;
+    const library = this.strainLibrary || [];
 
     if (strainName !== 'Unknown Strain') {
-      const phenoMatch = this.strainLibrary.find(
+      const phenoMatch = library.find(
         (s) => s.strain === strainName && s.phenotype === pheno
       );
       if (phenoMatch && phenoMatch.image) {
         imageUrl = phenoMatch.image;
         imageCropMeta = phenoMatch.image_crop_meta;
       } else {
-        const strainMatch = this.strainLibrary.find(
+        const strainMatch = library.find(
           (s) => s.strain === strainName && (!s.phenotype || s.phenotype === 'default')
         );
         if (strainMatch && strainMatch.image) {
           imageUrl = strainMatch.image;
           imageCropMeta = strainMatch.image_crop_meta;
         } else if (!imageUrl) {
-          const anyMatch = this.strainLibrary.find((s) => s.strain === strainName && s.image);
+          const anyMatch = library.find((s) => s.strain === strainName && s.image);
           if (anyMatch) {
             imageUrl = anyMatch.image;
             imageCropMeta = anyMatch.image_crop_meta;
@@ -496,14 +503,14 @@ export class GrowspacePlantCard extends LitElement {
   private renderPlantDaysRich(stages: StageDisplay[]): TemplateResult {
     return html`
       ${stages.map((d) => {
-        // Logic for classMap if needed
-        return html`
+      // Logic for classMap if needed
+      return html`
           <div class="pc-stat-item ${d.isCurrent ? 'current-stage' : ''}">
             <svg style="color: ${d.color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
             <div class="pc-stat-text">${d.days}d</div>
           </div>
         `;
-      })}
+    })}
     `;
   }
 
@@ -527,7 +534,7 @@ export class GrowspacePlantCard extends LitElement {
         @click=${this._handleClick}
       >
         ${imageUrl
-          ? html`
+        ? html`
               <img
                 class="plant-card-bg"
                 src="${imageUrl}"
@@ -537,9 +544,9 @@ export class GrowspacePlantCard extends LitElement {
               />
               <div class="plant-card-overlay"></div>
             `
-          : ''}
+        : ''}
         ${this.isEditMode
-          ? html`
+        ? html`
               <div
                 class="plant-card-checkbox ${this.selected ? 'selected' : ''}"
                 @click=${this._toggleSelection}
@@ -547,14 +554,14 @@ export class GrowspacePlantCard extends LitElement {
                 <svg
                   viewBox="0 0 24 24"
                   style="width: 24px; height: 24px; fill: ${this.selected
-                    ? 'var(--primary-color)'
-                    : 'rgba(255,255,255,0.7)'};"
+            ? 'var(--primary-color)'
+            : 'rgba(255,255,255,0.7)'};"
                 >
                   <path d="${this.selected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
                 </svg>
               </div>
             `
-          : ''}
+        : ''}
 
         <div class="plant-card-content">
           <div class="pc-info">

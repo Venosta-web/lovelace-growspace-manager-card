@@ -1,5 +1,6 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { createRef, ref } from 'lit/directives/ref.js';
 import { mdiPlus } from '@mdi/js';
 import { repeat } from 'lit/directives/repeat.js';
 import { PlantEntity, StrainEntry, GrowspaceManagerCardConfig } from '../types';
@@ -16,13 +17,14 @@ export class GrowspaceGrid extends LitElement {
   @property({ type: Array }) plants: (PlantEntity | null)[][] = [];
   @property({ type: Number }) rows: number = 3;
   @property({ type: Number }) cols: number = 3;
-  @property({ type: Array }) strainLibrary: StrainEntry[] = [];
+  // strainLibrary is now consumed via context in child cards
   @property({ type: Boolean }) isEditMode: boolean = false;
   @property({ type: Object }) selectedPlants: Set<string> = new Set();
   @property({ type: Boolean }) compact: boolean = false;
   @property({ type: Boolean }) isLoading: boolean = false;
 
   private _draggedPlant: PlantEntity | null = null;
+  private _gridRef = createRef<HTMLDivElement>();
 
   static styles = css`
     :host {
@@ -391,41 +393,40 @@ export class GrowspaceGrid extends LitElement {
       >
         ${this.isLoading ? this.renderSkeletonGrid() : ''}
         ${!this.isLoading
-          ? repeat(
-              flatGrid,
-              (plant, index) =>
-                plant ? plant.attributes?.plant_id || plant.entity_id : `empty-${index}`,
-              (plant, index) => {
-                // Recalculate row/col based on grid index
-                const row = Math.floor(index / this.cols) + 1;
-                const col = (index % this.cols) + 1;
+        ? repeat(
+          flatGrid,
+          (plant, index) =>
+            plant ? plant.attributes?.plant_id || plant.entity_id : `empty-${index}`,
+          (plant, index) => {
+            // Recalculate row/col based on grid index
+            const row = Math.floor(index / this.cols) + 1;
+            const col = (index % this.cols) + 1;
 
-                if (!plant) {
-                  return this.renderEmptySlot(row, col);
-                }
+            if (!plant) {
+              return this.renderEmptySlot(row, col);
+            }
 
-                const plantId =
-                  plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-                const isSelected = this.selectedPlants.has(plantId);
+            const plantId =
+              plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+            const isSelected = this.selectedPlants.has(plantId);
 
-                return html`
+            return html`
                   <growspace-plant-card
                     .plant=${plant}
                     .row=${row}
                     .col=${col}
-                    .strainLibrary=${this.strainLibrary}
                     .isEditMode=${this.isEditMode}
                     .selected=${isSelected}
                     @plant-click=${() => this._handlePlantClick(plant)}
                     @plant-drag-start=${() => this._handleDragStart(plant)}
                     @plant-drop=${(e: PlantDropEvent) =>
-                      this._handleDrop(e.detail.originalEvent, row, col, plant)}
+                this._handleDrop(e.detail.originalEvent, row, col, plant)}
                     @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
                   ></growspace-plant-card>
                 `;
-              }
-            )
-          : ''}
+          }
+        )
+        : ''}
       </div>
     `;
   }

@@ -1441,6 +1441,7 @@ class s$3{get value(){return this.o}set value(s){this.setValue(s);}setValue(s,t=
 
 const hassContext = n$4('hass');
 const configContext = n$4('config');
+const strainLibraryContext = n$4('strain-library');
 
 // these aren't really private, but nor are they really useful to document
 
@@ -11234,20 +11235,930 @@ GrowspaceEnvChart = __decorate([
     t$2('growspace-env-chart')
 ], GrowspaceEnvChart);
 
-const dialogStyles = i$6 `
+class GrowspaceStore {
+    constructor(host) {
+        // State
+        this.state = {
+            selectedDevice: null,
+            strainLibrary: [],
+            activeDialog: { type: 'NONE' },
+            isEditMode: false,
+            selectedPlants: new Set(),
+            optimisticDeletedPlantIds: new Set(),
+            focusedPlantIndex: -1,
+            menuOpen: false,
+            notification: null,
+            isCompactView: false,
+            defaultApplied: false,
+            isLoading: true,
+            devices: [],
+        };
+        this.wsDataCache = {};
+        this._isFetchingWS = false;
+        this.handleTakeClone = (motherPlant, numClones) => {
+            const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
+            this.dataService
+                .takeClone({
+                mother_plant_id: plantId,
+                num_clones: numClones,
+            })
+                .then(() => {
+                console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
+            })
+                .catch((error) => {
+                console.error(`Failed to take clone: ${error.message}`);
+            });
+        };
+        this.host = host;
+        host.addController(this);
+        // Wrap state in a proxy to auto-trigger updates
+        this.state = new Proxy(this.state, {
+            set: (target, prop, value) => {
+                const oldVal = target[prop];
+                if (oldVal !== value) {
+                    // Use type assertion to avoid 'any' is not assignable to 'never' error
+                    target[prop] = value;
+                    this.host.requestUpdate();
+                }
+                return true;
+            }
+        });
+        console.log('GrowspaceStore initialized with Reactive Proxy');
+        this.dataService = new DataService();
+    }
+    hostConnected() {
+        // Lifecycle hook
+        // We can't subscribe here because hass might not be set yet.
+        // Logic handled in updateHass/subscribe
+    }
+    hostDisconnected() {
+        if (this._unsubEvents) {
+            this._unsubEvents();
+            this._unsubEvents = undefined;
+        }
+    }
+    updateHass(hass) {
+        this.hass = hass;
+        this.dataService.updateHass(hass);
+        this._ensureEventSubscription();
+        // If cache empty, fetch initial
+        if (Object.keys(this.wsDataCache).length === 0 && !this._isFetchingWS) {
+            this._refreshGrowspaceData();
+        }
+        else {
+            // Just re-calculate derived state (sync) because entities might have changed
+            this._updateDevicesState();
+        }
+        if (!this.state.selectedDevice && this.state.devices.length > 0) {
+            this.state.selectedDevice = this.state.devices[0].device_id;
+            // Ensure the UI knows we are ready to display
+            if (this.state.isLoading) {
+                this.state.isLoading = false;
+            }
+        }
+        this.pruneOptimisticDeletions();
+    }
+    async _ensureEventSubscription() {
+        if (this._unsubEvents || !this.hass)
+            return;
+        try {
+            this._unsubEvents = await this.hass.connection.subscribeEvents(() => this._refreshGrowspaceData(), // specific logic to handle event payload? Msg is empty usually.
+            'growspace_manager_updated');
+        }
+        catch (err) {
+            console.error('Failed to subscribe to growspace events', err);
+        }
+    }
+    async refreshData() {
+        await this._refreshGrowspaceData();
+    }
+    async _refreshGrowspaceData() {
+        if (!this.hass || this._isFetchingWS)
+            return;
+        this._isFetchingWS = true;
+        // Show loading spinner if we have no devices yet
+        if (this.state.devices.length === 0) {
+            this.state.isLoading = true;
+        }
+        try {
+            // fetchGrowspaceData without ID should return all data
+            const data = await this.dataService.fetchGrowspaceData();
+            this.wsDataCache = data || {};
+            this._updateDevicesState();
+        }
+        catch (e) {
+            console.error('Failed to fetch growspace data', e);
+        }
+        finally {
+            this._isFetchingWS = false;
+            // Only clear loading if we didn't find any devices OR if we already have a selection
+            // If we found devices but no selection, wait for auto-select logic in updateHass/initialize
+            if (this.state.devices.length === 0 || this.state.selectedDevice) {
+                this.state.isLoading = false;
+            }
+        }
+    }
+    _updateDevicesState() {
+        const devices = this.dataService.getGrowspaceDevices(this.wsDataCache);
+        this.state.devices = devices;
+        // Auto-select if needed (handles initial load race condition where updateHass hasn't run yet)
+        if (!this.state.selectedDevice && devices.length > 0) {
+            this.state.selectedDevice = devices[0].device_id;
+        }
+    }
+    requestUpdate() {
+        this.host.requestUpdate();
+    }
+    // --- Actions / Logic ---
+    // State Setters
+    setIsCompactView(value) {
+        this.state.isCompactView = value;
+    }
+    setDefaultApplied(value) {
+        this.state.defaultApplied = value;
+    }
+    showToast(message, type = 'info') {
+        this.state.notification = { message, type };
+        setTimeout(() => {
+            this.state.notification = null;
+        }, 4000);
+    }
+    initializeSelectedDevice(config) {
+        // Update compact view from config if not already set (or always?)
+        if (config?.compact !== undefined) {
+            this.state.isCompactView = config.compact;
+        }
+        const devices = this.state.devices;
+        if (!devices.length || this.state.selectedDevice)
+            return;
+        // Try to apply default from config
+        if (config?.default_growspace) {
+            const defaultDevice = devices.find((d) => d.device_id === config.default_growspace || d.name === config.default_growspace);
+            if (defaultDevice) {
+                this.state.selectedDevice = defaultDevice.device_id;
+                this.state.defaultApplied = true;
+                return;
+            }
+        }
+        // Fallback to first device
+        this.state.selectedDevice = devices[0].device_id;
+    }
+    // ...
+    fetchStrainLibrary(force = false) {
+        return this._fetchStrainLibraryImpl(force);
+    }
+    async _fetchStrainLibraryImpl(force) {
+        if (!this.hass)
+            return;
+        const CACHE_KEY = 'growspace_strain_library_v2';
+        const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
+        // 1. Try to load from cache
+        const cachedRaw = localStorage.getItem(CACHE_KEY);
+        let usedCache = false;
+        if (!force && cachedRaw) {
+            try {
+                const cache = JSON.parse(cachedRaw);
+                const age = Date.now() - (cache.timestamp || 0);
+                if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
+                    this.state.strainLibrary = cache.data;
+                    usedCache = true;
+                }
+            }
+            catch (e) {
+                console.warn('Failed to parse cached strain library', e);
+                localStorage.removeItem(CACHE_KEY); // Clear bad cache
+            }
+        }
+        // 2. Fetch from backend if no cache or invalid
+        if (!usedCache) {
+            try {
+                const currentStrains = await this.dataService.fetchStrainLibrary();
+                if (Array.isArray(currentStrains)) {
+                    this.state.strainLibrary = currentStrains;
+                    // Update cache
+                    const cacheData = {
+                        version: 2,
+                        timestamp: Date.now(),
+                        data: currentStrains,
+                    };
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+                }
+            }
+            catch (e) {
+                console.error('Failed to fetch strain library:', e);
+            }
+        }
+    }
+    handleKeyboardNavigation(key) {
+        if (this.state.isEditMode && key === 'Escape') {
+            this.exitEditMode();
+            return;
+        }
+        if (!this.state.selectedDevice)
+            return;
+        const devices = this.state.devices;
+        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
+        if (!device)
+            return;
+        const plants = device.plants.filter((p) => !this.state.optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
+        if (plants.length === 0)
+            return;
+        if (key === 'ArrowRight') {
+            this.setFocusedPlantIndex((this.state.focusedPlantIndex + 1) % plants.length);
+        }
+        else if (key === 'ArrowLeft') {
+            this.setFocusedPlantIndex((this.state.focusedPlantIndex - 1 + plants.length) % plants.length);
+        }
+        else if (key === 'Enter' || key === ' ') {
+            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
+                this.handlePlantClick(plants[this.state.focusedPlantIndex]);
+            }
+        }
+        else if (key === 'Delete' || key === 'Backspace') {
+            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
+                const focusedPlant = plants[this.state.focusedPlantIndex];
+                if (focusedPlant) {
+                    this.handleDeletePlant(focusedPlant.entity_id);
+                }
+            }
+            else if (this.state.selectedPlants.size > 0) {
+                // If multiple plants are selected, delete them
+                this.handleDeletePlant(Array.from(this.state.selectedPlants));
+            }
+        }
+    }
+    handleDeviceChange(deviceId) {
+        this.state.selectedDevice = deviceId;
+    }
+    togglePlantSelection(plantOrId) {
+        const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
+        if (!plantId)
+            return;
+        const newSet = new Set(this.state.selectedPlants);
+        if (newSet.has(plantId)) {
+            newSet.delete(plantId);
+        }
+        else {
+            newSet.add(plantId);
+        }
+        this.state.selectedPlants = newSet;
+    }
+    selectAllPlants() {
+        if (!this.state.selectedDevice)
+            return;
+        const devices = this.state.devices;
+        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
+        if (selectedDeviceData && selectedDeviceData.plants) {
+            selectedDeviceData.plants.forEach((plant) => {
+                const pId = plant.attributes.plant_id;
+                if (pId && !this.state.optimisticDeletedPlantIds.has(pId)) {
+                    this.state.selectedPlants.add(pId);
+                }
+            });
+            // Force update to trigger proxy set trap on a property if we mutated distinct property? 
+            // Actually Set and Map mutations don't trigger proxy 'set'.
+            // We must reassign the Set to trigger the proxy trap.
+            this.state.selectedPlants = new Set(this.state.selectedPlants);
+        }
+    }
+    setSelectedPlants(plantIds) {
+        this.state.selectedPlants = new Set(plantIds);
+    }
+    setFocusedPlantIndex(index) {
+        this.state.focusedPlantIndex = index;
+    }
+    clearPlantSelection() {
+        this.state.selectedPlants = new Set();
+    }
+    exitEditMode() {
+        this.state.isEditMode = false;
+        this.state.selectedPlants = new Set();
+    }
+    setEditMode(value) {
+        this.state.isEditMode = value;
+    }
+    setMenuOpen(value) {
+        this.state.menuOpen = value;
+    }
+    setActiveDialog(dialogState) {
+        this.state.activeDialog = dialogState;
+    }
+    closeActiveDialog() {
+        this.state.activeDialog = { type: 'NONE' };
+    }
+    handlePlantClick(plant) {
+        if (this.state.isEditMode && this.state.selectedPlants.size > 0) {
+            const plantId = plant.attributes.plant_id;
+            if (plantId && !this.state.selectedPlants.has(plantId)) {
+                this.togglePlantSelection(plantId);
+            }
+            this.openPlantOverviewDialog(plant, Array.from(this.state.selectedPlants));
+        }
+        else {
+            this.openPlantOverviewDialog(plant);
+        }
+    }
+    openPlantOverviewDialog(plant, selectedIds) {
+        this.state.activeDialog = {
+            type: 'PLANT_OVERVIEW',
+            payload: {
+                plant,
+                editedAttributes: { ...plant.attributes },
+                activeTab: 'dashboard',
+                selectedPlantIds: selectedIds,
+            },
+        };
+    }
+    async updatePlantFromDialog(dialogState) {
+        const { plant, editedAttributes, selectedPlantIds } = dialogState;
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
+        const isBulkEdit = targetIds.length > 1;
+        const payloadTemplate = {};
+        const dateFields = [
+            'seedling_start',
+            'mother_start',
+            'clone_start',
+            'veg_start',
+            'flower_start',
+            'dry_start',
+            'cure_start',
+        ];
+        const fieldsToProcess = isBulkEdit
+            ? dateFields
+            : ['strain', 'phenotype', 'row', 'col', ...dateFields];
+        fieldsToProcess.forEach((field) => {
+            if (editedAttributes[field] !== undefined) {
+                if (dateFields.includes(field)) {
+                    const val = String(editedAttributes[field] || '');
+                    if (!val || val === 'null' || val === 'undefined') {
+                        payloadTemplate[field] = null;
+                    }
+                    else {
+                        const formattedDate = PlantUtils.formatDateForBackend(val);
+                        if (formattedDate) {
+                            payloadTemplate[field] = formattedDate;
+                        }
+                    }
+                }
+                else {
+                    if (editedAttributes[field] !== null) {
+                        payloadTemplate[field] = editedAttributes[field];
+                    }
+                }
+            }
+        });
+        try {
+            const updatePromises = targetIds.map((id) => {
+                const payload = { ...payloadTemplate, plant_id: id };
+                if (isBulkEdit) {
+                    delete payload.row;
+                    delete payload.col;
+                }
+                return this.dataService.updatePlant(payload);
+            });
+            await Promise.all(updatePromises);
+            this.closeActiveDialog();
+            if (this.state.isEditMode) {
+                this.state.selectedPlants = new Set();
+                this.state.isEditMode = false;
+            }
+        }
+        catch (err) {
+            console.error('Error updating plant(s):', err);
+        }
+    }
+    async updatePlant(plantId, updates) {
+        try {
+            await this.dataService.updatePlant({ plant_id: plantId, ...updates });
+            this.showToast('Plant updated', 'success');
+            // Dialog might stay open or close? Usually stay open for overview.
+        }
+        catch (e) {
+            console.error('Failed to update plant:', e);
+            this.showToast(`Failed to update plant: ${e.message}`, 'error');
+        }
+    }
+    async handleDeletePlant(plantId) {
+        const ids = Array.isArray(plantId) ? plantId : [plantId];
+        const newOptimistic = new Set(this.state.optimisticDeletedPlantIds);
+        ids.forEach((id) => newOptimistic.add(id));
+        this.state.optimisticDeletedPlantIds = newOptimistic;
+        try {
+            // Check if backend supports bulk delete? If not, loop.
+            // Assuming dataService.deletePlant takes one ID.
+            await Promise.all(ids.map((id) => this.dataService.removePlant(id)));
+            this.showToast('Plant(s) deleted', 'success');
+            // Do NOT remove from optimistic set here.
+            // We wait for updateHass/pruneOptimisticDeletions to confirm they are gone from HA state.
+            ids.forEach((id) => {
+                this.state.selectedPlants.delete(id);
+            });
+            if (this.state.activeDialog.type === 'PLANT_OVERVIEW') {
+                this.closeActiveDialog();
+            }
+            this.updateGrid();
+        }
+        catch (e) {
+            console.error('Failed to delete plant:', e);
+            this.showToast(`Failed to delete: ${e.message}`, 'error');
+            const revertedOptimistic = new Set(this.state.optimisticDeletedPlantIds);
+            ids.forEach((id) => revertedOptimistic.delete(id));
+            this.state.optimisticDeletedPlantIds = revertedOptimistic;
+        }
+    }
+    pruneOptimisticDeletions() {
+        if (this.state.optimisticDeletedPlantIds.size === 0)
+            return;
+        const allPlantIds = new Set();
+        const devices = this.state.devices;
+        devices.forEach((d) => d.plants.forEach((p) => allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))));
+        const toRemove = new Set();
+        this.state.optimisticDeletedPlantIds.forEach((id) => {
+            // If the plant ID is NOT in the current data, it means deletion is confirmed/propagated.
+            // So we can stop masking it.
+            if (!allPlantIds.has(id)) {
+                toRemove.add(id);
+            }
+        });
+        if (toRemove.size > 0) {
+            const newOptimistic = new Set(this.state.optimisticDeletedPlantIds);
+            toRemove.forEach((id) => newOptimistic.delete(id));
+            this.state.optimisticDeletedPlantIds = newOptimistic;
+        }
+    }
+    async handleMovePlantToNextStage(plant) {
+        const stage = plant.attributes?.stage;
+        let targetGrowspace = '';
+        const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
+        if (!stage || !movableStages.has(stage)) {
+            this.showToast('Plant must be in mother or flower or dry or cure stage to move. stage is ' + stage, 'error');
+            return;
+        }
+        if (stage === 'flower') {
+            targetGrowspace = 'dry';
+        }
+        else if (stage === 'dry') {
+            targetGrowspace = 'cure';
+        }
+        else if (stage === 'mother') {
+            targetGrowspace = 'clone';
+        }
+        else {
+            console.error('Unknown stage, cannot move plant', targetGrowspace);
+            targetGrowspace = 'error';
+        }
+        try {
+            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+            await this.dataService.harvestPlant(plantId, targetGrowspace);
+            this.closeActiveDialog();
+        }
+        catch (err) {
+            console.error('Error moving plant to next stage:', err);
+        }
+    }
+    async addStrain(strainData) {
+        if (!strainData.strain)
+            return;
+        const payload = {
+            strain: strainData.strain,
+            phenotype: strainData.phenotype,
+            breeder: strainData.breeder,
+            type: strainData.type,
+            flowering_days_min: strainData.flowering_days_min
+                ? Number(strainData.flowering_days_min)
+                : undefined,
+            flowering_days_max: strainData.flowering_days_max
+                ? Number(strainData.flowering_days_max)
+                : undefined,
+            lineage: strainData.lineage,
+            sex: strainData.sex,
+            description: strainData.description,
+            image: strainData.image,
+            image_crop_meta: strainData.image_crop_meta,
+            sativa_percentage: strainData.sativa_percentage,
+            indica_percentage: strainData.indica_percentage,
+        };
+        try {
+            await this.dataService.addStrain(payload);
+            await this.fetchStrainLibrary(true);
+        }
+        catch (err) {
+            console.error('Error adding strain:', err);
+        }
+    }
+    async removeStrain(strainKey) {
+        try {
+            const parts = strainKey.split('|');
+            const strain = parts[0];
+            const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
+            await this.dataService.removeStrain(strain, phenotype);
+            if (this.state.strainLibrary) {
+                this.state.strainLibrary = this.state.strainLibrary.filter((s) => s.key !== strainKey);
+            }
+            await this.fetchStrainLibrary(true);
+        }
+        catch (err) {
+            console.error('Error removing strain:', err);
+        }
+    }
+    updateGrid() {
+        // Force refresh from HA
+        if (this.hass) {
+            this.dataService.updateHass(this.hass);
+        }
+        // Trigger generic request update, but also maybe refresh WS data if we expect backend changes?
+        // Actions usually trigger backend changes which fire growspace_updated, so subscription handles it.
+        this.requestUpdate();
+    }
+    async handleDrop(targetRow, targetCol, targetPlant, sourcePlant) {
+        if (!sourcePlant || !this.state.selectedDevice)
+            return;
+        try {
+            if (targetPlant) {
+                const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
+                const targetId = targetPlant.attributes.plant_id || targetPlant.entity_id.replace('sensor.', '');
+                if (sourceId === targetId)
+                    return;
+                await this.dataService.swapPlants(sourceId, targetId);
+                this.updateGrid();
+            }
+            else {
+                await this.movePlant(sourcePlant, targetRow, targetCol);
+            }
+        }
+        catch (err) {
+            console.error('Error during drag-and-drop:', err);
+        }
+    }
+    async movePlant(plant, newRow, newCol) {
+        try {
+            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+            await this.dataService.updatePlant({
+                plant_id: plantId,
+                row: newRow,
+                col: newCol,
+            });
+            this.updateGrid();
+        }
+        catch (err) {
+            console.error('Error moving plant:', err);
+        }
+    }
+    async handleAddGrowspace(detail) {
+        const { name, rows, plants_per_row, notification_service } = detail;
+        if (!name) {
+            this.showToast('Name is required', 'error');
+            return;
+        }
+        try {
+            await this.dataService.addGrowspace({
+                name,
+                rows: rows || 4,
+                plants_per_row: plants_per_row || 4,
+                notification_service: notification_service || 'mobile_app_notify',
+            });
+            this.showToast('Growspace added successfully!', 'success');
+            await this.refreshData();
+            this.closeActiveDialog();
+        }
+        catch (e) {
+            this.showToast(`Error: ${e.message}`, 'error');
+        }
+    }
+    async harvestPlant(plant) {
+        await this.handleMovePlantToNextStage(plant);
+    }
+    async finishDryingPlant(plant) {
+        await this.handleMovePlantToNextStage(plant);
+    }
+    openAddPlantDialog(row, col) {
+        // If row/col specified, use them (clicked from grid)
+        if (row !== undefined && col !== undefined) {
+            this.fetchStrainLibrary();
+            this.setActiveDialog({
+                type: 'ADD_PLANT',
+                payload: { row, col },
+            });
+            return;
+        }
+        // Auto-find free slot if not specified
+        if (!this.state.selectedDevice)
+            return;
+        const devices = this.state.devices;
+        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
+        if (device) {
+            const rows = device.rows || 4;
+            const cols = device.plants_per_row || 4;
+            const { row: targetRow, col: targetCol } = PlantUtils.findFirstAvailableSlot(device.plants || [], rows, cols);
+            // If full, default to 1,1 or last found (let backend reject or user change)
+            this.fetchStrainLibrary();
+            // Convert 1-based backend coordinates to 0-based dialog coordinates
+            this.setActiveDialog({
+                type: 'ADD_PLANT',
+                payload: { row: targetRow - 1, col: targetCol - 1 },
+            });
+        }
+    }
+    async clonePlant(plant, numClones) {
+        await this.handleTakeClone(plant, numClones);
+    }
+    async confirmAddPlant(detail) {
+        const devices = this.state.devices;
+        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
+        if (!selectedDeviceData)
+            return;
+        // Convert 0-based dialog coordinates to 1-based backend coordinates
+        const row = detail.row + 1;
+        const col = detail.col + 1;
+        const { strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start, } = detail;
+        if (!strain) {
+            this.showToast('Please select a strain', 'error');
+            return;
+        }
+        try {
+            await this.dataService.addPlant({
+                growspace_id: selectedDeviceData.device_id,
+                strain,
+                phenotype: phenotype || '',
+                row,
+                col,
+                veg_start,
+                flower_start,
+                seedling_start,
+                mother_start,
+                clone_start,
+                dry_start,
+                cure_start,
+            });
+            this.showToast('Plant added successfully', 'success');
+            this.closeActiveDialog();
+        }
+        catch (e) {
+            console.error(e);
+            this.showToast('Failed to add plant', 'error');
+        }
+    }
+    async analyzeGrowspace(query, isGlobal = false) {
+        const dialogPayload = this.state.activeDialog.type === 'GROW_MASTER' ? this.state.activeDialog.payload : null;
+        if (!dialogPayload)
+            return;
+        // Update dialog state to loading
+        this.setActiveDialog({
+            type: 'GROW_MASTER',
+            payload: { ...dialogPayload, isLoading: true, response: null },
+        });
+        try {
+            let result;
+            if (isGlobal || dialogPayload.mode === 'all') {
+                result = await this.dataService.analyzeAllGrowspaces();
+            }
+            else {
+                result = await this.dataService.askGrowAdvice(this.state.selectedDevice || '', query);
+            }
+            const responseText = typeof result.response === 'string'
+                ? result.response
+                : result.response?.response || JSON.stringify(result);
+            this.setActiveDialog({
+                type: 'GROW_MASTER',
+                payload: { ...dialogPayload, isLoading: false, response: responseText },
+            });
+        }
+        catch (err) {
+            console.error('Error asking Grow Master:', err);
+            this.setActiveDialog({
+                type: 'GROW_MASTER',
+                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
+            });
+        }
+    }
+    async getStrainRecommendation(userQuery) {
+        const dialogPayload = this.state.activeDialog.type === 'STRAIN_RECOMMENDATION'
+            ? this.state.activeDialog.payload
+            : null;
+        if (!dialogPayload)
+            return;
+        this.setActiveDialog({
+            type: 'STRAIN_RECOMMENDATION',
+            payload: { ...dialogPayload, isLoading: true, response: null },
+        });
+        try {
+            const result = await this.dataService.getStrainRecommendation(userQuery);
+            const responseText = typeof result.response === 'string' ? result.response : JSON.stringify(result);
+            this.setActiveDialog({
+                type: 'STRAIN_RECOMMENDATION',
+                payload: { ...dialogPayload, isLoading: false, response: responseText },
+            });
+        }
+        catch (err) {
+            console.error('Error getting strain recommendation:', err);
+            this.setActiveDialog({
+                type: 'STRAIN_RECOMMENDATION',
+                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
+            });
+        }
+    }
+    openStrainRecommendationDialog() {
+        this.setActiveDialog({
+            type: 'STRAIN_RECOMMENDATION',
+            payload: {
+                isLoading: false,
+                response: null,
+            },
+        });
+    }
+    openLogbookDialog() {
+        if (!this.state.selectedDevice)
+            return;
+        this.setActiveDialog({
+            type: 'LOGBOOK',
+            payload: {
+                growspaceId: this.state.selectedDevice,
+            },
+        });
+    }
+    handleExportLibrary() {
+        // Logic needs to be adapted since event subscription on HASS connection is component specific?
+        // Actually we can do it here if we assume `hass` is available.
+        // But `subscribeEvents` is on `hass.connection`.
+        // We can emit a custom event or just implement the logic here.
+        // The download part triggers a browser action (window location or anchor click).
+        // It's better to keep DOM interaction like download in the component?
+        // Or pass a callback.
+        // I'll keep it simple: Implement logic here, but for the download part, creating an element on document
+        // might be slightly unclean in a store but it works.
+        this._handleExportLibraryLogic();
+    }
+    async _handleExportLibraryLogic() {
+        if (!this.hass)
+            return;
+        const unsubscribe = await this.hass.connection.subscribeEvents((event) => {
+            if (event.data && event.data.url) {
+                this._downloadFile(event.data.url);
+                unsubscribe();
+            }
+        }, 'growspace_manager_strain_library_exported');
+        try {
+            await this.dataService.exportStrainLibrary();
+            this.showToast('Export started...', 'info');
+        }
+        catch (err) {
+            console.error('Failed to call export service', err);
+            unsubscribe();
+        }
+    }
+    _downloadFile(url) {
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = url.split('/').pop() || 'export.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+    async performImport(file, replace) {
+        if (!file)
+            return;
+        try {
+            const result = await this.dataService.importStrainLibrary(file, replace);
+            this.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
+            await this.fetchStrainLibrary(true);
+        }
+        catch (err) {
+            console.error('Import failed:', err);
+            this.showToast(`Import failed: ${err.message}`, 'error');
+        }
+    }
+}
+
+const sharedStyles = i$6 `
+  /* --- Glassmorphism Surfaces --- */
+  .glass-surface {
+    background: rgba(20, 20, 24, 0.6);
+    background-image: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.03) 0%,
+      rgba(255, 255, 255, 0.01) 100%
+    );
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 4px 24px -1px rgba(0, 0, 0, 0.2),
+      0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+    color: var(--primary-text-color, #fff);
+  }
+
+  .glass-panel {
+    border-radius: var(--border-radius-xl, 28px);
+    padding: var(--spacing-lg, 24px);
+  }
+
   .glass-dialog-container {
-    background: rgba(20, 20, 20, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
+    border-radius: var(--border-radius-lg, 16px);
     overflow: hidden;
+    background: rgba(20, 20, 20, 0.85); /* Slightly darker for dialogs */
+    backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  /* --- Cards --- */
+  .detail-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius-md, 12px);
+    padding: var(--spacing-md, 16px);
+  }
+
+  /* --- MD3 Buttons --- */
+  .md3-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 24px;
+    height: 40px;
+    border-radius: 20px;
+    border: none;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  }
+  .md3-button.text {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 0 12px;
+  }
+  .md3-button.text:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+  }
+  .md3-button.tonal {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+  .md3-button.tonal:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+  .md3-button.primary {
+    background: var(--primary-color, #4caf50);
+    color: #fff;
+  }
+  .md3-button.primary:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  }
+  .md3-button.danger {
+    background: rgba(244, 67, 54, 0.1);
+    color: #f44336;
+  }
+  .md3-button.danger:hover {
+    background: rgba(244, 67, 54, 0.2);
+  }
+
+  /* --- Inputs --- */
+  .md3-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    margin-bottom: 12px;
+  }
+  .md3-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #9ca3af;
+    margin-left: 4px;
+  }
+  .md3-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-radius: 8px;
+    padding: 10px 12px;
+    width: 100%;
+    box-sizing: border-box;
+    font-family: inherit;
+    transition: all 0.2s ease;
+  }
+  .md3-input:focus {
+    outline: none;
+    border-color: var(--primary-color, #4caf50);
+    background: rgba(255, 255, 255, 0.08);
+  }
+`;
+
+const dialogStyles = [
+    sharedStyles,
+    i$6 `
+  .glass-dialog-container {
     display: flex;
     flex-direction: column;
     max-height: 85vh;
     color: #fff;
     font-family: 'Roboto', sans-serif;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    /* Background/Shadow handled by sharedStyles, but specific flex layout kept here */
   }
 
   /* Restored from 1.0.24.3.0 */
@@ -11295,15 +12206,6 @@ const dialogStyles = i$6 `
     margin-top: 2px;
   }
 
-  .detail-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    padding: 16px;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-
   .detail-card h3 {
     margin-top: 0;
     margin-bottom: 16px;
@@ -11324,52 +12226,6 @@ const dialogStyles = i$6 `
     flex-wrap: wrap;
   }
 
-  .md3-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 24px;
-    height: 40px;
-    border-radius: 20px;
-    border: none;
-    font-family: inherit;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .md3-button.text {
-    background: transparent;
-    color: rgba(255, 255, 255, 0.7);
-    padding: 0 12px;
-  }
-  .md3-button.text:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
-  }
-  .md3-button.tonal {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-  }
-  .md3-button.tonal:hover {
-    background: rgba(255, 255, 255, 0.15);
-  }
-  .md3-button.primary {
-    background: var(--primary-color, #4caf50);
-    color: #fff;
-  }
-  .md3-button.primary:hover {
-    filter: brightness(1.1);
-    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-  }
-  .md3-button.danger {
-    background: rgba(244, 67, 54, 0.1);
-    color: #f44336;
-  }
-  .md3-button.danger:hover {
-    background: rgba(244, 67, 54, 0.2);
-  }
-
   .row-col-grid {
     display: flex;
     gap: 16px;
@@ -11378,36 +12234,6 @@ const dialogStyles = i$6 `
   .row-col-grid > * {
     flex: 1;
     min-width: 0;
-  }
-
-  /* MD3 Input Styles */
-  .md3-input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex: 1;
-    margin-bottom: 12px;
-  }
-  .md3-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: #9ca3af;
-    margin-left: 4px;
-  }
-  .md3-input {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #fff;
-    border-radius: 8px;
-    padding: 10px 12px;
-    width: 100%;
-    box-sizing: border-box;
-    font-family: inherit;
-  }
-  .md3-input:focus {
-    outline: none;
-    border-color: #4caf50;
-    background: rgba(255, 255, 255, 0.08);
   }
 
   @media (max-width: 450px) {
@@ -11441,7 +12267,8 @@ const dialogStyles = i$6 `
       flex: 1 1 1;
     }
   }
-`;
+`
+];
 
 let Md3TextInput = class Md3TextInput extends i$3 {
     constructor() {
@@ -11680,6 +12507,286 @@ __decorate([
 Md3DateInput = __decorate([
     t$2('md3-date-input')
 ], Md3DateInput);
+
+let AddPlantDialog = class AddPlantDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.strainLibrary = [];
+        this.growspaceName = '';
+        this.open = false;
+        // Initialize with values passed via methods or defaults
+        this.strain = '';
+        this.phenotype = '';
+        this.row = 0;
+        this.col = 0;
+        // Date fields
+        this.veg_start = '';
+        this.flower_start = '';
+        this.seedling_start = '';
+        this.mother_start = '';
+        this.clone_start = '';
+        this.dry_start = '';
+        this.cure_start = '';
+    }
+    // Provide a method to set initial data from parent if needed
+    setInitialState(row, col, strain = '', phenotype = '') {
+        this.row = row;
+        this.col = col;
+        this.strain = strain;
+        this.phenotype = phenotype;
+        // resetting dates
+        this.veg_start = '';
+        this.flower_start = '';
+        this.seedling_start = '';
+        this.mother_start = '';
+        this.clone_start = '';
+        this.dry_start = '';
+        this.cure_start = '';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _confirm() {
+        const payload = {
+            row: this.row,
+            col: this.col,
+            strain: this.strain,
+            phenotype: this.phenotype,
+            veg_start: this.veg_start,
+            flower_start: this.flower_start,
+            seedling_start: this.seedling_start,
+            mother_start: this.mother_start,
+            clone_start: this.clone_start,
+            dry_start: this.dry_start,
+            cure_start: this.cure_start,
+        };
+        this.dispatchEvent(new CustomEvent('add-plant-submit', {
+            detail: payload,
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        if (!this.open)
+            return x ``;
+        const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="glass-dialog-container">
+          <!-- HEADER -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiSprout}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Add New Plant</h2>
+              <div class="dialog-subtitle">Enter plant details below</div>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="overview-grid">
+            <!-- IDENTITY CARD -->
+            <div class="detail-card">
+              <h3>Identity & Location</h3>
+              <md3-select
+                label="Strain *"
+                .value=${this.strain}
+                .options=${uniqueStrains}
+                @change=${(e) => (this.strain = e.detail)}
+              ></md3-select>
+              <md3-text-input
+                label="Phenotype"
+                .value=${this.phenotype}
+                @change=${(e) => (this.phenotype = e.detail)}
+              ></md3-text-input>
+              <div class="row-col-grid">
+                <md3-number-input
+                  label="Row"
+                  .value=${this.row + 1}
+                  @change=${(e) => (this.row = parseInt(e.detail) - 1)}
+                ></md3-number-input>
+                <md3-number-input
+                  label="Col"
+                  .value=${this.col + 1}
+                  @change=${(e) => (this.col = parseInt(e.detail) - 1)}
+                ></md3-number-input>
+              </div>
+            </div>
+
+            <!-- TIMELINE CARD -->
+            <div class="detail-card">
+              <h3>Timeline</h3>
+              ${this.renderTimelineContent()}
+            </div>
+          </div>
+
+          <!-- ACTION BUTTONS -->
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+            <button class="md3-button primary" @click=${this._confirm}>
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiSprout}"></path>
+              </svg>
+              Add Plant
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    renderTimelineContent() {
+        const name = this.growspaceName.toLowerCase();
+        if (name.includes('mother')) {
+            return x `<md3-date-input
+        label="Mother Start"
+        .value=${this.mother_start}
+        @change=${(e) => (this.mother_start = e.detail)}
+      ></md3-date-input>`;
+        }
+        else if (name.includes('clone')) {
+            return x `<md3-date-input
+        label="Clone Start"
+        .value=${this.clone_start}
+        @change=${(e) => (this.clone_start = e.detail)}
+      ></md3-date-input>`;
+        }
+        else if (name.includes('dry')) {
+            return x `<md3-date-input
+        label="Dry Start"
+        .value=${this.dry_start}
+        @change=${(e) => (this.dry_start = e.detail)}
+      ></md3-date-input>`;
+        }
+        else if (name.includes('cure')) {
+            return x `<md3-date-input
+        label="Cure Start"
+        .value=${this.cure_start}
+        @change=${(e) => (this.cure_start = e.detail)}
+      ></md3-date-input>`;
+        }
+        else {
+            return x `
+        <md3-date-input
+          label="Seedling Start"
+          .value=${this.seedling_start}
+          @change=${(e) => (this.seedling_start = e.detail)}
+        ></md3-date-input>
+        <md3-date-input
+          label="Veg Start"
+          .value=${this.veg_start}
+          @change=${(e) => (this.veg_start = e.detail)}
+        ></md3-date-input>
+        <md3-date-input
+          label="Flower Start"
+          .value=${this.flower_start}
+          @change=${(e) => (this.flower_start = e.detail)}
+        ></md3-date-input>
+      `;
+        }
+    }
+};
+AddPlantDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      .overview-grid {
+        padding: 24px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      @media (max-width: 450px) {
+        .overview-grid {
+          flex: 1;
+          min-height: 0;
+          padding: 16px;
+        }
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true }),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Array }),
+    __metadata("design:type", Array)
+], AddPlantDialog.prototype, "strainLibrary", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "growspaceName", void 0);
+__decorate([
+    n$5({ type: Boolean, reflect: true }),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "open", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "strain", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "phenotype", void 0);
+__decorate([
+    n$5({ type: Number }),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "row", void 0);
+__decorate([
+    n$5({ type: Number }),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "col", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "veg_start", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "flower_start", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "seedling_start", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "mother_start", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "clone_start", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "dry_start", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], AddPlantDialog.prototype, "cure_start", void 0);
+AddPlantDialog = __decorate([
+    t$2('add-plant-dialog')
+], AddPlantDialog);
 
 let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
     constructor() {
@@ -14013,1041 +15120,6 @@ StrainLibraryDialog = __decorate([
     t$2('strain-library-dialog')
 ], StrainLibraryDialog);
 
-let Md3Switch = class Md3Switch extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.checked = false;
-        this.disabled = false;
-    }
-    _handleClick() {
-        if (this.disabled)
-            return;
-        this.checked = !this.checked;
-        this.dispatchEvent(new CustomEvent('change', {
-            detail: { checked: this.checked },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    render() {
-        return x `
-      <button
-        role="switch"
-        aria-checked=${this.checked}
-        @click=${this._handleClick}
-        ?disabled=${this.disabled}
-      >
-        <div class="handle"></div>
-      </button>
-    `;
-    }
-};
-Md3Switch.styles = i$6 `
-    :host {
-      display: inline-block;
-      vertical-align: middle;
-      --md-switch-width: 52px;
-      --md-switch-height: 32px;
-      --md-switch-handle-size: 24px;
-      --md-switch-track-color-on: var(--primary-color, #2196f3);
-      --md-switch-track-color-off: rgba(255, 255, 255, 0.1);
-      --md-switch-handle-color: #fff;
-    }
-
-    button {
-      all: unset;
-      position: relative;
-      width: var(--md-switch-width);
-      height: var(--md-switch-height);
-      border-radius: calc(var(--md-switch-height) / 2);
-      background: var(--md-switch-track-color-off);
-      cursor: pointer;
-      transition: background-color 0.2s;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-sizing: border-box;
-    }
-
-    :host([checked]) button {
-      background: var(--md-switch-track-color-on);
-      border-color: transparent;
-    }
-
-    .handle {
-      position: absolute;
-      top: 50%;
-      left: 4px;
-      transform: translateY(-50%);
-      width: var(--md-switch-handle-size);
-      height: var(--md-switch-handle-size);
-      background: var(--md-switch-handle-color);
-      border-radius: 50%;
-      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-    }
-
-    :host([checked]) .handle {
-      transform: translate(20px, -50%); /* 52 - 4 - 24 - 4 = 20px move */
-    }
-  `;
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], Md3Switch.prototype, "checked", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], Md3Switch.prototype, "disabled", void 0);
-Md3Switch = __decorate([
-    t$2('md3-switch')
-], Md3Switch);
-
-let IrrigationDialog = class IrrigationDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.growspaceName = '';
-        this._irrigation_pump_entity = '';
-        this._drain_pump_entity = '';
-        this._irrigation_duration = 60;
-        this._drain_duration = 60;
-        this._irrigation_times = [];
-        this._drain_times = [];
-        this._activeTab = 'schedules';
-        this._strategy = {};
-    }
-    willUpdate(changedProps) {
-        if ((changedProps.has('open') && this.open) || (changedProps.has('device') && this.device)) {
-            this._initializeState();
-        }
-        if (this.hass && (changedProps.has('hass') || !this._dataService)) {
-            this._dataService = new DataService(this.hass);
-        }
-    }
-    _initializeState() {
-        if (!this.device)
-            return;
-        const config = this.device.irrigation_config || {};
-        this._irrigation_pump_entity = config.irrigation_pump_entity || '';
-        this._drain_pump_entity = config.drain_pump_entity || '';
-        this._irrigation_duration = config.irrigation_duration || 60;
-        this._drain_duration = config.drain_duration || 60;
-        this._irrigation_times = this.device.irrigation_times || [];
-        this._drain_times = this.device.drain_times || [];
-        console.log('[IrrigationDialog] Initializing State', {
-            device: this.device,
-            irrigation_times: this._irrigation_times,
-            drain_times: this._drain_times,
-            raw_config: config,
-        });
-        // Initialize Strategy
-        const strat = this.device.irrigation_strategy;
-        this._strategy = {
-            enabled: strat?.enabled || false,
-            lights_on_time: strat?.lights_on_time || '06:00:00',
-            p0_duration_minutes: strat?.p0_duration_minutes || 60,
-            p2_stop_before_lights_off_minutes: strat?.p2_stop_before_lights_off_minutes || 120,
-            target_vwc_percent: strat?.target_vwc_percent || 45.0,
-            maintenance_dryback_percent: strat?.maintenance_dryback_percent || 3.0,
-            shot_duration_seconds: strat?.shot_duration_seconds || 15,
-            shot_interval_minutes: strat?.shot_interval_minutes || 15,
-        };
-    }
-    // ... (Keep existing _parseScheduleString, _saveSettings, _addIrrigationTime, etc. - ensure logical flow)
-    _parseScheduleString(scheduleString) {
-        if (Array.isArray(scheduleString))
-            return scheduleString;
-        if (!scheduleString)
-            return [];
-        return scheduleString.split(',').map((t) => {
-            const parts = t.trim().split('|');
-            return {
-                time: parts[0],
-                duration: parts[1] ? parseInt(parts[1]) : undefined,
-            };
-        });
-    }
-    async _saveSettings() {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.setIrrigationSettings({
-                growspace_id: this.device.device_id,
-                irrigation_pump_entity: this._irrigation_pump_entity,
-                drain_pump_entity: this._drain_pump_entity,
-                irrigation_duration: this._irrigation_duration,
-                drain_duration: this._drain_duration,
-            });
-        }
-        catch (e) {
-            console.error('Failed to save settings:', e);
-        }
-    }
-    async _addIrrigationTime(time, duration) {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.addIrrigationTime({
-                growspace_id: this.device.device_id,
-                time,
-                duration: duration || this._irrigation_duration,
-            });
-            // Optimistic update
-            const newTime = { time, duration: duration || this._irrigation_duration };
-            this._irrigation_times = [...this._irrigation_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
-            this._adding_irrigation_time = undefined;
-        }
-        catch (e) {
-            console.error('Failed to add irrigation time:', e);
-        }
-    }
-    async _removeIrrigationTime(time) {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.removeIrrigationTime({
-                growspace_id: this.device.device_id,
-                time,
-            });
-            // Optimistic update
-            this._irrigation_times = this._irrigation_times.filter((t) => t.time !== time);
-        }
-        catch (e) {
-            console.error('Failed to remove irrigation time:', e);
-        }
-    }
-    async _addDrainTime(time, duration) {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.addDrainTime({
-                growspace_id: this.device.device_id,
-                time,
-                duration: duration || this._drain_duration,
-            });
-            // Optimistic update
-            const newTime = { time, duration: duration || this._drain_duration };
-            this._drain_times = [...this._drain_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
-            this._adding_drain_time = undefined;
-        }
-        catch (e) {
-            console.error('Failed to add drain time:', e);
-        }
-    }
-    async _removeDrainTime(time) {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.removeDrainTime({
-                growspace_id: this.device.device_id,
-                time,
-            });
-            // Optimistic update
-            this._drain_times = this._drain_times.filter((t) => t.time !== time);
-        }
-        catch (e) {
-            console.error('Failed to remove drain time:', e);
-        }
-    }
-    _startAddingIrrigationTime(x, width) {
-        const percentage = x / width;
-        const totalMinutes = Math.round(percentage * 24 * 60);
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        this._adding_irrigation_time = {
-            time: timeStr,
-            duration: this._irrigation_duration,
-        };
-    }
-    _startAddingDrainTime(x, width) {
-        const percentage = x / width;
-        const totalMinutes = Math.round(percentage * 24 * 60);
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        this._adding_drain_time = {
-            time: timeStr,
-            duration: this._drain_duration,
-        };
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close'));
-    }
-    async _saveStrategy() {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.setIrrigationStrategy(this.device.device_id, this._strategy);
-        }
-        catch (e) {
-            console.error('Failed to save strategy:', e);
-        }
-    }
-    _updateStrategyField(field, value) {
-        this._strategy = { ...this._strategy, [field]: value };
-    }
-    render() {
-        if (!this.open)
-            return E;
-        const dialogColor = '#2196F3';
-        return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
-      >
-        <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiWater}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Irrigation Management</h2>
-              <div class="dialog-subtitle">${this.growspaceName}</div>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${this._close}
-              style="min-width: auto; padding: 8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
-          <!-- Tabs -->
-          <div
-            class="tabs-row"
-            style="display: flex; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0;"
-          >
-            <div
-              class="tab-item ${this._activeTab === 'schedules' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'schedules')}
-              style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
-            >
-              <style>
-                .tab-item.active {
-                  border-bottom-color: ${dialogColor} !important;
-                  opacity: 1 !important;
-                }
-                .tab-item:hover {
-                  opacity: 1 !important;
-                  background: rgba(255, 255, 255, 0.05);
-                }
-              </style>
-              Schedules
-            </div>
-            <div
-              class="tab-item ${this._activeTab === 'steering' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'steering')}
-              style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
-            >
-              Crop Steering (VWC)
-            </div>
-          </div>
-
-          <div class="dialog-body">
-            ${this._activeTab === 'schedules'
-            ? this._renderSchedulesTab(dialogColor)
-            : this._renderSteeringTab(dialogColor)}
-          </div>
-
-          <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close}>Close</button>
-            ${this._activeTab === 'steering'
-            ? x `
-                  <button
-                    class="md3-button primary"
-                    style="background: ${dialogColor};"
-                    @click=${this._saveStrategy}
-                  >
-                    Save Strategy
-                  </button>
-                `
-            : ''}
-          </div>
-        </div>
-      </ha-dialog>
-    `;
-    }
-    _renderSchedulesTab(color) {
-        return x `
-      ${this._renderScheduleSection('Irrigation Schedule', this._irrigation_times, this._irrigation_duration, 'irrigation', color)}
-      ${this._renderScheduleSection('Drain Schedule', this._drain_times, this._drain_duration, 'drain', '#FF9800')}
-    `;
-    }
-    _renderSteeringTab(color) {
-        return x `
-      <div class="detail-card">
-        <h3 style="margin-top: 0;">Crop Steering Configuration</h3>
-        <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 20px;">
-          Enable logic-based irrigation based on volumetric water content (VWC) targets. Overrides
-          basic schedules when active.
-        </p>
-
-        <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-          <div
-            style="grid-column: span 2; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;"
-          >
-            <span>Enable VWC Steering</span>
-            <md3-switch
-              .checked=${this._strategy.enabled}
-              @change=${(e) => this._updateStrategyField('enabled', e.target.checked)}
-            ></md3-switch>
-          </div>
-
-          <div
-            style="grid-column: span 2; border-bottom: 1px solid rgba(255,255,255,0.1); margin: 8px 0;"
-          ></div>
-          <h4 style="grid-column: span 2; margin: 4px 0;">Targets</h4>
-
-          <md3-number-input
-            label="Target VWC (%)"
-            .value=${this._strategy.target_vwc_percent}
-            @change=${(e) => this._updateStrategyField('target_vwc_percent', parseFloat(e.detail))}
-          ></md3-number-input>
-
-          <md3-number-input
-            label="Dryback (%)"
-            .value=${this._strategy.maintenance_dryback_percent}
-            @change=${(e) => this._updateStrategyField('maintenance_dryback_percent', parseFloat(e.detail))}
-          ></md3-number-input>
-
-          <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Timing</h4>
-
-          <md3-text-input
-            label="Lights On Time"
-            type="time"
-            .value=${this._strategy.lights_on_time}
-            @change=${(e) => this._updateStrategyField('lights_on_time', e.target.value || e.detail)}
-          ></md3-text-input>
-
-          <md3-number-input
-            label="P0 Duration (min)"
-            .value=${this._strategy.p0_duration_minutes}
-            @change=${(e) => this._updateStrategyField('p0_duration_minutes', parseInt(e.detail))}
-          ></md3-number-input>
-
-          <md3-number-input
-            label="P2 Stop Buffer (min)"
-            .value=${this._strategy.p2_stop_before_lights_off_minutes}
-            @change=${(e) => this._updateStrategyField('p2_stop_before_lights_off_minutes', parseInt(e.detail))}
-          ></md3-number-input>
-
-          <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Dosing</h4>
-
-          <md3-number-input
-            label="Shot Duration (sec)"
-            .value=${this._strategy.shot_duration_seconds}
-            @change=${(e) => this._updateStrategyField('shot_duration_seconds', parseInt(e.detail))}
-          ></md3-number-input>
-
-          <md3-number-input
-            label="Shot Interval (min)"
-            .value=${this._strategy.shot_interval_minutes}
-            @change=${(e) => this._updateStrategyField('shot_interval_minutes', parseInt(e.detail))}
-          ></md3-number-input>
-        </div>
-      </div>
-    `;
-    }
-    _renderScheduleSection(title, times, defaultDuration, type, color) {
-        const addingTime = type === 'irrigation' ? this._adding_irrigation_time : this._adding_drain_time;
-        return x `
-      <div class="detail-card">
-        <div
-          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"
-        >
-          <h3 style="margin: 0;">${title}</h3>
-          <button
-            @click=${(e) => {
-            const container = e.target
-                .closest('.detail-card')
-                ?.querySelector(`.${type}-time-bar`);
-            if (container) {
-                const rect = container.getBoundingClientRect();
-                type === 'irrigation'
-                    ? this._startAddingIrrigationTime(rect.width / 2, rect.width)
-                    : this._startAddingDrainTime(rect.width / 2, rect.width);
-            }
-        }}
-            class="md3-button primary"
-            style="background: ${color};"
-          >
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiPlus}"></path>
-            </svg>
-            ADD TIME
-          </button>
-        </div>
-
-        <div
-          class="${type}-time-bar time-bar-container"
-          @click=${(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            type === 'irrigation'
-                ? this._startAddingIrrigationTime(x, rect.width)
-                : this._startAddingDrainTime(x, rect.width);
-        }}
-          style="border: 2px solid ${color}40;"
-        >
-          ${Array.from({ length: 25 }, (_, i) => i).map((hour) => x `
-              <div
-                class="time-tick ${hour % 6 === 0 ? 'major' : ''}"
-                style="left: ${(hour / 24) * 100}%;"
-              >
-                ${hour % 3 === 0
-            ? x ` <span class="time-label">${hour.toString().padStart(2, '0')}:00</span> `
-            : ''}
-              </div>
-            `)}
-          ${times.map((t) => {
-            const [hours, minutes] = t.time.split(':').map(Number);
-            const position = ((hours + minutes / 60) / 24) * 100;
-            return x `
-              <div
-                class="chart-marker"
-                @click=${(e) => {
-                e.stopPropagation();
-                if (confirm(`Remove ${type} time ${t.time}?`)) {
-                    type === 'irrigation'
-                        ? this._removeIrrigationTime(t.time)
-                        : this._removeDrainTime(t.time);
-                }
-            }}
-                style="left: ${position}%; background: ${color}; box-shadow: 0 0 8px ${color};"
-                title="${t.time} | Duration: ${t.duration || defaultDuration}seconds"
-              >
-                <div class="chart-tooltip" style="background: ${color};">
-                  ${t.time} | ${t.duration || defaultDuration}s
-                </div>
-              </div>
-            `;
-        })}
-        </div>
-
-        <div class="legend-row">
-          <span>00:00</span>
-          <span>06:00</span>
-          <span>12:00</span>
-          <span>18:00</span>
-          <span>24:00</span>
-        </div>
-
-        ${addingTime
-            ? x `
-              <div
-                class="overlay-backdrop"
-                @click=${() => type === 'irrigation'
-                ? (this._adding_irrigation_time = undefined)
-                : (this._adding_drain_time = undefined)}
-              >
-                <div
-                  class="detail-card"
-                  style="max-width: 400px; margin: 0; background: #2d2d2d; width: 90%;"
-                  @click=${(e) => e.stopPropagation()}
-                >
-                  <h3>Add ${title} Time</h3>
-
-                  <md3-text-input
-                    label="Time"
-                    type="time"
-                    .value=${addingTime.time}
-                    @change=${(e) => {
-                const val = e.target.value || e.detail; // md3-text-input uses detail
-                if (type === 'irrigation' && this._adding_irrigation_time)
-                    this._adding_irrigation_time = {
-                        ...this._adding_irrigation_time,
-                        time: val,
-                    };
-                if (type === 'drain' && this._adding_drain_time)
-                    this._adding_drain_time = { ...this._adding_drain_time, time: val };
-            }}
-                  ></md3-text-input>
-
-                  <md3-number-input
-                    label="Duration (seconds)"
-                    .value=${addingTime.duration}
-                    .min=${1}
-                    @change=${(e) => {
-                const val = parseInt(e.detail);
-                if (!isNaN(val)) {
-                    if (type === 'irrigation' && this._adding_irrigation_time)
-                        this._adding_irrigation_time = {
-                            ...this._adding_irrigation_time,
-                            duration: val,
-                        };
-                    if (type === 'drain' && this._adding_drain_time)
-                        this._adding_drain_time = { ...this._adding_drain_time, duration: val };
-                }
-            }}
-                  ></md3-number-input>
-
-                  <div class="button-group">
-                    <button
-                      class="md3-button tonal"
-                      @click=${() => type === 'irrigation'
-                ? (this._adding_irrigation_time = undefined)
-                : (this._adding_drain_time = undefined)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      class="md3-button primary"
-                      @click=${() => {
-                type === 'irrigation'
-                    ? this._addIrrigationTime(addingTime.time, addingTime.duration)
-                    : this._addDrainTime(addingTime.time, addingTime.duration);
-            }}
-                      style="background: ${color};"
-                    >
-                      Add Schedule
-                    </button>
-                  </div>
-                </div>
-              </div>
-            `
-            : ''}
-      </div>
-    `;
-    }
-};
-IrrigationDialog.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        --mdc-dialog-min-width: 400px;
-        --mdc-dialog-max-width: 1000px;
-      }
-
-      /* Overrides/Specific Layouts */
-      .dialog-body {
-        padding: 24px;
-        overflow-y: auto;
-        max-height: 70vh;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
-
-      /* Time Bar Visualization */
-      .time-bar-container {
-        position: relative;
-        height: 80px;
-        background: rgba(0, 0, 0, 0.3);
-        border-radius: 8px;
-        cursor: crosshair;
-      }
-
-      .time-tick {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        border-left: 1px solid rgba(255, 255, 255, 0.05);
-        pointer-events: none;
-      }
-      .time-tick.major {
-        border-left-color: rgba(255, 255, 255, 0.2);
-      }
-
-      .time-label {
-        position: absolute;
-        bottom: -22px;
-        left: -12px;
-        font-size: 0.7rem;
-        color: var(--secondary-text-color);
-      }
-
-      .chart-marker {
-        position: absolute;
-        top: 10%;
-        bottom: 10%;
-        width: 4px;
-        cursor: pointer;
-        border-radius: 2px;
-      }
-
-      .chart-tooltip {
-        position: absolute;
-        left: 8px;
-        top: -24px;
-        color: #fff;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 0.7rem;
-        white-space: nowrap;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        z-index: 10;
-      }
-
-      .legend-row {
-        margin-top: 30px;
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.7rem;
-        color: var(--secondary-text-color);
-      }
-
-      .overlay-backdrop {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-      }
-    `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "hass", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "open", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "device", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "growspaceName", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_irrigation_pump_entity", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_drain_pump_entity", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_irrigation_duration", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_drain_duration", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Array)
-], IrrigationDialog.prototype, "_irrigation_times", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Array)
-], IrrigationDialog.prototype, "_drain_times", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_adding_irrigation_time", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_adding_drain_time", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", String)
-], IrrigationDialog.prototype, "_activeTab", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_strategy", void 0);
-IrrigationDialog = __decorate([
-    t$2('irrigation-dialog')
-], IrrigationDialog);
-
-let AddPlantDialog = class AddPlantDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.strainLibrary = [];
-        this.growspaceName = '';
-        this.open = false;
-        // Initialize with values passed via methods or defaults
-        this.strain = '';
-        this.phenotype = '';
-        this.row = 0;
-        this.col = 0;
-        // Date fields
-        this.veg_start = '';
-        this.flower_start = '';
-        this.seedling_start = '';
-        this.mother_start = '';
-        this.clone_start = '';
-        this.dry_start = '';
-        this.cure_start = '';
-    }
-    // Provide a method to set initial data from parent if needed
-    setInitialState(row, col, strain = '', phenotype = '') {
-        this.row = row;
-        this.col = col;
-        this.strain = strain;
-        this.phenotype = phenotype;
-        // resetting dates
-        this.veg_start = '';
-        this.flower_start = '';
-        this.seedling_start = '';
-        this.mother_start = '';
-        this.clone_start = '';
-        this.dry_start = '';
-        this.cure_start = '';
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
-    _confirm() {
-        const payload = {
-            row: this.row,
-            col: this.col,
-            strain: this.strain,
-            phenotype: this.phenotype,
-            veg_start: this.veg_start,
-            flower_start: this.flower_start,
-            seedling_start: this.seedling_start,
-            mother_start: this.mother_start,
-            clone_start: this.clone_start,
-            dry_start: this.dry_start,
-            cure_start: this.cure_start,
-        };
-        this.dispatchEvent(new CustomEvent('add-plant-submit', {
-            detail: payload,
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    render() {
-        if (!this.open)
-            return x ``;
-        const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
-        return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
-      >
-        <div class="glass-dialog-container">
-          <!-- HEADER -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiSprout}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Add New Plant</h2>
-              <div class="dialog-subtitle">Enter plant details below</div>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${this._close}
-              style="min-width: auto; padding: 8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
-          <div class="overview-grid">
-            <!-- IDENTITY CARD -->
-            <div class="detail-card">
-              <h3>Identity & Location</h3>
-              <md3-select
-                label="Strain *"
-                .value=${this.strain}
-                .options=${uniqueStrains}
-                @change=${(e) => (this.strain = e.detail)}
-              ></md3-select>
-              <md3-text-input
-                label="Phenotype"
-                .value=${this.phenotype}
-                @change=${(e) => (this.phenotype = e.detail)}
-              ></md3-text-input>
-              <div class="row-col-grid">
-                <md3-number-input
-                  label="Row"
-                  .value=${this.row + 1}
-                  @change=${(e) => (this.row = parseInt(e.detail) - 1)}
-                ></md3-number-input>
-                <md3-number-input
-                  label="Col"
-                  .value=${this.col + 1}
-                  @change=${(e) => (this.col = parseInt(e.detail) - 1)}
-                ></md3-number-input>
-              </div>
-            </div>
-
-            <!-- TIMELINE CARD -->
-            <div class="detail-card">
-              <h3>Timeline</h3>
-              ${this.renderTimelineContent()}
-            </div>
-          </div>
-
-          <!-- ACTION BUTTONS -->
-          <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
-            <button class="md3-button primary" @click=${this._confirm}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiSprout}"></path>
-              </svg>
-              Add Plant
-            </button>
-          </div>
-        </div>
-      </ha-dialog>
-    `;
-    }
-    renderTimelineContent() {
-        const name = this.growspaceName.toLowerCase();
-        if (name.includes('mother')) {
-            return x `<md3-date-input
-        label="Mother Start"
-        .value=${this.mother_start}
-        @change=${(e) => (this.mother_start = e.detail)}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('clone')) {
-            return x `<md3-date-input
-        label="Clone Start"
-        .value=${this.clone_start}
-        @change=${(e) => (this.clone_start = e.detail)}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('dry')) {
-            return x `<md3-date-input
-        label="Dry Start"
-        .value=${this.dry_start}
-        @change=${(e) => (this.dry_start = e.detail)}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('cure')) {
-            return x `<md3-date-input
-        label="Cure Start"
-        .value=${this.cure_start}
-        @change=${(e) => (this.cure_start = e.detail)}
-      ></md3-date-input>`;
-        }
-        else {
-            return x `
-        <md3-date-input
-          label="Seedling Start"
-          .value=${this.seedling_start}
-          @change=${(e) => (this.seedling_start = e.detail)}
-        ></md3-date-input>
-        <md3-date-input
-          label="Veg Start"
-          .value=${this.veg_start}
-          @change=${(e) => (this.veg_start = e.detail)}
-        ></md3-date-input>
-        <md3-date-input
-          label="Flower Start"
-          .value=${this.flower_start}
-          @change=${(e) => (this.flower_start = e.detail)}
-        ></md3-date-input>
-      `;
-        }
-    }
-};
-AddPlantDialog.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-      }
-      .overview-grid {
-        padding: 24px;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      @media (max-width: 450px) {
-        .overview-grid {
-          flex: 1;
-          min-height: 0;
-          padding: 16px;
-        }
-      }
-    `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "hass", void 0);
-__decorate([
-    n$5({ type: Array }),
-    __metadata("design:type", Array)
-], AddPlantDialog.prototype, "strainLibrary", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "growspaceName", void 0);
-__decorate([
-    n$5({ type: Boolean, reflect: true }),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "open", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "strain", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "phenotype", void 0);
-__decorate([
-    n$5({ type: Number }),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "row", void 0);
-__decorate([
-    n$5({ type: Number }),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "col", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "veg_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "flower_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "seedling_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "mother_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "clone_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "dry_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "cure_start", void 0);
-AddPlantDialog = __decorate([
-    t$2('add-plant-dialog')
-], AddPlantDialog);
-
 let ConfigDialog = class ConfigDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -16043,6 +16115,761 @@ StrainRecommendationDialog = __decorate([
     t$2('strain-recommendation-dialog')
 ], StrainRecommendationDialog);
 
+let Md3Switch = class Md3Switch extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.checked = false;
+        this.disabled = false;
+    }
+    _handleClick() {
+        if (this.disabled)
+            return;
+        this.checked = !this.checked;
+        this.dispatchEvent(new CustomEvent('change', {
+            detail: { checked: this.checked },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        return x `
+      <button
+        role="switch"
+        aria-checked=${this.checked}
+        @click=${this._handleClick}
+        ?disabled=${this.disabled}
+      >
+        <div class="handle"></div>
+      </button>
+    `;
+    }
+};
+Md3Switch.styles = i$6 `
+    :host {
+      display: inline-block;
+      vertical-align: middle;
+      --md-switch-width: 52px;
+      --md-switch-height: 32px;
+      --md-switch-handle-size: 24px;
+      --md-switch-track-color-on: var(--primary-color, #2196f3);
+      --md-switch-track-color-off: rgba(255, 255, 255, 0.1);
+      --md-switch-handle-color: #fff;
+    }
+
+    button {
+      all: unset;
+      position: relative;
+      width: var(--md-switch-width);
+      height: var(--md-switch-height);
+      border-radius: calc(var(--md-switch-height) / 2);
+      background: var(--md-switch-track-color-off);
+      cursor: pointer;
+      transition: background-color 0.2s;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-sizing: border-box;
+    }
+
+    :host([checked]) button {
+      background: var(--md-switch-track-color-on);
+      border-color: transparent;
+    }
+
+    .handle {
+      position: absolute;
+      top: 50%;
+      left: 4px;
+      transform: translateY(-50%);
+      width: var(--md-switch-handle-size);
+      height: var(--md-switch-handle-size);
+      background: var(--md-switch-handle-color);
+      border-radius: 50%;
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+
+    :host([checked]) .handle {
+      transform: translate(20px, -50%); /* 52 - 4 - 24 - 4 = 20px move */
+    }
+  `;
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], Md3Switch.prototype, "checked", void 0);
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], Md3Switch.prototype, "disabled", void 0);
+Md3Switch = __decorate([
+    t$2('md3-switch')
+], Md3Switch);
+
+let IrrigationDialog = class IrrigationDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceName = '';
+        this._irrigation_pump_entity = '';
+        this._drain_pump_entity = '';
+        this._irrigation_duration = 60;
+        this._drain_duration = 60;
+        this._irrigation_times = [];
+        this._drain_times = [];
+        this._activeTab = 'schedules';
+        this._strategy = {};
+    }
+    willUpdate(changedProps) {
+        if ((changedProps.has('open') && this.open) || (changedProps.has('device') && this.device)) {
+            this._initializeState();
+        }
+        if (this.hass && (changedProps.has('hass') || !this._dataService)) {
+            this._dataService = new DataService(this.hass);
+        }
+    }
+    _initializeState() {
+        if (!this.device)
+            return;
+        const config = this.device.irrigation_config || {};
+        this._irrigation_pump_entity = config.irrigation_pump_entity || '';
+        this._drain_pump_entity = config.drain_pump_entity || '';
+        this._irrigation_duration = config.irrigation_duration || 60;
+        this._drain_duration = config.drain_duration || 60;
+        this._irrigation_times = this.device.irrigation_times || [];
+        this._drain_times = this.device.drain_times || [];
+        console.log('[IrrigationDialog] Initializing State', {
+            device: this.device,
+            irrigation_times: this._irrigation_times,
+            drain_times: this._drain_times,
+            raw_config: config,
+        });
+        // Initialize Strategy
+        const strat = this.device.irrigation_strategy;
+        this._strategy = {
+            enabled: strat?.enabled || false,
+            lights_on_time: strat?.lights_on_time || '06:00:00',
+            p0_duration_minutes: strat?.p0_duration_minutes || 60,
+            p2_stop_before_lights_off_minutes: strat?.p2_stop_before_lights_off_minutes || 120,
+            target_vwc_percent: strat?.target_vwc_percent || 45.0,
+            maintenance_dryback_percent: strat?.maintenance_dryback_percent || 3.0,
+            shot_duration_seconds: strat?.shot_duration_seconds || 15,
+            shot_interval_minutes: strat?.shot_interval_minutes || 15,
+        };
+    }
+    // ... (Keep existing _parseScheduleString, _saveSettings, _addIrrigationTime, etc. - ensure logical flow)
+    _parseScheduleString(scheduleString) {
+        if (Array.isArray(scheduleString))
+            return scheduleString;
+        if (!scheduleString)
+            return [];
+        return scheduleString.split(',').map((t) => {
+            const parts = t.trim().split('|');
+            return {
+                time: parts[0],
+                duration: parts[1] ? parseInt(parts[1]) : undefined,
+            };
+        });
+    }
+    async _saveSettings() {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.setIrrigationSettings({
+                growspace_id: this.device.device_id,
+                irrigation_pump_entity: this._irrigation_pump_entity,
+                drain_pump_entity: this._drain_pump_entity,
+                irrigation_duration: this._irrigation_duration,
+                drain_duration: this._drain_duration,
+            });
+        }
+        catch (e) {
+            console.error('Failed to save settings:', e);
+        }
+    }
+    async _addIrrigationTime(time, duration) {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.addIrrigationTime({
+                growspace_id: this.device.device_id,
+                time,
+                duration: duration || this._irrigation_duration,
+            });
+            // Optimistic update
+            const newTime = { time, duration: duration || this._irrigation_duration };
+            this._irrigation_times = [...this._irrigation_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
+            this._adding_irrigation_time = undefined;
+        }
+        catch (e) {
+            console.error('Failed to add irrigation time:', e);
+        }
+    }
+    async _removeIrrigationTime(time) {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.removeIrrigationTime({
+                growspace_id: this.device.device_id,
+                time,
+            });
+            // Optimistic update
+            this._irrigation_times = this._irrigation_times.filter((t) => t.time !== time);
+        }
+        catch (e) {
+            console.error('Failed to remove irrigation time:', e);
+        }
+    }
+    async _addDrainTime(time, duration) {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.addDrainTime({
+                growspace_id: this.device.device_id,
+                time,
+                duration: duration || this._drain_duration,
+            });
+            // Optimistic update
+            const newTime = { time, duration: duration || this._drain_duration };
+            this._drain_times = [...this._drain_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
+            this._adding_drain_time = undefined;
+        }
+        catch (e) {
+            console.error('Failed to add drain time:', e);
+        }
+    }
+    async _removeDrainTime(time) {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.removeDrainTime({
+                growspace_id: this.device.device_id,
+                time,
+            });
+            // Optimistic update
+            this._drain_times = this._drain_times.filter((t) => t.time !== time);
+        }
+        catch (e) {
+            console.error('Failed to remove drain time:', e);
+        }
+    }
+    _startAddingIrrigationTime(x, width) {
+        const percentage = x / width;
+        const totalMinutes = Math.round(percentage * 24 * 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        this._adding_irrigation_time = {
+            time: timeStr,
+            duration: this._irrigation_duration,
+        };
+    }
+    _startAddingDrainTime(x, width) {
+        const percentage = x / width;
+        const totalMinutes = Math.round(percentage * 24 * 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        this._adding_drain_time = {
+            time: timeStr,
+            duration: this._drain_duration,
+        };
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    async _saveStrategy() {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.setIrrigationStrategy(this.device.device_id, this._strategy);
+        }
+        catch (e) {
+            console.error('Failed to save strategy:', e);
+        }
+    }
+    _updateStrategyField(field, value) {
+        this._strategy = { ...this._strategy, [field]: value };
+    }
+    render() {
+        if (!this.open)
+            return E;
+        const dialogColor = '#2196F3';
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiWater}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Irrigation Management</h2>
+              <div class="dialog-subtitle">${this.growspaceName}</div>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Tabs -->
+          <div
+            class="tabs-row"
+            style="display: flex; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0;"
+          >
+            <div
+              class="tab-item ${this._activeTab === 'schedules' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'schedules')}
+              style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
+            >
+              <style>
+                .tab-item.active {
+                  border-bottom-color: ${dialogColor} !important;
+                  opacity: 1 !important;
+                }
+                .tab-item:hover {
+                  opacity: 1 !important;
+                  background: rgba(255, 255, 255, 0.05);
+                }
+              </style>
+              Schedules
+            </div>
+            <div
+              class="tab-item ${this._activeTab === 'steering' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'steering')}
+              style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
+            >
+              Crop Steering (VWC)
+            </div>
+          </div>
+
+          <div class="dialog-body">
+            ${this._activeTab === 'schedules'
+            ? this._renderSchedulesTab(dialogColor)
+            : this._renderSteeringTab(dialogColor)}
+          </div>
+
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close}>Close</button>
+            ${this._activeTab === 'steering'
+            ? x `
+                  <button
+                    class="md3-button primary"
+                    style="background: ${dialogColor};"
+                    @click=${this._saveStrategy}
+                  >
+                    Save Strategy
+                  </button>
+                `
+            : ''}
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    _renderSchedulesTab(color) {
+        return x `
+      ${this._renderScheduleSection('Irrigation Schedule', this._irrigation_times, this._irrigation_duration, 'irrigation', color)}
+      ${this._renderScheduleSection('Drain Schedule', this._drain_times, this._drain_duration, 'drain', '#FF9800')}
+    `;
+    }
+    _renderSteeringTab(color) {
+        return x `
+      <div class="detail-card">
+        <h3 style="margin-top: 0;">Crop Steering Configuration</h3>
+        <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 20px;">
+          Enable logic-based irrigation based on volumetric water content (VWC) targets. Overrides
+          basic schedules when active.
+        </p>
+
+        <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div
+            style="grid-column: span 2; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;"
+          >
+            <span>Enable VWC Steering</span>
+            <md3-switch
+              .checked=${this._strategy.enabled}
+              @change=${(e) => this._updateStrategyField('enabled', e.target.checked)}
+            ></md3-switch>
+          </div>
+
+          <div
+            style="grid-column: span 2; border-bottom: 1px solid rgba(255,255,255,0.1); margin: 8px 0;"
+          ></div>
+          <h4 style="grid-column: span 2; margin: 4px 0;">Targets</h4>
+
+          <md3-number-input
+            label="Target VWC (%)"
+            .value=${this._strategy.target_vwc_percent}
+            @change=${(e) => this._updateStrategyField('target_vwc_percent', parseFloat(e.detail))}
+          ></md3-number-input>
+
+          <md3-number-input
+            label="Dryback (%)"
+            .value=${this._strategy.maintenance_dryback_percent}
+            @change=${(e) => this._updateStrategyField('maintenance_dryback_percent', parseFloat(e.detail))}
+          ></md3-number-input>
+
+          <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Timing</h4>
+
+          <md3-text-input
+            label="Lights On Time"
+            type="time"
+            .value=${this._strategy.lights_on_time}
+            @change=${(e) => this._updateStrategyField('lights_on_time', e.target.value || e.detail)}
+          ></md3-text-input>
+
+          <md3-number-input
+            label="P0 Duration (min)"
+            .value=${this._strategy.p0_duration_minutes}
+            @change=${(e) => this._updateStrategyField('p0_duration_minutes', parseInt(e.detail))}
+          ></md3-number-input>
+
+          <md3-number-input
+            label="P2 Stop Buffer (min)"
+            .value=${this._strategy.p2_stop_before_lights_off_minutes}
+            @change=${(e) => this._updateStrategyField('p2_stop_before_lights_off_minutes', parseInt(e.detail))}
+          ></md3-number-input>
+
+          <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Dosing</h4>
+
+          <md3-number-input
+            label="Shot Duration (sec)"
+            .value=${this._strategy.shot_duration_seconds}
+            @change=${(e) => this._updateStrategyField('shot_duration_seconds', parseInt(e.detail))}
+          ></md3-number-input>
+
+          <md3-number-input
+            label="Shot Interval (min)"
+            .value=${this._strategy.shot_interval_minutes}
+            @change=${(e) => this._updateStrategyField('shot_interval_minutes', parseInt(e.detail))}
+          ></md3-number-input>
+        </div>
+      </div>
+    `;
+    }
+    _renderScheduleSection(title, times, defaultDuration, type, color) {
+        const addingTime = type === 'irrigation' ? this._adding_irrigation_time : this._adding_drain_time;
+        return x `
+      <div class="detail-card">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"
+        >
+          <h3 style="margin: 0;">${title}</h3>
+          <button
+            @click=${(e) => {
+            const container = e.target
+                .closest('.detail-card')
+                ?.querySelector(`.${type}-time-bar`);
+            if (container) {
+                const rect = container.getBoundingClientRect();
+                type === 'irrigation'
+                    ? this._startAddingIrrigationTime(rect.width / 2, rect.width)
+                    : this._startAddingDrainTime(rect.width / 2, rect.width);
+            }
+        }}
+            class="md3-button primary"
+            style="background: ${color};"
+          >
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiPlus}"></path>
+            </svg>
+            ADD TIME
+          </button>
+        </div>
+
+        <div
+          class="${type}-time-bar time-bar-container"
+          @click=${(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            type === 'irrigation'
+                ? this._startAddingIrrigationTime(x, rect.width)
+                : this._startAddingDrainTime(x, rect.width);
+        }}
+          style="border: 2px solid ${color}40;"
+        >
+          ${Array.from({ length: 25 }, (_, i) => i).map((hour) => x `
+              <div
+                class="time-tick ${hour % 6 === 0 ? 'major' : ''}"
+                style="left: ${(hour / 24) * 100}%;"
+              >
+                ${hour % 3 === 0
+            ? x ` <span class="time-label">${hour.toString().padStart(2, '0')}:00</span> `
+            : ''}
+              </div>
+            `)}
+          ${times.map((t) => {
+            const [hours, minutes] = t.time.split(':').map(Number);
+            const position = ((hours + minutes / 60) / 24) * 100;
+            return x `
+              <div
+                class="chart-marker"
+                @click=${(e) => {
+                e.stopPropagation();
+                if (confirm(`Remove ${type} time ${t.time}?`)) {
+                    type === 'irrigation'
+                        ? this._removeIrrigationTime(t.time)
+                        : this._removeDrainTime(t.time);
+                }
+            }}
+                style="left: ${position}%; background: ${color}; box-shadow: 0 0 8px ${color};"
+                title="${t.time} | Duration: ${t.duration || defaultDuration}seconds"
+              >
+                <div class="chart-tooltip" style="background: ${color};">
+                  ${t.time} | ${t.duration || defaultDuration}s
+                </div>
+              </div>
+            `;
+        })}
+        </div>
+
+        <div class="legend-row">
+          <span>00:00</span>
+          <span>06:00</span>
+          <span>12:00</span>
+          <span>18:00</span>
+          <span>24:00</span>
+        </div>
+
+        ${addingTime
+            ? x `
+              <div
+                class="overlay-backdrop"
+                @click=${() => type === 'irrigation'
+                ? (this._adding_irrigation_time = undefined)
+                : (this._adding_drain_time = undefined)}
+              >
+                <div
+                  class="detail-card"
+                  style="max-width: 400px; margin: 0; background: #2d2d2d; width: 90%;"
+                  @click=${(e) => e.stopPropagation()}
+                >
+                  <h3>Add ${title} Time</h3>
+
+                  <md3-text-input
+                    label="Time"
+                    type="time"
+                    .value=${addingTime.time}
+                    @change=${(e) => {
+                const val = e.target.value || e.detail; // md3-text-input uses detail
+                if (type === 'irrigation' && this._adding_irrigation_time)
+                    this._adding_irrigation_time = {
+                        ...this._adding_irrigation_time,
+                        time: val,
+                    };
+                if (type === 'drain' && this._adding_drain_time)
+                    this._adding_drain_time = { ...this._adding_drain_time, time: val };
+            }}
+                  ></md3-text-input>
+
+                  <md3-number-input
+                    label="Duration (seconds)"
+                    .value=${addingTime.duration}
+                    .min=${1}
+                    @change=${(e) => {
+                const val = parseInt(e.detail);
+                if (!isNaN(val)) {
+                    if (type === 'irrigation' && this._adding_irrigation_time)
+                        this._adding_irrigation_time = {
+                            ...this._adding_irrigation_time,
+                            duration: val,
+                        };
+                    if (type === 'drain' && this._adding_drain_time)
+                        this._adding_drain_time = { ...this._adding_drain_time, duration: val };
+                }
+            }}
+                  ></md3-number-input>
+
+                  <div class="button-group">
+                    <button
+                      class="md3-button tonal"
+                      @click=${() => type === 'irrigation'
+                ? (this._adding_irrigation_time = undefined)
+                : (this._adding_drain_time = undefined)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      class="md3-button primary"
+                      @click=${() => {
+                type === 'irrigation'
+                    ? this._addIrrigationTime(addingTime.time, addingTime.duration)
+                    : this._addDrainTime(addingTime.time, addingTime.duration);
+            }}
+                      style="background: ${color};"
+                    >
+                      Add Schedule
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `
+            : ''}
+      </div>
+    `;
+    }
+};
+IrrigationDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        --mdc-dialog-min-width: 400px;
+        --mdc-dialog-max-width: 1000px;
+      }
+
+      /* Overrides/Specific Layouts */
+      .dialog-body {
+        padding: 24px;
+        overflow-y: auto;
+        max-height: 70vh;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      /* Time Bar Visualization */
+      .time-bar-container {
+        position: relative;
+        height: 80px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        cursor: crosshair;
+      }
+
+      .time-tick {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        border-left: 1px solid rgba(255, 255, 255, 0.05);
+        pointer-events: none;
+      }
+      .time-tick.major {
+        border-left-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .time-label {
+        position: absolute;
+        bottom: -22px;
+        left: -12px;
+        font-size: 0.7rem;
+        color: var(--secondary-text-color);
+      }
+
+      .chart-marker {
+        position: absolute;
+        top: 10%;
+        bottom: 10%;
+        width: 4px;
+        cursor: pointer;
+        border-radius: 2px;
+      }
+
+      .chart-tooltip {
+        position: absolute;
+        left: 8px;
+        top: -24px;
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        z-index: 10;
+      }
+
+      .legend-row {
+        margin-top: 30px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.7rem;
+        color: var(--secondary-text-color);
+      }
+
+      .overlay-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true }),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Boolean }),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false }),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "device", void 0);
+__decorate([
+    n$5({ type: String }),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "growspaceName", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_irrigation_pump_entity", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_drain_pump_entity", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_irrigation_duration", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_drain_duration", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Array)
+], IrrigationDialog.prototype, "_irrigation_times", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Array)
+], IrrigationDialog.prototype, "_drain_times", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_adding_irrigation_time", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_adding_drain_time", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", String)
+], IrrigationDialog.prototype, "_activeTab", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
+], IrrigationDialog.prototype, "_strategy", void 0);
+IrrigationDialog = __decorate([
+    t$2('irrigation-dialog')
+], IrrigationDialog);
+
 class GrowspaceLogbookController {
     constructor(hass) {
         this.hass = hass;
@@ -16465,6 +17292,269 @@ LogbookDialog = __decorate([
     t$2('logbook-dialog')
 ], LogbookDialog);
 
+let DialogHost = class DialogHost extends i$3 {
+    shouldUpdate(changedProps) {
+        // Update if store is provided, or if activeDialogState changed
+        return !!this.store;
+    }
+    render() {
+        if (!this.store)
+            return x ``;
+        const active = this.store.state.activeDialog;
+        if (active.type === 'NONE')
+            return x ``;
+        const strainLibrary = this.store.state.strainLibrary || [];
+        const devices = this.store.state.devices;
+        const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
+        // Prepare options for select dropdowns if needed
+        const growspaceOptions = {};
+        devices.forEach((d) => {
+            growspaceOptions[d.device_id] = d.name;
+        });
+        switch (active.type) {
+            case 'ADD_PLANT':
+                return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
+            case 'PLANT_OVERVIEW':
+                return this._renderPlantOverviewDialog(active, growspaceOptions);
+            case 'STRAIN_LIBRARY':
+                return this._renderStrainLibraryDialog(active, strainLibrary);
+            case 'CONFIG':
+                return this._renderConfigDialog(active, growspaceOptions);
+            case 'GROW_MASTER':
+                return this._renderGrowMasterDialog(active);
+            case 'STRAIN_RECOMMENDATION':
+                return this._renderStrainRecommendationDialog(active);
+            case 'IRRIGATION':
+                return this._renderIrrigationDialog(active, selectedDeviceData);
+            case 'LOGBOOK':
+                return this._renderLogbookDialog(active);
+            default:
+                return x ``;
+        }
+    }
+    _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
+        if (active.type !== 'ADD_PLANT')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+        <add-plant-dialog
+            .open=${true}
+            .strainLibrary=${strainLibrary}
+            .targetRow=${dialogState.row}
+            .targetCol=${dialogState.col}
+            .growspaceName=${selectedDeviceData?.name || ''}
+            @close=${() => this.store.closeActiveDialog()}
+            @submit=${(e) => this.store.confirmAddPlant(e.detail)}
+        ></add-plant-dialog>
+        `;
+    }
+    _renderPlantOverviewDialog(active, growspaceOptions) {
+        if (active.type !== 'PLANT_OVERVIEW')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+        <plant-overview-dialog
+            .open=${true}
+            .plant=${dialogState.plant}
+            .editedAttributes=${dialogState.editedAttributes}
+            .activeTab=${dialogState.activeTab}
+            .selectedPlantIds=${dialogState.selectedPlantIds}
+            .growspaceOptions=${growspaceOptions}
+            @close=${() => this.store.closeActiveDialog()}
+            @update-plant=${(e) => this.store.updatePlantFromDialog(e.detail)}
+            @delete-plant=${(e) => this.store.handleDeletePlant(e.detail.plantId)}
+            @harvest-plant=${(e) => this.store.harvestPlant(e.detail.plant)}
+            @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
+            @take-clone=${(e) => this.store.clonePlant(e.detail.plant, e.detail.numClones)}
+            @move-clone=${(e) => this._moveClonePlant(e.detail.plant, e.detail.targetGrowspace)}
+        ></plant-overview-dialog>
+        `;
+    }
+    // Helper for moveClone which is not fully in store yet, or use store wrapper?
+    // The original card had _moveClonePlant calling dataService.
+    // We should move this logic to Store completely or keep a small bridge here?
+    // Better to move to store. But store methods I restored might miss it.
+    // Let's check if store has moveClonePlant. Checking...
+    // Store has handleMovePlantToNextStage but moveClone is specific.
+    // The original code had:
+    /*
+    _moveClonePlant(plant: PlantEntity, targetGrowspace: string) {
+        const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
+        this.store.dataService.moveClone(plantId, targetGrowspace)...
+    }
+    */
+    // I will implement a temporary bridge or assume I can call store.dataService
+    _moveClonePlant(plant, targetGrowspace) {
+        const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
+        this.store.dataService.moveClone(plantId, targetGrowspace)
+            .then(() => {
+            this.store.closeActiveDialog();
+        })
+            .catch(err => console.error("Error moving clone", err));
+    }
+    _renderStrainLibraryDialog(active, strainLibrary) {
+        if (active.type !== 'STRAIN_LIBRARY')
+            return x ``;
+        return x `
+        <strain-library-dialog
+            .open=${true}
+            .strains=${strainLibrary}
+            @close=${() => this.store.closeActiveDialog()}
+            @add-strain=${(e) => this.store.addStrain(e.detail)}
+            @remove-strain=${(e) => this.store.removeStrain(e.detail)}
+            @import-library=${(e) => this._performImport(e.detail.file, e.detail.replace)}
+            @export-library=${() => this.store.handleExportLibrary()}
+        ></strain-library-dialog>
+        `;
+    }
+    async _performImport(file, replace) {
+        if (!file)
+            return;
+        try {
+            const result = await this.store.dataService.importStrainLibrary(file, replace);
+            this.store.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
+            await this.store.fetchStrainLibrary();
+        }
+        catch (err) {
+            console.error('Import failed:', err);
+            this.store.showToast(`Import failed: ${err.message}`, 'error');
+        }
+    }
+    _renderConfigDialog(active, growspaceOptions) {
+        if (active.type !== 'CONFIG')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+        <config-dialog
+            .open=${true}
+            .currentTab=${dialogState.currentTab}
+            .environmentData=${dialogState.environmentData}
+            .growspaceOptions=${growspaceOptions}
+            @close=${() => this.store.closeActiveDialog()}
+            @add-growspace-submit=${(e) => this.store.handleAddGrowspace(e.detail)}
+            @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
+        ></config-dialog>
+        `;
+    }
+    async _handleEnvironmentConfig(detail) {
+        const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold, } = detail;
+        if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
+            this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
+            return;
+        }
+        try {
+            await this.store.dataService.configureEnvironment({
+                growspace_id: selectedGrowspaceId,
+                temperature_sensor: temp_sensor,
+                humidity_sensor,
+                vpd_sensor: vpd_sensor || undefined,
+                co2_sensor: co2_sensor || undefined,
+                circulation_fan: circulation_fan || undefined,
+                stress_threshold,
+                mold_threshold,
+            });
+            this.store.showToast('Environment configured successfully!', 'success');
+            await this.store.refreshData();
+            this.store.closeActiveDialog();
+        }
+        catch (e) {
+            this.store.showToast(`Error: ${e.message}`, 'error');
+        }
+    }
+    _renderGrowMasterDialog(active) {
+        if (active.type !== 'GROW_MASTER')
+            return x ``;
+        const dialogState = active.payload;
+        // Determine stress state (logic moved from card or duplicated/simplified?)
+        // Ideally store should calculate this derived state or pass it in payload.
+        // For now, I'll access hass via store? No, store has hass but it's not reactive property of DialogHost
+        // But store.hass IS available.
+        let isStressed = false;
+        let personality;
+        if (this.store.state.selectedDevice && this.store.hass) {
+            const id = this.store.state.selectedDevice;
+            const stressEntityIds = [
+                `binary_sensor.${id}_plants_under_stress`,
+                `binary_sensor.${id}_stress`,
+                `binary_sensor.growspace_manager_${id}_stress`,
+            ];
+            for (const eid of stressEntityIds) {
+                const ent = this.store.hass.states[eid];
+                if (ent && ent.state === 'on') {
+                    isStressed = true;
+                    break;
+                }
+            }
+            const manager = this.store.hass.states['sensor.growspace_manager'];
+            if (manager && manager.attributes && manager.attributes.ai_settings) {
+                personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
+            }
+        }
+        return x `
+        <grow-master-dialog
+            .open=${true}
+            .isStressed=${isStressed}
+            .personality=${personality}
+            .isLoading=${dialogState.isLoading}
+            .response=${dialogState.response}
+            @close=${() => this.store.closeActiveDialog()}
+            @analyze-growspace=${(e) => this.store.analyzeGrowspace(e.detail.query, false)}
+            @analyze-all-growspaces=${(e) => this.store.analyzeGrowspace(e.detail.query, true)}
+        ></grow-master-dialog>
+        `;
+    }
+    _renderStrainRecommendationDialog(active) {
+        if (active.type !== 'STRAIN_RECOMMENDATION')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+        <strain-recommendation-dialog
+            .open=${true}
+            .isLoading=${dialogState.isLoading}
+            .response=${dialogState.response}
+            @close=${() => this.store.closeActiveDialog()}
+            @get-recommendation=${(e) => this.store.getStrainRecommendation(e.detail.query)}
+        ></strain-recommendation-dialog>
+        `;
+    }
+    _renderIrrigationDialog(active, selectedDeviceData) {
+        if (active.type !== 'IRRIGATION')
+            return x ``;
+        return x `
+        <irrigation-dialog
+            .open=${true}
+            .device=${selectedDeviceData}
+            .growspaceName=${selectedDeviceData?.name || ''}
+            @close=${() => this.store.closeActiveDialog()}
+            @closed=${() => this.store.closeActiveDialog()}
+        ></irrigation-dialog>
+        `;
+    }
+    _renderLogbookDialog(active) {
+        if (active.type !== 'LOGBOOK')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+        <logbook-dialog
+            .open=${true}
+            .growspaceId=${dialogState.growspaceId}
+            @close=${() => this.store.closeActiveDialog()}
+        ></logbook-dialog>
+        `;
+    }
+};
+__decorate([
+    n$5({ attribute: false }),
+    __metadata("design:type", GrowspaceStore)
+], DialogHost.prototype, "store", void 0);
+__decorate([
+    n$5({ attribute: false }),
+    __metadata("design:type", Object)
+], DialogHost.prototype, "activeDialogState", void 0);
+DialogHost = __decorate([
+    t$2('growspace-dialog-host')
+], DialogHost);
+
 let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
     constructor() {
         super(...arguments);
@@ -16495,20 +17585,21 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         // Image logic
         let imageUrl;
         let imageCropMeta;
+        const library = this.strainLibrary || [];
         if (strainName !== 'Unknown Strain') {
-            const phenoMatch = this.strainLibrary.find((s) => s.strain === strainName && s.phenotype === pheno);
+            const phenoMatch = library.find((s) => s.strain === strainName && s.phenotype === pheno);
             if (phenoMatch && phenoMatch.image) {
                 imageUrl = phenoMatch.image;
                 imageCropMeta = phenoMatch.image_crop_meta;
             }
             else {
-                const strainMatch = this.strainLibrary.find((s) => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
+                const strainMatch = library.find((s) => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
                 if (strainMatch && strainMatch.image) {
                     imageUrl = strainMatch.image;
                     imageCropMeta = strainMatch.image_crop_meta;
                 }
                 else if (!imageUrl) {
-                    const anyMatch = this.strainLibrary.find((s) => s.strain === strainName && s.image);
+                    const anyMatch = library.find((s) => s.strain === strainName && s.image);
                     if (anyMatch) {
                         imageUrl = anyMatch.image;
                         imageCropMeta = anyMatch.image_crop_meta;
@@ -16961,6 +18052,7 @@ __decorate([
     __metadata("design:type", Number)
 ], GrowspacePlantCard.prototype, "col", void 0);
 __decorate([
+    c$2({ context: strainLibraryContext, subscribe: true }),
     n$5({ attribute: false }),
     __metadata("design:type", Array)
 ], GrowspacePlantCard.prototype, "strainLibrary", void 0);
@@ -18253,12 +19345,13 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         this.plants = [];
         this.rows = 3;
         this.cols = 3;
-        this.strainLibrary = [];
+        // strainLibrary is now consumed via context in child cards
         this.isEditMode = false;
         this.selectedPlants = new Set();
         this.compact = false;
         this.isLoading = false;
         this._draggedPlant = null;
+        this._gridRef = e$1();
     }
     _handleDragStart(plant) {
         this._draggedPlant = plant;
@@ -18356,7 +19449,6 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
                     .plant=${plant}
                     .row=${row}
                     .col=${col}
-                    .strainLibrary=${this.strainLibrary}
                     .isEditMode=${this.isEditMode}
                     .selected=${isSelected}
                     @plant-click=${() => this._handlePlantClick(plant)}
@@ -18674,10 +19766,6 @@ __decorate([
     __metadata("design:type", Number)
 ], GrowspaceGrid.prototype, "cols", void 0);
 __decorate([
-    n$5({ type: Array }),
-    __metadata("design:type", Array)
-], GrowspaceGrid.prototype, "strainLibrary", void 0);
-__decorate([
     n$5({ type: Boolean }),
     __metadata("design:type", Boolean)
 ], GrowspaceGrid.prototype, "isEditMode", void 0);
@@ -18718,28 +19806,12 @@ const growspaceCardStyles = i$6 `
 
   /* Unified Card Container - Glassmorphism 2.0 */
   .unified-growspace-card {
-    /* Deep glass effect */
-    background: rgba(20, 20, 24, 0.6);
-    background-image: linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.03) 0%,
-      rgba(255, 255, 255, 0.01) 100%
-    );
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 28px; /* MD3 Large rounding */
-    padding: 24px;
+    /* Glass effect provided by .glass-surface .glass-panel */
     display: flex;
     flex-direction: column;
     gap: 24px;
-    color: #fff;
     position: relative;
     overflow: hidden;
-    box-shadow:
-      0 4px 24px -1px rgba(0, 0, 0, 0.2),
-      0 0 0 1px rgba(255, 255, 255, 0.02) inset;
   }
   /* Edit Mode Banner */
   .edit-mode-banner {
@@ -19114,27 +20186,6 @@ const growspaceCardStyles = i$6 `
     border: 1px solid var(--error-border);
     border-radius: var(--border-radius-md);
     margin: var(--spacing-md) 0;
-  }
-  /* Dialog Styles */
-  ha-dialog {
-    --mdc-dialog-border-radius: var(--border-radius);
-    --mdc-dialog-box-shadow: var(--surface-elevation-hover);
-  }
-
-  ha-dialog .mdc-dialog--open .mdc-dialog__container,
-  ha-dialog .mdc-dialog--open {
-    align-items: start;
-    margin-top: 5vh;
-  }
-
-  ha-dialog.strain-dialog .mdc-dialog--open .mdc-dialog__container .mdc-dialog__surface {
-    width: 800px;
-    max-width: 90vw;
-    height: 600px;
-    max-height: 90vh;
-  }
-  ha-dialog.strain-dialog .mdc-dialog--open .dialog-content .strain-library-header {
-    justify-content: space-between;
   }
   ha-dialog.strain-dialog {
     --mdc-dialog-min-width: 45vw;
@@ -20320,815 +21371,6 @@ GrowspaceAnalytics = __decorate([
     t$2('growspace-analytics')
 ], GrowspaceAnalytics);
 
-class GrowspaceStore {
-    constructor(host) {
-        // State
-        this.state = {
-            selectedDevice: null,
-            strainLibrary: [],
-            activeDialog: { type: 'NONE' },
-            isEditMode: false,
-            selectedPlants: new Set(),
-            optimisticDeletedPlantIds: new Set(),
-            focusedPlantIndex: -1,
-            menuOpen: false,
-            notification: null,
-            isCompactView: false,
-            defaultApplied: false,
-            isLoading: true,
-            devices: [],
-        };
-        this.wsDataCache = {};
-        this._isFetchingWS = false;
-        this.handleTakeClone = (motherPlant, numClones) => {
-            const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
-            this.dataService
-                .takeClone({
-                mother_plant_id: plantId,
-                num_clones: numClones,
-            })
-                .then(() => {
-                console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
-            })
-                .catch((error) => {
-                console.error(`Failed to take clone: ${error.message}`);
-            });
-        };
-        this.host = host;
-        host.addController(this);
-        console.log('GrowspaceStore Authenticated v2025-12-11-FIX-DATA-SERVICE-PARSING');
-        this.dataService = new DataService();
-    }
-    hostConnected() {
-        // Lifecycle hook
-        // We can't subscribe here because hass might not be set yet.
-        // Logic handled in updateHass/subscribe
-    }
-    hostDisconnected() {
-        if (this._unsubEvents) {
-            this._unsubEvents();
-            this._unsubEvents = undefined;
-        }
-    }
-    updateHass(hass) {
-        this.hass = hass;
-        this.dataService.updateHass(hass);
-        this._ensureEventSubscription();
-        // If cache empty, fetch initial
-        if (Object.keys(this.wsDataCache).length === 0 && !this._isFetchingWS) {
-            this._refreshGrowspaceData();
-        }
-        else {
-            // Just re-calculate derived state (sync) because entities might have changed
-            this._updateDevicesState();
-        }
-        if (!this.state.selectedDevice && this.state.devices.length > 0) {
-            this.state.selectedDevice = this.state.devices[0].device_id;
-            // Ensure the UI knows we are ready to display
-            if (this.state.isLoading) {
-                this.state.isLoading = false;
-            }
-            this.requestUpdate();
-        }
-        this.pruneOptimisticDeletions();
-    }
-    async _ensureEventSubscription() {
-        if (this._unsubEvents || !this.hass)
-            return;
-        try {
-            this._unsubEvents = await this.hass.connection.subscribeEvents(() => this._refreshGrowspaceData(), // specific logic to handle event payload? Msg is empty usually.
-            'growspace_manager_updated');
-        }
-        catch (err) {
-            console.error('Failed to subscribe to growspace events', err);
-        }
-    }
-    async refreshData() {
-        await this._refreshGrowspaceData();
-    }
-    async _refreshGrowspaceData() {
-        if (!this.hass || this._isFetchingWS)
-            return;
-        this._isFetchingWS = true;
-        // Show loading spinner if we have no devices yet
-        if (this.state.devices.length === 0) {
-            this.state.isLoading = true;
-            this.requestUpdate();
-        }
-        try {
-            // fetchGrowspaceData without ID should return all data
-            const data = await this.dataService.fetchGrowspaceData();
-            this.wsDataCache = data || {};
-            this._updateDevicesState();
-        }
-        catch (e) {
-            console.error('Failed to fetch growspace data', e);
-        }
-        finally {
-            this._isFetchingWS = false;
-            // Only clear loading if we didn't find any devices OR if we already have a selection
-            // If we found devices but no selection, wait for auto-select logic in updateHass/initialize
-            if (this.state.devices.length === 0 || this.state.selectedDevice) {
-                this.state.isLoading = false;
-            }
-            this.requestUpdate();
-        }
-    }
-    _updateDevicesState() {
-        const devices = this.dataService.getGrowspaceDevices(this.wsDataCache);
-        this.state.devices = devices;
-        // Auto-select if needed (handles initial load race condition where updateHass hasn't run yet)
-        if (!this.state.selectedDevice && devices.length > 0) {
-            this.state.selectedDevice = devices[0].device_id;
-        }
-        this.requestUpdate();
-    }
-    requestUpdate() {
-        this.host.requestUpdate();
-    }
-    // --- Actions / Logic ---
-    // State Setters
-    setIsCompactView(value) {
-        this.state.isCompactView = value;
-        this.requestUpdate();
-    }
-    setDefaultApplied(value) {
-        this.state.defaultApplied = value;
-        // No requestUpdate needed usually as this is internal logic flag, but safer to update
-        this.requestUpdate();
-    }
-    showToast(message, type = 'info') {
-        this.state.notification = { message, type };
-        this.requestUpdate();
-        setTimeout(() => {
-            this.state.notification = null;
-            this.requestUpdate();
-        }, 4000);
-    }
-    initializeSelectedDevice(config) {
-        // Update compact view from config if not already set (or always?)
-        if (config?.compact !== undefined) {
-            this.state.isCompactView = config.compact;
-        }
-        const devices = this.state.devices;
-        if (!devices.length || this.state.selectedDevice)
-            return;
-        // Try to apply default from config
-        if (config?.default_growspace) {
-            const defaultDevice = devices.find((d) => d.device_id === config.default_growspace || d.name === config.default_growspace);
-            if (defaultDevice) {
-                this.state.selectedDevice = defaultDevice.device_id;
-                this.state.defaultApplied = true;
-                this.requestUpdate();
-                return;
-            }
-        }
-        // Fallback to first device
-        this.state.selectedDevice = devices[0].device_id;
-        this.requestUpdate();
-    }
-    fetchStrainLibrary(force = false) {
-        return this._fetchStrainLibraryImpl(force);
-    }
-    async _fetchStrainLibraryImpl(force) {
-        // ... existing logic ...
-        if (!this.hass)
-            return;
-        const CACHE_KEY = 'growspace_strain_library_v2';
-        const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
-        // 1. Try to load from cache
-        const cachedRaw = localStorage.getItem(CACHE_KEY);
-        let usedCache = false;
-        if (!force && cachedRaw) {
-            try {
-                const cache = JSON.parse(cachedRaw);
-                const age = Date.now() - (cache.timestamp || 0);
-                if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
-                    this.state.strainLibrary = cache.data;
-                    this.requestUpdate();
-                    usedCache = true;
-                }
-            }
-            catch (e) {
-                console.warn('Failed to parse cached strain library', e);
-                localStorage.removeItem(CACHE_KEY); // Clear bad cache
-            }
-        }
-        // 2. Fetch from backend if no cache or invalid
-        if (!usedCache) {
-            try {
-                const currentStrains = await this.dataService.fetchStrainLibrary();
-                if (Array.isArray(currentStrains)) {
-                    this.state.strainLibrary = currentStrains;
-                    this.requestUpdate();
-                    // Update cache
-                    const cacheData = {
-                        version: 2,
-                        timestamp: Date.now(),
-                        data: currentStrains,
-                    };
-                    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-                }
-            }
-            catch (e) {
-                console.error('Failed to fetch strain library:', e);
-            }
-        }
-    }
-    handleKeyboardNavigation(key) {
-        if (this.state.isEditMode && key === 'Escape') {
-            this.exitEditMode();
-            return;
-        }
-        if (!this.state.selectedDevice)
-            return;
-        const devices = this.state.devices;
-        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
-        if (!device)
-            return;
-        const plants = device.plants.filter((p) => !this.state.optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
-        if (plants.length === 0)
-            return;
-        if (key === 'ArrowRight') {
-            this.setFocusedPlantIndex((this.state.focusedPlantIndex + 1) % plants.length);
-        }
-        else if (key === 'ArrowLeft') {
-            this.setFocusedPlantIndex((this.state.focusedPlantIndex - 1 + plants.length) % plants.length);
-        }
-        else if (key === 'Enter' || key === ' ') {
-            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
-                this.handlePlantClick(plants[this.state.focusedPlantIndex]);
-            }
-        }
-        else if (key === 'Delete' || key === 'Backspace') {
-            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
-                const focusedPlant = plants[this.state.focusedPlantIndex];
-                if (focusedPlant) {
-                    this.handleDeletePlant(focusedPlant.entity_id);
-                }
-            }
-            else if (this.state.selectedPlants.size > 0) {
-                // If multiple plants are selected, delete them
-                this.handleDeletePlant(Array.from(this.state.selectedPlants));
-            }
-        }
-    }
-    handleDeviceChange(deviceId) {
-        this.state.selectedDevice = deviceId;
-        this.requestUpdate();
-    }
-    togglePlantSelection(plantOrId) {
-        const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
-        if (!plantId)
-            return;
-        const newSet = new Set(this.state.selectedPlants);
-        if (newSet.has(plantId)) {
-            newSet.delete(plantId);
-        }
-        else {
-            newSet.add(plantId);
-        }
-        this.state.selectedPlants = newSet;
-        this.requestUpdate();
-    }
-    selectAllPlants() {
-        if (!this.state.selectedDevice)
-            return;
-        const devices = this.state.devices;
-        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
-        if (selectedDeviceData && selectedDeviceData.plants) {
-            selectedDeviceData.plants.forEach((plant) => {
-                const pId = plant.attributes.plant_id;
-                if (pId && !this.state.optimisticDeletedPlantIds.has(pId)) {
-                    this.state.selectedPlants.add(pId);
-                }
-            });
-            this.requestUpdate();
-        }
-    }
-    setSelectedPlants(plantIds) {
-        this.state.selectedPlants = new Set(plantIds);
-        this.requestUpdate();
-    }
-    setFocusedPlantIndex(index) {
-        this.state.focusedPlantIndex = index;
-        this.requestUpdate();
-    }
-    clearPlantSelection() {
-        this.state.selectedPlants = new Set();
-        this.requestUpdate();
-    }
-    exitEditMode() {
-        this.state.isEditMode = false;
-        this.state.selectedPlants = new Set();
-        this.requestUpdate();
-    }
-    setEditMode(value) {
-        this.state.isEditMode = value;
-        this.requestUpdate();
-    }
-    setMenuOpen(value) {
-        this.state.menuOpen = value;
-        this.requestUpdate();
-    }
-    // setFocusedPlantIndex(index: number) { // This was replaced by the new block above
-    //     this.state.focusedPlantIndex = index;
-    //     this.requestUpdate();
-    // }
-    setActiveDialog(dialogState) {
-        this.state.activeDialog = dialogState;
-        this.requestUpdate();
-    }
-    closeActiveDialog() {
-        this.state.activeDialog = { type: 'NONE' };
-        this.requestUpdate();
-    }
-    handlePlantClick(plant) {
-        if (this.state.isEditMode && this.state.selectedPlants.size > 0) {
-            const plantId = plant.attributes.plant_id;
-            if (plantId && !this.state.selectedPlants.has(plantId)) {
-                this.togglePlantSelection(plantId);
-            }
-            this.openPlantOverviewDialog(plant, Array.from(this.state.selectedPlants));
-        }
-        else {
-            this.openPlantOverviewDialog(plant);
-        }
-    }
-    openPlantOverviewDialog(plant, selectedIds) {
-        this.state.activeDialog = {
-            type: 'PLANT_OVERVIEW',
-            payload: {
-                plant,
-                editedAttributes: { ...plant.attributes },
-                activeTab: 'dashboard',
-                selectedPlantIds: selectedIds,
-            },
-        };
-        this.requestUpdate();
-    }
-    async updatePlantFromDialog(dialogState) {
-        const { plant, editedAttributes, selectedPlantIds } = dialogState;
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
-        const isBulkEdit = targetIds.length > 1;
-        const payloadTemplate = {};
-        const dateFields = [
-            'seedling_start',
-            'mother_start',
-            'clone_start',
-            'veg_start',
-            'flower_start',
-            'dry_start',
-            'cure_start',
-        ];
-        const fieldsToProcess = isBulkEdit
-            ? dateFields
-            : ['strain', 'phenotype', 'row', 'col', ...dateFields];
-        fieldsToProcess.forEach((field) => {
-            if (editedAttributes[field] !== undefined) {
-                if (dateFields.includes(field)) {
-                    const val = String(editedAttributes[field] || '');
-                    if (!val || val === 'null' || val === 'undefined') {
-                        payloadTemplate[field] = null;
-                    }
-                    else {
-                        const formattedDate = PlantUtils.formatDateForBackend(val);
-                        if (formattedDate) {
-                            payloadTemplate[field] = formattedDate;
-                        }
-                    }
-                }
-                else {
-                    if (editedAttributes[field] !== null) {
-                        payloadTemplate[field] = editedAttributes[field];
-                    }
-                }
-            }
-        });
-        try {
-            const updatePromises = targetIds.map((id) => {
-                const payload = { ...payloadTemplate, plant_id: id };
-                if (isBulkEdit) {
-                    delete payload.row;
-                    delete payload.col;
-                }
-                return this.dataService.updatePlant(payload);
-            });
-            await Promise.all(updatePromises);
-            this.closeActiveDialog();
-            if (this.state.isEditMode) {
-                this.state.selectedPlants = new Set();
-                this.state.isEditMode = false;
-            }
-            this.requestUpdate();
-        }
-        catch (err) {
-            console.error('Error updating plant(s):', err);
-        }
-    }
-    async updatePlant(plantId, updates) {
-        try {
-            await this.dataService.updatePlant({ plant_id: plantId, ...updates });
-            this.showToast('Plant updated', 'success');
-            // Dialog might stay open or close? Usually stay open for overview.
-            this.requestUpdate();
-        }
-        catch (e) {
-            console.error('Failed to update plant:', e);
-            this.showToast(`Failed to update plant: ${e.message}`, 'error');
-        }
-    }
-    async handleDeletePlant(plantId) {
-        const ids = Array.isArray(plantId) ? plantId : [plantId];
-        ids.forEach((id) => this.state.optimisticDeletedPlantIds.add(id));
-        this.requestUpdate();
-        try {
-            // Check if backend supports bulk delete? If not, loop.
-            // Assuming dataService.deletePlant takes one ID.
-            await Promise.all(ids.map((id) => this.dataService.removePlant(id)));
-            this.showToast('Plant(s) deleted', 'success');
-            // Do NOT remove from optimistic set here.
-            // We wait for updateHass/pruneOptimisticDeletions to confirm they are gone from HA state.
-            ids.forEach((id) => {
-                this.state.selectedPlants.delete(id);
-            });
-            if (this.state.activeDialog.type === 'PLANT_OVERVIEW') {
-                this.closeActiveDialog();
-            }
-            this.updateGrid();
-        }
-        catch (e) {
-            console.error('Failed to delete plant:', e);
-            this.showToast(`Failed to delete: ${e.message}`, 'error');
-            ids.forEach((id) => this.state.optimisticDeletedPlantIds.delete(id));
-            this.requestUpdate();
-        }
-    }
-    pruneOptimisticDeletions() {
-        if (this.state.optimisticDeletedPlantIds.size === 0)
-            return;
-        const allPlantIds = new Set();
-        const devices = this.state.devices;
-        devices.forEach((d) => d.plants.forEach((p) => allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))));
-        const toRemove = new Set();
-        this.state.optimisticDeletedPlantIds.forEach((id) => {
-            // If the plant ID is NOT in the current data, it means deletion is confirmed/propagated.
-            // So we can stop masking it.
-            if (!allPlantIds.has(id)) {
-                toRemove.add(id);
-            }
-        });
-        if (toRemove.size > 0) {
-            toRemove.forEach((id) => this.state.optimisticDeletedPlantIds.delete(id));
-            this.requestUpdate(); // Not strictly needed if it just affects rendering of missing items, but good for debug
-        }
-    }
-    async handleMovePlantToNextStage(plant) {
-        const stage = plant.attributes?.stage;
-        let targetGrowspace = '';
-        const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
-        if (!stage || !movableStages.has(stage)) {
-            this.showToast('Plant must be in mother or flower or dry or cure stage to move. stage is ' + stage, 'error');
-            return;
-        }
-        if (stage === 'flower') {
-            targetGrowspace = 'dry';
-        }
-        else if (stage === 'dry') {
-            targetGrowspace = 'cure';
-        }
-        else if (stage === 'mother') {
-            targetGrowspace = 'clone';
-        }
-        else {
-            console.error('Unknown stage, cannot move plant', targetGrowspace);
-            targetGrowspace = 'error';
-        }
-        try {
-            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-            await this.dataService.harvestPlant(plantId, targetGrowspace);
-            this.closeActiveDialog();
-        }
-        catch (err) {
-            console.error('Error moving plant to next stage:', err);
-        }
-    }
-    async addStrain(strainData) {
-        if (!strainData.strain)
-            return;
-        const payload = {
-            strain: strainData.strain,
-            phenotype: strainData.phenotype,
-            breeder: strainData.breeder,
-            type: strainData.type,
-            flowering_days_min: strainData.flowering_days_min
-                ? Number(strainData.flowering_days_min)
-                : undefined,
-            flowering_days_max: strainData.flowering_days_max
-                ? Number(strainData.flowering_days_max)
-                : undefined,
-            lineage: strainData.lineage,
-            sex: strainData.sex,
-            description: strainData.description,
-            image: strainData.image,
-            image_crop_meta: strainData.image_crop_meta,
-            sativa_percentage: strainData.sativa_percentage,
-            indica_percentage: strainData.indica_percentage,
-        };
-        try {
-            await this.dataService.addStrain(payload);
-            await this.fetchStrainLibrary(true);
-        }
-        catch (err) {
-            console.error('Error adding strain:', err);
-        }
-    }
-    async removeStrain(strainKey) {
-        try {
-            const parts = strainKey.split('|');
-            const strain = parts[0];
-            const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
-            await this.dataService.removeStrain(strain, phenotype);
-            if (this.state.strainLibrary) {
-                this.state.strainLibrary = this.state.strainLibrary.filter((s) => s.key !== strainKey);
-                this.requestUpdate();
-            }
-            await this.fetchStrainLibrary(true);
-        }
-        catch (err) {
-            console.error('Error removing strain:', err);
-        }
-    }
-    updateGrid() {
-        // Force refresh from HA
-        if (this.hass) {
-            this.dataService.updateHass(this.hass);
-        }
-        // Trigger generic request update, but also maybe refresh WS data if we expect backend changes?
-        // Actions usually trigger backend changes which fire growspace_updated, so subscription handles it.
-        this.requestUpdate();
-    }
-    async handleDrop(targetRow, targetCol, targetPlant, sourcePlant) {
-        if (!sourcePlant || !this.state.selectedDevice)
-            return;
-        try {
-            if (targetPlant) {
-                const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
-                const targetId = targetPlant.attributes.plant_id || targetPlant.entity_id.replace('sensor.', '');
-                if (sourceId === targetId)
-                    return;
-                await this.dataService.swapPlants(sourceId, targetId);
-                this.updateGrid();
-            }
-            else {
-                await this.movePlant(sourcePlant, targetRow, targetCol);
-            }
-        }
-        catch (err) {
-            console.error('Error during drag-and-drop:', err);
-        }
-    }
-    async movePlant(plant, newRow, newCol) {
-        try {
-            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-            await this.dataService.updatePlant({
-                plant_id: plantId,
-                row: newRow,
-                col: newCol,
-            });
-            this.updateGrid();
-        }
-        catch (err) {
-            console.error('Error moving plant:', err);
-        }
-    }
-    async handleAddGrowspace(detail) {
-        const { name, rows, plants_per_row, notification_service } = detail;
-        if (!name) {
-            this.showToast('Name is required', 'error');
-            return;
-        }
-        try {
-            await this.dataService.addGrowspace({
-                name,
-                rows: rows || 4,
-                plants_per_row: plants_per_row || 4,
-                notification_service: notification_service || 'mobile_app_notify',
-            });
-            this.showToast('Growspace added successfully!', 'success');
-            await this.refreshData();
-            this.closeActiveDialog();
-        }
-        catch (e) {
-            this.showToast(`Error: ${e.message}`, 'error');
-        }
-    }
-    async harvestPlant(plant) {
-        await this.handleMovePlantToNextStage(plant);
-    }
-    async finishDryingPlant(plant) {
-        await this.handleMovePlantToNextStage(plant);
-    }
-    openAddPlantDialog(row, col) {
-        // If row/col specified, use them (clicked from grid)
-        if (row !== undefined && col !== undefined) {
-            this.fetchStrainLibrary();
-            this.setActiveDialog({
-                type: 'ADD_PLANT',
-                payload: { row, col },
-            });
-            return;
-        }
-        // Auto-find free slot if not specified
-        if (!this.state.selectedDevice)
-            return;
-        const devices = this.state.devices;
-        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
-        if (device) {
-            const rows = device.rows || 4;
-            const cols = device.plants_per_row || 4;
-            const { row: targetRow, col: targetCol } = PlantUtils.findFirstAvailableSlot(device.plants || [], rows, cols);
-            // If full, default to 1,1 or last found (let backend reject or user change)
-            this.fetchStrainLibrary();
-            // Convert 1-based backend coordinates to 0-based dialog coordinates
-            this.setActiveDialog({
-                type: 'ADD_PLANT',
-                payload: { row: targetRow - 1, col: targetCol - 1 },
-            });
-        }
-    }
-    async clonePlant(plant, numClones) {
-        await this.handleTakeClone(plant, numClones);
-    }
-    async confirmAddPlant(detail) {
-        const devices = this.state.devices;
-        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
-        if (!selectedDeviceData)
-            return;
-        // Convert 0-based dialog coordinates to 1-based backend coordinates
-        const row = detail.row + 1;
-        const col = detail.col + 1;
-        const { strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start, } = detail;
-        if (!strain) {
-            this.showToast('Please select a strain', 'error');
-            return;
-        }
-        try {
-            await this.dataService.addPlant({
-                growspace_id: selectedDeviceData.device_id,
-                strain,
-                phenotype: phenotype || '',
-                row,
-                col,
-                veg_start,
-                flower_start,
-                seedling_start,
-                mother_start,
-                clone_start,
-                dry_start,
-                cure_start,
-            });
-            this.showToast('Plant added successfully', 'success');
-            this.closeActiveDialog();
-        }
-        catch (e) {
-            console.error(e);
-            this.showToast('Failed to add plant', 'error');
-        }
-    }
-    async analyzeGrowspace(query, isGlobal = false) {
-        const dialogPayload = this.state.activeDialog.type === 'GROW_MASTER' ? this.state.activeDialog.payload : null;
-        if (!dialogPayload)
-            return;
-        // Update dialog state to loading
-        this.setActiveDialog({
-            type: 'GROW_MASTER',
-            payload: { ...dialogPayload, isLoading: true, response: null },
-        });
-        try {
-            let result;
-            if (isGlobal || dialogPayload.mode === 'all') {
-                result = await this.dataService.analyzeAllGrowspaces();
-            }
-            else {
-                result = await this.dataService.askGrowAdvice(this.state.selectedDevice || '', query);
-            }
-            const responseText = typeof result.response === 'string'
-                ? result.response
-                : result.response?.response || JSON.stringify(result);
-            this.setActiveDialog({
-                type: 'GROW_MASTER',
-                payload: { ...dialogPayload, isLoading: false, response: responseText },
-            });
-        }
-        catch (err) {
-            console.error('Error asking Grow Master:', err);
-            this.setActiveDialog({
-                type: 'GROW_MASTER',
-                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
-            });
-        }
-    }
-    async getStrainRecommendation(userQuery) {
-        const dialogPayload = this.state.activeDialog.type === 'STRAIN_RECOMMENDATION'
-            ? this.state.activeDialog.payload
-            : null;
-        if (!dialogPayload)
-            return;
-        this.setActiveDialog({
-            type: 'STRAIN_RECOMMENDATION',
-            payload: { ...dialogPayload, isLoading: true, response: null },
-        });
-        try {
-            const result = await this.dataService.getStrainRecommendation(userQuery);
-            const responseText = typeof result.response === 'string' ? result.response : JSON.stringify(result);
-            this.setActiveDialog({
-                type: 'STRAIN_RECOMMENDATION',
-                payload: { ...dialogPayload, isLoading: false, response: responseText },
-            });
-        }
-        catch (err) {
-            console.error('Error getting strain recommendation:', err);
-            this.setActiveDialog({
-                type: 'STRAIN_RECOMMENDATION',
-                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
-            });
-        }
-    }
-    openStrainRecommendationDialog() {
-        this.setActiveDialog({
-            type: 'STRAIN_RECOMMENDATION',
-            payload: {
-                isLoading: false,
-                response: null,
-            },
-        });
-    }
-    openLogbookDialog() {
-        if (!this.state.selectedDevice)
-            return;
-        this.setActiveDialog({
-            type: 'LOGBOOK',
-            payload: {
-                growspaceId: this.state.selectedDevice,
-            },
-        });
-    }
-    handleExportLibrary() {
-        // Logic needs to be adapted since event subscription on HASS connection is component specific?
-        // Actually we can do it here if we assume `hass` is available.
-        // But `subscribeEvents` is on `hass.connection`.
-        // We can emit a custom event or just implement the logic here.
-        // The download part triggers a browser action (window location or anchor click).
-        // It's better to keep DOM interaction like download in the component?
-        // Or pass a callback.
-        // I'll keep it simple: Implement logic here, but for the download part, creating an element on document
-        // might be slightly unclean in a store but it works.
-        this._handleExportLibraryLogic();
-    }
-    async _handleExportLibraryLogic() {
-        if (!this.hass)
-            return;
-        const unsubscribe = await this.hass.connection.subscribeEvents((event) => {
-            if (event.data && event.data.url) {
-                this._downloadFile(event.data.url);
-                unsubscribe();
-            }
-        }, 'growspace_manager_strain_library_exported');
-        try {
-            await this.dataService.exportStrainLibrary();
-            this.showToast('Export started...', 'info');
-        }
-        catch (err) {
-            console.error('Failed to call export service', err);
-            unsubscribe();
-        }
-    }
-    _downloadFile(url) {
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = url.split('/').pop() || 'export.zip';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
-    async performImport(file, replace) {
-        if (!file)
-            return;
-        try {
-            const result = await this.dataService.importStrainLibrary(file, replace);
-            this.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
-            await this.fetchStrainLibrary(true);
-        }
-        catch (err) {
-            console.error('Import failed:', err);
-            this.showToast(`Import failed: ${err.message}`, 'error');
-        }
-    }
-}
-
 let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     constructor() {
         super(...arguments);
@@ -21141,6 +21383,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             effectiveRows: 0,
             grid: [],
         };
+        this._strainLibrary = [];
         this._handleTakeClone = (motherPlant) => {
             const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
             this.store.dataService
@@ -21189,6 +21432,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         // We do this every update to ensure fresh data from store, but we filter in place.
         // Ideally we would check for changes, but this is already better than doing it in render().
         if (this.store && this.store.state) {
+            // Sync strain library to context provider
+            if (this.store.state.strainLibrary !== this._strainLibrary) {
+                this._strainLibrary = this.store.state.strainLibrary || [];
+            }
             const devices = this.store.state.devices || [];
             this._cachedActiveDevices = devices.map((d) => ({
                 ...d,
@@ -21700,7 +21947,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         return x `
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="sr-only-announcer" aria-live="polite"></div>
-        <div class="unified-growspace-card" tabindex="0" @keydown=${this._handleKeyboardNav}>
+        <div class="unified-growspace-card glass-surface glass-panel" tabindex="0" @keydown=${this._handleKeyboardNav}>
           <growspace-header
             .device=${selectedDeviceData}
             .devices=${devices}
@@ -21753,7 +22000,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             </div>
           `
             : ''}
-      ${this.renderDialogs(growspaceOptions)}
+      ${this.renderDialogs()}
     `;
     }
     renderEditModeBanner() {
@@ -21795,279 +22042,19 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
       ></growspace-grid>
     `;
     }
-    async _confirmAddPlant(detail) {
-        const devices = this.store.state.devices;
-        const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
-        if (!selectedDeviceData)
-            return;
-        const { strain, phenotype, row, col, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start, } = detail;
-        if (!strain) {
-            this.store.showToast('Please select a strain', 'error');
-            return;
-        }
-        try {
-            await this.store.dataService.addPlant({
-                growspace_id: selectedDeviceData.device_id,
-                strain,
-                phenotype: phenotype || '',
-                row,
-                col,
-                veg_start,
-                flower_start,
-                seedling_start,
-                mother_start,
-                clone_start,
-                dry_start,
-                cure_start,
-            });
-            this.store.showToast('Plant added successfully', 'success');
-            this.store.closeActiveDialog();
-            await this.store.refreshData(); // Force refresh to show new sensor
-        }
-        catch (e) {
-            console.error(e);
-            this.store.showToast('Failed to add plant', 'error');
-        }
-    }
-    async _handleEditGrowspace(detail) {
-        try {
-            await this.store.dataService.updateGrowspace(detail);
-            this.store.showToast(`Growspace '${detail.name}' updated`, 'success');
-            this.store.closeActiveDialog();
-            await this.store.refreshData();
-        }
-        catch (e) {
-            console.error(e);
-            this.store.showToast('Failed to update growspace', 'error');
-        }
-    }
-    async _handleDeleteGrowspace(detail) {
-        try {
-            await this.store.dataService.removeGrowspace(detail.growspace_id);
-            this.store.showToast('Growspace deleted', 'success');
-            this.store.closeActiveDialog();
-            await this.store.refreshData();
-        }
-        catch (e) {
-            console.error(e);
-            this.store.showToast('Failed to delete growspace', 'error');
-        }
-    }
-    _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
-        if (active.type !== 'ADD_PLANT')
-            return x ``;
-        const dialogState = active.payload;
-        return x `
-      <add-plant-dialog
-        .open=${true}
-        .strainLibrary=${strainLibrary}
-        .growspaceName=${selectedDeviceData?.name ?? ''}
-        .row=${dialogState.row}
-        .col=${dialogState.col}
-        @close=${() => this.store.closeActiveDialog()}
-        @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
-      ></add-plant-dialog>
-    `;
-    }
-    _renderPlantOverviewDialog(active, growspaceOptions) {
-        if (active.type !== 'PLANT_OVERVIEW')
-            return x ``;
-        const dialogState = active.payload;
-        return x `
-      <plant-overview-dialog
-        .open=${true}
-        .dialog=${dialogState}
-        .plant=${dialogState.plant}
-        .growspaceOptions=${growspaceOptions}
-        @close=${() => this.store.closeActiveDialog()}
-        @update-plant=${(e) => {
-            const payload = active.payload;
-            this.store.updatePlantFromDialog({
-                plant: payload.plant,
-                editedAttributes: e.detail,
-                selectedPlantIds: payload.selectedPlantIds,
-            });
-        }}
-        @delete-plant=${(e) => this.store.handleDeletePlant(e.detail.plantId)}
-        @harvest-plant=${(e) => this.store.handleMovePlantToNextStage(e.detail.plant)}
-        @finish-drying=${(e) => this.store.handleMovePlantToNextStage(e.detail.plant)}
-        @take-clone=${(e) => {
-            const { plant, numClones } = e.detail;
-            this.store.handleTakeClone(plant, numClones);
-        }}
-        @move-clone=${(e) => {
-            const { plant, targetGrowspace } = e.detail;
-            const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-            this.store.dataService
-                .moveClone(plantId, targetGrowspace)
-                .then(() => {
-                console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
-                this.store.closeActiveDialog();
-            })
-                .catch((err) => {
-                console.error('Error moving clone:', err);
-            });
-        }}
-        @attribute-change=${(e) => {
-            const payload = active.payload;
-            payload.editedAttributes[e.detail.key] = e.detail.value;
-            this.requestUpdate();
-        }}
-        @toggle-show-all-dates=${() => {
-            const payload = active.payload;
-            payload.showAllDates = !payload.showAllDates;
-            this.requestUpdate();
-        }}
-      ></plant-overview-dialog>
-    `;
-    }
-    _renderStrainLibraryDialog(active, strainLibrary) {
-        if (active.type !== 'STRAIN_LIBRARY')
-            return x ``;
-        return x `
-      <strain-library-dialog
-        .open=${true}
-        .strains=${strainLibrary}
-        @close=${() => this.store.closeActiveDialog()}
-        @save-strain=${(e) => this._addStrain(e.detail)}
-        @delete-strain=${(e) => this._removeStrain(e.detail.key)}
-        @import-library=${(e) => this.store.performImport(e.detail.file, e.detail.replace)}
-        @export-library=${() => this.store.handleExportLibrary()}
-        @get-recommendation=${() => this._openStrainRecommendationDialog()}
-      ></strain-library-dialog>
-    `;
-    }
-    _renderConfigDialog(active, growspaceOptions) {
-        if (active.type !== 'CONFIG')
-            return x ``;
-        const dialogState = active.payload;
-        return x `
-      <config-dialog
-        .open=${true}
-        .hass=${this.hass}
-        .devices=${this.store.state.devices}
-        .growspaceOptions=${growspaceOptions}
-        .initialTab=${dialogState.currentTab || 'environment'}
-        @close=${() => this.store.closeActiveDialog()}
-        @add-growspace-submit=${(e) => this._handleAddGrowspace(e.detail)}
-        @edit-growspace-submit=${(e) => this._handleEditGrowspace(e.detail)}
-        @delete-growspace-submit=${(e) => this._handleDeleteGrowspace(e.detail)}
-        @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
-      ></config-dialog>
-    `;
-    }
-    _renderGrowMasterDialog(active) {
-        if (active.type !== 'GROW_MASTER')
-            return x ``;
-        const dialogState = active.payload;
-        // Determine stress state for the dialog
-        let isStressed = false;
-        let personality;
-        // Attempt to find stress sensor
-        if (this.selectedDevice && this.hass) {
-            const id = this.selectedDevice;
-            const stressEntityIds = [
-                `binary_sensor.${id}_plants_under_stress`,
-                `binary_sensor.${id}_stress`,
-                `binary_sensor.growspace_manager_${id}_stress`,
-            ];
-            for (const eid of stressEntityIds) {
-                const ent = this.hass.states[eid];
-                if (ent && ent.state === 'on') {
-                    isStressed = true;
-                    break;
-                }
-            }
-        }
-        // Personality check
-        if (this.hass) {
-            const manager = this.hass.states['sensor.growspace_manager'];
-            if (manager && manager.attributes && manager.attributes.ai_settings) {
-                personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
-            }
-        }
-        return x `
-      <grow-master-dialog
-        .open=${true}
-        .isStressed=${isStressed}
-        .personality=${personality}
-        .isLoading=${dialogState.isLoading}
-        .response=${dialogState.response}
-        @close=${() => this.store.closeActiveDialog()}
-        @analyze-growspace=${(e) => this.store.analyzeGrowspace(e.detail.query, false)}
-        @analyze-all-growspaces=${(e) => this.store.analyzeGrowspace(e.detail.query, true)}
-      ></grow-master-dialog>
-    `;
-    }
-    _renderStrainRecommendationDialog(active) {
-        if (active.type !== 'STRAIN_RECOMMENDATION')
-            return x ``;
-        const dialogState = active.payload;
-        return x `
-      <strain-recommendation-dialog
-        .open=${true}
-        .isLoading=${dialogState.isLoading}
-        .response=${dialogState.response}
-        @close=${() => this.store.closeActiveDialog()}
-        @get-recommendation=${(e) => this.store.getStrainRecommendation(e.detail.query)}
-      ></strain-recommendation-dialog>
-    `;
-    }
-    _renderIrrigationDialog(active, selectedDeviceData) {
-        if (active.type !== 'IRRIGATION')
-            return x ``;
-        return x `
-      <irrigation-dialog
-        .open=${true}
-        .device=${selectedDeviceData}
-        .growspaceName=${selectedDeviceData?.name || ''}
-        @close=${() => this.store.closeActiveDialog()}
-        @closed=${() => this.store.closeActiveDialog()}
-      ></irrigation-dialog>
-    `;
-    }
-    _renderLogbookDialog(active) {
-        if (active.type !== 'LOGBOOK')
-            return x ``;
-        const dialogState = active.payload;
-        return x `
-      <logbook-dialog
-        .open=${true}
-        .growspaceId=${dialogState.growspaceId}
-        @close=${() => this.store.closeActiveDialog()}
-      ></logbook-dialog>
-    `;
-    }
-    renderDialogs(growspaceOptions) {
-        const active = this.store.state.activeDialog;
-        if (active.type === 'NONE')
-            return x ``;
-        const strainLibrary = this.store.state.strainLibrary || [];
-        const devices = this.store.state.devices;
-        const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
-        switch (active.type) {
-            case 'ADD_PLANT':
-                return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
-            case 'PLANT_OVERVIEW':
-                return this._renderPlantOverviewDialog(active, growspaceOptions);
-            case 'STRAIN_LIBRARY':
-                return this._renderStrainLibraryDialog(active, strainLibrary);
-            case 'CONFIG':
-                return this._renderConfigDialog(active, growspaceOptions);
-            case 'GROW_MASTER':
-                return this._renderGrowMasterDialog(active);
-            case 'STRAIN_RECOMMENDATION':
-                return this._renderStrainRecommendationDialog(active);
-            case 'IRRIGATION':
-                return this._renderIrrigationDialog(active, selectedDeviceData);
-            case 'LOGBOOK':
-                return this._renderLogbookDialog(active);
-            default:
-                return x ``;
-        }
+    renderDialogs() {
+        return x `<growspace-dialog-host 
+      .store=${this.store} 
+      .activeDialogState=${this.store.state.activeDialog}
+    ></growspace-dialog-host>`;
     }
 };
-GrowspaceManagerCard.styles = [variables, growspaceCardStyles];
+GrowspaceManagerCard.styles = [variables, sharedStyles, growspaceCardStyles];
+__decorate([
+    e$3({ context: strainLibraryContext }),
+    r$2(),
+    __metadata("design:type", Array)
+], GrowspaceManagerCard.prototype, "_strainLibrary", void 0);
 __decorate([
     e$3({ context: hassContext }),
     n$5({ attribute: false }),

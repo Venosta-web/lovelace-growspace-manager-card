@@ -4,3 +4,4 @@ import { GrowspaceManagerCardConfig } from './types';
 
 export const hassContext = createContext<HomeAssistant>('hass');
 export const configContext = createContext<GrowspaceManagerCardConfig>('config');
+export const strainLibraryContext = createContext<import('./types').StrainEntry[]>('strain-library');

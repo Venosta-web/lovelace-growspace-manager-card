@@ -21,28 +21,12 @@ export const growspaceCardStyles = css`
 
   /* Unified Card Container - Glassmorphism 2.0 */
   .unified-growspace-card {
-    /* Deep glass effect */
-    background: rgba(20, 20, 24, 0.6);
-    background-image: linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.03) 0%,
-      rgba(255, 255, 255, 0.01) 100%
-    );
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 28px; /* MD3 Large rounding */
-    padding: 24px;
+    /* Glass effect provided by .glass-surface .glass-panel */
     display: flex;
     flex-direction: column;
     gap: 24px;
-    color: #fff;
     position: relative;
     overflow: hidden;
-    box-shadow:
-      0 4px 24px -1px rgba(0, 0, 0, 0.2),
-      0 0 0 1px rgba(255, 255, 255, 0.02) inset;
   }
   /* Edit Mode Banner */
   .edit-mode-banner {
@@ -417,27 +401,6 @@ export const growspaceCardStyles = css`
     border: 1px solid var(--error-border);
     border-radius: var(--border-radius-md);
     margin: var(--spacing-md) 0;
-  }
-  /* Dialog Styles */
-  ha-dialog {
-    --mdc-dialog-border-radius: var(--border-radius);
-    --mdc-dialog-box-shadow: var(--surface-elevation-hover);
-  }
-
-  ha-dialog .mdc-dialog--open .mdc-dialog__container,
-  ha-dialog .mdc-dialog--open {
-    align-items: start;
-    margin-top: 5vh;
-  }
-
-  ha-dialog.strain-dialog .mdc-dialog--open .mdc-dialog__container .mdc-dialog__surface {
-    width: 800px;
-    max-width: 90vw;
-    height: 600px;
-    max-height: 90vh;
-  }
-  ha-dialog.strain-dialog .mdc-dialog--open .dialog-content .strain-library-header {
-    justify-content: space-between;
   }
   ha-dialog.strain-dialog {
     --mdc-dialog-min-width: 45vw;

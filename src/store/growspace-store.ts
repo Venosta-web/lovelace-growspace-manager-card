@@ -51,7 +51,21 @@ export class GrowspaceStore implements ReactiveController {
     constructor(host: ReactiveControllerHost) {
         this.host = host;
         host.addController(this);
-        console.log('GrowspaceStore Authenticated v2025-12-11-FIX-DATA-SERVICE-PARSING');
+
+        // Wrap state in a proxy to auto-trigger updates
+        this.state = new Proxy(this.state, {
+            set: (target, prop, value) => {
+                const oldVal = target[prop as keyof GrowspaceState];
+                if (oldVal !== value) {
+                    // Use type assertion to avoid 'any' is not assignable to 'never' error
+                    (target as any)[prop] = value;
+                    this.host.requestUpdate();
+                }
+                return true;
+            }
+        });
+
+        console.log('GrowspaceStore initialized with Reactive Proxy');
         this.dataService = new DataService();
     }
 
@@ -88,7 +102,6 @@ export class GrowspaceStore implements ReactiveController {
             if (this.state.isLoading) {
                 this.state.isLoading = false;
             }
-            this.requestUpdate();
         }
 
         this.pruneOptimisticDeletions();
@@ -118,7 +131,6 @@ export class GrowspaceStore implements ReactiveController {
         // Show loading spinner if we have no devices yet
         if (this.state.devices.length === 0) {
             this.state.isLoading = true;
-            this.requestUpdate();
         }
 
         try {
@@ -135,7 +147,6 @@ export class GrowspaceStore implements ReactiveController {
             if (this.state.devices.length === 0 || this.state.selectedDevice) {
                 this.state.isLoading = false;
             }
-            this.requestUpdate();
         }
     }
 
@@ -147,8 +158,6 @@ export class GrowspaceStore implements ReactiveController {
         if (!this.state.selectedDevice && devices.length > 0) {
             this.state.selectedDevice = devices[0].device_id;
         }
-
-        this.requestUpdate();
     }
 
     requestUpdate() {
@@ -160,21 +169,16 @@ export class GrowspaceStore implements ReactiveController {
     // State Setters
     setIsCompactView(value: boolean) {
         this.state.isCompactView = value;
-        this.requestUpdate();
     }
 
     setDefaultApplied(value: boolean) {
         this.state.defaultApplied = value;
-        // No requestUpdate needed usually as this is internal logic flag, but safer to update
-        this.requestUpdate();
     }
 
     showToast(message: string, type: 'info' | 'error' | 'success' = 'info') {
         this.state.notification = { message, type };
-        this.requestUpdate();
         setTimeout(() => {
             this.state.notification = null;
-            this.requestUpdate();
         }, 4000);
     }
 
@@ -195,22 +199,21 @@ export class GrowspaceStore implements ReactiveController {
             if (defaultDevice) {
                 this.state.selectedDevice = defaultDevice.device_id;
                 this.state.defaultApplied = true;
-                this.requestUpdate();
                 return;
             }
         }
 
         // Fallback to first device
         this.state.selectedDevice = devices[0].device_id;
-        this.requestUpdate();
     }
+
+    // ...
 
     fetchStrainLibrary(force: boolean = false) {
         return this._fetchStrainLibraryImpl(force);
     }
 
     private async _fetchStrainLibraryImpl(force: boolean) {
-        // ... existing logic ...
         if (!this.hass) return;
 
         const CACHE_KEY = 'growspace_strain_library_v2';
@@ -227,7 +230,6 @@ export class GrowspaceStore implements ReactiveController {
 
                 if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
                     this.state.strainLibrary = cache.data;
-                    this.requestUpdate();
                     usedCache = true;
                 }
             } catch (e) {
@@ -242,7 +244,6 @@ export class GrowspaceStore implements ReactiveController {
                 const currentStrains = await this.dataService.fetchStrainLibrary();
                 if (Array.isArray(currentStrains)) {
                     this.state.strainLibrary = currentStrains;
-                    this.requestUpdate();
 
                     // Update cache
                     const cacheData = {
@@ -297,7 +298,6 @@ export class GrowspaceStore implements ReactiveController {
 
     handleDeviceChange(deviceId: string) {
         this.state.selectedDevice = deviceId;
-        this.requestUpdate();
     }
 
     togglePlantSelection(plantOrId: string | PlantEntity) {
@@ -312,7 +312,6 @@ export class GrowspaceStore implements ReactiveController {
             newSet.add(plantId);
         }
         this.state.selectedPlants = newSet;
-        this.requestUpdate();
     }
 
     selectAllPlants() {
@@ -327,54 +326,44 @@ export class GrowspaceStore implements ReactiveController {
                     this.state.selectedPlants.add(pId);
                 }
             });
-            this.requestUpdate();
+            // Force update to trigger proxy set trap on a property if we mutated distinct property? 
+            // Actually Set and Map mutations don't trigger proxy 'set'.
+            // We must reassign the Set to trigger the proxy trap.
+            this.state.selectedPlants = new Set(this.state.selectedPlants);
         }
     }
 
     setSelectedPlants(plantIds: Set<string>) {
         this.state.selectedPlants = new Set(plantIds);
-        this.requestUpdate();
     }
 
     setFocusedPlantIndex(index: number) {
         this.state.focusedPlantIndex = index;
-        this.requestUpdate();
     }
 
     clearPlantSelection() {
         this.state.selectedPlants = new Set();
-        this.requestUpdate();
     }
 
     exitEditMode() {
         this.state.isEditMode = false;
         this.state.selectedPlants = new Set();
-        this.requestUpdate();
     }
 
     setEditMode(value: boolean) {
         this.state.isEditMode = value;
-        this.requestUpdate();
     }
 
     setMenuOpen(value: boolean) {
         this.state.menuOpen = value;
-        this.requestUpdate();
     }
-
-    // setFocusedPlantIndex(index: number) { // This was replaced by the new block above
-    //     this.state.focusedPlantIndex = index;
-    //     this.requestUpdate();
-    // }
 
     setActiveDialog(dialogState: ActiveDialogState) {
         this.state.activeDialog = dialogState;
-        this.requestUpdate();
     }
 
     closeActiveDialog() {
         this.state.activeDialog = { type: 'NONE' };
-        this.requestUpdate();
     }
 
     handlePlantClick(plant: PlantEntity) {
@@ -399,7 +388,6 @@ export class GrowspaceStore implements ReactiveController {
                 selectedPlantIds: selectedIds,
             },
         };
-        this.requestUpdate();
     }
 
     async updatePlantFromDialog(dialogState: any) {
@@ -463,7 +451,6 @@ export class GrowspaceStore implements ReactiveController {
                 this.state.selectedPlants = new Set();
                 this.state.isEditMode = false;
             }
-            this.requestUpdate();
         } catch (err) {
             console.error('Error updating plant(s):', err);
         }
@@ -474,7 +461,6 @@ export class GrowspaceStore implements ReactiveController {
             await this.dataService.updatePlant({ plant_id: plantId, ...updates });
             this.showToast('Plant updated', 'success');
             // Dialog might stay open or close? Usually stay open for overview.
-            this.requestUpdate();
         } catch (e: any) {
             console.error('Failed to update plant:', e);
             this.showToast(`Failed to update plant: ${e.message}`, 'error');
@@ -484,8 +470,9 @@ export class GrowspaceStore implements ReactiveController {
     async handleDeletePlant(plantId: string | string[]) {
         const ids = Array.isArray(plantId) ? plantId : [plantId];
 
-        ids.forEach((id) => this.state.optimisticDeletedPlantIds.add(id));
-        this.requestUpdate();
+        const newOptimistic = new Set(this.state.optimisticDeletedPlantIds);
+        ids.forEach((id) => newOptimistic.add(id));
+        this.state.optimisticDeletedPlantIds = newOptimistic;
 
         try {
             // Check if backend supports bulk delete? If not, loop.
@@ -508,8 +495,10 @@ export class GrowspaceStore implements ReactiveController {
         } catch (e: any) {
             console.error('Failed to delete plant:', e);
             this.showToast(`Failed to delete: ${e.message}`, 'error');
-            ids.forEach((id) => this.state.optimisticDeletedPlantIds.delete(id));
-            this.requestUpdate();
+
+            const revertedOptimistic = new Set(this.state.optimisticDeletedPlantIds);
+            ids.forEach((id) => revertedOptimistic.delete(id));
+            this.state.optimisticDeletedPlantIds = revertedOptimistic;
         }
     }
 
@@ -534,8 +523,9 @@ export class GrowspaceStore implements ReactiveController {
         });
 
         if (toRemove.size > 0) {
-            toRemove.forEach((id) => this.state.optimisticDeletedPlantIds.delete(id));
-            this.requestUpdate(); // Not strictly needed if it just affects rendering of missing items, but good for debug
+            const newOptimistic = new Set(this.state.optimisticDeletedPlantIds);
+            toRemove.forEach((id) => newOptimistic.delete(id));
+            this.state.optimisticDeletedPlantIds = newOptimistic;
         }
     }
 
@@ -630,7 +620,6 @@ export class GrowspaceStore implements ReactiveController {
 
             if (this.state.strainLibrary) {
                 this.state.strainLibrary = this.state.strainLibrary.filter((s) => s.key !== strainKey);
-                this.requestUpdate();
             }
             await this.fetchStrainLibrary(true);
         } catch (err) {

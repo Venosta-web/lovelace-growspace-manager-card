@@ -9,7 +9,7 @@ import {
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 import { ref } from 'lit/directives/ref.js';
-import { hassContext, configContext } from './context';
+import { hassContext, configContext, strainLibraryContext } from './context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 import { mdiCheckboxMarked } from '@mdi/js';
 import { DateTime } from 'luxon';
@@ -17,6 +17,7 @@ import { variables } from './styles/variables';
 
 import { GrowspaceManagerCardConfig, PlantEntity, GrowspaceDevice, StrainEntry } from './types';
 import { ActiveDialogState } from './ui-state';
+
 import { PlantUtils } from './utils';
 import { DataService } from './data-service';
 import {
@@ -24,14 +25,7 @@ import {
   GrowspaceCardHost,
 } from './controllers/growspace-history-controller';
 import './growspace-env-chart';
-import './dialogs/plant-overview-dialog';
-import './dialogs/strain-library-dialog';
-import './dialogs/irrigation-dialog';
-import './dialogs/add-plant-dialog';
-import './dialogs/config-dialog';
-import './dialogs/grow-master-dialog';
-import './dialogs/strain-recommendation-dialog';
-import './dialogs/logbook-dialog';
+import './components/manager/dialog-host';
 import './components/plant-card';
 import './components/growspace-header';
 import {
@@ -55,6 +49,7 @@ import {
 } from './events';
 import './components/growspace-grid';
 import './components/growspace-analytics';
+import { sharedStyles } from './styles/shared.styles';
 import { growspaceCardStyles } from './styles/growspace-card.styles';
 import { GrowspaceStore } from './store/growspace-store';
 
@@ -76,6 +71,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     grid: [],
   };
 
+  @provide({ context: strainLibraryContext })
+  @state()
+  private _strainLibrary: StrainEntry[] = [];
+
   // Getter to satisfy GrowspaceCardHost interface and allow external access
   get dataService() {
     return this.store.dataService;
@@ -94,7 +93,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   @property({ attribute: false })
   private _config!: GrowspaceManagerCardConfig;
 
-  static styles: CSSResultGroup = [variables, growspaceCardStyles];
+
+
+  static styles: CSSResultGroup = [variables, sharedStyles, growspaceCardStyles];
 
   connectedCallback() {
     super.connectedCallback();
@@ -122,6 +123,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     // We do this every update to ensure fresh data from store, but we filter in place.
     // Ideally we would check for changes, but this is already better than doing it in render().
     if (this.store && this.store.state) {
+      // Sync strain library to context provider
+      if (this.store.state.strainLibrary !== this._strainLibrary) {
+        this._strainLibrary = this.store.state.strainLibrary || [];
+      }
+
       const devices = this.store.state.devices || [];
       this._cachedActiveDevices = devices.map((d) => ({
         ...d,
@@ -730,7 +736,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     return html`
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="sr-only-announcer" aria-live="polite"></div>
-        <div class="unified-growspace-card" tabindex="0" @keydown=${this._handleKeyboardNav}>
+        <div class="unified-growspace-card glass-surface glass-panel" tabindex="0" @keydown=${this._handleKeyboardNav}>
           <growspace-header
             .device=${selectedDeviceData}
             .devices=${devices}
@@ -743,11 +749,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
             .linkedGraphGroups=${this.historyController.linkedGraphGroups}
             @growspace-changed=${this._handleDeviceChange}
             @toggle-env-graph=${(e: ToggleEnvGraphEvent) =>
-              this.historyController.toggleEnvGraph({ metric: e.detail.metric, visible: true })}
+        this.historyController.toggleEnvGraph({ metric: e.detail.metric, visible: true })}
             @link-graphs=${(e: LinkGraphsEvent) =>
-              this.historyController.linkGraphs(e.detail.metric1, e.detail.metric2)}
+        this.historyController.linkGraphs(e.detail.metric1, e.detail.metric2)}
             @unlink-graphs=${(e: UnlinkGraphsEvent) =>
-              this.historyController.unlinkGraphGroup(e.detail.groupIndex)}
+        this.historyController.unlinkGraphGroup(e.detail.groupIndex)}
             @trigger-action=${this._handleHeaderAction}
           ></growspace-header>
           <growspace-analytics
@@ -770,13 +776,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
             .linkedGraphGroups=${this.historyController.linkedGraphGroups}
             .range=${this.historyController.getRange()}
             @range-change=${(e: RangeChangeEvent) =>
-              this.historyController.setGraphRange(e.detail.range)}
+        this.historyController.setGraphRange(e.detail.range)}
             @toggle-graph=${(e: ToggleEnvGraphEvent) =>
-              this.historyController.toggleEnvGraph({ metric: e.detail.metric, visible: true })}
+        this.historyController.toggleEnvGraph({ metric: e.detail.metric, visible: true })}
             @unlink-graphs=${(e: UnlinkGraphsEvent) =>
-              this.historyController.unlinkGraphGroup(e.detail.groupIndex)}
+        this.historyController.unlinkGraphGroup(e.detail.groupIndex)}
             @unlink-graph=${(e: UnlinkGraphMetricEvent) =>
-              this.historyController.unlinkGraphMetric(e.detail.metric)}
+        this.historyController.unlinkGraphMetric(e.detail.metric)}
           ></growspace-analytics>
           ${this.renderEditModeBanner()}
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
@@ -790,7 +796,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
             </div>
           `
         : ''}
-      ${this.renderDialogs(growspaceOptions)}
+      ${this.renderDialogs()}
     `;
   }
 
@@ -832,332 +838,26 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         .isLoading=${this.store.state.isLoading}
         @plant-click=${(e: PlantClickEvent) => this._handlePlantClick(e.detail.plant)}
         @add-plant-click=${(e: AddPlantClickEvent) =>
-          this._openAddPlantDialog(e.detail.row, e.detail.col)}
+        this._openAddPlantDialog(e.detail.row, e.detail.col)}
         @plant-drop=${(e: PlantDropEvent) =>
-          this._handleDrop(
-            e.detail.originalEvent,
-            e.detail.targetRow,
-            e.detail.targetCol,
-            e.detail.targetPlant,
-            e.detail.sourcePlant
-          )}
+        this._handleDrop(
+          e.detail.originalEvent,
+          e.detail.targetRow,
+          e.detail.targetCol,
+          e.detail.targetPlant,
+          e.detail.sourcePlant
+        )}
         @selection-changed=${(e: SelectionChangedEvent) => {
-          this.store.setSelectedPlants(e.detail.selectedPlants);
-        }}
+        this.store.setSelectedPlants(e.detail.selectedPlants);
+      }}
       ></growspace-grid>
     `;
   }
 
-  private async _confirmAddPlant(detail: any) {
-    const devices = this.store.state.devices;
-    const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
-    if (!selectedDeviceData) return;
-
-    const {
-      strain,
-      phenotype,
-      row,
-      col,
-      veg_start,
-      flower_start,
-      seedling_start,
-      mother_start,
-      clone_start,
-      dry_start,
-      cure_start,
-    } = detail;
-
-    if (!strain) {
-      this.store.showToast('Please select a strain', 'error');
-      return;
-    }
-
-    try {
-      await this.store.dataService.addPlant({
-        growspace_id: selectedDeviceData.device_id,
-        strain,
-        phenotype: phenotype || '',
-        row,
-        col,
-        veg_start,
-        flower_start,
-        seedling_start,
-        mother_start,
-        clone_start,
-        dry_start,
-        cure_start,
-      });
-      this.store.showToast('Plant added successfully', 'success');
-      this.store.closeActiveDialog();
-      await this.store.refreshData(); // Force refresh to show new sensor
-    } catch (e: any) {
-      console.error(e);
-      this.store.showToast('Failed to add plant', 'error');
-    }
-  }
-
-  private async _handleEditGrowspace(detail: any) {
-    try {
-      await this.store.dataService.updateGrowspace(detail);
-      this.store.showToast(`Growspace '${detail.name}' updated`, 'success');
-      this.store.closeActiveDialog();
-      await this.store.refreshData();
-    } catch (e: any) {
-      console.error(e);
-      this.store.showToast('Failed to update growspace', 'error');
-    }
-  }
-
-  private async _handleDeleteGrowspace(detail: any) {
-    try {
-      await this.store.dataService.removeGrowspace(detail.growspace_id);
-      this.store.showToast('Growspace deleted', 'success');
-      this.store.closeActiveDialog();
-      await this.store.refreshData();
-    } catch (e: any) {
-      console.error(e);
-      this.store.showToast('Failed to delete growspace', 'error');
-    }
-  }
-
-  private _renderAddPlantDialog(
-    active: ActiveDialogState,
-    strainLibrary: StrainEntry[],
-    selectedDeviceData?: GrowspaceDevice
-  ): TemplateResult {
-    if (active.type !== 'ADD_PLANT') return html``;
-    const dialogState = active.payload;
-    return html`
-      <add-plant-dialog
-        .open=${true}
-        .strainLibrary=${strainLibrary}
-        .growspaceName=${selectedDeviceData?.name ?? ''}
-        .row=${dialogState.row}
-        .col=${dialogState.col}
-        @close=${() => this.store.closeActiveDialog()}
-        @add-plant-submit=${(e: CustomEvent) => this.store.confirmAddPlant(e.detail)}
-      ></add-plant-dialog>
-    `;
-  }
-
-  private _renderPlantOverviewDialog(
-    active: ActiveDialogState,
-    growspaceOptions: Record<string, string>
-  ): TemplateResult {
-    if (active.type !== 'PLANT_OVERVIEW') return html``;
-    const dialogState = active.payload;
-    return html`
-      <plant-overview-dialog
-        .open=${true}
-        .dialog=${dialogState}
-        .plant=${dialogState.plant}
-        .growspaceOptions=${growspaceOptions}
-        @close=${() => this.store.closeActiveDialog()}
-        @update-plant=${(e: UpdatePlantEvent) => {
-          const payload = active.payload;
-          this.store.updatePlantFromDialog({
-            plant: payload.plant,
-            editedAttributes: e.detail,
-            selectedPlantIds: payload.selectedPlantIds,
-          });
-        }}
-        @delete-plant=${(e: DeletePlantEvent) => this.store.handleDeletePlant(e.detail.plantId)}
-        @harvest-plant=${(e: HarvestPlantEvent) =>
-          this.store.handleMovePlantToNextStage(e.detail.plant)}
-        @finish-drying=${(e: FinishDryingEvent) =>
-          this.store.handleMovePlantToNextStage(e.detail.plant)}
-        @take-clone=${(e: TakeCloneEvent) => {
-          const { plant, numClones } = e.detail;
-          this.store.handleTakeClone(plant, numClones);
-        }}
-        @move-clone=${(e: MoveCloneEvent) => {
-          const { plant, targetGrowspace } = e.detail;
-          const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-          this.store.dataService
-            .moveClone(plantId, targetGrowspace)
-            .then(() => {
-              console.log(`Clone ${plant.attributes.friendly_name} moved to ${targetGrowspace}`);
-              this.store.closeActiveDialog();
-            })
-            .catch((err: any) => {
-              console.error('Error moving clone:', err);
-            });
-        }}
-        @attribute-change=${(e: CustomEvent) => {
-          const payload = active.payload;
-          payload.editedAttributes[e.detail.key] = e.detail.value;
-          this.requestUpdate();
-        }}
-        @toggle-show-all-dates=${() => {
-          const payload = active.payload;
-          payload.showAllDates = !payload.showAllDates;
-          this.requestUpdate();
-        }}
-      ></plant-overview-dialog>
-    `;
-  }
-
-  private _renderStrainLibraryDialog(
-    active: ActiveDialogState,
-    strainLibrary: StrainEntry[]
-  ): TemplateResult {
-    if (active.type !== 'STRAIN_LIBRARY') return html``;
-    return html`
-      <strain-library-dialog
-        .open=${true}
-        .strains=${strainLibrary}
-        @close=${() => this.store.closeActiveDialog()}
-        @save-strain=${(e: CustomEvent) => this._addStrain(e.detail)}
-        @delete-strain=${(e: CustomEvent) => this._removeStrain(e.detail.key)}
-        @import-library=${(e: CustomEvent) =>
-          this.store.performImport(e.detail.file, e.detail.replace)}
-        @export-library=${() => this.store.handleExportLibrary()}
-        @get-recommendation=${() => this._openStrainRecommendationDialog()}
-      ></strain-library-dialog>
-    `;
-  }
-
-  private _renderConfigDialog(
-    active: ActiveDialogState,
-    growspaceOptions: Record<string, string>
-  ): TemplateResult {
-    if (active.type !== 'CONFIG') return html``;
-    const dialogState = active.payload;
-    return html`
-      <config-dialog
-        .open=${true}
-        .hass=${this.hass}
-        .devices=${this.store.state.devices}
-        .growspaceOptions=${growspaceOptions}
-        .initialTab=${dialogState.currentTab || 'environment'}
-        @close=${() => this.store.closeActiveDialog()}
-        @add-growspace-submit=${(e: CustomEvent) => this._handleAddGrowspace(e.detail)}
-        @edit-growspace-submit=${(e: CustomEvent) => this._handleEditGrowspace(e.detail)}
-        @delete-growspace-submit=${(e: CustomEvent) => this._handleDeleteGrowspace(e.detail)}
-        @configure-environment-submit=${(e: CustomEvent) => this._handleEnvironmentConfig(e.detail)}
-      ></config-dialog>
-    `;
-  }
-
-  private _renderGrowMasterDialog(active: ActiveDialogState): TemplateResult {
-    if (active.type !== 'GROW_MASTER') return html``;
-    const dialogState = active.payload;
-
-    // Determine stress state for the dialog
-    let isStressed = false;
-    let personality;
-
-    // Attempt to find stress sensor
-    if (this.selectedDevice && this.hass) {
-      const id = this.selectedDevice;
-      const stressEntityIds = [
-        `binary_sensor.${id}_plants_under_stress`,
-        `binary_sensor.${id}_stress`,
-        `binary_sensor.growspace_manager_${id}_stress`,
-      ];
-
-      for (const eid of stressEntityIds) {
-        const ent = this.hass.states[eid];
-        if (ent && ent.state === 'on') {
-          isStressed = true;
-          break;
-        }
-      }
-    }
-
-    // Personality check
-    if (this.hass) {
-      const manager = this.hass.states['sensor.growspace_manager'];
-      if (manager && manager.attributes && manager.attributes.ai_settings) {
-        personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
-      }
-    }
-
-    return html`
-      <grow-master-dialog
-        .open=${true}
-        .isStressed=${isStressed}
-        .personality=${personality}
-        .isLoading=${dialogState.isLoading}
-        .response=${dialogState.response}
-        @close=${() => this.store.closeActiveDialog()}
-        @analyze-growspace=${(e: CustomEvent) => this.store.analyzeGrowspace(e.detail.query, false)}
-        @analyze-all-growspaces=${(e: CustomEvent) =>
-          this.store.analyzeGrowspace(e.detail.query, true)}
-      ></grow-master-dialog>
-    `;
-  }
-
-  private _renderStrainRecommendationDialog(active: ActiveDialogState): TemplateResult {
-    if (active.type !== 'STRAIN_RECOMMENDATION') return html``;
-    const dialogState = active.payload;
-    return html`
-      <strain-recommendation-dialog
-        .open=${true}
-        .isLoading=${dialogState.isLoading}
-        .response=${dialogState.response}
-        @close=${() => this.store.closeActiveDialog()}
-        @get-recommendation=${(e: CustomEvent) =>
-          this.store.getStrainRecommendation(e.detail.query)}
-      ></strain-recommendation-dialog>
-    `;
-  }
-
-  private _renderIrrigationDialog(
-    active: ActiveDialogState,
-    selectedDeviceData?: GrowspaceDevice
-  ): TemplateResult {
-    if (active.type !== 'IRRIGATION') return html``;
-    return html`
-      <irrigation-dialog
-        .open=${true}
-        .device=${selectedDeviceData}
-        .growspaceName=${selectedDeviceData?.name || ''}
-        @close=${() => this.store.closeActiveDialog()}
-        @closed=${() => this.store.closeActiveDialog()}
-      ></irrigation-dialog>
-    `;
-  }
-
-  private _renderLogbookDialog(active: ActiveDialogState): TemplateResult {
-    if (active.type !== 'LOGBOOK') return html``;
-    const dialogState = active.payload;
-    return html`
-      <logbook-dialog
-        .open=${true}
-        .growspaceId=${dialogState.growspaceId}
-        @close=${() => this.store.closeActiveDialog()}
-      ></logbook-dialog>
-    `;
-  }
-
-  private renderDialogs(growspaceOptions: Record<string, string>): TemplateResult {
-    const active = this.store.state.activeDialog;
-    if (active.type === 'NONE') return html``;
-
-    const strainLibrary = this.store.state.strainLibrary || [];
-    const devices = this.store.state.devices;
-    const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
-
-    switch (active.type) {
-      case 'ADD_PLANT':
-        return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
-      case 'PLANT_OVERVIEW':
-        return this._renderPlantOverviewDialog(active, growspaceOptions);
-      case 'STRAIN_LIBRARY':
-        return this._renderStrainLibraryDialog(active, strainLibrary);
-      case 'CONFIG':
-        return this._renderConfigDialog(active, growspaceOptions);
-      case 'GROW_MASTER':
-        return this._renderGrowMasterDialog(active);
-      case 'STRAIN_RECOMMENDATION':
-        return this._renderStrainRecommendationDialog(active);
-      case 'IRRIGATION':
-        return this._renderIrrigationDialog(active, selectedDeviceData);
-      case 'LOGBOOK':
-        return this._renderLogbookDialog(active);
-      default:
-        return html``;
-    }
+  private renderDialogs(): TemplateResult {
+    return html`<growspace-dialog-host 
+      .store=${this.store} 
+      .activeDialogState=${this.store.state.activeDialog}
+    ></growspace-dialog-host>`;
   }
 }
