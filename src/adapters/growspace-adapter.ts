@@ -70,6 +70,9 @@ export class GrowspaceAdapter {
             row,
             col,
           },
+          last_changed: '',
+          last_updated: '',
+          context: { id: '', parent_id: null, user_id: null },
         });
       }
     });
@@ -77,27 +80,27 @@ export class GrowspaceAdapter {
     // Extract enhanced metrics from WS data or attributes
     const bioMetrics = wsData
       ? {
-          vpd_status: wsData.vpd_status,
-          vpd_target_min: wsData.vpd_target_min,
-          vpd_target_max: wsData.vpd_target_max,
-          vpd_danger_min: wsData.vpd_danger_min,
-          vpd_danger_max: wsData.vpd_danger_max,
-          granular_stage: wsData.granular_stage,
-          is_day: wsData.is_day,
-          veg_week: wsData.veg_week,
-          flower_week: wsData.flower_week,
-          // Added per request:
-          air_exchange: wsData.air_exchange,
-        }
+        vpd_status: wsData.vpd_status,
+        vpd_target_min: wsData.vpd_target_min,
+        vpd_target_max: wsData.vpd_target_max,
+        vpd_danger_min: wsData.vpd_danger_min,
+        vpd_danger_max: wsData.vpd_danger_max,
+        granular_stage: wsData.granular_stage,
+        is_day: wsData.is_day,
+        veg_week: wsData.veg_week,
+        flower_week: wsData.flower_week,
+        // Added per request:
+        air_exchange: wsData.air_exchange,
+      }
       : {
-          // Fallback to attributes if WS failed or not used (though we removed them from backend)
-          vpd_status: attributes.vpd_status,
-          vpd_target_min: attributes.vpd_target_min,
-          vpd_target_max: attributes.vpd_target_max,
-          granular_stage: attributes.granular_stage,
-          is_day: attributes.is_day,
-          air_exchange: attributes.air_exchange,
-        };
+        // Fallback to attributes if WS failed or not used (though we removed them from backend)
+        vpd_status: attributes.vpd_status,
+        vpd_target_min: attributes.vpd_target_min,
+        vpd_target_max: attributes.vpd_target_max,
+        granular_stage: attributes.granular_stage,
+        is_day: attributes.is_day,
+        air_exchange: attributes.air_exchange,
+      };
 
     // Extract irrigation times from nested config in WS data
     const rawIrrigation =
@@ -114,50 +117,50 @@ export class GrowspaceAdapter {
     // Environment attributes
     const envAttrs = wsData
       ? {
-          temperature_sensor: wsData.temperature_sensor,
-          humidity_sensor: wsData.humidity_sensor,
-          vpd_sensor: wsData.vpd_sensor,
-          co2_sensor: wsData.co2_sensor,
-          soil_moisture_sensor: wsData.soil_moisture_sensor,
-          dehumidifier_entity: wsData.dehumidifier_entity,
-          humidifier_entity: wsData.humidifier_entity,
-          exhaust_entity: wsData.exhaust_entity,
-          exhaust_sensor: wsData.exhaust_sensor,
-          humidifier_sensor: wsData.humidifier_sensor,
-          circulation_fan_entity: wsData.circulation_fan_entity,
-          light_sensor: wsData.light_sensor,
-          dehumidifier_control_enabled: wsData.dehumidifier_control_enabled,
-          // Added per request:
-          dehumidifier_humidity: wsData.dehumidifier_humidity,
-          dehumidifier_current_humidity: wsData.dehumidifier_current_humidity,
-          dehumidifier_mode: wsData.dehumidifier_mode,
-          vpd: wsData.vpd,
-        }
+        temperature_sensor: wsData.temperature_sensor,
+        humidity_sensor: wsData.humidity_sensor,
+        vpd_sensor: wsData.vpd_sensor,
+        co2_sensor: wsData.co2_sensor,
+        soil_moisture_sensor: wsData.soil_moisture_sensor,
+        dehumidifier_entity: wsData.dehumidifier_entity,
+        humidifier_entity: wsData.humidifier_entity,
+        exhaust_entity: wsData.exhaust_entity,
+        exhaust_sensor: wsData.exhaust_sensor,
+        humidifier_sensor: wsData.humidifier_sensor,
+        circulation_fan_entity: wsData.circulation_fan_entity,
+        light_sensor: wsData.light_sensor,
+        dehumidifier_control_enabled: wsData.dehumidifier_control_enabled,
+        // Added per request:
+        dehumidifier_humidity: wsData.dehumidifier_humidity,
+        dehumidifier_current_humidity: wsData.dehumidifier_current_humidity,
+        dehumidifier_mode: wsData.dehumidifier_mode,
+        vpd: wsData.vpd,
+      }
       : {
-          // Fallback
-          temperature_sensor: attributes.temperature_sensor,
-          humidity_sensor: attributes.humidity_sensor,
-          vpd_sensor: attributes.vpd_sensor,
-          co2_sensor: attributes.co2_sensor,
-          soil_moisture_sensor: attributes.soil_moisture_sensor,
-          light_sensor: attributes.light_sensor,
-          exhaust_entity: attributes.exhaust_entity,
-          exhaust_sensor: attributes.exhaust_sensor,
-          humidifier_entity: attributes.humidifier_entity,
-          humidifier_sensor: attributes.humidifier_sensor,
-          circulation_fan_entity: attributes.circulation_fan_entity,
-          dehumidifier_entity: attributes.dehumidifier_entity,
-          dehumidifier_control_enabled: attributes.dehumidifier_control_enabled,
-        };
+        // Fallback
+        temperature_sensor: attributes.temperature_sensor,
+        humidity_sensor: attributes.humidity_sensor,
+        vpd_sensor: attributes.vpd_sensor,
+        co2_sensor: attributes.co2_sensor,
+        soil_moisture_sensor: attributes.soil_moisture_sensor,
+        light_sensor: attributes.light_sensor,
+        exhaust_entity: attributes.exhaust_entity,
+        exhaust_sensor: attributes.exhaust_sensor,
+        humidifier_entity: attributes.humidifier_entity,
+        humidifier_sensor: attributes.humidifier_sensor,
+        circulation_fan_entity: attributes.circulation_fan_entity,
+        dehumidifier_entity: attributes.dehumidifier_entity,
+        dehumidifier_control_enabled: attributes.dehumidifier_control_enabled,
+      };
 
     const irrigationConfig = wsData
       ? wsData.irrigation_config
       : {
-          irrigation_pump_entity: attributes.irrigation_pump_entity,
-          drain_pump_entity: attributes.drain_pump_entity,
-          irrigation_duration: attributes.irrigation_duration,
-          drain_duration: attributes.drain_duration,
-        };
+        irrigation_pump_entity: attributes.irrigation_pump_entity,
+        drain_pump_entity: attributes.drain_pump_entity,
+        irrigation_duration: attributes.irrigation_duration,
+        drain_duration: attributes.drain_duration,
+      };
     const irrigationStrategy = wsData ? wsData.irrigation_strategy : attributes.irrigation_strategy;
 
     return createGrowspaceDevice({

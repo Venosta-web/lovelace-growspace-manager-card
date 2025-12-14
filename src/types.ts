@@ -1,5 +1,6 @@
 import { mdiSprout, mdiFlower, mdiHairDryer, mdiCannabis } from '@mdi/js';
 import { LovelaceCardConfig } from 'custom-card-helpers';
+import { HassEntity } from 'home-assistant-js-websocket';
 
 export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
   type: string;
@@ -12,6 +13,103 @@ export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
     rows?: string;
   };
 }
+
+// -- Generic Entity Types --
+
+export interface GrowspaceEntity<T = any> extends HassEntity {
+  attributes: T & HassEntity['attributes'];
+}
+
+export interface GrowspaceContext {
+  hass: any; // We can't strictly type HomeAssistant object easily here without circular deps or huge types
+  store: any; // Will be typed as GrowspaceStore later
+}
+
+// -- Domain Specific Attributes --
+
+export interface PlantAttributes {
+  friendly_name?: string;
+  device_id?: string;
+  row?: number;
+  col?: number;
+  strain?: string;
+  phenotype?: string;
+
+  // Calculated Days
+  veg_days?: number;
+  flower_days?: number;
+  dry_days?: number;
+  cure_days?: number;
+  mom_days?: number;
+  clone_days?: number;
+
+  // Date Strings (ISO YYYY-MM-DD)
+  veg_start?: string | null;
+  flower_start?: string | null;
+  dry_start?: string | null;
+  cure_start?: string | null;
+  mom_start?: string | null;
+  clone_start?: string | null;
+  mother_start?: string | null;
+  seedling_start?: string | null;
+
+  plant_id?: string;
+  stage?: PlantStage;
+  growspace_id?: string;
+
+  // Allow other attributes from HA
+  [key: string]: any;
+}
+
+export interface GrowspaceAttributes {
+  growspace_id: string;
+  plants_per_row: number;
+  rows: number;
+  // ... other specific attributes
+  [key: string]: any;
+}
+
+// -- Entities --
+
+export interface PlantEntity extends GrowspaceEntity<PlantAttributes> {
+  attributes: PlantAttributes & HassEntity['attributes'];
+}
+
+// -- Enums & Constants --
+
+export enum PlantStage {
+  SEEDLING = 'seedling',
+  MOTHER = 'mother',
+  CLONE = 'clone',
+  VEG = 'veg',
+  FLOWER = 'flower',
+  DRY = 'dry',
+  CURE = 'cure',
+}
+
+export type GrowspaceType = 'normal' | 'mother' | 'clone' | 'dry' | 'cure';
+
+export const stageInputs: Record<
+  PlantStage,
+  Array<{
+    label: string;
+    icon: string;
+    key: keyof PlantAttributes;
+  }>
+> = {
+  [PlantStage.SEEDLING]: [],
+  [PlantStage.MOTHER]: [{ label: 'Mother Start', icon: mdiSprout, key: 'mother_start' }],
+  [PlantStage.CLONE]: [{ label: 'Clone Start', icon: mdiSprout, key: 'clone_start' }],
+  [PlantStage.VEG]: [{ label: 'Vegetative Start', icon: mdiSprout, key: 'veg_start' }],
+  [PlantStage.FLOWER]: [
+    { label: 'Vegetative Start', icon: mdiSprout, key: 'veg_start' },
+    { label: 'Flower Start', icon: mdiFlower, key: 'flower_start' },
+  ],
+  [PlantStage.DRY]: [{ label: 'Dry Start', icon: mdiHairDryer, key: 'dry_start' }],
+  [PlantStage.CURE]: [{ label: 'Cure Start', icon: mdiCannabis, key: 'cure_start' }],
+};
+
+// -- Data Structures --
 
 export interface StrainAnalytics {
   avg_veg_days: number;
@@ -44,76 +142,60 @@ export interface StrainEntry {
   indica_percentage?: number;
 }
 
-export interface PlantEntity {
-  entity_id: string;
-  state: string;
-  attributes: {
-    friendly_name?: string;
-    device_id?: string;
-    row?: number;
-    col?: number;
-    strain?: string;
-    phenotype?: string;
-    veg_days?: number;
-    flower_days?: number;
-    dry_days?: number;
-    cure_days?: number;
-    mom_days?: number;
-    clone_days?: number;
-    veg_start?: string;
-    flower_start?: string;
-    dry_start?: string;
-    cure_start?: string;
-    mom_start?: string;
-    clone_start?: string;
-    plant_id?: string;
-    stage?: PlantStage;
-    growspace_id?: string;
-    [key: string]: any;
-  };
-}
-export enum PlantStage {
-  SEEDLING = 'seedling',
-  MOTHER = 'mother',
-  CLONE = 'clone',
-  VEG = 'veg',
-  FLOWER = 'flower',
-  DRY = 'dry',
-  CURE = 'cure',
-}
+export type PlantAttributeValue = string | number | undefined | null;
 
-export type GrowspaceType = 'normal' | 'mother' | 'clone' | 'dry' | 'cure';
-export const stageInputs: Record<
-  PlantStage,
-  Array<{
-    label: string;
-    icon: string;
-    key: keyof PlantEntity['attributes'];
-  }>
-> = {
-  [PlantStage.SEEDLING]: [],
-  [PlantStage.MOTHER]: [{ label: 'Mother Start', icon: mdiSprout, key: 'mother_start' }],
-  [PlantStage.CLONE]: [{ label: 'Clone Start', icon: mdiSprout, key: 'clone_start' }],
-  [PlantStage.VEG]: [{ label: 'Vegetative Start', icon: mdiSprout, key: 'veg_start' }],
-  [PlantStage.FLOWER]: [
-    { label: 'Vegetative Start', icon: mdiSprout, key: 'veg_start' },
-    { label: 'Flower Start', icon: mdiFlower, key: 'flower_start' },
-  ],
-  [PlantStage.DRY]: [{ label: 'Dry Start', icon: mdiHairDryer, key: 'dry_start' }],
-  [PlantStage.CURE]: [{ label: 'Cure Start', icon: mdiCannabis, key: 'cure_start' }],
-};
-
-export type PlantAttributeValue = string | number | undefined;
 export interface PlantOverviewEditedAttributes {
   [key: string]: PlantAttributeValue;
   row?: number;
   col?: number;
-  veg_start?: string;
-  flower_start?: string;
-  dry_start?: string;
-  cure_start?: string;
-  mom_start?: string;
-  clone_start?: string;
+  veg_start?: string | null;
+  flower_start?: string | null;
+  dry_start?: string | null;
+  cure_start?: string | null;
+  mom_start?: string | null;
+  clone_start?: string | null;
+  seedling_start?: string | null;
+  mother_start?: string | null; // Alias
+}
+
+export interface IrrigationTime {
+  time: string;
+  duration?: number;
+}
+
+export interface IrrigationStrategy {
+  enabled: boolean;
+  lights_on_time: string;
+  p0_duration_minutes: number;
+  p2_stop_before_lights_off_minutes: number;
+  target_vwc_percent: number;
+  maintenance_dryback_percent: number;
+  shot_duration_seconds: number;
+  shot_interval_minutes: number;
+  [key: string]: any;
+}
+
+export interface IrrigationConfig {
+  irrigation_pump_entity?: string;
+  drain_pump_entity?: string;
+  irrigation_duration?: number;
+  drain_duration?: number;
+  irrigation_times?: IrrigationTime[];
+  drain_times?: IrrigationTime[];
+  [key: string]: any;
+}
+
+export interface GrowspaceEnvironmentAttributes {
+  temperature_sensor?: string;
+  humidity_sensor?: string;
+  vpd_sensor?: string;
+  co2_sensor?: string;
+  soil_moisture_sensor?: string;
+  light_sensor?: string;
+  dehumidifier_entity?: string;
+  humidifier_entity?: string;
+  exhaust_entity?: string;
+  [key: string]: any;
 }
 
 export interface GrowspaceDevice {
@@ -125,7 +207,8 @@ export interface GrowspaceDevice {
   rows: number;
   plants_per_row: number;
   last_updated?: string;
-  // Enhanced data from WebSocket
+
+  // Biological Metrics
   biological_metrics?: {
     vpd_status?: string;
     vpd_target_min?: number;
@@ -138,38 +221,24 @@ export interface GrowspaceDevice {
     flower_week?: number;
     [key: string]: any;
   };
+
   /** @deprecated Use irrigation_config.irrigation_times */
-  irrigation_times?: { time: string; duration?: number }[];
+  irrigation_times?: IrrigationTime[];
   /** @deprecated Use irrigation_config.drain_times */
-  drain_times?: { time: string; duration?: number }[];
-  irrigation_config?: {
-    irrigation_pump_entity?: string;
-    drain_pump_entity?: string;
-    irrigation_duration?: number;
-    drain_duration?: number;
-    irrigation_times?: { time: string; duration?: number }[]; // Added here
-    drain_times?: { time: string; duration?: number }[]; // Added here
-    [key: string]: any;
-  };
+  drain_times?: IrrigationTime[];
+
+  irrigation_config?: IrrigationConfig;
   irrigation_strategy?: IrrigationStrategy;
-  environment_attributes?: {
-    temperature_sensor?: string;
-    humidity_sensor?: string;
-    vpd_sensor?: string;
-    co2_sensor?: string;
-    soil_moisture_sensor?: string;
-    light_sensor?: string;
-    dehumidifier_entity?: string;
-    humidifier_entity?: string;
-    exhaust_entity?: string;
-    [key: string]: any;
-  };
+
+  environment_attributes?: GrowspaceEnvironmentAttributes;
+
   // Statistics
   max_veg_days?: number;
   max_flower_days?: number;
   total_plants?: number;
   max_stage_summary?: string;
 }
+
 export function createGrowspaceDevice(
   params: Omit<GrowspaceDevice, 'type'> & { type?: GrowspaceType }
 ): GrowspaceDevice {
@@ -179,6 +248,8 @@ export function createGrowspaceDevice(
   };
 }
 
+// -- Dialog States --
+
 export interface AddPlantDialogState {
   row: number;
   col: number;
@@ -186,13 +257,13 @@ export interface AddPlantDialogState {
 
 export interface PlantOverviewDialogState {
   plant: PlantEntity;
-  editedAttributes: { [key: string]: any };
+  editedAttributes: Partial<PlantAttributes>; // Use the strict type
   activeTab: 'dashboard' | 'timeline' | 'genetics';
   showAllDates?: boolean;
   selectedPlantIds?: string[];
 }
 
-export interface StrainLibraryDialogState {}
+export interface StrainLibraryDialogState { }
 
 export interface ConfigDialogState {
   currentTab: 'add_growspace' | 'environment';
@@ -220,10 +291,7 @@ export interface StrainRecommendationDialogState {
   response: string | null;
 }
 
-export interface IrrigationTime {
-  time: string;
-  duration?: number;
-}
+// -- Events & History --
 
 export interface GrowspaceEvent {
   sensor_type: string;
@@ -236,16 +304,7 @@ export interface GrowspaceEvent {
   reasons: string[];
 }
 
-export interface IrrigationStrategy {
-  enabled: boolean;
-  lights_on_time: string;
-  p0_duration_minutes: number;
-  p2_stop_before_lights_off_minutes: number;
-  target_vwc_percent: number;
-  maintenance_dryback_percent: number;
-  shot_duration_seconds: number;
-  shot_interval_minutes: number;
-}
+// -- Raw Data Interfaces (from Backend/WS) --
 
 export interface RawPlantData {
   strain: string;
@@ -267,7 +326,7 @@ export interface RawGrowspaceAttributes {
 }
 
 export interface GrowspaceWebSocketData {
-  growspace_id: string; // Updated from 'id' to match serializer
+  growspace_id: string;
   name: string;
   type: GrowspaceType;
   rows: number;
@@ -277,16 +336,7 @@ export interface GrowspaceWebSocketData {
 
   grid: Record<string, RawPlantData | null>;
 
-  // Irrigation is now nested in config
-  irrigation_config: {
-    irrigation_pump_entity?: string;
-    drain_pump_entity?: string;
-    irrigation_duration?: number;
-    drain_duration?: number;
-    irrigation_times?: IrrigationTime[];
-    drain_times?: IrrigationTime[];
-    [key: string]: any;
-  };
+  irrigation_config: IrrigationConfig;
   irrigation_strategy: IrrigationStrategy;
 
   // Statistics
@@ -366,7 +416,7 @@ export interface HistorySensorState {
 export type SensorHistories = Record<string, HistorySensorState[]>;
 
 export interface GraphSeries {
-  id: string; // metricKey
+  id: string;
   title: string;
   color: string;
   unit: string;
@@ -390,4 +440,29 @@ export interface TooltipData {
   x: number;
   time: string;
   items: TooltipItem[];
+}
+
+export interface CropMeta {
+  x: number;
+  y: number;
+  scale: number;
+}
+
+export interface StrainEntry {
+  strain: string;
+  phenotype: string;
+  key: string;
+  breeder?: string;
+  type?: string;
+  flowering_days_min?: number;
+  flowering_days_max?: number;
+  lineage?: string;
+  sex?: string;
+  description?: string;
+  image?: string;
+  image_crop_meta?: CropMeta;
+  analytics?: StrainAnalytics;
+  strain_analytics?: StrainAnalytics;
+  sativa_percentage?: number;
+  indica_percentage?: number;
 }

@@ -54,7 +54,7 @@ export class ConfigDialog extends LitElement {
 
       /* Config Tabs Specific */
       .glass-dialog-container {
-        min-width: 30vw;
+        min-width: 0;
         max-width: 95vw;
         height: 700px;
         max-height: 90vh;
@@ -339,21 +339,21 @@ export class ConfigDialog extends LitElement {
           <div class="button-group">
             <button class="md3-button tonal" @click=${this._close}>Cancel</button>
             ${this.currentTab === 'add_growspace'
-              ? html`
+        ? html`
                   <button class="md3-button primary" @click=${this._submitAddGrowspace}>
                     Add Growspace
                   </button>
                 `
-              : nothing}
+        : nothing}
             ${this.currentTab === 'environment'
-              ? html`
+        ? html`
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
                     Save Sensors
                   </button>
                 `
-              : nothing}
+        : nothing}
             ${this.currentTab === 'edit_growspace' && !this._showDeleteConfirm
-              ? html`
+        ? html`
                   <button
                     class="md3-button tonal error"
                     @click=${this._submitDeleteGrowspace}
@@ -375,7 +375,7 @@ export class ConfigDialog extends LitElement {
                     Save Changes
                   </button>
                 `
-              : nothing}
+        : nothing}
           </div>
         </div>
       </ha-dialog>
@@ -450,11 +450,11 @@ export class ConfigDialog extends LitElement {
         <select class="md3-input" .value=${value} @change=${changeHandler}>
           <option value="">Select Entity...</option>
           ${entities.map(
-            (e) =>
-              html`<option value="${e.entity_id}" ?selected=${e.entity_id === value}>
+      (e) =>
+        html`<option value="${e.entity_id}" ?selected=${e.entity_id === value}>
                 ${e.attributes.friendly_name || e.entity_id} (${e.entity_id})
               </option>`
-          )}
+    )}
         </select>
       </div>
     `;
@@ -493,14 +493,14 @@ export class ConfigDialog extends LitElement {
             >
               <option value="">Select...</option>
               ${Object.entries(this.growspaceOptions).map(
-                ([id, name]) => html`<option value="${id}">${name}</option>`
-              )}
+      ([id, name]) => html`<option value="${id}">${name}</option>`
+    )}
             </select>
           </div>
         </div>
 
         ${this.edit_selectedId
-          ? html`
+        ? html`
               <div class="detail-card">
                 <h3>Edit Details</h3>
                 <md3-text-input
@@ -522,7 +522,7 @@ export class ConfigDialog extends LitElement {
                 </div>
               </div>
             `
-          : html`
+        : html`
               <div style="text-align:center; padding: 20px; color: rgba(255,255,255,0.5);">
                 Please select a growspace to edit.
               </div>
@@ -542,12 +542,12 @@ export class ConfigDialog extends LitElement {
               class="md3-input"
               .value=${this.env_selectedGrowspaceId}
               @change=${(e: Event) =>
-                (this.env_selectedGrowspaceId = (e.target as HTMLSelectElement).value)}
+        (this.env_selectedGrowspaceId = (e.target as HTMLSelectElement).value)}
             >
               <option value="">Select...</option>
               ${Object.entries(this.growspaceOptions).map(
-                ([id, name]) => html`<option value="${id}">${name}</option>`
-              )}
+          ([id, name]) => html`<option value="${id}">${name}</option>`
+        )}
             </select>
           </div>
         </div>
@@ -555,44 +555,44 @@ export class ConfigDialog extends LitElement {
         <div class="detail-card">
           <h3>Sensors</h3>
           ${this._renderEntitySelect(
-            'Temperature Sensor',
-            this.env_temp_sensor,
-            ['sensor', 'input_number'],
-            'temperature',
-            (e: Event) => (this.env_temp_sensor = (e.target as HTMLSelectElement).value)
-          )}
+          'Temperature Sensor',
+          this.env_temp_sensor,
+          ['sensor', 'input_number'],
+          'temperature',
+          (e: Event) => (this.env_temp_sensor = (e.target as HTMLSelectElement).value)
+        )}
           ${this._renderEntitySelect(
-            'Humidity Sensor',
-            this.env_humidity_sensor,
-            ['sensor', 'input_number'],
-            'humidity',
-            (e: Event) => (this.env_humidity_sensor = (e.target as HTMLSelectElement).value)
-          )}
+          'Humidity Sensor',
+          this.env_humidity_sensor,
+          ['sensor', 'input_number'],
+          'humidity',
+          (e: Event) => (this.env_humidity_sensor = (e.target as HTMLSelectElement).value)
+        )}
           ${this._renderEntitySelect(
-            'VPD Sensor (Optional)',
-            this.env_vpd_sensor,
-            ['sensor', 'input_number'],
-            'pressure',
-            (e: Event) => (this.env_vpd_sensor = (e.target as HTMLSelectElement).value)
-          )}
+          'VPD Sensor (Optional)',
+          this.env_vpd_sensor,
+          ['sensor', 'input_number'],
+          'pressure',
+          (e: Event) => (this.env_vpd_sensor = (e.target as HTMLSelectElement).value)
+        )}
         </div>
 
         <div class="detail-card">
           <h3>Optional</h3>
           ${this._renderEntitySelect(
-            'CO2 Sensor',
-            this.env_co2_sensor,
-            ['sensor', 'input_number'],
-            'carbon_dioxide',
-            (e: Event) => (this.env_co2_sensor = (e.target as HTMLSelectElement).value)
-          )}
+          'CO2 Sensor',
+          this.env_co2_sensor,
+          ['sensor', 'input_number'],
+          'carbon_dioxide',
+          (e: Event) => (this.env_co2_sensor = (e.target as HTMLSelectElement).value)
+        )}
           ${this._renderEntitySelect(
-            'Circulation Fan / Switch',
-            this.env_circulation_fan,
-            ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'],
-            null,
-            (e: Event) => (this.env_circulation_fan = (e.target as HTMLSelectElement).value)
-          )}
+          'Circulation Fan / Switch',
+          this.env_circulation_fan,
+          ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'],
+          null,
+          (e: Event) => (this.env_circulation_fan = (e.target as HTMLSelectElement).value)
+        )}
         </div>
 
         <div class="detail-card">

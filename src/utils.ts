@@ -69,7 +69,7 @@ export class PlantUtils {
     if (!plant || !plant.attributes) return 0;
     const stage = this.getPlantStage(plant);
     const attrs = plant.attributes;
-    let startStr: string | undefined;
+    let startStr: string | undefined | null;
 
     switch (stage) {
       case PlantStage.FLOWER:
