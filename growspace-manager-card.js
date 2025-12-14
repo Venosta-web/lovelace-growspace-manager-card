@@ -19644,6 +19644,106 @@ GrowspaceHeader = __decorate([
  */
 const u=(e,s,t)=>{const r=new Map;for(let l=s;l<=t;l++)r.set(e[l],l);return r},c=e$2(class extends i$1{constructor(e){if(super(e),e.type!==t.CHILD)throw Error("repeat() can only be used in text expressions")}dt(e,s,t){let r;void 0===t?t=s:void 0!==s&&(r=s);const l=[],o=[];let i=0;for(const s of e)l[i]=r?r(s,i):i,o[i]=t(s,i),i++;return {values:o,keys:l}}render(e,s,t){return this.dt(e,s,t).values}update(s,[t,r,c]){const d=p(s),{values:p$1,keys:a}=this.dt(t,r,c);if(!Array.isArray(d))return this.ut=a,p$1;const h=this.ut??=[],v$1=[];let m$1,y,x=0,j=d.length-1,k=0,w=p$1.length-1;for(;x<=j&&k<=w;)if(null===d[x])x++;else if(null===d[j])j--;else if(h[x]===a[k])v$1[k]=v(d[x],p$1[k]),x++,k++;else if(h[j]===a[w])v$1[w]=v(d[j],p$1[w]),j--,w--;else if(h[x]===a[w])v$1[w]=v(d[x],p$1[w]),s$2(s,v$1[w+1],d[x]),x++,w--;else if(h[j]===a[k])v$1[k]=v(d[j],p$1[k]),s$2(s,d[x],d[j]),j--,k++;else if(void 0===m$1&&(m$1=u(a,k,w),y=u(h,x,j)),m$1.has(h[x]))if(m$1.has(h[j])){const e=y.get(a[k]),t=void 0!==e?d[e]:null;if(null===t){const e=s$2(s,d[x]);v(e,p$1[k]),v$1[k]=e;}else v$1[k]=v(t,p$1[k]),s$2(s,d[x],t),d[e]=null;k++;}else M(d[j]),j--;else M(d[x]),x++;for(;k<=w;){const e=s$2(s,v$1[w+1]);v(e,p$1[k]),v$1[k++]=e;}for(;x<=j;){const e=d[x++];null!==e&&M(e);}return this.ut=a,m(s,v$1),T}});
 
+const variables = i$6 `
+  :host {
+    /* MD3 Color System */
+    --primary-gradient: linear-gradient(135deg, #4caf50, #45a049);
+    --secondary-gradient: linear-gradient(135deg, #2196f3, #1976d2);
+    --danger-gradient: linear-gradient(135deg, #f44336, #d32f2f);
+
+    /* MD3 Elevation Levels */
+    --md3-elevation-level0: none;
+    --md3-elevation-level1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+    --md3-elevation-level2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+    --md3-elevation-level3: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+    --md3-elevation-level4: 0 6px 10px 4px rgba(0, 0, 0, 0.15), 0 2px 3px rgba(0, 0, 0, 0.3);
+    --md3-elevation-level5: 0 8px 12px 6px rgba(0, 0, 0, 0.15), 0 4px 4px rgba(0, 0, 0, 0.3);
+
+    --surface-elevation: var(--md3-elevation-level1);
+    --surface-elevation-hover: var(--md3-elevation-level2);
+
+    /* Spacing (MD3 spacing system) */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    /* Border Radius (MD3 shape system) */
+    --border-radius-xs: 4px;
+    --border-radius-sm: 8px;
+    --border-radius-md: 12px;
+    --border-radius-lg: 16px;
+    --border-radius-xl: 28px;
+    --border-radius: 12px; /* Default */
+
+    /* MD3 Typography Scale */
+    --font-size-xs: 0.6875rem; /* 11px */
+    --font-size-sm: 0.875rem; /* 14px - Body Small */
+    --font-size-md: 1rem; /* 16px - Body Medium */
+    --font-size-lg: 1.25rem; /* 20px - Title Large */
+    --font-size-xl: 1.5rem; /* 24px - Headline Small */
+
+    /* Font Weights */
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+
+    /* MD3 Motion Tokens */
+    --md3-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+    --md3-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --md3-motion-duration-short1: 50ms;
+    --md3-motion-duration-short2: 100ms;
+    --md3-motion-duration-short3: 150ms;
+    --md3-motion-duration-short4: 200ms;
+    --md3-motion-duration-medium1: 250ms;
+    --md3-motion-duration-medium2: 300ms;
+    --md3-motion-duration-long1: 400ms;
+    --md3-motion-duration-long2: 500ms;
+
+    /* Growspace Theme Colors */
+    --growspace-card-bg: var(--card-background-color, #1e1e1e);
+    --growspace-card-text: var(--primary-text-color, #fff);
+    --growspace-card-accent: var(--primary-color, #4caf50);
+    --growspace-empty-bg: rgba(255, 255, 255, 0.05);
+    --growspace-empty-bg-hover: rgba(255, 255, 255, 0.1);
+    --plant-border-color-default: #2196f3;
+
+    /* Card Shadows (using MD3 elevation) */
+    --card-shadow: var(--md3-elevation-level1);
+    --card-shadow-hover: var(--md3-elevation-level2);
+
+    /* Transitions (using MD3 motion) */
+    --transition: all var(--md3-motion-duration-short4) var(--md3-motion-easing-standard);
+    --transition-fast: all var(--md3-motion-duration-short2) var(--md3-motion-easing-standard);
+    --transition-medium: all var(--md3-motion-duration-medium2) var(--md3-motion-easing-standard);
+
+    /* Divider */
+    --divider-color: rgba(255, 255, 255, 0.12);
+
+    /* Plant Stage Colors */
+    --stage-veg: #4caf50;
+    --stage-flower: #ff9800;
+    --stage-dry: #9c27b0;
+    --stage-cure: #2196f3;
+
+    /* Error/Warning Colors */
+    --error-color: #f44336;
+    --error-bg: rgba(244, 67, 54, 0.1);
+    --error-border: rgba(244, 67, 54, 0.3);
+
+    /* Strain Dialog */
+    --strain-dialog-bg: var(--ha-card-background, #1e1e1e);
+    --strain-dialog-color: var(--primary-text-color, #fff);
+    --strain-border-color: #4caf50;
+    --strain-input-bg: #2a2a2a;
+    --strain-input-border: #3a3a3a;
+
+    /* Light Color */
+    --primary-light-color: #ffeb3b;
+  }
+`;
+
 let GrowspaceGrid = class GrowspaceGrid extends i$3 {
     constructor() {
         super(...arguments);
@@ -19808,7 +19908,9 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
             .map(() => x `<div class="skeleton-card"></div>`);
     }
 };
-GrowspaceGrid.styles = i$6 `
+GrowspaceGrid.styles = [
+    variables,
+    i$6 `
     :host {
       display: block;
     }
@@ -20069,7 +20171,8 @@ GrowspaceGrid.styles = i$6 `
         gap: 16px;
       }
     }
-  `;
+  `
+];
 __decorate([
     c$2({ context: storeContext }),
     __metadata("design:type", Function)

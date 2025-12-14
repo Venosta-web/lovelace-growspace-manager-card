@@ -7,6 +7,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { PlantEntity, StrainEntry } from '../types';
 import { storeContext } from '../context';
 import type { GrowspaceStore } from '../store/growspace-store';
+import { variables } from '../styles/variables';
 import './plant-card';
 
 @customElement('growspace-grid')
@@ -26,7 +27,9 @@ export class GrowspaceGrid extends LitElement {
   private _draggedPlant: PlantEntity | null = null;
   private _gridRef = createRef<HTMLDivElement>();
 
-  static styles = css`
+  static styles = [
+    variables,
+    css`
     :host {
       display: block;
     }
@@ -287,7 +290,7 @@ export class GrowspaceGrid extends LitElement {
         gap: 16px;
       }
     }
-  `;
+  `];
 
   private _handleDragStart(plant: PlantEntity) {
     this._draggedPlant = plant;
