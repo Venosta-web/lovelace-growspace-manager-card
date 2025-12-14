@@ -2152,6 +2152,84 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             this._resizeObserver.disconnect();
         }
     }
+    /**
+     * Gets VPD thresholds from device overview entity.
+     */
+    _getVpdThresholds() {
+        const overviewEntity = this.device?.overview_entity_id
+            ? this.hass?.states[this.device.overview_entity_id]
+            : null;
+        return {
+            targetMin: overviewEntity?.attributes?.vpd_target_min ?? 0.8,
+            targetMax: overviewEntity?.attributes?.vpd_target_max ?? 1.2,
+            dangerMin: overviewEntity?.attributes?.vpd_danger_min ?? 0.4,
+            dangerMax: overviewEntity?.attributes?.vpd_danger_max ?? 1.6,
+        };
+    }
+    /**
+     * Gets VPD status based on value and thresholds.
+     */
+    _getVpdStatusForValue(value, thresholds) {
+        if (value < thresholds.dangerMin || value > thresholds.dangerMax) {
+            return 'danger';
+        }
+        else if (value < thresholds.targetMin || value > thresholds.targetMax) {
+            return 'warning';
+        }
+        return 'optimal';
+    }
+    /**
+     * Gets color for VPD status.
+     */
+    _getVpdStatusColor(status) {
+        switch (status) {
+            case 'optimal': return '#4caf50'; // Green
+            case 'warning': return '#ff9800'; // Orange
+            case 'danger': return '#f44336'; // Red
+            default: return '#9c27b0'; // Default VPD color (purple)
+        }
+    }
+    /**
+     * Generates multi-colored VPD path segments based on status at each point.
+     */
+    _generateVpdSegments(points, thresholds) {
+        if (points.length < 2)
+            return [];
+        const segments = [];
+        let currentSegment = [];
+        let currentStatus = this._getVpdStatusForValue(points[0].value, thresholds);
+        for (let i = 0; i < points.length; i++) {
+            const p = points[i];
+            const status = this._getVpdStatusForValue(p.value, thresholds);
+            if (status === currentStatus) {
+                currentSegment.push(p);
+            }
+            else {
+                // Status changed - finish current segment and start new one
+                if (currentSegment.length >= 1) {
+                    // Add connecting point to current segment
+                    currentSegment.push(p);
+                    const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+                    segments.push({
+                        path: pathStr,
+                        color: this._getVpdStatusColor(currentStatus)
+                    });
+                }
+                // Start new segment with this point
+                currentSegment = [p];
+                currentStatus = status;
+            }
+        }
+        // Finish last segment
+        if (currentSegment.length >= 2) {
+            const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+            segments.push({
+                path: pathStr,
+                color: this._getVpdStatusColor(currentStatus)
+            });
+        }
+        return segments;
+    }
     _computeGraphSeries(width, height, startTime, durationMillis, now) {
         const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
         const seriesList = [];
@@ -2279,6 +2357,17 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                     });
                     pathStr = `M ${points.map((p) => `${p[0]},${p[1]}`).join(' L ')}`;
                 }
+                // Generate VPD segments for multi-colored rendering
+                let vpdSegments;
+                if (key === 'vpd') {
+                    const thresholds = this._getVpdThresholds();
+                    const vpdPoints = dataPoints.map((p) => {
+                        const x = ((p.time - startTime.getTime()) / durationMillis) * width;
+                        const y = height - ((p.value - min) / paddedRange) * height;
+                        return { x, y, value: p.value };
+                    });
+                    vpdSegments = this._generateVpdSegments(vpdPoints, thresholds);
+                }
                 seriesList.push({
                     id: key,
                     title: config.title || key,
@@ -2291,6 +2380,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                     avg,
                     path: pathStr,
                     fillType: this.isCombined ? 'flat' : 'gradient',
+                    vpdSegments,
                 });
             }
         });
@@ -2353,7 +2443,15 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
           >
             ${this._renderGrid(width, height)}
             ${series.map((s) => {
-            if (s.fillType === 'gradient') {
+            // VPD with multi-colored segments
+            if (s.vpdSegments && s.vpdSegments.length > 0) {
+                return b `
+              ${s.vpdSegments.map(seg => b `
+                <path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+              `)}
+            `;
+            }
+            else if (s.fillType === 'gradient') {
                 return b `
                                     <defs>
                                         ${this._renderGradient(s.id, s.color)}

@@ -433,6 +433,8 @@ export interface GraphSeries {
   avg?: number;
   path: string;
   fillType: 'gradient' | 'flat' | 'none';
+  /** Multi-colored path segments for VPD based on status thresholds */
+  vpdSegments?: Array<{ path: string; color: string }>;
 }
 
 export interface TooltipItem {
