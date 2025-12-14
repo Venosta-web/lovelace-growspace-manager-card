@@ -139,12 +139,42 @@ test.describe('Plant Lifecycle', () => {
         await expect(plantCard.locator('.pc-stage')).toContainText(/flower/i, { timeout: 10000 });
         await expect(plantCard.locator('.pc-stats')).toContainText(/[4-6]d/);
 
-        // Delete Plant
+        // Ensure we are in the source growspace (Grow Room)
+
+        // Harvest Plant
         await plantCard.click();
+        await expect(page.locator('.glass-dialog-container')).toBeVisible({ timeout: 10000 });
+
+        // Click Harvest
+        await page.getByRole('button', { name: 'Harvest' }).click();
+
+        // Wait for move to complete (plant should disappear from current view)
+        await expect(plantCard).toBeHidden({ timeout: 10000 });
+
+        // Verify Plant in 'dry' Growspace
+        const growspaceSelectHarvest = card.locator('.growspace-select-header');
+
+        // Select 'dry' (assuming name is "dry" based on logs)
+        // If "dry" is not found, we might need to look for case variations, but logs said "name":"dry"
+        await growspaceSelectHarvest.selectOption({ label: 'dry' });
+
+        // Find plant in new location
+        const plantCardInDry = card.locator('.plant-card, .plant-card-rich').filter({ hasText: strainName });
+        await expect(plantCardInDry).toBeVisible({ timeout: 10000 });
+        await expect(plantCardInDry.locator('.pc-stage')).toContainText(/dry/i);
+
+        // Delete Plant (from Dry Growspace)
+
+        await expect(plantCardInDry).toBeVisible({ timeout: 10000 });
+        await expect(plantCardInDry.locator('.pc-stage')).toContainText(/dry/i);
+
+        // Delete Plant (from Dry Growspace)
+        await plantCardInDry.click();
         await expect(page.locator('.glass-dialog-container')).toBeVisible({ timeout: 10000 });
         await page.locator('.button-group button.md3-button.danger').filter({ hasText: 'Delete' }).first().click();
         await expect(page.getByText('Confirm Deletion')).toBeVisible({ timeout: 5000 });
         await page.locator('.dialog-overlay button.md3-button.danger').filter({ hasText: 'Delete' }).click();
-        await expect(plantCard).toBeHidden({ timeout: 10000 });
+        await expect(plantCardInDry).toBeHidden({ timeout: 10000 });
     });
 });
+
