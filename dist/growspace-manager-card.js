@@ -19043,10 +19043,119 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
     }
     /**
      * Gets the sparkline color based on the metric's configured color from METRIC_CONFIG.
+     * For VPD, uses status colors (optimal=green, warning=orange, danger=red).
      */
-    _getSparklineColor(metricKey) {
+    _getSparklineColor(metricKey, status) {
+        if (metricKey === 'vpd' && status) {
+            switch (status) {
+                case 'optimal': return '#4caf50'; // Green
+                case 'warning': return '#ff9800'; // Orange
+                case 'danger': return '#f44336'; // Red
+            }
+        }
         const config = METRIC_CONFIG[metricKey];
         return config?.color || 'rgba(255, 255, 255, 0.3)';
+    }
+    /**
+     * Gets VPD status based on value and thresholds.
+     */
+    _getVpdStatusForValue(value, thresholds) {
+        if (value < thresholds.dangerMin || value > thresholds.dangerMax) {
+            return 'danger';
+        }
+        else if (value < thresholds.targetMin || value > thresholds.targetMax) {
+            return 'warning';
+        }
+        return 'optimal';
+    }
+    /**
+     * Generates colored VPD sparkline segments based on VPD value at each point.
+     * Returns array of { path, color } objects for rendering.
+     */
+    _generateVpdSparklineSegments(width, height) {
+        if (!this.historyController || !this.device)
+            return [];
+        const historyData = this.historyController.historyCache['vpd'];
+        if (!historyData || historyData.length < 2)
+            return [];
+        // Get VPD thresholds from device overview entity
+        const overviewEntity = this.device.overview_entity_id
+            ? this.hass?.states[this.device.overview_entity_id]
+            : null;
+        const thresholds = {
+            targetMin: overviewEntity?.attributes?.vpd_target_min ?? 0.8,
+            targetMax: overviewEntity?.attributes?.vpd_target_max ?? 1.2,
+            dangerMin: overviewEntity?.attributes?.vpd_danger_min ?? 0.4,
+            dangerMax: overviewEntity?.attributes?.vpd_danger_max ?? 1.6,
+        };
+        // Sort and filter data
+        let sortedData = [...historyData]
+            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
+            .filter(h => {
+            const val = parseFloat(h.state);
+            return !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
+        });
+        if (sortedData.length < 2)
+            return [];
+        // Downsample
+        const targetPoints = 192;
+        if (sortedData.length > targetPoints) {
+            const step = Math.ceil(sortedData.length / targetPoints);
+            sortedData = sortedData.filter((_, i) => i % step === 0 || i === sortedData.length - 1);
+        }
+        const values = sortedData.map(h => parseFloat(h.state));
+        const times = sortedData.map(h => new Date(h.last_changed).getTime());
+        const minVal = Math.min(...values);
+        const maxVal = Math.max(...values);
+        const minTime = Math.min(...times);
+        const maxTime = Math.max(...times);
+        const valueRange = maxVal - minVal || 1;
+        const timeRange = maxTime - minTime || 1;
+        // Generate points with coordinates and status
+        // Add padding so lines don't touch edges (5px top/bottom)
+        const padding = 5;
+        const usableHeight = height - (padding * 2);
+        const points = sortedData.map((h, i) => {
+            const value = values[i];
+            const x = ((times[i] - minTime) / timeRange) * width;
+            const y = padding + (usableHeight - ((value - minVal) / valueRange) * usableHeight);
+            const status = this._getVpdStatusForValue(value, thresholds);
+            return { x, y, status };
+        });
+        // Generate segments by color
+        const segments = [];
+        let currentSegment = [];
+        let currentStatus = points[0]?.status;
+        for (let i = 0; i < points.length; i++) {
+            const p = points[i];
+            if (p.status === currentStatus) {
+                currentSegment.push(p);
+            }
+            else {
+                // Status changed - finish current segment and start new one
+                if (currentSegment.length >= 1) {
+                    // Add connecting point to current segment
+                    currentSegment.push(p);
+                    const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+                    segments.push({
+                        path: pathStr,
+                        color: this._getSparklineColor('vpd', currentStatus)
+                    });
+                }
+                // Start new segment with this point
+                currentSegment = [p];
+                currentStatus = p.status;
+            }
+        }
+        // Finish last segment
+        if (currentSegment.length >= 2) {
+            const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+            segments.push({
+                path: pathStr,
+                color: this._getSparklineColor('vpd', currentStatus)
+            });
+        }
+        return segments;
     }
     _renderHeroCard(chip) {
         const match = String(chip.value || '').match(/^([\d.,]+)\s*(.*)$/);
@@ -19055,8 +19164,12 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         // Generate sparkline path for this metric
         const sparklineWidth = 140; // Approximate card width
         const sparklineHeight = 80; // Approximate card height minus padding
-        const sparklinePath = this._generateSparklinePath(chip.key, sparklineWidth, sparklineHeight);
-        const sparklineColor = this._getSparklineColor(chip.key);
+        // For VPD, try multi-segment coloring first, fall back to standard if no segments
+        const isVpd = chip.key === 'vpd';
+        const vpdSegments = isVpd ? this._generateVpdSparklineSegments(sparklineWidth, sparklineHeight) : [];
+        const useVpdSegments = isVpd && vpdSegments.length > 0;
+        const sparklinePath = useVpdSegments ? '' : this._generateSparklinePath(chip.key, sparklineWidth, sparklineHeight);
+        const sparklineColor = this._getSparklineColor(chip.key, chip.status);
         return x `
         <div 
             class="hero-card ${chip.status ? `status-${chip.status}` : ''} ${chip.active ? 'active' : ''} ${chip.linked ? 'linked' : ''}"
@@ -19068,7 +19181,27 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             title="${chip.tooltip || ''}"
         >
             <!-- Mini sparkline background -->
-            ${sparklinePath ? x `
+            ${useVpdSegments ? x `
+              <svg 
+                class="hero-sparkline" 
+                viewBox="0 0 ${sparklineWidth} ${sparklineHeight}" 
+                preserveAspectRatio="none"
+                style="overflow: visible;"
+              >
+                <!-- Transparent rect to establish dimensions -->
+                <rect x="0" y="0" width="${sparklineWidth}" height="${sparklineHeight}" fill="transparent" />
+                ${vpdSegments.map(seg => b `
+                  <path 
+                    d="${seg.path}" 
+                    fill="none" 
+                    stroke="${seg.color}" 
+                    stroke-width="2.5" 
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                `)}
+              </svg>
+            ` : sparklinePath ? x `
               <svg 
                 class="hero-sparkline" 
                 viewBox="0 0 ${sparklineWidth} ${sparklineHeight}" 
@@ -19099,8 +19232,6 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                 <span class="hero-value">${val}</span>
                 <span class="hero-unit">${unit}</span>
             </div>
-
-            ${chip.status ? x `<div class="hero-status-bar"></div>` : ''}
         </div>
     `;
     }
@@ -19311,20 +19442,6 @@ GrowspaceHeader.styles = i$6 `
         color: rgba(255, 255, 255, 0.7);
         font-weight: 500;
     }
-
-    /* Status Indicators for Hero Cards via bottom border/bar */
-    .hero-status-bar {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: rgba(255,255,255,0.1);
-    }
-    .status-optimal .hero-status-bar { background: #4caf50;box-shadow: 0 -2px 8px rgba(76, 175, 80, 0.4); }
-    .status-warning .hero-status-bar { background: #ff9800;box-shadow: 0 -2px 8px rgba(255, 152, 0, 0.4); }
-    .status-danger .hero-status-bar { background: #f44336;box-shadow: 0 -2px 8px rgba(244, 67, 54, 0.4); }
-    
     /* Active graph indication */
     .hero-card.active {
         box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);
@@ -19333,7 +19450,7 @@ GrowspaceHeader.styles = i$6 `
     /* Mini sparkline background for hero cards */
     .hero-sparkline {
         position: absolute;
-        top: 50%;
+        top: 0;
         left: 0;
         right: 0;
         bottom: 0;
@@ -19344,8 +19461,7 @@ GrowspaceHeader.styles = i$6 `
         opacity: 0.7;
     }
 
-    .hero-value-group,
-    .hero-status-bar {
+    .hero-value-group {
         position: relative;
         z-index: 1;
     }
