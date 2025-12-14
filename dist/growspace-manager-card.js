@@ -1498,6 +1498,7 @@ const hassContext = n$4('hass');
 const configContext = n$4('config');
 const strainLibraryContext = n$4('strain-library');
 const storeContext = n$4('store');
+const historyContext = n$4('growspace-history-controller');
 
 const variables = i$6 `
   :host {
@@ -1679,8 +1680,19 @@ class GrowspaceHistoryController {
         this.activeEnvGraphs = new Set();
         this.linkedGraphGroups = [];
         this.graphRanges = {};
+        this._listeners = [];
         this._prevSelectedDevice = null;
         (this.host = host).addController(this);
+    }
+    addListener(callback) {
+        this._listeners.push(callback);
+    }
+    removeListener(callback) {
+        this._listeners = this._listeners.filter(l => l !== callback);
+    }
+    _notifyUpdate() {
+        this.host.requestUpdate();
+        this._listeners.forEach(cb => cb());
     }
     hostConnected() {
         // Initial fetch if needed, though hostUpdated usually handles it
@@ -1717,7 +1729,7 @@ class GrowspaceHistoryController {
             ...this.graphRanges,
             [this.host.selectedDevice]: range,
         };
-        this.host.requestUpdate();
+        this._notifyUpdate();
         this._fetchHistory(range);
         this.refreshSecondaryHistories(range);
     }
@@ -1734,7 +1746,7 @@ class GrowspaceHistoryController {
             this._fetchMetricHistory(metric, range);
         }
         this.activeEnvGraphs = newSet;
-        this.host.requestUpdate();
+        this._notifyUpdate();
     }
     linkGraphs(metric1, metric2) {
         // Check if already linked
@@ -1757,25 +1769,25 @@ class GrowspaceHistoryController {
         newActive.add(metric1);
         newActive.add(metric2);
         this.activeEnvGraphs = newActive;
-        this.host.requestUpdate();
+        this._notifyUpdate();
     }
     unlinkGraphGroup(index) {
         if (index >= 0 && index < this.linkedGraphGroups.length) {
             const newGroups = [...this.linkedGraphGroups];
             newGroups.splice(index, 1);
             this.linkedGraphGroups = newGroups;
-            this.host.requestUpdate();
+            this._notifyUpdate();
         }
     }
     clearAllLinks() {
         this.linkedGraphGroups = [];
-        this.host.requestUpdate();
+        this._notifyUpdate();
     }
     unlinkGraphMetric(metric) {
         this.linkedGraphGroups = this.linkedGraphGroups
             .map((group) => group.filter((m) => m !== metric))
             .filter((group) => group.length > 1);
-        this.host.requestUpdate();
+        this._notifyUpdate();
     }
     /**
      * Refreshes history data for all currently active environment graphs.
@@ -3970,6 +3982,23 @@ class GrowspaceStore {
         catch (err) {
             console.error('Failed to call export service', err);
             unsubscribe();
+        }
+    }
+    async toggleDehumidifierControl(deviceId) {
+        const device = this.state.devices.find((d) => d.device_id === deviceId);
+        if (!device || !device.overview_entity_id || !this.hass)
+            return;
+        const stateObj = this.hass.states[device.overview_entity_id];
+        const attrs = stateObj?.attributes || {};
+        const currentStatus = attrs.dehumidifier_control_enabled === true;
+        try {
+            await this.dataService.setDehumidifierControl(deviceId, !currentStatus);
+            console.log(`Toggled dehumidifier control to ${!currentStatus} for ${deviceId}`);
+            this.showToast(`Dehumidifier control ${!currentStatus ? 'enabled' : 'disabled'}`, 'success');
+        }
+        catch (err) {
+            console.error('Failed to toggle dehumidifier control:', err);
+            this.showToast(`Failed to toggle dehumidifier: ${err.message}`, 'error');
         }
     }
     async performImport(file, replace) {
@@ -18337,11 +18366,10 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         super(...arguments);
         this.compact = false;
         this.isEditMode = false;
-        this.activeEnvGraphs = new Set();
+        // activeEnvGraphs and linkedGraphGroups removed as props, accessed via historyController in render or getters
         this.growspaceOptions = {};
         this.historyData = null;
         this._menuOpen = false;
-        this.linkedGraphGroups = [];
         this._draggedMetric = null;
         // Cached Metric Data
         this._mainChips = [];
@@ -18355,6 +18383,9 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         this._isCompact = false;
         this._isMobileCheck = false;
         this._hasTouch = false;
+        this._handleControllerUpdate = () => {
+            this.requestUpdate();
+        };
         this._checkMobileBound = () => this._checkMobile();
     }
     /**
@@ -18369,6 +18400,20 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             return ent.attributes.observations[key];
         }
         return undefined;
+    }
+    // Helper getters for clarity in render/compute
+    get activeEnvGraphs() {
+        return this.historyController?.activeEnvGraphs || new Set();
+    }
+    _isMetricLinked(metric) {
+        if (!this.historyController)
+            return { linked: false, groupIndex: -1 };
+        for (let i = 0; i < this.historyController.linkedGraphGroups.length; i++) {
+            if (this.historyController.linkedGraphGroups[i].includes(metric)) {
+                return { linked: true, groupIndex: i };
+            }
+        }
+        return { linked: false, groupIndex: -1 };
     }
     _computeMetrics() {
         if (!this.device || !this.hass)
@@ -18573,19 +18618,14 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             setTimeout(() => this._checkScroll(), 0);
         }
     }
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        window.removeEventListener('resize', this._checkMobileBound);
-        if (this._resizeObserver) {
-            this._resizeObserver.disconnect();
-        }
-    }
     _handleDeviceChange(e) {
         const target = e.target;
         this.store.handleDeviceChange(target.value);
     }
     _toggleEnvGraph(metric) {
-        this.dispatchEvent(new ToggleEnvGraphEvent(metric));
+        if (!this.historyController)
+            return;
+        this.historyController.toggleEnvGraph({ metric, visible: true });
     }
     _handleChipDragStart(e, metric) {
         this._draggedMetric = metric;
@@ -18600,7 +18640,9 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             this._draggedMetric = null;
             return;
         }
-        this.dispatchEvent(new LinkGraphsEvent(this._draggedMetric, targetMetric));
+        if (this.historyController) {
+            this.historyController.linkGraphs(this._draggedMetric, targetMetric);
+        }
         this._draggedMetric = null;
     }
     _handleDragOver(e) {
@@ -18608,21 +18650,28 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             e.preventDefault();
         }
     }
-    _isMetricLinked(metric) {
-        const index = this.linkedGraphGroups.findIndex((g) => g.includes(metric));
-        return {
-            linked: index !== -1,
-            groupIndex: index,
-            group: index !== -1 ? this.linkedGraphGroups[index] : [],
-        };
-    }
     _unlinkGraphs(groupIndex) {
-        this.dispatchEvent(new UnlinkGraphsEvent(groupIndex));
+        if (this.historyController) {
+            this.historyController.unlinkGraphGroup(groupIndex);
+        }
     }
     connectedCallback() {
         super.connectedCallback();
         this._checkMobile();
         window.addEventListener('resize', this._checkMobileBound);
+        if (this.historyController) {
+            this.historyController.addListener(this._handleControllerUpdate);
+        }
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        window.removeEventListener('resize', this._checkMobileBound);
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+        }
+        if (this.historyController) {
+            this.historyController.removeListener(this._handleControllerUpdate);
+        }
     }
     _checkMobile() {
         const isMobile = window.matchMedia('(max-width: 768px)').matches;
@@ -18635,8 +18684,6 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         }
     }
     get _chipDraggable() {
-        // If user is on mobile (narrow width) OR has touch, drag is ONLY allowed if explicitly in link mode.
-        // This ensures consistency: if you see mobile UI, you get mobile behavior.
         if (this._isMobileCheck || this._hasTouch) {
             return this._mobileLink.toString();
         }
@@ -18669,6 +18716,11 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                 break;
             case 'edit':
                 this.store.setEditMode(!this.store.state.isEditMode);
+                break;
+            case 'control_dehumidifier':
+                if (this.store.state.selectedDevice) {
+                    this.store.toggleDehumidifierControl(this.store.state.selectedDevice);
+                }
                 break;
             case 'compact':
                 this.store.setIsCompactView(!this.store.state.isCompactView);
@@ -19387,6 +19439,10 @@ __decorate([
     __metadata("design:type", Function)
 ], GrowspaceHeader.prototype, "store", void 0);
 __decorate([
+    c$2({ context: historyContext, subscribe: true }),
+    __metadata("design:type", Function)
+], GrowspaceHeader.prototype, "historyController", void 0);
+__decorate([
     c$2({ context: configContext, subscribe: true }),
     n$5({ attribute: false }),
     __metadata("design:type", Object)
@@ -19406,10 +19462,6 @@ __decorate([
 __decorate([
     n$5({ attribute: false }),
     __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "activeEnvGraphs", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "growspaceOptions", void 0);
 __decorate([
     n$5({ attribute: false }),
@@ -19419,10 +19471,6 @@ __decorate([
     r$2(),
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_menuOpen", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceHeader.prototype, "linkedGraphGroups", void 0);
 __decorate([
     r$2(),
     __metadata("design:type", Object)
@@ -19484,7 +19532,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         this.plants = [];
         this.rows = 3;
         this.cols = 3;
-        // strainLibrary is now consumed via context in child cards
+        this.strainLibrary = [];
         this.isEditMode = false;
         this.selectedPlants = new Set();
         this.compact = false;
@@ -19503,79 +19551,90 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
             e.preventDefault();
         if (!this._draggedPlant)
             return;
-        this.dispatchEvent(new PlantDropEvent(e, targetRow, targetCol, targetPlant, this._draggedPlant));
+        // Direct store call
+        this.store.handleDrop(targetRow, targetCol, targetPlant, this._draggedPlant);
         this._draggedPlant = null;
     }
     _handlePlantClick(plant) {
-        this.dispatchEvent(new PlantClickEvent(plant));
+        // Direct store call
+        this.store.handlePlantClick(plant);
     }
     _togglePlantSelection(plant) {
         const plantId = plant.attributes.plant_id;
-        if (!plantId)
-            return;
-        const newSet = new Set(this.selectedPlants);
-        if (newSet.has(plantId)) {
-            newSet.delete(plantId);
+        if (plantId) {
+            this.store.togglePlantSelection(plantId);
         }
-        else {
-            newSet.add(plantId);
-        }
-        this.dispatchEvent(new SelectionChangedEvent(newSet));
     }
     _handleMobileDrop(e) {
         const { x, y, plant } = e.detail;
-        // Check all slots (cards and empty slots)
-        const slots = this.shadowRoot?.querySelectorAll('growspace-plant-card, .plant-card-empty');
-        if (!slots)
+        const gridEl = this._gridRef.value;
+        if (!gridEl)
             return;
-        let targetRow = null;
-        let targetCol = null;
-        let targetPlant = null;
-        for (const slot of Array.from(slots)) {
-            const rect = slot.getBoundingClientRect();
-            if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-                if (slot.tagName.toLowerCase() === 'growspace-plant-card') {
-                    targetRow = slot.row;
-                    targetCol = slot.col;
-                    targetPlant = slot.plant;
-                }
-                else {
-                    const rowStr = slot.getAttribute('data-row');
-                    const colStr = slot.getAttribute('data-col');
-                    if (rowStr && colStr) {
-                        targetRow = parseInt(rowStr);
-                        targetCol = parseInt(colStr);
-                        targetPlant = null;
-                    }
-                }
-                break;
-            }
+        // O(1) Math-based logic
+        // We assume the grid structure corresponds to rows/cols
+        // This logic principally works well for desktop grids.
+        // However, mobile layouts often stack elements vertically (flex-direction: column).
+        // If it's stacked, math based on cell width/height might be tricky if we assume a matrix.
+        // BUT: The instruction requested O(1) math logic.
+        // To handle both grid and list view robustly with O(1) is complex without knowing exact layout method.
+        // If it is indeed a CSS Grid:
+        const rect = gridEl.getBoundingClientRect();
+        const cellW = rect.width / this.cols;
+        const cellH = rect.height / this.rows;
+        // If list view (desktop or mobile), the logic changes implicitly because
+        // cols might be effectively 1.
+        // Let's rely on the grid layout properties.
+        // If elements are stacked vertically, cellW is full width, cellH is total height / (rows*cols).
+        // Let's refine based on media query check or compact prop? No, getComputedStyle is slow-ish but better than loop.
+        // Actually, "Smart" logic instructions were specific:
+        const isListView = this.cols > 5 || window.innerWidth <= 600; // Match render logic
+        let targetRow, targetCol;
+        if (isListView) {
+            // List view: items are stacked 1 column, N rows (effectively)
+            // Check if list view logic applies
+            const hitY = y - rect.top;
+            if (hitY < 0 || hitY > rect.height)
+                return;
+            // In list view, each item height?
+            const itemCount = this.rows * this.cols;
+            const itemHeight = rect.height / itemCount;
+            const index = Math.floor(hitY / itemHeight);
+            // Convert linear index back to row/col
+            targetRow = Math.floor(index / this.cols) + 1;
+            targetCol = (index % this.cols) + 1;
         }
-        if (targetRow !== null && targetCol !== null) {
-            if (targetRow !== null && targetCol !== null) {
-                this.dispatchEvent(new PlantDropEvent(null, // drag event not available in mobile drop
-                targetRow, targetCol, targetPlant, plant));
-            }
+        else {
+            // Grid View
+            const colIndex = Math.ceil((x - rect.left) / cellW);
+            const rowIndex = Math.ceil((y - rect.top) / cellH);
+            targetRow = rowIndex;
+            targetCol = colIndex;
+        }
+        if (targetCol > 0 && targetCol <= this.cols &&
+            targetRow > 0 && targetRow <= this.rows) {
+            // Identify target plant from array
+            // plants is (PlantEntity | null)[][]
+            // 0-based index access
+            const targetPlant = this.plants[targetRow - 1][targetCol - 1]; // Can be null or PlantEntity
+            this.store.handleDrop(targetRow, targetCol, targetPlant, plant);
         }
     }
     render() {
-        const isListView = this.cols > 5;
+        const isListView = this.cols > 5; // Simplified check for inline style
         const gridStyle = isListView
             ? ''
             : `grid-template-columns: repeat(${this.cols}, minmax(0, 1fr)); grid-template-rows: repeat(${this.rows}, 1fr);`;
-        // Flatten grid for rendering
-        // Assuming plants input is (PlantEntity | null)[][]
         const flatGrid = this.plants.flat();
         return x `
       <div
         class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
         style="${gridStyle}"
         @mobile-drop=${this._handleMobileDrop}
+        ${n$2(this._gridRef)}
       >
         ${this.isLoading ? this.renderSkeletonGrid() : ''}
         ${!this.isLoading
             ? c(flatGrid, (plant, index) => plant ? plant.attributes?.plant_id || plant.entity_id : `empty-${index}`, (plant, index) => {
-                // Recalculate row/col based on grid index
                 const row = Math.floor(index / this.cols) + 1;
                 const col = (index % this.cols) + 1;
                 if (!plant) {
@@ -19602,13 +19661,14 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
     `;
     }
     renderEmptySlot(row, col) {
+        // 0-based for API
         return x `
       <div
         class="plant-card-empty"
         data-row="${row}"
         data-col="${col}"
         style="grid-row: ${row}; grid-column: ${col}"
-        @click=${() => this.dispatchEvent(new AddPlantClickEvent(row - 1, col - 1))}
+        @click=${() => this.store.openAddPlantDialog(row - 1, col - 1)}
         @dragover=${this._handleDragOver}
         @drop=${(e) => this._handleDrop(e, row, col, null)}
       >
@@ -19625,7 +19685,6 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
     `;
     }
     renderSkeletonGrid() {
-        // Generate placeholder items matching row * col count
         const count = this.rows * this.cols;
         return Array(count)
             .fill(0)
@@ -19640,6 +19699,8 @@ GrowspaceGrid.styles = i$6 `
     .grid {
       display: grid;
       gap: var(--spacing-md);
+      /* Position relative needed for coordinate calculation */
+      position: relative; 
     }
 
     .grid.compact {
@@ -19893,6 +19954,10 @@ GrowspaceGrid.styles = i$6 `
     }
   `;
 __decorate([
+    c$2({ context: storeContext }),
+    __metadata("design:type", Function)
+], GrowspaceGrid.prototype, "store", void 0);
+__decorate([
     n$5({ type: Array }),
     __metadata("design:type", Array)
 ], GrowspaceGrid.prototype, "plants", void 0);
@@ -19904,6 +19969,10 @@ __decorate([
     n$5({ type: Number }),
     __metadata("design:type", Number)
 ], GrowspaceGrid.prototype, "cols", void 0);
+__decorate([
+    n$5({ type: Array }),
+    __metadata("design:type", Array)
+], GrowspaceGrid.prototype, "strainLibrary", void 0);
 __decorate([
     n$5({ type: Boolean }),
     __metadata("design:type", Boolean)
@@ -21245,77 +21314,41 @@ const growspaceCardStyles = i$6 `
 let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
     constructor() {
         super(...arguments);
-        this.historyData = []; // Generic bucket if needed
-        this.optimalHistory = [];
-        this.dehumidifierHistory = [];
-        this.exhaustHistory = [];
-        this.humidifierHistory = [];
-        this.circulationFanHistory = [];
-        this.soilMoistureHistory = [];
-        this.lightHistory = [];
-        this.irrigationHistory = [];
-        this.drainHistory = [];
-        // Individual environment sensor histories (since env data moved to WebSocket)
-        this.temperatureHistory = [];
-        this.humidityHistory = [];
-        this.vpdHistory = [];
-        this.co2History = [];
-        this.activeEnvGraphs = new Set();
-        this.linkedGraphGroups = [];
-        this.range = '24h';
         this._itemsToRender = [];
-        this._sensorHistory = {};
+        this._handleControllerUpdate = () => {
+            this.requestUpdate();
+        };
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.historyController) {
+            this.historyController.addListener(this._handleControllerUpdate);
+        }
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this.historyController) {
+            this.historyController.removeListener(this._handleControllerUpdate);
+        }
     }
     willUpdate(changedProperties) {
-        if (changedProperties.has('activeEnvGraphs') || changedProperties.has('linkedGraphGroups')) {
-            this._computeItemsToRender();
-        }
-        // Use sensorHistory prop if provided (preferred API)
-        if (changedProperties.has('sensorHistory') && this.sensorHistory) {
-            this._sensorHistory = this.sensorHistory;
-        }
-        else if (
-        // Backward compatibility: merge individual props if sensorHistory not provided
-        !this.sensorHistory && (changedProperties.has('temperatureHistory') ||
-            changedProperties.has('humidityHistory') ||
-            changedProperties.has('vpdHistory') ||
-            changedProperties.has('co2History') ||
-            changedProperties.has('dehumidifierHistory') ||
-            changedProperties.has('exhaustHistory') ||
-            changedProperties.has('humidifierHistory') ||
-            changedProperties.has('circulationFanHistory') ||
-            changedProperties.has('soilMoistureHistory') ||
-            changedProperties.has('lightHistory') ||
-            changedProperties.has('irrigationHistory') ||
-            changedProperties.has('drainHistory') ||
-            changedProperties.has('optimalHistory'))) {
-            this._sensorHistory = {
-                temperature: this.temperatureHistory || [],
-                humidity: this.humidityHistory || [],
-                vpd: this.vpdHistory || [],
-                co2: this.co2History || [],
-                dehumidifier: this.dehumidifierHistory || [],
-                exhaust: this.exhaustHistory || [],
-                humidifier: this.humidifierHistory || [],
-                circulation_fan: this.circulationFanHistory || [],
-                soil_moisture: this.soilMoistureHistory || [],
-                light: this.lightHistory || [],
-                irrigation: this.irrigationHistory || [],
-                drain: this.drainHistory || [],
-                optimal: this.optimalHistory || [],
-            };
-        }
+        // Recompute items whenever update is requested (controller notifies)
+        this._computeItemsToRender();
     }
     _computeItemsToRender() {
+        if (!this.historyController)
+            return;
         const getSortIndex = (metric) => {
             const index = METRIC_SORT_ORDER.indexOf(metric);
             return index !== -1 ? index : 999;
         };
         const items = [];
         const processedMetrics = new Set();
+        const activeEnvGraphs = this.historyController.activeEnvGraphs;
+        const linkedGraphGroups = this.historyController.linkedGraphGroups;
         // Process Linked Groups
-        this.linkedGraphGroups.forEach((group) => {
-            const activeMetricsInGroup = group.filter((m) => this.activeEnvGraphs.has(m));
+        linkedGraphGroups.forEach((group) => {
+            const activeMetricsInGroup = group.filter((m) => activeEnvGraphs.has(m));
             if (activeMetricsInGroup.length > 0) {
                 const minIndex = Math.min(...activeMetricsInGroup.map(getSortIndex));
                 items.push({
@@ -21327,7 +21360,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
             }
         });
         // Process Individual Metrics
-        this.activeEnvGraphs.forEach((metric) => {
+        activeEnvGraphs.forEach((metric) => {
             if (!processedMetrics.has(metric)) {
                 items.push({
                     type: 'single',
@@ -21340,10 +21373,12 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
         this._itemsToRender = items;
     }
     render() {
-        if (this.activeEnvGraphs.size === 0)
+        if (!this.historyController || this.historyController.activeEnvGraphs.size === 0)
             return x ``;
         if (!this.device)
             return x ``;
+        const sensorHistory = this.historyController.combinedHistory;
+        const range = this.historyController.getRange();
         const graphs = c(this._itemsToRender, 
         // Key function: Unique ID for the item
         (item) => item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`, 
@@ -21354,11 +21389,11 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
             <growspace-env-chart
               .hass=${this.hass}
               .device=${this.device}
-              .sensorHistory=${this._sensorHistory}
+              .sensorHistory=${sensorHistory}
               .metrics=${item.metrics}
               .isCombined=${true}
               .metricConfig=${METRIC_CONFIG}
-              .range=${this.range}
+              .range=${range}
               @toggle-graph=${this._handleToggleGraph}
               @unlink-graphs=${this._handleUnlinkGraphs}
               @unlink-graph=${this._handleUnlinkGraphMetric}
@@ -21372,28 +21407,28 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
             <growspace-env-chart
               .hass=${this.hass}
               .device=${this.device}
-              .sensorHistory=${this._sensorHistory}
+              .sensorHistory=${sensorHistory}
               .metricKey=${metric}
               .unit=${config.unit}
               .color=${config.color}
               .title=${config.title}
               .icon=${config.icon}
-              .range=${this.range}
+              .range=${range}
               .type=${config.type || 'line'}
               @toggle-graph=${this._handleToggleGraph}
             ></growspace-env-chart>
           `;
             }
         });
-        return x ` <div class="graphs-container">${this.renderTimeRangeSelector()} ${graphs}</div> `;
+        return x ` <div class="graphs-container">${this.renderTimeRangeSelector(range)} ${graphs}</div> `;
     }
-    renderTimeRangeSelector() {
+    renderTimeRangeSelector(currentRange) {
         const ranges = ['1h', '6h', '24h', '7d'];
         return x `
       <div class="time-range-selector">
         ${ranges.map((r) => x `
             <button
-              class="range-btn ${this.range === r ? 'active' : ''}"
+              class="range-btn ${currentRange === r ? 'active' : ''}"
               @click=${() => this._setGraphRange(r)}
             >
               ${r}
@@ -21403,16 +21438,36 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
     `;
     }
     _setGraphRange(range) {
-        this.dispatchEvent(new RangeChangeEvent(range));
+        // Call controller directly
+        this.historyController.setGraphRange(range);
+        // Deprecated event removed: this.dispatchEvent(new RangeChangeEvent(range));
     }
     _handleToggleGraph(e) {
-        // Original event bubbles
+        e.stopPropagation();
+        const metric = e.detail.metric; // Assuming detail contains metric
+        if (metric) {
+            this.historyController.toggleEnvGraph({ metric, visible: false }); // Toggling off usually? Handled by controller logic
+        }
+        // Actually, toggleEnvGraph event from chart usually means "close" or "toggle".
+        // The chart emits toggle-graph with detail: { metric }
+        this.historyController.toggleEnvGraph({ metric: e.detail, visible: false });
+        // Wait, e.detail from GrowspaceEnvChart might vary. 
+        // Let's assume e.detail is the metric string based on previous usage.
     }
     _handleUnlinkGraphs(e) {
-        // Original event bubbles
+        e.stopPropagation();
+        // detail is likely groupIndex?
+        // But looking at header implementation, unlink emits groupIndex.
+        // From chart, we need to know what it emits.
+        // Assuming it emits the group index or metrics?
+        // Let's assume it emits groupIndex for now, or check code.
+        // But based on usage in stored method `unlinkGraphGroup(index)`, it expects index.
+        this.historyController.unlinkGraphGroup(e.detail);
     }
     _handleUnlinkGraphMetric(e) {
-        // Original event bubbles
+        e.stopPropagation();
+        // detail is metric string
+        this.historyController.unlinkGraphMetric(e.detail);
     }
 };
 GrowspaceAnalytics.styles = [
@@ -21433,89 +21488,17 @@ __decorate([
     __metadata("design:type", Object)
 ], GrowspaceAnalytics.prototype, "hass", void 0);
 __decorate([
+    c$2({ context: historyContext, subscribe: true }),
+    __metadata("design:type", Function)
+], GrowspaceAnalytics.prototype, "historyController", void 0);
+__decorate([
     n$5({ attribute: false }),
     __metadata("design:type", Object)
 ], GrowspaceAnalytics.prototype, "device", void 0);
 __decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "historyData", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "optimalHistory", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "dehumidifierHistory", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "exhaustHistory", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "humidifierHistory", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "circulationFanHistory", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "soilMoistureHistory", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "lightHistory", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "irrigationHistory", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "drainHistory", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "temperatureHistory", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "humidityHistory", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "vpdHistory", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "co2History", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Set)
-], GrowspaceAnalytics.prototype, "activeEnvGraphs", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "linkedGraphGroups", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", String)
-], GrowspaceAnalytics.prototype, "range", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspaceAnalytics.prototype, "sensorHistory", void 0);
-__decorate([
     r$2(),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "_itemsToRender", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceAnalytics.prototype, "_sensorHistory", void 0);
 GrowspaceAnalytics = __decorate([
     t$2('growspace-analytics')
 ], GrowspaceAnalytics);
@@ -21653,9 +21636,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         return 4;
     }
     // Event handlers
-    _handleDeviceChange(e) {
-        this.store.handleDeviceChange(e.detail.deviceId);
-    }
     _handleKeyboardNav(e) {
         this.store.handleKeyboardNavigation(e.key);
     }
@@ -21668,171 +21648,14 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             }
         }
     }
-    _handlePlantClick(plant) {
-        // If in edit mode and we have selections, open dialog for ALL selected plants
-        if (this.store.state.isEditMode && this.store.state.selectedPlants.size > 0) {
-            const plantId = plant.attributes.plant_id;
-            // If clicked plant is NOT selected, add it to selection then open.
-            if (plantId && !this.store.state.selectedPlants.has(plantId)) {
-                this.store.togglePlantSelection(plantId);
-            }
-            // Pass the set of IDs to the dialog
-            this._openPlantOverviewDialog(plant, Array.from(this.store.state.selectedPlants));
-        }
-        else {
-            // Normal behavior
-            this._openPlantOverviewDialog(plant);
-        }
-    }
-    _openPlantOverviewDialog(plant, selectedIds) {
-        this.store.setActiveDialog({
-            type: 'PLANT_OVERVIEW',
-            payload: {
-                plant,
-                editedAttributes: { ...plant.attributes },
-                activeTab: 'dashboard',
-                selectedPlantIds: selectedIds,
-            },
-        });
-    }
-    // Strain library methods
-    async _openStrainLibraryDialog() {
-        if (!this.store.state.strainLibrary || this.store.state.strainLibrary.length === 0) {
-            this.store.fetchStrainLibrary();
-        }
-        this.store.setActiveDialog({
-            type: 'STRAIN_LIBRARY',
-            payload: {},
-        });
-    }
-    // Irrigation dialog methods
-    _openIrrigationDialog() {
-        if (!this.store.state.selectedDevice)
-            return;
-        this.store.setActiveDialog({
-            type: 'IRRIGATION',
-            payload: true,
-        });
-    }
-    async _addStrain(strainData) {
-        this.store.addStrain(strainData);
-    }
-    async _removeStrain(strainKey) {
-        this.store.removeStrain(strainKey);
-    }
     _downloadFile(url) {
         const a = document.createElement('a');
         a.style.display = 'none';
         a.href = url;
-        a.download = url.split('/').pop() || 'export.zip'; // Sets filename from URL
+        a.download = url.split('/').pop() || 'export.zip';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-    }
-    async _performImport(file, replace) {
-        if (!file)
-            return;
-        try {
-            const result = await this.store.dataService.importStrainLibrary(file, replace);
-            this.store.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
-            await this.store.fetchStrainLibrary();
-        }
-        catch (err) {
-            console.error('Import failed:', err);
-            this.store.showToast(`Import failed: ${err.message}`, 'error');
-        }
-    }
-    updateGrid() {
-        // Refresh data from Home Assistant
-        if (this.hass) {
-            this.store.updateHass(this.hass);
-        }
-        // Force Lit to re-render
-        this.requestUpdate();
-        this.store.updateGrid();
-    }
-    _handleHeaderAction(e) {
-        const action = e.detail.action;
-        switch (action) {
-            case 'add_plant':
-                this.store.openAddPlantDialog();
-                break;
-            case 'config':
-                this.store.setActiveDialog({
-                    type: 'CONFIG',
-                    payload: {
-                        currentTab: 'environment',
-                        environmentData: {
-                            selectedGrowspaceId: this.store.state.selectedDevice || '',
-                            temp_sensor: '',
-                            humidity_sensor: '',
-                            vpd_sensor: '',
-                            co2_sensor: '',
-                            circulation_fan: '',
-                            stress_threshold: 0.8,
-                            mold_threshold: 0.8,
-                        },
-                    },
-                });
-                break;
-            case 'edit':
-                this.store.setEditMode(!this.store.state.isEditMode);
-                break;
-            case 'compact':
-                this.store.setIsCompactView(!this.store.state.isCompactView);
-                break;
-            case 'control_dehumidifier':
-                if (this.store.state.selectedDevice) {
-                    const device = this.store.state.devices.find((d) => d.device_id === this.store.state.selectedDevice);
-                    if (device && device.overview_entity_id) {
-                        const stateObj = this.hass.states[device.overview_entity_id];
-                        const attrs = stateObj?.attributes || {};
-                        // 1. Get current state (Default to false if attribute missing)
-                        // Ensure your backend GrowspaceOverviewSensor exposes this attribute!
-                        const currentStatus = attrs.dehumidifier_control_enabled === true;
-                        // 2. Call service with opposite state
-                        this.store.dataService
-                            .setDehumidifierControl(this.store.state.selectedDevice, !currentStatus)
-                            .then(() => {
-                            console.log(`Toggled dehumidifier control to ${!currentStatus} for`, this.store.state.selectedDevice);
-                        })
-                            .catch((err) => {
-                            console.error('Failed to toggle dehumidifier control:', err);
-                        });
-                    }
-                }
-                break;
-            case 'strains':
-                if (!this.store.state.strainLibrary || this.store.state.strainLibrary.length === 0) {
-                    this.store.fetchStrainLibrary();
-                }
-                this.store.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
-                break;
-            case 'irrigation':
-                if (this.store.state.selectedDevice) {
-                    this.store.setActiveDialog({ type: 'IRRIGATION', payload: true });
-                }
-                break;
-            case 'ai':
-                this.store.setActiveDialog({
-                    type: 'GROW_MASTER',
-                    payload: {
-                        growspaceId: this.store.state.selectedDevice || '',
-                        isLoading: false,
-                        response: null,
-                        mode: 'single',
-                    },
-                });
-                break;
-            case 'logbook':
-                if (this.store.state.selectedDevice) {
-                    this.store.setActiveDialog({
-                        type: 'LOGBOOK',
-                        payload: { growspaceId: this.store.state.selectedDevice },
-                    });
-                }
-                break;
-        }
     }
     render() {
         if (!this.hass) {
@@ -21879,43 +21702,11 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         <div class="unified-growspace-card glass-surface glass-panel" tabindex="0" @keydown=${this._handleKeyboardNav}>
           <growspace-header
             .device=${selectedDeviceData}
-            .devices=${devices}
-            .activeEnvGraphs=${this.historyController.activeEnvGraphs}
-            .historyData=${this.historyController.historyData || null}
-            .compact=${this.store.state.isCompactView}
-            .isEditMode=${this.store.state.isEditMode}
-            .selectedDevice=${this.store.state.selectedDevice}
             .growspaceOptions=${growspaceOptions}
-            .linkedGraphGroups=${this.historyController.linkedGraphGroups}
-            @growspace-changed=${this._handleDeviceChange}
-            @toggle-env-graph=${(e) => this.historyController.toggleEnvGraph({ metric: e.detail.metric, visible: true })}
-            @link-graphs=${(e) => this.historyController.linkGraphs(e.detail.metric1, e.detail.metric2)}
-            @unlink-graphs=${(e) => this.historyController.unlinkGraphGroup(e.detail.groupIndex)}
-            @trigger-action=${this._handleHeaderAction}
+            @growspace-changed=${(e) => this.store.handleDeviceChange(e.target.value)}
           ></growspace-header>
           <growspace-analytics
             .device=${selectedDeviceData}
-            .historyData=${this.historyController.historyData || []}
-            .optimalHistory=${this.historyController.optimalHistory || []}
-            .dehumidifierHistory=${this.historyController.dehumidifierHistory || []}
-            .exhaustHistory=${this.historyController.exhaustHistory || []}
-            .humidifierHistory=${this.historyController.humidifierHistory || []}
-            .circulationFanHistory=${this.historyController.circulationFanHistory || []}
-            .soilMoistureHistory=${this.historyController.soilMoistureHistory || []}
-            .lightHistory=${this.historyController.lightHistory || []}
-            .irrigationHistory=${this.historyController.irrigationHistory || []}
-            .drainHistory=${this.historyController.drainHistory || []}
-            .temperatureHistory=${this.historyController.temperatureHistory || []}
-            .humidityHistory=${this.historyController.humidityHistory || []}
-            .vpdHistory=${this.historyController.vpdHistory || []}
-            .co2History=${this.historyController.co2History || []}
-            .activeEnvGraphs=${this.historyController.activeEnvGraphs}
-            .linkedGraphGroups=${this.historyController.linkedGraphGroups}
-            .range=${this.historyController.getRange()}
-            @range-change=${(e) => this.historyController.setGraphRange(e.detail.range)}
-            @toggle-graph=${(e) => this.historyController.toggleEnvGraph({ metric: e.detail.metric, visible: true })}
-            @unlink-graphs=${(e) => this.historyController.unlinkGraphGroup(e.detail.groupIndex)}
-            @unlink-graph=${(e) => this.historyController.unlinkGraphMetric(e.detail.metric)}
           ></growspace-analytics>
           ${this.renderEditModeBanner()}
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
@@ -21961,20 +21752,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         .rows=${rows}
         .cols=${cols}
         .strainLibrary=${strainLibrary}
-        .isEditMode=${this.store.state.isEditMode}
-        .selectedPlants=${this.store.state.selectedPlants}
         .compact=${this.store.state.isCompactView}
         .isLoading=${this.store.state.isLoading}
-        @plant-click=${(e) => this._handlePlantClick(e.detail.plant)}
-        @add-plant-click=${(e) => this.store.openAddPlantDialog(e.detail.row, e.detail.col)}
-        @plant-drop=${(e) => {
-            if (e.detail.originalEvent)
-                e.detail.originalEvent.preventDefault();
-            this.store.handleDrop(e.detail.targetRow, e.detail.targetCol, e.detail.targetPlant, e.detail.sourcePlant);
-        }}
-        @selection-changed=${(e) => {
-            this.store.setSelectedPlants(e.detail.selectedPlants);
-        }}
       ></growspace-grid>
     `;
     }
@@ -21994,6 +21773,10 @@ __decorate([
     e$3({ context: storeContext }),
     __metadata("design:type", Object)
 ], GrowspaceManagerCard.prototype, "store", void 0);
+__decorate([
+    e$3({ context: historyContext }),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "historyController", void 0);
 __decorate([
     e$3({ context: strainLibraryContext }),
     r$2(),

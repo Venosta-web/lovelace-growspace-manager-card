@@ -31,16 +31,12 @@ import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
 import './growspace-chip'; // Import the new component
 import { consume } from '@lit/context';
-import { hassContext, configContext, storeContext } from '../context';
+import { hassContext, configContext, storeContext, historyContext } from '../context';
 import { GrowspaceDevice, GrowspaceManagerCardConfig, IrrigationTime } from '../types';
 import { PlantUtils } from '../utils';
-import {
-  ToggleEnvGraphEvent,
-  LinkGraphsEvent,
-  UnlinkGraphsEvent,
-} from '../events';
 import { METRIC_CONFIG } from '../constants';
 import type { GrowspaceStore } from '../store/growspace-store';
+import type { GrowspaceHistoryController } from '../controllers/growspace-history-controller';
 
 @customElement('growspace-header')
 export class GrowspaceHeader extends LitElement {
@@ -50,6 +46,9 @@ export class GrowspaceHeader extends LitElement {
   @consume({ context: storeContext, subscribe: true })
   public store!: GrowspaceStore;
 
+  @consume({ context: historyContext, subscribe: true })
+  public historyController!: GrowspaceHistoryController;
+
   @consume({ context: configContext, subscribe: true })
   @property({ attribute: false })
   public config!: GrowspaceManagerCardConfig;
@@ -57,13 +56,12 @@ export class GrowspaceHeader extends LitElement {
   @property({ attribute: false }) public device!: GrowspaceDevice;
   @property({ type: Boolean }) public compact = false;
   @property({ type: Boolean }) public isEditMode = false;
-  @property({ attribute: false }) public activeEnvGraphs = new Set<string>();
+  // activeEnvGraphs and linkedGraphGroups removed as props, accessed via historyController in render or getters
   @property({ attribute: false }) public growspaceOptions: Record<string, string> = {};
   @property({ attribute: false }) public historyData: any[] | null = null;
 
   @state() private _menuOpen = false;
 
-  @property({ attribute: false }) public linkedGraphGroups: string[][] = [];
   @state() private _draggedMetric: string | null = null;
 
   // Cached Metric Data
@@ -88,6 +86,22 @@ export class GrowspaceHeader extends LitElement {
       return ent.attributes.observations[key];
     }
     return undefined;
+  }
+
+  // Helper getters for clarity in render/compute
+  get activeEnvGraphs() {
+    return this.historyController?.activeEnvGraphs || new Set();
+  }
+
+  private _isMetricLinked(metric: string): { linked: boolean; groupIndex: number } {
+    if (!this.historyController) return { linked: false, groupIndex: -1 };
+
+    for (let i = 0; i < this.historyController.linkedGraphGroups.length; i++) {
+      if (this.historyController.linkedGraphGroups[i].includes(metric)) {
+        return { linked: true, groupIndex: i };
+      }
+    }
+    return { linked: false, groupIndex: -1 };
   }
 
   private _computeMetrics(): {
@@ -381,13 +395,6 @@ export class GrowspaceHeader extends LitElement {
     }
   }
 
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    window.removeEventListener('resize', this._checkMobileBound);
-    if (this._resizeObserver) {
-      this._resizeObserver.disconnect();
-    }
-  }
 
   static styles = css`
     :host {
@@ -876,7 +883,8 @@ export class GrowspaceHeader extends LitElement {
   }
 
   private _toggleEnvGraph(metric: string) {
-    this.dispatchEvent(new ToggleEnvGraphEvent(metric));
+    if (!this.historyController) return;
+    this.historyController.toggleEnvGraph({ metric, visible: true });
   }
 
   private _handleChipDragStart(e: DragEvent, metric: string) {
@@ -894,7 +902,9 @@ export class GrowspaceHeader extends LitElement {
       return;
     }
 
-    this.dispatchEvent(new LinkGraphsEvent(this._draggedMetric, targetMetric));
+    if (this.historyController) {
+      this.historyController.linkGraphs(this._draggedMetric, targetMetric);
+    }
 
     this._draggedMetric = null;
   }
@@ -905,21 +915,10 @@ export class GrowspaceHeader extends LitElement {
     }
   }
 
-  private _isMetricLinked(metric: string): {
-    linked: boolean;
-    groupIndex: number;
-    group: string[];
-  } {
-    const index = this.linkedGraphGroups.findIndex((g) => g.includes(metric));
-    return {
-      linked: index !== -1,
-      groupIndex: index,
-      group: index !== -1 ? this.linkedGraphGroups[index] : [],
-    };
-  }
-
   private _unlinkGraphs(groupIndex: number) {
-    this.dispatchEvent(new UnlinkGraphsEvent(groupIndex));
+    if (this.historyController) {
+      this.historyController.unlinkGraphGroup(groupIndex);
+    }
   }
 
   @state() private _mobileLink = false;
@@ -931,6 +930,24 @@ export class GrowspaceHeader extends LitElement {
     super.connectedCallback();
     this._checkMobile();
     window.addEventListener('resize', this._checkMobileBound);
+    if (this.historyController) {
+      this.historyController.addListener(this._handleControllerUpdate);
+    }
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener('resize', this._checkMobileBound);
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
+    }
+    if (this.historyController) {
+      this.historyController.removeListener(this._handleControllerUpdate);
+    }
+  }
+
+  private _handleControllerUpdate = () => {
+    this.requestUpdate();
   }
 
   private _checkMobileBound = () => this._checkMobile();
@@ -949,8 +966,6 @@ export class GrowspaceHeader extends LitElement {
   }
 
   private get _chipDraggable(): string {
-    // If user is on mobile (narrow width) OR has touch, drag is ONLY allowed if explicitly in link mode.
-    // This ensures consistency: if you see mobile UI, you get mobile behavior.
     if (this._isMobileCheck || this._hasTouch) {
       return this._mobileLink.toString();
     }
@@ -984,6 +999,11 @@ export class GrowspaceHeader extends LitElement {
         break;
       case 'edit':
         this.store.setEditMode(!this.store.state.isEditMode);
+        break;
+      case 'control_dehumidifier':
+        if (this.store.state.selectedDevice) {
+          this.store.toggleDehumidifierControl(this.store.state.selectedDevice);
+        }
         break;
       case 'compact':
         this.store.setIsCompactView(!this.store.state.isCompactView);

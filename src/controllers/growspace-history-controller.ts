@@ -112,8 +112,23 @@ export class GrowspaceHistoryController implements ReactiveController {
   public linkedGraphGroups: string[][] = [];
   public graphRanges: Record<string, '1h' | '6h' | '24h' | '7d'> = {};
 
+  private _listeners: (() => void)[] = [];
+
   constructor(host: GrowspaceCardHost) {
     (this.host = host).addController(this);
+  }
+
+  public addListener(callback: () => void) {
+    this._listeners.push(callback);
+  }
+
+  public removeListener(callback: () => void) {
+    this._listeners = this._listeners.filter(l => l !== callback);
+  }
+
+  private _notifyUpdate() {
+    this.host.requestUpdate();
+    this._listeners.forEach(cb => cb());
   }
 
   hostConnected() {
@@ -157,7 +172,7 @@ export class GrowspaceHistoryController implements ReactiveController {
       ...this.graphRanges,
       [this.host.selectedDevice]: range,
     };
-    this.host.requestUpdate();
+    this._notifyUpdate();
 
     this._fetchHistory(range);
     this.refreshSecondaryHistories(range);
@@ -175,7 +190,7 @@ export class GrowspaceHistoryController implements ReactiveController {
       this._fetchMetricHistory(metric, range);
     }
     this.activeEnvGraphs = newSet;
-    this.host.requestUpdate();
+    this._notifyUpdate();
   }
 
   linkGraphs(metric1: string, metric2: string) {
@@ -205,7 +220,7 @@ export class GrowspaceHistoryController implements ReactiveController {
     newActive.add(metric2);
     this.activeEnvGraphs = newActive;
 
-    this.host.requestUpdate();
+    this._notifyUpdate();
   }
 
   unlinkGraphGroup(index: number) {
@@ -213,20 +228,20 @@ export class GrowspaceHistoryController implements ReactiveController {
       const newGroups = [...this.linkedGraphGroups];
       newGroups.splice(index, 1);
       this.linkedGraphGroups = newGroups;
-      this.host.requestUpdate();
+      this._notifyUpdate();
     }
   }
 
   clearAllLinks() {
     this.linkedGraphGroups = [];
-    this.host.requestUpdate();
+    this._notifyUpdate();
   }
 
   unlinkGraphMetric(metric: string) {
     this.linkedGraphGroups = this.linkedGraphGroups
       .map((group) => group.filter((m) => m !== metric))
       .filter((group) => group.length > 1);
-    this.host.requestUpdate();
+    this._notifyUpdate();
   }
 
   /**

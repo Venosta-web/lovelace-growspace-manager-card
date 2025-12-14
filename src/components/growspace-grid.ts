@@ -1,23 +1,29 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { consume } from '@lit/context';
 import { createRef, ref } from 'lit/directives/ref.js';
 import { mdiPlus } from '@mdi/js';
 import { repeat } from 'lit/directives/repeat.js';
-import { PlantEntity, StrainEntry, GrowspaceManagerCardConfig } from '../types';
+import { PlantEntity, StrainEntry } from '../types';
+import { storeContext } from '../context';
 import {
   AddPlantClickEvent,
   PlantClickEvent,
   PlantDropEvent,
   SelectionChangedEvent,
 } from '../events';
+import type { GrowspaceStore } from '../store/growspace-store';
 import './plant-card';
 
 @customElement('growspace-grid')
 export class GrowspaceGrid extends LitElement {
+  @consume({ context: storeContext })
+  private store!: GrowspaceStore;
+
   @property({ type: Array }) plants: (PlantEntity | null)[][] = [];
   @property({ type: Number }) rows: number = 3;
   @property({ type: Number }) cols: number = 3;
-  // strainLibrary is now consumed via context in child cards
+  @property({ type: Array }) strainLibrary: StrainEntry[] = [];
   @property({ type: Boolean }) isEditMode: boolean = false;
   @property({ type: Object }) selectedPlants: Set<string> = new Set();
   @property({ type: Boolean }) compact: boolean = false;
@@ -34,6 +40,8 @@ export class GrowspaceGrid extends LitElement {
     .grid {
       display: grid;
       gap: var(--spacing-md);
+      /* Position relative needed for coordinate calculation */
+      position: relative; 
     }
 
     .grid.compact {
@@ -304,85 +312,94 @@ export class GrowspaceGrid extends LitElement {
     if (e) e.preventDefault();
     if (!this._draggedPlant) return;
 
-    this.dispatchEvent(
-      new PlantDropEvent(e, targetRow, targetCol, targetPlant, this._draggedPlant)
-    );
-
+    // Direct store call
+    this.store.handleDrop(targetRow, targetCol, targetPlant, this._draggedPlant);
     this._draggedPlant = null;
   }
 
   private _handlePlantClick(plant: PlantEntity) {
-    this.dispatchEvent(new PlantClickEvent(plant));
+    // Direct store call
+    this.store.handlePlantClick(plant);
   }
 
   private _togglePlantSelection(plant: PlantEntity) {
     const plantId = plant.attributes.plant_id;
-    if (!plantId) return;
-
-    const newSet = new Set(this.selectedPlants);
-    if (newSet.has(plantId)) {
-      newSet.delete(plantId);
-    } else {
-      newSet.add(plantId);
+    if (plantId) {
+      this.store.togglePlantSelection(plantId);
     }
-
-    this.dispatchEvent(new SelectionChangedEvent(newSet));
   }
 
   private _handleMobileDrop(e: CustomEvent) {
     const { x, y, plant } = e.detail;
+    const gridEl = this._gridRef.value;
 
-    // Check all slots (cards and empty slots)
-    const slots = this.shadowRoot?.querySelectorAll('growspace-plant-card, .plant-card-empty');
-    if (!slots) return;
+    if (!gridEl) return;
 
-    let targetRow: number | null = null;
-    let targetCol: number | null = null;
-    let targetPlant: PlantEntity | null = null;
+    // O(1) Math-based logic
+    // We assume the grid structure corresponds to rows/cols
+    // This logic principally works well for desktop grids.
+    // However, mobile layouts often stack elements vertically (flex-direction: column).
+    // If it's stacked, math based on cell width/height might be tricky if we assume a matrix.
+    // BUT: The instruction requested O(1) math logic.
+    // To handle both grid and list view robustly with O(1) is complex without knowing exact layout method.
+    // If it is indeed a CSS Grid:
 
-    for (const slot of Array.from(slots)) {
-      const rect = slot.getBoundingClientRect();
-      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-        if (slot.tagName.toLowerCase() === 'growspace-plant-card') {
-          targetRow = (slot as any).row;
-          targetCol = (slot as any).col;
-          targetPlant = (slot as any).plant;
-        } else {
-          const rowStr = slot.getAttribute('data-row');
-          const colStr = slot.getAttribute('data-col');
-          if (rowStr && colStr) {
-            targetRow = parseInt(rowStr);
-            targetCol = parseInt(colStr);
-            targetPlant = null;
-          }
-        }
-        break;
-      }
+    const rect = gridEl.getBoundingClientRect();
+    const cellW = rect.width / this.cols;
+    const cellH = rect.height / this.rows;
+
+    // If list view (desktop or mobile), the logic changes implicitly because
+    // cols might be effectively 1.
+    // Let's rely on the grid layout properties.
+    // If elements are stacked vertically, cellW is full width, cellH is total height / (rows*cols).
+    // Let's refine based on media query check or compact prop? No, getComputedStyle is slow-ish but better than loop.
+    // Actually, "Smart" logic instructions were specific:
+
+    const isListView = this.cols > 5 || window.innerWidth <= 600; // Match render logic
+
+    let targetRow, targetCol;
+
+    if (isListView) {
+      // List view: items are stacked 1 column, N rows (effectively)
+      // Check if list view logic applies
+      const hitY = y - rect.top;
+      if (hitY < 0 || hitY > rect.height) return;
+
+      // In list view, each item height?
+      const itemCount = this.rows * this.cols;
+      const itemHeight = rect.height / itemCount;
+      const index = Math.floor(hitY / itemHeight);
+
+      // Convert linear index back to row/col
+      targetRow = Math.floor(index / this.cols) + 1;
+      targetCol = (index % this.cols) + 1;
+    } else {
+      // Grid View
+      const colIndex = Math.ceil((x - rect.left) / cellW);
+      const rowIndex = Math.ceil((y - rect.top) / cellH);
+      targetRow = rowIndex;
+      targetCol = colIndex;
     }
 
-    if (targetRow !== null && targetCol !== null) {
-      if (targetRow !== null && targetCol !== null) {
-        this.dispatchEvent(
-          new PlantDropEvent(
-            null as any, // drag event not available in mobile drop
-            targetRow,
-            targetCol,
-            targetPlant,
-            plant
-          )
-        );
-      }
+    if (
+      targetCol > 0 && targetCol <= this.cols &&
+      targetRow > 0 && targetRow <= this.rows
+    ) {
+      // Identify target plant from array
+      // plants is (PlantEntity | null)[][]
+      // 0-based index access
+      const targetPlant = this.plants[targetRow - 1][targetCol - 1]; // Can be null or PlantEntity
+
+      this.store.handleDrop(targetRow, targetCol, targetPlant, plant);
     }
   }
 
   render() {
-    const isListView = this.cols > 5;
+    const isListView = this.cols > 5; // Simplified check for inline style
     const gridStyle = isListView
       ? ''
       : `grid-template-columns: repeat(${this.cols}, minmax(0, 1fr)); grid-template-rows: repeat(${this.rows}, 1fr);`;
 
-    // Flatten grid for rendering
-    // Assuming plants input is (PlantEntity | null)[][]
     const flatGrid = this.plants.flat();
 
     return html`
@@ -390,6 +407,7 @@ export class GrowspaceGrid extends LitElement {
         class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
         style="${gridStyle}"
         @mobile-drop=${this._handleMobileDrop}
+        ${ref(this._gridRef)}
       >
         ${this.isLoading ? this.renderSkeletonGrid() : ''}
         ${!this.isLoading
@@ -398,7 +416,6 @@ export class GrowspaceGrid extends LitElement {
           (plant, index) =>
             plant ? plant.attributes?.plant_id || plant.entity_id : `empty-${index}`,
           (plant, index) => {
-            // Recalculate row/col based on grid index
             const row = Math.floor(index / this.cols) + 1;
             const col = (index % this.cols) + 1;
 
@@ -432,13 +449,14 @@ export class GrowspaceGrid extends LitElement {
   }
 
   private renderEmptySlot(row: number, col: number): TemplateResult {
+    // 0-based for API
     return html`
       <div
         class="plant-card-empty"
         data-row="${row}"
         data-col="${col}"
         style="grid-row: ${row}; grid-column: ${col}"
-        @click=${() => this.dispatchEvent(new AddPlantClickEvent(row - 1, col - 1))}
+        @click=${() => this.store.openAddPlantDialog(row - 1, col - 1)}
         @dragover=${this._handleDragOver}
         @drop=${(e: DragEvent) => this._handleDrop(e, row, col, null)}
       >
@@ -456,7 +474,6 @@ export class GrowspaceGrid extends LitElement {
   }
 
   private renderSkeletonGrid(): TemplateResult[] {
-    // Generate placeholder items matching row * col count
     const count = this.rows * this.cols;
     return Array(count)
       .fill(0)

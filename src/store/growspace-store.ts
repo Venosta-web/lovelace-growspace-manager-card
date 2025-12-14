@@ -931,6 +931,24 @@ export class GrowspaceStore implements ReactiveController {
         }
     }
 
+    async toggleDehumidifierControl(deviceId: string) {
+        const device = this.state.devices.find((d) => d.device_id === deviceId);
+        if (!device || !device.overview_entity_id || !this.hass) return;
+
+        const stateObj = this.hass.states[device.overview_entity_id];
+        const attrs = stateObj?.attributes || {};
+        const currentStatus = attrs.dehumidifier_control_enabled === true;
+
+        try {
+            await this.dataService.setDehumidifierControl(deviceId, !currentStatus);
+            console.log(`Toggled dehumidifier control to ${!currentStatus} for ${deviceId}`);
+            this.showToast(`Dehumidifier control ${!currentStatus ? 'enabled' : 'disabled'}`, 'success');
+        } catch (err: any) {
+            console.error('Failed to toggle dehumidifier control:', err);
+            this.showToast(`Failed to toggle dehumidifier: ${err.message}`, 'error');
+        }
+    }
+
     async performImport(file: File, replace: boolean) {
         if (!file) return;
 

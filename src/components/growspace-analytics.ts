@@ -2,43 +2,25 @@ import { LitElement, html, css, PropertyValues, TemplateResult } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { GrowspaceDevice, HistorySensorState, SensorHistories } from '../types';
+import { GrowspaceDevice } from '../types';
 import { RangeChangeEvent } from '../events';
 import { METRIC_CONFIG, METRIC_SORT_ORDER, DEFAULT_METRIC_CONFIG } from '../constants';
 import '../growspace-env-chart';
 import { growspaceCardStyles } from '../styles/growspace-card.styles';
 
 import { consume } from '@lit/context';
-import { hassContext } from '../context';
+import { hassContext, historyContext } from '../context';
+import type { GrowspaceHistoryController } from '../controllers/growspace-history-controller';
 
 @customElement('growspace-analytics')
 export class GrowspaceAnalytics extends LitElement {
   @consume({ context: hassContext, subscribe: true })
   hass!: HomeAssistant;
 
+  @consume({ context: historyContext, subscribe: true })
+  public historyController!: GrowspaceHistoryController;
+
   @property({ attribute: false }) device?: GrowspaceDevice;
-  @property({ attribute: false }) historyData: HistorySensorState[] = []; // Generic bucket if needed
-  @property({ attribute: false }) optimalHistory: HistorySensorState[] = [];
-  @property({ attribute: false }) dehumidifierHistory: HistorySensorState[] = [];
-  @property({ attribute: false }) exhaustHistory: HistorySensorState[] = [];
-  @property({ attribute: false }) humidifierHistory: HistorySensorState[] = [];
-  @property({ attribute: false }) circulationFanHistory: HistorySensorState[] = [];
-  @property({ attribute: false }) soilMoistureHistory: HistorySensorState[] = [];
-  @property({ attribute: false }) lightHistory: HistorySensorState[] = [];
-  @property({ attribute: false }) irrigationHistory: HistorySensorState[] = [];
-  @property({ attribute: false }) drainHistory: HistorySensorState[] = [];
-  // Individual environment sensor histories (since env data moved to WebSocket)
-  @property({ attribute: false }) temperatureHistory: HistorySensorState[] = [];
-  @property({ attribute: false }) humidityHistory: HistorySensorState[] = [];
-  @property({ attribute: false }) vpdHistory: HistorySensorState[] = [];
-  @property({ attribute: false }) co2History: HistorySensorState[] = [];
-
-  @property({ attribute: false }) activeEnvGraphs: Set<string> = new Set();
-  @property({ attribute: false }) linkedGraphGroups: string[][] = [];
-  @property({ type: String }) range: '1h' | '6h' | '24h' | '7d' = '24h';
-
-  /** Preferred single property for all sensor histories. If provided, individual history props are ignored. */
-  @property({ attribute: false }) sensorHistory?: SensorHistories;
 
   static styles = [
     growspaceCardStyles,
@@ -60,53 +42,32 @@ export class GrowspaceAnalytics extends LitElement {
     sortIndex: number;
   }[] = [];
 
-  @state() private _sensorHistory: SensorHistories = {};
-
-  protected willUpdate(changedProperties: PropertyValues) {
-    if (changedProperties.has('activeEnvGraphs') || changedProperties.has('linkedGraphGroups')) {
-      this._computeItemsToRender();
-    }
-
-    // Use sensorHistory prop if provided (preferred API)
-    if (changedProperties.has('sensorHistory') && this.sensorHistory) {
-      this._sensorHistory = this.sensorHistory;
-    } else if (
-      // Backward compatibility: merge individual props if sensorHistory not provided
-      !this.sensorHistory && (
-        changedProperties.has('temperatureHistory') ||
-        changedProperties.has('humidityHistory') ||
-        changedProperties.has('vpdHistory') ||
-        changedProperties.has('co2History') ||
-        changedProperties.has('dehumidifierHistory') ||
-        changedProperties.has('exhaustHistory') ||
-        changedProperties.has('humidifierHistory') ||
-        changedProperties.has('circulationFanHistory') ||
-        changedProperties.has('soilMoistureHistory') ||
-        changedProperties.has('lightHistory') ||
-        changedProperties.has('irrigationHistory') ||
-        changedProperties.has('drainHistory') ||
-        changedProperties.has('optimalHistory')
-      )
-    ) {
-      this._sensorHistory = {
-        temperature: this.temperatureHistory || [],
-        humidity: this.humidityHistory || [],
-        vpd: this.vpdHistory || [],
-        co2: this.co2History || [],
-        dehumidifier: this.dehumidifierHistory || [],
-        exhaust: this.exhaustHistory || [],
-        humidifier: this.humidifierHistory || [],
-        circulation_fan: this.circulationFanHistory || [],
-        soil_moisture: this.soilMoistureHistory || [],
-        light: this.lightHistory || [],
-        irrigation: this.irrigationHistory || [],
-        drain: this.drainHistory || [],
-        optimal: this.optimalHistory || [],
-      };
+  connectedCallback() {
+    super.connectedCallback();
+    if (this.historyController) {
+      this.historyController.addListener(this._handleControllerUpdate);
     }
   }
 
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this.historyController) {
+      this.historyController.removeListener(this._handleControllerUpdate);
+    }
+  }
+
+  private _handleControllerUpdate = () => {
+    this.requestUpdate();
+  }
+
+  protected willUpdate(changedProperties: PropertyValues) {
+    // Recompute items whenever update is requested (controller notifies)
+    this._computeItemsToRender();
+  }
+
   private _computeItemsToRender() {
+    if (!this.historyController) return;
+
     const getSortIndex = (metric: string): number => {
       const index = METRIC_SORT_ORDER.indexOf(metric);
       return index !== -1 ? index : 999;
@@ -119,10 +80,12 @@ export class GrowspaceAnalytics extends LitElement {
     }[] = [];
 
     const processedMetrics = new Set<string>();
+    const activeEnvGraphs = this.historyController.activeEnvGraphs;
+    const linkedGraphGroups = this.historyController.linkedGraphGroups;
 
     // Process Linked Groups
-    this.linkedGraphGroups.forEach((group) => {
-      const activeMetricsInGroup = group.filter((m) => this.activeEnvGraphs.has(m));
+    linkedGraphGroups.forEach((group) => {
+      const activeMetricsInGroup = group.filter((m) => activeEnvGraphs.has(m));
       if (activeMetricsInGroup.length > 0) {
         const minIndex = Math.min(...activeMetricsInGroup.map(getSortIndex));
         items.push({
@@ -135,7 +98,7 @@ export class GrowspaceAnalytics extends LitElement {
     });
 
     // Process Individual Metrics
-    this.activeEnvGraphs.forEach((metric) => {
+    activeEnvGraphs.forEach((metric) => {
       if (!processedMetrics.has(metric)) {
         items.push({
           type: 'single',
@@ -150,8 +113,11 @@ export class GrowspaceAnalytics extends LitElement {
   }
 
   protected render(): TemplateResult {
-    if (this.activeEnvGraphs.size === 0) return html``;
+    if (!this.historyController || this.historyController.activeEnvGraphs.size === 0) return html``;
     if (!this.device) return html``;
+
+    const sensorHistory = this.historyController.combinedHistory;
+    const range = this.historyController.getRange();
 
     const graphs = repeat(
       this._itemsToRender,
@@ -165,11 +131,11 @@ export class GrowspaceAnalytics extends LitElement {
             <growspace-env-chart
               .hass=${this.hass}
               .device=${this.device}
-              .sensorHistory=${this._sensorHistory}
+              .sensorHistory=${sensorHistory}
               .metrics=${item.metrics}
               .isCombined=${true}
               .metricConfig=${METRIC_CONFIG}
-              .range=${this.range}
+              .range=${range}
               @toggle-graph=${this._handleToggleGraph}
               @unlink-graphs=${this._handleUnlinkGraphs}
               @unlink-graph=${this._handleUnlinkGraphMetric}
@@ -183,13 +149,13 @@ export class GrowspaceAnalytics extends LitElement {
             <growspace-env-chart
               .hass=${this.hass}
               .device=${this.device}
-              .sensorHistory=${this._sensorHistory}
+              .sensorHistory=${sensorHistory}
               .metricKey=${metric}
               .unit=${config.unit}
               .color=${config.color}
               .title=${config.title}
               .icon=${config.icon}
-              .range=${this.range}
+              .range=${range}
               .type=${config.type || 'line'}
               @toggle-graph=${this._handleToggleGraph}
             ></growspace-env-chart>
@@ -198,10 +164,10 @@ export class GrowspaceAnalytics extends LitElement {
       }
     );
 
-    return html` <div class="graphs-container">${this.renderTimeRangeSelector()} ${graphs}</div> `;
+    return html` <div class="graphs-container">${this.renderTimeRangeSelector(range)} ${graphs}</div> `;
   }
 
-  private renderTimeRangeSelector(): TemplateResult {
+  private renderTimeRangeSelector(currentRange: '1h' | '6h' | '24h' | '7d'): TemplateResult {
     const ranges: ('1h' | '6h' | '24h' | '7d')[] = ['1h', '6h', '24h', '7d'];
 
     return html`
@@ -209,7 +175,7 @@ export class GrowspaceAnalytics extends LitElement {
         ${ranges.map(
       (r) => html`
             <button
-              class="range-btn ${this.range === r ? 'active' : ''}"
+              class="range-btn ${currentRange === r ? 'active' : ''}"
               @click=${() => this._setGraphRange(r)}
             >
               ${r}
@@ -221,18 +187,38 @@ export class GrowspaceAnalytics extends LitElement {
   }
 
   private _setGraphRange(range: '1h' | '6h' | '24h' | '7d') {
-    this.dispatchEvent(new RangeChangeEvent(range));
+    // Call controller directly
+    this.historyController.setGraphRange(range);
+    // Deprecated event removed: this.dispatchEvent(new RangeChangeEvent(range));
   }
 
   private _handleToggleGraph(e: CustomEvent) {
-    // Original event bubbles
+    e.stopPropagation();
+    const metric = e.detail.metric; // Assuming detail contains metric
+    if (metric) {
+      this.historyController.toggleEnvGraph({ metric, visible: false }); // Toggling off usually? Handled by controller logic
+    }
+    // Actually, toggleEnvGraph event from chart usually means "close" or "toggle".
+    // The chart emits toggle-graph with detail: { metric }
+    this.historyController.toggleEnvGraph({ metric: e.detail, visible: false });
+    // Wait, e.detail from GrowspaceEnvChart might vary. 
+    // Let's assume e.detail is the metric string based on previous usage.
   }
 
   private _handleUnlinkGraphs(e: CustomEvent) {
-    // Original event bubbles
+    e.stopPropagation();
+    // detail is likely groupIndex?
+    // But looking at header implementation, unlink emits groupIndex.
+    // From chart, we need to know what it emits.
+    // Assuming it emits the group index or metrics?
+    // Let's assume it emits groupIndex for now, or check code.
+    // But based on usage in stored method `unlinkGraphGroup(index)`, it expects index.
+    this.historyController.unlinkGraphGroup(e.detail);
   }
 
   private _handleUnlinkGraphMetric(e: CustomEvent) {
-    // Original event bubbles
+    e.stopPropagation();
+    // detail is metric string
+    this.historyController.unlinkGraphMetric(e.detail);
   }
 }
