@@ -220,6 +220,11 @@ export class GrowspaceHistoryController implements ReactiveController {
     newActive.add(metric2);
     this.activeEnvGraphs = newActive;
 
+    // Fetch data for the linked metrics immediately
+    const range = this.getRange();
+    this._fetchMetricHistory(metric1, range);
+    this._fetchMetricHistory(metric2, range);
+
     this._notifyUpdate();
   }
 

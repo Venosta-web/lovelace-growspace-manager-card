@@ -55,7 +55,19 @@ export class MetricsUtils {
         if (!device || !hass)
             return { mainChips: [], deviceChips: [], dominant: undefined, envAttrs: {} };
 
-        const dominant = PlantUtils.getDominantStage(device.plants);
+        const dominantRaw = PlantUtils.getDominantStage(device.plants);
+        let dominant;
+        if (dominantRaw) {
+            const stageName = dominantRaw.stage.charAt(0).toUpperCase() + dominantRaw.stage.slice(1);
+            const weeks = Math.floor((dominantRaw.days - 1) / 7) + 1;
+            const icon = PlantUtils.getPlantStageIcon(dominantRaw.stage);
+
+            dominant = {
+                icon,
+                daysLabel: `${dominantRaw.days} Day${dominantRaw.days !== 1 ? 's' : ''} ${stageName}`,
+                weeksLabel: `${weeks} Week${weeks !== 1 ? 's' : ''} ${stageName}`
+            };
+        }
 
         // Fetch Environmental Data
         let slug = device.name.toLowerCase().replace(/\s+/g, '_');

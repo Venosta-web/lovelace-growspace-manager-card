@@ -147,482 +147,333 @@ export class GrowspaceHeader extends LitElement {
   static styles = css`
     :host {
       display: block;
+      --glass-bg: rgba(255, 255, 255, 0.05);
+      --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+      --glass-blur: blur(12px);
     }
 
     .gs-stats-container {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 24px;
     }
 
+    /* --- Header Top Section --- */
     .gs-header-top {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
+      align-items: flex-start;
       gap: 16px;
-    }
-
-    .header-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-      flex: 1; /* Ensure it takes available space */
     }
 
     .gs-title-group {
       display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex-shrink: 0;
+      flex-direction: row;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
     }
 
-    .gs-title {
-      font-family: 'Roboto', sans-serif;
-      font-size: 2.25rem;
-      font-weight: 400;
-      margin: 0;
-      letter-spacing: 0;
-      line-height: 2.75rem;
-      text-transform: capitalize;
-      background: linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    /* ABSOLUTE OVERLAY TRICK for Auto-Width Select */
+    .select-wrapper {
+        position: relative;
+        display: inline-flex; /* Use inline-flex for tight wrapping */
+        align-items: center;
+        max-width: 100%;
+        vertical-align: middle;
     }
 
+    /* The visible text element that drives width */
+    .select-sizer {
+        font-family: 'Roboto', sans-serif;
+        font-size: 2.5rem;
+        font-weight: 300;
+        margin: 0;
+        line-height: 1.1;
+        text-transform: capitalize;
+        background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.9) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        white-space: pre;
+        pointer-events: none; /* Let clicks pass through to select */
+        visibility: visible; /* Ensure it is seen */
+    }
+
+    /* The functional select element, invisible but clickable */
     .growspace-select-header {
-      font-family: 'Roboto', sans-serif;
-      font-size: 2.25rem;
-      font-weight: 400;
-      margin: 0;
-      letter-spacing: 0;
-      line-height: 2.75rem;
-      text-transform: capitalize;
-      background: linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      border: none;
-      cursor: pointer;
-      padding: 0;
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0; /* Invisible */
+        cursor: pointer;
+        appearance: none;
+        font-size: 2.5rem; /* Match size for approximate sizing if fallback */
+        margin: 0;
+        padding: 0;
     }
 
     .growspace-select-header option {
-      background: var(--card-background-color, #1c1c1c);
-      color: var(--primary-text-color, #fff);
+        color: initial; /* Reset color for dropdown options */
+        background-color: initial;
     }
 
-    .gs-stage-chip {
+    .gs-stage-pill {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
+      padding: 4px 12px;
       background: rgba(255, 255, 255, 0.1);
-      padding: 6px 16px;
-      border-radius: 24px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: #fff;
-      width: fit-content;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(4px);
-    }
-
-    .gs-stats-chips {
-      display: flex;
-      flex-wrap: nowrap;
-      gap: 8px;
-      justify-content: flex-start;
-      align-items: center;
-      overflow-x: auto;
-      overflow-y: hidden;
-      flex: 1;
-      min-width: 0;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-      /* Remove static mask */
-      /* mask-image: linear-gradient(to right, black 85%, transparent 100%); */
-      /* -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%); */
-      padding: 4px 2px;
-      transition: mask-image 0.3s;
-
-      touch-action: manipulation;
-      max-width: 100%;
-      -webkit-overflow-scrolling: touch;
-    }
-    .gs-stats-chips::-webkit-scrollbar {
-      display: none;
-    }
-
-    .gs-stats-chips > :first-child {
-      margin-left: auto;
-    }
-
-    .stat-chip {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 8px 16px;
-      font-size: 0.875rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
       font-weight: 500;
       color: rgba(255, 255, 255, 0.9);
+      width: fit-content;
       backdrop-filter: blur(8px);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      position: relative;
-      user-select: none;
-      flex-shrink: 0;
-      white-space: nowrap;
-      touch-action: auto;
     }
 
-    /* Status Colors */
-    @keyframes pulse-red {
-      0% {
-        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
-      }
-      70% {
-        box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
-      }
-      100% {
-        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
-      }
-    }
-    .stat-chip.status-optimal {
-      color: #2e7d32 !important;
-      background: rgba(46, 125, 50, 0.1) !important;
-    }
-
-    .stat-chip.status-warning {
-      color: #ffa726 !important;
-      border-color: rgba(255, 167, 38, 0.5) !important;
-      background: rgba(255, 167, 38, 0.1) !important;
-    }
-
-    .stat-chip.status-danger {
-      color: #ef5350 !important;
-      border-color: rgba(239, 83, 80, 0.5) !important;
-      background: rgba(239, 83, 80, 0.1) !important;
-      animation: pulse-red 2s infinite;
-    }
-
-    .stat-chip:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.2);
-      transform: translateY(-1px);
-    }
-
-    .stat-chip.active {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.4);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      color: #fff;
-    }
-
-    .stat-chip svg {
-      width: 18px;
-      height: 18px;
-      fill: currentColor;
-      opacity: 0.8;
-      pointer-events: none; /* Ensure key events pass through to chip/container */
-    }
-
-    .gs-device-chips {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      touch-action: pan-x;
-      max-width: 100%;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .menu-container {
-      position: relative;
-      display: inline-block;
-    }
-
-    .menu-button {
+    .header-actions {
       display: flex;
       align-items: center;
-      justify-content: center;
+      gap: 12px;
+    }
+
+    /* --- Hero Grid (Vital Stats) --- */
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 16px;
+      width: 100%;
+      min-height: 50px;
+    }
+
+    .hero-card {
+      background: var(--glass-bg);
+      border: var(--glass-border);
+      backdrop-filter: var(--glass-blur);
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      cursor: grab;
+      transition: transform 0.2s, box-shadow 0.2s;
+      overflow: hidden;
+      min-height: 110px;
+    }
+
+    .hero-card:active {
+      cursor: grabbing;
+      transform: scale(0.98);
+    }
+    
+    .hero-card:hover {
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .hero-card.linked {
+        border-color: rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .hero-value-group {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .hero-value {
+      font-size: 2rem;
+      font-weight: 400; /* Thinner for modern look */
+      color: #fff;
+      line-height: 1;
+    }
+
+    .hero-unit {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 500;
+    }
+
+    .hero-icon-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: auto; /* Push to bottom */
+    }
+
+    .hero-icon {
+        width: 20px;
+        height: 20px;
+        fill: rgba(255, 255, 255, 0.7);
+    }
+
+    .hero-label {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 500;
+    }
+
+    /* Status Indicators for Hero Cards via bottom border/bar */
+    .hero-status-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: rgba(255,255,255,0.1);
+    }
+    .status-optimal .hero-status-bar { background: #4caf50;box-shadow: 0 -2px 8px rgba(76, 175, 80, 0.4); }
+    .status-warning .hero-status-bar { background: #ff9800;box-shadow: 0 -2px 8px rgba(255, 152, 0, 0.4); }
+    .status-danger .hero-status-bar { background: #f44336;box-shadow: 0 -2px 8px rgba(244, 67, 54, 0.4); }
+    
+    /* Active graph indication */
+    .hero-card.active {
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);
+    }
+
+    /* --- Secondary Strip (Scrollable) --- */
+    .secondary-strip-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px; /* For arrows */
+        background: var(--glass-bg);
+        border: var(--glass-border);
+        backdrop-filter: var(--glass-blur);
+        border-radius: 16px;
+        padding: 4px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .scroll-arrow {
+        min-width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255,255,255,0.7);
+        cursor: pointer;
+        border-radius: 50%;
+        transition: background 0.2s;
+    }
+    .scroll-arrow:hover {
+        background: rgba(255,255,255,0.1);
+        color: #fff;
+    }
+    .scroll-arrow.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+    .scroll-arrow svg { width: 20px; height: 20px; fill: currentColor; }
+
+    .secondary-strip {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex: 1;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE */
+        padding: 8px 4px;
+        scroll-behavior: smooth;
+    }
+    .secondary-strip::-webkit-scrollbar { display: none; }
+
+    .secondary-divider {
+        width: 1px;
+        height: 24px;
+        background: rgba(255,255,255,0.15);
+        flex-shrink: 0;
+        margin: 0 4px;
+    }
+
+    /* Secondary Chips styling tweaks if needed */
+    /* Reuse existing .stat-chip or use growspace-chip component */
+    
+    /* --- Mobile & Responsive --- */
+    @media (max-width: 600px) {
+        .gs-title { font-size: 2rem; }
+        .hero-grid {
+            grid-template-columns: 1fr 1fr; /* 2 cols on mobile */
+            gap: 12px;
+        }
+        .hero-value { font-size: 1.75rem; }
+        
+        .header-actions {
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+        .gs-header-top {
+            position: relative; /* For absolute actions */
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Wrap secondary strip when link mode active */
+        .secondary-strip.mobile-wrap {
+            flex-wrap: wrap;
+            height: auto;
+            overflow-x: visible;
+        }
+    }
+
+    /* Menu & Buttons (Reused/Refined) */
+    .icon-button {
       width: 40px;
       height: 40px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       color: #fff;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .icon-button:hover { background: rgba(255, 255, 255, 0.2); }
+    .icon-button svg { width: 22px; height: 22px; fill: currentColor; }
+    
+    .icon-button.mobile-link.active {
+        background: var(--primary-color, #2196f3);
+        border-color: var(--primary-color, #2196f3);
     }
 
-    .menu-button:hover {
-      background: rgba(255, 255, 255, 0.2);
-      border-color: rgba(255, 255, 255, 0.3);
-    }
-
-    .menu-button svg {
-      width: 24px;
-      height: 24px;
-      fill: currentColor;
-    }
-
+    .menu-container { position: relative; }
     .menu-dropdown {
       position: absolute;
-      top: calc(100% + 8px);
+      top: 100%;
       right: 0;
-      z-index: 1000;
-      min-width: 200px;
-      background: rgba(30, 30, 30, 0.95);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: 8px;
+      background: #2a2a2a;
+      border: 1px solid rgba(255,255,255,0.1);
       border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      overflow: hidden;
-    }
-
-    .menu-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      cursor: pointer;
-      transition: background 0.2s;
-      color: rgba(255, 255, 255, 0.9);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .menu-item:last-child {
-      border-bottom: none;
-    }
-
-    .menu-item:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .menu-item svg {
-      width: 20px;
-      height: 20px;
-      fill: currentColor;
-      flex-shrink: 0;
-    }
-
-    .menu-item-label {
-      flex: 1;
       font-size: 0.9rem;
+      min-width: 180px;
+      z-index: 1000;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
     }
-
-    .menu-toggle-switch {
-      width: 40px;
-      height: 20px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 10px;
-      position: relative;
-      transition: background 0.2s;
-    }
-
-    .menu-toggle-switch::after {
-      content: '';
-      position: absolute;
-      width: 16px;
-      height: 16px;
-      background: white;
-      border-radius: 50%;
-      top: 2px;
-      left: 2px;
-      transition: transform 0.2s;
-    }
-
-    .menu-toggle-switch.active {
-      background: var(--primary-color, #03a9f4);
-    }
-
-    .menu-toggle-switch.active::after {
-      transform: translateX(20px);
-    }
-
-    .link-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      margin-left: -8px;
-      margin-right: -8px;
-    }
-
-    @media (max-width: 768px) {
-      .gs-title-group {
-        gap: 8px;
-        min-width: 0; /* Enable flex shrinking */
-      }
-      .gs-stats-chips {
-        justify-content: flex-start;
-        mask-image: linear-gradient(to right, black 90%, transparent 100%);
-        -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
-        padding-right: 16px;
-        /* Force layout properties for scrolling */
-        display: flex;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        width: 100%;
-        touch-action: manipulation;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      .gs-header-top {
-        flex-direction: column;
-        align-items: stretch;
-        position: relative;
-        min-width: 0;
-      }
-      .header-controls-container {
-        max-width: 100%;
-      }
-      .header-controls {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-        overflow: visible;
-        min-width: 0;
-      }
-
-      .menu-container {
-        position: absolute;
-        top: 0;
-        right: 0;
-        z-index: 10;
-        margin: 0;
-      }
-
-      .gs-device-chips {
-        justify-content: flex-start;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        overflow-y: hidden;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-        mask-image: linear-gradient(to right, black 90%, transparent 100%);
-        -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
-        padding: 4px 2px;
-        padding-right: 16px;
-        width: 100%;
-        touch-action: manipulation; /* Allow X scrolling and Y page scrolling */
-        min-width: 0;
-        display: flex;
-      }
-      .gs-device-chips::-webkit-scrollbar {
-        display: none;
-      }
-      .link-icon {
-        width: 24px;
-        height: 24px;
-      }
-      /* Mobile Link Button */
-      .mobile-link-btn {
+    .menu-item {
+        padding: 12px 16px;
         display: flex;
         align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #fff;
+        gap: 12px;
         cursor: pointer;
-        transition: all 0.2s ease;
-        align-self: flex-end;
-        margin-bottom: 8px; /* Gap logic */
-        flex-shrink: 0;
-      }
-
-      .mobile-link-btn.active {
-        background: var(--primary-color, #03a9f4);
-        border-color: var(--primary-color, #03a9f4);
-        box-shadow: 0 0 12px rgba(3, 169, 244, 0.4);
-      }
-
-      .mobile-link-btn svg {
-        width: 24px;
-        height: 24px;
-        fill: currentColor;
-      }
-
-      /* Link Mode Active State - WRAPPING ENABLED, SCROLL DISABLED */
-      .gs-stats-chips.mobile-link-active,
-      .gs-device-chips.mobile-link-active {
-        overflow-x: visible;
-        flex-wrap: wrap;
-        mask-image: none;
-        -webkit-mask-image: none;
-        justify-content: space-between;
-      }
-      .gs-stats-chips.mobile-link-active .stat-chip,
-      .gs-device-chips.mobile-link-active .stat-chip {
-        width: 90%;
-      }
+        color: #ddd;
+        transition: background 0.2s;
     }
-
-    .scroll-nav {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      opacity: 0.5;
-      transition: opacity 0.2s;
-      min-width: 24px;
-      color: #fff;
-    }
-
-    .scroll-nav:hover {
-      opacity: 1;
-    }
-
-    .scroll-nav svg {
-      width: 24px;
-      height: 24px;
-      fill: currentColor;
-    }
-
-    @media (pointer: coarse) {
-      .scroll-nav {
-        display: none;
-      }
-    }
-
-    .gs-stats-chips.mask-right {
-      mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
-      -webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
-    }
-
-    .gs-stats-chips.mask-left {
-      mask-image: linear-gradient(to right, transparent 0%, black 40px, black 100%);
-      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 40px, black 100%);
-    }
-
-    .gs-stats-chips.mask-left.mask-right {
-      mask-image: linear-gradient(
-        to right,
-        transparent 0%,
-        black 40px,
-        black calc(100% - 40px),
-        transparent 100%
-      );
-      -webkit-mask-image: linear-gradient(
-        to right,
-        transparent 0%,
-        black 40px,
-        black calc(100% - 40px),
-        transparent 100%
-      );
-    }
+    .menu-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .menu-item svg { width: 20px; height: 20px; fill: currentColor; }
   `;
 
   private _handleDeviceChange(e: Event) {
@@ -722,7 +573,7 @@ export class GrowspaceHeader extends LitElement {
 
   private _triggerAction(action: string) {
     this._menuOpen = false;
-    // Direct store method calls instead of event dispatch
+    // Direct store method calls
     switch (action) {
       case 'add_plant':
         this.store.openAddPlantDialog();
@@ -731,30 +582,23 @@ export class GrowspaceHeader extends LitElement {
         this.store.setActiveDialog({
           type: 'CONFIG',
           payload: {
-            currentTab: 'environment',
+            currentTab: 'environment', // Default tab
             environmentData: {
               selectedGrowspaceId: this.store.state.selectedDevice || '',
-              temp_sensor: '',
-              humidity_sensor: '',
-              vpd_sensor: '',
-              co2_sensor: '',
-              circulation_fan: '',
-              stress_threshold: 0.8,
-              mold_threshold: 0.8,
-            },
-          },
+              // Pass minimal defaults; store handles merging usually, or fetching
+              temp_sensor: '', humidity_sensor: '', vpd_sensor: '', co2_sensor: '',
+              circulation_fan: '', stress_threshold: 0.8, mold_threshold: 0.8
+            }
+          }
         });
         break;
       case 'edit':
         this.store.setEditMode(!this.store.state.isEditMode);
         break;
-      case 'control_dehumidifier':
-        if (this.store.state.selectedDevice) {
-          this.store.toggleDehumidifierControl(this.store.state.selectedDevice);
-        }
-        break;
       case 'compact':
-        this.store.setIsCompactView(!this.store.state.isCompactView);
+        // Legacy mapping; now should set ViewMode
+        const currentMode = this.store.state.viewMode;
+        this.store.setViewMode(currentMode === 'compact' ? 'standard' : 'compact');
         break;
       case 'strains':
         this.store.fetchStrainLibrary();
@@ -768,12 +612,7 @@ export class GrowspaceHeader extends LitElement {
       case 'ai':
         this.store.setActiveDialog({
           type: 'GROW_MASTER',
-          payload: {
-            growspaceId: this.store.state.selectedDevice || '',
-            isLoading: false,
-            response: null,
-            mode: 'single',
-          },
+          payload: { growspaceId: this.store.state.selectedDevice || '', isLoading: false, response: null, mode: 'single' }
         });
         break;
       case 'logbook':
@@ -786,204 +625,201 @@ export class GrowspaceHeader extends LitElement {
     if (!this.device || !this.hass) return html``;
 
     const dominant = this._dominant;
-    const envAttrs = this._envAttrs;
+
+    // Split Chips
+    const heroKeys = ['temperature', 'humidity', 'vpd', 'co2'];
+    // Filter chips and force valid status/value if testing
+    const heroChips = this._mainChips.filter(c => heroKeys.includes(c.key));
+    const secondaryChips = this._mainChips.filter(c => !heroKeys.includes(c.key));
 
     return html`
       <div class="gs-stats-container">
+        
+        <!-- TOP HEADER: Title + Actions -->
         <div class="gs-header-top">
           <div class="gs-title-group">
             ${!this.config?.default_growspace
         ? html`
-                  <select
+            <div class="select-wrapper">
+                <!-- Hidden span to drive width based on selected value -->
+                <span class="select-sizer">${this.store.state.devices.find(d => d.device_id === this.device.device_id)?.name || this.device.name}</span>
+                <select
                     class="growspace-select-header"
                     .value=${this.device.device_id}
                     @change=${this._handleDeviceChange}
-                  >
-                    ${Object.entries(this.growspaceOptions).map(
-          ([id, name]) => html`<option value="${id}">${name}</option>`
+                >
+                    ${this.store.state.devices.map(
+          (d) => html`<option value=${d.device_id}>${d.name}</option>`
         )}
-                  </select>
-                `
-        : html` <h3 class="gs-title">${this.device.name}</h3> `}
+                </select>
+            </div>`
+        : html`<h1 class="gs-title">${this.device.name}</h1>`
+      }
+            
             ${dominant
         ? html`
-                  <div style="display: flex; gap: 8px;">
-                    <div class="gs-stage-chip">
-                      <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-                        <path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path>
-                      </svg>
-                      ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Day
-                      ${dominant.days}
+                    <div class="gs-stage-pill">
+                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
+                        ${dominant.daysLabel}
                     </div>
-                    <div class="gs-stage-chip">
-                      <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-                        <path d="${PlantUtils.getPlantStageIcon(dominant.stage)}"></path>
-                      </svg>
-                      ${dominant.stage.charAt(0).toUpperCase() + dominant.stage.slice(1)} • Week
-                      ${Math.ceil(dominant.days / 7)}
+                    <div class="gs-stage-pill">
+                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
+                        ${dominant.weeksLabel}
                     </div>
-                  </div>
-                `
+                  `
         : ''}
           </div>
 
-          <div
-            class="header-controls-container"
-            style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px;"
-          >
-            <div class="header-controls">
-              <div
-                class=${classMap({ 'mobile-link-btn': true, active: this._mobileLink })}
-                @click=${() => (this._mobileLink = !this._mobileLink)}
-              >
-                <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
-              </div>
-
-              <div
-                style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px; overflow: hidden;"
-              >
-                ${this._canScrollLeft && !this._mobileLink
-        ? html`
-                      <div class="scroll-nav left" @click=${() => this._scrollChips('left')}>
-                        <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
-                      </div>
-                    `
-        : ''}
-
-                <div
-                  class=${classMap({
-          'gs-stats-chips': true,
-          'mobile-link-active': this._mobileLink,
-          'mask-left': this._canScrollLeft,
-          'mask-right': this._canScrollRight,
-        })}
-                  ${ref(this._chipsContainerRef)}
+          <div class="header-actions">
+             ${(this._isMobileCheck || this._hasTouch) ? html`
+                <div 
+                    class="icon-button mobile-link ${this._mobileLink ? 'active' : ''}"
+                    @click=${() => this._mobileLink = !this._mobileLink} 
+                    title="Toggle Link Mode"
                 >
-                  ${this._mainChips.map(
-          (chip) => html`
-                      <growspace-chip
+                    <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
+                </div>
+             ` : ''}
+
+             <div class="menu-container">
+                <div class="icon-button" @click=${() => this._menuOpen = !this._menuOpen}>
+                    <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
+                </div>
+                ${this._renderMenu()}
+             </div>
+          </div>
+        </div>
+
+        <!-- HERO GRID (Vital Stats) -->
+        <div class="hero-grid">
+            ${heroChips.map(chip => this._renderHeroCard(chip))}
+        </div>
+
+        <!-- SECONDARY STRIP (Scrollable) -->
+        <div class="secondary-strip-container">
+            <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollChips('left')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+            </div>
+            
+            <div 
+                class="secondary-strip ${this._mobileLink ? 'mobile-wrap' : ''}"
+                ${ref(this._chipsContainerRef)}
+            >
+                <!-- Secondary Metrics -->
+                ${secondaryChips.map(chip => html`
+                    <growspace-chip
                         .icon=${chip.icon}
-                        .label=${chip.label || ''}
+                        .label=${chip.label}
                         .value=${chip.value}
-                        .status=${chip.status || ''}
+                        .status=${chip.status}
                         .active=${chip.active}
                         .linked=${chip.linked}
-                        .tooltip=${chip.tooltip || ''}
+                        .tooltip=${chip.tooltip}
                         draggable="${this._chipDraggable}"
                         @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
                         @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
-                        @dragover=${(e: DragEvent) => this._handleDragOver(e)}
-                        @click=${(e: Event) => {
-              if ((e.target as HTMLElement).closest('.link-icon')) return;
-              this._toggleEnvGraph(chip.key);
-            }}
-                        @unlink=${() =>
-              chip.groupIndex !== undefined && this._unlinkGraphs(chip.groupIndex)}
-                      ></growspace-chip>
-                    `
-        )}
-                </div>
+                        @dragover=${this._handleDragOver}
+                        @click=${() => this._toggleEnvGraph(chip.key)}
+                        @unlink=${(e: CustomEvent) => this._unlinkGraphs(chip.groupIndex)}
+                    ></growspace-chip>
+                `)}
 
-                ${this._canScrollRight && !this._mobileLink
-        ? html`
-                      <div class="scroll-nav right" @click=${() => this._scrollChips('right')}>
-                        <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
-                      </div>
-                    `
-        : ''}
-              </div>
+                ${this._deviceChips.length > 0 && secondaryChips.length > 0 ? html`<div class="secondary-divider"></div>` : ''}
 
-              <div class="menu-container">
-                <div class="menu-button" @click=${() => (this._menuOpen = !this._menuOpen)}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
-                </div>
-                ${this._menuOpen
-        ? html`
-                      <div class="menu-dropdown" @click=${(e: Event) => e.stopPropagation()}>
-                        <div class="menu-item" @click=${() => this._triggerAction('config')}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                          <span class="menu-item-label">Config</span>
-                        </div>
-                        <div class="menu-item" @click=${() => this._triggerAction('edit')}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-                          <span class="menu-item-label">Edit</span>
-                          <div
-                            class=${classMap({
-          'menu-toggle-switch': true,
-          active: this.isEditMode,
-        })}
-                          ></div>
-                        </div>
-                        <div class="menu-item" @click=${() => this._triggerAction('compact')}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-                          <span class="menu-item-label">Compact View</span>
-                          <div
-                            class=${classMap({ 'menu-toggle-switch': true, active: this.compact })}
-                          ></div>
-                        </div>
-                        <div
-                          class="menu-item"
-                          @click=${() => this._triggerAction('control_dehumidifier')}
-                        >
-                          <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
-                          <span class="menu-item-label">Control Dehumidifier</span>
-                          <div
-                            class=${classMap({
-          'menu-toggle-switch': true,
-          active: !!envAttrs.dehumidifier_control_enabled,
-        })}
-                          ></div>
-                        </div>
-                        <div class="menu-item" @click=${() => this._triggerAction('strains')}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-                          <span class="menu-item-label">Strains</span>
-                        </div>
-                        <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                          <span class="menu-item-label">Irrigation</span>
-                        </div>
-                        <div class="menu-item" @click=${() => this._triggerAction('ai')}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-                          <span class="menu-item-label">Ask AI</span>
-                        </div>
-                        <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
-                          <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
-                          <span class="menu-item-label">Logbook</span>
-                        </div>
-                      </div>
-                    `
-        : ''}
-              </div>
+                <!-- Device Chips -->
+                ${this._deviceChips.map(chip => html`
+                    <growspace-chip
+                        .icon=${chip.icon}
+                        .label=${chip.label}
+                        .value=${chip.value}
+                        .status=${chip.status}
+                        .active=${chip.active}
+                        .linked=${chip.linked}
+                        .tooltip=${chip.tooltip}
+                        draggable="${this._chipDraggable}"
+                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
+                        @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
+                        @dragover=${this._handleDragOver}
+                        @click=${() => this._toggleEnvGraph(chip.key)}
+                        @unlink=${(e: CustomEvent) => this._unlinkGraphs(chip.groupIndex)}
+                    ></growspace-chip>
+                `)}
             </div>
 
-            <div
-              class=${classMap({ 'gs-device-chips': true, 'mobile-link-active': this._mobileLink })}
-            >
-              ${this._deviceChips.map(
-          (chip) => html`
-                  <growspace-chip
-                    .icon=${chip.icon}
-                    .label=${chip.label || ''}
-                    .value=${chip.value}
-                    .status=${chip.status || ''}
-                    .active=${chip.active}
-                    .linked=${chip.linked}
-                    .tooltip=${chip.tooltip || ''}
-                    draggable="${this._chipDraggable}"
-                    @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
-                    @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
-                    @dragover=${(e: DragEvent) => this._handleDragOver(e)}
-                    @click=${(e: Event) => {
-              if ((e.target as HTMLElement).closest('.link-icon')) return;
-              this._toggleEnvGraph(chip.key);
-            }}
-                    @unlink=${() =>
-              chip.groupIndex !== undefined && this._unlinkGraphs(chip.groupIndex)}
-                  ></growspace-chip>
-                `
-        )}
+            <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollChips('right')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
             </div>
-          </div>
+        </div>
+
+      </div>
+    `;
+  }
+
+  private _renderHeroCard(chip: any) {
+    const match = String(chip.value || '').match(/^([\d.,]+)\s*(.*)$/);
+    const val = match ? match[1] : chip.value;
+    const unit = match ? match[2] : '';
+
+    return html`
+        <div 
+            class="hero-card ${chip.status ? `status-${chip.status}` : ''} ${chip.active ? 'active' : ''} ${chip.linked ? 'linked' : ''}"
+            draggable="${this._chipDraggable}"
+            @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
+            @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
+            @dragover=${this._handleDragOver}
+            @click=${() => this._toggleEnvGraph(chip.key)}
+            title="${chip.tooltip || ''}"
+        >
+            <div class="hero-value-group">
+                <span class="hero-value">${val}</span>
+                <span class="hero-unit">${unit}</span>
+            </div>
+            
+            <div class="hero-icon-label">
+                <svg class="hero-icon" viewBox="0 0 24 24"><path d="${chip.icon}"></path></svg>
+                <span class="hero-label">${chip.label || chip.name || chip.key}</span>
+            </div>
+
+            ${chip.status ? html`<div class="hero-status-bar"></div>` : ''}
+        </div>
+    `;
+  }
+
+  private _renderMenu() {
+    if (!this._menuOpen) return '';
+    return html`
+      <div class="menu-dropdown">
+        <div class="menu-item" @click=${() => this._triggerAction('add_plant')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+            <span>Add Plant</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('edit')}>
+             <div class="menu-toggle-switch ${this.store.state.isEditMode ? 'active' : ''}"></div>
+             <span>Edit Mode</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('compact')}>
+             <div class="menu-toggle-switch ${this.store.state.viewMode === 'compact' ? 'active' : ''}"></div>
+             <span>Compact View</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('strains')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+            <span>Strain Library</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
+            <span>Logbook</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+            <span>Irrigation Manager</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('ai')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+            <span>Ask GrowMaster</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('config')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+            <span>Settings</span>
         </div>
       </div>
     `;
