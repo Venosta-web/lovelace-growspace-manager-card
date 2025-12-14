@@ -11,8 +11,10 @@ var mdiCannabis = "M11.5,22V17.35C11,18.13 10,19.09 8.03,19.81C8.03,19.81 8.53,1
 var mdiCheck = "M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z";
 var mdiCheckboxBlankOutline = "M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z";
 var mdiCheckboxMarked = "M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z";
+var mdiChevronDown = "M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z";
 var mdiChevronLeft = "M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z";
 var mdiChevronRight = "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z";
+var mdiChevronUp = "M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z";
 var mdiClipboardTextClock = "M21 11.11V5C21 3.9 20.11 3 19 3H14.82C14.4 1.84 13.3 1 12 1S9.6 1.84 9.18 3H5C3.9 3 3 3.9 3 5V19C3 20.11 3.9 21 5 21H11.11C12.37 22.24 14.09 23 16 23C19.87 23 23 19.87 23 16C23 14.09 22.24 12.37 21 11.11M12 3C12.55 3 13 3.45 13 4S12.55 5 12 5 11 4.55 11 4 11.45 3 12 3M6 7H18V9H6V7M9.08 17H6V15H9.08C9.03 15.33 9 15.66 9 16S9.03 16.67 9.08 17M6 13V11H11.11C10.5 11.57 10.04 12.25 9.68 13H6M16 21C13.24 21 11 18.76 11 16S13.24 11 16 11 21 13.24 21 16 18.76 21 16 21M16.5 16.25L19.36 17.94L18.61 19.16L15 17V12H16.5V16.25Z";
 var mdiClose = "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z";
 var mdiCloudOutline = "M6.5 20Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20M6.5 18H18.5Q19.55 18 20.27 17.27 21 16.55 21 15.5 21 14.45 20.27 13.73 19.55 13 18.5 13H17V11Q17 8.93 15.54 7.46 14.08 6 12 6 9.93 6 8.46 7.46 7 8.93 7 11H6.5Q5.05 11 4.03 12.03 3 13.05 3 14.5 3 15.95 4.03 17 5.05 18 6.5 18M12 12Z";
@@ -25,6 +27,7 @@ var mdiDotsVertical = "M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,
 var mdiDownload = "M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z";
 var mdiFan = "M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z";
 var mdiFlower = "M3,13A9,9 0 0,0 12,22C12,17 7.97,13 3,13M12,5.5A2.5,2.5 0 0,1 14.5,8A2.5,2.5 0 0,1 12,10.5A2.5,2.5 0 0,1 9.5,8A2.5,2.5 0 0,1 12,5.5M5.6,10.25A2.5,2.5 0 0,0 8.1,12.75C8.63,12.75 9.12,12.58 9.5,12.31C9.5,12.37 9.5,12.43 9.5,12.5A2.5,2.5 0 0,0 12,15A2.5,2.5 0 0,0 14.5,12.5C14.5,12.43 14.5,12.37 14.5,12.31C14.88,12.58 15.37,12.75 15.9,12.75C17.28,12.75 18.4,11.63 18.4,10.25C18.4,9.25 17.81,8.4 16.97,8C17.81,7.6 18.4,6.74 18.4,5.75C18.4,4.37 17.28,3.25 15.9,3.25C15.37,3.25 14.88,3.41 14.5,3.69C14.5,3.63 14.5,3.56 14.5,3.5A2.5,2.5 0 0,0 12,1A2.5,2.5 0 0,0 9.5,3.5C9.5,3.56 9.5,3.63 9.5,3.69C9.12,3.41 8.63,3.25 8.1,3.25A2.5,2.5 0 0,0 5.6,5.75C5.6,6.74 6.19,7.6 7.03,8C6.19,8.4 5.6,9.25 5.6,10.25M12,22A9,9 0 0,0 21,13C16,13 12,17 12,22Z";
+var mdiFullscreenExit = "M14,14H19V16H16V19H14V14M5,14H10V19H8V16H5V14M8,5H10V10H5V8H8V5M19,8V10H14V5H16V8H19Z";
 var mdiHairDryer = "M22 9A4.32 4.32 0 0 1 19.78 8.45A3.4 3.4 0 0 0 18 8V7A4.32 4.32 0 0 1 20.22 7.55A3.4 3.4 0 0 0 22 8M22 6A3.4 3.4 0 0 1 20.22 5.55A4.32 4.32 0 0 0 18 5V6A3.4 3.4 0 0 1 19.78 6.45A4.32 4.32 0 0 0 22 7M22 10A3.4 3.4 0 0 1 20.22 9.55A4.32 4.32 0 0 0 18 9V10A3.4 3.4 0 0 1 19.78 10.45A4.32 4.32 0 0 0 22 11M10 12.73A70.39 70.39 0 0 0 17 11V4S10.5 2 7.5 2A5.5 5.5 0 0 0 6.12 12.82L7 19H8A3 3 0 0 0 9.46 21.33A3.15 3.15 0 0 1 11 24H12A4.12 4.12 0 0 0 10.09 20.55C9.39 20 9 19.63 9 19H10M7.5 10A2.5 2.5 0 1 1 10 7.5A2.5 2.5 0 0 1 7.5 10Z";
 var mdiImage = "M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z";
 var mdiLeaf = "M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z";
@@ -3055,6 +3058,7 @@ class GrowspaceStore {
             defaultApplied: false,
             isLoading: true,
             devices: [],
+            viewMode: 'standard',
         };
         this.wsDataCache = {};
         this._isFetchingWS = false;
@@ -3176,6 +3180,26 @@ class GrowspaceStore {
     // State Setters
     setIsCompactView(value) {
         this.state.isCompactView = value;
+        // Sync viewMode if toggled via old method
+        if (value) {
+            this.state.viewMode = 'grid_only';
+        }
+        else if (this.state.viewMode === 'grid_only') {
+            this.state.viewMode = 'standard';
+        }
+    }
+    setViewMode(mode) {
+        this.state.viewMode = mode;
+        // Sync legacy flag
+        this.state.isCompactView = mode === 'grid_only';
+    }
+    toggleHeaderExpansion() {
+        if (this.state.viewMode === 'header_only') {
+            this.setViewMode('standard');
+        }
+        else {
+            this.setViewMode('header_only');
+        }
     }
     setDefaultApplied(value) {
         this.state.defaultApplied = value;
@@ -3187,10 +3211,16 @@ class GrowspaceStore {
         }, 4000);
     }
     initializeSelectedDevice(config) {
-        // Update compact view from config if not already set (or always?)
-        if (config?.compact !== undefined) {
-            this.state.isCompactView = config.compact;
+        // Handle View Mode Initialization
+        if (config?.initial_view_mode) {
+            this.state.viewMode = config.initial_view_mode;
         }
+        else if (config?.compact) {
+            // Backward compatibility
+            this.state.viewMode = 'grid_only';
+        }
+        // Sync isCompactView for legacy support/internal use if needed
+        this.state.isCompactView = this.state.viewMode === 'grid_only';
         const devices = this.state.devices;
         if (!devices.length || this.state.selectedDevice)
             return;
@@ -21055,6 +21085,78 @@ const growspaceCardStyles = i$6 `
   }
 
 
+  /* View Modes */
+  .view-mode-container {
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Compact Mode (Grid Only) */
+  .compact-exit-fab {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 100;
+  }
+  .compact-exit-fab:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+    color: #fff;
+    border-color: var(--primary-color);
+  }
+
+  /* Header Only Mode */
+  .header-only .expand-handle {
+    width: 100%;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    margin-top: 0; 
+    transition: all 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: none;
+  }
+  .header-only .expand-handle:hover {
+    background: rgba(var(--rgb-primary-color), 0.1);
+    color: var(--primary-color);
+  }
+
+  /* Collapse Handle (Standard Mode -> Header Only) */
+  .collapse-handle {
+    width: 100%;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px; /* Rounded top and bottom for visual separation */
+    margin-top: 8px; /* Spacing from grid */
+    transition: all 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .collapse-handle:hover {
+    background: rgba(var(--rgb-primary-color), 0.1);
+    color: var(--primary-color);
+  }
 `;
 
 let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
@@ -21444,16 +21546,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="sr-only-announcer" aria-live="polite"></div>
         <div class="unified-growspace-card glass-surface glass-panel" tabindex="0" @keydown=${this._handleKeyboardNav}>
-          <growspace-header
-            .device=${selectedDeviceData}
-            .growspaceOptions=${growspaceOptions}
-            @growspace-changed=${(e) => this.store.handleDeviceChange(e.target.value)}
-          ></growspace-header>
-          <growspace-analytics
-            .device=${selectedDeviceData}
-          ></growspace-analytics>
-          ${this.renderEditModeBanner()}
-          ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
+          ${this.renderViewContent(selectedDeviceData, growspaceOptions, grid, effectiveRows)}
         </div>
       </ha-card>
 
@@ -21498,6 +21591,64 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         .compact=${this.store.state.isCompactView}
         .isLoading=${this.store.state.isLoading}
       ></growspace-grid>
+    `;
+    }
+    renderViewContent(selectedDeviceData, growspaceOptions, grid, effectiveRows) {
+        const viewMode = this.store.state.viewMode;
+        if (viewMode === 'grid_only') {
+            return x `
+        <div class="view-mode-container grid-only">
+          ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
+          <button
+            class="md3-button compact-exit-fab"
+            @click=${() => this.store.setViewMode('standard')}
+            title="Exit Compact Mode"
+          >
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiFullscreenExit}"></path>
+            </svg>
+          </button>
+        </div>
+      `;
+        }
+        if (viewMode === 'header_only') {
+            return x `
+        <div class="view-mode-container header-only">
+          <growspace-header
+            .device=${selectedDeviceData}
+            .growspaceOptions=${growspaceOptions}
+            @growspace-changed=${(e) => this.store.handleDeviceChange(e.target.value)}
+          ></growspace-header>
+          <div class="expand-handle" @click=${() => this.store.toggleHeaderExpansion()}>
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiChevronDown}"></path>
+            </svg>
+          </div>
+        </div>
+      `;
+        }
+        // Standard Mode
+        return x `
+      <growspace-header
+        .device=${selectedDeviceData}
+        .growspaceOptions=${growspaceOptions}
+        @growspace-changed=${(e) => this.store.handleDeviceChange(e.target.value)}
+      ></growspace-header>
+      <growspace-analytics
+        .device=${selectedDeviceData}
+      ></growspace-analytics>
+      ${this.renderEditModeBanner()}
+      ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
+      
+      ${this._config?.initial_view_mode === 'header_only'
+            ? x `
+            <div class="collapse-handle" @click=${() => this.store.toggleHeaderExpansion()}>
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiChevronUp}"></path>
+              </svg>
+            </div>
+          `
+            : ''}
     `;
     }
     renderDialogs() {
@@ -21591,6 +21742,18 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
         if (!this._config)
             return x ``;
         return x `
+      <div class="form-group">
+        <label>Initial View Mode</label>
+        <select
+          .value=${this._config.initial_view_mode || 'standard'}
+          @change=${(e) => this._valueChanged('initial_view_mode', e.target.value)}
+        >
+          <option value="standard">Standard</option>
+          <option value="grid_only">Compact (Grid Only)</option>
+          <option value="header_only">Header Only (Collapsed)</option>
+        </select>
+      </div>
+
       <div class="form-group">
         <label>Default Growspace</label>
         <select

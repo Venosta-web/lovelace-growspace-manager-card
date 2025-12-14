@@ -8,18 +8,14 @@ import {
 } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
-import { ref } from 'lit/directives/ref.js';
+
 import { hassContext, configContext, strainLibraryContext, storeContext, historyContext } from './context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiCheckboxMarked } from '@mdi/js';
-import { DateTime } from 'luxon';
-import { variables } from './styles/variables';
+import { mdiCheckboxMarked, mdiFullscreenExit, mdiChevronDown, mdiChevronUp } from '@mdi/js';
+
 
 import { GrowspaceManagerCardConfig, PlantEntity, GrowspaceDevice, StrainEntry } from './types';
-import { ActiveDialogState } from './ui-state';
 
-import { PlantUtils } from './utils/plant-utils';
-import { DataService } from './data-service';
 import {
   GrowspaceHistoryController,
   GrowspaceCardHost,
@@ -228,16 +224,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="sr-only-announcer" aria-live="polite"></div>
         <div class="unified-growspace-card glass-surface glass-panel" tabindex="0" @keydown=${this._handleKeyboardNav}>
-          <growspace-header
-            .device=${selectedDeviceData}
-            .growspaceOptions=${growspaceOptions}
-            @growspace-changed=${(e: any) => this.store.handleDeviceChange(e.target.value)}
-          ></growspace-header>
-          <growspace-analytics
-            .device=${selectedDeviceData}
-          ></growspace-analytics>
-          ${this.renderEditModeBanner()}
-          ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
+          ${this.renderViewContent(selectedDeviceData, growspaceOptions, grid, effectiveRows)}
         </div>
       </ha-card>
 
@@ -288,6 +275,73 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         .compact=${this.store.state.isCompactView}
         .isLoading=${this.store.state.isLoading}
       ></growspace-grid>
+    `;
+  }
+
+  private renderViewContent(
+    selectedDeviceData: GrowspaceDevice,
+    growspaceOptions: Record<string, string>,
+    grid: (PlantEntity | null)[][],
+    effectiveRows: number
+  ): TemplateResult {
+    const viewMode = this.store.state.viewMode;
+
+    if (viewMode === 'grid_only') {
+      return html`
+        <div class="view-mode-container grid-only">
+          ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
+          <button
+            class="md3-button compact-exit-fab"
+            @click=${() => this.store.setViewMode('standard')}
+            title="Exit Compact Mode"
+          >
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiFullscreenExit}"></path>
+            </svg>
+          </button>
+        </div>
+      `;
+    }
+
+    if (viewMode === 'header_only') {
+      return html`
+        <div class="view-mode-container header-only">
+          <growspace-header
+            .device=${selectedDeviceData}
+            .growspaceOptions=${growspaceOptions}
+            @growspace-changed=${(e: any) => this.store.handleDeviceChange(e.target.value)}
+          ></growspace-header>
+          <div class="expand-handle" @click=${() => this.store.toggleHeaderExpansion()}>
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiChevronDown}"></path>
+            </svg>
+          </div>
+        </div>
+      `;
+    }
+
+    // Standard Mode
+    return html`
+      <growspace-header
+        .device=${selectedDeviceData}
+        .growspaceOptions=${growspaceOptions}
+        @growspace-changed=${(e: any) => this.store.handleDeviceChange(e.target.value)}
+      ></growspace-header>
+      <growspace-analytics
+        .device=${selectedDeviceData}
+      ></growspace-analytics>
+      ${this.renderEditModeBanner()}
+      ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
+      
+      ${this._config?.initial_view_mode === 'header_only'
+        ? html`
+            <div class="collapse-handle" @click=${() => this.store.toggleHeaderExpansion()}>
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiChevronUp}"></path>
+              </svg>
+            </div>
+          `
+        : ''}
     `;
   }
 

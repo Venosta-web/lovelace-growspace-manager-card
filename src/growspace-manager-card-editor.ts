@@ -83,16 +83,29 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
 
     return html`
       <div class="form-group">
+        <label>Initial View Mode</label>
+        <select
+          .value=${this._config.initial_view_mode || 'standard'}
+          @change=${(e: Event) =>
+        this._valueChanged('initial_view_mode', (e.target as HTMLSelectElement).value)}
+        >
+          <option value="standard">Standard</option>
+          <option value="grid_only">Compact (Grid Only)</option>
+          <option value="header_only">Header Only (Collapsed)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
         <label>Default Growspace</label>
         <select
           .value=${this._config.default_growspace ?? ''}
           @change=${(e: Event) =>
-            this._valueChanged('default_growspace', (e.target as HTMLSelectElement).value)}
+        this._valueChanged('default_growspace', (e.target as HTMLSelectElement).value)}
         >
           <option value="">Select a growspace</option>
           ${this._growspaceOptions.length === 0
-            ? html`<option disabled>No growspaces found</option>`
-            : this._growspaceOptions.map((gs) => html`<option value="${gs}">${gs}</option>`)}
+        ? html`<option disabled>No growspaces found</option>`
+        : this._growspaceOptions.map((gs) => html`<option value="${gs}">${gs}</option>`)}
         </select>
       </div>
     `;

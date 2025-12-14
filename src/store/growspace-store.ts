@@ -1,7 +1,7 @@
 import { ReactiveController, ReactiveControllerHost } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { DateTime } from 'luxon';
-import { GrowspaceDevice, StrainEntry, PlantEntity, CropMeta } from '../types';
+import { GrowspaceDevice, StrainEntry, PlantEntity, CropMeta, GrowspaceViewMode } from '../types';
 import { ActiveDialogState } from '../ui-state';
 import { DataService } from '../data-service';
 import { PlantUtils } from '../utils/plant-utils';
@@ -21,6 +21,7 @@ export interface GrowspaceState {
     defaultApplied: boolean;
     isLoading: boolean;
     devices: GrowspaceDevice[];
+    viewMode: GrowspaceViewMode;
 }
 
 export class GrowspaceStore implements ReactiveController {
@@ -43,6 +44,7 @@ export class GrowspaceStore implements ReactiveController {
         defaultApplied: false,
         isLoading: true,
         devices: [],
+        viewMode: 'standard',
     };
 
     private wsDataCache: Record<string, any> = {};
@@ -170,6 +172,26 @@ export class GrowspaceStore implements ReactiveController {
     // State Setters
     setIsCompactView(value: boolean) {
         this.state.isCompactView = value;
+        // Sync viewMode if toggled via old method
+        if (value) {
+            this.state.viewMode = 'grid_only';
+        } else if (this.state.viewMode === 'grid_only') {
+            this.state.viewMode = 'standard';
+        }
+    }
+
+    setViewMode(mode: GrowspaceViewMode) {
+        this.state.viewMode = mode;
+        // Sync legacy flag
+        this.state.isCompactView = mode === 'grid_only';
+    }
+
+    toggleHeaderExpansion() {
+        if (this.state.viewMode === 'header_only') {
+            this.setViewMode('standard');
+        } else {
+            this.setViewMode('header_only');
+        }
     }
 
     setDefaultApplied(value: boolean) {
@@ -184,10 +206,16 @@ export class GrowspaceStore implements ReactiveController {
     }
 
     initializeSelectedDevice(config: any) {
-        // Update compact view from config if not already set (or always?)
-        if (config?.compact !== undefined) {
-            this.state.isCompactView = config.compact;
+        // Handle View Mode Initialization
+        if (config?.initial_view_mode) {
+            this.state.viewMode = config.initial_view_mode;
+        } else if (config?.compact) {
+            // Backward compatibility
+            this.state.viewMode = 'grid_only';
         }
+
+        // Sync isCompactView for legacy support/internal use if needed
+        this.state.isCompactView = this.state.viewMode === 'grid_only';
 
         const devices = this.state.devices;
         if (!devices.length || this.state.selectedDevice) return;

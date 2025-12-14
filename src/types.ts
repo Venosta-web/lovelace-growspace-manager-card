@@ -13,7 +13,12 @@ export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
     columns?: 'full' | 'auto';
     rows?: string;
   };
+  initial_view_mode?: GrowspaceViewMode;
+  /** @deprecated use initial_view_mode = 'grid_only' */
+  compact?: boolean;
 }
+
+export type GrowspaceViewMode = 'standard' | 'grid_only' | 'header_only';
 
 // -- Generic Entity Types --
 
