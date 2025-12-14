@@ -1,5 +1,5 @@
 import { mdiSprout, mdiFlower, mdiHairDryer, mdiCannabis } from '@mdi/js';
-import { PlantEntity, GrowspaceDevice, PlantStage, CropMeta } from './types';
+import { PlantEntity, GrowspaceDevice, PlantStage, CropMeta, GrowspaceType } from './types';
 
 export const PLANT_STAGES: PlantStage[] = [
   PlantStage.SEEDLING,
@@ -147,12 +147,14 @@ export class PlantUtils {
     return { row: 1, col: 1 };
   }
 
-  static calculateEffectiveRows(device: GrowspaceDevice): number {
-    const { name, plants, plants_per_row, rows } = device;
+  /** Growspace types that support dynamic row expansion */
+  private static readonly DYNAMIC_ROW_TYPES: GrowspaceType[] = ['dry', 'cure', 'mother', 'clone'];
 
-    // Check for special growspaces by name/ID logic or type if available
-    // Assuming name might match stage or ID.
-    if (name === 'dry' || name === 'cure' || name === 'mother' || name === 'clone') {
+  static calculateEffectiveRows(device: GrowspaceDevice): number {
+    const { type, plants, plants_per_row, rows } = device;
+
+    // Use strict type check instead of magic string comparison
+    if (this.DYNAMIC_ROW_TYPES.includes(type)) {
       if (plants.length === 0) return 1;
 
       const maxRowUsed = Math.max(...plants.map((p) => p.attributes?.row || 1));
@@ -213,6 +215,63 @@ export class PlantUtils {
     } catch {
       return undefined;
     }
+  }
+
+  /** Date fields used for plant lifecycle */
+  private static readonly DATE_FIELDS = [
+    'seedling_start',
+    'mother_start',
+    'clone_start',
+    'veg_start',
+    'flower_start',
+    'dry_start',
+    'cure_start',
+  ] as const;
+
+  /**
+   * Maps dialog-edited attributes to API-ready payload.
+   * Pure function - no side effects.
+   * @param editedAttributes - Attributes from the plant overview dialog
+   * @param isBulkEdit - Whether multiple plants are being edited
+   * @returns Object ready for API call
+   */
+  static mapDialogToApiPayload(
+    editedAttributes: Record<string, any>,
+    isBulkEdit: boolean
+  ): Record<string, any> {
+    const payload: Record<string, any> = {};
+
+    const fieldsToProcess = isBulkEdit
+      ? [...this.DATE_FIELDS]
+      : ['strain', 'phenotype', 'row', 'col', ...this.DATE_FIELDS];
+
+    fieldsToProcess.forEach((field) => {
+      if (editedAttributes[field] !== undefined) {
+        if (this.DATE_FIELDS.includes(field as typeof this.DATE_FIELDS[number])) {
+          const val = String(editedAttributes[field] || '');
+          if (!val || val === 'null' || val === 'undefined') {
+            payload[field] = null;
+          } else {
+            const formattedDate = this.formatDateForBackend(val);
+            if (formattedDate) {
+              payload[field] = formattedDate;
+            }
+          }
+        } else {
+          if (editedAttributes[field] !== null) {
+            payload[field] = editedAttributes[field];
+          }
+        }
+      }
+    });
+
+    // Remove position fields for bulk edits
+    if (isBulkEdit) {
+      delete payload.row;
+      delete payload.col;
+    }
+
+    return payload;
   }
 
   static getCurrentDateTime(): string {

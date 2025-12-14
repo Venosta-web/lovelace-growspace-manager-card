@@ -5,6 +5,7 @@ import { GrowspaceDevice, StrainEntry, PlantEntity, CropMeta } from '../types';
 import { ActiveDialogState } from '../ui-state';
 import { DataService } from '../data-service';
 import { PlantUtils } from '../utils';
+import { LibraryExportReadyEvent } from '../events';
 
 export interface GrowspaceState {
     selectedDevice: string | null;
@@ -398,48 +399,12 @@ export class GrowspaceStore implements ReactiveController {
             selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
         const isBulkEdit = targetIds.length > 1;
 
-        const payloadTemplate: any = {};
-        const dateFields = [
-            'seedling_start',
-            'mother_start',
-            'clone_start',
-            'veg_start',
-            'flower_start',
-            'dry_start',
-            'cure_start',
-        ];
-
-        const fieldsToProcess = isBulkEdit
-            ? dateFields
-            : ['strain', 'phenotype', 'row', 'col', ...dateFields];
-
-        fieldsToProcess.forEach((field) => {
-            if (editedAttributes[field] !== undefined) {
-                if (dateFields.includes(field)) {
-                    const val = String(editedAttributes[field] || '');
-                    if (!val || val === 'null' || val === 'undefined') {
-                        payloadTemplate[field] = null;
-                    } else {
-                        const formattedDate = PlantUtils.formatDateForBackend(val);
-                        if (formattedDate) {
-                            payloadTemplate[field] = formattedDate;
-                        }
-                    }
-                } else {
-                    if (editedAttributes[field] !== null) {
-                        payloadTemplate[field] = editedAttributes[field];
-                    }
-                }
-            }
-        });
+        // Use extracted pure function for payload generation
+        const payloadTemplate = PlantUtils.mapDialogToApiPayload(editedAttributes, isBulkEdit);
 
         try {
             const updatePromises = targetIds.map((id: string) => {
                 const payload = { ...payloadTemplate, plant_id: id };
-                if (isBulkEdit) {
-                    delete payload.row;
-                    delete payload.col;
-                }
                 return this.dataService.updatePlant(payload);
             });
 
@@ -949,7 +914,10 @@ export class GrowspaceStore implements ReactiveController {
 
         const unsubscribe = await this.hass.connection.subscribeEvents((event: any) => {
             if (event.data && event.data.url) {
-                this._downloadFile(event.data.url);
+                // Dispatch event to view layer for DOM-based download
+                (this.host as unknown as HTMLElement).dispatchEvent(
+                    new LibraryExportReadyEvent(event.data.url)
+                );
                 unsubscribe();
             }
         }, 'growspace_manager_strain_library_exported');
@@ -961,16 +929,6 @@ export class GrowspaceStore implements ReactiveController {
             console.error('Failed to call export service', err);
             unsubscribe();
         }
-    }
-
-    private _downloadFile(url: string) {
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = url.split('/').pop() || 'export.zip';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
     }
 
     async performImport(file: File, replace: boolean) {

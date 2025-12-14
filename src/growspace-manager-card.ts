@@ -9,7 +9,7 @@ import {
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 import { ref } from 'lit/directives/ref.js';
-import { hassContext, configContext, strainLibraryContext } from './context';
+import { hassContext, configContext, strainLibraryContext, storeContext } from './context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 import { mdiCheckboxMarked } from '@mdi/js';
 import { DateTime } from 'luxon';
@@ -46,6 +46,7 @@ import {
   FinishDryingEvent,
   TakeCloneEvent,
   MoveCloneEvent,
+  LibraryExportReadyEvent,
 } from './events';
 import './components/growspace-grid';
 import './components/growspace-analytics';
@@ -59,6 +60,7 @@ import { GrowspaceGridController } from './controllers/grid-controller';
 
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard, GrowspaceCardHost {
+  @provide({ context: storeContext })
   public store = new GrowspaceStore(this);
 
   // Controllers
@@ -99,6 +101,21 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     this.store.initializeSelectedDevice(this._config);
     this.store.fetchStrainLibrary();
   }
+
+  connectedCallback() {
+    super.connectedCallback();
+    // Listen for export ready events from store
+    this.addEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady as EventListener);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady as EventListener);
+  }
+
+  private _handleLibraryExportReady = (e: LibraryExportReadyEvent) => {
+    this._downloadFile(e.detail.url);
+  };
 
   protected willUpdate(changedProps: PropertyValues): void {
     if (changedProps.has('hass')) {
@@ -228,28 +245,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     this.store.removeStrain(strainKey);
   }
 
-  private async _handleExportLibrary() {
-    // 1. Subscribe to the completion event
-    const unsubscribe = await this.hass.connection.subscribeEvents((event: any) => {
-      // Check if the URL exists in the event data
-      if (event.data && event.data.url) {
-        // 2. Trigger the download in the browser
-        this._downloadFile(event.data.url);
 
-        // 3. Clean up the listener
-        unsubscribe();
-      }
-    }, 'growspace_manager_strain_library_exported');
-
-    // 4. Call the backend service to start the export
-    try {
-      await this.store.dataService.exportStrainLibrary();
-      // Optional: Show a "Exporting..." toast or spinner here
-    } catch (err) {
-      console.error('Failed to call export service', err);
-      unsubscribe(); // Cleanup if call fails
-    }
-  }
 
   private _downloadFile(url: string) {
     const a = document.createElement('a');

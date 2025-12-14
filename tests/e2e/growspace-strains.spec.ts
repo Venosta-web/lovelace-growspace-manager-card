@@ -78,7 +78,12 @@ test.describe('Growspace Strains View', () => {
         // 9. Wait for form to close and list to refresh
         await page.waitForTimeout(1000);
 
-        // 10. Verify it appears in the list by searching for the unique name
+        // 10. Use search to find the newly created strain (handles pagination)
+        const searchInput = page.locator('input[placeholder="Search Strains by Name, Breeder..."]');
+        await searchInput.fill(uniqueName);
+        await page.waitForTimeout(500);
+
+        // 11. Verify it appears in the filtered list
         const strainCard = page.locator('.strain-card').filter({ hasText: uniqueName });
         await expect(strainCard).toBeVisible({ timeout: 10000 });
     });
@@ -100,25 +105,30 @@ test.describe('Growspace Strains View', () => {
         await page.locator('.sd-form-group').filter({ hasText: 'Strain Name' }).locator('input').fill(uniqueName);
         await page.getByRole('button', { name: 'Save Strain' }).click();
 
-        // 4. Wait for form to close and strain to appear
+        // 4. Wait for form to close
         await page.waitForTimeout(1000);
 
-        // 5. Find the strain card
+        // 5. Use search to find the strain (handles pagination)
+        const searchInput = page.locator('input[placeholder="Search Strains by Name, Breeder..."]');
+        await searchInput.fill(uniqueName);
+        await page.waitForTimeout(500);
+
+        // 6. Find the strain card
         const strainCard = page.locator('.strain-card').filter({ hasText: uniqueName }).first();
         await expect(strainCard).toBeVisible({ timeout: 10000 });
 
-        // 6. Click the delete action button (visible on hover)
+        // 7. Click the delete action button (visible on hover)
         await strainCard.hover();
         const actionBtn = strainCard.locator('.sc-action-btn');
         await expect(actionBtn).toBeVisible();
         await actionBtn.click();
 
-        // 7. Confirm deletion in the confirmation overlay
+        // 8. Confirm deletion in the confirmation overlay
         const confirmDeleteBtn = page.locator('.crop-overlay button.md3-button.text').filter({ hasText: 'Delete' });
         await expect(confirmDeleteBtn).toBeVisible({ timeout: 5000 });
         await confirmDeleteBtn.click();
 
-        // 8. Verify removal
+        // 9. Verify removal from search results
         await expect(strainCard).toBeHidden({ timeout: 10000 });
     });
 
@@ -139,25 +149,30 @@ test.describe('Growspace Strains View', () => {
         await page.locator('.sd-form-group').filter({ hasText: 'Strain Name' }).locator('input').fill(uniqueName);
         await page.getByRole('button', { name: 'Save Strain' }).click();
 
-        // 4. Wait for form to close and strain to appear
+        // 4. Wait for form to close
         await page.waitForTimeout(1000);
 
-        // 5. Find and click the strain card to open edit mode
+        // 5. Use search to find the strain (handles pagination)
+        const searchInput = page.locator('input[placeholder="Search Strains by Name, Breeder..."]');
+        await searchInput.fill(uniqueName);
+        await page.waitForTimeout(500);
+
+        // 6. Find and click the strain card to open edit mode
         const strainCard = page.locator('.strain-card').filter({ hasText: uniqueName }).first();
         await expect(strainCard).toBeVisible({ timeout: 10000 });
         await strainCard.click();
 
-        // 6. Click Delete in the Editor Footer
+        // 7. Click Delete in the Editor Footer
         const deleteBtn = page.locator('.sd-footer button').filter({ hasText: 'Delete' });
         await expect(deleteBtn).toBeVisible();
         await deleteBtn.click();
 
-        // 7. Confirm deletion in the confirmation overlay
+        // 8. Confirm deletion in the confirmation overlay
         const confirmDeleteBtn = page.locator('.crop-overlay button.md3-button.text').filter({ hasText: 'Delete' });
         await expect(confirmDeleteBtn).toBeVisible({ timeout: 5000 });
         await confirmDeleteBtn.click();
 
-        // 8. Verify removal
+        // 9. Verify removal from search results
         await expect(strainCard).toBeHidden({ timeout: 10000 });
     });
 });

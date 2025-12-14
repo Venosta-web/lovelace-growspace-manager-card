@@ -37,6 +37,9 @@ export class GrowspaceAnalytics extends LitElement {
   @property({ attribute: false }) linkedGraphGroups: string[][] = [];
   @property({ type: String }) range: '1h' | '6h' | '24h' | '7d' = '24h';
 
+  /** Preferred single property for all sensor histories. If provided, individual history props are ignored. */
+  @property({ attribute: false }) sensorHistory?: SensorHistories;
+
   static styles = [
     growspaceCardStyles,
     css`
@@ -64,20 +67,26 @@ export class GrowspaceAnalytics extends LitElement {
       this._computeItemsToRender();
     }
 
-    if (
-      changedProperties.has('temperatureHistory') ||
-      changedProperties.has('humidityHistory') ||
-      changedProperties.has('vpdHistory') ||
-      changedProperties.has('co2History') ||
-      changedProperties.has('dehumidifierHistory') ||
-      changedProperties.has('exhaustHistory') ||
-      changedProperties.has('humidifierHistory') ||
-      changedProperties.has('circulationFanHistory') ||
-      changedProperties.has('soilMoistureHistory') ||
-      changedProperties.has('lightHistory') ||
-      changedProperties.has('irrigationHistory') ||
-      changedProperties.has('drainHistory') ||
-      changedProperties.has('optimalHistory')
+    // Use sensorHistory prop if provided (preferred API)
+    if (changedProperties.has('sensorHistory') && this.sensorHistory) {
+      this._sensorHistory = this.sensorHistory;
+    } else if (
+      // Backward compatibility: merge individual props if sensorHistory not provided
+      !this.sensorHistory && (
+        changedProperties.has('temperatureHistory') ||
+        changedProperties.has('humidityHistory') ||
+        changedProperties.has('vpdHistory') ||
+        changedProperties.has('co2History') ||
+        changedProperties.has('dehumidifierHistory') ||
+        changedProperties.has('exhaustHistory') ||
+        changedProperties.has('humidifierHistory') ||
+        changedProperties.has('circulationFanHistory') ||
+        changedProperties.has('soilMoistureHistory') ||
+        changedProperties.has('lightHistory') ||
+        changedProperties.has('irrigationHistory') ||
+        changedProperties.has('drainHistory') ||
+        changedProperties.has('optimalHistory')
+      )
     ) {
       this._sensorHistory = {
         temperature: this.temperatureHistory || [],
@@ -198,7 +207,7 @@ export class GrowspaceAnalytics extends LitElement {
     return html`
       <div class="time-range-selector">
         ${ranges.map(
-          (r) => html`
+      (r) => html`
             <button
               class="range-btn ${this.range === r ? 'active' : ''}"
               @click=${() => this._setGraphRange(r)}
@@ -206,7 +215,7 @@ export class GrowspaceAnalytics extends LitElement {
               ${r}
             </button>
           `
-        )}
+    )}
       </div>
     `;
   }

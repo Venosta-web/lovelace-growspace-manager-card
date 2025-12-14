@@ -89,6 +89,25 @@ export class GrowspaceHistoryController implements ReactiveController {
     return this.historyCache.drain || null;
   }
 
+  /** Returns all sensor histories as a combined object for analytics component */
+  public get combinedHistory(): import('../types').SensorHistories {
+    return {
+      temperature: this.historyCache.temperature || [],
+      humidity: this.historyCache.humidity || [],
+      vpd: this.historyCache.vpd || [],
+      co2: this.historyCache.co2 || [],
+      dehumidifier: this.historyCache.dehumidifier || [],
+      exhaust: this.historyCache.exhaust || [],
+      humidifier: this.historyCache.humidifier || [],
+      circulation_fan: this.historyCache.circulation_fan || [],
+      soil_moisture: this.historyCache.soil_moisture || [],
+      light: this.historyCache.light || [],
+      irrigation: this.historyCache.irrigation || [],
+      drain: this.historyCache.drain || [],
+      optimal: this.historyCache.optimal || [],
+    };
+  }
+
   public activeEnvGraphs: Set<string> = new Set();
   public linkedGraphGroups: string[][] = [];
   public graphRanges: Record<string, '1h' | '6h' | '24h' | '7d'> = {};

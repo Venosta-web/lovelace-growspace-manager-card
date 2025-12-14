@@ -189,10 +189,9 @@ class PlantUtils {
         return { row: 1, col: 1 };
     }
     static calculateEffectiveRows(device) {
-        const { name, plants, plants_per_row, rows } = device;
-        // Check for special growspaces by name/ID logic or type if available
-        // Assuming name might match stage or ID.
-        if (name === 'dry' || name === 'cure' || name === 'mother' || name === 'clone') {
+        const { type, plants, plants_per_row, rows } = device;
+        // Use strict type check instead of magic string comparison
+        if (this.DYNAMIC_ROW_TYPES.includes(type)) {
             if (plants.length === 0)
                 return 1;
             const maxRowUsed = Math.max(...plants.map((p) => p.attributes?.row || 1));
@@ -252,6 +251,46 @@ class PlantUtils {
         catch {
             return undefined;
         }
+    }
+    /**
+     * Maps dialog-edited attributes to API-ready payload.
+     * Pure function - no side effects.
+     * @param editedAttributes - Attributes from the plant overview dialog
+     * @param isBulkEdit - Whether multiple plants are being edited
+     * @returns Object ready for API call
+     */
+    static mapDialogToApiPayload(editedAttributes, isBulkEdit) {
+        const payload = {};
+        const fieldsToProcess = isBulkEdit
+            ? [...this.DATE_FIELDS]
+            : ['strain', 'phenotype', 'row', 'col', ...this.DATE_FIELDS];
+        fieldsToProcess.forEach((field) => {
+            if (editedAttributes[field] !== undefined) {
+                if (this.DATE_FIELDS.includes(field)) {
+                    const val = String(editedAttributes[field] || '');
+                    if (!val || val === 'null' || val === 'undefined') {
+                        payload[field] = null;
+                    }
+                    else {
+                        const formattedDate = this.formatDateForBackend(val);
+                        if (formattedDate) {
+                            payload[field] = formattedDate;
+                        }
+                    }
+                }
+                else {
+                    if (editedAttributes[field] !== null) {
+                        payload[field] = editedAttributes[field];
+                    }
+                }
+            }
+        });
+        // Remove position fields for bulk edits
+        if (isBulkEdit) {
+            delete payload.row;
+            delete payload.col;
+        }
+        return payload;
     }
     static getCurrentDateTime() {
         const now = new Date();
@@ -407,6 +446,18 @@ PlantUtils.stageIcons = {
     [PlantStage.DRY]: mdiHairDryer,
     [PlantStage.CURE]: mdiCannabis,
 };
+/** Growspace types that support dynamic row expansion */
+PlantUtils.DYNAMIC_ROW_TYPES = ['dry', 'cure', 'mother', 'clone'];
+/** Date fields used for plant lifecycle */
+PlantUtils.DATE_FIELDS = [
+    'seedling_start',
+    'mother_start',
+    'clone_start',
+    'veg_start',
+    'flower_start',
+    'dry_start',
+    'cure_start',
+];
 
 class GrowspaceAdapter {
     static transformGrowspace(overview, wsData = null) {
@@ -1446,6 +1497,7 @@ class s$3{get value(){return this.o}set value(s){this.setValue(s);}setValue(s,t=
 const hassContext = n$4('hass');
 const configContext = n$4('config');
 const strainLibraryContext = n$4('strain-library');
+const storeContext = n$4('store');
 
 const variables = i$6 `
   :host {
@@ -1598,6 +1650,24 @@ class GrowspaceHistoryController {
     }
     get drainHistory() {
         return this.historyCache.drain || null;
+    }
+    /** Returns all sensor histories as a combined object for analytics component */
+    get combinedHistory() {
+        return {
+            temperature: this.historyCache.temperature || [],
+            humidity: this.historyCache.humidity || [],
+            vpd: this.historyCache.vpd || [],
+            co2: this.historyCache.co2 || [],
+            dehumidifier: this.historyCache.dehumidifier || [],
+            exhaust: this.historyCache.exhaust || [],
+            humidifier: this.historyCache.humidifier || [],
+            circulation_fan: this.historyCache.circulation_fan || [],
+            soil_moisture: this.historyCache.soil_moisture || [],
+            light: this.historyCache.light || [],
+            irrigation: this.historyCache.irrigation || [],
+            drain: this.historyCache.drain || [],
+            optimal: this.historyCache.optimal || [],
+        };
     }
     constructor(host) {
         /**
@@ -2282,6 +2352,16 @@ class MoveCloneEvent extends CustomEvent {
     }
 }
 MoveCloneEvent.TYPE = 'move-clone';
+class LibraryExportReadyEvent extends CustomEvent {
+    constructor(url) {
+        super(LibraryExportReadyEvent.TYPE, {
+            detail: { url },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+LibraryExportReadyEvent.TYPE = 'library-export-ready';
 
 let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
     constructor() {
@@ -3449,47 +3529,11 @@ class GrowspaceStore {
         const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
         const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
         const isBulkEdit = targetIds.length > 1;
-        const payloadTemplate = {};
-        const dateFields = [
-            'seedling_start',
-            'mother_start',
-            'clone_start',
-            'veg_start',
-            'flower_start',
-            'dry_start',
-            'cure_start',
-        ];
-        const fieldsToProcess = isBulkEdit
-            ? dateFields
-            : ['strain', 'phenotype', 'row', 'col', ...dateFields];
-        fieldsToProcess.forEach((field) => {
-            if (editedAttributes[field] !== undefined) {
-                if (dateFields.includes(field)) {
-                    const val = String(editedAttributes[field] || '');
-                    if (!val || val === 'null' || val === 'undefined') {
-                        payloadTemplate[field] = null;
-                    }
-                    else {
-                        const formattedDate = PlantUtils.formatDateForBackend(val);
-                        if (formattedDate) {
-                            payloadTemplate[field] = formattedDate;
-                        }
-                    }
-                }
-                else {
-                    if (editedAttributes[field] !== null) {
-                        payloadTemplate[field] = editedAttributes[field];
-                    }
-                }
-            }
-        });
+        // Use extracted pure function for payload generation
+        const payloadTemplate = PlantUtils.mapDialogToApiPayload(editedAttributes, isBulkEdit);
         try {
             const updatePromises = targetIds.map((id) => {
                 const payload = { ...payloadTemplate, plant_id: id };
-                if (isBulkEdit) {
-                    delete payload.row;
-                    delete payload.col;
-                }
                 return this.dataService.updatePlant(payload);
             });
             await Promise.all(updatePromises);
@@ -3914,7 +3958,8 @@ class GrowspaceStore {
             return;
         const unsubscribe = await this.hass.connection.subscribeEvents((event) => {
             if (event.data && event.data.url) {
-                this._downloadFile(event.data.url);
+                // Dispatch event to view layer for DOM-based download
+                this.host.dispatchEvent(new LibraryExportReadyEvent(event.data.url));
                 unsubscribe();
             }
         }, 'growspace_manager_strain_library_exported');
@@ -3926,15 +3971,6 @@ class GrowspaceStore {
             console.error('Failed to call export service', err);
             unsubscribe();
         }
-    }
-    _downloadFile(url) {
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = url.split('/').pop() || 'export.zip';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
     }
     async performImport(file, replace) {
         if (!file)
@@ -18299,7 +18335,6 @@ GrowspaceChip = __decorate([
 let GrowspaceHeader = class GrowspaceHeader extends i$3 {
     constructor() {
         super(...arguments);
-        this.devices = [];
         this.compact = false;
         this.isEditMode = false;
         this.activeEnvGraphs = new Set();
@@ -18547,7 +18582,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
     }
     _handleDeviceChange(e) {
         const target = e.target;
-        this.dispatchEvent(new DeviceChangeEvent(target.value));
+        this.store.handleDeviceChange(target.value);
     }
     _toggleEnvGraph(metric) {
         this.dispatchEvent(new ToggleEnvGraphEvent(metric));
@@ -18608,8 +18643,60 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         return 'true';
     }
     _triggerAction(action) {
-        this.dispatchEvent(new TriggerActionEvent(action));
         this._menuOpen = false;
+        // Direct store method calls instead of event dispatch
+        switch (action) {
+            case 'add_plant':
+                this.store.openAddPlantDialog();
+                break;
+            case 'config':
+                this.store.setActiveDialog({
+                    type: 'CONFIG',
+                    payload: {
+                        currentTab: 'environment',
+                        environmentData: {
+                            selectedGrowspaceId: this.store.state.selectedDevice || '',
+                            temp_sensor: '',
+                            humidity_sensor: '',
+                            vpd_sensor: '',
+                            co2_sensor: '',
+                            circulation_fan: '',
+                            stress_threshold: 0.8,
+                            mold_threshold: 0.8,
+                        },
+                    },
+                });
+                break;
+            case 'edit':
+                this.store.setEditMode(!this.store.state.isEditMode);
+                break;
+            case 'compact':
+                this.store.setIsCompactView(!this.store.state.isCompactView);
+                break;
+            case 'strains':
+                this.store.fetchStrainLibrary();
+                this.store.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
+                break;
+            case 'irrigation':
+                if (this.store.state.selectedDevice) {
+                    this.store.setActiveDialog({ type: 'IRRIGATION', payload: true });
+                }
+                break;
+            case 'ai':
+                this.store.setActiveDialog({
+                    type: 'GROW_MASTER',
+                    payload: {
+                        growspaceId: this.store.state.selectedDevice || '',
+                        isLoading: false,
+                        response: null,
+                        mode: 'single',
+                    },
+                });
+                break;
+            case 'logbook':
+                this.store.openLogbookDialog();
+                break;
+        }
     }
     render() {
         if (!this.device || !this.hass)
@@ -19296,9 +19383,9 @@ __decorate([
     __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "hass", void 0);
 __decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "device", void 0);
+    c$2({ context: storeContext, subscribe: true }),
+    __metadata("design:type", Function)
+], GrowspaceHeader.prototype, "store", void 0);
 __decorate([
     c$2({ context: configContext, subscribe: true }),
     n$5({ attribute: false }),
@@ -19306,8 +19393,8 @@ __decorate([
 ], GrowspaceHeader.prototype, "config", void 0);
 __decorate([
     n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspaceHeader.prototype, "devices", void 0);
+    __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "device", void 0);
 __decorate([
     n$5({ type: Boolean }),
     __metadata("design:type", Object)
@@ -21183,7 +21270,13 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
         if (changedProperties.has('activeEnvGraphs') || changedProperties.has('linkedGraphGroups')) {
             this._computeItemsToRender();
         }
-        if (changedProperties.has('temperatureHistory') ||
+        // Use sensorHistory prop if provided (preferred API)
+        if (changedProperties.has('sensorHistory') && this.sensorHistory) {
+            this._sensorHistory = this.sensorHistory;
+        }
+        else if (
+        // Backward compatibility: merge individual props if sensorHistory not provided
+        !this.sensorHistory && (changedProperties.has('temperatureHistory') ||
             changedProperties.has('humidityHistory') ||
             changedProperties.has('vpdHistory') ||
             changedProperties.has('co2History') ||
@@ -21195,7 +21288,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
             changedProperties.has('lightHistory') ||
             changedProperties.has('irrigationHistory') ||
             changedProperties.has('drainHistory') ||
-            changedProperties.has('optimalHistory')) {
+            changedProperties.has('optimalHistory'))) {
             this._sensorHistory = {
                 temperature: this.temperatureHistory || [],
                 humidity: this.humidityHistory || [],
@@ -21412,6 +21505,10 @@ __decorate([
     __metadata("design:type", String)
 ], GrowspaceAnalytics.prototype, "range", void 0);
 __decorate([
+    n$5({ attribute: false }),
+    __metadata("design:type", Object)
+], GrowspaceAnalytics.prototype, "sensorHistory", void 0);
+__decorate([
     r$2(),
     __metadata("design:type", Array)
 ], GrowspaceAnalytics.prototype, "_itemsToRender", void 0);
@@ -21483,6 +21580,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         this.historyController = new GrowspaceHistoryController(this);
         this.gridController = new GrowspaceGridController(this, this.store);
         this._strainLibrary = [];
+        this._handleLibraryExportReady = (e) => {
+            this._downloadFile(e.detail.url);
+        };
     }
     /* Getter for convenience/compatibility if needed, or update call sites */
     get selectedDevice() {
@@ -21500,6 +21600,15 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         this.store.updateHass(this.hass);
         this.store.initializeSelectedDevice(this._config);
         this.store.fetchStrainLibrary();
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        // Listen for export ready events from store
+        this.addEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
     }
     willUpdate(changedProps) {
         if (changedProps.has('hass')) {
@@ -21610,27 +21719,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     }
     async _removeStrain(strainKey) {
         this.store.removeStrain(strainKey);
-    }
-    async _handleExportLibrary() {
-        // 1. Subscribe to the completion event
-        const unsubscribe = await this.hass.connection.subscribeEvents((event) => {
-            // Check if the URL exists in the event data
-            if (event.data && event.data.url) {
-                // 2. Trigger the download in the browser
-                this._downloadFile(event.data.url);
-                // 3. Clean up the listener
-                unsubscribe();
-            }
-        }, 'growspace_manager_strain_library_exported');
-        // 4. Call the backend service to start the export
-        try {
-            await this.store.dataService.exportStrainLibrary();
-            // Optional: Show a "Exporting..." toast or spinner here
-        }
-        catch (err) {
-            console.error('Failed to call export service', err);
-            unsubscribe(); // Cleanup if call fails
-        }
     }
     _downloadFile(url) {
         const a = document.createElement('a');
@@ -21902,6 +21990,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     }
 };
 GrowspaceManagerCard.styles = [variables, sharedStyles, growspaceCardStyles];
+__decorate([
+    e$3({ context: storeContext }),
+    __metadata("design:type", Object)
+], GrowspaceManagerCard.prototype, "store", void 0);
 __decorate([
     e$3({ context: strainLibraryContext }),
     r$2(),
