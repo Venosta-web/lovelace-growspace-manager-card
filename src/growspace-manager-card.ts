@@ -28,35 +28,17 @@ import './growspace-env-chart';
 import './components/manager/dialog-host';
 import './components/plant-card';
 import './components/growspace-header';
-import {
-  DeviceChangeEvent,
-  TriggerActionEvent,
-  ToggleEnvGraphEvent,
-  LinkGraphsEvent,
-  UnlinkGraphsEvent,
-  RangeChangeEvent,
-  UnlinkGraphMetricEvent,
-  PlantClickEvent,
-  AddPlantClickEvent,
-  PlantDropEvent,
-  SelectionChangedEvent,
-  UpdatePlantEvent,
-  DeletePlantEvent,
-  HarvestPlantEvent,
-  FinishDryingEvent,
-  TakeCloneEvent,
-  MoveCloneEvent,
-  LibraryExportReadyEvent,
-} from './events';
+import { LibraryExportReadyEvent } from './events';
 import './components/growspace-grid';
 import './components/growspace-analytics';
 import { sharedStyles } from './styles/shared.styles';
+import { uiStyles } from './styles/ui.styles';
 import { growspaceCardStyles } from './styles/growspace-card.styles';
 import { GrowspaceStore } from './store/growspace-store';
 
 import { GrowspaceGridController } from './controllers/grid-controller';
 
-// ...
+
 
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard, GrowspaceCardHost {
@@ -241,7 +223,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     const { effectiveRows, grid } = this.gridController.gridLayout;
 
     const isWide = selectedDeviceData.plants_per_row > 7;
-    const strainLibrary = this.store.state.strainLibrary || [];
 
     return html`
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
@@ -256,7 +237,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
             .device=${selectedDeviceData}
           ></growspace-analytics>
           ${this.renderEditModeBanner()}
-          ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row, strainLibrary)}
+          ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
         </div>
       </ha-card>
 
@@ -297,15 +278,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   private renderGrid(
     grid: (PlantEntity | null)[][],
     rows: number,
-    cols: number,
-    strainLibrary: StrainEntry[]
+    cols: number
   ): TemplateResult {
     return html`
       <growspace-grid
         .plants=${grid}
         .rows=${rows}
         .cols=${cols}
-        .strainLibrary=${strainLibrary}
         .compact=${this.store.state.isCompactView}
         .isLoading=${this.store.state.isLoading}
       ></growspace-grid>
@@ -313,13 +292,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   }
 
   private renderDialogs(): TemplateResult {
-    return html`
-      <growspace-dialog-host
-        .store=${this.store}
-        .hass=${this.hass}
-        .activeDialogState=${this.store.state.activeDialog}
-        .strainLibrary=${this.store.state.strainLibrary}
-      ></growspace-dialog-host>
-    `;
+    return html`<growspace-dialog-host></growspace-dialog-host>`;
   }
 }

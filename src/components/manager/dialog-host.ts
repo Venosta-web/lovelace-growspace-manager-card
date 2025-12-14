@@ -1,5 +1,7 @@
 import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { consume } from '@lit/context';
+import { hassContext, storeContext, strainLibraryContext } from '../../context';
 import { GrowspaceStore } from '../../store/growspace-store';
 import { ActiveDialogState } from '../../ui-state';
 import { GrowspaceDevice, PlantEntity, StrainEntry } from '../../types';
@@ -17,25 +19,14 @@ import { HomeAssistant } from 'custom-card-helpers';
 
 @customElement('growspace-dialog-host')
 export class DialogHost extends LitElement {
-    @property({ attribute: false })
+    @consume({ context: hassContext, subscribe: true })
     hass!: HomeAssistant;
 
-    @property({ attribute: false })
+    @consume({ context: storeContext, subscribe: true })
     store!: GrowspaceStore;
 
-    @property({ attribute: false })
-    activeDialogState!: ActiveDialogState;
-
-    @property({ attribute: false })
+    @consume({ context: strainLibraryContext, subscribe: true })
     strainLibrary: StrainEntry[] = [];
-
-    protected shouldUpdate(changedProps: PropertyValues): boolean {
-        // Update if state props changed
-        if (changedProps.has('activeDialogState') || changedProps.has('store')) {
-            return true;
-        }
-        return true; // Default behavior
-    }
 
     render() {
         if (!this.store) return html``;

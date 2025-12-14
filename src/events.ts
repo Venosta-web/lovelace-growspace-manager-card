@@ -1,81 +1,6 @@
 import { PlantEntity, PlantOverviewEditedAttributes } from './types';
 
-export class DeviceChangeEvent extends CustomEvent<{ deviceId: string }> {
-  static readonly TYPE = 'growspace-changed';
-  constructor(deviceId: string) {
-    super(DeviceChangeEvent.TYPE, {
-      detail: { deviceId },
-      bubbles: true,
-      composed: true,
-    });
-  }
-}
 
-export class ToggleEnvGraphEvent extends CustomEvent<{ metric: string }> {
-  static readonly TYPE = 'toggle-env-graph';
-  constructor(metric: string) {
-    super(ToggleEnvGraphEvent.TYPE, {
-      detail: { metric },
-      bubbles: true,
-      composed: true,
-    });
-  }
-}
-
-export class LinkGraphsEvent extends CustomEvent<{ metric1: string; metric2: string }> {
-  static readonly TYPE = 'link-graphs';
-  constructor(metric1: string, metric2: string) {
-    super(LinkGraphsEvent.TYPE, {
-      detail: { metric1, metric2 },
-      bubbles: true,
-      composed: true,
-    });
-  }
-}
-
-export class UnlinkGraphsEvent extends CustomEvent<{ groupIndex: number }> {
-  static readonly TYPE = 'unlink-graphs';
-  constructor(groupIndex: number) {
-    super(UnlinkGraphsEvent.TYPE, {
-      detail: { groupIndex },
-      bubbles: true,
-      composed: true,
-    });
-  }
-}
-
-export class TriggerActionEvent extends CustomEvent<{ action: string }> {
-  static readonly TYPE = 'trigger-action';
-  constructor(action: string) {
-    super(TriggerActionEvent.TYPE, {
-      detail: { action },
-      bubbles: true,
-      composed: true,
-    });
-  }
-}
-
-export class RangeChangeEvent extends CustomEvent<{ range: '1h' | '6h' | '24h' | '7d' }> {
-  static readonly TYPE = 'range-change';
-  constructor(range: '1h' | '6h' | '24h' | '7d') {
-    super(RangeChangeEvent.TYPE, {
-      detail: { range },
-      bubbles: true,
-      composed: true,
-    });
-  }
-}
-
-export class UnlinkGraphMetricEvent extends CustomEvent<{ metric: string }> {
-  static readonly TYPE = 'unlink-graph';
-  constructor(metric: string) {
-    super(UnlinkGraphMetricEvent.TYPE, {
-      detail: { metric },
-      bubbles: true,
-      composed: true,
-    });
-  }
-}
 
 export class PlantClickEvent extends CustomEvent<{ plant: PlantEntity }> {
   static readonly TYPE = 'plant-click';
@@ -212,13 +137,6 @@ export class LibraryExportReadyEvent extends CustomEvent<{ url: string }> {
 
 declare global {
   interface HTMLElementEventMap {
-    [DeviceChangeEvent.TYPE]: DeviceChangeEvent;
-    [ToggleEnvGraphEvent.TYPE]: ToggleEnvGraphEvent;
-    [LinkGraphsEvent.TYPE]: LinkGraphsEvent;
-    [UnlinkGraphsEvent.TYPE]: UnlinkGraphsEvent;
-    [TriggerActionEvent.TYPE]: TriggerActionEvent;
-    [RangeChangeEvent.TYPE]: RangeChangeEvent;
-    [UnlinkGraphMetricEvent.TYPE]: UnlinkGraphMetricEvent;
     [PlantClickEvent.TYPE]: PlantClickEvent;
     [AddPlantClickEvent.TYPE]: AddPlantClickEvent;
     [PlantDropEvent.TYPE]: PlantDropEvent;

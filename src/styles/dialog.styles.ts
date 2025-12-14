@@ -1,8 +1,10 @@
 import { css } from 'lit';
 import { sharedStyles } from './shared.styles';
+import { uiStyles } from './ui.styles';
 
 export const dialogStyles = [
   sharedStyles,
+  uiStyles,
   css`
   .glass-dialog-container {
     display: flex;

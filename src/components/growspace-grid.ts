@@ -23,7 +23,7 @@ export class GrowspaceGrid extends LitElement {
   @property({ type: Array }) plants: (PlantEntity | null)[][] = [];
   @property({ type: Number }) rows: number = 3;
   @property({ type: Number }) cols: number = 3;
-  @property({ type: Array }) strainLibrary: StrainEntry[] = [];
+
   @property({ type: Boolean }) isEditMode: boolean = false;
   @property({ type: Object }) selectedPlants: Set<string> = new Set();
   @property({ type: Boolean }) compact: boolean = false;

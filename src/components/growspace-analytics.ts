@@ -3,7 +3,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice } from '../types';
-import { RangeChangeEvent } from '../events';
+
 import { METRIC_CONFIG, METRIC_SORT_ORDER, DEFAULT_METRIC_CONFIG } from '../constants';
 import '../growspace-env-chart';
 import { growspaceCardStyles } from '../styles/growspace-card.styles';
