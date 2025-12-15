@@ -173,4 +173,105 @@ export class ChartUtils {
 
         return segments;
     }
+
+    /**
+     * Generates an SVG path string from pre-processed time/value points.
+     * Handles scaling, optional min/max overrides, and line/step types.
+     */
+    public static generatePathFromValues(
+        data: { time: number; value: number }[],
+        width: number,
+        height: number,
+        options: {
+            min?: number;
+            max?: number;
+            startTime?: number;
+            endTime?: number;
+            type?: 'line' | 'step';
+        } = {}
+    ): string {
+        if (!data || data.length < 2) return '';
+
+        const type = options.type || 'line';
+        const vals = data.map(d => d.value);
+        const times = data.map(d => d.time);
+
+        const minVal = options.min !== undefined ? options.min : Math.min(...vals);
+        const maxVal = options.max !== undefined ? options.max : Math.max(...vals);
+        // Ensure range is not zero
+        const valueRange = (maxVal - minVal) || 1;
+
+        const minTime = options.startTime !== undefined ? options.startTime : Math.min(...times);
+        const maxTime = options.endTime !== undefined ? options.endTime : Math.max(...times);
+        const timeRange = (maxTime - minTime) || 1;
+
+        const points: [number, number][] = data.map(d => {
+            const x = ((d.time - minTime) / timeRange) * width;
+            const y = height - ((d.value - minVal) / valueRange) * height;
+            return [x, y];
+        });
+
+        if (points.length === 0) return '';
+
+        // Generate Path
+        if (type === 'step') {
+            let pathStr = `M ${points[0][0]},${points[0][1]}`;
+            for (let i = 1; i < points.length; i++) {
+                // Step: Horizontal to next X, prev Y, then Vertical to next Y
+                pathStr += ` L ${points[i][0]},${points[i - 1][1]}`;
+                pathStr += ` L ${points[i][0]},${points[i][1]}`;
+            }
+            return pathStr;
+        } else {
+            // Line
+            return `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+        }
+    }
+
+    /**
+     * Generates an SVG path string for a step graph (binary/state) from history data.
+     * Use generatePathFromValues for pre-processed data.
+     */
+    public static generateStepPath(
+        historyData: any[],
+        width: number,
+        height: number
+    ): string {
+        // ... existing implementation wrapper or kept for compatibility ...
+        // For now, keeping previous logic but maybe we can reuse generatePathFromValues?
+        // Let's keep the previous implementation of generateStepPath as is for now to avoid breaking changes if used elsewhere,
+        // but ideally we refactor it to call generatePathFromValues.
+        // Since I just added it and its not used yet, I can replace it.
+
+        if (!historyData || historyData.length < 2) return '';
+
+        const sortedData = [...historyData]
+            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
+            .filter(h => {
+                if (h.state === 'on' || h.state === 'off') return true;
+                const val = parseFloat(h.state);
+                return !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
+            });
+
+        if (sortedData.length < 2) return '';
+
+        // Downsample
+        let processedData = sortedData;
+        const targetPoints = 192;
+        if (processedData.length > targetPoints) {
+            const step = Math.ceil(processedData.length / targetPoints);
+            processedData = processedData.filter((_, i) => i % step === 0 || i === sortedData.length - 1);
+        }
+
+        const values = processedData.map(h => {
+            const t = new Date(h.last_changed).getTime();
+            let v = 0;
+            if (h.state === 'on') v = 1;
+            else if (h.state === 'off') v = 0;
+            else v = parseFloat(h.state);
+            return { time: t, value: v };
+        });
+
+        return this.generatePathFromValues(values, width, height, { type: 'step' });
+    }
 }

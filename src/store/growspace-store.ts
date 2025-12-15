@@ -1,7 +1,7 @@
 import { ReactiveController, ReactiveControllerHost } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { DateTime } from 'luxon';
-import { GrowspaceDevice, StrainEntry, PlantEntity, CropMeta, GrowspaceViewMode } from '../types';
+import { GrowspaceDevice, StrainEntry, PlantEntity, CropMeta, GrowspaceViewMode, PlantOverviewDialogState } from '../types';
 import { ActiveDialogState } from '../ui-state';
 import { DataService } from '../data-service';
 import { PlantUtils } from '../utils/plant-utils';
@@ -47,7 +47,7 @@ export class GrowspaceStore implements ReactiveController {
         viewMode: 'standard',
     };
 
-    private wsDataCache: Record<string, any> = {};
+    private wsDataCache: Record<string, any> = {}; // TODO: Type this strictly with WebSocket response type
     private _unsubEvents: (() => void) | undefined;
     private _isFetchingWS = false;
 
@@ -419,7 +419,7 @@ export class GrowspaceStore implements ReactiveController {
         };
     }
 
-    async updatePlantFromDialog(dialogState: any) {
+    async updatePlantFromDialog(dialogState: Pick<PlantOverviewDialogState, 'plant' | 'editedAttributes' | 'selectedPlantIds'>) {
         const { plant, editedAttributes, selectedPlantIds } = dialogState;
         const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
 
@@ -694,7 +694,7 @@ export class GrowspaceStore implements ReactiveController {
         }
     }
 
-    async handleAddGrowspace(detail: any) {
+    async handleAddGrowspace(detail: { name: string; rows?: number; plants_per_row?: number; notification_service?: string }) {
         const { name, rows, plants_per_row, notification_service } = detail;
         if (!name) {
             this.showToast('Name is required', 'error');
@@ -716,7 +716,7 @@ export class GrowspaceStore implements ReactiveController {
         }
     }
 
-    async handleUpdateGrowspace(detail: any) {
+    async handleUpdateGrowspace(detail: { growspace_id: string; name: string; rows: number; plants_per_row: number }) {
         console.log('[GrowspaceStore] handleUpdateGrowspace', detail);
         try {
             await this.dataService.updateGrowspace({
@@ -788,7 +788,7 @@ export class GrowspaceStore implements ReactiveController {
         await this.handleTakeClone(plant, numClones);
     }
 
-    async confirmAddPlant(detail: any) {
+    async confirmAddPlant(detail: { row: number; col: number; strain: string; phenotype?: string;[key: string]: any }) {
         const devices = this.state.devices;
         const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
         if (!selectedDeviceData) return;

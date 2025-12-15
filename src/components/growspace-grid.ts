@@ -8,6 +8,7 @@ import { PlantEntity, StrainEntry } from '../types';
 import { storeContext } from '../context';
 import type { GrowspaceStore } from '../store/growspace-store';
 import { variables } from '../styles/variables';
+import { sharedStyles } from '../styles/shared.styles';
 import './plant-card';
 
 @customElement('growspace-grid')
@@ -29,6 +30,7 @@ export class GrowspaceGrid extends LitElement {
 
   static styles = [
     variables,
+    sharedStyles,
     css`
     :host {
       display: block;
@@ -53,20 +55,23 @@ export class GrowspaceGrid extends LitElement {
       justify-content: center;
       height: 100%;
       aspect-ratio: 1;
-      border: 2px dashed rgba(255, 255, 255, 0.2);
-      border-radius: 16px;
+      height: 100%;
+      aspect-ratio: 1;
+      border: var(--glass-border);
+      border-radius: var(--border-radius-lg, 16px);
       color: var(--secondary-text-color);
       cursor: pointer;
       transition: all 0.2s ease;
-      background: rgba(255, 255, 255, 0.02);
+      transition: all 0.2s ease;
+      background: var(--glass-bg);
     }
 
     /* Skeleton Loading */
     .skeleton-card {
       height: 100%;
       aspect-ratio: 1;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.05);
+      border-radius: var(--border-radius-lg, 16px);
+      background: var(--glass-bg);
       animation: pulse 1.5s infinite;
     }
 
@@ -85,7 +90,8 @@ export class GrowspaceGrid extends LitElement {
     .plant-card-empty:hover {
       border-color: var(--primary-color);
       color: var(--primary-color);
-      background: rgba(255, 255, 255, 0.05);
+      color: var(--primary-color);
+      background: rgba(255, 255, 255, 0.08);
       transform: translateY(-2px);
     }
 

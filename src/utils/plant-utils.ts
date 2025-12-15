@@ -37,7 +37,8 @@ export class PlantUtils {
         [PlantStage.CURE]: mdiCannabis,
     };
 
-    private static normalizeStage(state: PlantStage | string): PlantStage {
+    private static normalizeStage(state: PlantStage | string | undefined | null): PlantStage {
+        if (!state) return PlantStage.SEEDLING; // Default fallback
         const lower = state.toLowerCase();
         if (lower === 'veg' || lower === 'vegetative') return PlantStage.VEG;
         if (lower === 'mom') return PlantStage.MOTHER;
@@ -45,12 +46,12 @@ export class PlantUtils {
         return lower as PlantStage;
     }
 
-    static getPlantStageColor(state: PlantStage | string): string {
+    static getPlantStageColor(state: PlantStage | string | undefined | null): string {
         const key = this.normalizeStage(state);
         return this.stageColors[key] ?? '#757575';
     }
 
-    static getPlantStageIcon(state: PlantStage | string): string {
+    static getPlantStageIcon(state: PlantStage | string | undefined | null): string {
         const key = this.normalizeStage(state);
         return this.stageIcons[key] ?? mdiSprout;
     }
@@ -376,10 +377,8 @@ export class PlantUtils {
     ): Promise<string> {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.readAsDataURL(file);
             reader.onload = (event) => {
                 const img = new Image();
-                img.src = event.target?.result as string;
                 img.onload = () => {
                     let width = img.width;
                     let height = img.height;
@@ -412,8 +411,10 @@ export class PlantUtils {
                     resolve(dataUrl);
                 };
                 img.onerror = (err) => reject(err);
+                img.src = event.target?.result as string;
             };
             reader.onerror = (err) => reject(err);
+            reader.readAsDataURL(file);
         });
     }
 

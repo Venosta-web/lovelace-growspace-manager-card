@@ -13,6 +13,7 @@ import {
   HistorySensorState,
   SensorHistories,
 } from './types';
+import { ChartUtils } from './utils/chart-utils';
 import { GraphDataTransformer } from './graph-data-transformer';
 import { SENSOR_CHART_DEFAULTS, METRIC_CONFIG } from './constants';
 
@@ -296,35 +297,21 @@ export class GrowspaceEnvChart extends LitElement {
         }
 
         const paddedRange = max - min || 1;
-        let pathStr = '';
 
-        if ((config as any).type === 'step') {
-          // Step Path
-          const stepPoints: [number, number][] = [];
-          if (dataPoints.length > 0) {
-            const startX = ((dataPoints[0].time - startTime.getTime()) / durationMillis) * width;
-            const startY = height - ((dataPoints[0].value - min) / paddedRange) * height;
-            stepPoints.push([startX, startY]);
-
-            for (let i = 1; i < dataPoints.length; i++) {
-              const p = dataPoints[i];
-              const x = ((p.time - startTime.getTime()) / durationMillis) * width;
-              const y = height - ((p.value - min) / paddedRange) * height;
-              // Step: H then V
-              stepPoints.push([x, stepPoints[stepPoints.length - 1][1]]);
-              stepPoints.push([x, y]);
-            }
+        const pathStr = ChartUtils.generatePathFromValues(
+          dataPoints,
+          width,
+          height,
+          {
+            min,
+            max, // Use padded max/min for single graphs path generation to respect padding? 
+            // Wait, 'min' and 'max' variables here are already adjusted for padding/ranges above (lines 281-296).
+            // So we pass them as the forced scale.
+            startTime: startTime.getTime(),
+            endTime: startTime.getTime() + durationMillis,
+            type: (config as any).type === 'step' ? 'step' : 'line'
           }
-          pathStr = `M ${stepPoints.map((p) => `${p[0]},${p[1]}`).join(' L ')}`;
-        } else {
-          // Line Path
-          const points = dataPoints.map((p) => {
-            const x = ((p.time - startTime.getTime()) / durationMillis) * width;
-            const y = height - ((p.value - min) / paddedRange) * height;
-            return [x, y];
-          });
-          pathStr = `M ${points.map((p) => `${p[0]},${p[1]}`).join(' L ')}`;
-        }
+        );
 
         // Generate VPD segments for multi-colored rendering
         let vpdSegments: Array<{ path: string; color: string }> | undefined;

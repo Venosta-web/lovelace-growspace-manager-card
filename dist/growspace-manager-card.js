@@ -1969,6 +1969,232 @@ const t={ATTRIBUTE:1,CHILD:2,PROPERTY:3,BOOLEAN_ATTRIBUTE:4,EVENT:5,ELEMENT:6},e
  * SPDX-License-Identifier: BSD-3-Clause
  */const n$1="important",i=" !"+n$1,o=e$2(class extends i$1{constructor(t$1){if(super(t$1),t$1.type!==t.ATTRIBUTE||"style"!==t$1.name||t$1.strings?.length>2)throw Error("The `styleMap` directive must be used in the `style` attribute and must be the only part in the attribute.")}render(t){return Object.keys(t).reduce(((e,r)=>{const s=t[r];return null==s?e:e+`${r=r.includes("-")?r:r.replace(/(?:^(webkit|moz|ms|o)|)(?=[A-Z])/g,"-$&").toLowerCase()}:${s};`}),"")}update(e,[r]){const{style:s}=e.element;if(void 0===this.ft)return this.ft=new Set(Object.keys(r)),this.render(r);for(const t of this.ft)null==r[t]&&(this.ft.delete(t),t.includes("-")?s.removeProperty(t):s[t]=null);for(const t in r){const e=r[t];if(null!=e){this.ft.add(t);const r="string"==typeof e&&e.endsWith(i);t.includes("-")||r?s.setProperty(t,r?e.slice(0,-11):e,r?n$1:""):s[t]=e;}}return T}});
 
+class ChartUtils {
+    /**
+     * Generates an SVG path string for a mini sparkline from history data.
+     * Returns empty string if not enough data points.
+     * Downsamples to ~8 points per hour (192 points on 24h grid) for performance.
+     */
+    static generateSparklinePath(historyData, width, height) {
+        if (!historyData || historyData.length < 2)
+            return '';
+        // Sort by time and extract numeric values
+        let sortedData = [...historyData]
+            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
+            .filter(h => {
+            const val = parseFloat(h.state);
+            return !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
+        });
+        if (sortedData.length < 2)
+            return '';
+        // Downsample to ~192 points (8 per hour on 24h grid) for performance
+        const targetPoints = 192;
+        if (sortedData.length > targetPoints) {
+            const step = Math.ceil(sortedData.length / targetPoints);
+            sortedData = sortedData.filter((_, i) => i % step === 0 || i === sortedData.length - 1);
+        }
+        const values = sortedData.map(h => parseFloat(h.state));
+        const times = sortedData.map(h => new Date(h.last_changed).getTime());
+        const minVal = Math.min(...values);
+        const maxVal = Math.max(...values);
+        const minTime = Math.min(...times);
+        const maxTime = Math.max(...times);
+        const valueRange = maxVal - minVal || 1;
+        const timeRange = maxTime - minTime || 1;
+        // Generate SVG path points
+        const points = sortedData.map((h, i) => {
+            const x = ((times[i] - minTime) / timeRange) * width;
+            const y = height - ((values[i] - minVal) / valueRange) * height;
+            return `${x},${y}`;
+        });
+        return `M ${points.join(' L ')}`;
+    }
+    /**
+     * Gets the sparkline color based on the metric's configured color from METRIC_CONFIG.
+     * For VPD, uses status colors (optimal=green, warning=orange, danger=red).
+     */
+    static getSparklineColor(metricKey, status) {
+        if (metricKey === 'vpd' && status) {
+            switch (status) {
+                case 'optimal': return '#4caf50'; // Green
+                case 'warning': return '#ff9800'; // Orange
+                case 'danger': return '#f44336'; // Red
+            }
+        }
+        const config = METRIC_CONFIG[metricKey];
+        return config?.color || 'rgba(255, 255, 255, 0.3)';
+    }
+    /**
+     * Gets VPD status based on value and thresholds.
+     */
+    static getVpdStatusForValue(value, thresholds) {
+        if (value < thresholds.dangerMin || value > thresholds.dangerMax) {
+            return 'danger';
+        }
+        else if (value < thresholds.targetMin || value > thresholds.targetMax) {
+            return 'warning';
+        }
+        return 'optimal';
+    }
+    /**
+     * Generates colored VPD sparkline segments based on VPD value at each point.
+     * Returns array of { path, color } objects for rendering.
+     */
+    static generateVpdSparklineSegments(historyData, width, height, thresholds) {
+        if (!historyData || historyData.length < 2)
+            return [];
+        // Sort and filter data
+        let sortedData = [...historyData]
+            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
+            .filter(h => {
+            const val = parseFloat(h.state);
+            return !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
+        });
+        if (sortedData.length < 2)
+            return [];
+        // Downsample
+        const targetPoints = 192;
+        if (sortedData.length > targetPoints) {
+            const step = Math.ceil(sortedData.length / targetPoints);
+            sortedData = sortedData.filter((_, i) => i % step === 0 || i === sortedData.length - 1);
+        }
+        const values = sortedData.map(h => parseFloat(h.state));
+        const times = sortedData.map(h => new Date(h.last_changed).getTime());
+        const minVal = Math.min(...values);
+        const maxVal = Math.max(...values);
+        const minTime = Math.min(...times);
+        const maxTime = Math.max(...times);
+        const valueRange = maxVal - minVal || 1;
+        const timeRange = maxTime - minTime || 1;
+        // Generate points with coordinates and status
+        // Add padding so lines don't touch edges (5px top/bottom)
+        const padding = 5;
+        const usableHeight = height - (padding * 2);
+        const points = sortedData.map((h, i) => {
+            const value = values[i];
+            const x = ((times[i] - minTime) / timeRange) * width;
+            const y = padding + (usableHeight - ((value - minVal) / valueRange) * usableHeight);
+            const status = this.getVpdStatusForValue(value, thresholds);
+            return { x, y, status };
+        });
+        // Generate segments by color
+        const segments = [];
+        let currentSegment = [];
+        let currentStatus = points[0]?.status;
+        for (let i = 0; i < points.length; i++) {
+            const p = points[i];
+            if (p.status === currentStatus) {
+                currentSegment.push(p);
+            }
+            else {
+                // Status changed - finish current segment and start new one
+                if (currentSegment.length >= 1) {
+                    // Add connecting point to current segment
+                    currentSegment.push(p);
+                    const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+                    segments.push({
+                        path: pathStr,
+                        color: this.getSparklineColor('vpd', currentStatus)
+                    });
+                }
+                // Start new segment with this point
+                currentSegment = [p];
+                currentStatus = p.status;
+            }
+        }
+        // Finish last segment
+        if (currentSegment.length >= 2) {
+            const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+            segments.push({
+                path: pathStr,
+                color: this.getSparklineColor('vpd', currentStatus)
+            });
+        }
+        return segments;
+    }
+    /**
+     * Generates an SVG path string from pre-processed time/value points.
+     * Handles scaling, optional min/max overrides, and line/step types.
+     */
+    static generatePathFromValues(data, width, height, options = {}) {
+        if (!data || data.length < 2)
+            return '';
+        const type = options.type || 'line';
+        const vals = data.map(d => d.value);
+        const times = data.map(d => d.time);
+        const minVal = options.min !== undefined ? options.min : Math.min(...vals);
+        const maxVal = options.max !== undefined ? options.max : Math.max(...vals);
+        // Ensure range is not zero
+        const valueRange = (maxVal - minVal) || 1;
+        const minTime = options.startTime !== undefined ? options.startTime : Math.min(...times);
+        const maxTime = options.endTime !== undefined ? options.endTime : Math.max(...times);
+        const timeRange = (maxTime - minTime) || 1;
+        const points = data.map(d => {
+            const x = ((d.time - minTime) / timeRange) * width;
+            const y = height - ((d.value - minVal) / valueRange) * height;
+            return [x, y];
+        });
+        if (points.length === 0)
+            return '';
+        // Generate Path
+        if (type === 'step') {
+            let pathStr = `M ${points[0][0]},${points[0][1]}`;
+            for (let i = 1; i < points.length; i++) {
+                // Step: Horizontal to next X, prev Y, then Vertical to next Y
+                pathStr += ` L ${points[i][0]},${points[i - 1][1]}`;
+                pathStr += ` L ${points[i][0]},${points[i][1]}`;
+            }
+            return pathStr;
+        }
+        else {
+            // Line
+            return `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+        }
+    }
+    /**
+     * Generates an SVG path string for a step graph (binary/state) from history data.
+     * Use generatePathFromValues for pre-processed data.
+     */
+    static generateStepPath(historyData, width, height) {
+        // ... existing implementation wrapper or kept for compatibility ...
+        // For now, keeping previous logic but maybe we can reuse generatePathFromValues?
+        // Let's keep the previous implementation of generateStepPath as is for now to avoid breaking changes if used elsewhere,
+        // but ideally we refactor it to call generatePathFromValues.
+        // Since I just added it and its not used yet, I can replace it.
+        if (!historyData || historyData.length < 2)
+            return '';
+        const sortedData = [...historyData]
+            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
+            .filter(h => {
+            if (h.state === 'on' || h.state === 'off')
+                return true;
+            const val = parseFloat(h.state);
+            return !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
+        });
+        if (sortedData.length < 2)
+            return '';
+        // Downsample
+        let processedData = sortedData;
+        const targetPoints = 192;
+        if (processedData.length > targetPoints) {
+            const step = Math.ceil(processedData.length / targetPoints);
+            processedData = processedData.filter((_, i) => i % step === 0 || i === sortedData.length - 1);
+        }
+        const values = processedData.map(h => {
+            const t = new Date(h.last_changed).getTime();
+            let v = 0;
+            if (h.state === 'on')
+                v = 1;
+            else if (h.state === 'off')
+                v = 0;
+            else
+                v = parseFloat(h.state);
+            return { time: t, value: v };
+        });
+        return this.generatePathFromValues(values, width, height, { type: 'step' });
+    }
+}
+
 class GraphDataTransformer {
     /**
      * Transforms start/end time events into a time-series of 0/1 data points for a step graph.
@@ -2329,34 +2555,15 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                     min -= 1;
                 }
                 const paddedRange = max - min || 1;
-                let pathStr = '';
-                if (config.type === 'step') {
-                    // Step Path
-                    const stepPoints = [];
-                    if (dataPoints.length > 0) {
-                        const startX = ((dataPoints[0].time - startTime.getTime()) / durationMillis) * width;
-                        const startY = height - ((dataPoints[0].value - min) / paddedRange) * height;
-                        stepPoints.push([startX, startY]);
-                        for (let i = 1; i < dataPoints.length; i++) {
-                            const p = dataPoints[i];
-                            const x = ((p.time - startTime.getTime()) / durationMillis) * width;
-                            const y = height - ((p.value - min) / paddedRange) * height;
-                            // Step: H then V
-                            stepPoints.push([x, stepPoints[stepPoints.length - 1][1]]);
-                            stepPoints.push([x, y]);
-                        }
-                    }
-                    pathStr = `M ${stepPoints.map((p) => `${p[0]},${p[1]}`).join(' L ')}`;
-                }
-                else {
-                    // Line Path
-                    const points = dataPoints.map((p) => {
-                        const x = ((p.time - startTime.getTime()) / durationMillis) * width;
-                        const y = height - ((p.value - min) / paddedRange) * height;
-                        return [x, y];
-                    });
-                    pathStr = `M ${points.map((p) => `${p[0]},${p[1]}`).join(' L ')}`;
-                }
+                const pathStr = ChartUtils.generatePathFromValues(dataPoints, width, height, {
+                    min,
+                    max, // Use padded max/min for single graphs path generation to respect padding? 
+                    // Wait, 'min' and 'max' variables here are already adjusted for padding/ranges above (lines 281-296).
+                    // So we pass them as the forced scale.
+                    startTime: startTime.getTime(),
+                    endTime: startTime.getTime() + durationMillis,
+                    type: config.type === 'step' ? 'step' : 'line'
+                });
                 // Generate VPD segments for multi-colored rendering
                 let vpdSegments;
                 let seriesColor = config.color || '#fff';
@@ -3169,7 +3376,7 @@ class GrowspaceStore {
             devices: [],
             viewMode: 'standard',
         };
-        this.wsDataCache = {};
+        this.wsDataCache = {}; // TODO: Type this strictly with WebSocket response type
         this._isFetchingWS = false;
         this.handleTakeClone = (motherPlant, numClones) => {
             const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
@@ -10082,7 +10289,9 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
     `;
     }
 };
-GrowspacePlantCard.styles = i$6 `
+GrowspacePlantCard.styles = [
+    sharedStyles,
+    i$6 `
     :host {
       display: block;
       width: 100%;
@@ -10098,10 +10307,10 @@ GrowspacePlantCard.styles = i$6 `
       border-radius: 16px;
       overflow: hidden;
       /* Default background if no image */
-      background: var(--ha-card-background, rgba(255, 255, 255, 0.05));
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: var(--glass-border);
       box-shadow: var(--ha-card-box-shadow, 0 4px 6px rgba(0, 0, 0, 0.1));
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
@@ -10255,7 +10464,8 @@ GrowspacePlantCard.styles = i$6 `
       z-index: 1000;
       pointer-events: none; /* Let events pass through to grid for elementFromPoint */
     }
-  `;
+  `
+];
 __decorate([
     n$5({ attribute: false }),
     __metadata("design:type", Object)
@@ -10324,7 +10534,9 @@ let GrowspaceChip = class GrowspaceChip extends i$3 {
         this.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
     }
 };
-GrowspaceChip.styles = i$6 `
+GrowspaceChip.styles = [
+    sharedStyles,
+    i$6 `
     :host {
       display: inline-flex;
       vertical-align: middle;
@@ -10336,14 +10548,14 @@ GrowspaceChip.styles = i$6 `
       display: flex;
       align-items: center;
       gap: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      background: var(--glass-bg);
+      border: var(--glass-border);
       border-radius: 12px;
       padding: 8px 16px;
       font-size: 0.875rem;
       font-weight: 500;
       color: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(8px);
+      backdrop-filter: var(--glass-blur);
       cursor: pointer;
       transition: all 0.2s ease;
       position: relative;
@@ -10428,7 +10640,8 @@ GrowspaceChip.styles = i$6 `
       height: 100%;
       fill: var(--primary-color, #03a9f4);
     }
-  `;
+  `
+];
 __decorate([
     n$5({ type: String }),
     __metadata("design:type", Object)
@@ -18783,151 +18996,6 @@ class MetricsUtils {
     }
 }
 
-class ChartUtils {
-    /**
-     * Generates an SVG path string for a mini sparkline from history data.
-     * Returns empty string if not enough data points.
-     * Downsamples to ~8 points per hour (192 points on 24h grid) for performance.
-     */
-    static generateSparklinePath(historyData, width, height) {
-        if (!historyData || historyData.length < 2)
-            return '';
-        // Sort by time and extract numeric values
-        let sortedData = [...historyData]
-            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
-            .filter(h => {
-            const val = parseFloat(h.state);
-            return !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
-        });
-        if (sortedData.length < 2)
-            return '';
-        // Downsample to ~192 points (8 per hour on 24h grid) for performance
-        const targetPoints = 192;
-        if (sortedData.length > targetPoints) {
-            const step = Math.ceil(sortedData.length / targetPoints);
-            sortedData = sortedData.filter((_, i) => i % step === 0 || i === sortedData.length - 1);
-        }
-        const values = sortedData.map(h => parseFloat(h.state));
-        const times = sortedData.map(h => new Date(h.last_changed).getTime());
-        const minVal = Math.min(...values);
-        const maxVal = Math.max(...values);
-        const minTime = Math.min(...times);
-        const maxTime = Math.max(...times);
-        const valueRange = maxVal - minVal || 1;
-        const timeRange = maxTime - minTime || 1;
-        // Generate SVG path points
-        const points = sortedData.map((h, i) => {
-            const x = ((times[i] - minTime) / timeRange) * width;
-            const y = height - ((values[i] - minVal) / valueRange) * height;
-            return `${x},${y}`;
-        });
-        return `M ${points.join(' L ')}`;
-    }
-    /**
-     * Gets the sparkline color based on the metric's configured color from METRIC_CONFIG.
-     * For VPD, uses status colors (optimal=green, warning=orange, danger=red).
-     */
-    static getSparklineColor(metricKey, status) {
-        if (metricKey === 'vpd' && status) {
-            switch (status) {
-                case 'optimal': return '#4caf50'; // Green
-                case 'warning': return '#ff9800'; // Orange
-                case 'danger': return '#f44336'; // Red
-            }
-        }
-        const config = METRIC_CONFIG[metricKey];
-        return config?.color || 'rgba(255, 255, 255, 0.3)';
-    }
-    /**
-     * Gets VPD status based on value and thresholds.
-     */
-    static getVpdStatusForValue(value, thresholds) {
-        if (value < thresholds.dangerMin || value > thresholds.dangerMax) {
-            return 'danger';
-        }
-        else if (value < thresholds.targetMin || value > thresholds.targetMax) {
-            return 'warning';
-        }
-        return 'optimal';
-    }
-    /**
-     * Generates colored VPD sparkline segments based on VPD value at each point.
-     * Returns array of { path, color } objects for rendering.
-     */
-    static generateVpdSparklineSegments(historyData, width, height, thresholds) {
-        if (!historyData || historyData.length < 2)
-            return [];
-        // Sort and filter data
-        let sortedData = [...historyData]
-            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
-            .filter(h => {
-            const val = parseFloat(h.state);
-            return !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
-        });
-        if (sortedData.length < 2)
-            return [];
-        // Downsample
-        const targetPoints = 192;
-        if (sortedData.length > targetPoints) {
-            const step = Math.ceil(sortedData.length / targetPoints);
-            sortedData = sortedData.filter((_, i) => i % step === 0 || i === sortedData.length - 1);
-        }
-        const values = sortedData.map(h => parseFloat(h.state));
-        const times = sortedData.map(h => new Date(h.last_changed).getTime());
-        const minVal = Math.min(...values);
-        const maxVal = Math.max(...values);
-        const minTime = Math.min(...times);
-        const maxTime = Math.max(...times);
-        const valueRange = maxVal - minVal || 1;
-        const timeRange = maxTime - minTime || 1;
-        // Generate points with coordinates and status
-        // Add padding so lines don't touch edges (5px top/bottom)
-        const padding = 5;
-        const usableHeight = height - (padding * 2);
-        const points = sortedData.map((h, i) => {
-            const value = values[i];
-            const x = ((times[i] - minTime) / timeRange) * width;
-            const y = padding + (usableHeight - ((value - minVal) / valueRange) * usableHeight);
-            const status = this.getVpdStatusForValue(value, thresholds);
-            return { x, y, status };
-        });
-        // Generate segments by color
-        const segments = [];
-        let currentSegment = [];
-        let currentStatus = points[0]?.status;
-        for (let i = 0; i < points.length; i++) {
-            const p = points[i];
-            if (p.status === currentStatus) {
-                currentSegment.push(p);
-            }
-            else {
-                // Status changed - finish current segment and start new one
-                if (currentSegment.length >= 1) {
-                    // Add connecting point to current segment
-                    currentSegment.push(p);
-                    const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
-                    segments.push({
-                        path: pathStr,
-                        color: this.getSparklineColor('vpd', currentStatus)
-                    });
-                }
-                // Start new segment with this point
-                currentSegment = [p];
-                currentStatus = p.status;
-            }
-        }
-        // Finish last segment
-        if (currentSegment.length >= 2) {
-            const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
-            segments.push({
-                path: pathStr,
-                color: this.getSparklineColor('vpd', currentStatus)
-            });
-        }
-        return segments;
-    }
-}
-
 class ResizeController {
     constructor(host, callback) {
         this.isMobile = false;
@@ -18990,9 +19058,13 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         this._canScrollLeft = false;
         this._canScrollRight = false;
         this._menuOpen = false;
+        this._mobileLink = false;
         this._chipsContainerRef = e$1();
         this._resizeController = new ResizeController(this, () => this._checkScroll());
-        this._mobileLink = false;
+        // Cached metrics to avoid re-computation on every render
+        this._mainChips = [];
+        this._deviceChips = [];
+        this._draggedMetric = null;
         this._handleControllerUpdate = () => {
             this.requestUpdate();
         };
@@ -20183,6 +20255,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
 };
 GrowspaceGrid.styles = [
     variables,
+    sharedStyles,
     i$6 `
     :host {
       display: block;
@@ -20207,20 +20280,23 @@ GrowspaceGrid.styles = [
       justify-content: center;
       height: 100%;
       aspect-ratio: 1;
-      border: 2px dashed rgba(255, 255, 255, 0.2);
-      border-radius: 16px;
+      height: 100%;
+      aspect-ratio: 1;
+      border: var(--glass-border);
+      border-radius: var(--border-radius-lg, 16px);
       color: var(--secondary-text-color);
       cursor: pointer;
       transition: all 0.2s ease;
-      background: rgba(255, 255, 255, 0.02);
+      transition: all 0.2s ease;
+      background: var(--glass-bg);
     }
 
     /* Skeleton Loading */
     .skeleton-card {
       height: 100%;
       aspect-ratio: 1;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.05);
+      border-radius: var(--border-radius-lg, 16px);
+      background: var(--glass-bg);
       animation: pulse 1.5s infinite;
     }
 
@@ -20239,7 +20315,8 @@ GrowspaceGrid.styles = [
     .plant-card-empty:hover {
       border-color: var(--primary-color);
       color: var(--primary-color);
-      background: rgba(255, 255, 255, 0.05);
+      color: var(--primary-color);
+      background: rgba(255, 255, 255, 0.08);
       transform: translateY(-2px);
     }
 
@@ -21702,6 +21779,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
 };
 GrowspaceAnalytics.styles = [
     growspaceCardStyles,
+    sharedStyles,
     i$6 `
       :host {
         display: block;

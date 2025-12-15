@@ -7,6 +7,7 @@ import { GrowspaceDevice } from '../types';
 import { METRIC_CONFIG, METRIC_SORT_ORDER, DEFAULT_METRIC_CONFIG } from '../constants';
 import '../growspace-env-chart';
 import { growspaceCardStyles } from '../styles/growspace-card.styles';
+import { sharedStyles } from '../styles/shared.styles';
 
 import { consume } from '@lit/context';
 import { hassContext, historyContext } from '../context';
@@ -24,6 +25,7 @@ export class GrowspaceAnalytics extends LitElement {
 
   static styles = [
     growspaceCardStyles,
+    sharedStyles,
     css`
       :host {
         display: block;

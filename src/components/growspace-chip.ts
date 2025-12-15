@@ -1,6 +1,7 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiLink } from '@mdi/js';
+import { sharedStyles } from '../styles/shared.styles';
 
 @customElement('growspace-chip')
 export class GrowspaceChip extends LitElement {
@@ -12,7 +13,9 @@ export class GrowspaceChip extends LitElement {
   @property({ type: Boolean }) linked = false;
   @property({ type: String }) tooltip = '';
 
-  static styles = css`
+  static styles = [
+    sharedStyles,
+    css`
     :host {
       display: inline-flex;
       vertical-align: middle;
@@ -24,14 +27,14 @@ export class GrowspaceChip extends LitElement {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      background: var(--glass-bg);
+      border: var(--glass-border);
       border-radius: 12px;
       padding: 8px 16px;
       font-size: 0.875rem;
       font-weight: 500;
       color: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(8px);
+      backdrop-filter: var(--glass-blur);
       cursor: pointer;
       transition: all 0.2s ease;
       position: relative;
@@ -116,7 +119,7 @@ export class GrowspaceChip extends LitElement {
       height: 100%;
       fill: var(--primary-color, #03a9f4);
     }
-  `;
+  `];
 
   render() {
     // Determine classes based on meaningful status string
@@ -129,12 +132,12 @@ export class GrowspaceChip extends LitElement {
         </div>
         ${this.label ? html`${this.label}: ` : ''}${this.value}
         ${this.linked
-          ? html`
+        ? html`
               <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">
                 <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
               </div>
             `
-          : ''}
+        : ''}
       </div>
     `;
   }

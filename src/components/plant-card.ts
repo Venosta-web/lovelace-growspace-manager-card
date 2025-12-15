@@ -14,6 +14,7 @@ import {
 } from '@mdi/js';
 import { PlantEntity, StrainEntry, PlantStage } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
+import { sharedStyles } from '../styles/shared.styles';
 
 interface StageDisplay {
   days: number;
@@ -48,7 +49,9 @@ export class GrowspacePlantCard extends LitElement {
 
   @state() private _displayData: PlantDisplayData | null = null;
 
-  static styles = css`
+  static styles = [
+    sharedStyles,
+    css`
     :host {
       display: block;
       width: 100%;
@@ -64,10 +67,10 @@ export class GrowspacePlantCard extends LitElement {
       border-radius: 16px;
       overflow: hidden;
       /* Default background if no image */
-      background: var(--ha-card-background, rgba(255, 255, 255, 0.05));
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: var(--glass-border);
       box-shadow: var(--ha-card-box-shadow, 0 4px 6px rgba(0, 0, 0, 0.1));
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
@@ -221,7 +224,7 @@ export class GrowspacePlantCard extends LitElement {
       z-index: 1000;
       pointer-events: none; /* Let events pass through to grid for elementFromPoint */
     }
-  `;
+  `];
 
   private _longPressTimer: number | undefined;
   private _isDraggingMobile = false;

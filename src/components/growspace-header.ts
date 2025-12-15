@@ -55,10 +55,17 @@ export class GrowspaceHeader extends LitElement {
   @state() private _canScrollLeft = false;
   @state() private _canScrollRight = false;
   @state() private _menuOpen = false;
+  @state() private _mobileLink = false;
 
   private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
-
   private _resizeController = new ResizeController(this, () => this._checkScroll());
+
+  // Cached metrics to avoid re-computation on every render
+  private _mainChips: any[] = [];
+  private _deviceChips: any[] = [];
+  private _dominant: any;
+  private _envAttrs: any;
+  private _draggedMetric: string | null = null;
 
   // Helper getters for clarity in render/compute
   get activeEnvGraphs() {
@@ -610,7 +617,7 @@ export class GrowspaceHeader extends LitElement {
     }
   }
 
-  @state() private _mobileLink = false;
+
 
   connectedCallback() {
     super.connectedCallback();

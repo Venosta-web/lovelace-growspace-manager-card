@@ -45,31 +45,43 @@ export class PlantOverviewDialog extends LitElement {
   @property({ type: Object }) plant?: PlantEntity;
   @property({ type: Object }) growspaceOptions: Record<string, string> = {};
 
-  @state() private editedAttributes: PlantOverviewEditedAttributes = {};
+  @property({ attribute: false }) editedAttributes: PlantOverviewEditedAttributes = {};
   @state() private isEditing = true;
   @state() private showAllDates = false;
   @state() private cloneTargetId = '';
   @state() private _showDeleteConfirmation = false;
 
   willUpdate(changedProps: Map<string, any>) {
+    // Handle dialog state object if passed (legacy/alternative usage)
     if (changedProps.has('dialog') && this.dialog) {
       this.plant = this.dialog.plant;
-      this.editedAttributes = this.dialog.editedAttributes || {
-        strain: this.plant?.attributes.strain,
-        phenotype: this.plant?.attributes.phenotype,
-        row: this.plant?.attributes.row,
-        col: this.plant?.attributes.col,
-        stage: this.plant?.state,
-        veg_start: this.plant?.attributes.veg_start,
-        flower_start: this.plant?.attributes.flower_start,
-        seedling_start: this.plant?.attributes.seedling_start,
-        mother_start: this.plant?.attributes.mother_start,
-        clone_start: this.plant?.attributes.clone_start,
-        dry_start: this.plant?.attributes.dry_start,
-        cure_start: this.plant?.attributes.cure_start,
-      };
+      this.editedAttributes = this.dialog.editedAttributes || this._getAttributesFromPlant();
       this.cloneTargetId = '';
     }
+
+    // Handle direct prop injection (DialogHost usage)
+    // If editedAttributes is undefined/null (e.g. passed as null from parent), init it
+    if (!this.editedAttributes || (changedProps.has('plant') && !this.editedAttributes.strain)) {
+      this.editedAttributes = this.editedAttributes || this._getAttributesFromPlant();
+    }
+  }
+
+  private _getAttributesFromPlant(): PlantOverviewEditedAttributes {
+    if (!this.plant) return {};
+    return {
+      strain: this.plant?.attributes?.strain,
+      phenotype: this.plant?.attributes?.phenotype,
+      row: this.plant?.attributes?.row,
+      col: this.plant?.attributes?.col,
+      stage: this.plant?.state,
+      veg_start: this.plant?.attributes?.veg_start,
+      flower_start: this.plant?.attributes?.flower_start,
+      seedling_start: this.plant?.attributes?.seedling_start,
+      mother_start: this.plant?.attributes?.mother_start,
+      clone_start: this.plant?.attributes?.clone_start,
+      dry_start: this.plant?.attributes?.dry_start,
+      cure_start: this.plant?.attributes?.cure_start,
+    };
   }
 
   static styles = [
@@ -438,19 +450,19 @@ export class PlantOverviewDialog extends LitElement {
         : html`
                     <div class="stat-grid">
                       <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes.strain}</span>
+                        <span class="stat-value">${this.plant.attributes?.strain}</span>
                         <span class="stat-label">Strain</span>
                       </div>
                       <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes.phenotype || 'N/A'}</span>
+                        <span class="stat-value">${this.plant.attributes?.phenotype || 'N/A'}</span>
                         <span class="stat-label">Phenotype</span>
                       </div>
                       <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes.row ?? '-'}</span>
+                        <span class="stat-value">${this.plant.attributes?.row ?? '-'}</span>
                         <span class="stat-label">Row</span>
                       </div>
                       <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes.col ?? '-'}</span>
+                        <span class="stat-value">${this.plant.attributes?.col ?? '-'}</span>
                         <span class="stat-label">Col</span>
                       </div>
                     </div>
@@ -612,7 +624,7 @@ export class PlantOverviewDialog extends LitElement {
             </button>
 
             <!-- DYNAMIC ACTIONS -->
-            ${this.plant.state.toLowerCase() === PlantStage.MOTHER
+            ${(this.plant.state || '').toLowerCase() === PlantStage.MOTHER
         ? html`
                   <div
                     class="take-clone-container"
@@ -644,7 +656,7 @@ export class PlantOverviewDialog extends LitElement {
                   </div>
                 `
         : nothing}
-            ${this.plant.state.toLowerCase() === PlantStage.FLOWER
+            ${(this.plant.state || '').toLowerCase() === PlantStage.FLOWER
         ? html`
                   <button class="md3-button primary" @click=${() => this._harvest(this.plant!)}>
                     <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
@@ -654,7 +666,7 @@ export class PlantOverviewDialog extends LitElement {
                   </button>
                 `
         : nothing}
-            ${this.plant.state.toLowerCase() === PlantStage.DRY
+            ${(this.plant.state || '').toLowerCase() === PlantStage.DRY
         ? html`
                   <button
                     class="md3-button primary"
@@ -667,7 +679,7 @@ export class PlantOverviewDialog extends LitElement {
                   </button>
                 `
         : nothing}
-            ${this.plant.state.toLowerCase() === PlantStage.CLONE
+            ${(this.plant.state || '').toLowerCase() === PlantStage.CLONE
         ? html`
                   <div style="display:contents; display:flex; gap: 8px; align-items: center;">
                     <md3-select
