@@ -65,7 +65,7 @@ describe('MetricsUtils', () => {
         expect(vpdChip.value).toBe('1.2 kPa');
         expect(vpdChip.status).toBe('optimal'); // From overview entity
 
-        const lightChip = result.mainChips.find(c => c.key === 'light');
+        const lightChip = result.deviceChips.find(c => c.key === 'light');
         expect(lightChip).toBeDefined();
         expect(lightChip.value).toBe('On');
     });

@@ -106,6 +106,25 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     if (this.store && this.store.state && this.store.state.strainLibrary !== this._strainLibrary) {
       this._strainLibrary = this.store.state.strainLibrary || [];
     }
+
+    // Apply default growspace logic
+    const devices = this.gridController.activeDevices;
+    if (!this.store.state.defaultApplied && this._config?.default_growspace && devices.length > 0) {
+      const match = devices.find(
+        (d) =>
+          d.device_id === this._config.default_growspace ||
+          d.name === this._config.default_growspace
+      );
+      if (match) {
+        // We can't await this here, causing a potential race if it depends on async,
+        // but handleDeviceChange is essentially synchronous in setting state, though it might fetch data.
+        // It's better than in render() anyway.
+        // Use a timeout to avoid property change during update cycle errors if immediate state change is needed
+        // but since we are in willUpdate, state changes should be fine if strictly internal or upcoming.
+        this.store.handleDeviceChange(match.device_id);
+      }
+      this.store.setDefaultApplied(true);
+    }
   }
 
   protected updated(changedProps: PropertyValues): void {
@@ -198,16 +217,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
     }
 
-    // Apply default growspace logic
-    if (!this.store.state.defaultApplied && this._config?.default_growspace) {
-      const match = devices.find(
-        (d) =>
-          d.device_id === this._config.default_growspace ||
-          d.name === this._config.default_growspace
-      );
-      if (match) this.store.handleDeviceChange(match.device_id); // Use store method
-      this.store.setDefaultApplied(true);
-    }
+    // Apply default growspace logic - MOVED TO willUpdate
+
 
     const selectedDeviceData = devices.find((d) => d.device_id === this.selectedDevice);
     if (!selectedDeviceData) {

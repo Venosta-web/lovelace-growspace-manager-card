@@ -3993,6 +3993,12 @@ class GrowspaceStore {
 
 const sharedStyles = i$6 `
   /* --- Glassmorphism Surfaces --- */
+  :host {
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+    --glass-blur: blur(12px);
+  }
+
   .glass-surface {
     background: rgba(20, 20, 24, 0.6);
     background-image: linear-gradient(
@@ -18777,6 +18783,202 @@ class MetricsUtils {
     }
 }
 
+class ChartUtils {
+    /**
+     * Generates an SVG path string for a mini sparkline from history data.
+     * Returns empty string if not enough data points.
+     * Downsamples to ~8 points per hour (192 points on 24h grid) for performance.
+     */
+    static generateSparklinePath(historyData, width, height) {
+        if (!historyData || historyData.length < 2)
+            return '';
+        // Sort by time and extract numeric values
+        let sortedData = [...historyData]
+            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
+            .filter(h => {
+            const val = parseFloat(h.state);
+            return !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
+        });
+        if (sortedData.length < 2)
+            return '';
+        // Downsample to ~192 points (8 per hour on 24h grid) for performance
+        const targetPoints = 192;
+        if (sortedData.length > targetPoints) {
+            const step = Math.ceil(sortedData.length / targetPoints);
+            sortedData = sortedData.filter((_, i) => i % step === 0 || i === sortedData.length - 1);
+        }
+        const values = sortedData.map(h => parseFloat(h.state));
+        const times = sortedData.map(h => new Date(h.last_changed).getTime());
+        const minVal = Math.min(...values);
+        const maxVal = Math.max(...values);
+        const minTime = Math.min(...times);
+        const maxTime = Math.max(...times);
+        const valueRange = maxVal - minVal || 1;
+        const timeRange = maxTime - minTime || 1;
+        // Generate SVG path points
+        const points = sortedData.map((h, i) => {
+            const x = ((times[i] - minTime) / timeRange) * width;
+            const y = height - ((values[i] - minVal) / valueRange) * height;
+            return `${x},${y}`;
+        });
+        return `M ${points.join(' L ')}`;
+    }
+    /**
+     * Gets the sparkline color based on the metric's configured color from METRIC_CONFIG.
+     * For VPD, uses status colors (optimal=green, warning=orange, danger=red).
+     */
+    static getSparklineColor(metricKey, status) {
+        if (metricKey === 'vpd' && status) {
+            switch (status) {
+                case 'optimal': return '#4caf50'; // Green
+                case 'warning': return '#ff9800'; // Orange
+                case 'danger': return '#f44336'; // Red
+            }
+        }
+        const config = METRIC_CONFIG[metricKey];
+        return config?.color || 'rgba(255, 255, 255, 0.3)';
+    }
+    /**
+     * Gets VPD status based on value and thresholds.
+     */
+    static getVpdStatusForValue(value, thresholds) {
+        if (value < thresholds.dangerMin || value > thresholds.dangerMax) {
+            return 'danger';
+        }
+        else if (value < thresholds.targetMin || value > thresholds.targetMax) {
+            return 'warning';
+        }
+        return 'optimal';
+    }
+    /**
+     * Generates colored VPD sparkline segments based on VPD value at each point.
+     * Returns array of { path, color } objects for rendering.
+     */
+    static generateVpdSparklineSegments(historyData, width, height, thresholds) {
+        if (!historyData || historyData.length < 2)
+            return [];
+        // Sort and filter data
+        let sortedData = [...historyData]
+            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
+            .filter(h => {
+            const val = parseFloat(h.state);
+            return !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
+        });
+        if (sortedData.length < 2)
+            return [];
+        // Downsample
+        const targetPoints = 192;
+        if (sortedData.length > targetPoints) {
+            const step = Math.ceil(sortedData.length / targetPoints);
+            sortedData = sortedData.filter((_, i) => i % step === 0 || i === sortedData.length - 1);
+        }
+        const values = sortedData.map(h => parseFloat(h.state));
+        const times = sortedData.map(h => new Date(h.last_changed).getTime());
+        const minVal = Math.min(...values);
+        const maxVal = Math.max(...values);
+        const minTime = Math.min(...times);
+        const maxTime = Math.max(...times);
+        const valueRange = maxVal - minVal || 1;
+        const timeRange = maxTime - minTime || 1;
+        // Generate points with coordinates and status
+        // Add padding so lines don't touch edges (5px top/bottom)
+        const padding = 5;
+        const usableHeight = height - (padding * 2);
+        const points = sortedData.map((h, i) => {
+            const value = values[i];
+            const x = ((times[i] - minTime) / timeRange) * width;
+            const y = padding + (usableHeight - ((value - minVal) / valueRange) * usableHeight);
+            const status = this.getVpdStatusForValue(value, thresholds);
+            return { x, y, status };
+        });
+        // Generate segments by color
+        const segments = [];
+        let currentSegment = [];
+        let currentStatus = points[0]?.status;
+        for (let i = 0; i < points.length; i++) {
+            const p = points[i];
+            if (p.status === currentStatus) {
+                currentSegment.push(p);
+            }
+            else {
+                // Status changed - finish current segment and start new one
+                if (currentSegment.length >= 1) {
+                    // Add connecting point to current segment
+                    currentSegment.push(p);
+                    const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+                    segments.push({
+                        path: pathStr,
+                        color: this.getSparklineColor('vpd', currentStatus)
+                    });
+                }
+                // Start new segment with this point
+                currentSegment = [p];
+                currentStatus = p.status;
+            }
+        }
+        // Finish last segment
+        if (currentSegment.length >= 2) {
+            const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+            segments.push({
+                path: pathStr,
+                color: this.getSparklineColor('vpd', currentStatus)
+            });
+        }
+        return segments;
+    }
+}
+
+class ResizeController {
+    constructor(host, callback) {
+        this.isMobile = false;
+        this.hasTouch = false;
+        this._checkMobileBound = () => this._checkMobile();
+        this.host = host;
+        this._callback = callback;
+        host.addController(this);
+    }
+    hostConnected() {
+        this._checkMobile();
+        window.addEventListener('resize', this._checkMobileBound);
+        // Observe the host element by default if not specified otherwise
+        // Note: The consumer can call startObserving(element) to be more specific
+        // or we can rely on window resize for mobile check.
+    }
+    hostDisconnected() {
+        window.removeEventListener('resize', this._checkMobileBound);
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+        }
+    }
+    observe(element) {
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+        }
+        this._elementToObserve = element;
+        this._resizeObserver = new ResizeObserver(() => {
+            this._callback?.();
+            this.host.requestUpdate();
+        });
+        this._resizeObserver.observe(element);
+    }
+    _checkMobile() {
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        const hasTouch = window.matchMedia('(pointer: coarse)').matches;
+        let changed = false;
+        if (this.isMobile !== isMobile) {
+            this.isMobile = isMobile;
+            changed = true;
+        }
+        if (this.hasTouch !== hasTouch) {
+            this.hasTouch = hasTouch;
+            changed = true;
+        }
+        if (changed) {
+            this.host.requestUpdate();
+        }
+    }
+}
+
 let GrowspaceHeader = class GrowspaceHeader extends i$3 {
     constructor() {
         super(...arguments);
@@ -18785,24 +18987,15 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         // activeEnvGraphs and linkedGraphGroups removed as props, accessed via historyController in render or getters
         this.growspaceOptions = {};
         this.historyData = null;
-        this._menuOpen = false;
-        this._draggedMetric = null;
-        // Cached Metric Data
-        this._mainChips = [];
-        this._deviceChips = [];
-        this._dominant = undefined;
-        this._envAttrs = {};
         this._canScrollLeft = false;
         this._canScrollRight = false;
+        this._menuOpen = false;
         this._chipsContainerRef = e$1();
+        this._resizeController = new ResizeController(this, () => this._checkScroll());
         this._mobileLink = false;
-        this._isCompact = false;
-        this._isMobileCheck = false;
-        this._hasTouch = false;
         this._handleControllerUpdate = () => {
             this.requestUpdate();
         };
-        this._checkMobileBound = () => this._checkMobile();
     }
     // Helper getters for clarity in render/compute
     get activeEnvGraphs() {
@@ -18852,8 +19045,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         const container = this._chipsContainerRef.value;
         if (container) {
             container.addEventListener('scroll', () => this._checkScroll());
-            this._resizeObserver = new ResizeObserver(() => this._checkScroll());
-            this._resizeObserver.observe(container);
+            this._resizeController.observe(container);
             // Initial check
             setTimeout(() => this._checkScroll(), 0);
         }
@@ -18897,34 +19089,18 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
     }
     connectedCallback() {
         super.connectedCallback();
-        this._checkMobile();
-        window.addEventListener('resize', this._checkMobileBound);
         if (this.historyController) {
             this.historyController.addListener(this._handleControllerUpdate);
         }
     }
     disconnectedCallback() {
         super.disconnectedCallback();
-        window.removeEventListener('resize', this._checkMobileBound);
-        if (this._resizeObserver) {
-            this._resizeObserver.disconnect();
-        }
         if (this.historyController) {
             this.historyController.removeListener(this._handleControllerUpdate);
         }
     }
-    _checkMobile() {
-        const isMobile = window.matchMedia('(max-width: 768px)').matches;
-        const hasTouch = window.matchMedia('(pointer: coarse)').matches;
-        if (this._isMobileCheck !== isMobile) {
-            this._isMobileCheck = isMobile;
-        }
-        if (this._hasTouch !== hasTouch) {
-            this._hasTouch = hasTouch;
-        }
-    }
     get _chipDraggable() {
-        if (this._isMobileCheck || this._hasTouch) {
+        if (this._resizeController.isMobile || this._resizeController.hasTouch) {
             return this._mobileLink.toString();
         }
         return 'true';
@@ -19032,7 +19208,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                 `)}
               </div>
 
-             ${(this._isMobileCheck || this._hasTouch) ? x `
+             ${(this._resizeController.isMobile || this._resizeController.hasTouch) ? x `
                 <div 
                     class="icon-button mobile-link ${this._mobileLink ? 'active' : ''}"
                     @click=${() => this._mobileLink = !this._mobileLink} 
@@ -19110,164 +19286,6 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
       </div>
     `;
     }
-    /**
-     * Generates an SVG path string for a mini sparkline from history data.
-     * Returns empty string if not enough data points.
-     * Downsamples to ~8 points per hour (192 points on 24h grid) for performance.
-     */
-    _generateSparklinePath(metricKey, width, height) {
-        if (!this.historyController)
-            return '';
-        const historyData = this.historyController.historyCache[metricKey];
-        if (!historyData || historyData.length < 2)
-            return '';
-        // Sort by time and extract numeric values
-        let sortedData = [...historyData]
-            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
-            .filter(h => {
-            const val = parseFloat(h.state);
-            return !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
-        });
-        if (sortedData.length < 2)
-            return '';
-        // Downsample to ~192 points (8 per hour on 24h grid) for performance
-        const targetPoints = 192;
-        if (sortedData.length > targetPoints) {
-            const step = Math.ceil(sortedData.length / targetPoints);
-            sortedData = sortedData.filter((_, i) => i % step === 0 || i === sortedData.length - 1);
-        }
-        const values = sortedData.map(h => parseFloat(h.state));
-        const times = sortedData.map(h => new Date(h.last_changed).getTime());
-        const minVal = Math.min(...values);
-        const maxVal = Math.max(...values);
-        const minTime = Math.min(...times);
-        const maxTime = Math.max(...times);
-        const valueRange = maxVal - minVal || 1;
-        const timeRange = maxTime - minTime || 1;
-        // Generate SVG path points
-        const points = sortedData.map((h, i) => {
-            const x = ((times[i] - minTime) / timeRange) * width;
-            const y = height - ((values[i] - minVal) / valueRange) * height;
-            return `${x},${y}`;
-        });
-        return `M ${points.join(' L ')}`;
-    }
-    /**
-     * Gets the sparkline color based on the metric's configured color from METRIC_CONFIG.
-     * For VPD, uses status colors (optimal=green, warning=orange, danger=red).
-     */
-    _getSparklineColor(metricKey, status) {
-        if (metricKey === 'vpd' && status) {
-            switch (status) {
-                case 'optimal': return '#4caf50'; // Green
-                case 'warning': return '#ff9800'; // Orange
-                case 'danger': return '#f44336'; // Red
-            }
-        }
-        const config = METRIC_CONFIG[metricKey];
-        return config?.color || 'rgba(255, 255, 255, 0.3)';
-    }
-    /**
-     * Gets VPD status based on value and thresholds.
-     */
-    _getVpdStatusForValue(value, thresholds) {
-        if (value < thresholds.dangerMin || value > thresholds.dangerMax) {
-            return 'danger';
-        }
-        else if (value < thresholds.targetMin || value > thresholds.targetMax) {
-            return 'warning';
-        }
-        return 'optimal';
-    }
-    /**
-     * Generates colored VPD sparkline segments based on VPD value at each point.
-     * Returns array of { path, color } objects for rendering.
-     */
-    _generateVpdSparklineSegments(width, height) {
-        if (!this.historyController || !this.device)
-            return [];
-        const historyData = this.historyController.historyCache['vpd'];
-        if (!historyData || historyData.length < 2)
-            return [];
-        // Get VPD thresholds from device overview entity
-        const overviewEntity = this.device.overview_entity_id
-            ? this.hass?.states[this.device.overview_entity_id]
-            : null;
-        const thresholds = {
-            targetMin: overviewEntity?.attributes?.vpd_target_min ?? 0.8,
-            targetMax: overviewEntity?.attributes?.vpd_target_max ?? 1.2,
-            dangerMin: overviewEntity?.attributes?.vpd_danger_min ?? 0.4,
-            dangerMax: overviewEntity?.attributes?.vpd_danger_max ?? 1.6,
-        };
-        // Sort and filter data
-        let sortedData = [...historyData]
-            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
-            .filter(h => {
-            const val = parseFloat(h.state);
-            return !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
-        });
-        if (sortedData.length < 2)
-            return [];
-        // Downsample
-        const targetPoints = 192;
-        if (sortedData.length > targetPoints) {
-            const step = Math.ceil(sortedData.length / targetPoints);
-            sortedData = sortedData.filter((_, i) => i % step === 0 || i === sortedData.length - 1);
-        }
-        const values = sortedData.map(h => parseFloat(h.state));
-        const times = sortedData.map(h => new Date(h.last_changed).getTime());
-        const minVal = Math.min(...values);
-        const maxVal = Math.max(...values);
-        const minTime = Math.min(...times);
-        const maxTime = Math.max(...times);
-        const valueRange = maxVal - minVal || 1;
-        const timeRange = maxTime - minTime || 1;
-        // Generate points with coordinates and status
-        // Add padding so lines don't touch edges (5px top/bottom)
-        const padding = 5;
-        const usableHeight = height - (padding * 2);
-        const points = sortedData.map((h, i) => {
-            const value = values[i];
-            const x = ((times[i] - minTime) / timeRange) * width;
-            const y = padding + (usableHeight - ((value - minVal) / valueRange) * usableHeight);
-            const status = this._getVpdStatusForValue(value, thresholds);
-            return { x, y, status };
-        });
-        // Generate segments by color
-        const segments = [];
-        let currentSegment = [];
-        let currentStatus = points[0]?.status;
-        for (let i = 0; i < points.length; i++) {
-            const p = points[i];
-            if (p.status === currentStatus) {
-                currentSegment.push(p);
-            }
-            else {
-                // Status changed - finish current segment and start new one
-                if (currentSegment.length >= 1) {
-                    // Add connecting point to current segment
-                    currentSegment.push(p);
-                    const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
-                    segments.push({
-                        path: pathStr,
-                        color: this._getSparklineColor('vpd', currentStatus)
-                    });
-                }
-                // Start new segment with this point
-                currentSegment = [p];
-                currentStatus = p.status;
-            }
-        }
-        // Finish last segment
-        if (currentSegment.length >= 2) {
-            const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
-            segments.push({
-                path: pathStr,
-                color: this._getSparklineColor('vpd', currentStatus)
-            });
-        }
-        return segments;
-    }
     _renderHeroCard(chip) {
         const match = String(chip.value || '').match(/^([\d.,]+)\s*(.*)$/);
         const val = match ? match[1] : chip.value;
@@ -19277,10 +19295,27 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         const sparklineHeight = 80; // Approximate card height minus padding
         // For VPD, try multi-segment coloring first, fall back to standard if no segments
         const isVpd = chip.key === 'vpd';
-        const vpdSegments = isVpd ? this._generateVpdSparklineSegments(sparklineWidth, sparklineHeight) : [];
+        let vpdSegments = [];
+        if (isVpd && this.historyController && this.device) {
+            const historyData = this.historyController.historyCache['vpd'];
+            // Get VPD thresholds from device overview entity
+            const overviewEntity = this.device.overview_entity_id
+                ? this.hass?.states[this.device.overview_entity_id]
+                : null;
+            const thresholds = {
+                targetMin: overviewEntity?.attributes?.vpd_target_min ?? 0.8,
+                targetMax: overviewEntity?.attributes?.vpd_target_max ?? 1.2,
+                dangerMin: overviewEntity?.attributes?.vpd_danger_min ?? 0.4,
+                dangerMax: overviewEntity?.attributes?.vpd_danger_max ?? 1.6,
+            };
+            vpdSegments = ChartUtils.generateVpdSparklineSegments(historyData, sparklineWidth, sparklineHeight, thresholds);
+        }
         const useVpdSegments = isVpd && vpdSegments.length > 0;
-        const sparklinePath = useVpdSegments ? '' : this._generateSparklinePath(chip.key, sparklineWidth, sparklineHeight);
-        const sparklineColor = this._getSparklineColor(chip.key, chip.status);
+        let sparklinePath = '';
+        if (!useVpdSegments && this.historyController) {
+            sparklinePath = ChartUtils.generateSparklinePath(this.historyController.historyCache[chip.key], sparklineWidth, sparklineHeight);
+        }
+        const sparklineColor = ChartUtils.getSparklineColor(chip.key, chip.status);
         return x `
         <div 
             class="hero-card ${chip.status ? `status-${chip.status}` : ''} ${chip.active ? 'active' : ''} ${chip.linked ? 'linked' : ''}"
@@ -19393,9 +19428,6 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
 GrowspaceHeader.styles = i$6 `
     :host {
       display: block;
-      --glass-bg: rgba(255, 255, 255, 0.05);
-      --glass-border: 1px solid rgba(255, 255, 255, 0.1);
-      --glass-blur: blur(12px);
     }
 
     .gs-stats-container {
@@ -19861,30 +19893,6 @@ __decorate([
 __decorate([
     r$2(),
     __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "_menuOpen", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "_draggedMetric", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Array)
-], GrowspaceHeader.prototype, "_mainChips", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Array)
-], GrowspaceHeader.prototype, "_deviceChips", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "_dominant", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "_envAttrs", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_canScrollLeft", void 0);
 __decorate([
     r$2(),
@@ -19893,19 +19901,11 @@ __decorate([
 __decorate([
     r$2(),
     __metadata("design:type", Object)
+], GrowspaceHeader.prototype, "_menuOpen", void 0);
+__decorate([
+    r$2(),
+    __metadata("design:type", Object)
 ], GrowspaceHeader.prototype, "_mobileLink", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "_isCompact", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "_isMobileCheck", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "_hasTouch", void 0);
 GrowspaceHeader = __decorate([
     t$2('growspace-header')
 ], GrowspaceHeader);
@@ -21830,6 +21830,21 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         if (this.store && this.store.state && this.store.state.strainLibrary !== this._strainLibrary) {
             this._strainLibrary = this.store.state.strainLibrary || [];
         }
+        // Apply default growspace logic
+        const devices = this.gridController.activeDevices;
+        if (!this.store.state.defaultApplied && this._config?.default_growspace && devices.length > 0) {
+            const match = devices.find((d) => d.device_id === this._config.default_growspace ||
+                d.name === this._config.default_growspace);
+            if (match) {
+                // We can't await this here, causing a potential race if it depends on async,
+                // but handleDeviceChange is essentially synchronous in setting state, though it might fetch data.
+                // It's better than in render() anyway.
+                // Use a timeout to avoid property change during update cycle errors if immediate state change is needed
+                // but since we are in willUpdate, state changes should be fine if strictly internal or upcoming.
+                this.store.handleDeviceChange(match.device_id);
+            }
+            this.store.setDefaultApplied(true);
+        }
     }
     updated(changedProps) {
         super.updated(changedProps);
@@ -21907,14 +21922,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         if (!devices.length) {
             return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
         }
-        // Apply default growspace logic
-        if (!this.store.state.defaultApplied && this._config?.default_growspace) {
-            const match = devices.find((d) => d.device_id === this._config.default_growspace ||
-                d.name === this._config.default_growspace);
-            if (match)
-                this.store.handleDeviceChange(match.device_id); // Use store method
-            this.store.setDefaultApplied(true);
-        }
+        // Apply default growspace logic - MOVED TO willUpdate
         const selectedDeviceData = devices.find((d) => d.device_id === this.selectedDevice);
         if (!selectedDeviceData) {
             return x `<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;

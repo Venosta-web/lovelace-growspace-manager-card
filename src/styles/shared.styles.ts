@@ -2,6 +2,12 @@ import { css } from 'lit';
 
 export const sharedStyles = css`
   /* --- Glassmorphism Surfaces --- */
+  :host {
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+    --glass-blur: blur(12px);
+  }
+
   .glass-surface {
     background: rgba(20, 20, 24, 0.6);
     background-image: linear-gradient(
