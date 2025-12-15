@@ -107,6 +107,7 @@ export class MetricsUtils {
             }
             if (vpd === undefined || vpd === null) {
                 // Calculated VPD fallback
+                // 1. Try Name-based ID (New Standard)
                 const slugify = (text: string) =>
                     text
                         .toString()
@@ -116,9 +117,20 @@ export class MetricsUtils {
                         .replace(/\-\-+/g, '_')
                         .replace(/^-+/, '')
                         .replace(/-+$/, '');
+
                 const calcName = `${device.name} Calculated VPD`;
                 const calculatedId = `sensor.${slugify(calcName)}`;
-                const vpdState = hass.states[calculatedId];
+                let vpdState = hass.states[calculatedId];
+
+                // 2. Try UUID-based ID (Old Legacy)
+                if (!vpdState || vpdState.state === 'unknown' || vpdState.state === 'unavailable') {
+                    const oldId = `sensor.${device.device_id}_calculated_vpd`;
+                    const oldState = hass.states[oldId];
+                    if (oldState && oldState.state !== 'unknown' && oldState.state !== 'unavailable') {
+                        vpdState = oldState;
+                    }
+                }
+
                 if (vpdState && vpdState.state !== 'unknown' && vpdState.state !== 'unavailable') {
                     const val = parseFloat(vpdState.state);
                     if (!isNaN(val)) vpd = val;

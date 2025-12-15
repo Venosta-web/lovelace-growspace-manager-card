@@ -380,12 +380,36 @@ export class GrowspaceHistoryController implements ReactiveController {
     }
 
     // VPD
-    if (envAttrs.vpd_sensor) {
+    let vpdSensor = envAttrs.vpd_sensor;
+    if (!vpdSensor && device.name) {
+      // Fallback to calculated VPD sensor if not explicitly configured
+      // This mirrors logic in MetricsUtils.computeHeaderMetrics
+      const slugify = (text: string) =>
+        text
+          .toString()
+          .toLowerCase()
+          .replace(/\s+/g, '_')
+          .replace(/[^\w\-]+/g, '')
+          .replace(/\-\-+/g, '_')
+          .replace(/^-+/, '')
+          .replace(/-+$/, '');
+
+      const calcName = `${device.name} Calculated VPD`;
+      const calculatedId = `sensor.${slugify(calcName)}`;
+
+      // Only use if it exists in Hass states to avoid 404s
+      if (this.host.hass.states[calculatedId]) {
+        vpdSensor = calculatedId;
+        console.log('[HistoryController] Using calculated VPD sensor fallback:', vpdSensor);
+      }
+    }
+
+    if (vpdSensor) {
       try {
-        const history = await this.host.dataService.getHistory(envAttrs.vpd_sensor, start, end);
+        const history = await this.host.dataService.getHistory(vpdSensor, start, end);
         console.log(
           '[HistoryController] VPD history fetched from',
-          envAttrs.vpd_sensor,
+          vpdSensor,
           'length:',
           history?.length || 0
         );
@@ -516,6 +540,27 @@ export class GrowspaceHistoryController implements ReactiveController {
     // Try fallback if primary not found
     if (!entityId && mapping.fallback) {
       entityId = envAttrs[mapping.fallback as keyof typeof envAttrs] as string | undefined;
+    }
+
+    // Special fallback for VPD calculated sensor
+    if (!entityId && metricKey === 'vpd' && device.name) {
+      const slugify = (text: string) =>
+        text
+          .toString()
+          .toLowerCase()
+          .replace(/\s+/g, '_')
+          .replace(/[^\w\-]+/g, '')
+          .replace(/\-\-+/g, '_')
+          .replace(/^-+/, '')
+          .replace(/-+$/, '');
+
+      const calcName = `${device.name} Calculated VPD`;
+      const calculatedId = `sensor.${slugify(calcName)}`;
+
+      if (this.host.hass && this.host.hass.states[calculatedId]) {
+        entityId = calculatedId;
+        console.log('[HistoryController] Using calculated VPD sensor fallback in getEntityIdForMetric:', entityId);
+      }
     }
 
     return entityId || null;

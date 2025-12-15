@@ -196,4 +196,63 @@ describe('MetricsUtils', () => {
         expect(tempChip).toBeDefined();
         expect(tempChip?.value).toBe('unknown°C');
     });
+
+    it('should fallback to Name-based Calculated VPD entity ID', () => {
+        // Device name "Test Room" -> "test_room_calculated_vpd"
+        const fallbackHass = {
+            states: {
+                'binary_sensor.test_room_optimal_conditions': {
+                    state: 'on',
+                    attributes: { temperature: 25 } // No VPD
+                },
+                'sensor.test_room_calculated_vpd': { state: '0.8' },
+                'sensor.test_room': { attributes: {} }
+            }
+        } as any;
+
+        const result = MetricsUtils.computeHeaderMetrics(
+            fallbackHass,
+            mockDevice,
+            new Set(),
+            []
+        );
+
+        const vpdChip = result.mainChips.find(c => c.key === 'vpd');
+        expect(vpdChip).toBeDefined();
+        // Should find 0.8 from sensor.test_room_calculated_vpd
+        expect(vpdChip.value).toBe('0.8 kPa');
+    });
+
+    it('should fallback to Legacy UUID-based Calculated VPD entity ID if Name-based missing', () => {
+        const legacyDevice = {
+            ...mockDevice,
+            device_id: 'aabbcc-112233'
+        } as any;
+
+        const fallbackHass = {
+            states: {
+                'binary_sensor.test_room_optimal_conditions': {
+                    state: 'on',
+                    attributes: { temperature: 25 } // No VPD
+                },
+                // Name based missing/unknown
+                'sensor.test_room_calculated_vpd': { state: 'unknown' },
+                // Legacy UUID based present (must match device.device_id which has dashes)
+                'sensor.aabbcc-112233_calculated_vpd': { state: '0.9' },
+                'sensor.test_room': { attributes: {} }
+            }
+        } as any;
+
+        const result = MetricsUtils.computeHeaderMetrics(
+            fallbackHass,
+            legacyDevice,
+            new Set(),
+            []
+        );
+
+        const vpdChip = result.mainChips.find(c => c.key === 'vpd');
+        expect(vpdChip).toBeDefined();
+        // Should find 0.9 from sensor.aabbcc_112233_calculated_vpd
+        expect(vpdChip.value).toBe('0.9 kPa');
+    });
 });

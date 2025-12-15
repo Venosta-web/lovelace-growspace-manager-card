@@ -91,6 +91,8 @@ function createGrowspaceDevice(params) {
 ];
 class PlantUtils {
     static normalizeStage(state) {
+        if (!state)
+            return PlantStage.SEEDLING; // Default fallback
         const lower = state.toLowerCase();
         if (lower === 'veg' || lower === 'vegetative')
             return PlantStage.VEG;
@@ -379,10 +381,8 @@ class PlantUtils {
     static compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.readAsDataURL(file);
             reader.onload = (event) => {
                 const img = new Image();
-                img.src = event.target?.result;
                 img.onload = () => {
                     let width = img.width;
                     let height = img.height;
@@ -413,8 +413,10 @@ class PlantUtils {
                     resolve(dataUrl);
                 };
                 img.onerror = (err) => reject(err);
+                img.src = event.target?.result;
             };
             reader.onerror = (err) => reject(err);
+            reader.readAsDataURL(file);
         });
     }
     static preloadImage(url) {
@@ -1784,10 +1786,30 @@ class GrowspaceHistoryController {
             }
         }
         // VPD
-        if (envAttrs.vpd_sensor) {
+        let vpdSensor = envAttrs.vpd_sensor;
+        if (!vpdSensor && device.name) {
+            // Fallback to calculated VPD sensor if not explicitly configured
+            // This mirrors logic in MetricsUtils.computeHeaderMetrics
+            const slugify = (text) => text
+                .toString()
+                .toLowerCase()
+                .replace(/\s+/g, '_')
+                .replace(/[^\w\-]+/g, '')
+                .replace(/\-\-+/g, '_')
+                .replace(/^-+/, '')
+                .replace(/-+$/, '');
+            const calcName = `${device.name} Calculated VPD`;
+            const calculatedId = `sensor.${slugify(calcName)}`;
+            // Only use if it exists in Hass states to avoid 404s
+            if (this.host.hass.states[calculatedId]) {
+                vpdSensor = calculatedId;
+                console.log('[HistoryController] Using calculated VPD sensor fallback:', vpdSensor);
+            }
+        }
+        if (vpdSensor) {
             try {
-                const history = await this.host.dataService.getHistory(envAttrs.vpd_sensor, start, end);
-                console.log('[HistoryController] VPD history fetched from', envAttrs.vpd_sensor, 'length:', history?.length || 0);
+                const history = await this.host.dataService.getHistory(vpdSensor, start, end);
+                console.log('[HistoryController] VPD history fetched from', vpdSensor, 'length:', history?.length || 0);
                 this.historyCache.vpd = history || [];
             }
             catch (e) {
@@ -1887,6 +1909,23 @@ class GrowspaceHistoryController {
         // Try fallback if primary not found
         if (!entityId && mapping.fallback) {
             entityId = envAttrs[mapping.fallback];
+        }
+        // Special fallback for VPD calculated sensor
+        if (!entityId && metricKey === 'vpd' && device.name) {
+            const slugify = (text) => text
+                .toString()
+                .toLowerCase()
+                .replace(/\s+/g, '_')
+                .replace(/[^\w\-]+/g, '')
+                .replace(/\-\-+/g, '_')
+                .replace(/^-+/, '')
+                .replace(/-+$/, '');
+            const calcName = `${device.name} Calculated VPD`;
+            const calculatedId = `sensor.${slugify(calcName)}`;
+            if (this.host.hass && this.host.hass.states[calculatedId]) {
+                entityId = calculatedId;
+                console.log('[HistoryController] Using calculated VPD sensor fallback in getEntityIdForMetric:', entityId);
+            }
         }
         return entityId || null;
     }
@@ -5224,24 +5263,35 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         this._showDeleteConfirmation = false;
     }
     willUpdate(changedProps) {
+        // Handle dialog state object if passed (legacy/alternative usage)
         if (changedProps.has('dialog') && this.dialog) {
             this.plant = this.dialog.plant;
-            this.editedAttributes = this.dialog.editedAttributes || {
-                strain: this.plant?.attributes.strain,
-                phenotype: this.plant?.attributes.phenotype,
-                row: this.plant?.attributes.row,
-                col: this.plant?.attributes.col,
-                stage: this.plant?.state,
-                veg_start: this.plant?.attributes.veg_start,
-                flower_start: this.plant?.attributes.flower_start,
-                seedling_start: this.plant?.attributes.seedling_start,
-                mother_start: this.plant?.attributes.mother_start,
-                clone_start: this.plant?.attributes.clone_start,
-                dry_start: this.plant?.attributes.dry_start,
-                cure_start: this.plant?.attributes.cure_start,
-            };
+            this.editedAttributes = this.dialog.editedAttributes || this._getAttributesFromPlant();
             this.cloneTargetId = '';
         }
+        // Handle direct prop injection (DialogHost usage)
+        // If editedAttributes is undefined/null (e.g. passed as null from parent), init it
+        if (!this.editedAttributes || (changedProps.has('plant') && !this.editedAttributes.strain)) {
+            this.editedAttributes = this.editedAttributes || this._getAttributesFromPlant();
+        }
+    }
+    _getAttributesFromPlant() {
+        if (!this.plant)
+            return {};
+        return {
+            strain: this.plant?.attributes?.strain,
+            phenotype: this.plant?.attributes?.phenotype,
+            row: this.plant?.attributes?.row,
+            col: this.plant?.attributes?.col,
+            stage: this.plant?.state,
+            veg_start: this.plant?.attributes?.veg_start,
+            flower_start: this.plant?.attributes?.flower_start,
+            seedling_start: this.plant?.attributes?.seedling_start,
+            mother_start: this.plant?.attributes?.mother_start,
+            clone_start: this.plant?.attributes?.clone_start,
+            dry_start: this.plant?.attributes?.dry_start,
+            cure_start: this.plant?.attributes?.cure_start,
+        };
     }
     _close() {
         this.dispatchEvent(new CustomEvent('close'));
@@ -5469,19 +5519,19 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             : x `
                     <div class="stat-grid">
                       <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes.strain}</span>
+                        <span class="stat-value">${this.plant.attributes?.strain}</span>
                         <span class="stat-label">Strain</span>
                       </div>
                       <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes.phenotype || 'N/A'}</span>
+                        <span class="stat-value">${this.plant.attributes?.phenotype || 'N/A'}</span>
                         <span class="stat-label">Phenotype</span>
                       </div>
                       <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes.row ?? '-'}</span>
+                        <span class="stat-value">${this.plant.attributes?.row ?? '-'}</span>
                         <span class="stat-label">Row</span>
                       </div>
                       <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes.col ?? '-'}</span>
+                        <span class="stat-value">${this.plant.attributes?.col ?? '-'}</span>
                         <span class="stat-label">Col</span>
                       </div>
                     </div>
@@ -5636,7 +5686,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             </button>
 
             <!-- DYNAMIC ACTIONS -->
-            ${this.plant.state.toLowerCase() === PlantStage.MOTHER
+            ${(this.plant.state || '').toLowerCase() === PlantStage.MOTHER
             ? x `
                   <div
                     class="take-clone-container"
@@ -5668,7 +5718,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                   </div>
                 `
             : E}
-            ${this.plant.state.toLowerCase() === PlantStage.FLOWER
+            ${(this.plant.state || '').toLowerCase() === PlantStage.FLOWER
             ? x `
                   <button class="md3-button primary" @click=${() => this._harvest(this.plant)}>
                     <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
@@ -5678,7 +5728,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                   </button>
                 `
             : E}
-            ${this.plant.state.toLowerCase() === PlantStage.DRY
+            ${(this.plant.state || '').toLowerCase() === PlantStage.DRY
             ? x `
                   <button
                     class="md3-button primary"
@@ -5691,7 +5741,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                   </button>
                 `
             : E}
-            ${this.plant.state.toLowerCase() === PlantStage.CLONE
+            ${(this.plant.state || '').toLowerCase() === PlantStage.CLONE
             ? x `
                   <div style="display:contents; display:flex; gap: 8px; align-items: center;">
                     <md3-select
@@ -5864,7 +5914,7 @@ __decorate([
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "growspaceOptions", void 0);
 __decorate([
-    r$2(),
+    n$5({ attribute: false }),
     __metadata("design:type", Object)
 ], PlantOverviewDialog.prototype, "editedAttributes", void 0);
 __decorate([
@@ -18873,6 +18923,7 @@ class MetricsUtils {
             }
             if (vpd === undefined || vpd === null) {
                 // Calculated VPD fallback
+                // 1. Try Name-based ID (New Standard)
                 const slugify = (text) => text
                     .toString()
                     .toLowerCase()
@@ -18883,7 +18934,15 @@ class MetricsUtils {
                     .replace(/-+$/, '');
                 const calcName = `${device.name} Calculated VPD`;
                 const calculatedId = `sensor.${slugify(calcName)}`;
-                const vpdState = hass.states[calculatedId];
+                let vpdState = hass.states[calculatedId];
+                // 2. Try UUID-based ID (Old Legacy)
+                if (!vpdState || vpdState.state === 'unknown' || vpdState.state === 'unavailable') {
+                    const oldId = `sensor.${device.device_id}_calculated_vpd`;
+                    const oldState = hass.states[oldId];
+                    if (oldState && oldState.state !== 'unknown' && oldState.state !== 'unavailable') {
+                        vpdState = oldState;
+                    }
+                }
                 if (vpdState && vpdState.state !== 'unknown' && vpdState.state !== 'unavailable') {
                     const val = parseFloat(vpdState.state);
                     if (!isNaN(val))
