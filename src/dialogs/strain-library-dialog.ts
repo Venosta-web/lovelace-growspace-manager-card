@@ -749,7 +749,7 @@ export class StrainLibraryDialog extends LitElement {
           <button
             class="md3-button text"
             @click=${() => (this._mobileMenuOpen = !this._mobileMenuOpen)}
-            style="min-width:auto; padding:8px; display: none;"
+            style="min-width:auto; padding:8px; margin-left: auto;"
           >
             <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
               <path d="${mdiDotsVertical}"></path>
@@ -764,9 +764,9 @@ export class StrainLibraryDialog extends LitElement {
           </style>
 
           <button
-            class="md3-button text"
+            class="md3-button text close"
             @click=${() => this.dispatchEvent(new CustomEvent('close'))}
-            style="min-width:auto; padding:8px;"
+            style="min-width:auto; padding:8px; margin-left: auto;"
           >
             <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
               <path d="${mdiClose}"></path>
@@ -1019,9 +1019,9 @@ export class StrainLibraryDialog extends LitElement {
           <h2 class="dialog-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
         </div>
         <button
-          class="md3-button text"
+          class="md3-button text close"
           @click=${() => this.dispatchEvent(new CustomEvent('close'))}
-          style="min-width:auto; padding:8px;"
+          style="min-width:auto; padding:8px margin-left: auto;"
         >
           <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
             <path d="${mdiClose}"></path>

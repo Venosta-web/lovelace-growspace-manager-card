@@ -114,8 +114,9 @@ export const dialogStyles = [
       min-height: 0;
       padding: 8px;
     }
-    .dialog-header .md3-button.text {
-      flex: 0;
+    .dialog-header .md3-button.text,
+    .dialog-header .md3-button.text.close {
+      flex: unset;
     }
     .detail-card .md3-button {
       flex: 1 1 1;

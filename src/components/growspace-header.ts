@@ -158,22 +158,6 @@ export class GrowspaceHeader extends LitElement {
       gap: 24px;
     }
 
-    /* --- Header Top Section --- */
-    .gs-header-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 16px;
-    }
-
-    .gs-title-group {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
     /* ABSOLUTE OVERLAY TRICK for Auto-Width Select */
     .select-wrapper {
         position: relative;
@@ -186,7 +170,7 @@ export class GrowspaceHeader extends LitElement {
     /* The visible text element that drives width */
     .select-sizer {
         font-family: 'Roboto', sans-serif;
-        font-size: 2.5rem;
+        font-size: 3.5rem;
         font-weight: 300;
         margin: 0;
         line-height: 1.1;
@@ -235,10 +219,62 @@ export class GrowspaceHeader extends LitElement {
       backdrop-filter: blur(8px);
     }
 
+    /* --- Header Top Section --- */
+    .gs-header-top {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      grid-template-rows: auto auto;
+      align-items: center;
+      gap: 4px 16px;
+    }
+
+    .header-title-area {
+        grid-column: 1;
+        grid-row: 1;
+        display: flex;
+        align-items: center;
+    }
+
     .header-actions {
+        grid-column: 2;
+        grid-row: 1;
+        justify-self: end;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .header-stage-area {
+        grid-column: 1;
+        grid-row: 2;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        padding-right: 16px;
+        box-sizing: border-box;
+        mask-image: linear-gradient(to right, black 90%, transparent 100%);
+    }
+
+    .gs-device-chips-header {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
+      margin-right: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .gs-device-chips-header growspace-chip {
+        flex-shrink: 0;
     }
 
     /* --- Hero Grid (Vital Stats) --- */
@@ -254,14 +290,18 @@ export class GrowspaceHeader extends LitElement {
       background: var(--glass-bg);
       border: var(--glass-border);
       backdrop-filter: var(--glass-blur);
-      border-radius: 20px;
-      padding: 20px;
+      box-shadow:
+        0 4px 24px -1px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+      
+      border-radius: 24px; /* Increased rounded corners */
+      padding: 20px 24px;
       display: flex;
       flex-direction: column;
       gap: 8px;
       position: relative;
       cursor: grab;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
       overflow: hidden;
       min-height: 110px;
     }
@@ -272,8 +312,12 @@ export class GrowspaceHeader extends LitElement {
     }
     
     .hero-card:hover {
-        background: rgba(255, 255, 255, 0.08);
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        background: rgba(255, 255, 255, 0.08); /* Slightly lighter on hover */
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 
+             0 8px 32px -4px rgba(0, 0, 0, 0.3),
+             0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+        transform: translateY(-2px);
     }
 
     .hero-card.linked {
@@ -318,12 +362,12 @@ export class GrowspaceHeader extends LitElement {
     /* Mini sparkline background for hero cards */
     .hero-sparkline {
         position: absolute;
-        top: 0;
+        top: 50%;
         left: 0;
         right: 0;
         bottom: 0;
         width: 100%;
-        height: 100%;
+        height: 50%;
         pointer-events: none;
         z-index: 0;
         opacity: 0.7;
@@ -340,12 +384,10 @@ export class GrowspaceHeader extends LitElement {
         display: flex;
         align-items: center;
         gap: 8px; /* For arrows */
-        background: var(--glass-bg);
-        border: var(--glass-border);
-        backdrop-filter: var(--glass-blur);
         border-radius: 16px;
-        padding: 4px;
-        width: 100%;
+        flex: 1;
+        min-width: 0;
+        margin: 0 16px;
         box-sizing: border-box;
     }
 
@@ -372,6 +414,7 @@ export class GrowspaceHeader extends LitElement {
 
     .secondary-strip {
         display: flex;
+        justify-content: flex-end;
         align-items: center;
         gap: 12px;
         overflow-x: auto;
@@ -379,7 +422,7 @@ export class GrowspaceHeader extends LitElement {
         flex: 1;
         scrollbar-width: none; /* Firefox */
         -ms-overflow-style: none; /* IE */
-        padding: 8px 4px;
+        padding: 8px 4px 8px 4px; 
         scroll-behavior: smooth;
     }
     .secondary-strip::-webkit-scrollbar { display: none; }
@@ -399,19 +442,20 @@ export class GrowspaceHeader extends LitElement {
     @media (max-width: 600px) {
         .gs-title { font-size: 2rem; }
         .hero-grid {
-            grid-template-columns: 1fr 1fr; /* 2 cols on mobile */
+            grid-template-columns: 1fr;
             gap: 12px;
         }
         .hero-value { font-size: 1.75rem; }
         
         .header-actions {
-            position: absolute;
-            top: 0;
-            right: 0;
+            grid-column: 1;
+            grid-row: 3;
+            justify-content: flex-start;
+            justify-self: auto;
         }
         .gs-header-top {
+            grid-template-columns: minmax(0, 1fr); /* Force single column constrained width */
             position: relative; /* For absolute actions */
-            flex-direction: column;
             gap: 8px;
         }
 
@@ -421,9 +465,37 @@ export class GrowspaceHeader extends LitElement {
             height: auto;
             overflow-x: visible;
         }
+
+        /* Absolute positioning for mobile actions */
+        .icon-button.mobile-link {
+            position: absolute;
+            top: 0;
+            right: 48px;
+        }
+        .menu-container {
+            position: absolute !important;
+            top: 0 !important;
+            right: 0 !important;
+        }
+
+        /* Fix scroll issue with flex-end on mobile */
+        .secondary-strip {
+            justify-content: flex-start;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            width: 100%; /* Ensure width is defined */
+            max-width: 100%;
+        }
+        .secondary-strip-container {
+            margin: 0;
+        }
+        .secondary-strip-container .scroll-arrow {
+            display: none;
+        }
     }
 
     /* Menu & Buttons (Reused/Refined) */
+    .menu-container { position: relative; }
     .icon-button {
       width: 40px;
       height: 40px;
@@ -445,7 +517,7 @@ export class GrowspaceHeader extends LitElement {
         border-color: var(--primary-color, #2196f3);
     }
 
-    .menu-container { position: relative; }
+
     .menu-dropdown {
       position: absolute;
       top: 100%;
@@ -665,11 +737,12 @@ export class GrowspaceHeader extends LitElement {
         
         <!-- TOP HEADER: Title + Actions -->
         <div class="gs-header-top">
-          <div class="gs-title-group">
+          
+          <!-- Row 1 Left: Title/Select -->
+          <div class="header-title-area">
             ${!this.config?.default_growspace
         ? html`
             <div class="select-wrapper">
-                <!-- Hidden span to drive width based on selected value -->
                 <span class="select-sizer">${this.store.state.devices.find(d => d.device_id === this.device.device_id)?.name || this.device.name}</span>
                 <select
                     class="growspace-select-header"
@@ -683,22 +756,30 @@ export class GrowspaceHeader extends LitElement {
             </div>`
         : html`<h1 class="gs-title">${this.device.name}</h1>`
       }
-            
-            ${dominant
-        ? html`
-                    <div class="gs-stage-pill">
-                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
-                        ${dominant.daysLabel}
-                    </div>
-                    <div class="gs-stage-pill">
-                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
-                        ${dominant.weeksLabel}
-                    </div>
-                  `
-        : ''}
           </div>
 
+          <!-- Row 1 Right: Header Actions (Device Chips + Menu) -->
           <div class="header-actions">
+              <div class="gs-device-chips-header">
+                ${this._deviceChips.map(chip => html`
+                    <growspace-chip
+                        .icon=${chip.icon}
+                        .label=${chip.label}
+                        .value=${chip.value}
+                        .status=${chip.status}
+                        .active=${chip.active}
+                        .linked=${chip.linked}
+                        .tooltip=${chip.tooltip}
+                        draggable="${this._chipDraggable}"
+                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
+                        @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
+                        @dragover=${this._handleDragOver}
+                        @click=${() => this._toggleEnvGraph(chip.key)}
+                        @unlink=${(e: CustomEvent) => this._unlinkGraphs(chip.groupIndex)}
+                    ></growspace-chip>
+                `)}
+              </div>
+
              ${(this._isMobileCheck || this._hasTouch) ? html`
                 <div 
                     class="icon-button mobile-link ${this._mobileLink ? 'active' : ''}"
@@ -716,15 +797,25 @@ export class GrowspaceHeader extends LitElement {
                 ${this._renderMenu()}
              </div>
           </div>
-        </div>
+          
+          <!-- Row 2 Left: Stage Chips -->
+          <div class="header-stage-area">
+            ${dominant
+        ? html`
+                    <div class="gs-stage-pill">
+                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
+                        ${dominant.daysLabel}
+                    </div>
+                    <div class="gs-stage-pill">
+                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
+                        ${dominant.weeksLabel}
+                    </div>
+                  `
+        : ''}
+          </div>
 
-        <!-- HERO GRID (Vital Stats) -->
-        <div class="hero-grid">
-            ${heroChips.map(chip => this._renderHeroCard(chip))}
-        </div>
-
-        <!-- SECONDARY STRIP (Scrollable) -->
-        <div class="secondary-strip-container">
+          <!-- Row 2 Right: Secondary Strip -->
+          <div class="secondary-strip-container">
             <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollChips('left')}>
                 <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
             </div>
@@ -733,29 +824,7 @@ export class GrowspaceHeader extends LitElement {
                 class="secondary-strip ${this._mobileLink ? 'mobile-wrap' : ''}"
                 ${ref(this._chipsContainerRef)}
             >
-                <!-- Secondary Metrics -->
                 ${secondaryChips.map(chip => html`
-                    <growspace-chip
-                        .icon=${chip.icon}
-                        .label=${chip.label}
-                        .value=${chip.value}
-                        .status=${chip.status}
-                        .active=${chip.active}
-                        .linked=${chip.linked}
-                        .tooltip=${chip.tooltip}
-                        draggable="${this._chipDraggable}"
-                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
-                        @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
-                        @dragover=${this._handleDragOver}
-                        @click=${() => this._toggleEnvGraph(chip.key)}
-                        @unlink=${(e: CustomEvent) => this._unlinkGraphs(chip.groupIndex)}
-                    ></growspace-chip>
-                `)}
-
-                ${this._deviceChips.length > 0 && secondaryChips.length > 0 ? html`<div class="secondary-divider"></div>` : ''}
-
-                <!-- Device Chips -->
-                ${this._deviceChips.map(chip => html`
                     <growspace-chip
                         .icon=${chip.icon}
                         .label=${chip.label}
@@ -777,8 +846,15 @@ export class GrowspaceHeader extends LitElement {
             <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollChips('right')}>
                 <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
             </div>
+          </div>
+
         </div>
 
+
+        <!-- HERO GRID (Vital Stats) -->
+        <div class="hero-grid">
+            ${heroChips.map(chip => this._renderHeroCard(chip))}
+        </div>
       </div>
     `;
   }

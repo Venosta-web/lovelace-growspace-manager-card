@@ -637,11 +637,11 @@ const METRIC_SORT_ORDER = [
     'humidity',
     'vpd',
     'co2',
-    'light',
     'soil_moisture',
     'irrigation',
     'drain',
     'optimal',
+    'light',
     'exhaust',
     'circulation_fan',
     'humidifier',
@@ -4469,8 +4469,9 @@ const dialogStyles = [
       min-height: 0;
       padding: 8px;
     }
-    .dialog-header .md3-button.text {
-      flex: 0;
+    .dialog-header .md3-button.text,
+    .dialog-header .md3-button.text.close {
+      flex: unset;
     }
     .detail-card .md3-button {
       flex: 1 1 1;
@@ -5832,7 +5833,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           <button
             class="md3-button text"
             @click=${() => (this._mobileMenuOpen = !this._mobileMenuOpen)}
-            style="min-width:auto; padding:8px; display: none;"
+            style="min-width:auto; padding:8px; margin-left: auto;"
           >
             <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
               <path d="${mdiDotsVertical}"></path>
@@ -5847,9 +5848,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           </style>
 
           <button
-            class="md3-button text"
+            class="md3-button text close"
             @click=${() => this.dispatchEvent(new CustomEvent('close'))}
-            style="min-width:auto; padding:8px;"
+            style="min-width:auto; padding:8px; margin-left: auto;"
           >
             <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
               <path d="${mdiClose}"></path>
@@ -6098,9 +6099,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           <h2 class="dialog-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
         </div>
         <button
-          class="md3-button text"
+          class="md3-button text close"
           @click=${() => this.dispatchEvent(new CustomEvent('close'))}
-          style="min-width:auto; padding:8px;"
+          style="min-width:auto; padding:8px margin-left: auto;"
         >
           <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
             <path d="${mdiClose}"></path>
@@ -18730,7 +18731,6 @@ class MetricsUtils {
                 ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})`
                 : ''),
             createChipData('co2', mdiWeatherCloudy, co2 !== undefined ? `${co2} ppm` : undefined),
-            createChipData('light', isLightsOn ? mdiLightbulbOn : mdiLightbulbOff, hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined),
             createChipData('soil_moisture', mdiWaterPercent, this._getAttributeValue(overviewEntity, 'soil_moisture_value') !== undefined
                 ? `${this._getAttributeValue(overviewEntity, 'soil_moisture_value')}%`
                 : undefined, 'Moisture'),
@@ -18766,6 +18766,8 @@ class MetricsUtils {
             ? hass.states[circulationFanId].state
             : undefined;
         const deviceChips = [
+            // Moved light chip here per request
+            createChipData('light', isLightsOn ? mdiLightbulbOn : mdiLightbulbOff, hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined),
             createChipData('exhaust', mdiFan, exhaustId || exhaustSensor ? `${exhaustState ?? '-'}` : undefined, 'Exhaust'),
             createChipData('circulation_fan', mdiFan, circulationFanId ? `${circulationFanState ?? '-'}` : undefined, 'Fan'),
             createChipData('humidifier', mdiAirHumidifier, humidifierId || humidifierSensor ? `${humidifierState ?? '-'}` : undefined, 'Humidifier'),
@@ -18990,11 +18992,12 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         
         <!-- TOP HEADER: Title + Actions -->
         <div class="gs-header-top">
-          <div class="gs-title-group">
+          
+          <!-- Row 1 Left: Title/Select -->
+          <div class="header-title-area">
             ${!this.config?.default_growspace
             ? x `
             <div class="select-wrapper">
-                <!-- Hidden span to drive width based on selected value -->
                 <span class="select-sizer">${this.store.state.devices.find(d => d.device_id === this.device.device_id)?.name || this.device.name}</span>
                 <select
                     class="growspace-select-header"
@@ -19005,22 +19008,30 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                 </select>
             </div>`
             : x `<h1 class="gs-title">${this.device.name}</h1>`}
-            
-            ${dominant
-            ? x `
-                    <div class="gs-stage-pill">
-                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
-                        ${dominant.daysLabel}
-                    </div>
-                    <div class="gs-stage-pill">
-                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
-                        ${dominant.weeksLabel}
-                    </div>
-                  `
-            : ''}
           </div>
 
+          <!-- Row 1 Right: Header Actions (Device Chips + Menu) -->
           <div class="header-actions">
+              <div class="gs-device-chips-header">
+                ${this._deviceChips.map(chip => x `
+                    <growspace-chip
+                        .icon=${chip.icon}
+                        .label=${chip.label}
+                        .value=${chip.value}
+                        .status=${chip.status}
+                        .active=${chip.active}
+                        .linked=${chip.linked}
+                        .tooltip=${chip.tooltip}
+                        draggable="${this._chipDraggable}"
+                        @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
+                        @drop=${(e) => this._handleChipDrop(e, chip.key)}
+                        @dragover=${this._handleDragOver}
+                        @click=${() => this._toggleEnvGraph(chip.key)}
+                        @unlink=${(e) => this._unlinkGraphs(chip.groupIndex)}
+                    ></growspace-chip>
+                `)}
+              </div>
+
              ${(this._isMobileCheck || this._hasTouch) ? x `
                 <div 
                     class="icon-button mobile-link ${this._mobileLink ? 'active' : ''}"
@@ -19038,15 +19049,25 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                 ${this._renderMenu()}
              </div>
           </div>
-        </div>
+          
+          <!-- Row 2 Left: Stage Chips -->
+          <div class="header-stage-area">
+            ${dominant
+            ? x `
+                    <div class="gs-stage-pill">
+                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
+                        ${dominant.daysLabel}
+                    </div>
+                    <div class="gs-stage-pill">
+                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
+                        ${dominant.weeksLabel}
+                    </div>
+                  `
+            : ''}
+          </div>
 
-        <!-- HERO GRID (Vital Stats) -->
-        <div class="hero-grid">
-            ${heroChips.map(chip => this._renderHeroCard(chip))}
-        </div>
-
-        <!-- SECONDARY STRIP (Scrollable) -->
-        <div class="secondary-strip-container">
+          <!-- Row 2 Right: Secondary Strip -->
+          <div class="secondary-strip-container">
             <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollChips('left')}>
                 <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
             </div>
@@ -19055,29 +19076,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                 class="secondary-strip ${this._mobileLink ? 'mobile-wrap' : ''}"
                 ${n$2(this._chipsContainerRef)}
             >
-                <!-- Secondary Metrics -->
                 ${secondaryChips.map(chip => x `
-                    <growspace-chip
-                        .icon=${chip.icon}
-                        .label=${chip.label}
-                        .value=${chip.value}
-                        .status=${chip.status}
-                        .active=${chip.active}
-                        .linked=${chip.linked}
-                        .tooltip=${chip.tooltip}
-                        draggable="${this._chipDraggable}"
-                        @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
-                        @drop=${(e) => this._handleChipDrop(e, chip.key)}
-                        @dragover=${this._handleDragOver}
-                        @click=${() => this._toggleEnvGraph(chip.key)}
-                        @unlink=${(e) => this._unlinkGraphs(chip.groupIndex)}
-                    ></growspace-chip>
-                `)}
-
-                ${this._deviceChips.length > 0 && secondaryChips.length > 0 ? x `<div class="secondary-divider"></div>` : ''}
-
-                <!-- Device Chips -->
-                ${this._deviceChips.map(chip => x `
                     <growspace-chip
                         .icon=${chip.icon}
                         .label=${chip.label}
@@ -19099,8 +19098,15 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollChips('right')}>
                 <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
             </div>
+          </div>
+
         </div>
 
+
+        <!-- HERO GRID (Vital Stats) -->
+        <div class="hero-grid">
+            ${heroChips.map(chip => this._renderHeroCard(chip))}
+        </div>
       </div>
     `;
     }
@@ -19398,22 +19404,6 @@ GrowspaceHeader.styles = i$6 `
       gap: 24px;
     }
 
-    /* --- Header Top Section --- */
-    .gs-header-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 16px;
-    }
-
-    .gs-title-group {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
     /* ABSOLUTE OVERLAY TRICK for Auto-Width Select */
     .select-wrapper {
         position: relative;
@@ -19426,7 +19416,7 @@ GrowspaceHeader.styles = i$6 `
     /* The visible text element that drives width */
     .select-sizer {
         font-family: 'Roboto', sans-serif;
-        font-size: 2.5rem;
+        font-size: 3.5rem;
         font-weight: 300;
         margin: 0;
         line-height: 1.1;
@@ -19475,10 +19465,62 @@ GrowspaceHeader.styles = i$6 `
       backdrop-filter: blur(8px);
     }
 
+    /* --- Header Top Section --- */
+    .gs-header-top {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      grid-template-rows: auto auto;
+      align-items: center;
+      gap: 4px 16px;
+    }
+
+    .header-title-area {
+        grid-column: 1;
+        grid-row: 1;
+        display: flex;
+        align-items: center;
+    }
+
     .header-actions {
+        grid-column: 2;
+        grid-row: 1;
+        justify-self: end;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .header-stage-area {
+        grid-column: 1;
+        grid-row: 2;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        padding-right: 16px;
+        box-sizing: border-box;
+        mask-image: linear-gradient(to right, black 90%, transparent 100%);
+    }
+
+    .gs-device-chips-header {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
+      margin-right: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .gs-device-chips-header growspace-chip {
+        flex-shrink: 0;
     }
 
     /* --- Hero Grid (Vital Stats) --- */
@@ -19494,14 +19536,18 @@ GrowspaceHeader.styles = i$6 `
       background: var(--glass-bg);
       border: var(--glass-border);
       backdrop-filter: var(--glass-blur);
-      border-radius: 20px;
-      padding: 20px;
+      box-shadow:
+        0 4px 24px -1px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+      
+      border-radius: 24px; /* Increased rounded corners */
+      padding: 20px 24px;
       display: flex;
       flex-direction: column;
       gap: 8px;
       position: relative;
       cursor: grab;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
       overflow: hidden;
       min-height: 110px;
     }
@@ -19512,8 +19558,12 @@ GrowspaceHeader.styles = i$6 `
     }
     
     .hero-card:hover {
-        background: rgba(255, 255, 255, 0.08);
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        background: rgba(255, 255, 255, 0.08); /* Slightly lighter on hover */
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 
+             0 8px 32px -4px rgba(0, 0, 0, 0.3),
+             0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+        transform: translateY(-2px);
     }
 
     .hero-card.linked {
@@ -19558,12 +19608,12 @@ GrowspaceHeader.styles = i$6 `
     /* Mini sparkline background for hero cards */
     .hero-sparkline {
         position: absolute;
-        top: 0;
+        top: 50%;
         left: 0;
         right: 0;
         bottom: 0;
         width: 100%;
-        height: 100%;
+        height: 50%;
         pointer-events: none;
         z-index: 0;
         opacity: 0.7;
@@ -19580,12 +19630,10 @@ GrowspaceHeader.styles = i$6 `
         display: flex;
         align-items: center;
         gap: 8px; /* For arrows */
-        background: var(--glass-bg);
-        border: var(--glass-border);
-        backdrop-filter: var(--glass-blur);
         border-radius: 16px;
-        padding: 4px;
-        width: 100%;
+        flex: 1;
+        min-width: 0;
+        margin: 0 16px;
         box-sizing: border-box;
     }
 
@@ -19612,6 +19660,7 @@ GrowspaceHeader.styles = i$6 `
 
     .secondary-strip {
         display: flex;
+        justify-content: flex-end;
         align-items: center;
         gap: 12px;
         overflow-x: auto;
@@ -19619,7 +19668,7 @@ GrowspaceHeader.styles = i$6 `
         flex: 1;
         scrollbar-width: none; /* Firefox */
         -ms-overflow-style: none; /* IE */
-        padding: 8px 4px;
+        padding: 8px 4px 8px 4px; 
         scroll-behavior: smooth;
     }
     .secondary-strip::-webkit-scrollbar { display: none; }
@@ -19639,19 +19688,20 @@ GrowspaceHeader.styles = i$6 `
     @media (max-width: 600px) {
         .gs-title { font-size: 2rem; }
         .hero-grid {
-            grid-template-columns: 1fr 1fr; /* 2 cols on mobile */
+            grid-template-columns: 1fr;
             gap: 12px;
         }
         .hero-value { font-size: 1.75rem; }
         
         .header-actions {
-            position: absolute;
-            top: 0;
-            right: 0;
+            grid-column: 1;
+            grid-row: 3;
+            justify-content: flex-start;
+            justify-self: auto;
         }
         .gs-header-top {
+            grid-template-columns: minmax(0, 1fr); /* Force single column constrained width */
             position: relative; /* For absolute actions */
-            flex-direction: column;
             gap: 8px;
         }
 
@@ -19661,9 +19711,37 @@ GrowspaceHeader.styles = i$6 `
             height: auto;
             overflow-x: visible;
         }
+
+        /* Absolute positioning for mobile actions */
+        .icon-button.mobile-link {
+            position: absolute;
+            top: 0;
+            right: 48px;
+        }
+        .menu-container {
+            position: absolute !important;
+            top: 0 !important;
+            right: 0 !important;
+        }
+
+        /* Fix scroll issue with flex-end on mobile */
+        .secondary-strip {
+            justify-content: flex-start;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            width: 100%; /* Ensure width is defined */
+            max-width: 100%;
+        }
+        .secondary-strip-container {
+            margin: 0;
+        }
+        .secondary-strip-container .scroll-arrow {
+            display: none;
+        }
     }
 
     /* Menu & Buttons (Reused/Refined) */
+    .menu-container { position: relative; }
     .icon-button {
       width: 40px;
       height: 40px;
@@ -19685,7 +19763,7 @@ GrowspaceHeader.styles = i$6 `
         border-color: var(--primary-color, #2196f3);
     }
 
-    .menu-container { position: relative; }
+
     .menu-dropdown {
       position: absolute;
       top: 100%;

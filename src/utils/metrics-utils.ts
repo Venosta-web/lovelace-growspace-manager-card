@@ -206,11 +206,6 @@ export class MetricsUtils {
             ),
             createChipData('co2', mdiWeatherCloudy, co2 !== undefined ? `${co2} ppm` : undefined),
             createChipData(
-                'light',
-                isLightsOn ? mdiLightbulbOn : mdiLightbulbOff,
-                hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined
-            ),
-            createChipData(
                 'soil_moisture',
                 mdiWaterPercent,
                 this._getAttributeValue(overviewEntity, 'soil_moisture_value') !== undefined
@@ -265,6 +260,12 @@ export class MetricsUtils {
                 : undefined;
 
         const deviceChips = [
+            // Moved light chip here per request
+            createChipData(
+                'light',
+                isLightsOn ? mdiLightbulbOn : mdiLightbulbOff,
+                hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined
+            ),
             createChipData(
                 'exhaust',
                 mdiFan,
