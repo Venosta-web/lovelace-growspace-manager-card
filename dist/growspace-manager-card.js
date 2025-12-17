@@ -22238,10 +22238,10 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
             this._unsubStateChanged = undefined;
         }
     }
-    _subscribeToSensorUpdates() {
+    async _subscribeToSensorUpdates() {
         if (!this.hass || this._unsubStateChanged)
             return;
-        this._unsubStateChanged = this.hass.connection.subscribeEvents((event) => {
+        this._unsubStateChanged = await this.hass.connection.subscribeEvents((event) => {
             const newState = event.data.new_state;
             if (newState?.entity_id === 'sensor.growspaces_list') {
                 const gsObj = newState.attributes.growspaces;

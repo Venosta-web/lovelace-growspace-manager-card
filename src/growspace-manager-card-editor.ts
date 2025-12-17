@@ -31,10 +31,10 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
     }
   }
 
-  private _subscribeToSensorUpdates() {
+  private async _subscribeToSensorUpdates() {
     if (!this.hass || this._unsubStateChanged) return;
 
-    this._unsubStateChanged = this.hass.connection.subscribeEvents((event: any) => {
+    this._unsubStateChanged = await this.hass.connection.subscribeEvents((event: any) => {
       const newState = event.data.new_state;
       if (newState?.entity_id === 'sensor.growspaces_list') {
         const gsObj = newState.attributes.growspaces;
