@@ -16,40 +16,78 @@ export class GrowspaceAdapter {
     overview: GrowspaceOverviewEntity,
     wsData: GrowspaceAPIResponse | null = null
   ): GrowspaceDevice | null {
+    const attributes = overview.attributes;
+    const growspace_id = attributes.growspace_id;
+    const name = attributes.friendly_name || `Growspace ${growspace_id}`;
 
-    // 1. Fallback / Check
-    // If we have no WS data, we might try attributes, but strict mode prefers WS.
-    // If WS data is missing, we return null or minimal data.
-    // However, for immediate UI feedback we might need attributes.
-    // Given the strict refactor request, we prioritize mapping wsData.
+    // Default type if unknown
+    const type: GrowspaceType = (attributes.type as GrowspaceType) || 'normal';
 
+    // 1. Missing WebSocket Data -> Return Loading/Skeleton State
+    // The UI should see this as a valid device but with empty/loading data.
     if (!wsData) {
-      // Legacy fallback or just return null if we enforce strict data?
-      // "Input: sensorEntity ... and wsData"
-      // Detailed mapping depends on wsData structure.
-      // If wsData is null, let's look at attributes minimally or return null.
-      // Current behavior was: return null if attributes.grid is also empty.
-      return null;
+      return createGrowspaceDevice({
+        device_id: growspace_id,
+        overview_entity_id: overview.entity_id,
+        name,
+        type,
+        plants: [],
+        rows: attributes.rows || 3,
+        plants_per_row: attributes.plants_per_row || 3,
+        last_updated: 'Loading...',
+        biological_metrics: {
+          vpd_status: 'unknown',
+          granular_stage: 'unknown',
+          is_day: false,
+          vpd_target_min: 0,
+          vpd_target_max: 0,
+          vpd_danger_min: 0,
+          vpd_danger_max: 0,
+          veg_week: 0,
+          flower_week: 0,
+          air_exchange: '0',
+        },
+        irrigation_times: [],
+        drain_times: [],
+        irrigation_config: {
+          irrigation_pump_entity: '',
+          drain_pump_entity: '',
+          irrigation_duration: 0,
+          drain_duration: 0,
+        },
+        environment_attributes: {},
+        stats: {
+          max_veg_days: 0,
+          max_flower_days: 0,
+          veg_week: 0,
+          flower_week: 0,
+          total_plants: 0,
+          max_stage_summary: '',
+        },
+      });
     }
 
+    // 2. Map Flat API Data STRICTLY
     const {
-      growspace_id,
-      name,
-      type,
+      // Root Props
+      grid,
       rows,
       plants_per_row,
       notification_target,
-      grid,
+
       // Configs
       irrigation_config,
       irrigation_strategy,
-      // Stats
+
+      // Statistics (Root -> Stats)
       max_veg_days,
       max_flower_days,
       veg_week,
       flower_week,
       max_stage_summary,
-      // Biological Metrics (Spread)
+      total_plants,
+
+      // Biological Metrics (Root -> Bio)
       vpd_status,
       vpd_target_min,
       vpd_target_max,
@@ -58,7 +96,8 @@ export class GrowspaceAdapter {
       granular_stage,
       is_day,
       air_exchange,
-      // Environment Sensors
+
+      // Environment Sensors (Root -> Env)
       temperature_sensor,
       humidity_sensor,
       vpd_sensor,
@@ -67,7 +106,8 @@ export class GrowspaceAdapter {
       exhaust_sensor,
       humidifier_sensor,
       light_sensor,
-      // Environment States
+
+      // Environment States (Root -> Env)
       dehumidifier_entity,
       dehumidifier_state,
       dehumidifier_humidity,
@@ -94,9 +134,7 @@ export class GrowspaceAdapter {
               ...slot,
               growspace_id,
               friendly_name: `${slot.strain} ${slot.phenotype}`,
-              // Ensure stage enum match if possible, or string fallback
               stage: slot.stage as PlantStage,
-              // Backend sends row/col in slot now
             },
             last_changed: '',
             last_updated: '',
@@ -150,35 +188,35 @@ export class GrowspaceAdapter {
       max_flower_days,
       veg_week,
       flower_week,
-      total_plants: wsData.total_plants,
+      total_plants,
       max_stage_summary,
     };
 
-    // --- Legacy compatibility for irrigation times (from config) ---
+    // --- Irrigation (Strictly from config) ---
     const irrigation_times = irrigation_config?.irrigation_times || [];
     const drain_times = irrigation_config?.drain_times || [];
 
     return createGrowspaceDevice({
       device_id: growspace_id,
-      overview_entity_id: overview.entity_id, // Use the sensor entity ID
+      overview_entity_id: overview.entity_id,
       name,
       plants,
-      rows,
-      plants_per_row,
+      rows: rows,
+      plants_per_row: plants_per_row,
       type: type as GrowspaceType,
-      last_updated: overview.last_updated, // Or current time?
+      last_updated: overview.last_updated,
       biological_metrics,
       irrigation_times,
       drain_times,
       irrigation_config,
-      irrigation_strategy: irrigation_strategy || undefined, // Strict null to undefined if interface asks optional?
+      irrigation_strategy: irrigation_strategy || undefined,
       environment_attributes,
       stats,
-      // Provide top-level backwards compat if needed, or rely on stats grouping
+      // Top-level stats (optional, but requested for strict match if interface demands)
       max_veg_days,
       max_flower_days,
-      total_plants: wsData.total_plants,
-      max_stage_summary,
+      total_plants,
+      max_stage_summary
     });
   }
 

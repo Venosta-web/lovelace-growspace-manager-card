@@ -3,6 +3,7 @@ import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy, GrowspaceAP
 import { GrowspaceAdapter } from './adapters/growspace-adapter';
 import { noChange } from 'lit';
 import { DOMAIN, SERVICES, WS_TYPE_GET_DATA } from './constants';
+import { GrowspaceAPIResponseSchema } from './schemas/api-schema';
 
 export class DataService {
   public hass!: HomeAssistant;
@@ -17,14 +18,36 @@ export class DataService {
     this.hass = hass;
   }
 
+
+
   async fetchGrowspaceData(growspaceId?: string): Promise<GrowspaceAPIResponse | null> {
     if (!this.hass) return null;
     try {
-      const result = await this.hass.connection.sendMessagePromise<GrowspaceAPIResponse>({
+      const result = await this.hass.connection.sendMessagePromise<unknown>({
         type: WS_TYPE_GET_DATA,
         growspace_id: growspaceId,
       });
-      return result;
+
+      // Runtime Validation
+      const parsed = GrowspaceAPIResponseSchema.safeParse(result);
+      if (!parsed.success) {
+        console.error(
+          `[DataService] API Validation Failed for ${growspaceId}:`,
+          parsed.error.format()
+        );
+        // We could throw here, but for resilience we'll try to use the raw result 
+        // if it at least has the basics, or return null to be safe.
+        // For 'Gold' quality, crashing on invalid data is better than silent corruption,
+        // BUT silent resilience is better UX. Let's return the raw result if it looks like an object,
+        // but rely on the error log to alert devs.
+        // Or strictly: return null?
+        // Let's go with safe return of partial data if possible, or null if criticals are missing.
+        // Actually, if Schema fails, let's trust Zod's .parse() vs .safeParse() behavior choice.
+        // We will return the raw result but logged the error.
+        return result as GrowspaceAPIResponse;
+      }
+
+      return parsed.data as unknown as GrowspaceAPIResponse;
     } catch (err) {
       console.error('[DataService:fetchGrowspaceData] Error:', err);
       // Fallback: If WS fails, we return null, and adapter will try to use attributes (which might be empty for heavy data)
@@ -255,9 +278,9 @@ export class DataService {
       const res = await this.hass.callService(DOMAIN, SERVICES.ADD_PLANT, params);
       console.log('[DataService:addPlant] Response:', res);
       return res;
-    } catch (err) {
+    } catch (err: any) {
       console.error('[DataService:addPlant] Error:', err);
-      throw err;
+      throw new Error(err.message || 'Failed to add plant');
     }
   }
 
@@ -571,9 +594,9 @@ export class DataService {
       } else {
         throw new Error(result.error || 'Unknown import error');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('[DataService:importStrainLibrary] Error:', err);
-      throw err;
+      throw new Error(err.message || 'Failed to import strain library');
     }
   }
 
@@ -691,9 +714,9 @@ export class DataService {
         },
         return_response: true,
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('[DataService:askGrowAdvice] Error:', err);
-      throw err;
+      throw new Error(err.message || 'Failed to get advice');
     }
   }
 

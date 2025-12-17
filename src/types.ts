@@ -103,16 +103,16 @@ export const stageInputs: Record<
     key: keyof PlantAttributes;
   }>
 > = {
-  [PlantStage.SEEDLING]: [],
-  [PlantStage.MOTHER]: [{ label: 'Mother Start', icon: mdiSprout, key: 'mother_start' }],
-  [PlantStage.CLONE]: [{ label: 'Clone Start', icon: mdiSprout, key: 'clone_start' }],
-  [PlantStage.VEG]: [{ label: 'Vegetative Start', icon: mdiSprout, key: 'veg_start' }],
+  [PlantStage.SEEDLING]: [{ label: 'metrics.planted_date', icon: mdiSprout, key: 'seedling_start' }],
+  [PlantStage.MOTHER]: [{ label: 'metrics.mother_start', icon: mdiSprout, key: 'mother_start' }],
+  [PlantStage.CLONE]: [{ label: 'metrics.clone_start', icon: mdiSprout, key: 'clone_start' }],
+  [PlantStage.VEG]: [{ label: 'metrics.veg_start', icon: mdiSprout, key: 'veg_start' }],
   [PlantStage.FLOWER]: [
-    { label: 'Vegetative Start', icon: mdiSprout, key: 'veg_start' },
-    { label: 'Flower Start', icon: mdiFlower, key: 'flower_start' },
+    { label: 'metrics.veg_start', icon: mdiSprout, key: 'veg_start' },
+    { label: 'metrics.flower_start', icon: mdiFlower, key: 'flower_start' },
   ],
-  [PlantStage.DRY]: [{ label: 'Dry Start', icon: mdiHairDryer, key: 'dry_start' }],
-  [PlantStage.CURE]: [{ label: 'Cure Start', icon: mdiCannabis, key: 'cure_start' }],
+  [PlantStage.DRY]: [{ label: 'metrics.dry_start', icon: mdiHairDryer, key: 'dry_start' }],
+  [PlantStage.CURE]: [{ label: 'metrics.cure_start', icon: mdiCannabis, key: 'cure_start' }],
 };
 
 // -- Data Structures --
@@ -248,6 +248,7 @@ export interface GrowspaceDevice {
     veg_week: number;
     flower_week: number;
     max_stage_summary: string;
+    total_plants: number;
   };
 }
 

@@ -4,6 +4,7 @@ import {
     mdiHairDryer,
     mdiCannabis,
 } from '@mdi/js';
+import { HomeAssistant } from 'custom-card-helpers';
 import { PlantEntity, PlantStage, CropMeta, GrowspaceType, GrowspaceDevice } from '../types';
 
 export const PLANT_STAGES: PlantStage[] = [
@@ -430,5 +431,44 @@ export class PlantUtils {
     static getImgStyle(meta?: CropMeta): string {
         if (!meta) return 'width: 100%; height: 100%; object-fit: cover;';
         return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
+    }
+
+    /**
+     * Formats a date using the user's Home Assistant locale.
+     * @param date Date object or ISO string
+     * @param hass HomeAssistant instance
+     * @returns Formatted date string
+     */
+    static formatDate(date: string | Date, hass: HomeAssistant): string {
+        if (!date) return '';
+        const d = typeof date === 'string' ? new Date(date) : date;
+        if (isNaN(d.getTime())) return '';
+
+        try {
+            return new Intl.DateTimeFormat(hass.locale.language, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            }).format(d);
+        } catch (e) {
+            console.warn('[PlantUtils] Date formatting error:', e);
+            return d.toLocaleDateString();
+        }
+    }
+
+    /**
+     * Formats a number using the user's Home Assistant locale.
+     * @param num Number to format
+     * @param hass HomeAssistant instance
+     * @param options Intl.NumberFormatOptions
+     * @returns Formatted number string
+     */
+    static formatNumber(num: number, hass: HomeAssistant, options?: Intl.NumberFormatOptions): string {
+        try {
+            return new Intl.NumberFormat(hass.locale.language, options).format(num);
+        } catch (e) {
+            console.warn('[PlantUtils] Number formatting error:', e);
+            return num.toString();
+        }
     }
 }
