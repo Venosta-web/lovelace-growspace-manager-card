@@ -22244,8 +22244,12 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
         this._unsubStateChanged = this.hass.connection.subscribeEvents((event) => {
             const newState = event.data.new_state;
             if (newState?.entity_id === 'sensor.growspaces_list') {
-                if (Array.isArray(newState.attributes?.growspaces)) {
-                    this._growspaceOptions = newState.attributes.growspaces;
+                const gsObj = newState.attributes.growspaces;
+                if (gsObj) {
+                    this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
+                        id,
+                        name: String(name),
+                    }));
                 }
                 else {
                     this._growspaceOptions = [];
@@ -22259,10 +22263,10 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
         const entity = this.hass.states['sensor.growspaces_list'];
         if (entity && entity.attributes?.growspaces) {
             const gsObj = entity.attributes.growspaces;
-            // Option 1: just values (friendly names)
-            this._growspaceOptions = Object.values(gsObj);
-            // Option 2: key/value pairs if you want IDs as the value
-            // this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({ id, name }));
+            this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
+                id,
+                name: String(name),
+            }));
         }
         else {
             this._growspaceOptions = [];
@@ -22293,7 +22297,7 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
           <option value="">Select a growspace</option>
           ${this._growspaceOptions.length === 0
             ? x `<option disabled>No growspaces found</option>`
-            : this._growspaceOptions.map((gs) => x `<option value="${gs}">${gs}</option>`)}
+            : this._growspaceOptions.map((gs) => x `<option value="${gs.id}">${gs.name}</option>`)}
         </select>
       </div>
     `;
