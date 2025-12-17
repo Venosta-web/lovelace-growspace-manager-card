@@ -1,5 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
-import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy } from './types';
+import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy, GrowspaceAPIResponse } from './types';
 import { GrowspaceAdapter } from './adapters/growspace-adapter';
 import { noChange } from 'lit';
 import { DOMAIN, SERVICES, WS_TYPE_GET_DATA } from './constants';
@@ -17,10 +17,10 @@ export class DataService {
     this.hass = hass;
   }
 
-  async fetchGrowspaceData(growspaceId?: string): Promise<any> {
+  async fetchGrowspaceData(growspaceId?: string): Promise<GrowspaceAPIResponse | null> {
     if (!this.hass) return null;
     try {
-      const result = await this.hass.connection.sendMessagePromise({
+      const result = await this.hass.connection.sendMessagePromise<GrowspaceAPIResponse>({
         type: WS_TYPE_GET_DATA,
         growspace_id: growspaceId,
       });
@@ -35,7 +35,7 @@ export class DataService {
   // Cache for transformed devices to avoid expensive re-parsing on every HASS update
   private _deviceCache = new Map<string, { entity: any; wsData: any; result: GrowspaceDevice }>();
 
-  getGrowspaceDevices(wsDataMap: Record<string, any> = {}): GrowspaceDevice[] {
+  getGrowspaceDevices(wsDataMap: Record<string, GrowspaceAPIResponse> = {}): GrowspaceDevice[] {
     if (!this.hass) {
       // console.log('[DataService] getGrowspaceDevices: no hass');
       return [];
@@ -164,6 +164,7 @@ export class DataService {
   async fetchStrainLibrary(): Promise<StrainEntry[]> {
     console.log('[DataService:fetchStrainLibrary] Fetching strain library via API');
     try {
+      // @ts-ignore - return_response is valid in modern HA but types might lag
       const serviceResponse: any = await this.hass.connection.sendMessagePromise({
         type: 'call_service',
         domain: DOMAIN,
@@ -172,13 +173,14 @@ export class DataService {
         return_response: true,
       });
 
-      const rawStrains = serviceResponse?.response || serviceResponse || {};
+      // Handle common response wrapping patterns in HA services
+      const rawStrains = serviceResponse?.response ?? serviceResponse ?? {};
       const currentStrains: StrainEntry[] = [];
 
       console.log('[DataService:fetchStrainLibrary] Raw response:', rawStrains);
 
       Object.entries(rawStrains).forEach(([strainName, data]: [string, any]) => {
-        if (strainName === 'response') return; // unexpected wrapper?
+        if (strainName === 'response') return; // unexpected wrapper or metadata
         const meta = data.meta || {};
         const phenotypes = data.phenotypes || {};
 

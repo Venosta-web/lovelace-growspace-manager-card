@@ -178,7 +178,6 @@ export interface IrrigationStrategy {
   maintenance_dryback_percent: number;
   shot_duration_seconds: number;
   shot_interval_minutes: number;
-  [key: string]: any;
 }
 
 export interface IrrigationConfig {
@@ -188,7 +187,6 @@ export interface IrrigationConfig {
   drain_duration?: number;
   irrigation_times?: IrrigationTime[];
   drain_times?: IrrigationTime[];
-  [key: string]: any;
 }
 
 export interface GrowspaceEnvironmentAttributes {
@@ -225,6 +223,7 @@ export interface GrowspaceDevice {
     is_day?: boolean;
     veg_week?: number;
     flower_week?: number;
+    air_exchange?: string;
     [key: string]: any;
   };
 
@@ -243,6 +242,13 @@ export interface GrowspaceDevice {
   max_flower_days?: number;
   total_plants?: number;
   max_stage_summary?: string;
+  stats?: {
+    max_veg_days: number;
+    max_flower_days: number;
+    veg_week: number;
+    flower_week: number;
+    max_stage_summary: string;
+  };
 }
 
 export function createGrowspaceDevice(
@@ -313,9 +319,33 @@ export interface GrowspaceEvent {
 // -- Raw Data Interfaces (from Backend/WS) --
 
 export interface RawPlantData {
+  plant_id: string;
+  entity_id: string;
   strain: string;
   phenotype: string;
-  stage?: string;
+  stage: string; // backend returns stage string
+  row: number;
+  col: number;
+  position: string;
+
+  // Days in stage
+  seedling_days: number;
+  mother_days: number;
+  clone_days: number;
+  veg_days: number;
+  flower_days: number;
+  dry_days: number;
+  cure_days: number;
+
+  // Start dates
+  seedling_start: string | null;
+  mother_start: string | null;
+  clone_start: string | null;
+  veg_start: string | null;
+  flower_start: string | null;
+  dry_start: string | null;
+  cure_start: string | null;
+
   [key: string]: any;
 }
 
@@ -326,12 +356,17 @@ export interface RawGrowspaceAttributes {
   friendly_name?: string;
   type?: string;
   grid?: Record<string, RawPlantData | null>;
-  row?: undefined;
-  col?: undefined;
   [key: string]: any;
 }
 
-export interface GrowspaceWebSocketData {
+export interface GrowspaceOverviewEntity extends HassEntity {
+  attributes: RawGrowspaceAttributes;
+}
+
+
+// STRICT API RESPONSE
+export interface GrowspaceAPIResponse {
+  // Root Identity
   growspace_id: string;
   name: string;
   type: GrowspaceType;
@@ -340,19 +375,21 @@ export interface GrowspaceWebSocketData {
   total_plants: number;
   notification_target?: string;
 
+  // Grid
   grid: Record<string, RawPlantData | null>;
 
+  // Configs
   irrigation_config: IrrigationConfig;
-  irrigation_strategy: IrrigationStrategy;
+  irrigation_strategy: IrrigationStrategy | null;
 
-  // Statistics
+  // Statistics (Root Level in Serializer)
   max_veg_days: number;
   max_flower_days: number;
   veg_week: number;
   flower_week: number;
   max_stage_summary: string;
 
-  // Biological Metrics
+  // Biological Metrics (Spread in Serializer)
   vpd_status: string;
   vpd_target_min: number;
   vpd_target_max: number;
@@ -360,10 +397,10 @@ export interface GrowspaceWebSocketData {
   vpd_danger_max: number;
   granular_stage: string;
   is_day: boolean;
-  air_exchange?: any;
-  vpd?: number | string;
+  air_exchange?: string;
 
-  // Environment Sensors
+  // Environment (Spread in Serializer)
+  // Sensors
   temperature_sensor?: string;
   humidity_sensor?: string;
   vpd_sensor?: string;
@@ -371,26 +408,26 @@ export interface GrowspaceWebSocketData {
   soil_moisture_sensor?: string;
   exhaust_sensor?: string;
   humidifier_sensor?: string;
-
-  // Environment Controls & States
-  dehumidifier_entity?: string;
-  humidifier_entity?: string;
-  exhaust_entity?: string;
-  circulation_fan_entity?: string;
   light_sensor?: string;
 
-  dehumidifier_control_enabled?: boolean;
-  dehumidifier_humidity?: number;
-  dehumidifier_mode?: string;
+  // Environment States/Controls
+  dehumidifier_entity?: string;
   dehumidifier_state?: string;
+  dehumidifier_humidity?: number;
   dehumidifier_current_humidity?: number;
+  dehumidifier_mode?: string;
+  dehumidifier_control_enabled?: boolean;
 
+  exhaust_entity?: string;
   exhaust_state?: string;
+
+  humidifier_entity?: string;
   humidifier_state?: string;
-  co2_state?: string;
-  light_level?: string;
-  daily_light_integral?: number;
-  heater_socket?: string;
+
+  circulation_fan_entity?: string;
+  circulation_fan_state?: string;
+
+  [key: string]: any;
 }
 
 export type MetricType =

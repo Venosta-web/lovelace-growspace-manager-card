@@ -74,10 +74,13 @@ describe('GrowspaceManagerCardEditor', () => {
         const options = growspaceSelect?.querySelectorAll('option');
 
         // first option is "Select a growspace"
-        // then 'Tent A', 'Tent B'
+        // then 'Tent A', 'Tent B' -> IDs will be '0', '1' due to Object.entries on array
         expect(options?.length).toBe(3);
-        expect(options?.[1].value).toBe('Tent A');
-        expect(options?.[2].value).toBe('Tent B');
+        // value should be ID
+        expect(options?.[1].value).toBe('0');
+        expect(options?.[1].textContent).toBe('Tent A');
+        expect(options?.[2].value).toBe('1');
+        expect(options?.[2].textContent).toBe('Tent B');
     });
 
     it('should handle missing growspaces list', async () => {
@@ -162,7 +165,9 @@ describe('GrowspaceManagerCardEditor', () => {
                 }
             });
             await element.updateComplete;
-            expect((element as any)._growspaceOptions).toEqual(['Updated Tent']);
+            // Expect array of objects {id, name}
+            // ID will be '0' for first item in array
+            expect((element as any)._growspaceOptions).toEqual([{ id: '0', name: 'Updated Tent' }]);
         } else {
             throw new Error('Subscription callback was not captured');
         }

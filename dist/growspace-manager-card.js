@@ -466,171 +466,130 @@ PlantUtils.DATE_FIELDS = [
 
 class GrowspaceAdapter {
     static transformGrowspace(overview, wsData = null) {
-        const attributes = overview.attributes;
-        const growspaceId = attributes.growspace_id;
-        const name = attributes.friendly_name || `Growspace ${growspaceId}`;
-        const type = attributes.type ??
-            (name.toLowerCase().includes('dry')
-                ? 'dry'
-                : name.toLowerCase().includes('cure')
-                    ? 'cure'
-                    : 'normal');
-        // 1. Check for missing data (empty state fix)
-        // If we have no WS data AND the attributes grid is empty/undefined, allow returning null/simulating loading
-        // We return null so the caller can filter this out and keep the previous state or show loading
-        if (!wsData && (!attributes.grid || Object.keys(attributes.grid).length === 0)) {
-            return null; // Cast to avoid changing return type signature broadly if strictly typed, but better handled by caller check
+        // 1. Fallback / Check
+        // If we have no WS data, we might try attributes, but strict mode prefers WS.
+        // If WS data is missing, we return null or minimal data.
+        // However, for immediate UI feedback we might need attributes.
+        // Given the strict refactor request, we prioritize mapping wsData.
+        if (!wsData) {
+            // Legacy fallback or just return null if we enforce strict data?
+            // "Input: sensorEntity ... and wsData"
+            // Detailed mapping depends on wsData structure.
+            // If wsData is null, let's look at attributes minimally or return null.
+            // Current behavior was: return null if attributes.grid is also empty.
+            return null;
         }
-        // Prefer WS data for grid, fallback to attributes.grid (legacy/fallback)
-        const grid = wsData?.grid || attributes.grid || {};
+        const { growspace_id, name, type, rows, plants_per_row, notification_target, grid, 
+        // Configs
+        irrigation_config, irrigation_strategy, 
+        // Stats
+        max_veg_days, max_flower_days, veg_week, flower_week, max_stage_summary, 
+        // Biological Metrics (Spread)
+        vpd_status, vpd_target_min, vpd_target_max, vpd_danger_min, vpd_danger_max, granular_stage, is_day, air_exchange, 
+        // Environment Sensors
+        temperature_sensor, humidity_sensor, vpd_sensor, co2_sensor, soil_moisture_sensor, exhaust_sensor, humidifier_sensor, light_sensor, 
+        // Environment States
+        dehumidifier_entity, dehumidifier_state, dehumidifier_humidity, dehumidifier_current_humidity, dehumidifier_mode, dehumidifier_control_enabled, exhaust_entity, exhaust_state, humidifier_entity, humidifier_state, circulation_fan_entity, circulation_fan_state, } = wsData;
+        // --- Plants Mapping ---
         const plants = [];
-        Object.entries(grid).forEach(([key, slot]) => {
-            if (slot) {
-                // Fix: Use the stable entity_id from backend if available, fallback to unknown (never guess)
-                const entityId = slot.entity_id || 'unknown';
-                // Extract row/col from key "position_R_C"
-                let row;
-                let col;
-                const parts = key.split('_');
-                if (parts.length === 3) {
-                    row = parseInt(parts[1]);
-                    col = parseInt(parts[2]);
+        if (grid) {
+            Object.entries(grid).forEach(([key, slot]) => {
+                if (slot) {
+                    plants.push({
+                        entity_id: slot.entity_id,
+                        state: slot.stage || 'unknown',
+                        attributes: {
+                            ...slot,
+                            growspace_id,
+                            friendly_name: `${slot.strain} ${slot.phenotype}`,
+                            // Ensure stage enum match if possible, or string fallback
+                            stage: slot.stage,
+                            // Backend sends row/col in slot now
+                        },
+                        last_changed: '',
+                        last_updated: '',
+                        context: { id: '', parent_id: null, user_id: null },
+                    });
                 }
-                plants.push({
-                    entity_id: entityId,
-                    state: slot.stage || 'unknown',
-                    attributes: {
-                        ...slot,
-                        growspace_id: growspaceId,
-                        friendly_name: `${slot.strain} ${slot.phenotype}`,
-                        stage: slot.stage,
-                        row,
-                        col,
-                    },
-                    last_changed: '',
-                    last_updated: '',
-                    context: { id: '', parent_id: null, user_id: null },
-                });
-            }
-        });
-        // Extract enhanced metrics from WS data or attributes
-        const bioMetrics = wsData
-            ? {
-                vpd_status: wsData.vpd_status,
-                vpd_target_min: wsData.vpd_target_min,
-                vpd_target_max: wsData.vpd_target_max,
-                vpd_danger_min: wsData.vpd_danger_min,
-                vpd_danger_max: wsData.vpd_danger_max,
-                granular_stage: wsData.granular_stage,
-                is_day: wsData.is_day,
-                veg_week: wsData.veg_week,
-                flower_week: wsData.flower_week,
-                // Added per request:
-                air_exchange: wsData.air_exchange,
-            }
-            : {
-                // Fallback to attributes if WS failed or not used (though we removed them from backend)
-                vpd_status: attributes.vpd_status,
-                vpd_target_min: attributes.vpd_target_min,
-                vpd_target_max: attributes.vpd_target_max,
-                granular_stage: attributes.granular_stage,
-                is_day: attributes.is_day,
-                air_exchange: attributes.air_exchange,
-            };
-        // Extract irrigation times from nested config in WS data
-        const rawIrrigation = wsData?.irrigation_config?.irrigation_times || attributes.irrigation_times || [];
-        const irrigationTimes = Array.isArray(rawIrrigation)
-            ? rawIrrigation.map((t) => (typeof t === 'string' ? { time: t } : t))
-            : [];
-        const rawDrain = wsData?.irrigation_config?.drain_times || attributes.drain_times || [];
-        const drainTimes = Array.isArray(rawDrain)
-            ? rawDrain.map((t) => (typeof t === 'string' ? { time: t } : t))
-            : [];
-        // Environment attributes
-        const envAttrs = wsData
-            ? {
-                temperature_sensor: wsData.temperature_sensor,
-                humidity_sensor: wsData.humidity_sensor,
-                vpd_sensor: wsData.vpd_sensor,
-                co2_sensor: wsData.co2_sensor,
-                soil_moisture_sensor: wsData.soil_moisture_sensor,
-                dehumidifier_entity: wsData.dehumidifier_entity,
-                humidifier_entity: wsData.humidifier_entity,
-                exhaust_entity: wsData.exhaust_entity,
-                exhaust_sensor: wsData.exhaust_sensor,
-                humidifier_sensor: wsData.humidifier_sensor,
-                circulation_fan_entity: wsData.circulation_fan_entity,
-                light_sensor: wsData.light_sensor,
-                dehumidifier_control_enabled: wsData.dehumidifier_control_enabled,
-                // Added per request:
-                dehumidifier_humidity: wsData.dehumidifier_humidity,
-                dehumidifier_current_humidity: wsData.dehumidifier_current_humidity,
-                dehumidifier_mode: wsData.dehumidifier_mode,
-                vpd: wsData.vpd,
-            }
-            : {
-                // Fallback
-                temperature_sensor: attributes.temperature_sensor,
-                humidity_sensor: attributes.humidity_sensor,
-                vpd_sensor: attributes.vpd_sensor,
-                co2_sensor: attributes.co2_sensor,
-                soil_moisture_sensor: attributes.soil_moisture_sensor,
-                light_sensor: attributes.light_sensor,
-                exhaust_entity: attributes.exhaust_entity,
-                exhaust_sensor: attributes.exhaust_sensor,
-                humidifier_entity: attributes.humidifier_entity,
-                humidifier_sensor: attributes.humidifier_sensor,
-                circulation_fan_entity: attributes.circulation_fan_entity,
-                dehumidifier_entity: attributes.dehumidifier_entity,
-                dehumidifier_control_enabled: attributes.dehumidifier_control_enabled,
-            };
-        const irrigationConfig = wsData
-            ? wsData.irrigation_config
-            : {
-                irrigation_pump_entity: attributes.irrigation_pump_entity,
-                drain_pump_entity: attributes.drain_pump_entity,
-                irrigation_duration: attributes.irrigation_duration,
-                drain_duration: attributes.drain_duration,
-            };
-        const irrigationStrategy = wsData ? wsData.irrigation_strategy : attributes.irrigation_strategy;
+            });
+        }
+        // --- Biological Metrics Grouping ---
+        const biological_metrics = {
+            vpd_status,
+            vpd_target_min,
+            vpd_target_max,
+            vpd_danger_min,
+            vpd_danger_max,
+            granular_stage,
+            is_day,
+            veg_week,
+            flower_week,
+            air_exchange,
+        };
+        // --- Environment Attributes Grouping ---
+        const environment_attributes = {
+            temperature_sensor,
+            humidity_sensor,
+            vpd_sensor,
+            co2_sensor,
+            soil_moisture_sensor,
+            exhaust_sensor,
+            humidifier_sensor,
+            light_sensor,
+            dehumidifier_entity,
+            dehumidifier_state,
+            dehumidifier_humidity,
+            dehumidifier_current_humidity,
+            dehumidifier_mode,
+            dehumidifier_control_enabled,
+            exhaust_entity,
+            exhaust_state,
+            humidifier_entity,
+            humidifier_state,
+            circulation_fan_entity,
+            circulation_fan_state,
+        };
+        // --- Stats Grouping ---
+        const stats = {
+            max_veg_days,
+            max_flower_days,
+            veg_week,
+            flower_week,
+            total_plants: wsData.total_plants,
+            max_stage_summary,
+        };
+        // --- Legacy compatibility for irrigation times (from config) ---
+        const irrigation_times = irrigation_config?.irrigation_times || [];
+        const drain_times = irrigation_config?.drain_times || [];
         return createGrowspaceDevice({
-            device_id: growspaceId,
-            overview_entity_id: overview.entity_id,
+            device_id: growspace_id,
+            overview_entity_id: overview.entity_id, // Use the sensor entity ID
             name,
             plants,
-            rows: attributes.rows ?? 3,
-            plants_per_row: attributes.plants_per_row ?? 3,
-            type,
-            last_updated: overview.last_updated,
-            biological_metrics: bioMetrics,
-            irrigation_times: irrigationTimes,
-            drain_times: drainTimes,
-            irrigation_config: irrigationConfig,
-            irrigation_strategy: irrigationStrategy,
-            environment_attributes: envAttrs,
-            // Pass through new statistics
-            max_veg_days: wsData?.max_veg_days,
-            max_flower_days: wsData?.max_flower_days,
-            total_plants: wsData?.total_plants,
-            max_stage_summary: wsData?.max_stage_summary,
+            rows,
+            plants_per_row,
+            type: type,
+            last_updated: overview.last_updated, // Or current time?
+            biological_metrics,
+            irrigation_times,
+            drain_times,
+            irrigation_config,
+            irrigation_strategy: irrigation_strategy || undefined, // Strict null to undefined if interface asks optional?
+            environment_attributes,
+            stats,
+            // Provide top-level backwards compat if needed, or rely on stats grouping
+            max_veg_days,
+            max_flower_days,
+            total_plants: wsData.total_plants,
+            max_stage_summary,
         });
     }
     /**
      * @deprecated Relies on attributes that are often empty. Use DataService.getGrowspaceDevices instead which uses WS data.
      */
     static transformToDevices(allStates) {
-        // Legacy method - might be unused after refactor, but kept for safety if needed
-        // Assuming no WS data available here, so grid comes from attributes (which might be empty now)
-        const overviewSensors = allStates.filter((entity) => {
-            const attrs = entity.attributes;
-            return (entity.entity_id.startsWith('sensor.') &&
-                attrs.growspace_id !== undefined &&
-                attrs.rows !== undefined &&
-                attrs.plants_per_row !== undefined &&
-                attrs.row === undefined &&
-                attrs.col === undefined);
-        });
-        return overviewSensors.map((overview) => this.transformGrowspace(overview, null));
+        // Legacy method stub - effectively disabled or returning empty if we enforce strict WS usage
+        return [];
     }
 }
 
@@ -885,6 +844,7 @@ class DataService {
     async fetchStrainLibrary() {
         console.log('[DataService:fetchStrainLibrary] Fetching strain library via API');
         try {
+            // @ts-ignore - return_response is valid in modern HA but types might lag
             const serviceResponse = await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
                 domain: DOMAIN,
@@ -892,12 +852,13 @@ class DataService {
                 service_data: {},
                 return_response: true,
             });
-            const rawStrains = serviceResponse?.response || serviceResponse || {};
+            // Handle common response wrapping patterns in HA services
+            const rawStrains = serviceResponse?.response ?? serviceResponse ?? {};
             const currentStrains = [];
             console.log('[DataService:fetchStrainLibrary] Raw response:', rawStrains);
             Object.entries(rawStrains).forEach(([strainName, data]) => {
                 if (strainName === 'response')
-                    return; // unexpected wrapper?
+                    return; // unexpected wrapper or metadata
                 const meta = data.meta || {};
                 const phenotypes = data.phenotypes || {};
                 Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {

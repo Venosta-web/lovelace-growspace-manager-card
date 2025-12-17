@@ -15,7 +15,7 @@ describe('GrowspaceHistoryController', () => {
         mockHost = {
             addController: vi.fn(),
             requestUpdate: vi.fn(),
-            hass: {},
+            hass: { states: {} },
             selectedDevice: 'd1',
             devices: [{ device_id: 'd1', name: 'Tent 1', overview_entity_id: 'sensor.tent_1' }],
             dataService: mockDataService
@@ -127,7 +127,7 @@ describe('GrowspaceHistoryController', () => {
         it('should synthesize light history if missing but optimal exists', async () => {
             mockHost.devices[0].environment_attributes = {};
             // Optimal history returns is_lights_on attribute
-            mockDataService.getHistory.mockImplementation((entity) => {
+            mockDataService.getHistory.mockImplementation((entity: string) => {
                 if (entity.includes('optimal')) {
                     return [{ state: 'on', attributes: { is_lights_on: true } }];
                 }
