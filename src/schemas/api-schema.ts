@@ -18,7 +18,7 @@ export const GrowspaceAPIResponseSchema = z.object({
     rows: z.number(),
     plants_per_row: z.number(),
     total_plants: z.number().optional().default(0),
-    notification_target: z.string().optional(),
+    notification_target: z.string().nullable().optional(),
 
     // Grid
     grid: z.record(z.string(), PlantSlotSchema).nullable().optional().transform(v => v ?? {}),
@@ -29,6 +29,9 @@ export const GrowspaceAPIResponseSchema = z.object({
         drain_times: z.array(z.any()).optional(),
     }).optional().default({}),
     irrigation_strategy: z.any().optional().nullable().default(null),
+
+    // New nested environment config
+    environment_config: z.record(z.any()).optional().default({}),
 
     // Statistics
     max_veg_days: z.number().optional().default(0),
@@ -45,12 +48,10 @@ export const GrowspaceAPIResponseSchema = z.object({
     vpd_danger_max: z.number().optional().default(0),
     granular_stage: z.string().optional().default('unknown'),
     is_day: z.boolean().optional().default(false),
-    air_exchange: z.union([z.string(), z.number().transform(String)]).optional(), // Default handled by optionality? types.ts says optional string.
-
-    // Environment
-    temperature_sensor: z.string().optional(),
-    humidity_sensor: z.string().optional(),
-    vpd_sensor: z.string().optional(),
+    air_exchange: z.union([z.string(), z.number().transform(String)]).nullable().optional(), // Default handled by optionality
 }).catchall(z.any()); // Allow extra fields to pass through without error
 
 export type GrowspaceAPIResponse = z.infer<typeof GrowspaceAPIResponseSchema>;
+
+export const GrowspaceAPICollectionSchema = z.record(z.string(), GrowspaceAPIResponseSchema);
+export type GrowspaceAPICollection = z.infer<typeof GrowspaceAPICollectionSchema>;

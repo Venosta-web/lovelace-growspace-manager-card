@@ -54,8 +54,8 @@ var mdiWeatherSunny = "M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 
 var PlantStage;
 (function (PlantStage) {
     PlantStage["SEEDLING"] = "seedling";
-    PlantStage["MOTHER"] = "mother";
     PlantStage["CLONE"] = "clone";
+    PlantStage["MOTHER"] = "mother";
     PlantStage["VEG"] = "veg";
     PlantStage["FLOWER"] = "flower";
     PlantStage["DRY"] = "dry";
@@ -559,16 +559,12 @@ class GrowspaceAdapter {
         // Root Props
         grid, rows, plants_per_row, notification_target, 
         // Configs
-        irrigation_config, irrigation_strategy, 
+        irrigation_config, irrigation_strategy, environment_config, // New nested structure
         // Statistics (Root -> Stats)
         max_veg_days, max_flower_days, veg_week, flower_week, max_stage_summary, total_plants, 
         // Biological Metrics (Root -> Bio)
-        vpd_status, vpd_target_min, vpd_target_max, vpd_danger_min, vpd_danger_max, granular_stage, is_day, air_exchange, 
-        // Environment Sensors (Root -> Env)
-        temperature_sensor, humidity_sensor, vpd_sensor, co2_sensor, soil_moisture_sensor, exhaust_sensor, humidifier_sensor, light_sensor, 
-        // Environment States (Root -> Env)
-        dehumidifier_entity, dehumidifier_state, dehumidifier_humidity, dehumidifier_current_humidity, dehumidifier_mode, dehumidifier_control_enabled, exhaust_entity, exhaust_state, humidifier_entity, humidifier_state, circulation_fan_entity, circulation_fan_state, } = wsData;
-        // --- Plants Mapping ---
+        vpd_status, vpd_target_min, vpd_target_max, vpd_danger_min, vpd_danger_max, granular_stage, is_day, air_exchange, } = wsData;
+        // --- Plants Mapping (Dictionary to Flat Array) ---
         const plants = [];
         if (grid) {
             Object.entries(grid).forEach(([key, slot]) => {
@@ -580,7 +576,7 @@ class GrowspaceAdapter {
                             ...slot,
                             growspace_id,
                             friendly_name: `${slot.strain} ${slot.phenotype}`,
-                            stage: slot.stage,
+                            stage: slot.stage || 'unknown',
                         },
                         last_changed: '',
                         last_updated: '',
@@ -602,28 +598,24 @@ class GrowspaceAdapter {
             flower_week,
             air_exchange,
         };
-        // --- Environment Attributes Grouping ---
+        // --- Environment Attributes Grouping (Map from nested config) ---
+        // --- Environment Attributes Grouping (Map from nested config) ---
         const environment_attributes = {
-            temperature_sensor,
-            humidity_sensor,
-            vpd_sensor,
-            co2_sensor,
-            soil_moisture_sensor,
-            exhaust_sensor,
-            humidifier_sensor,
-            light_sensor,
-            dehumidifier_entity,
-            dehumidifier_state,
-            dehumidifier_humidity,
-            dehumidifier_current_humidity,
-            dehumidifier_mode,
-            dehumidifier_control_enabled,
-            exhaust_entity,
-            exhaust_state,
-            humidifier_entity,
-            humidifier_state,
-            circulation_fan_entity,
-            circulation_fan_state,
+            ...environment_config, // Spread strictly if schema matches
+            // Fallback: Check root level for backward compatibility
+            exhaust_entity: environment_config?.exhaust_entity || wsData.exhaust_entity,
+            humidifier_entity: environment_config?.humidifier_entity || wsData.humidifier_entity,
+            dehumidifier_entity: environment_config?.dehumidifier_entity || wsData.dehumidifier_entity,
+            circulation_fan_entity: environment_config?.circulation_fan_entity || wsData.circulation_fan_entity,
+            temperature_sensor: environment_config?.temperature_sensor || wsData.temperature_sensor,
+            humidity_sensor: environment_config?.humidity_sensor || wsData.humidity_sensor,
+            vpd_sensor: environment_config?.vpd_sensor || wsData.vpd_sensor,
+            co2_sensor: environment_config?.co2_sensor || wsData.co2_sensor,
+            soil_moisture_sensor: environment_config?.soil_moisture_sensor || wsData.soil_moisture_sensor,
+            light_sensor: environment_config?.light_sensor || wsData.light_sensor,
+            // Legacy support for sensors if keys differ
+            exhaust_sensor: environment_config?.exhaust_sensor || wsData.exhaust_sensor,
+            humidifier_sensor: environment_config?.humidifier_sensor || wsData.humidifier_sensor
         };
         // --- Stats Grouping ---
         const stats = {
@@ -653,7 +645,7 @@ class GrowspaceAdapter {
             irrigation_strategy: irrigation_strategy || undefined,
             environment_attributes,
             stats,
-            // Top-level stats (optional, but requested for strict match if interface demands)
+            // Top-level stats
             max_veg_days,
             max_flower_days,
             total_plants,
@@ -5185,7 +5177,7 @@ const GrowspaceAPIResponseSchema = z$1.object({
     rows: z$1.number(),
     plants_per_row: z$1.number(),
     total_plants: z$1.number().optional().default(0),
-    notification_target: z$1.string().optional(),
+    notification_target: z$1.string().nullable().optional(),
     // Grid
     grid: z$1.record(z$1.string(), PlantSlotSchema).nullable().optional().transform(v => v ?? {}),
     // Configs
@@ -5194,6 +5186,8 @@ const GrowspaceAPIResponseSchema = z$1.object({
         drain_times: z$1.array(z$1.any()).optional(),
     }).optional().default({}),
     irrigation_strategy: z$1.any().optional().nullable().default(null),
+    // New nested environment config
+    environment_config: z$1.record(z$1.any()).optional().default({}),
     // Statistics
     max_veg_days: z$1.number().optional().default(0),
     max_flower_days: z$1.number().optional().default(0),
@@ -5208,12 +5202,9 @@ const GrowspaceAPIResponseSchema = z$1.object({
     vpd_danger_max: z$1.number().optional().default(0),
     granular_stage: z$1.string().optional().default('unknown'),
     is_day: z$1.boolean().optional().default(false),
-    air_exchange: z$1.union([z$1.string(), z$1.number().transform(String)]).optional(), // Default handled by optionality? types.ts says optional string.
-    // Environment
-    temperature_sensor: z$1.string().optional(),
-    humidity_sensor: z$1.string().optional(),
-    vpd_sensor: z$1.string().optional(),
+    air_exchange: z$1.union([z$1.string(), z$1.number().transform(String)]).nullable().optional(), // Default handled by optionality
 }).catchall(z$1.any()); // Allow extra fields to pass through without error
+const GrowspaceAPICollectionSchema = z$1.record(z$1.string(), GrowspaceAPIResponseSchema);
 
 class DataService {
     constructor(hass) {
@@ -5235,25 +5226,30 @@ class DataService {
                 growspace_id: growspaceId,
             });
             // Runtime Validation
-            const parsed = GrowspaceAPIResponseSchema.safeParse(result);
-            if (!parsed.success) {
-                console.error(`[DataService] API Validation Failed for ${growspaceId}:`, parsed.error.format());
-                // We could throw here, but for resilience we'll try to use the raw result 
-                // if it at least has the basics, or return null to be safe.
-                // For 'Gold' quality, crashing on invalid data is better than silent corruption,
-                // BUT silent resilience is better UX. Let's return the raw result if it looks like an object,
-                // but rely on the error log to alert devs.
-                // Or strictly: return null?
-                // Let's go with safe return of partial data if possible, or null if criticals are missing.
-                // Actually, if Schema fails, let's trust Zod's .parse() vs .safeParse() behavior choice.
-                // We will return the raw result but logged the error.
-                return result;
+            if (growspaceId) {
+                // Expect Single Response
+                const parsed = GrowspaceAPIResponseSchema.safeParse(result);
+                if (!parsed.success) {
+                    console.error(`[DataService] API Validation Failed for ${growspaceId}: `, parsed.error.format());
+                    return result;
+                }
+                return parsed.data;
             }
-            return parsed.data;
+            else {
+                // Expect Collection (Record<string, GrowspaceAPIResponse>)
+                const parsed = GrowspaceAPICollectionSchema.safeParse(result);
+                if (!parsed.success) {
+                    console.error('[DataService] API Validation Failed for Collection (All Data):', parsed.error.format());
+                    // If collection validation fails, it might be due to one invalid item.
+                    // We can try to cast, or filtered?
+                    // For resilience, return as collection.
+                    return result;
+                }
+                return parsed.data;
+            }
         }
         catch (err) {
             console.error('[DataService:fetchGrowspaceData] Error:', err);
-            // Fallback: If WS fails, we return null, and adapter will try to use attributes (which might be empty for heavy data)
             return null;
         }
     }

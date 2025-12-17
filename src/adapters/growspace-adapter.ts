@@ -78,6 +78,7 @@ export class GrowspaceAdapter {
       // Configs
       irrigation_config,
       irrigation_strategy,
+      environment_config, // New nested structure
 
       // Statistics (Root -> Stats)
       max_veg_days,
@@ -96,33 +97,9 @@ export class GrowspaceAdapter {
       granular_stage,
       is_day,
       air_exchange,
-
-      // Environment Sensors (Root -> Env)
-      temperature_sensor,
-      humidity_sensor,
-      vpd_sensor,
-      co2_sensor,
-      soil_moisture_sensor,
-      exhaust_sensor,
-      humidifier_sensor,
-      light_sensor,
-
-      // Environment States (Root -> Env)
-      dehumidifier_entity,
-      dehumidifier_state,
-      dehumidifier_humidity,
-      dehumidifier_current_humidity,
-      dehumidifier_mode,
-      dehumidifier_control_enabled,
-      exhaust_entity,
-      exhaust_state,
-      humidifier_entity,
-      humidifier_state,
-      circulation_fan_entity,
-      circulation_fan_state,
     } = wsData;
 
-    // --- Plants Mapping ---
+    // --- Plants Mapping (Dictionary to Flat Array) ---
     const plants: PlantEntity[] = [];
     if (grid) {
       Object.entries(grid).forEach(([key, slot]) => {
@@ -134,7 +111,7 @@ export class GrowspaceAdapter {
               ...slot,
               growspace_id,
               friendly_name: `${slot.strain} ${slot.phenotype}`,
-              stage: slot.stage as PlantStage,
+              stage: (slot.stage as PlantStage) || 'unknown',
             },
             last_changed: '',
             last_updated: '',
@@ -158,28 +135,27 @@ export class GrowspaceAdapter {
       air_exchange,
     };
 
-    // --- Environment Attributes Grouping ---
+    // --- Environment Attributes Grouping (Map from nested config) ---
+    // --- Environment Attributes Grouping (Map from nested config) ---
     const environment_attributes = {
-      temperature_sensor,
-      humidity_sensor,
-      vpd_sensor,
-      co2_sensor,
-      soil_moisture_sensor,
-      exhaust_sensor,
-      humidifier_sensor,
-      light_sensor,
-      dehumidifier_entity,
-      dehumidifier_state,
-      dehumidifier_humidity,
-      dehumidifier_current_humidity,
-      dehumidifier_mode,
-      dehumidifier_control_enabled,
-      exhaust_entity,
-      exhaust_state,
-      humidifier_entity,
-      humidifier_state,
-      circulation_fan_entity,
-      circulation_fan_state,
+      ...environment_config, // Spread strictly if schema matches
+
+      // Fallback: Check root level for backward compatibility
+      exhaust_entity: environment_config?.exhaust_entity || wsData.exhaust_entity,
+      humidifier_entity: environment_config?.humidifier_entity || wsData.humidifier_entity,
+      dehumidifier_entity: environment_config?.dehumidifier_entity || wsData.dehumidifier_entity,
+      circulation_fan_entity: environment_config?.circulation_fan_entity || wsData.circulation_fan_entity,
+
+      temperature_sensor: environment_config?.temperature_sensor || wsData.temperature_sensor,
+      humidity_sensor: environment_config?.humidity_sensor || wsData.humidity_sensor,
+      vpd_sensor: environment_config?.vpd_sensor || wsData.vpd_sensor,
+      co2_sensor: environment_config?.co2_sensor || wsData.co2_sensor,
+      soil_moisture_sensor: environment_config?.soil_moisture_sensor || wsData.soil_moisture_sensor,
+      light_sensor: environment_config?.light_sensor || wsData.light_sensor,
+
+      // Legacy support for sensors if keys differ
+      exhaust_sensor: environment_config?.exhaust_sensor || wsData.exhaust_sensor,
+      humidifier_sensor: environment_config?.humidifier_sensor || wsData.humidifier_sensor
     };
 
     // --- Stats Grouping ---
@@ -212,7 +188,7 @@ export class GrowspaceAdapter {
       irrigation_strategy: irrigation_strategy || undefined,
       environment_attributes,
       stats,
-      // Top-level stats (optional, but requested for strict match if interface demands)
+      // Top-level stats
       max_veg_days,
       max_flower_days,
       total_plants,

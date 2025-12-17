@@ -123,6 +123,20 @@ export const METRIC_ENTITY_KEYS: Record<
 export const DOMAIN = 'growspace_manager';
 export const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
 
+export const EVENTS = {
+  GROWSPACE_UPDATED: "growspace_manager_updated",
+  GROWSPACE_ADDED: "growspace_manager_growspace_added",
+  GROWSPACE_REMOVED: "growspace_manager_growspace_removed",
+  PLANT_ADDED: "growspace_manager_plant_added",
+  PLANT_UPDATED: "growspace_manager_plant_updated",
+  PLANT_REMOVED: "growspace_manager_plant_removed",
+  PLANT_MOVED: "growspace_manager_plant_moved",
+  PLANT_SWITCHED: "growspace_manager_plant_switched",
+  PLANT_TRANSITIONED: "growspace_manager_plant_transitioned",
+  PLANT_HARVESTED: "growspace_manager_plant_harvested",
+  CLONES_TAKEN: "growspace_manager_clones_taken"
+};
+
 export const SERVICES = {
   GET_STRAIN_LIBRARY: 'get_strain_library',
   ADD_PLANT: 'add_plant',

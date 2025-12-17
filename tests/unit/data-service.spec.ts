@@ -42,6 +42,53 @@ describe('DataService', () => {
             expect(result).toBeNull();
         });
 
+        it('should fetch all growspaces (collection) when no ID provided', async () => {
+            const mockCollection = {
+                gs1: { growspace_id: 'gs1', name: 'GS1', type: 'normal', rows: 4, plants_per_row: 4, grid: {} },
+                gs2: { growspace_id: 'gs2', name: 'GS2', type: 'mom', rows: 2, plants_per_row: 2, grid: {} }
+            };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(mockCollection);
+
+            const result = await service.fetchGrowspaceData();
+            expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'growspace_manager/get_data',
+                growspace_id: undefined
+            }));
+            // We expect a record
+            expect(result).toEqual(mockCollection);
+        });
+
+        it('should validate nullable optional fields in collection', async () => {
+            const mockCollection = {
+                gs1: {
+                    growspace_id: 'gs1',
+                    name: 'GS1',
+                    type: 'normal',
+                    rows: 4,
+                    plants_per_row: 4,
+                    grid: {},
+                    notification_target: null, // Should pass
+                    air_exchange: null // Should pass
+                }
+            };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(mockCollection);
+
+            const result = await service.fetchGrowspaceData();
+
+            // The result will have defaults applied by Zod schema
+            expect(result).toEqual({
+                gs1: expect.objectContaining({
+                    growspace_id: 'gs1',
+                    notification_target: null,
+                    air_exchange: null,
+                    // Verify defaults are applied
+                    total_plants: 0,
+                    environment_config: {},
+                    irrigation_config: {}
+                })
+            });
+        });
+
         it('should getHistory via API', async () => {
             const mockHist = [[{ state: '20' }]];
             (mockHass.callApi as any).mockResolvedValue(mockHist);
