@@ -180,6 +180,7 @@ export interface GrowspaceDevice {
   rows: number;
   plants_per_row: number;
   last_updated?: string;
+  notification_target?: string | null;
 
   // Structured Groups
   biological_metrics: SerializedBiologicalMetrics;

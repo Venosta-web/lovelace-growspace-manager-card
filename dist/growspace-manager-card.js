@@ -591,6 +591,7 @@ class GrowspaceAdapter {
             type: wsData.type || 'normal',
             rows: wsData.rows,
             plants_per_row: wsData.plants_per_row,
+            notification_target: wsData.notification_target,
             last_updated: overview.last_updated,
             // Structural Data
             plants,
@@ -11716,7 +11717,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
 })();
 
 (() => {
-    var _ConfigDialog_open_accessor_storage, _ConfigDialog_hass_accessor_storage, _ConfigDialog_growspaceOptions_accessor_storage, _ConfigDialog_devices_accessor_storage, _ConfigDialog_initialTab_accessor_storage, _ConfigDialog_currentTab_accessor_storage, _ConfigDialog_add_name_accessor_storage, _ConfigDialog_add_rows_accessor_storage, _ConfigDialog_add_plants_per_row_accessor_storage, _ConfigDialog_add_notification_service_accessor_storage, _ConfigDialog_edit_selectedId_accessor_storage, _ConfigDialog_edit_name_accessor_storage, _ConfigDialog_edit_rows_accessor_storage, _ConfigDialog_edit_plants_per_row_accessor_storage, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, _ConfigDialog_env_temp_sensor_accessor_storage, _ConfigDialog_env_humidity_sensor_accessor_storage, _ConfigDialog_env_vpd_sensor_accessor_storage, _ConfigDialog_env_co2_sensor_accessor_storage, _ConfigDialog_env_circulation_fan_accessor_storage, _ConfigDialog_env_stress_threshold_accessor_storage, _ConfigDialog_env_mold_threshold_accessor_storage, _ConfigDialog__showDeleteConfirm_accessor_storage;
+    var _ConfigDialog_open_accessor_storage, _ConfigDialog_hass_accessor_storage, _ConfigDialog_growspaceOptions_accessor_storage, _ConfigDialog_devices_accessor_storage, _ConfigDialog_initialTab_accessor_storage, _ConfigDialog_currentTab_accessor_storage, _ConfigDialog_add_name_accessor_storage, _ConfigDialog_add_rows_accessor_storage, _ConfigDialog_add_plants_per_row_accessor_storage, _ConfigDialog_add_notification_service_accessor_storage, _ConfigDialog_edit_selectedId_accessor_storage, _ConfigDialog_edit_name_accessor_storage, _ConfigDialog_edit_rows_accessor_storage, _ConfigDialog_edit_plants_per_row_accessor_storage, _ConfigDialog_edit_notification_service_accessor_storage, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, _ConfigDialog_env_temp_sensor_accessor_storage, _ConfigDialog_env_humidity_sensor_accessor_storage, _ConfigDialog_env_vpd_sensor_accessor_storage, _ConfigDialog_env_co2_sensor_accessor_storage, _ConfigDialog_env_circulation_fan_accessor_storage, _ConfigDialog_env_stress_threshold_accessor_storage, _ConfigDialog_env_mold_threshold_accessor_storage, _ConfigDialog__showDeleteConfirm_accessor_storage;
     let _classDecorators = [t$2('config-dialog')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -11764,6 +11765,9 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
     let _edit_plants_per_row_decorators;
     let _edit_plants_per_row_initializers = [];
     let _edit_plants_per_row_extraInitializers = [];
+    let _edit_notification_service_decorators;
+    let _edit_notification_service_initializers = [];
+    let _edit_notification_service_extraInitializers = [];
     let _env_selectedGrowspaceId_decorators;
     let _env_selectedGrowspaceId_initializers = [];
     let _env_selectedGrowspaceId_extraInitializers = [];
@@ -11822,6 +11826,8 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         set edit_rows(value) { __classPrivateFieldSet(this, _ConfigDialog_edit_rows_accessor_storage, value, "f"); }
         get edit_plants_per_row() { return __classPrivateFieldGet(this, _ConfigDialog_edit_plants_per_row_accessor_storage, "f"); }
         set edit_plants_per_row(value) { __classPrivateFieldSet(this, _ConfigDialog_edit_plants_per_row_accessor_storage, value, "f"); }
+        get edit_notification_service() { return __classPrivateFieldGet(this, _ConfigDialog_edit_notification_service_accessor_storage, "f"); }
+        set edit_notification_service(value) { __classPrivateFieldSet(this, _ConfigDialog_edit_notification_service_accessor_storage, value, "f"); }
         // Environment Data
         get env_selectedGrowspaceId() { return __classPrivateFieldGet(this, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, "f"); }
         set env_selectedGrowspaceId(value) { __classPrivateFieldSet(this, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, value, "f"); }
@@ -11915,6 +11921,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                     name: this.edit_name,
                     rows: this.edit_rows,
                     plants_per_row: this.edit_plants_per_row,
+                    notification_service: this.edit_notification_service,
                 },
                 bubbles: true,
                 composed: true,
@@ -11938,6 +11945,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
             this.edit_name = '';
             this.edit_rows = 0;
             this.edit_plants_per_row = 0;
+            this.edit_notification_service = '';
             this._showDeleteConfirm = false;
         }
         _cancelDeleteGrowspace() {
@@ -11952,6 +11960,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                     this.edit_name = device.name;
                     this.edit_rows = device.rows || 4;
                     this.edit_plants_per_row = device.plants_per_row || 4;
+                    this.edit_notification_service = device.notification_target || '';
                 }
             }
         }
@@ -12089,10 +12098,27 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
               @change=${(e) => (this.add_plants_per_row = parseInt(e.detail))}
             ></md3-number-input>
           </div>
+          <div class="md3-input-group">
+            <label class="md3-label">Notification Service (Mobile App)</label>
+            <select
+              class="md3-input"
+              .value=${this.add_notification_service}
+              @change=${(e) => (this.add_notification_service = e.target.value)}
+            >
+              <option value="">None</option>
+              ${this._getMobileAppNotifyServices().map((service) => x `<option
+                    value="${service.value}"
+                    ?selected=${this.add_notification_service === service.value}
+                  >
+                    ${service.label}
+                  </option>`)}
+            </select>
+          </div>
           <md3-text-input
             label="Notification Service (Optional)"
             .value=${this.add_notification_service}
-            @change=${(e) => (this.add_notification_service = e.detail)}
+             @change=${(e) => (this.add_notification_service = e.detail)}
+             style="display:none;" 
           ></md3-text-input>
         </div>
       </div>
@@ -12114,6 +12140,17 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                 return true;
             })
                 .sort((a, b) => (a.attributes.friendly_name || a.entity_id).localeCompare(b.attributes.friendly_name || b.entity_id));
+        }
+        _getMobileAppNotifyServices() {
+            if (!this.hass || !this.hass.services || !this.hass.services.notify)
+                return [];
+            return Object.keys(this.hass.services.notify)
+                .filter((service) => service.startsWith('mobile_app_'))
+                .map((service) => ({
+                label: service.replace('mobile_app_', ''),
+                value: service, // Service name within notify domain
+            }))
+                .sort((a, b) => a.label.localeCompare(b.label));
         }
         // Add helper to render selects
         _renderEntitySelect(label, value, domains, deviceClass, changeHandler) {
@@ -12186,6 +12223,22 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                     .value=${this.edit_plants_per_row}
                     @change=${(e) => (this.edit_plants_per_row = parseInt(e.detail))}
                   ></md3-number-input>
+                </div>
+                <div class="md3-input-group">
+                  <label class="md3-label">Notification Service (Mobile App)</label>
+                  <select
+                    class="md3-input"
+                    .value=${this.edit_notification_service}
+                    @change=${(e) => (this.edit_notification_service = e.target.value)}
+                  >
+                    <option value="">None</option>
+                    ${this._getMobileAppNotifyServices().map((service) => x `<option
+                          value="${service.value}"
+                          ?selected=${this.edit_notification_service === service.value}
+                        >
+                          ${service.label}
+                        </option>`)}
+                  </select>
                 </div>
               </div>
             `
@@ -12261,7 +12314,8 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
             _ConfigDialog_edit_name_accessor_storage.set(this, (__runInitializers(this, _edit_selectedId_extraInitializers), __runInitializers(this, _edit_name_initializers, '')));
             _ConfigDialog_edit_rows_accessor_storage.set(this, (__runInitializers(this, _edit_name_extraInitializers), __runInitializers(this, _edit_rows_initializers, 0)));
             _ConfigDialog_edit_plants_per_row_accessor_storage.set(this, (__runInitializers(this, _edit_rows_extraInitializers), __runInitializers(this, _edit_plants_per_row_initializers, 0)));
-            _ConfigDialog_env_selectedGrowspaceId_accessor_storage.set(this, (__runInitializers(this, _edit_plants_per_row_extraInitializers), __runInitializers(this, _env_selectedGrowspaceId_initializers, '')));
+            _ConfigDialog_edit_notification_service_accessor_storage.set(this, (__runInitializers(this, _edit_plants_per_row_extraInitializers), __runInitializers(this, _edit_notification_service_initializers, '')));
+            _ConfigDialog_env_selectedGrowspaceId_accessor_storage.set(this, (__runInitializers(this, _edit_notification_service_extraInitializers), __runInitializers(this, _env_selectedGrowspaceId_initializers, '')));
             _ConfigDialog_env_temp_sensor_accessor_storage.set(this, (__runInitializers(this, _env_selectedGrowspaceId_extraInitializers), __runInitializers(this, _env_temp_sensor_initializers, '')));
             _ConfigDialog_env_humidity_sensor_accessor_storage.set(this, (__runInitializers(this, _env_temp_sensor_extraInitializers), __runInitializers(this, _env_humidity_sensor_initializers, '')));
             _ConfigDialog_env_vpd_sensor_accessor_storage.set(this, (__runInitializers(this, _env_humidity_sensor_extraInitializers), __runInitializers(this, _env_vpd_sensor_initializers, '')));
@@ -12287,6 +12341,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
     _ConfigDialog_edit_name_accessor_storage = new WeakMap();
     _ConfigDialog_edit_rows_accessor_storage = new WeakMap();
     _ConfigDialog_edit_plants_per_row_accessor_storage = new WeakMap();
+    _ConfigDialog_edit_notification_service_accessor_storage = new WeakMap();
     _ConfigDialog_env_selectedGrowspaceId_accessor_storage = new WeakMap();
     _ConfigDialog_env_temp_sensor_accessor_storage = new WeakMap();
     _ConfigDialog_env_humidity_sensor_accessor_storage = new WeakMap();
@@ -12313,6 +12368,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         _edit_name_decorators = [r$2()];
         _edit_rows_decorators = [r$2()];
         _edit_plants_per_row_decorators = [r$2()];
+        _edit_notification_service_decorators = [r$2()];
         _env_selectedGrowspaceId_decorators = [r$2()];
         _env_temp_sensor_decorators = [r$2()];
         _env_humidity_sensor_decorators = [r$2()];
@@ -12336,6 +12392,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         __esDecorate(_classThis, null, _edit_name_decorators, { kind: "accessor", name: "edit_name", static: false, private: false, access: { has: obj => "edit_name" in obj, get: obj => obj.edit_name, set: (obj, value) => { obj.edit_name = value; } }, metadata: _metadata }, _edit_name_initializers, _edit_name_extraInitializers);
         __esDecorate(_classThis, null, _edit_rows_decorators, { kind: "accessor", name: "edit_rows", static: false, private: false, access: { has: obj => "edit_rows" in obj, get: obj => obj.edit_rows, set: (obj, value) => { obj.edit_rows = value; } }, metadata: _metadata }, _edit_rows_initializers, _edit_rows_extraInitializers);
         __esDecorate(_classThis, null, _edit_plants_per_row_decorators, { kind: "accessor", name: "edit_plants_per_row", static: false, private: false, access: { has: obj => "edit_plants_per_row" in obj, get: obj => obj.edit_plants_per_row, set: (obj, value) => { obj.edit_plants_per_row = value; } }, metadata: _metadata }, _edit_plants_per_row_initializers, _edit_plants_per_row_extraInitializers);
+        __esDecorate(_classThis, null, _edit_notification_service_decorators, { kind: "accessor", name: "edit_notification_service", static: false, private: false, access: { has: obj => "edit_notification_service" in obj, get: obj => obj.edit_notification_service, set: (obj, value) => { obj.edit_notification_service = value; } }, metadata: _metadata }, _edit_notification_service_initializers, _edit_notification_service_extraInitializers);
         __esDecorate(_classThis, null, _env_selectedGrowspaceId_decorators, { kind: "accessor", name: "env_selectedGrowspaceId", static: false, private: false, access: { has: obj => "env_selectedGrowspaceId" in obj, get: obj => obj.env_selectedGrowspaceId, set: (obj, value) => { obj.env_selectedGrowspaceId = value; } }, metadata: _metadata }, _env_selectedGrowspaceId_initializers, _env_selectedGrowspaceId_extraInitializers);
         __esDecorate(_classThis, null, _env_temp_sensor_decorators, { kind: "accessor", name: "env_temp_sensor", static: false, private: false, access: { has: obj => "env_temp_sensor" in obj, get: obj => obj.env_temp_sensor, set: (obj, value) => { obj.env_temp_sensor = value; } }, metadata: _metadata }, _env_temp_sensor_initializers, _env_temp_sensor_extraInitializers);
         __esDecorate(_classThis, null, _env_humidity_sensor_decorators, { kind: "accessor", name: "env_humidity_sensor", static: false, private: false, access: { has: obj => "env_humidity_sensor" in obj, get: obj => obj.env_humidity_sensor, set: (obj, value) => { obj.env_humidity_sensor = value; } }, metadata: _metadata }, _env_humidity_sensor_initializers, _env_humidity_sensor_extraInitializers);
@@ -12528,7 +12585,6 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
           <div class="content-padding">
             <!-- Input Area -->
             <div class="md3-input-group">
-              <label class="md3-label">Your Question</label>
               <textarea
                 class="sd-textarea"
                 placeholder="Ask about this growspace..."
@@ -12668,7 +12724,6 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
       }
       .sd-textarea:focus {
         outline: none;
-        border-color: #4caf50;
         background: rgba(255, 255, 255, 0.08);
       }
 
@@ -12864,7 +12919,6 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
       }
       .sd-textarea:focus {
         outline: none;
-        border-color: #4caf50;
         background: rgba(255, 255, 255, 0.08);
       }
       .gm-loading {
@@ -24824,7 +24878,6 @@ const variables = i$6 `
     /* Strain Dialog */
     --strain-dialog-bg: var(--ha-card-background, #1e1e1e);
     --strain-dialog-color: var(--primary-text-color, #fff);
-    --strain-border-color: #4caf50;
     --strain-input-bg: #2a2a2a;
     --strain-input-border: #3a3a3a;
 

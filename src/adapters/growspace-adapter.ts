@@ -83,6 +83,7 @@ export class GrowspaceAdapter {
       type: wsData.type || 'normal',
       rows: wsData.rows,
       plants_per_row: wsData.plants_per_row,
+      notification_target: wsData.notification_target,
       last_updated: overview.last_updated,
 
       // Structural Data

@@ -40,6 +40,7 @@ export class ConfigDialog extends LitElement {
   @state() private accessor edit_name = '';
   @state() private accessor edit_rows = 0;
   @state() private accessor edit_plants_per_row = 0;
+  @state() private accessor edit_notification_service = '';
 
   // Environment Data
   @state() private accessor env_selectedGrowspaceId = '';
@@ -230,6 +231,7 @@ export class ConfigDialog extends LitElement {
           name: this.edit_name,
           rows: this.edit_rows,
           plants_per_row: this.edit_plants_per_row,
+          notification_service: this.edit_notification_service,
         },
         bubbles: true,
         composed: true,
@@ -258,6 +260,7 @@ export class ConfigDialog extends LitElement {
     this.edit_name = '';
     this.edit_rows = 0;
     this.edit_plants_per_row = 0;
+    this.edit_notification_service = '';
     this._showDeleteConfirm = false;
   }
 
@@ -275,6 +278,7 @@ export class ConfigDialog extends LitElement {
         this.edit_name = device.name;
         this.edit_rows = device.rows || 4;
         this.edit_plants_per_row = device.plants_per_row || 4;
+        this.edit_notification_service = device.notification_target || '';
       }
     }
   }
@@ -414,10 +418,31 @@ export class ConfigDialog extends LitElement {
               @change=${(e: CustomEvent) => (this.add_plants_per_row = parseInt(e.detail))}
             ></md3-number-input>
           </div>
+          <div class="md3-input-group">
+            <label class="md3-label">Notification Service (Mobile App)</label>
+            <select
+              class="md3-input"
+              .value=${this.add_notification_service}
+              @change=${(e: Event) =>
+        (this.add_notification_service = (e.target as HTMLSelectElement).value)}
+            >
+              <option value="">None</option>
+              ${this._getMobileAppNotifyServices().map(
+          (service) =>
+            html`<option
+                    value="${service.value}"
+                    ?selected=${this.add_notification_service === service.value}
+                  >
+                    ${service.label}
+                  </option>`
+        )}
+            </select>
+          </div>
           <md3-text-input
             label="Notification Service (Optional)"
             .value=${this.add_notification_service}
-            @change=${(e: CustomEvent) => (this.add_notification_service = e.detail)}
+             @change=${(e: CustomEvent) => (this.add_notification_service = e.detail)}
+             style="display:none;" 
           ></md3-text-input>
         </div>
       </div>
@@ -443,6 +468,17 @@ export class ConfigDialog extends LitElement {
           b.attributes.friendly_name || b.entity_id
         )
       );
+  }
+
+  private _getMobileAppNotifyServices() {
+    if (!this.hass || !this.hass.services || !this.hass.services.notify) return [];
+    return Object.keys(this.hass.services.notify)
+      .filter((service) => service.startsWith('mobile_app_'))
+      .map((service) => ({
+        label: service.replace('mobile_app_', ''),
+        value: service, // Service name within notify domain
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   }
 
   // Add helper to render selects
@@ -529,6 +565,26 @@ export class ConfigDialog extends LitElement {
                     .value=${this.edit_plants_per_row}
                     @change=${(e: CustomEvent) => (this.edit_plants_per_row = parseInt(e.detail))}
                   ></md3-number-input>
+                </div>
+                <div class="md3-input-group">
+                  <label class="md3-label">Notification Service (Mobile App)</label>
+                  <select
+                    class="md3-input"
+                    .value=${this.edit_notification_service}
+                    @change=${(e: Event) =>
+            (this.edit_notification_service = (e.target as HTMLSelectElement).value)}
+                  >
+                    <option value="">None</option>
+                    ${this._getMobileAppNotifyServices().map(
+              (service) =>
+                html`<option
+                          value="${service.value}"
+                          ?selected=${this.edit_notification_service === service.value}
+                        >
+                          ${service.label}
+                        </option>`
+            )}
+                  </select>
                 </div>
               </div>
             `
