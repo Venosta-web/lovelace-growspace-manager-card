@@ -643,7 +643,7 @@ const METRIC_CONFIG = {
     humidity: { color: '#2196f3', title: 'Humidity', unit: '%', icon: mdiWaterPercent },
     vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa', icon: mdiCloudOutline },
     calculated_vpd: { color: '#ab47bc', title: 'Calc. VPD', unit: 'kPa', icon: mdiCalculator },
-    co2: { color: '#4caf50', title: 'CO2', unit: 'ppm', icon: mdiWeatherCloudy },
+    co2: { color: '#e91e63', title: 'CO2', unit: 'ppm', icon: mdiWeatherCloudy },
     air_exchange: { color: '#8d6e63', title: 'Air Exchange', unit: 'm³/h', icon: mdiAirFilter },
     soil_moisture: { color: '#03a9f4', title: 'Soil Moisture', unit: '%', icon: mdiWaterPercent },
     light: { color: '#ffc107', title: 'Light', unit: 'state', icon: mdiLightbulbOn, type: 'step' },
@@ -657,12 +657,12 @@ const METRIC_CONFIG = {
     drain: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: 'step' },
     exhaust: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
     circulation_fan: {
-        color: '#607d8b',
+        color: '#3f51b5',
         title: 'Circulation Fan',
         unit: '',
         icon: mdiFan,
     },
-    humidifier: { color: '#607d8b', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
+    humidifier: { color: '#00bcd4', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
     dehumidifier: {
         color: '#009688',
         title: 'Dehumidifier',
