@@ -23894,7 +23894,7 @@ class ResizeController {
 }
 
 (() => {
-    var _GrowspaceHeader_hass_accessor_storage, _GrowspaceHeader_store_accessor_storage, _GrowspaceHeader_historyController_accessor_storage, _GrowspaceHeader_config_accessor_storage, _GrowspaceHeader_device_accessor_storage, _GrowspaceHeader_compact_accessor_storage, _GrowspaceHeader_isEditMode_accessor_storage, _GrowspaceHeader_growspaceOptions_accessor_storage, _GrowspaceHeader_historyData_accessor_storage, _GrowspaceHeader__canScrollLeft_accessor_storage, _GrowspaceHeader__canScrollRight_accessor_storage, _GrowspaceHeader__canScrollStageLeft_accessor_storage, _GrowspaceHeader__canScrollStageRight_accessor_storage, _GrowspaceHeader__menuOpen_accessor_storage, _GrowspaceHeader__mobileLink_accessor_storage;
+    var _GrowspaceHeader_hass_accessor_storage, _GrowspaceHeader_store_accessor_storage, _GrowspaceHeader_historyController_accessor_storage, _GrowspaceHeader_config_accessor_storage, _GrowspaceHeader_device_accessor_storage, _GrowspaceHeader_compact_accessor_storage, _GrowspaceHeader_isEditMode_accessor_storage, _GrowspaceHeader_growspaceOptions_accessor_storage, _GrowspaceHeader_historyData_accessor_storage, _GrowspaceHeader__canScrollLeft_accessor_storage, _GrowspaceHeader__canScrollRight_accessor_storage, _GrowspaceHeader__canScrollStageLeft_accessor_storage, _GrowspaceHeader__canScrollStageRight_accessor_storage, _GrowspaceHeader__canScrollDeviceLeft_accessor_storage, _GrowspaceHeader__canScrollDeviceRight_accessor_storage, _GrowspaceHeader__menuOpen_accessor_storage, _GrowspaceHeader__mobileLink_accessor_storage;
     let _classDecorators = [t$2('growspace-header')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -23939,6 +23939,12 @@ class ResizeController {
     let __canScrollStageRight_decorators;
     let __canScrollStageRight_initializers = [];
     let __canScrollStageRight_extraInitializers = [];
+    let __canScrollDeviceLeft_decorators;
+    let __canScrollDeviceLeft_initializers = [];
+    let __canScrollDeviceLeft_extraInitializers = [];
+    let __canScrollDeviceRight_decorators;
+    let __canScrollDeviceRight_initializers = [];
+    let __canScrollDeviceRight_extraInitializers = [];
     let __menuOpen_decorators;
     let __menuOpen_initializers = [];
     let __menuOpen_extraInitializers = [];
@@ -23961,10 +23967,13 @@ class ResizeController {
             _GrowspaceHeader__canScrollRight_accessor_storage.set(this, (__runInitializers(this, __canScrollLeft_extraInitializers), __runInitializers(this, __canScrollRight_initializers, false)));
             _GrowspaceHeader__canScrollStageLeft_accessor_storage.set(this, (__runInitializers(this, __canScrollRight_extraInitializers), __runInitializers(this, __canScrollStageLeft_initializers, false)));
             _GrowspaceHeader__canScrollStageRight_accessor_storage.set(this, (__runInitializers(this, __canScrollStageLeft_extraInitializers), __runInitializers(this, __canScrollStageRight_initializers, false)));
-            _GrowspaceHeader__menuOpen_accessor_storage.set(this, (__runInitializers(this, __canScrollStageRight_extraInitializers), __runInitializers(this, __menuOpen_initializers, false)));
+            _GrowspaceHeader__canScrollDeviceLeft_accessor_storage.set(this, (__runInitializers(this, __canScrollStageRight_extraInitializers), __runInitializers(this, __canScrollDeviceLeft_initializers, false)));
+            _GrowspaceHeader__canScrollDeviceRight_accessor_storage.set(this, (__runInitializers(this, __canScrollDeviceLeft_extraInitializers), __runInitializers(this, __canScrollDeviceRight_initializers, false)));
+            _GrowspaceHeader__menuOpen_accessor_storage.set(this, (__runInitializers(this, __canScrollDeviceRight_extraInitializers), __runInitializers(this, __menuOpen_initializers, false)));
             _GrowspaceHeader__mobileLink_accessor_storage.set(this, (__runInitializers(this, __menuOpen_extraInitializers), __runInitializers(this, __mobileLink_initializers, false)));
             this._chipsContainerRef = (__runInitializers(this, __mobileLink_extraInitializers), e$1());
             this._stageContainerRef = e$1();
+            this._deviceChipsContainerRef = e$1();
             this._resizeController = new ResizeController(this, () => this._checkScroll());
             // Cached metrics to avoid re-computation on every render
             this._mainChips = [];
@@ -24001,6 +24010,10 @@ class ResizeController {
         set _canScrollStageLeft(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollStageLeft_accessor_storage, value, "f"); }
         get _canScrollStageRight() { return __classPrivateFieldGet(this, _GrowspaceHeader__canScrollStageRight_accessor_storage, "f"); }
         set _canScrollStageRight(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollStageRight_accessor_storage, value, "f"); }
+        get _canScrollDeviceLeft() { return __classPrivateFieldGet(this, _GrowspaceHeader__canScrollDeviceLeft_accessor_storage, "f"); }
+        set _canScrollDeviceLeft(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollDeviceLeft_accessor_storage, value, "f"); }
+        get _canScrollDeviceRight() { return __classPrivateFieldGet(this, _GrowspaceHeader__canScrollDeviceRight_accessor_storage, "f"); }
+        set _canScrollDeviceRight(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollDeviceRight_accessor_storage, value, "f"); }
         get _menuOpen() { return __classPrivateFieldGet(this, _GrowspaceHeader__menuOpen_accessor_storage, "f"); }
         set _menuOpen(value) { __classPrivateFieldSet(this, _GrowspaceHeader__menuOpen_accessor_storage, value, "f"); }
         get _mobileLink() { return __classPrivateFieldGet(this, _GrowspaceHeader__mobileLink_accessor_storage, "f"); }
@@ -24026,6 +24039,12 @@ class ResizeController {
                 container.scrollBy({ left: direction === 'left' ? -100 : 100, behavior: 'smooth' });
             }
         }
+        _scrollDeviceChips(direction) {
+            const container = this._deviceChipsContainerRef.value;
+            if (container) {
+                container.scrollBy({ left: direction === 'left' ? -100 : 100, behavior: 'smooth' });
+            }
+        }
         _checkScroll() {
             const container = this._chipsContainerRef.value;
             if (container) {
@@ -24039,6 +24058,12 @@ class ResizeController {
                 this._canScrollStageLeft = stageContainer.scrollLeft > 1;
                 this._canScrollStageRight =
                     stageContainer.scrollLeft < stageContainer.scrollWidth - stageContainer.clientWidth - 1;
+            }
+            const deviceContainer = this._deviceChipsContainerRef.value;
+            if (deviceContainer) {
+                this._canScrollDeviceLeft = deviceContainer.scrollLeft > 1;
+                this._canScrollDeviceRight =
+                    deviceContainer.scrollLeft < deviceContainer.scrollWidth - deviceContainer.clientWidth - 1;
             }
         }
         willUpdate(changedProperties) {
@@ -24071,6 +24096,11 @@ class ResizeController {
             if (stageContainer) {
                 stageContainer.addEventListener('scroll', () => this._checkScroll());
                 this._resizeController.observe(stageContainer);
+            }
+            const deviceContainer = this._deviceChipsContainerRef.value;
+            if (deviceContainer) {
+                deviceContainer.addEventListener('scroll', () => this._checkScroll());
+                this._resizeController.observe(deviceContainer);
             }
             // Initial check
             setTimeout(() => this._checkScroll(), 0);
@@ -24223,24 +24253,32 @@ class ResizeController {
 
           <!-- Row 1 Right: Header Actions (Device Chips + Menu) -->
           <div class="header-actions">
-              <div class="gs-device-chips-header">
-                ${this._deviceChips.map(chip => x `
-                    <growspace-chip
-                        .icon=${chip.icon}
-                        .label=${chip.label}
-                        .value=${chip.value}
-                        .status=${chip.status}
-                        .active=${chip.active}
-                        .linked=${chip.linked}
-                        .tooltip=${chip.tooltip}
-                        draggable="${this._chipDraggable}"
-                        @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
-                        @drop=${(e) => this._handleChipDrop(e, chip.key)}
-                        @dragover=${this._handleDragOver}
-                        @click=${() => this._toggleEnvGraph(chip.key)}
-                        @unlink=${(e) => this._unlinkGraphs(chip.groupIndex)}
-                    ></growspace-chip>
-                `)}
+              <div class="gs-device-chips-container">
+                  <div class="scroll-arrow ${!this._canScrollDeviceLeft ? 'hidden' : ''}" @click=${() => this._scrollDeviceChips('left')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+                  </div>
+                  <div class="gs-device-chips-header" ${n$2(this._deviceChipsContainerRef)}>
+                    ${this._deviceChips.map(chip => x `
+                        <growspace-chip
+                            .icon=${chip.icon}
+                            .label=${chip.label}
+                            .value=${chip.value}
+                            .status=${chip.status}
+                            .active=${chip.active}
+                            .linked=${chip.linked}
+                            .tooltip=${chip.tooltip}
+                            draggable="${this._chipDraggable}"
+                            @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
+                            @drop=${(e) => this._handleChipDrop(e, chip.key)}
+                            @dragover=${this._handleDragOver}
+                            @click=${() => this._toggleEnvGraph(chip.key)}
+                            @unlink=${(e) => this._unlinkGraphs(chip.groupIndex)}
+                        ></growspace-chip>
+                    `)}
+                  </div>
+                  <div class="scroll-arrow ${!this._canScrollDeviceRight ? 'hidden' : ''}" @click=${() => this._scrollDeviceChips('right')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                  </div>
               </div>
 
              ${(this._resizeController.isMobile || this._resizeController.hasTouch) ? x `
@@ -24482,6 +24520,8 @@ class ResizeController {
     _GrowspaceHeader__canScrollRight_accessor_storage = new WeakMap();
     _GrowspaceHeader__canScrollStageLeft_accessor_storage = new WeakMap();
     _GrowspaceHeader__canScrollStageRight_accessor_storage = new WeakMap();
+    _GrowspaceHeader__canScrollDeviceLeft_accessor_storage = new WeakMap();
+    _GrowspaceHeader__canScrollDeviceRight_accessor_storage = new WeakMap();
     _GrowspaceHeader__menuOpen_accessor_storage = new WeakMap();
     _GrowspaceHeader__mobileLink_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "GrowspaceHeader");
@@ -24500,6 +24540,8 @@ class ResizeController {
         __canScrollRight_decorators = [r$2()];
         __canScrollStageLeft_decorators = [r$2()];
         __canScrollStageRight_decorators = [r$2()];
+        __canScrollDeviceLeft_decorators = [r$2()];
+        __canScrollDeviceRight_decorators = [r$2()];
         __menuOpen_decorators = [r$2()];
         __mobileLink_decorators = [r$2()];
         __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
@@ -24515,6 +24557,8 @@ class ResizeController {
         __esDecorate(_classThis, null, __canScrollRight_decorators, { kind: "accessor", name: "_canScrollRight", static: false, private: false, access: { has: obj => "_canScrollRight" in obj, get: obj => obj._canScrollRight, set: (obj, value) => { obj._canScrollRight = value; } }, metadata: _metadata }, __canScrollRight_initializers, __canScrollRight_extraInitializers);
         __esDecorate(_classThis, null, __canScrollStageLeft_decorators, { kind: "accessor", name: "_canScrollStageLeft", static: false, private: false, access: { has: obj => "_canScrollStageLeft" in obj, get: obj => obj._canScrollStageLeft, set: (obj, value) => { obj._canScrollStageLeft = value; } }, metadata: _metadata }, __canScrollStageLeft_initializers, __canScrollStageLeft_extraInitializers);
         __esDecorate(_classThis, null, __canScrollStageRight_decorators, { kind: "accessor", name: "_canScrollStageRight", static: false, private: false, access: { has: obj => "_canScrollStageRight" in obj, get: obj => obj._canScrollStageRight, set: (obj, value) => { obj._canScrollStageRight = value; } }, metadata: _metadata }, __canScrollStageRight_initializers, __canScrollStageRight_extraInitializers);
+        __esDecorate(_classThis, null, __canScrollDeviceLeft_decorators, { kind: "accessor", name: "_canScrollDeviceLeft", static: false, private: false, access: { has: obj => "_canScrollDeviceLeft" in obj, get: obj => obj._canScrollDeviceLeft, set: (obj, value) => { obj._canScrollDeviceLeft = value; } }, metadata: _metadata }, __canScrollDeviceLeft_initializers, __canScrollDeviceLeft_extraInitializers);
+        __esDecorate(_classThis, null, __canScrollDeviceRight_decorators, { kind: "accessor", name: "_canScrollDeviceRight", static: false, private: false, access: { has: obj => "_canScrollDeviceRight" in obj, get: obj => obj._canScrollDeviceRight, set: (obj, value) => { obj._canScrollDeviceRight = value; } }, metadata: _metadata }, __canScrollDeviceRight_initializers, __canScrollDeviceRight_extraInitializers);
         __esDecorate(_classThis, null, __menuOpen_decorators, { kind: "accessor", name: "_menuOpen", static: false, private: false, access: { has: obj => "_menuOpen" in obj, get: obj => obj._menuOpen, set: (obj, value) => { obj._menuOpen = value; } }, metadata: _metadata }, __menuOpen_initializers, __menuOpen_extraInitializers);
         __esDecorate(_classThis, null, __mobileLink_decorators, { kind: "accessor", name: "_mobileLink", static: false, private: false, access: { has: obj => "_mobileLink" in obj, get: obj => obj._mobileLink, set: (obj, value) => { obj._mobileLink = value; } }, metadata: _metadata }, __mobileLink_initializers, __mobileLink_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
@@ -24612,7 +24656,6 @@ class ResizeController {
     .header-actions {
         grid-column: 2;
         grid-row: 1;
-        justify-self: end;
         display: flex;
         align-items: center;
         gap: 12px;
@@ -24634,18 +24677,31 @@ class ResizeController {
         mask-image: linear-gradient(to right, black 90%, transparent 100%);
     }
 
-    .gs-device-chips-header {
+    .gs-device-chips-container {
       display: flex;
       align-items: center;
-      gap: 8px;
       margin-right: 8px;
-      overflow-x: auto;
-      scrollbar-width: none;
+      overflow: hidden;
       width: 100%;
       min-width: 0;
       max-width: 100%;
       box-sizing: border-box;
+      position: relative;
     }
+
+    .gs-device-chips-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      width: 100%;
+      min-width: 0;
+      padding: 0 4px; /* Small padding for focus rings etc */
+      scroll-behavior: smooth;
+    }
+    
+    .gs-device-chips-header::-webkit-scrollbar { display: none; }
     
     .gs-device-chips-header growspace-chip {
         flex-shrink: 0;

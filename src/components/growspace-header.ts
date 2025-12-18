@@ -54,11 +54,14 @@ export class GrowspaceHeader extends LitElement {
   @state() private accessor _canScrollRight = false;
   @state() private accessor _canScrollStageLeft = false;
   @state() private accessor _canScrollStageRight = false;
+  @state() private accessor _canScrollDeviceLeft = false;
+  @state() private accessor _canScrollDeviceRight = false;
   @state() private accessor _menuOpen = false;
   @state() private accessor _mobileLink = false;
 
   private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
   private _stageContainerRef: Ref<HTMLDivElement> = createRef();
+  private _deviceChipsContainerRef: Ref<HTMLDivElement> = createRef();
   private _resizeController = new ResizeController(this, () => this._checkScroll());
 
   // Cached metrics to avoid re-computation on every render
@@ -104,6 +107,13 @@ export class GrowspaceHeader extends LitElement {
     }
   }
 
+  private _scrollDeviceChips(direction: 'left' | 'right') {
+    const container = this._deviceChipsContainerRef.value;
+    if (container) {
+      container.scrollBy({ left: direction === 'left' ? -100 : 100, behavior: 'smooth' });
+    }
+  }
+
   private _checkScroll() {
     const container = this._chipsContainerRef.value;
     if (container) {
@@ -118,6 +128,13 @@ export class GrowspaceHeader extends LitElement {
       this._canScrollStageLeft = stageContainer.scrollLeft > 1;
       this._canScrollStageRight =
         stageContainer.scrollLeft < stageContainer.scrollWidth - stageContainer.clientWidth - 1;
+    }
+
+    const deviceContainer = this._deviceChipsContainerRef.value;
+    if (deviceContainer) {
+      this._canScrollDeviceLeft = deviceContainer.scrollLeft > 1;
+      this._canScrollDeviceRight =
+        deviceContainer.scrollLeft < deviceContainer.scrollWidth - deviceContainer.clientWidth - 1;
     }
   }
 
@@ -158,6 +175,12 @@ export class GrowspaceHeader extends LitElement {
     if (stageContainer) {
       stageContainer.addEventListener('scroll', () => this._checkScroll());
       this._resizeController.observe(stageContainer);
+    }
+
+    const deviceContainer = this._deviceChipsContainerRef.value;
+    if (deviceContainer) {
+      deviceContainer.addEventListener('scroll', () => this._checkScroll());
+      this._resizeController.observe(deviceContainer);
     }
 
     // Initial check
@@ -256,7 +279,6 @@ export class GrowspaceHeader extends LitElement {
     .header-actions {
         grid-column: 2;
         grid-row: 1;
-        justify-self: flex-start;
         display: flex;
         align-items: center;
         gap: 12px;
@@ -278,18 +300,31 @@ export class GrowspaceHeader extends LitElement {
         mask-image: linear-gradient(to right, black 90%, transparent 100%);
     }
 
-    .gs-device-chips-header {
+    .gs-device-chips-container {
       display: flex;
       align-items: center;
-      gap: 8px;
       margin-right: 8px;
-      overflow-x: auto;
-      scrollbar-width: none;
+      overflow: hidden;
       width: 100%;
       min-width: 0;
       max-width: 100%;
       box-sizing: border-box;
+      position: relative;
     }
+
+    .gs-device-chips-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      width: 100%;
+      min-width: 0;
+      padding: 0 4px; /* Small padding for focus rings etc */
+      scroll-behavior: smooth;
+    }
+    
+    .gs-device-chips-header::-webkit-scrollbar { display: none; }
     
     .gs-device-chips-header growspace-chip {
         flex-shrink: 0;
@@ -773,24 +808,32 @@ export class GrowspaceHeader extends LitElement {
 
           <!-- Row 1 Right: Header Actions (Device Chips + Menu) -->
           <div class="header-actions">
-              <div class="gs-device-chips-header">
-                ${this._deviceChips.map(chip => html`
-                    <growspace-chip
-                        .icon=${chip.icon}
-                        .label=${chip.label}
-                        .value=${chip.value}
-                        .status=${chip.status}
-                        .active=${chip.active}
-                        .linked=${chip.linked}
-                        .tooltip=${chip.tooltip}
-                        draggable="${this._chipDraggable}"
-                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
-                        @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
-                        @dragover=${this._handleDragOver}
-                        @click=${() => this._toggleEnvGraph(chip.key)}
-                        @unlink=${(e: CustomEvent) => this._unlinkGraphs(chip.groupIndex)}
-                    ></growspace-chip>
-                `)}
+              <div class="gs-device-chips-container">
+                  <div class="scroll-arrow ${!this._canScrollDeviceLeft ? 'hidden' : ''}" @click=${() => this._scrollDeviceChips('left')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+                  </div>
+                  <div class="gs-device-chips-header" ${ref(this._deviceChipsContainerRef)}>
+                    ${this._deviceChips.map(chip => html`
+                        <growspace-chip
+                            .icon=${chip.icon}
+                            .label=${chip.label}
+                            .value=${chip.value}
+                            .status=${chip.status}
+                            .active=${chip.active}
+                            .linked=${chip.linked}
+                            .tooltip=${chip.tooltip}
+                            draggable="${this._chipDraggable}"
+                            @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
+                            @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
+                            @dragover=${this._handleDragOver}
+                            @click=${() => this._toggleEnvGraph(chip.key)}
+                            @unlink=${(e: CustomEvent) => this._unlinkGraphs(chip.groupIndex)}
+                        ></growspace-chip>
+                    `)}
+                  </div>
+                  <div class="scroll-arrow ${!this._canScrollDeviceRight ? 'hidden' : ''}" @click=${() => this._scrollDeviceChips('right')}>
+                      <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                  </div>
               </div>
 
              ${(this._resizeController.isMobile || this._resizeController.hasTouch) ? html`
