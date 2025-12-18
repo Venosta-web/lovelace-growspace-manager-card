@@ -6297,6 +6297,20 @@ class GrowspaceHistoryController {
      * Resolves the entity ID for a given metric using METRIC_ENTITY_KEYS mapping.
      */
     getEntityIdForMetric(device, metricKey) {
+        // Special handling for Optimal Conditions - checked FIRST because it has no entry in METRIC_ENTITY_KEYS
+        if (metricKey === 'optimal') {
+            let slug = device.name.toLowerCase().replace(/\s+/g, '_');
+            if (device.overview_entity_id) {
+                slug = device.overview_entity_id.replace('sensor.', '');
+            }
+            let optimalId = `binary_sensor.${slug}_optimal_conditions`;
+            // Legacy hardcoded slugs
+            if (slug === 'cure')
+                optimalId = `binary_sensor.cure_optimal_curing`;
+            else if (slug === 'dry')
+                optimalId = `binary_sensor.dry_optimal_drying`;
+            return optimalId;
+        }
         const mapping = METRIC_ENTITY_KEYS[metricKey];
         if (!mapping)
             return null;
@@ -6332,20 +6346,6 @@ class GrowspaceHistoryController {
                 entityId = calculatedId;
                 console.log('[HistoryController] Using calculated VPD sensor fallback in getEntityIdForMetric:', entityId);
             }
-        }
-        // Special handling for Optimal Conditions
-        if ((!entityId && metricKey === 'optimal') || metricKey === 'optimal') {
-            let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-            if (device.overview_entity_id) {
-                slug = device.overview_entity_id.replace('sensor.', '');
-            }
-            let optimalId = `binary_sensor.${slug}_optimal_conditions`;
-            // Legacy hardcoded slugs
-            if (slug === 'cure')
-                optimalId = `binary_sensor.cure_optimal_curing`;
-            else if (slug === 'dry')
-                optimalId = `binary_sensor.dry_optimal_drying`;
-            return optimalId;
         }
         return entityId || null;
     }
