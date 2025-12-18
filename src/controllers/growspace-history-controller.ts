@@ -131,29 +131,41 @@ export class GrowspaceHistoryController implements ReactiveController {
     this._listeners.forEach(cb => cb());
   }
 
+  private _refreshInterval: number | null = null;
+
   hostConnected() {
-    // Initial fetch if needed, though hostUpdated usually handles it
+    this.startAutoRefresh();
+  }
+
+  hostDisconnected() {
+    this.stopAutoRefresh();
+  }
+
+  startAutoRefresh() {
+    if (this._refreshInterval) return;
+    this._refreshInterval = window.setInterval(() => {
+      this._fetchHistory(this.getRange());
+    }, 5 * 60 * 1000); // 5 minutes
+  }
+
+  stopAutoRefresh() {
+    if (this._refreshInterval) {
+      window.clearInterval(this._refreshInterval);
+      this._refreshInterval = null;
+    }
   }
 
   hostUpdated() {
-    // We can check if we need to refetch based on changes.
-    // However, without keeping track of previous state, we might over-fetch.
-    // The original card fetched in `updated` checking `changedProps.has('selectedDevice')`.
-    // ReactiveController doesn't get `changedProps` in `hostUpdated`.
-    // We might need to rely on explicit calls or manual caching.
-    // But the user said "Listen for changes... to automatically re-fetch".
-    // We can store prevSelectedDevice.
+    // Rely on hostUpdate or manual calls
   }
 
   initFetch() {
-    // Called manually from firstUpdated if needed
-    this._fetchHistory();
+    this._fetchHistory(this.getRange());
   }
 
   private _prevSelectedDevice: string | null = null;
 
   async hostUpdate() {
-    // Logic to detect changes if possible, or we rely on hostUpdated
     if (this.host.selectedDevice !== this._prevSelectedDevice) {
       this._prevSelectedDevice = this.host.selectedDevice;
       const range = this.getRange();
@@ -261,40 +273,15 @@ export class GrowspaceHistoryController implements ReactiveController {
   }
 
   private async _fetchHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
-    console.log('[HistoryController] _fetchHistory called with range:', range);
-    if (!this.host.hass || !this.host.selectedDevice) {
-      console.log('[HistoryController] Aborting: no hass or selectedDevice', {
-        hasHass: !!this.host.hass,
-        selectedDevice: this.host.selectedDevice,
-      });
-      return;
-    }
-    // Use pre-loaded devices from store instead of fetching independently
-    const devices = this.host.devices;
-    console.log(
-      '[HistoryController] selectedDevice:',
-      this.host.selectedDevice,
-      'available devices:',
-      devices.map((d) => ({ device_id: d.device_id, name: d.name }))
-    );
-    const device = devices.find((d) => d.device_id === this.host.selectedDevice);
-    if (!device) {
-      console.log(
-        '[HistoryController] Aborting: device not found. Looking for:',
-        this.host.selectedDevice
-      );
-      return;
-    }
+    if (!this.host.hass || !this.host.selectedDevice) return;
+
+    const device = this.host.devices.find((d) => d.device_id === this.host.selectedDevice);
+    if (!device) return;
 
     const { start, end } = this.calculateTimeRange(range);
-    console.log(
-      '[HistoryController] Fetching history for device:',
-      device.name,
-      'entity:',
-      device.overview_entity_id
-    );
 
-    // 1. Fetch Main Sensor History (Temp, Humidity, VPD, etc.)
+    // 1. Fetch Main Sensor History (Temp, Humidity, VPD, etc.) via Overivew Entity
+    // We still fetch this manually because it populates 'main' history which is a special aggregate
     if (device.overview_entity_id) {
       try {
         const history = await this.host.dataService.getHistory(
@@ -302,191 +289,31 @@ export class GrowspaceHistoryController implements ReactiveController {
           start,
           end
         );
-        console.log(
-          '[HistoryController] History fetched, length:',
-          history?.length || 0,
-          'sample:',
-          history?.[0] ? JSON.stringify(history[0]).slice(0, 300) : 'empty'
-        );
         this.historyData = history;
       } catch (e) {
         console.error('Failed to fetch main sensor history', e);
       }
-    } else {
-      console.log('[HistoryController] No overview_entity_id on device');
     }
 
-    // 2. Fetch Optimal Conditions Binary Sensor History
-    let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-    if (device.overview_entity_id) {
-      slug = device.overview_entity_id.replace('sensor.', '');
-    }
+    // 2. Fetch all other metrics using the standard specialized method
+    // This ensures hero graph metrics (which are just these keys) are populated
+    const metricsToFetch = [
+      'optimal',
+      'temperature',
+      'humidity',
+      'vpd',
+      'co2',
+      'light',
+      'soil_moisture',
+      'exhaust',
+      'humidifier',
+      'dehumidifier',
+      'circulation_fan',
+      'irrigation',
+      'drain'
+    ];
 
-    let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
-    if (slug === 'cure') {
-      envEntityId = `binary_sensor.cure_optimal_curing`;
-    } else if (slug === 'dry') {
-      envEntityId = `binary_sensor.dry_optimal_drying`;
-    }
-
-    try {
-      const history = await this.host.dataService.getHistory(envEntityId, start, end);
-      this.optimalHistory = history;
-    } catch (e) {
-      console.error('Failed to fetch optimal history', e);
-    }
-
-    // 3. Fetch individual environment sensor histories (since env data moved to WebSocket)
-    const envAttrs = device.environment_attributes || {};
-
-    // Temperature
-    if (envAttrs.temperature_sensor) {
-      try {
-        const history = await this.host.dataService.getHistory(
-          envAttrs.temperature_sensor,
-          start,
-          end
-        );
-        console.log(
-          '[HistoryController] Temperature history fetched from',
-          envAttrs.temperature_sensor,
-          'length:',
-          history?.length || 0
-        );
-        this.historyCache.temperature = history || [];
-      } catch (e) {
-        console.error('Failed to fetch temperature history', e);
-      }
-    }
-
-    // Humidity
-    if (envAttrs.humidity_sensor) {
-      try {
-        const history = await this.host.dataService.getHistory(
-          envAttrs.humidity_sensor,
-          start,
-          end
-        );
-        console.log(
-          '[HistoryController] Humidity history fetched from',
-          envAttrs.humidity_sensor,
-          'length:',
-          history?.length || 0
-        );
-        this.historyCache.humidity = history || [];
-      } catch (e) {
-        console.error('Failed to fetch humidity history', e);
-      }
-    }
-
-    // VPD
-    let vpdSensor = envAttrs.vpd_sensor;
-    if (!vpdSensor && device.name) {
-      // Fallback to calculated VPD sensor if not explicitly configured
-      // This mirrors logic in MetricsUtils.computeHeaderMetrics
-      const slugify = (text: string) =>
-        text
-          .toString()
-          .toLowerCase()
-          .replace(/\s+/g, '_')
-          .replace(/[^\w\-]+/g, '')
-          .replace(/\-\-+/g, '_')
-          .replace(/^-+/, '')
-          .replace(/-+$/, '');
-
-      const calcName = `${device.name} Calculated VPD`;
-      const calculatedId = `sensor.${slugify(calcName)}`;
-
-      // Only use if it exists in Hass states to avoid 404s
-      if (this.host.hass.states[calculatedId]) {
-        vpdSensor = calculatedId;
-        console.log('[HistoryController] Using calculated VPD sensor fallback:', vpdSensor);
-      }
-    }
-
-    if (vpdSensor) {
-      try {
-        const history = await this.host.dataService.getHistory(vpdSensor, start, end);
-        console.log(
-          '[HistoryController] VPD history fetched from',
-          vpdSensor,
-          'length:',
-          history?.length || 0
-        );
-        this.historyCache.vpd = history || [];
-      } catch (e) {
-        console.error('Failed to fetch VPD history', e);
-      }
-    }
-
-    // CO2
-    if (envAttrs.co2_sensor) {
-      try {
-        const history = await this.host.dataService.getHistory(envAttrs.co2_sensor, start, end);
-        console.log(
-          '[HistoryController] CO2 history fetched from',
-          envAttrs.co2_sensor,
-          'length:',
-          history?.length || 0
-        );
-        this.historyCache.co2 = history || [];
-      } catch (e) {
-        console.error('Failed to fetch CO2 history', e);
-      }
-    }
-
-    // Light
-    if (envAttrs.light_sensor) {
-      try {
-        const history = await this.host.dataService.getHistory(envAttrs.light_sensor, start, end);
-        console.log(
-          '[HistoryController] Light history fetched from',
-          envAttrs.light_sensor,
-          'length:',
-          history?.length || 0
-        );
-        this.historyCache.light = history || [];
-      } catch (e) {
-        console.error('Failed to fetch Light history', e);
-      }
-    }
-
-    // Soil Moisture
-    if (envAttrs.soil_moisture_sensor) {
-      try {
-        const history = await this.host.dataService.getHistory(
-          envAttrs.soil_moisture_sensor,
-          start,
-          end
-        );
-        console.log(
-          '[HistoryController] Soil Moisture history fetched from',
-          envAttrs.soil_moisture_sensor,
-          'length:',
-          history?.length || 0
-        );
-        this.historyCache.soil_moisture = history || [];
-      } catch (e) {
-        console.error('Failed to fetch soil moisture history', e);
-      }
-    }
-
-    // Fallback: If light history is missing but we have optimal history, try to derive it from 'is_lights_on' attribute
-    const lightHistory = this.historyCache.light;
-    const optimalHistory = this.historyCache.optimal;
-    if (
-      (!lightHistory || lightHistory.length === 0) &&
-      optimalHistory &&
-      optimalHistory.length > 0
-    ) {
-      console.log('[HistoryController] Synthesizing Light history from Optimal attributes');
-      this.historyCache.light = optimalHistory.map((h) => ({
-        ...h,
-        entity_id: 'derived_light',
-        state: h.attributes?.is_lights_on ? 'on' : 'off',
-        attributes: {},
-      }));
-    }
+    await Promise.all(metricsToFetch.map(metric => this._fetchMetricHistory(metric, range)));
 
     this.host.requestUpdate();
   }
