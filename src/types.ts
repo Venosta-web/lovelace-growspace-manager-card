@@ -326,6 +326,12 @@ export interface ConfigDialogState {
     circulation_fan: string;
     stress_threshold: number;
     mold_threshold: number;
+    light_sensor: string;
+    exhaust_entity: string;
+    humidifier_entity: string;
+    dehumidifier_entity: string;
+    soil_moisture_sensor: string;
+    control_dehumidifier: boolean;
   };
 }
 

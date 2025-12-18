@@ -681,9 +681,19 @@ export class GrowspaceHeader extends LitElement {
             currentTab: 'environment', // Default tab
             environmentData: {
               selectedGrowspaceId: this.store.state.selectedDevice || '',
-              // Pass minimal defaults; store handles merging usually, or fetching
-              temp_sensor: '', humidity_sensor: '', vpd_sensor: '', co2_sensor: '',
-              circulation_fan: '', stress_threshold: 0.8, mold_threshold: 0.8
+              temp_sensor: this.device?.environment_attributes?.temperature_sensor || '',
+              humidity_sensor: this.device?.environment_attributes?.humidity_sensor || '',
+              vpd_sensor: this.device?.environment_attributes?.vpd_sensor || '',
+              co2_sensor: this.device?.environment_attributes?.co2_sensor || '',
+              circulation_fan: this.device?.environment_attributes?.circulation_fan_entity || '',
+              stress_threshold: 0.8,
+              mold_threshold: 0.8,
+              light_sensor: this.device?.environment_attributes?.light_sensor || '',
+              exhaust_entity: this.device?.environment_attributes?.exhaust_entity || '',
+              humidifier_entity: this.device?.environment_attributes?.humidifier_entity || '',
+              dehumidifier_entity: this.device?.environment_attributes?.dehumidifier_entity || '',
+              soil_moisture_sensor: this.device?.environment_attributes?.soil_moisture_sensor || '',
+              control_dehumidifier: this.device?.environment_attributes?.dehumidifier_control_enabled || false,
             }
           }
         });

@@ -189,6 +189,12 @@ export class DialogHost extends LitElement {
             circulation_fan,
             stress_threshold,
             mold_threshold,
+            light_sensor,
+            exhaust_entity,
+            humidifier_entity,
+            dehumidifier_entity,
+            soil_moisture_sensor,
+            control_dehumidifier,
         } = detail;
 
         if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
@@ -206,6 +212,12 @@ export class DialogHost extends LitElement {
                 circulation_fan: circulation_fan || undefined,
                 stress_threshold,
                 mold_threshold,
+                light_sensor: light_sensor || undefined,
+                exhaust_entity: exhaust_entity || undefined,
+                humidifier_entity: humidifier_entity || undefined,
+                dehumidifier_entity: dehumidifier_entity || undefined,
+                soil_moisture_sensor: soil_moisture_sensor || undefined,
+                control_dehumidifier,
             });
             this.store.showToast('Environment configured successfully!', 'success');
             await this.store.refreshData();

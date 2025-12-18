@@ -51,6 +51,12 @@ export class ConfigDialog extends LitElement {
   @state() private accessor env_circulation_fan = '';
   @state() private accessor env_stress_threshold = 0.8;
   @state() private accessor env_mold_threshold = 0.8;
+  @state() private accessor env_light_sensor = '';
+  @state() private accessor env_exhaust_entity = '';
+  @state() private accessor env_humidifier_entity = '';
+  @state() private accessor env_dehumidifier_entity = '';
+  @state() private accessor env_soil_moisture_sensor = '';
+  @state() private accessor env_control_dehumidifier = false;
 
   static styles = [
     dialogStyles,
@@ -161,6 +167,12 @@ export class ConfigDialog extends LitElement {
       circulation_fan: string;
       stress_threshold: number;
       mold_threshold: number;
+      light_sensor: string;
+      exhaust_entity: string;
+      humidifier_entity: string;
+      dehumidifier_entity: string;
+      soil_moisture_sensor: string;
+      control_dehumidifier: boolean;
     }
   ) {
     this.currentTab = currentTab;
@@ -173,6 +185,12 @@ export class ConfigDialog extends LitElement {
       this.env_circulation_fan = environmentData.circulation_fan;
       this.env_stress_threshold = environmentData.stress_threshold;
       this.env_mold_threshold = environmentData.mold_threshold;
+      this.env_light_sensor = environmentData.light_sensor;
+      this.env_exhaust_entity = environmentData.exhaust_entity;
+      this.env_humidifier_entity = environmentData.humidifier_entity;
+      this.env_dehumidifier_entity = environmentData.dehumidifier_entity;
+      this.env_soil_moisture_sensor = environmentData.soil_moisture_sensor;
+      this.env_control_dehumidifier = environmentData.control_dehumidifier;
     }
   }
 
@@ -213,6 +231,12 @@ export class ConfigDialog extends LitElement {
           circulation_fan: this.env_circulation_fan,
           stress_threshold: this.env_stress_threshold,
           mold_threshold: this.env_mold_threshold,
+          light_sensor: this.env_light_sensor,
+          exhaust_entity: this.env_exhaust_entity,
+          humidifier_entity: this.env_humidifier_entity,
+          dehumidifier_entity: this.env_dehumidifier_entity,
+          soil_moisture_sensor: this.env_soil_moisture_sensor,
+          control_dehumidifier: this.env_control_dehumidifier,
         },
         bubbles: true,
         composed: true,
@@ -607,13 +631,12 @@ export class ConfigDialog extends LitElement {
             <select
               class="md3-input"
               .value=${this.env_selectedGrowspaceId}
-              @change=${(e: Event) =>
-        (this.env_selectedGrowspaceId = (e.target as HTMLSelectElement).value)}
+              @change=${this._handleEnvGrowspaceChange}
             >
               <option value="">Select...</option>
               ${Object.entries(this.growspaceOptions).map(
-          ([id, name]) => html`<option value="${id}">${name}</option>`
-        )}
+      ([id, name]) => html`<option value="${id}">${name}</option>`
+    )}
             </select>
           </div>
         </div>
@@ -621,44 +644,94 @@ export class ConfigDialog extends LitElement {
         <div class="detail-card">
           <h3>Sensors</h3>
           ${this._renderEntitySelect(
-          'Temperature Sensor',
-          this.env_temp_sensor,
-          ['sensor', 'input_number'],
-          'temperature',
-          (e: Event) => (this.env_temp_sensor = (e.target as HTMLSelectElement).value)
-        )}
+      'Temperature Sensor',
+      this.env_temp_sensor,
+      ['sensor', 'input_number'],
+      'temperature',
+      (e: Event) => (this.env_temp_sensor = (e.target as HTMLSelectElement).value)
+    )}
           ${this._renderEntitySelect(
-          'Humidity Sensor',
-          this.env_humidity_sensor,
-          ['sensor', 'input_number'],
-          'humidity',
-          (e: Event) => (this.env_humidity_sensor = (e.target as HTMLSelectElement).value)
-        )}
+      'Humidity Sensor',
+      this.env_humidity_sensor,
+      ['sensor', 'input_number'],
+      'humidity',
+      (e: Event) => (this.env_humidity_sensor = (e.target as HTMLSelectElement).value)
+    )}
           ${this._renderEntitySelect(
-          'VPD Sensor (Optional)',
-          this.env_vpd_sensor,
-          ['sensor', 'input_number'],
-          'pressure',
-          (e: Event) => (this.env_vpd_sensor = (e.target as HTMLSelectElement).value)
-        )}
+      'VPD Sensor (Optional)',
+      this.env_vpd_sensor,
+      ['sensor', 'input_number'],
+      'pressure',
+      (e: Event) => (this.env_vpd_sensor = (e.target as HTMLSelectElement).value)
+    )}
+        </div>
+
         </div>
 
         <div class="detail-card">
           <h3>Optional</h3>
           ${this._renderEntitySelect(
-          'CO2 Sensor',
-          this.env_co2_sensor,
-          ['sensor', 'input_number'],
-          'carbon_dioxide',
-          (e: Event) => (this.env_co2_sensor = (e.target as HTMLSelectElement).value)
-        )}
+      'CO2 Sensor',
+      this.env_co2_sensor,
+      ['sensor', 'input_number'],
+      'carbon_dioxide',
+      (e: Event) => (this.env_co2_sensor = (e.target as HTMLSelectElement).value)
+    )}
           ${this._renderEntitySelect(
-          'Circulation Fan / Switch',
-          this.env_circulation_fan,
-          ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'],
-          null,
-          (e: Event) => (this.env_circulation_fan = (e.target as HTMLSelectElement).value)
-        )}
+      'Circulation Fan / Switch',
+      this.env_circulation_fan,
+      ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'],
+      null,
+      (e: Event) => (this.env_circulation_fan = (e.target as HTMLSelectElement).value)
+    )}
+          ${this._renderEntitySelect(
+      'Light Source / Sensor',
+      this.env_light_sensor,
+      ['switch', 'light', 'input_boolean', 'sensor'],
+      null,
+      (e: Event) => (this.env_light_sensor = (e.target as HTMLSelectElement).value)
+    )}
+          ${this._renderEntitySelect(
+      'Soil Moisture Sensor',
+      this.env_soil_moisture_sensor,
+      ['sensor', 'input_number'],
+      'moisture',
+      (e: Event) => (this.env_soil_moisture_sensor = (e.target as HTMLSelectElement).value)
+    )}
+        </div>
+
+        <div class="detail-card">
+          <h3>Climate Devices</h3>
+           ${this._renderEntitySelect(
+      'Exhaust Fan / Switch',
+      this.env_exhaust_entity,
+      ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
+      null,
+      (e: Event) => (this.env_exhaust_entity = (e.target as HTMLSelectElement).value)
+    )}
+           ${this._renderEntitySelect(
+      'Humidifier',
+      this.env_humidifier_entity,
+      ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
+      null,
+      (e: Event) => (this.env_humidifier_entity = (e.target as HTMLSelectElement).value)
+    )}
+           ${this._renderEntitySelect(
+      'Dehumidifier',
+      this.env_dehumidifier_entity,
+      ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'],
+      null,
+      (e: Event) => (this.env_dehumidifier_entity = (e.target as HTMLSelectElement).value)
+    )}
+          
+          <div class="md3-input-group" style="flex-direction:row; align-items:center; justify-content:space-between;">
+             <label class="md3-label" style="margin:0">Control Dehumidifier</label>
+             <input type="checkbox" 
+                .checked=${this.env_control_dehumidifier}
+                @change=${(e: Event) => (this.env_control_dehumidifier = (e.target as HTMLInputElement).checked)}
+                style="width:20px; height:20px;"
+             />
+          </div>
         </div>
 
         <div class="detail-card">
@@ -676,5 +749,43 @@ export class ConfigDialog extends LitElement {
         </div>
       </div>
     `;
+  }
+  private _handleEnvGrowspaceChange(e: Event) {
+    const target = e.target as HTMLSelectElement;
+    const growspaceId = target.value;
+    this.env_selectedGrowspaceId = growspaceId;
+
+    // Find the device in the passed devices array (from store state upstream)
+    const device = this.devices.find((d) => d.device_id === growspaceId);
+    if (device && device.environment_attributes) {
+      const attrs = device.environment_attributes;
+      this.env_temp_sensor = attrs.temperature_sensor || '';
+      this.env_humidity_sensor = attrs.humidity_sensor || '';
+      this.env_vpd_sensor = attrs.vpd_sensor || '';
+      this.env_co2_sensor = attrs.co2_sensor || '';
+      this.env_circulation_fan = attrs.circulation_fan_entity || '';
+      this.env_light_sensor = attrs.light_sensor || '';
+      this.env_exhaust_entity = attrs.exhaust_entity || '';
+      this.env_humidifier_entity = attrs.humidifier_entity || '';
+      this.env_dehumidifier_entity = attrs.dehumidifier_entity || '';
+      this.env_soil_moisture_sensor = attrs.soil_moisture_sensor || '';
+      this.env_control_dehumidifier = attrs.dehumidifier_control_enabled || false;
+      // Default or fetch if available (currently not in env attrs commonly exposed, or defaults are fine)
+      this.env_stress_threshold = 0.8;
+      this.env_mold_threshold = 0.8;
+    } else {
+      // Reset if no device or no attributes
+      this.env_temp_sensor = '';
+      this.env_humidity_sensor = '';
+      this.env_vpd_sensor = '';
+      this.env_co2_sensor = '';
+      this.env_circulation_fan = '';
+      this.env_light_sensor = '';
+      this.env_exhaust_entity = '';
+      this.env_humidifier_entity = '';
+      this.env_dehumidifier_entity = '';
+      this.env_soil_moisture_sensor = '';
+      this.env_control_dehumidifier = false;
+    }
   }
 }

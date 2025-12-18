@@ -681,11 +681,22 @@ export class DataService {
     growspace_id: string;
     temperature_sensor: string;
     humidity_sensor: string;
-    vpd_sensor: string;
+    vpd_sensor?: string;
     co2_sensor?: string;
     circulation_fan?: string;
     stress_threshold?: number;
     mold_threshold?: number;
+    light_sensor?: string;
+    exhaust_entity?: string;
+    humidifier_entity?: string;
+    dehumidifier_entity?: string;
+    soil_moisture_sensor?: string;
+    control_dehumidifier?: boolean;
+    veg_day_hours?: number;
+    flower_early_day_hours?: number;
+    flower_mid_day_hours?: number;
+    flower_late_day_hours?: number;
+    minimum_source_air_temperature?: number;
   }) {
     console.log('[DataService:configureEnvironment] Configuring sensors:', data);
     try {

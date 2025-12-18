@@ -11707,7 +11707,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
 })();
 
 (() => {
-    var _ConfigDialog_open_accessor_storage, _ConfigDialog_hass_accessor_storage, _ConfigDialog_growspaceOptions_accessor_storage, _ConfigDialog_devices_accessor_storage, _ConfigDialog_initialTab_accessor_storage, _ConfigDialog_currentTab_accessor_storage, _ConfigDialog_add_name_accessor_storage, _ConfigDialog_add_rows_accessor_storage, _ConfigDialog_add_plants_per_row_accessor_storage, _ConfigDialog_add_notification_service_accessor_storage, _ConfigDialog_edit_selectedId_accessor_storage, _ConfigDialog_edit_name_accessor_storage, _ConfigDialog_edit_rows_accessor_storage, _ConfigDialog_edit_plants_per_row_accessor_storage, _ConfigDialog_edit_notification_service_accessor_storage, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, _ConfigDialog_env_temp_sensor_accessor_storage, _ConfigDialog_env_humidity_sensor_accessor_storage, _ConfigDialog_env_vpd_sensor_accessor_storage, _ConfigDialog_env_co2_sensor_accessor_storage, _ConfigDialog_env_circulation_fan_accessor_storage, _ConfigDialog_env_stress_threshold_accessor_storage, _ConfigDialog_env_mold_threshold_accessor_storage, _ConfigDialog__showDeleteConfirm_accessor_storage;
+    var _ConfigDialog_open_accessor_storage, _ConfigDialog_hass_accessor_storage, _ConfigDialog_growspaceOptions_accessor_storage, _ConfigDialog_devices_accessor_storage, _ConfigDialog_initialTab_accessor_storage, _ConfigDialog_currentTab_accessor_storage, _ConfigDialog_add_name_accessor_storage, _ConfigDialog_add_rows_accessor_storage, _ConfigDialog_add_plants_per_row_accessor_storage, _ConfigDialog_add_notification_service_accessor_storage, _ConfigDialog_edit_selectedId_accessor_storage, _ConfigDialog_edit_name_accessor_storage, _ConfigDialog_edit_rows_accessor_storage, _ConfigDialog_edit_plants_per_row_accessor_storage, _ConfigDialog_edit_notification_service_accessor_storage, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, _ConfigDialog_env_temp_sensor_accessor_storage, _ConfigDialog_env_humidity_sensor_accessor_storage, _ConfigDialog_env_vpd_sensor_accessor_storage, _ConfigDialog_env_co2_sensor_accessor_storage, _ConfigDialog_env_circulation_fan_accessor_storage, _ConfigDialog_env_stress_threshold_accessor_storage, _ConfigDialog_env_mold_threshold_accessor_storage, _ConfigDialog_env_light_sensor_accessor_storage, _ConfigDialog_env_exhaust_entity_accessor_storage, _ConfigDialog_env_humidifier_entity_accessor_storage, _ConfigDialog_env_dehumidifier_entity_accessor_storage, _ConfigDialog_env_soil_moisture_sensor_accessor_storage, _ConfigDialog_env_control_dehumidifier_accessor_storage, _ConfigDialog__showDeleteConfirm_accessor_storage;
     let _classDecorators = [t$2('config-dialog')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -11782,6 +11782,24 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
     let _env_mold_threshold_decorators;
     let _env_mold_threshold_initializers = [];
     let _env_mold_threshold_extraInitializers = [];
+    let _env_light_sensor_decorators;
+    let _env_light_sensor_initializers = [];
+    let _env_light_sensor_extraInitializers = [];
+    let _env_exhaust_entity_decorators;
+    let _env_exhaust_entity_initializers = [];
+    let _env_exhaust_entity_extraInitializers = [];
+    let _env_humidifier_entity_decorators;
+    let _env_humidifier_entity_initializers = [];
+    let _env_humidifier_entity_extraInitializers = [];
+    let _env_dehumidifier_entity_decorators;
+    let _env_dehumidifier_entity_initializers = [];
+    let _env_dehumidifier_entity_extraInitializers = [];
+    let _env_soil_moisture_sensor_decorators;
+    let _env_soil_moisture_sensor_initializers = [];
+    let _env_soil_moisture_sensor_extraInitializers = [];
+    let _env_control_dehumidifier_decorators;
+    let _env_control_dehumidifier_initializers = [];
+    let _env_control_dehumidifier_extraInitializers = [];
     let __showDeleteConfirm_decorators;
     let __showDeleteConfirm_initializers = [];
     let __showDeleteConfirm_extraInitializers = [];
@@ -11835,6 +11853,18 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         set env_stress_threshold(value) { __classPrivateFieldSet(this, _ConfigDialog_env_stress_threshold_accessor_storage, value, "f"); }
         get env_mold_threshold() { return __classPrivateFieldGet(this, _ConfigDialog_env_mold_threshold_accessor_storage, "f"); }
         set env_mold_threshold(value) { __classPrivateFieldSet(this, _ConfigDialog_env_mold_threshold_accessor_storage, value, "f"); }
+        get env_light_sensor() { return __classPrivateFieldGet(this, _ConfigDialog_env_light_sensor_accessor_storage, "f"); }
+        set env_light_sensor(value) { __classPrivateFieldSet(this, _ConfigDialog_env_light_sensor_accessor_storage, value, "f"); }
+        get env_exhaust_entity() { return __classPrivateFieldGet(this, _ConfigDialog_env_exhaust_entity_accessor_storage, "f"); }
+        set env_exhaust_entity(value) { __classPrivateFieldSet(this, _ConfigDialog_env_exhaust_entity_accessor_storage, value, "f"); }
+        get env_humidifier_entity() { return __classPrivateFieldGet(this, _ConfigDialog_env_humidifier_entity_accessor_storage, "f"); }
+        set env_humidifier_entity(value) { __classPrivateFieldSet(this, _ConfigDialog_env_humidifier_entity_accessor_storage, value, "f"); }
+        get env_dehumidifier_entity() { return __classPrivateFieldGet(this, _ConfigDialog_env_dehumidifier_entity_accessor_storage, "f"); }
+        set env_dehumidifier_entity(value) { __classPrivateFieldSet(this, _ConfigDialog_env_dehumidifier_entity_accessor_storage, value, "f"); }
+        get env_soil_moisture_sensor() { return __classPrivateFieldGet(this, _ConfigDialog_env_soil_moisture_sensor_accessor_storage, "f"); }
+        set env_soil_moisture_sensor(value) { __classPrivateFieldSet(this, _ConfigDialog_env_soil_moisture_sensor_accessor_storage, value, "f"); }
+        get env_control_dehumidifier() { return __classPrivateFieldGet(this, _ConfigDialog_env_control_dehumidifier_accessor_storage, "f"); }
+        set env_control_dehumidifier(value) { __classPrivateFieldSet(this, _ConfigDialog_env_control_dehumidifier_accessor_storage, value, "f"); }
         updated(changedProperties) {
             super.updated(changedProperties);
             // Apply initial tab state only once when dialog opens
@@ -11863,6 +11893,12 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                 this.env_circulation_fan = environmentData.circulation_fan;
                 this.env_stress_threshold = environmentData.stress_threshold;
                 this.env_mold_threshold = environmentData.mold_threshold;
+                this.env_light_sensor = environmentData.light_sensor;
+                this.env_exhaust_entity = environmentData.exhaust_entity;
+                this.env_humidifier_entity = environmentData.humidifier_entity;
+                this.env_dehumidifier_entity = environmentData.dehumidifier_entity;
+                this.env_soil_moisture_sensor = environmentData.soil_moisture_sensor;
+                this.env_control_dehumidifier = environmentData.control_dehumidifier;
             }
         }
         _close() {
@@ -11895,6 +11931,12 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                     circulation_fan: this.env_circulation_fan,
                     stress_threshold: this.env_stress_threshold,
                     mold_threshold: this.env_mold_threshold,
+                    light_sensor: this.env_light_sensor,
+                    exhaust_entity: this.env_exhaust_entity,
+                    humidifier_entity: this.env_humidifier_entity,
+                    dehumidifier_entity: this.env_dehumidifier_entity,
+                    soil_moisture_sensor: this.env_soil_moisture_sensor,
+                    control_dehumidifier: this.env_control_dehumidifier,
                 },
                 bubbles: true,
                 composed: true,
@@ -12250,7 +12292,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
             <select
               class="md3-input"
               .value=${this.env_selectedGrowspaceId}
-              @change=${(e) => (this.env_selectedGrowspaceId = e.target.value)}
+              @change=${this._handleEnvGrowspaceChange}
             >
               <option value="">Select...</option>
               ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
@@ -12265,10 +12307,30 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
           ${this._renderEntitySelect('VPD Sensor (Optional)', this.env_vpd_sensor, ['sensor', 'input_number'], 'pressure', (e) => (this.env_vpd_sensor = e.target.value))}
         </div>
 
+        </div>
+
         <div class="detail-card">
           <h3>Optional</h3>
           ${this._renderEntitySelect('CO2 Sensor', this.env_co2_sensor, ['sensor', 'input_number'], 'carbon_dioxide', (e) => (this.env_co2_sensor = e.target.value))}
           ${this._renderEntitySelect('Circulation Fan / Switch', this.env_circulation_fan, ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'], null, (e) => (this.env_circulation_fan = e.target.value))}
+          ${this._renderEntitySelect('Light Source / Sensor', this.env_light_sensor, ['switch', 'light', 'input_boolean', 'sensor'], null, (e) => (this.env_light_sensor = e.target.value))}
+          ${this._renderEntitySelect('Soil Moisture Sensor', this.env_soil_moisture_sensor, ['sensor', 'input_number'], 'moisture', (e) => (this.env_soil_moisture_sensor = e.target.value))}
+        </div>
+
+        <div class="detail-card">
+          <h3>Climate Devices</h3>
+           ${this._renderEntitySelect('Exhaust Fan / Switch', this.env_exhaust_entity, ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (e) => (this.env_exhaust_entity = e.target.value))}
+           ${this._renderEntitySelect('Humidifier', this.env_humidifier_entity, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (e) => (this.env_humidifier_entity = e.target.value))}
+           ${this._renderEntitySelect('Dehumidifier', this.env_dehumidifier_entity, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'], null, (e) => (this.env_dehumidifier_entity = e.target.value))}
+          
+          <div class="md3-input-group" style="flex-direction:row; align-items:center; justify-content:space-between;">
+             <label class="md3-label" style="margin:0">Control Dehumidifier</label>
+             <input type="checkbox" 
+                .checked=${this.env_control_dehumidifier}
+                @change=${(e) => (this.env_control_dehumidifier = e.target.checked)}
+                style="width:20px; height:20px;"
+             />
+          </div>
         </div>
 
         <div class="detail-card">
@@ -12286,6 +12348,44 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         </div>
       </div>
     `;
+        }
+        _handleEnvGrowspaceChange(e) {
+            const target = e.target;
+            const growspaceId = target.value;
+            this.env_selectedGrowspaceId = growspaceId;
+            // Find the device in the passed devices array (from store state upstream)
+            const device = this.devices.find((d) => d.device_id === growspaceId);
+            if (device && device.environment_attributes) {
+                const attrs = device.environment_attributes;
+                this.env_temp_sensor = attrs.temperature_sensor || '';
+                this.env_humidity_sensor = attrs.humidity_sensor || '';
+                this.env_vpd_sensor = attrs.vpd_sensor || '';
+                this.env_co2_sensor = attrs.co2_sensor || '';
+                this.env_circulation_fan = attrs.circulation_fan_entity || '';
+                this.env_light_sensor = attrs.light_sensor || '';
+                this.env_exhaust_entity = attrs.exhaust_entity || '';
+                this.env_humidifier_entity = attrs.humidifier_entity || '';
+                this.env_dehumidifier_entity = attrs.dehumidifier_entity || '';
+                this.env_soil_moisture_sensor = attrs.soil_moisture_sensor || '';
+                this.env_control_dehumidifier = attrs.dehumidifier_control_enabled || false;
+                // Default or fetch if available (currently not in env attrs commonly exposed, or defaults are fine)
+                this.env_stress_threshold = 0.8;
+                this.env_mold_threshold = 0.8;
+            }
+            else {
+                // Reset if no device or no attributes
+                this.env_temp_sensor = '';
+                this.env_humidity_sensor = '';
+                this.env_vpd_sensor = '';
+                this.env_co2_sensor = '';
+                this.env_circulation_fan = '';
+                this.env_light_sensor = '';
+                this.env_exhaust_entity = '';
+                this.env_humidifier_entity = '';
+                this.env_dehumidifier_entity = '';
+                this.env_soil_moisture_sensor = '';
+                this.env_control_dehumidifier = false;
+            }
         }
         constructor() {
             super(...arguments);
@@ -12313,7 +12413,13 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
             _ConfigDialog_env_circulation_fan_accessor_storage.set(this, (__runInitializers(this, _env_co2_sensor_extraInitializers), __runInitializers(this, _env_circulation_fan_initializers, '')));
             _ConfigDialog_env_stress_threshold_accessor_storage.set(this, (__runInitializers(this, _env_circulation_fan_extraInitializers), __runInitializers(this, _env_stress_threshold_initializers, 0.8)));
             _ConfigDialog_env_mold_threshold_accessor_storage.set(this, (__runInitializers(this, _env_stress_threshold_extraInitializers), __runInitializers(this, _env_mold_threshold_initializers, 0.8)));
-            _ConfigDialog__showDeleteConfirm_accessor_storage.set(this, (__runInitializers(this, _env_mold_threshold_extraInitializers), __runInitializers(this, __showDeleteConfirm_initializers, false)));
+            _ConfigDialog_env_light_sensor_accessor_storage.set(this, (__runInitializers(this, _env_mold_threshold_extraInitializers), __runInitializers(this, _env_light_sensor_initializers, '')));
+            _ConfigDialog_env_exhaust_entity_accessor_storage.set(this, (__runInitializers(this, _env_light_sensor_extraInitializers), __runInitializers(this, _env_exhaust_entity_initializers, '')));
+            _ConfigDialog_env_humidifier_entity_accessor_storage.set(this, (__runInitializers(this, _env_exhaust_entity_extraInitializers), __runInitializers(this, _env_humidifier_entity_initializers, '')));
+            _ConfigDialog_env_dehumidifier_entity_accessor_storage.set(this, (__runInitializers(this, _env_humidifier_entity_extraInitializers), __runInitializers(this, _env_dehumidifier_entity_initializers, '')));
+            _ConfigDialog_env_soil_moisture_sensor_accessor_storage.set(this, (__runInitializers(this, _env_dehumidifier_entity_extraInitializers), __runInitializers(this, _env_soil_moisture_sensor_initializers, '')));
+            _ConfigDialog_env_control_dehumidifier_accessor_storage.set(this, (__runInitializers(this, _env_soil_moisture_sensor_extraInitializers), __runInitializers(this, _env_control_dehumidifier_initializers, false)));
+            _ConfigDialog__showDeleteConfirm_accessor_storage.set(this, (__runInitializers(this, _env_control_dehumidifier_extraInitializers), __runInitializers(this, __showDeleteConfirm_initializers, false)));
             __runInitializers(this, __showDeleteConfirm_extraInitializers);
         }
     };
@@ -12340,6 +12446,12 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
     _ConfigDialog_env_circulation_fan_accessor_storage = new WeakMap();
     _ConfigDialog_env_stress_threshold_accessor_storage = new WeakMap();
     _ConfigDialog_env_mold_threshold_accessor_storage = new WeakMap();
+    _ConfigDialog_env_light_sensor_accessor_storage = new WeakMap();
+    _ConfigDialog_env_exhaust_entity_accessor_storage = new WeakMap();
+    _ConfigDialog_env_humidifier_entity_accessor_storage = new WeakMap();
+    _ConfigDialog_env_dehumidifier_entity_accessor_storage = new WeakMap();
+    _ConfigDialog_env_soil_moisture_sensor_accessor_storage = new WeakMap();
+    _ConfigDialog_env_control_dehumidifier_accessor_storage = new WeakMap();
     _ConfigDialog__showDeleteConfirm_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "ConfigDialog");
     (() => {
@@ -12367,6 +12479,12 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         _env_circulation_fan_decorators = [r$2()];
         _env_stress_threshold_decorators = [r$2()];
         _env_mold_threshold_decorators = [r$2()];
+        _env_light_sensor_decorators = [r$2()];
+        _env_exhaust_entity_decorators = [r$2()];
+        _env_humidifier_entity_decorators = [r$2()];
+        _env_dehumidifier_entity_decorators = [r$2()];
+        _env_soil_moisture_sensor_decorators = [r$2()];
+        _env_control_dehumidifier_decorators = [r$2()];
         __showDeleteConfirm_decorators = [r$2()];
         __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
         __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
@@ -12391,6 +12509,12 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         __esDecorate(_classThis, null, _env_circulation_fan_decorators, { kind: "accessor", name: "env_circulation_fan", static: false, private: false, access: { has: obj => "env_circulation_fan" in obj, get: obj => obj.env_circulation_fan, set: (obj, value) => { obj.env_circulation_fan = value; } }, metadata: _metadata }, _env_circulation_fan_initializers, _env_circulation_fan_extraInitializers);
         __esDecorate(_classThis, null, _env_stress_threshold_decorators, { kind: "accessor", name: "env_stress_threshold", static: false, private: false, access: { has: obj => "env_stress_threshold" in obj, get: obj => obj.env_stress_threshold, set: (obj, value) => { obj.env_stress_threshold = value; } }, metadata: _metadata }, _env_stress_threshold_initializers, _env_stress_threshold_extraInitializers);
         __esDecorate(_classThis, null, _env_mold_threshold_decorators, { kind: "accessor", name: "env_mold_threshold", static: false, private: false, access: { has: obj => "env_mold_threshold" in obj, get: obj => obj.env_mold_threshold, set: (obj, value) => { obj.env_mold_threshold = value; } }, metadata: _metadata }, _env_mold_threshold_initializers, _env_mold_threshold_extraInitializers);
+        __esDecorate(_classThis, null, _env_light_sensor_decorators, { kind: "accessor", name: "env_light_sensor", static: false, private: false, access: { has: obj => "env_light_sensor" in obj, get: obj => obj.env_light_sensor, set: (obj, value) => { obj.env_light_sensor = value; } }, metadata: _metadata }, _env_light_sensor_initializers, _env_light_sensor_extraInitializers);
+        __esDecorate(_classThis, null, _env_exhaust_entity_decorators, { kind: "accessor", name: "env_exhaust_entity", static: false, private: false, access: { has: obj => "env_exhaust_entity" in obj, get: obj => obj.env_exhaust_entity, set: (obj, value) => { obj.env_exhaust_entity = value; } }, metadata: _metadata }, _env_exhaust_entity_initializers, _env_exhaust_entity_extraInitializers);
+        __esDecorate(_classThis, null, _env_humidifier_entity_decorators, { kind: "accessor", name: "env_humidifier_entity", static: false, private: false, access: { has: obj => "env_humidifier_entity" in obj, get: obj => obj.env_humidifier_entity, set: (obj, value) => { obj.env_humidifier_entity = value; } }, metadata: _metadata }, _env_humidifier_entity_initializers, _env_humidifier_entity_extraInitializers);
+        __esDecorate(_classThis, null, _env_dehumidifier_entity_decorators, { kind: "accessor", name: "env_dehumidifier_entity", static: false, private: false, access: { has: obj => "env_dehumidifier_entity" in obj, get: obj => obj.env_dehumidifier_entity, set: (obj, value) => { obj.env_dehumidifier_entity = value; } }, metadata: _metadata }, _env_dehumidifier_entity_initializers, _env_dehumidifier_entity_extraInitializers);
+        __esDecorate(_classThis, null, _env_soil_moisture_sensor_decorators, { kind: "accessor", name: "env_soil_moisture_sensor", static: false, private: false, access: { has: obj => "env_soil_moisture_sensor" in obj, get: obj => obj.env_soil_moisture_sensor, set: (obj, value) => { obj.env_soil_moisture_sensor = value; } }, metadata: _metadata }, _env_soil_moisture_sensor_initializers, _env_soil_moisture_sensor_extraInitializers);
+        __esDecorate(_classThis, null, _env_control_dehumidifier_decorators, { kind: "accessor", name: "env_control_dehumidifier", static: false, private: false, access: { has: obj => "env_control_dehumidifier" in obj, get: obj => obj.env_control_dehumidifier, set: (obj, value) => { obj.env_control_dehumidifier = value; } }, metadata: _metadata }, _env_control_dehumidifier_initializers, _env_control_dehumidifier_extraInitializers);
         __esDecorate(_classThis, null, __showDeleteConfirm_decorators, { kind: "accessor", name: "_showDeleteConfirm", static: false, private: false, access: { has: obj => "_showDeleteConfirm" in obj, get: obj => obj._showDeleteConfirm, set: (obj, value) => { obj._showDeleteConfirm = value; } }, metadata: _metadata }, __showDeleteConfirm_initializers, __showDeleteConfirm_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         _classThis = _classDescriptor.value;
@@ -14453,7 +14577,7 @@ class GrowspaceLogbookController {
         `;
         }
         async _handleEnvironmentConfig(detail) {
-            const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold, } = detail;
+            const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold, light_sensor, exhaust_entity, humidifier_entity, dehumidifier_entity, soil_moisture_sensor, control_dehumidifier, } = detail;
             if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
                 this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
                 return;
@@ -14468,6 +14592,12 @@ class GrowspaceLogbookController {
                     circulation_fan: circulation_fan || undefined,
                     stress_threshold,
                     mold_threshold,
+                    light_sensor: light_sensor || undefined,
+                    exhaust_entity: exhaust_entity || undefined,
+                    humidifier_entity: humidifier_entity || undefined,
+                    dehumidifier_entity: dehumidifier_entity || undefined,
+                    soil_moisture_sensor: soil_moisture_sensor || undefined,
+                    control_dehumidifier,
                 });
                 this.store.showToast('Environment configured successfully!', 'success');
                 await this.store.refreshData();
@@ -24014,9 +24144,19 @@ class ResizeController {
                             currentTab: 'environment', // Default tab
                             environmentData: {
                                 selectedGrowspaceId: this.store.state.selectedDevice || '',
-                                // Pass minimal defaults; store handles merging usually, or fetching
-                                temp_sensor: '', humidity_sensor: '', vpd_sensor: '', co2_sensor: '',
-                                circulation_fan: '', stress_threshold: 0.8, mold_threshold: 0.8
+                                temp_sensor: this.device?.environment_attributes?.temperature_sensor || '',
+                                humidity_sensor: this.device?.environment_attributes?.humidity_sensor || '',
+                                vpd_sensor: this.device?.environment_attributes?.vpd_sensor || '',
+                                co2_sensor: this.device?.environment_attributes?.co2_sensor || '',
+                                circulation_fan: this.device?.environment_attributes?.circulation_fan_entity || '',
+                                stress_threshold: 0.8,
+                                mold_threshold: 0.8,
+                                light_sensor: this.device?.environment_attributes?.light_sensor || '',
+                                exhaust_entity: this.device?.environment_attributes?.exhaust_entity || '',
+                                humidifier_entity: this.device?.environment_attributes?.humidifier_entity || '',
+                                dehumidifier_entity: this.device?.environment_attributes?.dehumidifier_entity || '',
+                                soil_moisture_sensor: this.device?.environment_attributes?.soil_moisture_sensor || '',
+                                control_dehumidifier: this.device?.environment_attributes?.dehumidifier_control_enabled || false,
                             }
                         }
                     });
