@@ -1,7 +1,7 @@
 import { ReactiveController, ReactiveControllerHost } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { DateTime } from 'luxon';
-import { GrowspaceDevice, StrainEntry, PlantEntity, CropMeta, GrowspaceViewMode, PlantOverviewDialogState } from '../types';
+import { GrowspaceDevice, StrainEntry, PlantEntity, CropMeta, GrowspaceViewMode, PlantOverviewDialogState, GrowspaceAPIResponse } from '../types';
 import { ActiveDialogState } from '../ui-state';
 import { DataService } from '../data-service';
 import { PlantUtils } from '../utils/plant-utils';
@@ -47,7 +47,7 @@ export class GrowspaceStore implements ReactiveController {
         viewMode: 'standard',
     };
 
-    private wsDataCache: Record<string, any> = {}; // TODO: Type this strictly with WebSocket response type
+    private wsDataCache: Record<string, GrowspaceAPIResponse> = {};
     private _unsubEvents: (() => void) | undefined;
     private _isFetchingWS = false;
 

@@ -559,11 +559,15 @@ class GrowspaceAdapter {
         // Root Props
         grid, rows, plants_per_row, notification_target, 
         // Configs
-        irrigation_config, irrigation_strategy, environment_config, // New nested structure
+        // Configs
+        irrigation_config, irrigation_strategy, 
+        // environment_config is removed from API response type
         // Statistics (Root -> Stats)
         max_veg_days, max_flower_days, veg_week, flower_week, max_stage_summary, total_plants, 
         // Biological Metrics (Root -> Bio)
-        vpd_status, vpd_target_min, vpd_target_max, vpd_danger_min, vpd_danger_max, granular_stage, is_day, air_exchange, } = wsData;
+        vpd_status, vpd_target_min, vpd_target_max, vpd_danger_min, vpd_danger_max, granular_stage, is_day, air_exchange, 
+        // Environment Attributes (Flattened in API)
+        temperature_sensor, humidity_sensor, vpd_sensor, co2_sensor, soil_moisture_sensor, light_sensor, exhaust_entity, humidifier_entity, dehumidifier_entity, circulation_fan_entity, } = wsData;
         // --- Plants Mapping (Dictionary to Flat Array) ---
         const plants = [];
         if (grid) {
@@ -598,24 +602,21 @@ class GrowspaceAdapter {
             flower_week,
             air_exchange,
         };
-        // --- Environment Attributes Grouping (Map from nested config) ---
-        // --- Environment Attributes Grouping (Map from nested config) ---
+        // --- Environment Attributes Grouping (Map from flattened root props) ---
         const environment_attributes = {
-            ...environment_config, // Spread strictly if schema matches
-            // Fallback: Check root level for backward compatibility
-            exhaust_entity: environment_config?.exhaust_entity || wsData.exhaust_entity,
-            humidifier_entity: environment_config?.humidifier_entity || wsData.humidifier_entity,
-            dehumidifier_entity: environment_config?.dehumidifier_entity || wsData.dehumidifier_entity,
-            circulation_fan_entity: environment_config?.circulation_fan_entity || wsData.circulation_fan_entity,
-            temperature_sensor: environment_config?.temperature_sensor || wsData.temperature_sensor,
-            humidity_sensor: environment_config?.humidity_sensor || wsData.humidity_sensor,
-            vpd_sensor: environment_config?.vpd_sensor || wsData.vpd_sensor,
-            co2_sensor: environment_config?.co2_sensor || wsData.co2_sensor,
-            soil_moisture_sensor: environment_config?.soil_moisture_sensor || wsData.soil_moisture_sensor,
-            light_sensor: environment_config?.light_sensor || wsData.light_sensor,
-            // Legacy support for sensors if keys differ
-            exhaust_sensor: environment_config?.exhaust_sensor || wsData.exhaust_sensor,
-            humidifier_sensor: environment_config?.humidifier_sensor || wsData.humidifier_sensor
+            temperature_sensor,
+            humidity_sensor,
+            vpd_sensor,
+            co2_sensor,
+            soil_moisture_sensor,
+            light_sensor,
+            exhaust_entity,
+            humidifier_entity,
+            dehumidifier_entity,
+            circulation_fan_entity,
+            // Fallback/Legacy keys if needed, though strictly typed locally now
+            exhaust_sensor: exhaust_entity, // alias for safety if UI uses sensor key
+            humidifier_sensor: humidifier_entity,
         };
         // --- Stats Grouping ---
         const stats = {
@@ -5161,13 +5162,30 @@ var z$1 = /*#__PURE__*/Object.freeze({
 });
 
 const PlantSlotSchema = z$1.object({
-    entity_id: z$1.string(),
-    stage: z$1.string().optional(),
-    strain: z$1.string().optional(),
-    phenotype: z$1.string().optional(),
-    row: z$1.number().optional(),
-    col: z$1.number().optional(),
-    // Add other known plant fields as optional to be safe, or allow pass-through
+    entity_id: z$1.string().optional().default(''), // Ensure default if missing
+    plant_id: z$1.string().optional().default(''),
+    stage: z$1.string().optional().default('unknown'),
+    strain: z$1.string().optional().default(''),
+    phenotype: z$1.string().optional().default(''),
+    row: z$1.number().optional().default(0),
+    col: z$1.number().optional().default(0),
+    position: z$1.string().optional().default(''),
+    // Days in stage
+    seedling_days: z$1.number().optional().default(0),
+    mother_days: z$1.number().optional().default(0),
+    clone_days: z$1.number().optional().default(0),
+    veg_days: z$1.number().optional().default(0),
+    flower_days: z$1.number().optional().default(0),
+    dry_days: z$1.number().optional().default(0),
+    cure_days: z$1.number().optional().default(0),
+    // Start dates
+    seedling_start: z$1.string().nullable().optional().default(null),
+    mother_start: z$1.string().nullable().optional().default(null),
+    clone_start: z$1.string().nullable().optional().default(null),
+    veg_start: z$1.string().nullable().optional().default(null),
+    flower_start: z$1.string().nullable().optional().default(null),
+    dry_start: z$1.string().nullable().optional().default(null),
+    cure_start: z$1.string().nullable().optional().default(null),
 }).catchall(z$1.any()).nullable();
 const GrowspaceAPIResponseSchema = z$1.object({
     // Root Identity
@@ -5185,9 +5203,18 @@ const GrowspaceAPIResponseSchema = z$1.object({
         irrigation_times: z$1.array(z$1.any()).optional(),
         drain_times: z$1.array(z$1.any()).optional(),
     }).optional().default({}),
-    irrigation_strategy: z$1.any().optional().nullable().default(null),
-    // New nested environment config
-    environment_config: z$1.record(z$1.any()).optional().default({}),
+    irrigation_strategy: z$1.any().nullable().default(null),
+    // Flattened Environment Config (Root Level)
+    temperature_sensor: z$1.string().optional(),
+    humidity_sensor: z$1.string().optional(),
+    vpd_sensor: z$1.string().optional(),
+    co2_sensor: z$1.string().optional(),
+    soil_moisture_sensor: z$1.string().optional(),
+    light_sensor: z$1.string().optional(),
+    exhaust_entity: z$1.string().optional(),
+    humidifier_entity: z$1.string().optional(),
+    dehumidifier_entity: z$1.string().optional(),
+    circulation_fan_entity: z$1.string().optional(),
     // Statistics
     max_veg_days: z$1.number().optional().default(0),
     max_flower_days: z$1.number().optional().default(0),
@@ -7891,7 +7918,7 @@ class GrowspaceStore {
             devices: [],
             viewMode: 'standard',
         };
-        this.wsDataCache = {}; // TODO: Type this strictly with WebSocket response type
+        this.wsDataCache = {};
         this._isFetchingWS = false;
         this.handleTakeClone = (motherPlant, numClones) => {
             const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');

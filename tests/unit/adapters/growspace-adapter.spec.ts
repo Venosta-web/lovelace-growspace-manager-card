@@ -65,11 +65,10 @@ describe('GrowspaceAdapter', () => {
             granular_stage: 'early_veg',
             is_day: true,
             air_exchange: '100',
-            environment_config: {
-                temperature_sensor: 'sensor.temp',
-                humidity_sensor: 'sensor.hum',
-                vpd_sensor: 'sensor.vpd'
-            }
+            // Flat Environment Config
+            temperature_sensor: 'sensor.temp',
+            humidity_sensor: 'sensor.hum',
+            vpd_sensor: 'sensor.vpd'
         };
 
         const result = GrowspaceAdapter.transformGrowspace(mockOverview, mockWSData);

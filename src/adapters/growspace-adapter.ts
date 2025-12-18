@@ -76,9 +76,10 @@ export class GrowspaceAdapter {
       notification_target,
 
       // Configs
+      // Configs
       irrigation_config,
       irrigation_strategy,
-      environment_config, // New nested structure
+      // environment_config is removed from API response type
 
       // Statistics (Root -> Stats)
       max_veg_days,
@@ -97,6 +98,18 @@ export class GrowspaceAdapter {
       granular_stage,
       is_day,
       air_exchange,
+
+      // Environment Attributes (Flattened in API)
+      temperature_sensor,
+      humidity_sensor,
+      vpd_sensor,
+      co2_sensor,
+      soil_moisture_sensor,
+      light_sensor,
+      exhaust_entity,
+      humidifier_entity,
+      dehumidifier_entity,
+      circulation_fan_entity,
     } = wsData;
 
     // --- Plants Mapping (Dictionary to Flat Array) ---
@@ -135,27 +148,22 @@ export class GrowspaceAdapter {
       air_exchange,
     };
 
-    // --- Environment Attributes Grouping (Map from nested config) ---
-    // --- Environment Attributes Grouping (Map from nested config) ---
+    // --- Environment Attributes Grouping (Map from flattened root props) ---
     const environment_attributes = {
-      ...environment_config, // Spread strictly if schema matches
+      temperature_sensor,
+      humidity_sensor,
+      vpd_sensor,
+      co2_sensor,
+      soil_moisture_sensor,
+      light_sensor,
+      exhaust_entity,
+      humidifier_entity,
+      dehumidifier_entity,
+      circulation_fan_entity,
 
-      // Fallback: Check root level for backward compatibility
-      exhaust_entity: environment_config?.exhaust_entity || wsData.exhaust_entity,
-      humidifier_entity: environment_config?.humidifier_entity || wsData.humidifier_entity,
-      dehumidifier_entity: environment_config?.dehumidifier_entity || wsData.dehumidifier_entity,
-      circulation_fan_entity: environment_config?.circulation_fan_entity || wsData.circulation_fan_entity,
-
-      temperature_sensor: environment_config?.temperature_sensor || wsData.temperature_sensor,
-      humidity_sensor: environment_config?.humidity_sensor || wsData.humidity_sensor,
-      vpd_sensor: environment_config?.vpd_sensor || wsData.vpd_sensor,
-      co2_sensor: environment_config?.co2_sensor || wsData.co2_sensor,
-      soil_moisture_sensor: environment_config?.soil_moisture_sensor || wsData.soil_moisture_sensor,
-      light_sensor: environment_config?.light_sensor || wsData.light_sensor,
-
-      // Legacy support for sensors if keys differ
-      exhaust_sensor: environment_config?.exhaust_sensor || wsData.exhaust_sensor,
-      humidifier_sensor: environment_config?.humidifier_sensor || wsData.humidifier_sensor
+      // Fallback/Legacy keys if needed, though strictly typed locally now
+      exhaust_sensor: exhaust_entity, // alias for safety if UI uses sensor key
+      humidifier_sensor: humidifier_entity,
     };
 
     // --- Stats Grouping ---

@@ -83,7 +83,6 @@ describe('DataService', () => {
                     air_exchange: null,
                     // Verify defaults are applied
                     total_plants: 0,
-                    environment_config: {},
                     irrigation_config: {}
                 })
             });

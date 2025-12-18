@@ -1,13 +1,32 @@
 import { z } from 'zod';
 
 const PlantSlotSchema = z.object({
-    entity_id: z.string(),
-    stage: z.string().optional(),
-    strain: z.string().optional(),
-    phenotype: z.string().optional(),
-    row: z.number().optional(),
-    col: z.number().optional(),
-    // Add other known plant fields as optional to be safe, or allow pass-through
+    entity_id: z.string().optional().default(''), // Ensure default if missing
+    plant_id: z.string().optional().default(''),
+    stage: z.string().optional().default('unknown'),
+    strain: z.string().optional().default(''),
+    phenotype: z.string().optional().default(''),
+    row: z.number().optional().default(0),
+    col: z.number().optional().default(0),
+    position: z.string().optional().default(''),
+
+    // Days in stage
+    seedling_days: z.number().optional().default(0),
+    mother_days: z.number().optional().default(0),
+    clone_days: z.number().optional().default(0),
+    veg_days: z.number().optional().default(0),
+    flower_days: z.number().optional().default(0),
+    dry_days: z.number().optional().default(0),
+    cure_days: z.number().optional().default(0),
+
+    // Start dates
+    seedling_start: z.string().nullable().optional().default(null),
+    mother_start: z.string().nullable().optional().default(null),
+    clone_start: z.string().nullable().optional().default(null),
+    veg_start: z.string().nullable().optional().default(null),
+    flower_start: z.string().nullable().optional().default(null),
+    dry_start: z.string().nullable().optional().default(null),
+    cure_start: z.string().nullable().optional().default(null),
 }).catchall(z.any()).nullable();
 
 export const GrowspaceAPIResponseSchema = z.object({
@@ -28,10 +47,19 @@ export const GrowspaceAPIResponseSchema = z.object({
         irrigation_times: z.array(z.any()).optional(),
         drain_times: z.array(z.any()).optional(),
     }).optional().default({}),
-    irrigation_strategy: z.any().optional().nullable().default(null),
+    irrigation_strategy: z.any().nullable().default(null),
 
-    // New nested environment config
-    environment_config: z.record(z.any()).optional().default({}),
+    // Flattened Environment Config (Root Level)
+    temperature_sensor: z.string().optional(),
+    humidity_sensor: z.string().optional(),
+    vpd_sensor: z.string().optional(),
+    co2_sensor: z.string().optional(),
+    soil_moisture_sensor: z.string().optional(),
+    light_sensor: z.string().optional(),
+    exhaust_entity: z.string().optional(),
+    humidifier_entity: z.string().optional(),
+    dehumidifier_entity: z.string().optional(),
+    circulation_fan_entity: z.string().optional(),
 
     // Statistics
     max_veg_days: z.number().optional().default(0),

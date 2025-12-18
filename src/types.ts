@@ -227,7 +227,7 @@ export interface GrowspaceDevice {
     is_day?: boolean;
     veg_week?: number;
     flower_week?: number;
-    air_exchange?: string;
+    air_exchange?: string | null;
     [key: string]: any;
   };
 
@@ -378,15 +378,30 @@ export interface GrowspaceAPIResponse {
   rows: number;
   plants_per_row: number;
   total_plants: number;
-  notification_target?: string;
+  notification_target?: string | null;
 
   // Grid - Dictionary keyed by position_{row}_{col}
   grid: Record<string, RawPlantData | null>;
 
   // Configs - Nested Objects
   irrigation_config: IrrigationConfig;
-  irrigation_strategy: IrrigationStrategy | null;
-  environment_config: GrowspaceEnvironmentAttributes; // Nested environment config
+  irrigation_strategy?: IrrigationStrategy | null;
+  // Environment config is flattened in API now, but we keep this type definition clean
+  // by listing the specific keys that come from environment config at the root.
+
+  // Environment Sensors (Flattened)
+  temperature_sensor?: string;
+  humidity_sensor?: string;
+  vpd_sensor?: string;
+  co2_sensor?: string;
+  soil_moisture_sensor?: string;
+  light_sensor?: string;
+
+  // Environment Actuators (Flattened)
+  dehumidifier_entity?: string;
+  humidifier_entity?: string;
+  exhaust_entity?: string;
+  circulation_fan_entity?: string;
 
   // Statistics (Root Level in Serializer)
   max_veg_days: number;
@@ -395,7 +410,7 @@ export interface GrowspaceAPIResponse {
   flower_week: number;
   max_stage_summary: string;
 
-  // Biological Metrics (Spread in Serializer)
+  // Biological Metrics (Spread in Serializer - Root Level)
   vpd_status: string;
   vpd_target_min: number;
   vpd_target_max: number;
@@ -403,13 +418,7 @@ export interface GrowspaceAPIResponse {
   vpd_danger_max: number;
   granular_stage: string;
   is_day: boolean;
-  air_exchange?: string;
-
-  // Note: Environment attributes are now in environment_config object,
-  // but we should check if they are still spread or only nested.
-  // Prompt says: "environment_config and irrigation_config are nested objects."
-  // So we remove the spread environment props from root if they are now nested.
-  // However, serializer might duplicate. Let's assume strict nesting based on prompt.
+  air_exchange?: string | null;
 
   [key: string]: any;
 }
