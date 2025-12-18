@@ -158,20 +158,22 @@ export const uiStyles = css`
   .md3-input-group {
     position: relative;
     margin-bottom: 20px;
-    background: var(--card-background-color, rgba(255, 255, 255, 0.03));
+    background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border-radius: 4px 4px 0 0;
-    border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.4));
+    border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
     transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
   }
 
   .md3-input-group:hover {
-    background: var(--secondary-background-color, rgba(255, 255, 255, 0.06));
-    border-bottom-color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
+    background: rgba(var(--secondary-background-color, 255, 255, 255), 0.08);
+    border-bottom-color: var(--primary-light-color-hover, rgba(255, 255, 255, 0.6));
   }
 
   .md3-input-group:focus-within {
-    background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
-    border-bottom: 2px solid var(--primary-color, #4caf50);
+    background: rgba(var(--secondary-background-color, 255, 255, 255), 0.12);
+    border-bottom: 2px solid var(--primary-light-color-active, rgba(255, 255, 255, 0.6));
   }
 
   /* Error state for inputs */
@@ -196,7 +198,7 @@ export const uiStyles = css`
   }
 
   .md3-input-group:focus-within .md3-label {
-    color: var(--primary-color, #4caf50);
+    color: var(--primary-light-color-active, rgba(255, 255, 255, 0.6));
   }
 
   .md3-input {
@@ -246,20 +248,7 @@ export const uiStyles = css`
     color: var(--error-color, #f44336);
   }
 
-  /* --- Glass Dialog Container --- */
-  .glass-dialog-container {
-    background: var(--card-background-color, #ffffff);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    border-radius: 28px; /* MD3 extra large rounding */
-    padding: var(--spacing-lg);
-    color: var(--primary-text-color, #212121); /* Force variable text, dark fallback */
 
-    margin: -24px; /* Counteract default dialog padding if necessary */
-    min-width: 320px;
-  }
 
   /* --- Toast Notification --- */
   .toast-notification {

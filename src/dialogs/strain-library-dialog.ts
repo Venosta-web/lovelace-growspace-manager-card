@@ -569,7 +569,7 @@ export class StrainLibraryDialog extends LitElement {
         display: flex;
         align-items: center;
         gap: 12px;
-        color: var(--primary-text-color, #fff);
+        color: var(, #fff);
         cursor: pointer;
       }
       .mobile-menu-item:hover {
@@ -1354,7 +1354,7 @@ export class StrainLibraryDialog extends LitElement {
                 ${['Feminized', 'Regular'].map(
           (sex) => html`
                     <label
-                      style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--primary-text-color, white);"
+                      style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(, white);"
                     >
                       <input
                         type="radio"

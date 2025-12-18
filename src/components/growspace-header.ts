@@ -52,10 +52,13 @@ export class GrowspaceHeader extends LitElement {
 
   @state() private accessor _canScrollLeft = false;
   @state() private accessor _canScrollRight = false;
+  @state() private accessor _canScrollStageLeft = false;
+  @state() private accessor _canScrollStageRight = false;
   @state() private accessor _menuOpen = false;
   @state() private accessor _mobileLink = false;
 
   private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
+  private _stageContainerRef: Ref<HTMLDivElement> = createRef();
   private _resizeController = new ResizeController(this, () => this._checkScroll());
 
   // Cached metrics to avoid re-computation on every render
@@ -94,6 +97,13 @@ export class GrowspaceHeader extends LitElement {
     }
   }
 
+  private _scrollStage(direction: 'left' | 'right') {
+    const container = this._stageContainerRef.value;
+    if (container) {
+      container.scrollBy({ left: direction === 'left' ? -100 : 100, behavior: 'smooth' });
+    }
+  }
+
   private _checkScroll() {
     const container = this._chipsContainerRef.value;
     if (container) {
@@ -101,6 +111,13 @@ export class GrowspaceHeader extends LitElement {
       this._canScrollLeft = container.scrollLeft > 1;
       this._canScrollRight =
         container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
+    }
+
+    const stageContainer = this._stageContainerRef.value;
+    if (stageContainer) {
+      this._canScrollStageLeft = stageContainer.scrollLeft > 1;
+      this._canScrollStageRight =
+        stageContainer.scrollLeft < stageContainer.scrollWidth - stageContainer.clientWidth - 1;
     }
   }
 
@@ -135,10 +152,16 @@ export class GrowspaceHeader extends LitElement {
     if (container) {
       container.addEventListener('scroll', () => this._checkScroll());
       this._resizeController.observe(container);
-
-      // Initial check
-      setTimeout(() => this._checkScroll(), 0);
     }
+
+    const stageContainer = this._stageContainerRef.value;
+    if (stageContainer) {
+      stageContainer.addEventListener('scroll', () => this._checkScroll());
+      this._resizeController.observe(stageContainer);
+    }
+
+    // Initial check
+    setTimeout(() => this._checkScroll(), 0);
   }
 
 
@@ -217,7 +240,7 @@ export class GrowspaceHeader extends LitElement {
     /* --- Header Top Section --- */
     .gs-header-top {
       display: grid;
-      grid-template-columns: auto 1fr;
+      grid-template-columns: minmax(300px, 25%) 1fr;
       grid-template-rows: auto auto;
       align-items: center;
       gap: 4px 16px;
@@ -275,7 +298,7 @@ export class GrowspaceHeader extends LitElement {
     /* --- Hero Grid (Vital Stats) --- */
     .hero-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
       width: 100%;
       min-height: 50px;
@@ -378,11 +401,9 @@ export class GrowspaceHeader extends LitElement {
         position: relative;
         display: flex;
         align-items: center;
-        gap: 8px; /* For arrows */
         border-radius: 16px;
         flex: 1;
         min-width: 0;
-        margin: 0 16px;
         box-sizing: border-box;
     }
 
@@ -404,6 +425,10 @@ export class GrowspaceHeader extends LitElement {
     .scroll-arrow.hidden {
         opacity: 0;
         pointer-events: none;
+        min-width: 0;
+        width: 0;
+        min-height: 0;
+        height: 0;
     }
     .scroll-arrow svg { width: 20px; height: 20px; fill: currentColor; }
 
@@ -437,7 +462,6 @@ export class GrowspaceHeader extends LitElement {
     @media (max-width: 600px) {
         .gs-title { font-size: 2rem; }
         .hero-grid {
-            grid-template-columns: 1fr;
             gap: 12px;
         }
         .hero-value { font-size: 1.75rem; }
@@ -483,10 +507,11 @@ export class GrowspaceHeader extends LitElement {
         }
         .secondary-strip-container {
             margin: 0;
+            min-width: 0; /* Important for grid item to shrink */
+            overflow: hidden; /* Constrain */
         }
-        .secondary-strip-container .scroll-arrow {
-            display: none;
-        }
+        /* Allow arrows if they fit logic */
+        /* .secondary-strip-container .scroll-arrow { display: none; } REMOVED to allow arrows */
     }
 
     /* Menu & Buttons (Reused/Refined) */
@@ -769,21 +794,30 @@ export class GrowspaceHeader extends LitElement {
              </div>
           </div>
           
-          <!-- Row 2 Left: Stage Chips -->
-          <div class="header-stage-area">
-            ${dominant
+           <!-- Row 2 Left: Stage Chips -->
+           <div class="header-stage-area-wrapper" style="grid-column: 1; grid-row: 2; display: flex; align-items: center; min-width: 0; position: relative;">
+               <!-- Added arrows for stage if needed, using same logic or simplified -->
+                <div class="scroll-arrow ${!this._canScrollStageLeft ? 'hidden' : ''}" @click=${() => this._scrollStage('left')}>
+                    <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+                </div>
+               <div class="header-stage-area" ${ref(this._stageContainerRef)}>
+                 ${dominant
         ? html`
-                    <div class="gs-stage-pill">
-                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
-                        ${dominant.daysLabel}
-                    </div>
-                    <div class="gs-stage-pill">
-                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
-                        ${dominant.weeksLabel}
-                    </div>
-                  `
+                         <div class="gs-stage-pill">
+                             <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
+                             ${dominant.daysLabel}
+                         </div>
+                         <div class="gs-stage-pill">
+                             <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
+                             ${dominant.weeksLabel}
+                         </div>
+                       `
         : ''}
-          </div>
+               </div>
+                <div class="scroll-arrow ${!this._canScrollStageRight ? 'hidden' : ''}" @click=${() => this._scrollStage('right')}>
+                    <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                </div>
+           </div>
 
           <!-- Row 2 Right: Secondary Strip -->
           <div class="secondary-strip-container">

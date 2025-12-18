@@ -35,12 +35,13 @@ export const sharedStyles = css`
     background: var(--card-background-color, rgba(20, 20, 20, 0.85));
     backdrop-filter: blur(16px);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
   }
 
   /* --- Cards --- */
   .detail-card {
     background: var(--secondary-background-color, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
     border-radius: var(--border-radius-md, 12px);
     padding: var(--spacing-md, 16px);
   }

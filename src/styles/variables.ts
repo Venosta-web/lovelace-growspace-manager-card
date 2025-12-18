@@ -96,5 +96,7 @@ export const variables: CSSResult = css`
 
     /* Light Color */
     --primary-light-color: #ffeb3b;
+    --primary-light-color-hover: rgba(255, 255, 255, 0.1);
+    --primary-light-color-active: rgba(255, 255, 255, 0.2);
   }
 `;

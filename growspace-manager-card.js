@@ -7940,12 +7940,13 @@ const sharedStyles = i$6 `
     background: var(--card-background-color, rgba(20, 20, 20, 0.85));
     backdrop-filter: blur(16px);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
   }
 
   /* --- Cards --- */
   .detail-card {
     background: var(--secondary-background-color, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
     border-radius: var(--border-radius-md, 12px);
     padding: var(--spacing-md, 16px);
   }
@@ -8111,20 +8112,22 @@ const uiStyles = i$6 `
   .md3-input-group {
     position: relative;
     margin-bottom: 20px;
-    background: var(--card-background-color, rgba(255, 255, 255, 0.03));
+    background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border-radius: 4px 4px 0 0;
-    border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.4));
+    border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
     transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
   }
 
   .md3-input-group:hover {
-    background: var(--secondary-background-color, rgba(255, 255, 255, 0.06));
-    border-bottom-color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
+    background: rgba(var(--secondary-background-color, 255, 255, 255), 0.08);
+    border-bottom-color: var(--primary-light-color-hover, rgba(255, 255, 255, 0.6));
   }
 
   .md3-input-group:focus-within {
-    background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
-    border-bottom: 2px solid var(--primary-color, #4caf50);
+    background: rgba(var(--secondary-background-color, 255, 255, 255), 0.12);
+    border-bottom: 2px solid var(--primary-light-color-active, rgba(255, 255, 255, 0.6));
   }
 
   /* Error state for inputs */
@@ -8149,7 +8152,7 @@ const uiStyles = i$6 `
   }
 
   .md3-input-group:focus-within .md3-label {
-    color: var(--primary-color, #4caf50);
+    color: var(--primary-light-color-active, rgba(255, 255, 255, 0.6));
   }
 
   .md3-input {
@@ -8199,20 +8202,7 @@ const uiStyles = i$6 `
     color: var(--error-color, #f44336);
   }
 
-  /* --- Glass Dialog Container --- */
-  .glass-dialog-container {
-    background: var(--card-background-color, #ffffff);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    border-radius: 28px; /* MD3 extra large rounding */
-    padding: var(--spacing-lg);
-    color: var(--primary-text-color, #212121); /* Force variable text, dark fallback */
 
-    margin: -24px; /* Counteract default dialog padding if necessary */
-    min-width: 320px;
-  }
 
   /* --- Toast Notification --- */
   .toast-notification {
@@ -10816,7 +10806,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
               <div style="display:flex; gap:20px; padding: 8px 0;">
                 ${['Feminized', 'Regular'].map((sex) => x `
                     <label
-                      style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--primary-text-color, white);"
+                      style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(, white);"
                     >
                       <input
                         type="radio"
@@ -11692,7 +11682,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         display: flex;
         align-items: center;
         gap: 12px;
-        color: var(--primary-text-color, #fff);
+        color: var(, #fff);
         cursor: pointer;
       }
       .mobile-menu-item:hover {
@@ -23774,7 +23764,7 @@ class ResizeController {
 }
 
 (() => {
-    var _GrowspaceHeader_hass_accessor_storage, _GrowspaceHeader_store_accessor_storage, _GrowspaceHeader_historyController_accessor_storage, _GrowspaceHeader_config_accessor_storage, _GrowspaceHeader_device_accessor_storage, _GrowspaceHeader_compact_accessor_storage, _GrowspaceHeader_isEditMode_accessor_storage, _GrowspaceHeader_growspaceOptions_accessor_storage, _GrowspaceHeader_historyData_accessor_storage, _GrowspaceHeader__canScrollLeft_accessor_storage, _GrowspaceHeader__canScrollRight_accessor_storage, _GrowspaceHeader__menuOpen_accessor_storage, _GrowspaceHeader__mobileLink_accessor_storage;
+    var _GrowspaceHeader_hass_accessor_storage, _GrowspaceHeader_store_accessor_storage, _GrowspaceHeader_historyController_accessor_storage, _GrowspaceHeader_config_accessor_storage, _GrowspaceHeader_device_accessor_storage, _GrowspaceHeader_compact_accessor_storage, _GrowspaceHeader_isEditMode_accessor_storage, _GrowspaceHeader_growspaceOptions_accessor_storage, _GrowspaceHeader_historyData_accessor_storage, _GrowspaceHeader__canScrollLeft_accessor_storage, _GrowspaceHeader__canScrollRight_accessor_storage, _GrowspaceHeader__canScrollStageLeft_accessor_storage, _GrowspaceHeader__canScrollStageRight_accessor_storage, _GrowspaceHeader__menuOpen_accessor_storage, _GrowspaceHeader__mobileLink_accessor_storage;
     let _classDecorators = [t$2('growspace-header')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -23813,6 +23803,12 @@ class ResizeController {
     let __canScrollRight_decorators;
     let __canScrollRight_initializers = [];
     let __canScrollRight_extraInitializers = [];
+    let __canScrollStageLeft_decorators;
+    let __canScrollStageLeft_initializers = [];
+    let __canScrollStageLeft_extraInitializers = [];
+    let __canScrollStageRight_decorators;
+    let __canScrollStageRight_initializers = [];
+    let __canScrollStageRight_extraInitializers = [];
     let __menuOpen_decorators;
     let __menuOpen_initializers = [];
     let __menuOpen_extraInitializers = [];
@@ -23833,9 +23829,12 @@ class ResizeController {
             _GrowspaceHeader_historyData_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _historyData_initializers, null)));
             _GrowspaceHeader__canScrollLeft_accessor_storage.set(this, (__runInitializers(this, _historyData_extraInitializers), __runInitializers(this, __canScrollLeft_initializers, false)));
             _GrowspaceHeader__canScrollRight_accessor_storage.set(this, (__runInitializers(this, __canScrollLeft_extraInitializers), __runInitializers(this, __canScrollRight_initializers, false)));
-            _GrowspaceHeader__menuOpen_accessor_storage.set(this, (__runInitializers(this, __canScrollRight_extraInitializers), __runInitializers(this, __menuOpen_initializers, false)));
+            _GrowspaceHeader__canScrollStageLeft_accessor_storage.set(this, (__runInitializers(this, __canScrollRight_extraInitializers), __runInitializers(this, __canScrollStageLeft_initializers, false)));
+            _GrowspaceHeader__canScrollStageRight_accessor_storage.set(this, (__runInitializers(this, __canScrollStageLeft_extraInitializers), __runInitializers(this, __canScrollStageRight_initializers, false)));
+            _GrowspaceHeader__menuOpen_accessor_storage.set(this, (__runInitializers(this, __canScrollStageRight_extraInitializers), __runInitializers(this, __menuOpen_initializers, false)));
             _GrowspaceHeader__mobileLink_accessor_storage.set(this, (__runInitializers(this, __menuOpen_extraInitializers), __runInitializers(this, __mobileLink_initializers, false)));
             this._chipsContainerRef = (__runInitializers(this, __mobileLink_extraInitializers), e$1());
+            this._stageContainerRef = e$1();
             this._resizeController = new ResizeController(this, () => this._checkScroll());
             // Cached metrics to avoid re-computation on every render
             this._mainChips = [];
@@ -23868,6 +23867,10 @@ class ResizeController {
         set _canScrollLeft(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollLeft_accessor_storage, value, "f"); }
         get _canScrollRight() { return __classPrivateFieldGet(this, _GrowspaceHeader__canScrollRight_accessor_storage, "f"); }
         set _canScrollRight(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollRight_accessor_storage, value, "f"); }
+        get _canScrollStageLeft() { return __classPrivateFieldGet(this, _GrowspaceHeader__canScrollStageLeft_accessor_storage, "f"); }
+        set _canScrollStageLeft(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollStageLeft_accessor_storage, value, "f"); }
+        get _canScrollStageRight() { return __classPrivateFieldGet(this, _GrowspaceHeader__canScrollStageRight_accessor_storage, "f"); }
+        set _canScrollStageRight(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollStageRight_accessor_storage, value, "f"); }
         get _menuOpen() { return __classPrivateFieldGet(this, _GrowspaceHeader__menuOpen_accessor_storage, "f"); }
         set _menuOpen(value) { __classPrivateFieldSet(this, _GrowspaceHeader__menuOpen_accessor_storage, value, "f"); }
         get _mobileLink() { return __classPrivateFieldGet(this, _GrowspaceHeader__mobileLink_accessor_storage, "f"); }
@@ -23887,6 +23890,12 @@ class ResizeController {
                 container.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
             }
         }
+        _scrollStage(direction) {
+            const container = this._stageContainerRef.value;
+            if (container) {
+                container.scrollBy({ left: direction === 'left' ? -100 : 100, behavior: 'smooth' });
+            }
+        }
         _checkScroll() {
             const container = this._chipsContainerRef.value;
             if (container) {
@@ -23894,6 +23903,12 @@ class ResizeController {
                 this._canScrollLeft = container.scrollLeft > 1;
                 this._canScrollRight =
                     container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
+            }
+            const stageContainer = this._stageContainerRef.value;
+            if (stageContainer) {
+                this._canScrollStageLeft = stageContainer.scrollLeft > 1;
+                this._canScrollStageRight =
+                    stageContainer.scrollLeft < stageContainer.scrollWidth - stageContainer.clientWidth - 1;
             }
         }
         willUpdate(changedProperties) {
@@ -23921,9 +23936,14 @@ class ResizeController {
             if (container) {
                 container.addEventListener('scroll', () => this._checkScroll());
                 this._resizeController.observe(container);
-                // Initial check
-                setTimeout(() => this._checkScroll(), 0);
             }
+            const stageContainer = this._stageContainerRef.value;
+            if (stageContainer) {
+                stageContainer.addEventListener('scroll', () => this._checkScroll());
+                this._resizeController.observe(stageContainer);
+            }
+            // Initial check
+            setTimeout(() => this._checkScroll(), 0);
         }
         _handleDeviceChange(e) {
             const target = e.target;
@@ -24101,21 +24121,30 @@ class ResizeController {
              </div>
           </div>
           
-          <!-- Row 2 Left: Stage Chips -->
-          <div class="header-stage-area">
-            ${dominant
+           <!-- Row 2 Left: Stage Chips -->
+           <div class="header-stage-area-wrapper" style="grid-column: 1; grid-row: 2; display: flex; align-items: center; min-width: 0; position: relative;">
+               <!-- Added arrows for stage if needed, using same logic or simplified -->
+                <div class="scroll-arrow ${!this._canScrollStageLeft ? 'hidden' : ''}" @click=${() => this._scrollStage('left')}>
+                    <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+                </div>
+               <div class="header-stage-area" ${n$2(this._stageContainerRef)}>
+                 ${dominant
                 ? x `
-                    <div class="gs-stage-pill">
-                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
-                        ${dominant.daysLabel}
-                    </div>
-                    <div class="gs-stage-pill">
-                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
-                        ${dominant.weeksLabel}
-                    </div>
-                  `
+                         <div class="gs-stage-pill">
+                             <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
+                             ${dominant.daysLabel}
+                         </div>
+                         <div class="gs-stage-pill">
+                             <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
+                             ${dominant.weeksLabel}
+                         </div>
+                       `
                 : ''}
-          </div>
+               </div>
+                <div class="scroll-arrow ${!this._canScrollStageRight ? 'hidden' : ''}" @click=${() => this._scrollStage('right')}>
+                    <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                </div>
+           </div>
 
           <!-- Row 2 Right: Secondary Strip -->
           <div class="secondary-strip-container">
@@ -24311,6 +24340,8 @@ class ResizeController {
     _GrowspaceHeader_historyData_accessor_storage = new WeakMap();
     _GrowspaceHeader__canScrollLeft_accessor_storage = new WeakMap();
     _GrowspaceHeader__canScrollRight_accessor_storage = new WeakMap();
+    _GrowspaceHeader__canScrollStageLeft_accessor_storage = new WeakMap();
+    _GrowspaceHeader__canScrollStageRight_accessor_storage = new WeakMap();
     _GrowspaceHeader__menuOpen_accessor_storage = new WeakMap();
     _GrowspaceHeader__mobileLink_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "GrowspaceHeader");
@@ -24327,6 +24358,8 @@ class ResizeController {
         _historyData_decorators = [n$5({ attribute: false })];
         __canScrollLeft_decorators = [r$2()];
         __canScrollRight_decorators = [r$2()];
+        __canScrollStageLeft_decorators = [r$2()];
+        __canScrollStageRight_decorators = [r$2()];
         __menuOpen_decorators = [r$2()];
         __mobileLink_decorators = [r$2()];
         __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
@@ -24340,6 +24373,8 @@ class ResizeController {
         __esDecorate(_classThis, null, _historyData_decorators, { kind: "accessor", name: "historyData", static: false, private: false, access: { has: obj => "historyData" in obj, get: obj => obj.historyData, set: (obj, value) => { obj.historyData = value; } }, metadata: _metadata }, _historyData_initializers, _historyData_extraInitializers);
         __esDecorate(_classThis, null, __canScrollLeft_decorators, { kind: "accessor", name: "_canScrollLeft", static: false, private: false, access: { has: obj => "_canScrollLeft" in obj, get: obj => obj._canScrollLeft, set: (obj, value) => { obj._canScrollLeft = value; } }, metadata: _metadata }, __canScrollLeft_initializers, __canScrollLeft_extraInitializers);
         __esDecorate(_classThis, null, __canScrollRight_decorators, { kind: "accessor", name: "_canScrollRight", static: false, private: false, access: { has: obj => "_canScrollRight" in obj, get: obj => obj._canScrollRight, set: (obj, value) => { obj._canScrollRight = value; } }, metadata: _metadata }, __canScrollRight_initializers, __canScrollRight_extraInitializers);
+        __esDecorate(_classThis, null, __canScrollStageLeft_decorators, { kind: "accessor", name: "_canScrollStageLeft", static: false, private: false, access: { has: obj => "_canScrollStageLeft" in obj, get: obj => obj._canScrollStageLeft, set: (obj, value) => { obj._canScrollStageLeft = value; } }, metadata: _metadata }, __canScrollStageLeft_initializers, __canScrollStageLeft_extraInitializers);
+        __esDecorate(_classThis, null, __canScrollStageRight_decorators, { kind: "accessor", name: "_canScrollStageRight", static: false, private: false, access: { has: obj => "_canScrollStageRight" in obj, get: obj => obj._canScrollStageRight, set: (obj, value) => { obj._canScrollStageRight = value; } }, metadata: _metadata }, __canScrollStageRight_initializers, __canScrollStageRight_extraInitializers);
         __esDecorate(_classThis, null, __menuOpen_decorators, { kind: "accessor", name: "_menuOpen", static: false, private: false, access: { has: obj => "_menuOpen" in obj, get: obj => obj._menuOpen, set: (obj, value) => { obj._menuOpen = value; } }, metadata: _metadata }, __menuOpen_initializers, __menuOpen_extraInitializers);
         __esDecorate(_classThis, null, __mobileLink_decorators, { kind: "accessor", name: "_mobileLink", static: false, private: false, access: { has: obj => "_mobileLink" in obj, get: obj => obj._mobileLink, set: (obj, value) => { obj._mobileLink = value; } }, metadata: _metadata }, __mobileLink_initializers, __mobileLink_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
@@ -24421,7 +24456,7 @@ class ResizeController {
     /* --- Header Top Section --- */
     .gs-header-top {
       display: grid;
-      grid-template-columns: auto 1fr;
+      grid-template-columns: minmax(300px, 25%) 1fr;
       grid-template-rows: auto auto;
       align-items: center;
       gap: 4px 16px;
@@ -24479,7 +24514,7 @@ class ResizeController {
     /* --- Hero Grid (Vital Stats) --- */
     .hero-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
       width: 100%;
       min-height: 50px;
@@ -24582,11 +24617,9 @@ class ResizeController {
         position: relative;
         display: flex;
         align-items: center;
-        gap: 8px; /* For arrows */
         border-radius: 16px;
         flex: 1;
         min-width: 0;
-        margin: 0 16px;
         box-sizing: border-box;
     }
 
@@ -24608,6 +24641,10 @@ class ResizeController {
     .scroll-arrow.hidden {
         opacity: 0;
         pointer-events: none;
+        min-width: 0;
+        width: 0;
+        min-height: 0;
+        height: 0;
     }
     .scroll-arrow svg { width: 20px; height: 20px; fill: currentColor; }
 
@@ -24641,7 +24678,6 @@ class ResizeController {
     @media (max-width: 600px) {
         .gs-title { font-size: 2rem; }
         .hero-grid {
-            grid-template-columns: 1fr;
             gap: 12px;
         }
         .hero-value { font-size: 1.75rem; }
@@ -24687,10 +24723,11 @@ class ResizeController {
         }
         .secondary-strip-container {
             margin: 0;
+            min-width: 0; /* Important for grid item to shrink */
+            overflow: hidden; /* Constrain */
         }
-        .secondary-strip-container .scroll-arrow {
-            display: none;
-        }
+        /* Allow arrows if they fit logic */
+        /* .secondary-strip-container .scroll-arrow { display: none; } REMOVED to allow arrows */
     }
 
     /* Menu & Buttons (Reused/Refined) */
@@ -24883,6 +24920,8 @@ const variables = i$6 `
 
     /* Light Color */
     --primary-light-color: #ffeb3b;
+    --primary-light-color-hover: rgba(255, 255, 255, 0.1);
+    --primary-light-color-active: rgba(255, 255, 255, 0.2);
   }
 `;
 
