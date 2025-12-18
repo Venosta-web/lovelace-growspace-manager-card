@@ -90,8 +90,8 @@ export class StrainLibraryDialog extends LitElement {
 
       .sd-footer {
         padding: 16px 24px;
-        background: rgba(0, 0, 0, 0.2);
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         display: flex;
         justify-content: flex-end;
         gap: 12px;
@@ -104,10 +104,10 @@ export class StrainLibraryDialog extends LitElement {
         gap: 20px;
       }
       .strain-card {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border-radius: 12px;
         overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
         transition: all 0.3s ease;
         position: relative;
         display: flex;
@@ -121,11 +121,11 @@ export class StrainLibraryDialog extends LitElement {
       }
       .sc-thumb {
         height: 180px;
-        background: #222;
+        background: var(--card-background-color, #222);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #444;
+        color: var(--secondary-text-color, #444);
         position: relative;
       }
       .sc-thumb img {
@@ -141,7 +141,7 @@ export class StrainLibraryDialog extends LitElement {
         font-size: 1.1rem;
         font-weight: 700;
         margin: 0 0 4px 0;
-        color: #fff;
+        color: var(--primary-text-color, #fff);
       }
       .sc-type-row {
         display: flex;
@@ -212,11 +212,11 @@ export class StrainLibraryDialog extends LitElement {
       }
       .search-bar-input {
         width: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         border-radius: 12px;
         padding: 14px 14px 14px 48px;
-        color: #fff;
+        color: var(--primary-text-color, #fff);
         font-size: 1rem;
         outline: none;
         box-sizing: border-box;
@@ -233,7 +233,7 @@ export class StrainLibraryDialog extends LitElement {
       }
       .sd-label {
         display: block;
-        color: var(--secondary-text-color);
+        color: var(--primary-text-color,--secondary-text-color);
         font-size: 0.85rem;
         margin-bottom: 8px;
         font-weight: 500;
@@ -242,11 +242,11 @@ export class StrainLibraryDialog extends LitElement {
       .sd-textarea,
       .sd-select {
         width: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         border-radius: 8px;
         padding: 12px 16px;
-        color: #fff;
+        color: var(--primary-text-color, #fff);
         font-size: 0.95rem;
         outline: none;
         transition: border-color 0.2s;
@@ -271,9 +271,9 @@ export class StrainLibraryDialog extends LitElement {
 
       /* PHOTO UPLOAD */
       .photo-upload-area {
-        border: 2px dashed rgba(255, 255, 255, 0.1);
+        border: 2px dashed var(--divider-color, rgba(255, 255, 255, 0.1));
         border-radius: 12px;
-        background: rgba(255, 255, 255, 0.02);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.02));
         height: 240px;
         display: flex;
         flex-direction: column;
@@ -355,8 +355,8 @@ export class StrainLibraryDialog extends LitElement {
         margin-bottom: 16px;
       }
       .type-option {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         border-radius: 8px;
         padding: 16px;
         cursor: pointer;
@@ -371,9 +371,9 @@ export class StrainLibraryDialog extends LitElement {
         border-color: #666;
       }
       .type-option.active {
-        background: rgba(76, 175, 80, 0.1);
+        background: var(--secondary-background-color, rgba(76, 175, 80, 0.1));
         border-color: var(--accent-green);
-        color: #fff;
+        color: var(--primary-text-color, #fff);
       }
       .type-option svg {
         width: 28px;
@@ -398,7 +398,7 @@ export class StrainLibraryDialog extends LitElement {
         justify-content: space-between;
         font-size: 0.75rem;
         font-weight: 700;
-        color: #fff;
+        color: var(--primary-text-color, #fff);
         margin-bottom: 2px;
       }
       .hg-bar-track {
@@ -409,7 +409,7 @@ export class StrainLibraryDialog extends LitElement {
         position: relative;
         overflow: hidden;
         display: flex;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         cursor: pointer;
       }
       .hg-bar-indica {
@@ -436,7 +436,7 @@ export class StrainLibraryDialog extends LitElement {
         background: transparent;
         border: none;
         border-bottom: 1px solid var(--secondary-text-color);
-        color: #fff;
+        color: var(--primary-text-color, #fff);
         width: 36px;
         text-align: center;
         font-size: 0.75rem;
@@ -463,9 +463,9 @@ export class StrainLibraryDialog extends LitElement {
         font-weight: 500;
       }
       .pagination-btn {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #fff;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        color: var(--primary-text-color, #fff);
         width: 36px;
         height: 36px;
         border-radius: 50%;
@@ -536,11 +536,11 @@ export class StrainLibraryDialog extends LitElement {
 
       .sd-textarea {
         width: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         border-radius: 8px;
         padding: 12px;
-        color: #fff;
+        color: var(--primary-text-color, #fff);
         font-family: inherit;
         resize: vertical;
         box-sizing: border-box;
@@ -557,7 +557,7 @@ export class StrainLibraryDialog extends LitElement {
         position: absolute;
         top: 60px;
         right: 16px;
-        background: #2d2d2d;
+        background: var(--card-background-color, #2d2d2d);
         border-radius: 4px;
         padding: 8px 0;
         min-width: 200px;
@@ -569,7 +569,7 @@ export class StrainLibraryDialog extends LitElement {
         display: flex;
         align-items: center;
         gap: 12px;
-        color: #fff;
+        color: var(--primary-text-color, #fff);
         cursor: pointer;
       }
       .mobile-menu-item:hover {
@@ -1354,7 +1354,7 @@ export class StrainLibraryDialog extends LitElement {
                 ${['Feminized', 'Regular'].map(
           (sex) => html`
                     <label
-                      style="display:flex; align-items:center; gap:8px; cursor:pointer; color:white;"
+                      style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--primary-text-color, white);"
                     >
                       <input
                         type="radio"

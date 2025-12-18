@@ -22,9 +22,7 @@ import './growspace-chip'; // Import the new component
 import { consume } from '@lit/context';
 import { hassContext, configContext, storeContext, historyContext } from '../context';
 import { GrowspaceDevice, GrowspaceManagerCardConfig, IrrigationTime } from '../types';
-import { PlantUtils } from '../utils/plant-utils';
 import { MetricsUtils } from '../utils/metrics-utils';
-import { METRIC_CONFIG } from '../constants';
 import { ChartUtils } from '../utils/chart-utils';
 import { ResizeController } from '../controllers/resize-controller';
 import type { GrowspaceStore } from '../store/growspace-store';
@@ -172,10 +170,10 @@ export class GrowspaceHeader extends LitElement {
         margin: 0;
         line-height: 1.1;
         text-transform: capitalize;
-        background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.9) 100%);
+        background: linear-gradient(135deg, var(--primary-text-color, #ffffff) 0%, var(--secondary-text-color, rgba(255, 255, 255, 0.9)) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         white-space: pre;
         pointer-events: none; /* Let clicks pass through to select */
         visibility: visible; /* Ensure it is seen */
@@ -206,12 +204,12 @@ export class GrowspaceHeader extends LitElement {
       align-items: center;
       gap: 6px;
       padding: 4px 12px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       border-radius: 20px;
       font-size: 0.85rem;
       font-weight: 500;
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
       width: fit-content;
       backdrop-filter: blur(8px);
     }
@@ -284,8 +282,8 @@ export class GrowspaceHeader extends LitElement {
     }
 
     .hero-card {
-      background: var(--glass-bg);
-      border: var(--glass-border);
+      background: var(--glass-bg, rgba(255, 255, 255, 0.05));
+      border: var(--divider-color, rgba(255, 255, 255, 0.1));
       backdrop-filter: var(--glass-blur);
       box-shadow:
         0 4px 24px -1px rgba(0, 0, 0, 0.2),
@@ -309,8 +307,8 @@ export class GrowspaceHeader extends LitElement {
     }
     
     .hero-card:hover {
-        background: rgba(255, 255, 255, 0.08); /* Slightly lighter on hover */
-        border-color: rgba(255, 255, 255, 0.15);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08)); /* Slightly lighter on hover */
+        border-color: var(--divider-color, rgba(255, 255, 255, 0.15));
         box-shadow: 
              0 8px 32px -4px rgba(0, 0, 0, 0.3),
              0 0 0 1px rgba(255, 255, 255, 0.05) inset;
@@ -318,8 +316,8 @@ export class GrowspaceHeader extends LitElement {
     }
 
     .hero-card.linked {
-        border-color: rgba(255, 255, 255, 0.3);
-        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
     }
 
     .hero-value-group {
@@ -331,24 +329,24 @@ export class GrowspaceHeader extends LitElement {
     .hero-value {
       font-size: 2rem;
       font-weight: 400; /* Thinner for modern look */
-      color: #fff;
+      color: var(--primary-text-color, #fff);
       line-height: 1;
     }
 
     .hero-unit {
       font-size: 1rem;
-      color: rgba(255, 255, 255, 0.6);
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
       font-weight: 500;
     }
     .hero-icon {
         width: 20px;
         height: 20px;
-        fill: rgba(255, 255, 255, 0.7);
+        fill: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
     }
 
     .hero-label {
         font-size: 0.9rem;
-        color: rgba(255, 255, 255, 0.7);
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
         font-weight: 500;
     }
     /* Active graph indication */
@@ -394,14 +392,14 @@ export class GrowspaceHeader extends LitElement {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: rgba(255,255,255,0.7);
+        color: var(--secondary-text-color, rgba(255,255,255,0.7));
         cursor: pointer;
         border-radius: 50%;
         transition: background 0.2s;
     }
     .scroll-arrow:hover {
         background: rgba(255,255,255,0.1);
-        color: #fff;
+        color: var(--primary-text-color, #fff);
     }
     .scroll-arrow.hidden {
         opacity: 0;
@@ -427,7 +425,7 @@ export class GrowspaceHeader extends LitElement {
     .secondary-divider {
         width: 1px;
         height: 24px;
-        background: rgba(255,255,255,0.15);
+        background: var(--divider-color, rgba(255,255,255,0.15));
         flex-shrink: 0;
         margin: 0 4px;
     }
@@ -497,16 +495,16 @@ export class GrowspaceHeader extends LitElement {
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #fff;
+      color: var(--primary-text-color, #fff);
       cursor: pointer;
       transition: all 0.2s;
     }
-    .icon-button:hover { background: rgba(255, 255, 255, 0.2); }
+    .icon-button:hover { background: var(--secondary-background-color, rgba(255, 255, 255, 0.2)); }
     .icon-button svg { width: 22px; height: 22px; fill: currentColor; }
     
     .icon-button.mobile-link.active {
@@ -520,8 +518,8 @@ export class GrowspaceHeader extends LitElement {
       top: 100%;
       right: 0;
       margin-top: 8px;
-      background: #2a2a2a;
-      border: 1px solid rgba(255,255,255,0.1);
+      background: var(--card-background-color, #2a2a2a);
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
       border-radius: 12px;
       font-size: 0.9rem;
       min-width: 180px;
@@ -535,17 +533,17 @@ export class GrowspaceHeader extends LitElement {
         align-items: center;
         gap: 12px;
         cursor: pointer;
-        color: #ddd;
+        color: var(--primary-text-color, #ddd);
         transition: background 0.2s;
     }
-    .menu-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .menu-item:hover { background: var(--secondary-background-color, rgba(255,255,255,0.1)); color: var(--primary-text-color, #fff); }
     .menu-item svg { width: 20px; height: 20px; fill: currentColor; }
     .menu-item-label { flex: 1; }
 
     .menu-toggle-switch {
       width: 40px;
       height: 20px;
-      background: rgba(255, 255, 255, 0.2);
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.2));
       border-radius: 10px;
       position: relative;
       transition: background 0.2s;

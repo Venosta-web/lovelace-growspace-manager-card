@@ -253,7 +253,7 @@ export class GrowspaceGrid extends LitElement {
 
       .pc-strain-name {
         font-size: 0.9rem;
-        color: #fff !important;
+        color: var(--primary-text-color, #fff) !important;
         font-weight: 700;
       }
 

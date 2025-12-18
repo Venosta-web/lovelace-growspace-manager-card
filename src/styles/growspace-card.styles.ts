@@ -56,7 +56,7 @@ export const growspaceCardStyles = css`
     display: flex;
     align-items: center;
     gap: 12px;
-    color: #fff;
+    color: var(--primary-text-color, #fff);
     font-weight: 500;
     font-size: 0.95rem;
   }
@@ -141,7 +141,7 @@ export const growspaceCardStyles = css`
   .range-btn {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid transparent;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
     border-radius: 8px; /* Small rounding for compact look */
     padding: 6px 12px;
     font-size: 0.75rem;
@@ -152,7 +152,7 @@ export const growspaceCardStyles = css`
   }
   .range-btn:hover {
     background: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    color: var(--primary-text-color, #fff);
   }
   .range-btn.active {
     background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.15);
@@ -192,7 +192,7 @@ export const growspaceCardStyles = css`
     position: absolute;
     top: 10px;
     background: rgba(30, 30, 35, 0.9);
-    color: #fff;
+    color: var(--primary-text-color, #fff);
     padding: 8px 12px;
     border-radius: 8px;
     font-size: 0.75rem;
@@ -258,12 +258,12 @@ export const growspaceCardStyles = css`
     display: flex;
     align-items: center;
     gap: 12px;
-    color: #fff;
+    color: var(--primary-text-color, #fff);
   }
 
   .gs-icon-box {
-    background: rgba(255, 235, 59, 0.05);
-    border: 1px solid rgba(255, 235, 59, 0.2);
+    background: var(--secondary-background-color, rgba(255, 235, 59, 0.05));
+    border: 1px solid var(--divider-color, rgba(255, 235, 59, 0.2));
     border-radius: 14px;
     width: 48px;
     height: 48px;
@@ -360,7 +360,7 @@ export const growspaceCardStyles = css`
   .ac-text .time {
     font-size: 1.2rem;
     font-weight: 600;
-    color: #fff;
+    color: var(--primary-text-color, #fff);
   }
 
   .ac-text .time span {
@@ -825,13 +825,13 @@ export const growspaceCardStyles = css`
 
     .pc-pheno {
       font-size: 0.8rem;
-      color: rgba(255, 255, 255, 0.7) !important;
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.7)) !important;
     }
 
     .pc-stage {
       margin-top: 2px;
       font-size: 0.8rem;
-      color: var(--stage-color, #fff) !important;
+      color: var(--stage-color, var(--primary-text-color, #fff)) !important;
       font-weight: 600;
     }
 
@@ -924,10 +924,11 @@ export const growspaceCardStyles = css`
   .dialog-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-lg);
     padding-bottom: var(--spacing-md);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
   }
 
   .dialog-icon {
@@ -950,23 +951,23 @@ export const growspaceCardStyles = css`
     font-size: 1.5rem;
     font-weight: 500; /* MD3 Headline Small */
     margin: 0;
-    color: #ffffff;
+    color: var(--primary-text-color, #ffffff);
   }
 
   .dialog-subtitle {
     font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
     margin-top: 4px;
     text-transform: capitalize;
   }
 
   /* MD3 Cards inside Dialog */
   .detail-card {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
     border-radius: 12px;
     padding: var(--spacing-md);
     margin-bottom: var(--spacing-md);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
   }
 
   .detail-card h3 {

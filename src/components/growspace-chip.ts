@@ -33,7 +33,7 @@ export class GrowspaceChip extends LitElement {
       padding: 8px 16px;
       font-size: 0.875rem;
       font-weight: 500;
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
       backdrop-filter: var(--glass-blur);
       cursor: pointer;
       transition: all 0.2s ease;
@@ -76,16 +76,16 @@ export class GrowspaceChip extends LitElement {
     }
 
     .stat-chip:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.2);
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+      border-color: var(--divider-color, rgba(255, 255, 255, 0.2));
       transform: translateY(-1px);
     }
 
     :host([active]) .stat-chip {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.4);
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.15));
+      border-color: var(--divider-color, rgba(255, 255, 255, 0.4));
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      color: #fff;
+      color: var(--primary-text-color, #fff);
     }
 
     .icon {

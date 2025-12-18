@@ -158,19 +158,19 @@ export const uiStyles = css`
   .md3-input-group {
     position: relative;
     margin-bottom: 20px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--card-background-color, rgba(255, 255, 255, 0.03));
     border-radius: 4px 4px 0 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.4));
     transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
   }
 
   .md3-input-group:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-bottom-color: rgba(255, 255, 255, 0.9);
+    background: var(--secondary-background-color, rgba(255, 255, 255, 0.06));
+    border-bottom-color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
   }
 
   .md3-input-group:focus-within {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
     border-bottom: 2px solid var(--primary-color, #4caf50);
   }
 
@@ -189,7 +189,7 @@ export const uiStyles = css`
     top: 8px;
     font-size: 0.75rem;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
     pointer-events: none;
     transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
     letter-spacing: 0.4px;
@@ -204,15 +204,20 @@ export const uiStyles = css`
     padding: 24px 16px 8px;
     border: none;
     background: transparent;
-    color: #ffffff;
+    color: var(--primary-text-color, #ffffff);
     font-size: 1rem;
     font-family: 'Roboto', sans-serif;
     box-sizing: border-box;
     outline: none;
   }
 
+  .md3-input option {
+    background-color: var(--card-background-color, #1e1e1e);
+    color: var(--primary-text-color, #ffffff);
+  }
+
   .md3-input::placeholder {
-    color: rgba(255, 255, 255, 0.38);
+    color: var(--disabled-text-color, rgba(255, 255, 255, 0.38));
     opacity: 1;
   }
 
@@ -221,7 +226,7 @@ export const uiStyles = css`
   }
 
   .md3-input:disabled {
-    color: rgba(255, 255, 255, 0.38);
+    color: var(--disabled-text-color, rgba(255, 255, 255, 0.38));
     cursor: not-allowed;
   }
 
@@ -233,7 +238,7 @@ export const uiStyles = css`
   .md3-supporting-text {
     padding: 4px 16px 0;
     font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
     letter-spacing: 0.4px;
   }
 
@@ -243,14 +248,15 @@ export const uiStyles = css`
 
   /* --- Glass Dialog Container --- */
   .glass-dialog-container {
-    background: var(--growspace-card-bg);
+    background: var(--card-background-color, #ffffff);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     border-radius: 28px; /* MD3 extra large rounding */
     padding: var(--spacing-lg);
-    color: #ffffff; /* Force white text for contrast against dark glass */
+    color: var(--primary-text-color, #212121); /* Force variable text, dark fallback */
+
     margin: -24px; /* Counteract default dialog padding if necessary */
     min-width: 320px;
   }

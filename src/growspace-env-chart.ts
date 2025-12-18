@@ -375,11 +375,11 @@ export class GrowspaceEnvChart extends LitElement {
               ${this.icon ? html`<ha-icon .icon=${this.icon}></ha-icon>` : ''}
               <span>${this.title || 'Graph'}</span>
             </div>
-            <span style="color: #666; font-size: 0.9em;">No Data</span>
+            <span style="color: var(--secondary-text-color, #666); font-size: 0.9em;">No Data</span>
           </div>
           <div
             class="gs-env-chart-container"
-            style="display: flex; align-items: center; justify-content: center; color: #444;"
+            style="display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color, #444);"
           >
             No history data available for ${this.range}
           </div>
@@ -623,9 +623,10 @@ export class GrowspaceEnvChart extends LitElement {
   private _renderGrid(width: number, height: number): TemplateResult {
     return svg`
             <!-- Simple Grid -->
-            <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
-            <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
-            <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="#333" stroke-width="0.5" stroke-dasharray="4 4" />
+            <!-- Simple Grid -->
+            <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="var(--divider-color, #333)" stroke-width="1" />
+            <line x1="0" y1="0" x2="0" y2="${height}" stroke="var(--divider-color, #333)" stroke-width="1" />
+            <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="var(--divider-color, #333)" stroke-width="0.5" stroke-dasharray="4 4" />
         `;
   }
 
@@ -645,7 +646,7 @@ export class GrowspaceEnvChart extends LitElement {
     // We want them effectively at bottom: 10px?
 
     const labelStyle =
-      'position: absolute; bottom: 8px; font-size: 10px; color: #666; line-height: 1; pointer-events: none;';
+      'position: absolute; bottom: 8px; font-size: 10px; color: var(--secondary-text-color, #666); line-height: 1; pointer-events: none;';
 
     return html`
       <div style="${labelStyle} left: 50px;">-${range}</div>
@@ -668,7 +669,7 @@ export class GrowspaceEnvChart extends LitElement {
     // Even if it's border-box, we can use percentages.
 
     const labelStyle =
-      'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: #aaa; line-height: 1; pointer-events: none;';
+      'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: var(--secondary-text-color, #aaa); line-height: 1; pointer-events: none;';
 
     if (unit === 'state' || (max === 1 && min === 0)) {
       return html`
@@ -823,7 +824,7 @@ export class GrowspaceEnvChart extends LitElement {
 
     .gs-env-graph-card {
       margin-top: 12px;
-      background: #1a1a1a;
+      background: var(--card-background-color, #1a1a1a);
       border-radius: 12px;
       padding: 16px;
     }
@@ -839,7 +840,7 @@ export class GrowspaceEnvChart extends LitElement {
     .gs-env-chart-container {
       position: relative;
       height: 180px;
-      background: #0d0d0d;
+      background: var(--secondary-background-color, #0d0d0d);
       border-radius: 8px;
       padding: 20px 40px 30px 50px;
       cursor: crosshair;
@@ -847,8 +848,8 @@ export class GrowspaceEnvChart extends LitElement {
 
     .gs-tooltip {
       position: absolute;
-      background: rgba(30, 30, 35, 0.9);
-      color: #fff;
+      background: var(--card-background-color, rgba(30, 30, 35, 0.9));
+      color: var(--primary-text-color, #fff);
       padding: 8px 12px;
       border-radius: 8px;
       font-size: 0.75rem;
@@ -856,7 +857,7 @@ export class GrowspaceEnvChart extends LitElement {
       transform: translate(-50%, 0);
       z-index: 1000;
       white-space: nowrap;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       backdrop-filter: blur(12px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
       line-height: 1.4;
@@ -943,7 +944,7 @@ export class GrowspaceEnvChart extends LitElement {
       opacity: 0.5;
       transition: opacity 0.2s;
       min-width: 24px;
-      color: #fff;
+      color: var(--primary-text-color, #fff);
     }
 
     .scroll-nav:hover {

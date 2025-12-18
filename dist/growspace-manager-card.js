@@ -7163,11 +7163,11 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
               ${this.icon ? x `<ha-icon .icon=${this.icon}></ha-icon>` : ''}
               <span>${this.title || 'Graph'}</span>
             </div>
-            <span style="color: #666; font-size: 0.9em;">No Data</span>
+            <span style="color: var(--secondary-text-color, #666); font-size: 0.9em;">No Data</span>
           </div>
           <div
             class="gs-env-chart-container"
-            style="display: flex; align-items: center; justify-content: center; color: #444;"
+            style="display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color, #444);"
           >
             No history data available for ${this.range}
           </div>
@@ -7402,9 +7402,10 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
     _renderGrid(width, height) {
         return b `
             <!-- Simple Grid -->
-            <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="#333" stroke-width="1" />
-            <line x1="0" y1="0" x2="0" y2="${height}" stroke="#333" stroke-width="1" />
-            <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="#333" stroke-width="0.5" stroke-dasharray="4 4" />
+            <!-- Simple Grid -->
+            <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="var(--divider-color, #333)" stroke-width="1" />
+            <line x1="0" y1="0" x2="0" y2="${height}" stroke="var(--divider-color, #333)" stroke-width="1" />
+            <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="var(--divider-color, #333)" stroke-width="0.5" stroke-dasharray="4 4" />
         `;
     }
     _renderGradient(key, color) {
@@ -7420,7 +7421,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         // Container padding: 20px 40px 30px 50px (top right bottom left)
         // Labels usually at bottom. Bottom padding 30px is for these labels.
         // We want them effectively at bottom: 10px?
-        const labelStyle = 'position: absolute; bottom: 8px; font-size: 10px; color: #666; line-height: 1; pointer-events: none;';
+        const labelStyle = 'position: absolute; bottom: 8px; font-size: 10px; color: var(--secondary-text-color, #666); line-height: 1; pointer-events: none;';
         return x `
       <div style="${labelStyle} left: 50px;">-${range}</div>
       <div style="${labelStyle} right: 40px;">Now</div>
@@ -7439,7 +7440,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         // In HA/Lit, usually we rely on user agent defaults unless reset.
         // Let's assume content-box for now as that's standard CSS.
         // Even if it's border-box, we can use percentages.
-        const labelStyle = 'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: #aaa; line-height: 1; pointer-events: none;';
+        const labelStyle = 'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: var(--secondary-text-color, #aaa); line-height: 1; pointer-events: none;';
         if (unit === 'state' || (max === 1 && min === 0)) {
             return x `
         <div style="${labelStyle} top: 20px;">ON</div>
@@ -7575,7 +7576,7 @@ GrowspaceEnvChart.styles = i$6 `
 
     .gs-env-graph-card {
       margin-top: 12px;
-      background: #1a1a1a;
+      background: var(--card-background-color, #1a1a1a);
       border-radius: 12px;
       padding: 16px;
     }
@@ -7591,7 +7592,7 @@ GrowspaceEnvChart.styles = i$6 `
     .gs-env-chart-container {
       position: relative;
       height: 180px;
-      background: #0d0d0d;
+      background: var(--secondary-background-color, #0d0d0d);
       border-radius: 8px;
       padding: 20px 40px 30px 50px;
       cursor: crosshair;
@@ -7599,8 +7600,8 @@ GrowspaceEnvChart.styles = i$6 `
 
     .gs-tooltip {
       position: absolute;
-      background: rgba(30, 30, 35, 0.9);
-      color: #fff;
+      background: var(--card-background-color, rgba(30, 30, 35, 0.9));
+      color: var(--primary-text-color, #fff);
       padding: 8px 12px;
       border-radius: 8px;
       font-size: 0.75rem;
@@ -7608,7 +7609,7 @@ GrowspaceEnvChart.styles = i$6 `
       transform: translate(-50%, 0);
       z-index: 1000;
       white-space: nowrap;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       backdrop-filter: blur(12px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
       line-height: 1.4;
@@ -7695,7 +7696,7 @@ GrowspaceEnvChart.styles = i$6 `
       opacity: 0.5;
       transition: opacity 0.2s;
       min-width: 24px;
-      color: #fff;
+      color: var(--primary-text-color, #fff);
     }
 
     .scroll-nav:hover {
@@ -8745,13 +8746,13 @@ class GrowspaceStore {
 const sharedStyles = i$6 `
   /* --- Glassmorphism Surfaces --- */
   :host {
-    --glass-bg: rgba(255, 255, 255, 0.05);
-    --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+    --glass-bg: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+    --glass-border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
     --glass-blur: blur(12px);
   }
 
   .glass-surface {
-    background: rgba(20, 20, 24, 0.6);
+    background: var(--card-background-color, rgba(20, 20, 24, 0.6));
     background-image: linear-gradient(
       145deg,
       rgba(255, 255, 255, 0.03) 0%,
@@ -8759,7 +8760,7 @@ const sharedStyles = i$6 `
     );
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
     box-shadow:
       0 4px 24px -1px rgba(0, 0, 0, 0.2),
       0 0 0 1px rgba(255, 255, 255, 0.02) inset;
@@ -8774,15 +8775,15 @@ const sharedStyles = i$6 `
   .glass-dialog-container {
     border-radius: var(--border-radius-lg, 16px);
     overflow: hidden;
-    background: rgba(20, 20, 20, 0.85); /* Slightly darker for dialogs */
+    background: var(--card-background-color, rgba(20, 20, 20, 0.85));
     backdrop-filter: blur(16px);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   }
 
   /* --- Cards --- */
   .detail-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--card-background-color, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
     border-radius: var(--border-radius-md, 12px);
     padding: var(--spacing-md, 16px);
   }
@@ -8948,19 +8949,19 @@ const uiStyles = i$6 `
   .md3-input-group {
     position: relative;
     margin-bottom: 20px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--card-background-color, rgba(255, 255, 255, 0.03));
     border-radius: 4px 4px 0 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.4));
     transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
   }
 
   .md3-input-group:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-bottom-color: rgba(255, 255, 255, 0.9);
+    background: var(--secondary-background-color, rgba(255, 255, 255, 0.06));
+    border-bottom-color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
   }
 
   .md3-input-group:focus-within {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
     border-bottom: 2px solid var(--primary-color, #4caf50);
   }
 
@@ -8979,7 +8980,7 @@ const uiStyles = i$6 `
     top: 8px;
     font-size: 0.75rem;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
     pointer-events: none;
     transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
     letter-spacing: 0.4px;
@@ -8994,15 +8995,20 @@ const uiStyles = i$6 `
     padding: 24px 16px 8px;
     border: none;
     background: transparent;
-    color: #ffffff;
+    color: var(--primary-text-color, #ffffff);
     font-size: 1rem;
     font-family: 'Roboto', sans-serif;
     box-sizing: border-box;
     outline: none;
   }
 
+  .md3-input option {
+    background-color: var(--card-background-color, #1e1e1e);
+    color: var(--primary-text-color, #ffffff);
+  }
+
   .md3-input::placeholder {
-    color: rgba(255, 255, 255, 0.38);
+    color: var(--disabled-text-color, rgba(255, 255, 255, 0.38));
     opacity: 1;
   }
 
@@ -9011,7 +9017,7 @@ const uiStyles = i$6 `
   }
 
   .md3-input:disabled {
-    color: rgba(255, 255, 255, 0.38);
+    color: var(--disabled-text-color, rgba(255, 255, 255, 0.38));
     cursor: not-allowed;
   }
 
@@ -9023,7 +9029,7 @@ const uiStyles = i$6 `
   .md3-supporting-text {
     padding: 4px 16px 0;
     font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
     letter-spacing: 0.4px;
   }
 
@@ -9033,14 +9039,15 @@ const uiStyles = i$6 `
 
   /* --- Glass Dialog Container --- */
   .glass-dialog-container {
-    background: var(--growspace-card-bg);
+    background: var(--card-background-color, #ffffff);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     border-radius: 28px; /* MD3 extra large rounding */
     padding: var(--spacing-lg);
-    color: #ffffff; /* Force white text for contrast against dark glass */
+    color: var(--primary-text-color, #212121); /* Force variable text, dark fallback */
+
     margin: -24px; /* Counteract default dialog padding if necessary */
     min-width: 320px;
   }
@@ -9122,7 +9129,7 @@ const dialogStyles = [
     display: flex;
     flex-direction: column;
     max-height: 85vh;
-    color: #fff;
+    color: var(--primary-text-color, #fff);
     font-family: 'Roboto', sans-serif;
     /* Background/Shadow handled by sharedStyles, but specific flex layout kept here */
   }
@@ -9140,15 +9147,15 @@ const dialogStyles = [
     display: flex;
     align-items: center;
     padding: 16px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+    background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
   }
 
   .dialog-icon {
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -9170,6 +9177,7 @@ const dialogStyles = [
     font-size: 0.85rem;
     opacity: 0.7;
     margin-top: 2px;
+    color: var(--secondary-text-color);
   }
 
   .detail-card h3 {
@@ -9178,14 +9186,15 @@ const dialogStyles = [
     font-size: 1rem;
     font-weight: 500;
     opacity: 0.9;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--primary-text-color, #fff);
+    border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
     padding-bottom: 8px;
   }
 
   .button-group {
     padding: 16px 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+    background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
     display: flex;
     justify-content: flex-end;
     gap: 12px;
@@ -9930,7 +9939,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         <div class="glass-dialog-container" style="width: 350px; height: auto; padding: 24px;">
           <h2 class="dialog-title" style="margin-bottom:12px">Confirm Deletion</h2>
           <p
-            style="color:rgba(255,255,255,0.7); margin-bottom:24px; font-size: 1rem; line-height: 1.5;"
+            style="color:var(--secondary-text-color, rgba(255,255,255,0.7)); margin-bottom:24px; font-size: 1rem; line-height: 1.5;"
           >
             Are you sure you want to delete this plant? This action cannot be undone.
           </p>
@@ -10292,7 +10301,7 @@ PlantOverviewDialog.styles = [
       .timeline {
         position: relative;
         padding-left: 24px;
-        border-left: 2px solid rgba(255, 255, 255, 0.1);
+        border-left: 2px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         margin-top: 16px;
       }
       .timeline-event {
@@ -10308,7 +10317,7 @@ PlantOverviewDialog.styles = [
         height: 12px;
         border-radius: 50%;
         background: var(--event-color, #4caf50);
-        border: 2px solid #2c2c2c;
+        border: 2px solid var(--card-background-color, #2c2c2c);
       }
       .timeline-date {
         font-size: 0.8rem;
@@ -10316,7 +10325,7 @@ PlantOverviewDialog.styles = [
         margin-bottom: 4px;
       }
       .timeline-content {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border-radius: 8px;
         padding: 12px;
       }
@@ -10328,7 +10337,7 @@ PlantOverviewDialog.styles = [
         gap: 12px;
       }
       .stat-item {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border-radius: 8px;
         padding: 12px;
         text-align: center;
@@ -10360,7 +10369,7 @@ PlantOverviewDialog.styles = [
         border-radius: 8px;
         cursor: pointer;
         transition: transform 0.2s;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       }
       .plant-image:hover {
         transform: scale(1.05);
@@ -11196,7 +11205,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
               <div style="display:flex; gap:20px; padding: 8px 0;">
                 ${['Feminized', 'Regular'].map((sex) => x `
                     <label
-                      style="display:flex; align-items:center; gap:8px; cursor:pointer; color:white;"
+                      style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--primary-text-color, white);"
                     >
                       <input
                         type="radio"
@@ -11550,8 +11559,8 @@ StrainLibraryDialog.styles = [
 
       .sd-footer {
         padding: 16px 24px;
-        background: rgba(0, 0, 0, 0.2);
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         display: flex;
         justify-content: flex-end;
         gap: 12px;
@@ -11564,10 +11573,10 @@ StrainLibraryDialog.styles = [
         gap: 20px;
       }
       .strain-card {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border-radius: 12px;
         overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
         transition: all 0.3s ease;
         position: relative;
         display: flex;
@@ -11581,11 +11590,11 @@ StrainLibraryDialog.styles = [
       }
       .sc-thumb {
         height: 180px;
-        background: #222;
+        background: var(--card-background-color, #222);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #444;
+        color: var(--secondary-text-color, #444);
         position: relative;
       }
       .sc-thumb img {
@@ -11601,7 +11610,7 @@ StrainLibraryDialog.styles = [
         font-size: 1.1rem;
         font-weight: 700;
         margin: 0 0 4px 0;
-        color: #fff;
+        color: var(--primary-text-color, #fff);
       }
       .sc-type-row {
         display: flex;
@@ -11672,11 +11681,11 @@ StrainLibraryDialog.styles = [
       }
       .search-bar-input {
         width: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         border-radius: 12px;
         padding: 14px 14px 14px 48px;
-        color: #fff;
+        color: var(--primary-text-color, #fff);
         font-size: 1rem;
         outline: none;
         box-sizing: border-box;
@@ -11693,7 +11702,7 @@ StrainLibraryDialog.styles = [
       }
       .sd-label {
         display: block;
-        color: var(--secondary-text-color);
+        color: var(--primary-text-color,--secondary-text-color);
         font-size: 0.85rem;
         margin-bottom: 8px;
         font-weight: 500;
@@ -11702,11 +11711,11 @@ StrainLibraryDialog.styles = [
       .sd-textarea,
       .sd-select {
         width: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         border-radius: 8px;
         padding: 12px 16px;
-        color: #fff;
+        color: var(--primary-text-color, #fff);
         font-size: 0.95rem;
         outline: none;
         transition: border-color 0.2s;
@@ -11731,9 +11740,9 @@ StrainLibraryDialog.styles = [
 
       /* PHOTO UPLOAD */
       .photo-upload-area {
-        border: 2px dashed rgba(255, 255, 255, 0.1);
+        border: 2px dashed var(--divider-color, rgba(255, 255, 255, 0.1));
         border-radius: 12px;
-        background: rgba(255, 255, 255, 0.02);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.02));
         height: 240px;
         display: flex;
         flex-direction: column;
@@ -11815,8 +11824,8 @@ StrainLibraryDialog.styles = [
         margin-bottom: 16px;
       }
       .type-option {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         border-radius: 8px;
         padding: 16px;
         cursor: pointer;
@@ -11831,9 +11840,9 @@ StrainLibraryDialog.styles = [
         border-color: #666;
       }
       .type-option.active {
-        background: rgba(76, 175, 80, 0.1);
+        background: var(--secondary-background-color, rgba(76, 175, 80, 0.1));
         border-color: var(--accent-green);
-        color: #fff;
+        color: var(--primary-text-color, #fff);
       }
       .type-option svg {
         width: 28px;
@@ -11858,7 +11867,7 @@ StrainLibraryDialog.styles = [
         justify-content: space-between;
         font-size: 0.75rem;
         font-weight: 700;
-        color: #fff;
+        color: var(--primary-text-color, #fff);
         margin-bottom: 2px;
       }
       .hg-bar-track {
@@ -11869,7 +11878,7 @@ StrainLibraryDialog.styles = [
         position: relative;
         overflow: hidden;
         display: flex;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         cursor: pointer;
       }
       .hg-bar-indica {
@@ -11896,7 +11905,7 @@ StrainLibraryDialog.styles = [
         background: transparent;
         border: none;
         border-bottom: 1px solid var(--secondary-text-color);
-        color: #fff;
+        color: var(--primary-text-color, #fff);
         width: 36px;
         text-align: center;
         font-size: 0.75rem;
@@ -11923,9 +11932,9 @@ StrainLibraryDialog.styles = [
         font-weight: 500;
       }
       .pagination-btn {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #fff;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        color: var(--primary-text-color, #fff);
         width: 36px;
         height: 36px;
         border-radius: 50%;
@@ -11996,11 +12005,11 @@ StrainLibraryDialog.styles = [
 
       .sd-textarea {
         width: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         border-radius: 8px;
         padding: 12px;
-        color: #fff;
+        color: var(--primary-text-color, #fff);
         font-family: inherit;
         resize: vertical;
         box-sizing: border-box;
@@ -12017,7 +12026,7 @@ StrainLibraryDialog.styles = [
         position: absolute;
         top: 60px;
         right: 16px;
-        background: #2d2d2d;
+        background: var(--card-background-color, #2d2d2d);
         border-radius: 4px;
         padding: 8px 0;
         min-width: 200px;
@@ -12029,7 +12038,7 @@ StrainLibraryDialog.styles = [
         display: flex;
         align-items: center;
         gap: 12px;
-        color: #fff;
+        color: var(--primary-text-color, #fff);
         cursor: pointer;
       }
       .mobile-menu-item:hover {
@@ -12423,7 +12432,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             return x `
         <div class="detail-card" style="text-align: center; padding: 40px 20px;">
           <h3 style="color: var(--error-color, #ff5252);">Delete Growspace?</h3>
-          <p style="margin-bottom: 30px; color: rgba(255,255,255,0.7);">
+          <p style="margin-bottom: 30px; color: var(--secondary-text-color);">
             Are you sure you want to delete "<strong>${this.edit_name}</strong>"?<br />
             This will remove all associated plants and history.<br />
             This action cannot be undone.
@@ -12478,7 +12487,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
               </div>
             `
             : x `
-              <div style="text-align:center; padding: 20px; color: rgba(255,255,255,0.5);">
+              <div style="text-align:center; padding: 20px; color: var(--secondary-text-color);">
                 Please select a growspace to edit.
               </div>
             `}
@@ -12550,7 +12559,7 @@ ConfigDialog.styles = [
       .config-tabs {
         display: flex;
         padding: 0 16px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         background: transparent;
       }
       .config-tab {
@@ -12560,7 +12569,7 @@ ConfigDialog.styles = [
         padding: 16px 8px;
         text-align: center;
         cursor: pointer;
-        color: rgba(255, 255, 255, 0.5);
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
         border-bottom: 2px solid transparent;
         transition: all 0.2s;
         display: flex;
@@ -12579,8 +12588,8 @@ ConfigDialog.styles = [
         fill: currentColor;
       }
       .config-tab:hover {
-        color: #fff;
-        background: rgba(255, 255, 255, 0.05);
+        color: var(--primary-text-color, #fff);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border-radius: 8px 8px 0 0;
       }
       .config-tab.active {
@@ -15109,7 +15118,7 @@ GrowspaceChip.styles = [
       padding: 8px 16px;
       font-size: 0.875rem;
       font-weight: 500;
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
       backdrop-filter: var(--glass-blur);
       cursor: pointer;
       transition: all 0.2s ease;
@@ -15152,16 +15161,16 @@ GrowspaceChip.styles = [
     }
 
     .stat-chip:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.2);
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+      border-color: var(--divider-color, rgba(255, 255, 255, 0.2));
       transform: translateY(-1px);
     }
 
     :host([active]) .stat-chip {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.4);
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.15));
+      border-color: var(--divider-color, rgba(255, 255, 255, 0.4));
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      color: #fff;
+      color: var(--primary-text-color, #fff);
     }
 
     .icon {
@@ -24089,10 +24098,10 @@ GrowspaceHeader.styles = i$6 `
         margin: 0;
         line-height: 1.1;
         text-transform: capitalize;
-        background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.9) 100%);
+        background: linear-gradient(135deg, var(--primary-text-color, #ffffff) 0%, var(--secondary-text-color, rgba(255, 255, 255, 0.9)) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         white-space: pre;
         pointer-events: none; /* Let clicks pass through to select */
         visibility: visible; /* Ensure it is seen */
@@ -24123,12 +24132,12 @@ GrowspaceHeader.styles = i$6 `
       align-items: center;
       gap: 6px;
       padding: 4px 12px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       border-radius: 20px;
       font-size: 0.85rem;
       font-weight: 500;
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
       width: fit-content;
       backdrop-filter: blur(8px);
     }
@@ -24201,8 +24210,8 @@ GrowspaceHeader.styles = i$6 `
     }
 
     .hero-card {
-      background: var(--glass-bg);
-      border: var(--glass-border);
+      background: var(--glass-bg, rgba(255, 255, 255, 0.05));
+      border: var(--divider-color, rgba(255, 255, 255, 0.1));
       backdrop-filter: var(--glass-blur);
       box-shadow:
         0 4px 24px -1px rgba(0, 0, 0, 0.2),
@@ -24226,8 +24235,8 @@ GrowspaceHeader.styles = i$6 `
     }
     
     .hero-card:hover {
-        background: rgba(255, 255, 255, 0.08); /* Slightly lighter on hover */
-        border-color: rgba(255, 255, 255, 0.15);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08)); /* Slightly lighter on hover */
+        border-color: var(--divider-color, rgba(255, 255, 255, 0.15));
         box-shadow: 
              0 8px 32px -4px rgba(0, 0, 0, 0.3),
              0 0 0 1px rgba(255, 255, 255, 0.05) inset;
@@ -24235,8 +24244,8 @@ GrowspaceHeader.styles = i$6 `
     }
 
     .hero-card.linked {
-        border-color: rgba(255, 255, 255, 0.3);
-        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
     }
 
     .hero-value-group {
@@ -24248,24 +24257,24 @@ GrowspaceHeader.styles = i$6 `
     .hero-value {
       font-size: 2rem;
       font-weight: 400; /* Thinner for modern look */
-      color: #fff;
+      color: var(--primary-text-color, #fff);
       line-height: 1;
     }
 
     .hero-unit {
       font-size: 1rem;
-      color: rgba(255, 255, 255, 0.6);
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
       font-weight: 500;
     }
     .hero-icon {
         width: 20px;
         height: 20px;
-        fill: rgba(255, 255, 255, 0.7);
+        fill: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
     }
 
     .hero-label {
         font-size: 0.9rem;
-        color: rgba(255, 255, 255, 0.7);
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
         font-weight: 500;
     }
     /* Active graph indication */
@@ -24311,14 +24320,14 @@ GrowspaceHeader.styles = i$6 `
         display: flex;
         align-items: center;
         justify-content: center;
-        color: rgba(255,255,255,0.7);
+        color: var(--secondary-text-color, rgba(255,255,255,0.7));
         cursor: pointer;
         border-radius: 50%;
         transition: background 0.2s;
     }
     .scroll-arrow:hover {
         background: rgba(255,255,255,0.1);
-        color: #fff;
+        color: var(--primary-text-color, #fff);
     }
     .scroll-arrow.hidden {
         opacity: 0;
@@ -24344,7 +24353,7 @@ GrowspaceHeader.styles = i$6 `
     .secondary-divider {
         width: 1px;
         height: 24px;
-        background: rgba(255,255,255,0.15);
+        background: var(--divider-color, rgba(255,255,255,0.15));
         flex-shrink: 0;
         margin: 0 4px;
     }
@@ -24414,16 +24423,16 @@ GrowspaceHeader.styles = i$6 `
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #fff;
+      color: var(--primary-text-color, #fff);
       cursor: pointer;
       transition: all 0.2s;
     }
-    .icon-button:hover { background: rgba(255, 255, 255, 0.2); }
+    .icon-button:hover { background: var(--secondary-background-color, rgba(255, 255, 255, 0.2)); }
     .icon-button svg { width: 22px; height: 22px; fill: currentColor; }
     
     .icon-button.mobile-link.active {
@@ -24437,8 +24446,8 @@ GrowspaceHeader.styles = i$6 `
       top: 100%;
       right: 0;
       margin-top: 8px;
-      background: #2a2a2a;
-      border: 1px solid rgba(255,255,255,0.1);
+      background: var(--card-background-color, #2a2a2a);
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
       border-radius: 12px;
       font-size: 0.9rem;
       min-width: 180px;
@@ -24452,17 +24461,17 @@ GrowspaceHeader.styles = i$6 `
         align-items: center;
         gap: 12px;
         cursor: pointer;
-        color: #ddd;
+        color: var(--primary-text-color, #ddd);
         transition: background 0.2s;
     }
-    .menu-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .menu-item:hover { background: var(--secondary-background-color, rgba(255,255,255,0.1)); color: var(--primary-text-color, #fff); }
     .menu-item svg { width: 20px; height: 20px; fill: currentColor; }
     .menu-item-label { flex: 1; }
 
     .menu-toggle-switch {
       width: 40px;
       height: 20px;
-      background: rgba(255, 255, 255, 0.2);
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.2));
       border-radius: 10px;
       position: relative;
       transition: background 0.2s;
@@ -25042,7 +25051,7 @@ GrowspaceGrid.styles = [
 
       .pc-strain-name {
         font-size: 0.9rem;
-        color: #fff !important;
+        color: var(--primary-text-color, #fff) !important;
         font-weight: 700;
       }
 
@@ -25179,7 +25188,7 @@ const growspaceCardStyles = i$6 `
     display: flex;
     align-items: center;
     gap: 12px;
-    color: #fff;
+    color: var(--primary-text-color, #fff);
     font-weight: 500;
     font-size: 0.95rem;
   }
@@ -25264,7 +25273,7 @@ const growspaceCardStyles = i$6 `
   .range-btn {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid transparent;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
     border-radius: 8px; /* Small rounding for compact look */
     padding: 6px 12px;
     font-size: 0.75rem;
@@ -25275,7 +25284,7 @@ const growspaceCardStyles = i$6 `
   }
   .range-btn:hover {
     background: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    color: var(--primary-text-color, #fff);
   }
   .range-btn.active {
     background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.15);
@@ -25315,7 +25324,7 @@ const growspaceCardStyles = i$6 `
     position: absolute;
     top: 10px;
     background: rgba(30, 30, 35, 0.9);
-    color: #fff;
+    color: var(--primary-text-color, #fff);
     padding: 8px 12px;
     border-radius: 8px;
     font-size: 0.75rem;
@@ -25381,12 +25390,12 @@ const growspaceCardStyles = i$6 `
     display: flex;
     align-items: center;
     gap: 12px;
-    color: #fff;
+    color: var(--primary-text-color, #fff);
   }
 
   .gs-icon-box {
-    background: rgba(255, 235, 59, 0.05);
-    border: 1px solid rgba(255, 235, 59, 0.2);
+    background: var(--secondary-background-color, rgba(255, 235, 59, 0.05));
+    border: 1px solid var(--divider-color, rgba(255, 235, 59, 0.2));
     border-radius: 14px;
     width: 48px;
     height: 48px;
@@ -25483,7 +25492,7 @@ const growspaceCardStyles = i$6 `
   .ac-text .time {
     font-size: 1.2rem;
     font-weight: 600;
-    color: #fff;
+    color: var(--primary-text-color, #fff);
   }
 
   .ac-text .time span {
@@ -25948,13 +25957,13 @@ const growspaceCardStyles = i$6 `
 
     .pc-pheno {
       font-size: 0.8rem;
-      color: rgba(255, 255, 255, 0.7) !important;
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.7)) !important;
     }
 
     .pc-stage {
       margin-top: 2px;
       font-size: 0.8rem;
-      color: var(--stage-color, #fff) !important;
+      color: var(--stage-color, var(--primary-text-color, #fff)) !important;
       font-weight: 600;
     }
 
@@ -26047,10 +26056,11 @@ const growspaceCardStyles = i$6 `
   .dialog-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-lg);
     padding-bottom: var(--spacing-md);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
   }
 
   .dialog-icon {
@@ -26073,23 +26083,23 @@ const growspaceCardStyles = i$6 `
     font-size: 1.5rem;
     font-weight: 500; /* MD3 Headline Small */
     margin: 0;
-    color: #ffffff;
+    color: var(--primary-text-color, #ffffff);
   }
 
   .dialog-subtitle {
     font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
     margin-top: 4px;
     text-transform: capitalize;
   }
 
   /* MD3 Cards inside Dialog */
   .detail-card {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
     border-radius: 12px;
     padding: var(--spacing-md);
     margin-bottom: var(--spacing-md);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
   }
 
   .detail-card h3 {

@@ -68,7 +68,7 @@ export class ConfigDialog extends LitElement {
       .config-tabs {
         display: flex;
         padding: 0 16px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         background: transparent;
       }
       .config-tab {
@@ -78,7 +78,7 @@ export class ConfigDialog extends LitElement {
         padding: 16px 8px;
         text-align: center;
         cursor: pointer;
-        color: rgba(255, 255, 255, 0.5);
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
         border-bottom: 2px solid transparent;
         transition: all 0.2s;
         display: flex;
@@ -97,8 +97,8 @@ export class ConfigDialog extends LitElement {
         fill: currentColor;
       }
       .config-tab:hover {
-        color: #fff;
-        background: rgba(255, 255, 255, 0.05);
+        color: var(--primary-text-color, #fff);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border-radius: 8px 8px 0 0;
       }
       .config-tab.active {
@@ -475,7 +475,7 @@ export class ConfigDialog extends LitElement {
       return html`
         <div class="detail-card" style="text-align: center; padding: 40px 20px;">
           <h3 style="color: var(--error-color, #ff5252);">Delete Growspace?</h3>
-          <p style="margin-bottom: 30px; color: rgba(255,255,255,0.7);">
+          <p style="margin-bottom: 30px; color: var(--secondary-text-color);">
             Are you sure you want to delete "<strong>${this.edit_name}</strong>"?<br />
             This will remove all associated plants and history.<br />
             This action cannot be undone.
@@ -533,7 +533,7 @@ export class ConfigDialog extends LitElement {
               </div>
             `
         : html`
-              <div style="text-align:center; padding: 20px; color: rgba(255,255,255,0.5);">
+              <div style="text-align:center; padding: 20px; color: var(--secondary-text-color);">
                 Please select a growspace to edit.
               </div>
             `}

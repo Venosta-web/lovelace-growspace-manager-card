@@ -10,7 +10,7 @@ export const dialogStyles = [
     display: flex;
     flex-direction: column;
     max-height: 85vh;
-    color: #fff;
+    color: var(--primary-text-color, #fff);
     font-family: 'Roboto', sans-serif;
     /* Background/Shadow handled by sharedStyles, but specific flex layout kept here */
   }
@@ -28,15 +28,15 @@ export const dialogStyles = [
     display: flex;
     align-items: center;
     padding: 16px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+    background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
   }
 
   .dialog-icon {
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -58,6 +58,7 @@ export const dialogStyles = [
     font-size: 0.85rem;
     opacity: 0.7;
     margin-top: 2px;
+    color: var(--secondary-text-color);
   }
 
   .detail-card h3 {
@@ -66,14 +67,15 @@ export const dialogStyles = [
     font-size: 1rem;
     font-weight: 500;
     opacity: 0.9;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--primary-text-color, #fff);
+    border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
     padding-bottom: 8px;
   }
 
   .button-group {
     padding: 16px 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+    background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
     display: flex;
     justify-content: flex-end;
     gap: 12px;

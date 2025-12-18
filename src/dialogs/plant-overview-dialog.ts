@@ -103,7 +103,7 @@ export class PlantOverviewDialog extends LitElement {
       .timeline {
         position: relative;
         padding-left: 24px;
-        border-left: 2px solid rgba(255, 255, 255, 0.1);
+        border-left: 2px solid var(--divider-color, rgba(255, 255, 255, 0.1));
         margin-top: 16px;
       }
       .timeline-event {
@@ -119,7 +119,7 @@ export class PlantOverviewDialog extends LitElement {
         height: 12px;
         border-radius: 50%;
         background: var(--event-color, #4caf50);
-        border: 2px solid #2c2c2c;
+        border: 2px solid var(--card-background-color, #2c2c2c);
       }
       .timeline-date {
         font-size: 0.8rem;
@@ -127,7 +127,7 @@ export class PlantOverviewDialog extends LitElement {
         margin-bottom: 4px;
       }
       .timeline-content {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border-radius: 8px;
         padding: 12px;
       }
@@ -139,7 +139,7 @@ export class PlantOverviewDialog extends LitElement {
         gap: 12px;
       }
       .stat-item {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border-radius: 8px;
         padding: 12px;
         text-align: center;
@@ -171,7 +171,7 @@ export class PlantOverviewDialog extends LitElement {
         border-radius: 8px;
         cursor: pointer;
         transition: transform 0.2s;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       }
       .plant-image:hover {
         transform: scale(1.05);
@@ -353,7 +353,7 @@ export class PlantOverviewDialog extends LitElement {
         <div class="glass-dialog-container" style="width: 350px; height: auto; padding: 24px;">
           <h2 class="dialog-title" style="margin-bottom:12px">Confirm Deletion</h2>
           <p
-            style="color:rgba(255,255,255,0.7); margin-bottom:24px; font-size: 1rem; line-height: 1.5;"
+            style="color:var(--secondary-text-color, rgba(255,255,255,0.7)); margin-bottom:24px; font-size: 1rem; line-height: 1.5;"
           >
             Are you sure you want to delete this plant? This action cannot be undone.
           </p>
