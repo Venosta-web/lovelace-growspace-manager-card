@@ -91,7 +91,6 @@ export const variables: CSSResult = css`
     /* Strain Dialog */
     --strain-dialog-bg: var(--ha-card-background, #1e1e1e);
     --strain-dialog-color: var(--primary-text-color, #fff);
-    --strain-border-color: #4caf50;
     --strain-input-bg: #2a2a2a;
     --strain-input-border: #3a3a3a;
 

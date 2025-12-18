@@ -15012,14 +15012,17 @@ class GrowspaceLogbookController {
     .plant-card-content {
       position: relative;
       z-index: 2;
-      display: flex;
+      display: grid;
       flex-direction: column;
-      justify-content: flex-end;
+      justify-content: stretch;
       gap: 16px;
-      height: 100%;
       padding: 16px;
       box-sizing: border-box;
-    }
+      align-content: stretch;
+      align-items: end;
+      justify-items: center;
+      margin-top: auto;
+  }
 
     .pc-info {
       text-align: center;
@@ -15027,6 +15030,13 @@ class GrowspaceLogbookController {
       flex-direction: column;
       gap: 4px;
       align-items: center;
+      backdrop-filter: blur(1px);
+      -webkit-backdrop-filter: blur(1px);
+
+      border-top: 1px solid rgba(0, 0, 0, 0.2);
+      color: white;
+      --primary-text-color: white;
+      --secondary-text-color: rgba(255, 255, 255, 0.8);
     }
 
     .pc-strain-name {

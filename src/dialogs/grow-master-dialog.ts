@@ -65,7 +65,6 @@ export class GrowMasterDialog extends LitElement {
       }
       .sd-textarea:focus {
         outline: none;
-        border-color: #4caf50;
         background: rgba(255, 255, 255, 0.08);
       }
 
@@ -144,7 +143,6 @@ export class GrowMasterDialog extends LitElement {
           <div class="content-padding">
             <!-- Input Area -->
             <div class="md3-input-group">
-              <label class="md3-label">Your Question</label>
               <textarea
                 class="sd-textarea"
                 placeholder="Ask about this growspace..."

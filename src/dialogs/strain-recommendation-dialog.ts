@@ -43,7 +43,6 @@ export class StrainRecommendationDialog extends LitElement {
       }
       .sd-textarea:focus {
         outline: none;
-        border-color: #4caf50;
         background: rgba(255, 255, 255, 0.08);
       }
       .gm-loading {
