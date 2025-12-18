@@ -24640,7 +24640,7 @@ class ResizeController {
     /* --- Header Top Section --- */
     .gs-header-top {
       display: grid;
-      grid-template-columns: minmax(300px, 25%) minmax(0, 1fr);
+      grid-template-columns: minmax(280px, 25%) minmax(0, 1fr);
       grid-template-rows: auto auto;
       align-items: center;
       gap: 4px 16px;
@@ -24682,11 +24682,11 @@ class ResizeController {
       align-items: center;
       margin-right: 8px;
       overflow: hidden;
-      width: 100%;
       min-width: 0;
       max-width: 100%;
       box-sizing: border-box;
       position: relative;
+      margin-left: auto;
     }
 
     .gs-device-chips-header {
@@ -24695,7 +24695,6 @@ class ResizeController {
       gap: 8px;
       overflow-x: auto;
       scrollbar-width: none;
-      width: 100%;
       min-width: 0;
       padding: 0 4px; /* Small padding for focus rings etc */
       scroll-behavior: smooth;
@@ -24710,7 +24709,7 @@ class ResizeController {
     /* --- Hero Grid (Vital Stats) --- */
     .hero-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 16px;
       width: 100%;
       min-height: 50px;
@@ -24883,6 +24882,9 @@ class ResizeController {
         .hero-grid {
             gap: 12px;
         }
+        .header-title-area {
+          max-width: 70%;
+        }
         .hero-value { font-size: 1.75rem; }
         
         .header-actions {
@@ -24892,7 +24894,7 @@ class ResizeController {
             justify-self: auto;
         }
         .gs-header-top {
-            grid-template-columns: minmax(0, 1fr); /* Force single column constrained width */
+            grid-template-columns: minmax(0, 1fr);
             position: relative; /* For absolute actions */
             gap: 8px;
         }
@@ -24925,9 +24927,8 @@ class ResizeController {
             max-width: 100%;
         }
         .secondary-strip-container {
-            margin: 0;
-            min-width: 0; /* Important for grid item to shrink */
-            overflow: hidden; /* Constrain */
+            grid-row: 4;
+            grid-column: 1;
         }
         /* Allow arrows if they fit logic */
         /* .secondary-strip-container .scroll-arrow { display: none; } REMOVED to allow arrows */

@@ -305,11 +305,11 @@ export class GrowspaceHeader extends LitElement {
       align-items: center;
       margin-right: 8px;
       overflow: hidden;
-      width: 100%;
       min-width: 0;
       max-width: 100%;
       box-sizing: border-box;
       position: relative;
+      margin-left: auto;
     }
 
     .gs-device-chips-header {
