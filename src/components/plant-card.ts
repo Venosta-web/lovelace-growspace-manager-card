@@ -12,7 +12,7 @@ import {
   mdiCheckboxMarked,
   mdiCheckboxBlankOutline,
 } from '@mdi/js';
-import { PlantEntity, StrainEntry, PlantStage } from '../types';
+import { PlantEntity, StrainEntry, PlantStage, STAGE_CONFIG } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { sharedStyles } from '../styles/shared.styles';
 
@@ -36,18 +36,24 @@ interface PlantDisplayData {
 
 @customElement('growspace-plant-card')
 export class GrowspacePlantCard extends LitElement {
-  @property({ attribute: false }) public plant!: PlantEntity;
-  @property({ type: Number }) public row!: number;
-  @property({ type: Number }) public col!: number;
+  @property({ attribute: false }) accessor plant!: PlantEntity;
+  @property({ type: Number }) accessor row!: number;
+  @property({ type: Number }) accessor col!: number;
 
   @consume({ context: strainLibraryContext, subscribe: true })
-  @property({ attribute: false })
-  public strainLibrary: StrainEntry[] = [];
+  accessor strainLibrary: StrainEntry[] = [];
 
-  @property({ type: Boolean }) public isEditMode = false;
-  @property({ type: Boolean }) public selected = false;
+  @property({ type: Boolean }) accessor isEditMode = false;
+  @property({ type: Boolean }) accessor selected = false;
 
-  @state() private _displayData: PlantDisplayData | null = null;
+  @state() accessor _displayData: PlantDisplayData | null = null;
+  @state() accessor _longPressTimer: number | undefined;
+  @state() accessor _isDraggingMobile = false;
+
+  private _startX = 0;
+  private _startY = 0;
+  private _initialLeft = 0;
+  private _initialTop = 0;
 
   static styles = [
     sharedStyles,
@@ -97,6 +103,7 @@ export class GrowspacePlantCard extends LitElement {
       height: 100%;
       background-size: cover;
       z-index: 0;
+      transition: filter 0.3s ease;
     }
 
     .plant-card-overlay {
@@ -226,13 +233,6 @@ export class GrowspacePlantCard extends LitElement {
     }
   `];
 
-  private _longPressTimer: number | undefined;
-  private _isDraggingMobile = false;
-  private _startX = 0;
-  private _startY = 0;
-  private _initialLeft = 0;
-  private _initialTop = 0;
-
   protected willUpdate(changedProps: PropertyValues): void {
     if (changedProps.has('plant') || changedProps.has('strainLibrary')) {
       this._calculateDisplayData();
@@ -279,44 +279,24 @@ export class GrowspacePlantCard extends LitElement {
       }
     }
 
-    // Stages logic
-    const days = [
-      {
-        days: plant.attributes?.seedling_days,
-        icon: mdiSprout,
-        title: 'Seedling',
-        stage: PlantStage.SEEDLING,
-      },
-      {
-        days: plant.attributes?.mother_days,
-        icon: mdiSprout,
-        title: 'Mother',
-        stage: PlantStage.MOTHER,
-      },
-      {
-        days: plant.attributes?.clone_days,
-        icon: mdiSprout,
-        title: 'Clone',
-        stage: PlantStage.CLONE,
-      },
-      { days: plant.attributes?.veg_days, icon: mdiSprout, title: 'Veg', stage: PlantStage.VEG },
-      {
-        days: plant.attributes?.flower_days,
-        icon: mdiFlower,
-        title: 'Flower',
-        stage: PlantStage.FLOWER,
-      },
-      { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: 'Dry', stage: PlantStage.DRY },
-      {
-        days: plant.attributes?.cure_days,
-        icon: mdiCannabis,
-        title: 'Cure',
-        stage: PlantStage.CURE,
-      },
-    ].filter((d) => d.days !== undefined && d.days !== null);
+    // Correction: I need to update imports first to include STAGE_CONFIG
+    // Assuming STAGE_CONFIG from ../types is available. 
+    // I will write the cleaned up logic below using STAGE_CONFIG imported from ../types
+
+    // Stages logic refactored
+    const stagesData = Object.entries(STAGE_CONFIG).map(([stage, config]) => {
+      const daysAttr = `${stage}_days` as keyof typeof plant.attributes;
+      const days = plant.attributes?.[daysAttr] as number | undefined;
+      return {
+        days,
+        stage: stage as PlantStage,
+        icon: config.icon,
+        title: config.title,
+      };
+    }).filter(d => d.days !== undefined && d.days !== null);
 
     const currentStage = (plant.state || '').toLowerCase();
-    let visibleDays = days.filter((d) => d.days);
+    let visibleDays = stagesData.filter((d) => d.days);
 
     if (currentStage === PlantStage.DRY) {
       visibleDays = visibleDays.filter((d) => d.stage === PlantStage.DRY);
@@ -328,7 +308,7 @@ export class GrowspacePlantCard extends LitElement {
       currentStage === 'veg' || currentStage === 'vegetative' ? PlantStage.VEG : currentStage;
 
     const stages: StageDisplay[] = visibleDays.map((d) => ({
-      days: d.days,
+      days: d.days as number,
       icon: d.icon,
       title: d.title,
       stage: d.stage,
@@ -348,8 +328,6 @@ export class GrowspacePlantCard extends LitElement {
 
   private _handleTouchStart(e: TouchEvent) {
     if (this.isEditMode) return;
-
-    // Only single touch
     if (e.touches.length !== 1) return;
 
     this._startX = e.touches[0].clientX;
@@ -367,7 +345,7 @@ export class GrowspacePlantCard extends LitElement {
 
   private _handleTouchMove(e: TouchEvent) {
     if (this._isDraggingMobile) {
-      e.preventDefault(); // Stop scrolling
+      e.preventDefault();
       const touch = e.touches[0];
       const card = this.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
 
@@ -376,7 +354,6 @@ export class GrowspacePlantCard extends LitElement {
 
       card.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.05)`;
     } else {
-      // If moved significantly before timer fires, cancel timer
       const touch = e.touches[0];
       if (
         Math.abs(touch.clientX - this._startX) > 10 ||
@@ -399,7 +376,6 @@ export class GrowspacePlantCard extends LitElement {
     const card = this.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
     card.classList.add('dragging-mobile');
 
-    // Dispatch event to notify grid/parent
     this.dispatchEvent(
       new CustomEvent('mobile-drag-start', {
         detail: { plant: this.plant },
@@ -444,7 +420,6 @@ export class GrowspacePlantCard extends LitElement {
       e.dataTransfer.effectAllowed = 'move';
     }
 
-    // Dispatch event to parent to track dragged plant state
     this.dispatchEvent(
       new CustomEvent('plant-drag-start', {
         detail: { plant: this.plant },
@@ -479,7 +454,6 @@ export class GrowspacePlantCard extends LitElement {
 
   private _handleDragOver(e: DragEvent) {
     e.preventDefault();
-    // Optional: Add visual feedback
   }
 
   private _handleClick() {
@@ -506,7 +480,6 @@ export class GrowspacePlantCard extends LitElement {
   private renderPlantDaysRich(stages: StageDisplay[]): TemplateResult {
     return html`
       ${stages.map((d) => {
-      // Logic for classMap if needed
       return html`
           <div class="pc-stat-item ${d.isCurrent ? 'current-stage' : ''}">
             <svg style="color: ${d.color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>

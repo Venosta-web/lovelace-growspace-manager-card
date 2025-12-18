@@ -1,48 +1,3 @@
-// --- Enums ---
-var PlantStage;
-(function (PlantStage) {
-    PlantStage["SEEDLING"] = "seedling";
-    PlantStage["CLONE"] = "clone";
-    PlantStage["MOTHER"] = "mother";
-    PlantStage["VEG"] = "veg";
-    PlantStage["FLOWER"] = "flower";
-    PlantStage["DRY"] = "dry";
-    PlantStage["CURE"] = "cure";
-})(PlantStage || (PlantStage = {}));
-// --- Utils ---
-function createGrowspaceDevice(params) {
-    return {
-        type: 'normal',
-        rows: 3,
-        plants_per_row: 3,
-        plants: [],
-        grid: {},
-        irrigation_config: { irrigation_times: [], drain_times: [] },
-        // Default Empty Objects to prevent UI crashes
-        biological_metrics: {
-            vpd_status: 'unknown',
-            vpd_target_min: 0,
-            vpd_target_max: 0,
-            vpd_danger_min: 0,
-            vpd_danger_max: 0,
-            granular_stage: 'unknown',
-            is_day: true,
-            veg_week: 0,
-            flower_week: 0
-        },
-        environment_attributes: {},
-        stats: {
-            max_veg_days: 0,
-            max_flower_days: 0,
-            veg_week: 0,
-            flower_week: 0,
-            max_stage_summary: '',
-            total_plants: 0
-        },
-        ...params,
-    };
-}
-
 // Material Design Icons v7.4.47
 var mdiAirFilter = "M19,18.31V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V16.3C4.54,16.12 3.95,16 3,16A1,1 0 0,1 2,15A1,1 0 0,1 3,14C3.82,14 4.47,14.08 5,14.21V12.3C4.54,12.12 3.95,12 3,12A1,1 0 0,1 2,11A1,1 0 0,1 3,10C3.82,10 4.47,10.08 5,10.21V8.3C4.54,8.12 3.95,8 3,8A1,1 0 0,1 2,7A1,1 0 0,1 3,6C3.82,6 4.47,6.08 5,6.21V4A2,2 0 0,1 7,2H17A2,2 0 0,1 19,4V6.16C20.78,6.47 21.54,7.13 21.71,7.29C22.1,7.68 22.1,8.32 21.71,8.71C21.32,9.1 20.8,9.09 20.29,8.71V8.71C20.29,8.71 19.25,8 17,8C15.74,8 14.91,8.41 13.95,8.9C12.91,9.41 11.74,10 10,10C9.64,10 9.31,10 9,9.96V7.95C9.3,8 9.63,8 10,8C11.26,8 12.09,7.59 13.05,7.11C14.09,6.59 15.27,6 17,6V4H7V20H17V18C18.5,18 18.97,18.29 19,18.31M17,10C15.27,10 14.09,10.59 13.05,11.11C12.09,11.59 11.26,12 10,12C9.63,12 9.3,12 9,11.95V13.96C9.31,14 9.64,14 10,14C11.74,14 12.91,13.41 13.95,12.9C14.91,12.42 15.74,12 17,12C19.25,12 20.29,12.71 20.29,12.71V12.71C20.8,13.1 21.32,13.1 21.71,12.71C22.1,12.32 22.1,11.69 21.71,11.29C21.5,11.08 20.25,10 17,10M17,14C15.27,14 14.09,14.59 13.05,15.11C12.09,15.59 11.26,16 10,16C9.63,16 9.3,16 9,15.95V17.96C9.31,18 9.64,18 10,18C11.74,18 12.91,17.41 13.95,16.9C14.91,16.42 15.74,16 17,16C19.25,16 20.29,16.71 20.29,16.71V16.71C20.8,17.1 21.32,17.1 21.71,16.71C22.1,16.32 22.1,15.69 21.71,15.29C21.5,15.08 20.25,14 17,14Z";
 var mdiAirHumidifier = "M11 9C8.79 9 7 10.79 7 13S8.79 17 11 17 15 15.21 15 13 13.21 9 11 9M11 15C9.9 15 9 14.11 9 13S9.9 11 11 11 13 11.9 13 13 12.11 15 11 15M7 4H14C16.21 4 18 5.79 18 8V9H16V8C16 6.9 15.11 6 14 6H7C5.9 6 5 6.9 5 8V20H16V18H18V22H3V8C3 5.79 4.79 4 7 4M19 10.5C19 10.5 21 12.67 21 14C21 15.1 20.1 16 19 16S17 15.1 17 14C17 12.67 19 10.5 19 10.5";
@@ -94,6 +49,61 @@ var mdiWaterPercent = "M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,
 var mdiWeatherCloudy = "M6,19A5,5 0 0,1 1,14A5,5 0 0,1 6,9C7,6.65 9.3,5 12,5C15.43,5 18.24,7.66 18.5,11.03L19,11A4,4 0 0,1 23,15A4,4 0 0,1 19,19H6M19,13H17V12A5,5 0 0,0 12,7C9.5,7 7.45,8.82 7.06,11.19C6.73,11.07 6.37,11 6,11A3,3 0 0,0 3,14A3,3 0 0,0 6,17H19A2,2 0 0,0 21,15A2,2 0 0,0 19,13Z";
 var mdiWeatherNight = "M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z";
 var mdiWeatherSunny = "M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,6.65C6.9,7.16 6.36,7.78 5.94,8.5C5.5,9.24 5.25,10 5.11,10.79L3.34,7M3.36,17L5.12,13.23C5.26,14 5.53,14.78 5.95,15.5C6.37,16.24 6.91,16.86 7.5,17.37L3.36,17M20.65,7L18.88,10.79C18.74,10 18.47,9.23 18.05,8.5C17.63,7.78 17.1,7.15 16.5,6.64L20.65,7M20.64,17L16.5,17.36C17.09,16.85 17.62,16.22 18.04,15.5C18.46,14.77 18.73,14 18.87,13.21L20.64,17M12,22L9.59,18.56C10.33,18.83 11.14,19 12,19C12.82,19 13.63,18.83 14.37,18.56L12,22Z";
+
+// --- Enums ---
+var PlantStage;
+(function (PlantStage) {
+    PlantStage["SEEDLING"] = "seedling";
+    PlantStage["CLONE"] = "clone";
+    PlantStage["MOTHER"] = "mother";
+    PlantStage["VEG"] = "veg";
+    PlantStage["FLOWER"] = "flower";
+    PlantStage["DRY"] = "dry";
+    PlantStage["CURE"] = "cure";
+})(PlantStage || (PlantStage = {}));
+// --- Configuration Constants ---
+const STAGE_CONFIG = {
+    [PlantStage.SEEDLING]: { icon: mdiSprout, title: 'Seedling', colorVar: '--state-seedling-color' },
+    [PlantStage.CLONE]: { icon: mdiSprout, title: 'Clone', colorVar: '--state-clone-color' },
+    [PlantStage.MOTHER]: { icon: mdiSprout, title: 'Mother', colorVar: '--state-mother-color' },
+    [PlantStage.VEG]: { icon: mdiSprout, title: 'Veg', colorVar: '--state-veg-color' },
+    [PlantStage.FLOWER]: { icon: mdiFlower, title: 'Flower', colorVar: '--state-flower-color' },
+    [PlantStage.DRY]: { icon: mdiHairDryer, title: 'Dry', colorVar: '--state-dry-color' },
+    [PlantStage.CURE]: { icon: mdiCannabis, title: 'Cure', colorVar: '--state-cure-color' },
+};
+// --- Utils ---
+function createGrowspaceDevice(params) {
+    return {
+        type: 'normal',
+        rows: 3,
+        plants_per_row: 3,
+        plants: [],
+        grid: {},
+        irrigation_config: { irrigation_times: [], drain_times: [] },
+        // Default Empty Objects to prevent UI crashes
+        biological_metrics: {
+            vpd_status: 'unknown',
+            vpd_target_min: 0,
+            vpd_target_max: 0,
+            vpd_danger_min: 0,
+            vpd_danger_max: 0,
+            granular_stage: 'unknown',
+            is_day: true,
+            veg_week: 0,
+            flower_week: 0
+        },
+        environment_attributes: {},
+        stats: {
+            max_veg_days: 0,
+            max_flower_days: 0,
+            veg_week: 0,
+            flower_week: 0,
+            max_stage_summary: '',
+            total_plants: 0
+        },
+        ...params,
+    };
+}
 
 [
     PlantStage.SEEDLING,
@@ -1258,13 +1268,13 @@ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 ***************************************************************************** */
 
-function __classPrivateFieldGet(receiver, state, kind, f) {
+function __classPrivateFieldGet$1(receiver, state, kind, f) {
     if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 }
 
-function __classPrivateFieldSet(receiver, state, value, kind, f) {
+function __classPrivateFieldSet$1(receiver, state, value, kind, f) {
     if (kind === "m") throw new TypeError("Private method is not writable");
     if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
@@ -4356,10 +4366,10 @@ class ZodEnum extends ZodType {
             });
             return INVALID$3;
         }
-        if (!__classPrivateFieldGet(this, _ZodEnum_cache, "f")) {
-            __classPrivateFieldSet(this, _ZodEnum_cache, new Set(this._def.values), "f");
+        if (!__classPrivateFieldGet$1(this, _ZodEnum_cache, "f")) {
+            __classPrivateFieldSet$1(this, _ZodEnum_cache, new Set(this._def.values), "f");
         }
-        if (!__classPrivateFieldGet(this, _ZodEnum_cache, "f").has(input.data)) {
+        if (!__classPrivateFieldGet$1(this, _ZodEnum_cache, "f").has(input.data)) {
             const ctx = this._getOrReturnCtx(input);
             const expectedValues = this._def.values;
             addIssueToContext(ctx, {
@@ -4428,10 +4438,10 @@ class ZodNativeEnum extends ZodType {
             });
             return INVALID$3;
         }
-        if (!__classPrivateFieldGet(this, _ZodNativeEnum_cache, "f")) {
-            __classPrivateFieldSet(this, _ZodNativeEnum_cache, new Set(util.getValidEnumValues(this._def.values)), "f");
+        if (!__classPrivateFieldGet$1(this, _ZodNativeEnum_cache, "f")) {
+            __classPrivateFieldSet$1(this, _ZodNativeEnum_cache, new Set(util.getValidEnumValues(this._def.values)), "f");
         }
-        if (!__classPrivateFieldGet(this, _ZodNativeEnum_cache, "f").has(input.data)) {
+        if (!__classPrivateFieldGet$1(this, _ZodNativeEnum_cache, "f").has(input.data)) {
             const expectedValues = util.objectValues(nativeEnumValues);
             addIssueToContext(ctx, {
                 received: ctx.data,
@@ -5855,15 +5865,55 @@ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 ***************************************************************************** */
 
-function __decorate(decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
+function __esDecorate(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+    function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
+    var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+    var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+    var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+    var _, done = false;
+    for (var i = decorators.length - 1; i >= 0; i--) {
+        var context = {};
+        for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+        for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+        context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
+        var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
+        if (kind === "accessor") {
+            if (result === void 0) continue;
+            if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+            if (_ = accept(result.get)) descriptor.get = _;
+            if (_ = accept(result.set)) descriptor.set = _;
+            if (_ = accept(result.init)) initializers.unshift(_);
+        }
+        else if (_ = accept(result)) {
+            if (kind === "field") initializers.unshift(_);
+            else descriptor[key] = _;
+        }
+    }
+    if (target) Object.defineProperty(target, contextIn.name, descriptor);
+    done = true;
+}
+function __runInitializers(thisArg, initializers, value) {
+    var useValue = arguments.length > 2;
+    for (var i = 0; i < initializers.length; i++) {
+        value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+    }
+    return useValue ? value : void 0;
+}
+function __setFunctionName(f, name, prefix) {
+    if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
+    return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
+}
+function __classPrivateFieldGet(receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 }
 
-function __metadata(metadataKey, metadataValue) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+function __classPrivateFieldSet(receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
 }
 
 typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
@@ -6844,292 +6894,391 @@ class GraphDataTransformer {
     }
 }
 
-let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.sensorHistory = {};
-        this.metricKey = '';
-        this.unit = '';
-        this.color = '#ffffff';
-        this.title = '';
-        this.icon = mdiMagnify;
-        this.range = '24h';
-        this.type = 'line';
+(() => {
+    var _GrowspaceEnvChart_hass_accessor_storage, _GrowspaceEnvChart_device_accessor_storage, _GrowspaceEnvChart_sensorHistory_accessor_storage, _GrowspaceEnvChart_metricKey_accessor_storage, _GrowspaceEnvChart_unit_accessor_storage, _GrowspaceEnvChart_color_accessor_storage, _GrowspaceEnvChart_title_accessor_storage, _GrowspaceEnvChart_icon_accessor_storage, _GrowspaceEnvChart_range_accessor_storage, _GrowspaceEnvChart_type_accessor_storage, _GrowspaceEnvChart_metrics_accessor_storage, _GrowspaceEnvChart_isCombined_accessor_storage, _GrowspaceEnvChart_metricConfig_accessor_storage, _GrowspaceEnvChart__activeTooltip_accessor_storage, _GrowspaceEnvChart__hoverTime_accessor_storage, _GrowspaceEnvChart__canScrollLeft_accessor_storage, _GrowspaceEnvChart__canScrollRight_accessor_storage, _GrowspaceEnvChart__renderSeries_accessor_storage;
+    let _classDecorators = [t$2('growspace-env-chart')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _device_decorators;
+    let _device_initializers = [];
+    let _device_extraInitializers = [];
+    let _sensorHistory_decorators;
+    let _sensorHistory_initializers = [];
+    let _sensorHistory_extraInitializers = [];
+    let _metricKey_decorators;
+    let _metricKey_initializers = [];
+    let _metricKey_extraInitializers = [];
+    let _unit_decorators;
+    let _unit_initializers = [];
+    let _unit_extraInitializers = [];
+    let _color_decorators;
+    let _color_initializers = [];
+    let _color_extraInitializers = [];
+    let _title_decorators;
+    let _title_initializers = [];
+    let _title_extraInitializers = [];
+    let _icon_decorators;
+    let _icon_initializers = [];
+    let _icon_extraInitializers = [];
+    let _range_decorators;
+    let _range_initializers = [];
+    let _range_extraInitializers = [];
+    let _type_decorators;
+    let _type_initializers = [];
+    let _type_extraInitializers = [];
+    let _metrics_decorators;
+    let _metrics_initializers = [];
+    let _metrics_extraInitializers = [];
+    let _isCombined_decorators;
+    let _isCombined_initializers = [];
+    let _isCombined_extraInitializers = [];
+    let _metricConfig_decorators;
+    let _metricConfig_initializers = [];
+    let _metricConfig_extraInitializers = [];
+    let __activeTooltip_decorators;
+    let __activeTooltip_initializers = [];
+    let __activeTooltip_extraInitializers = [];
+    let __hoverTime_decorators;
+    let __hoverTime_initializers = [];
+    let __hoverTime_extraInitializers = [];
+    let __canScrollLeft_decorators;
+    let __canScrollLeft_initializers = [];
+    let __canScrollLeft_extraInitializers = [];
+    let __canScrollRight_decorators;
+    let __canScrollRight_initializers = [];
+    let __canScrollRight_extraInitializers = [];
+    let __renderSeries_decorators;
+    let __renderSeries_initializers = [];
+    let __renderSeries_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        constructor() {
+            super(...arguments);
+            _GrowspaceEnvChart_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _GrowspaceEnvChart_device_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _device_initializers, void 0)));
+            _GrowspaceEnvChart_sensorHistory_accessor_storage.set(this, (__runInitializers(this, _device_extraInitializers), __runInitializers(this, _sensorHistory_initializers, {})));
+            _GrowspaceEnvChart_metricKey_accessor_storage.set(this, (__runInitializers(this, _sensorHistory_extraInitializers), __runInitializers(this, _metricKey_initializers, '')));
+            _GrowspaceEnvChart_unit_accessor_storage.set(this, (__runInitializers(this, _metricKey_extraInitializers), __runInitializers(this, _unit_initializers, '')));
+            _GrowspaceEnvChart_color_accessor_storage.set(this, (__runInitializers(this, _unit_extraInitializers), __runInitializers(this, _color_initializers, '#ffffff')));
+            _GrowspaceEnvChart_title_accessor_storage.set(this, (__runInitializers(this, _color_extraInitializers), __runInitializers(this, _title_initializers, '')));
+            _GrowspaceEnvChart_icon_accessor_storage.set(this, (__runInitializers(this, _title_extraInitializers), __runInitializers(this, _icon_initializers, mdiMagnify)));
+            _GrowspaceEnvChart_range_accessor_storage.set(this, (__runInitializers(this, _icon_extraInitializers), __runInitializers(this, _range_initializers, '24h')));
+            _GrowspaceEnvChart_type_accessor_storage.set(this, (__runInitializers(this, _range_extraInitializers), __runInitializers(this, _type_initializers, 'line')));
+            _GrowspaceEnvChart_metrics_accessor_storage.set(this, (__runInitializers(this, _type_extraInitializers), __runInitializers(this, _metrics_initializers, [])));
+            _GrowspaceEnvChart_isCombined_accessor_storage.set(this, (__runInitializers(this, _metrics_extraInitializers), __runInitializers(this, _isCombined_initializers, false)));
+            _GrowspaceEnvChart_metricConfig_accessor_storage.set(this, (__runInitializers(this, _isCombined_extraInitializers), __runInitializers(this, _metricConfig_initializers, {})));
+            _GrowspaceEnvChart__activeTooltip_accessor_storage.set(this, (__runInitializers(this, _metricConfig_extraInitializers), __runInitializers(this, __activeTooltip_initializers, null)));
+            _GrowspaceEnvChart__hoverTime_accessor_storage.set(this, (__runInitializers(this, __activeTooltip_extraInitializers), __runInitializers(this, __hoverTime_initializers, null)));
+            _GrowspaceEnvChart__canScrollLeft_accessor_storage.set(this, (__runInitializers(this, __hoverTime_extraInitializers), __runInitializers(this, __canScrollLeft_initializers, false)));
+            _GrowspaceEnvChart__canScrollRight_accessor_storage.set(this, (__runInitializers(this, __canScrollLeft_extraInitializers), __runInitializers(this, __canScrollRight_initializers, false)));
+            _GrowspaceEnvChart__renderSeries_accessor_storage.set(this, (__runInitializers(this, __canScrollRight_extraInitializers), __runInitializers(this, __renderSeries_initializers, [])));
+            this._chipsContainerRef = (__runInitializers(this, __renderSeries_extraInitializers), e$1());
+        }
+        get hass() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_hass_accessor_storage, value, "f"); }
+        get device() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_device_accessor_storage, "f"); }
+        set device(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_device_accessor_storage, value, "f"); }
+        get sensorHistory() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_sensorHistory_accessor_storage, "f"); }
+        set sensorHistory(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_sensorHistory_accessor_storage, value, "f"); }
+        get metricKey() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_metricKey_accessor_storage, "f"); }
+        set metricKey(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_metricKey_accessor_storage, value, "f"); }
+        get unit() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_unit_accessor_storage, "f"); }
+        set unit(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_unit_accessor_storage, value, "f"); }
+        get color() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_color_accessor_storage, "f"); }
+        set color(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_color_accessor_storage, value, "f"); }
+        get title() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_title_accessor_storage, "f"); }
+        set title(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_title_accessor_storage, value, "f"); }
+        get icon() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_icon_accessor_storage, "f"); }
+        set icon(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_icon_accessor_storage, value, "f"); }
+        get range() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_range_accessor_storage, "f"); }
+        set range(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_range_accessor_storage, value, "f"); }
+        get type() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_type_accessor_storage, "f"); }
+        set type(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_type_accessor_storage, value, "f"); }
         // For combined graphs
-        this.metrics = [];
-        this.isCombined = false;
-        this.metricConfig = {};
-        this._activeTooltip = null;
-        this._hoverTime = null;
-        this._canScrollLeft = false;
-        this._canScrollRight = false;
-        this._renderSeries = []; // Cached series renamed for clarity
-        this._chipsContainerRef = e$1();
-    }
-    _scrollChips(direction) {
-        const container = this._chipsContainerRef.value;
-        if (container) {
-            container.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
-        }
-    }
-    _checkScroll() {
-        const container = this._chipsContainerRef.value;
-        if (container) {
-            this._canScrollLeft = container.scrollLeft > 1;
-            this._canScrollRight =
-                container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
-        }
-    }
-    firstUpdated() {
-        const container = this._chipsContainerRef.value;
-        if (container) {
-            container.addEventListener('scroll', () => this._checkScroll());
-            this._resizeObserver = new ResizeObserver(() => this._checkScroll());
-            this._resizeObserver.observe(container);
-            setTimeout(() => this._checkScroll(), 100);
-        }
-    }
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        if (this._resizeObserver) {
-            this._resizeObserver.disconnect();
-        }
-    }
-    /**
-     * Gets VPD thresholds from device overview entity.
-     */
-    _getVpdThresholds() {
-        const overviewEntity = this.device?.overview_entity_id
-            ? this.hass?.states[this.device.overview_entity_id]
-            : null;
-        return {
-            targetMin: overviewEntity?.attributes?.vpd_target_min ?? 0.8,
-            targetMax: overviewEntity?.attributes?.vpd_target_max ?? 1.2,
-            dangerMin: overviewEntity?.attributes?.vpd_danger_min ?? 0.4,
-            dangerMax: overviewEntity?.attributes?.vpd_danger_max ?? 1.6,
-        };
-    }
-    /**
-     * Gets VPD status based on value and thresholds.
-     */
-    _getVpdStatusForValue(value, thresholds) {
-        if (value < thresholds.dangerMin || value > thresholds.dangerMax) {
-            return 'danger';
-        }
-        else if (value < thresholds.targetMin || value > thresholds.targetMax) {
-            return 'warning';
-        }
-        return 'optimal';
-    }
-    /**
-     * Gets color for VPD status.
-     */
-    _getVpdStatusColor(status) {
-        switch (status) {
-            case 'optimal': return '#4caf50'; // Green
-            case 'warning': return '#ff9800'; // Orange
-            case 'danger': return '#f44336'; // Red
-            default: return '#9c27b0'; // Default VPD color (purple)
-        }
-    }
-    /**
-     * Generates multi-colored VPD path segments based on status at each point.
-     */
-    _generateVpdSegments(points, thresholds) {
-        if (points.length < 2)
-            return [];
-        const segments = [];
-        let currentSegment = [];
-        let currentStatus = this._getVpdStatusForValue(points[0].value, thresholds);
-        for (let i = 0; i < points.length; i++) {
-            const p = points[i];
-            const status = this._getVpdStatusForValue(p.value, thresholds);
-            if (status === currentStatus) {
-                currentSegment.push(p);
-            }
-            else {
-                // Status changed - finish current segment and start new one
-                if (currentSegment.length >= 1) {
-                    // Add connecting point to current segment
-                    currentSegment.push(p);
-                    const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
-                    segments.push({
-                        path: pathStr,
-                        color: this._getVpdStatusColor(currentStatus)
-                    });
-                }
-                // Start new segment with this point
-                currentSegment = [p];
-                currentStatus = status;
+        get metrics() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_metrics_accessor_storage, "f"); }
+        set metrics(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_metrics_accessor_storage, value, "f"); }
+        get isCombined() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_isCombined_accessor_storage, "f"); }
+        set isCombined(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_isCombined_accessor_storage, value, "f"); }
+        get metricConfig() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_metricConfig_accessor_storage, "f"); }
+        set metricConfig(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_metricConfig_accessor_storage, value, "f"); }
+        get _activeTooltip() { return __classPrivateFieldGet(this, _GrowspaceEnvChart__activeTooltip_accessor_storage, "f"); }
+        set _activeTooltip(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart__activeTooltip_accessor_storage, value, "f"); }
+        get _hoverTime() { return __classPrivateFieldGet(this, _GrowspaceEnvChart__hoverTime_accessor_storage, "f"); }
+        set _hoverTime(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart__hoverTime_accessor_storage, value, "f"); }
+        get _canScrollLeft() { return __classPrivateFieldGet(this, _GrowspaceEnvChart__canScrollLeft_accessor_storage, "f"); }
+        set _canScrollLeft(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart__canScrollLeft_accessor_storage, value, "f"); }
+        get _canScrollRight() { return __classPrivateFieldGet(this, _GrowspaceEnvChart__canScrollRight_accessor_storage, "f"); }
+        set _canScrollRight(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart__canScrollRight_accessor_storage, value, "f"); }
+        get _renderSeries() { return __classPrivateFieldGet(this, _GrowspaceEnvChart__renderSeries_accessor_storage, "f"); } // Cached series renamed for clarity
+        set _renderSeries(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart__renderSeries_accessor_storage, value, "f"); }
+        _scrollChips(direction) {
+            const container = this._chipsContainerRef.value;
+            if (container) {
+                container.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
             }
         }
-        // Finish last segment
-        if (currentSegment.length >= 2) {
-            const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
-            segments.push({
-                path: pathStr,
-                color: this._getVpdStatusColor(currentStatus)
-            });
+        _checkScroll() {
+            const container = this._chipsContainerRef.value;
+            if (container) {
+                this._canScrollLeft = container.scrollLeft > 1;
+                this._canScrollRight =
+                    container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
+            }
         }
-        return segments;
-    }
-    _computeGraphSeries(width, height, startTime, durationMillis, now) {
-        const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
-        const seriesList = [];
-        metricKeys.forEach((key) => {
-            const config = this.metricConfig[key] || {
-                color: this.isCombined ? METRIC_CONFIG[key]?.color || '#ffffff' : this.color,
-                title: this.isCombined ? METRIC_CONFIG[key]?.title || key : this.title,
-                unit: this.isCombined ? METRIC_CONFIG[key]?.unit || '' : this.unit,
-                icon: this.isCombined ? METRIC_CONFIG[key]?.icon || '' : this.icon,
+        firstUpdated() {
+            const container = this._chipsContainerRef.value;
+            if (container) {
+                container.addEventListener('scroll', () => this._checkScroll());
+                this._resizeObserver = new ResizeObserver(() => this._checkScroll());
+                this._resizeObserver.observe(container);
+                setTimeout(() => this._checkScroll(), 100);
+            }
+        }
+        disconnectedCallback() {
+            super.disconnectedCallback();
+            if (this._resizeObserver) {
+                this._resizeObserver.disconnect();
+            }
+        }
+        /**
+         * Gets VPD thresholds from device overview entity.
+         */
+        _getVpdThresholds() {
+            const overviewEntity = this.device?.overview_entity_id
+                ? this.hass?.states[this.device.overview_entity_id]
+                : null;
+            return {
+                targetMin: overviewEntity?.attributes?.vpd_target_min ?? 0.8,
+                targetMax: overviewEntity?.attributes?.vpd_target_max ?? 1.2,
+                dangerMin: overviewEntity?.attributes?.vpd_danger_min ?? 0.4,
+                dangerMax: overviewEntity?.attributes?.vpd_danger_max ?? 1.6,
             };
-            const historySource = this.sensorHistory[key] || [];
-            const dataPoints = [];
-            if (key === 'optimal' && historySource.length > 0) {
-                // Optimal logic (Step Graph for Binary Sensor)
-                const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
-                let initialState = sortedHistory[0];
-                for (const h of sortedHistory) {
-                    const t = new Date(h.last_changed).getTime();
-                    if (t > startTime.getTime())
-                        break;
-                    initialState = h;
+        }
+        /**
+         * Gets VPD status based on value and thresholds.
+         */
+        _getVpdStatusForValue(value, thresholds) {
+            if (value < thresholds.dangerMin || value > thresholds.dangerMax) {
+                return 'danger';
+            }
+            else if (value < thresholds.targetMin || value > thresholds.targetMax) {
+                return 'warning';
+            }
+            return 'optimal';
+        }
+        /**
+         * Gets color for VPD status.
+         */
+        _getVpdStatusColor(status) {
+            switch (status) {
+                case 'optimal': return '#4caf50'; // Green
+                case 'warning': return '#ff9800'; // Orange
+                case 'danger': return '#f44336'; // Red
+                default: return '#9c27b0'; // Default VPD color (purple)
+            }
+        }
+        /**
+         * Generates multi-colored VPD path segments based on status at each point.
+         */
+        _generateVpdSegments(points, thresholds) {
+            if (points.length < 2)
+                return [];
+            const segments = [];
+            let currentSegment = [];
+            let currentStatus = this._getVpdStatusForValue(points[0].value, thresholds);
+            for (let i = 0; i < points.length; i++) {
+                const p = points[i];
+                const status = this._getVpdStatusForValue(p.value, thresholds);
+                if (status === currentStatus) {
+                    currentSegment.push(p);
                 }
-                if (initialState) {
-                    const val = initialState.state === 'on' ? 1 : 0;
-                    dataPoints.push({ time: startTime.getTime(), value: val });
-                }
-                sortedHistory.forEach((h) => {
-                    const t = new Date(h.last_changed).getTime();
-                    if (t <= startTime.getTime())
-                        return;
-                    const val = h.state === 'on' ? 1 : 0;
-                    const reasons = h.attributes?.reasons;
-                    dataPoints.push({ time: t, value: val, meta: reasons ? { reasons } : undefined });
-                });
-                // Extend to NOW
-                if (dataPoints.length > 0) {
-                    const last = dataPoints[dataPoints.length - 1];
-                    dataPoints.push({ time: now.getTime(), value: last.value });
+                else {
+                    // Status changed - finish current segment and start new one
+                    if (currentSegment.length >= 1) {
+                        // Add connecting point to current segment
+                        currentSegment.push(p);
+                        const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+                        segments.push({
+                            path: pathStr,
+                            color: this._getVpdStatusColor(currentStatus)
+                        });
+                    }
+                    // Start new segment with this point
+                    currentSegment = [p];
+                    currentStatus = status;
                 }
             }
-            else if (historySource.length > 0) {
-                // Standard Sensor Logic
-                const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
-                let initialState = sortedHistory[0];
-                for (const h of sortedHistory) {
-                    const t = new Date(h.last_changed).getTime();
-                    if (t > startTime.getTime())
-                        break;
-                    initialState = h;
-                }
-                if (initialState) {
-                    const val = GraphDataTransformer.normalizeSensorValue(initialState, key);
-                    if (val !== undefined) {
+            // Finish last segment
+            if (currentSegment.length >= 2) {
+                const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+                segments.push({
+                    path: pathStr,
+                    color: this._getVpdStatusColor(currentStatus)
+                });
+            }
+            return segments;
+        }
+        _computeGraphSeries(width, height, startTime, durationMillis, now) {
+            const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
+            const seriesList = [];
+            metricKeys.forEach((key) => {
+                const config = this.metricConfig[key] || {
+                    color: this.isCombined ? METRIC_CONFIG[key]?.color || '#ffffff' : this.color,
+                    title: this.isCombined ? METRIC_CONFIG[key]?.title || key : this.title,
+                    unit: this.isCombined ? METRIC_CONFIG[key]?.unit || '' : this.unit,
+                    icon: this.isCombined ? METRIC_CONFIG[key]?.icon || '' : this.icon,
+                };
+                const historySource = this.sensorHistory[key] || [];
+                const dataPoints = [];
+                if (key === 'optimal' && historySource.length > 0) {
+                    // Optimal logic (Step Graph for Binary Sensor)
+                    const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+                    let initialState = sortedHistory[0];
+                    for (const h of sortedHistory) {
+                        const t = new Date(h.last_changed).getTime();
+                        if (t > startTime.getTime())
+                            break;
+                        initialState = h;
+                    }
+                    if (initialState) {
+                        const val = initialState.state === 'on' ? 1 : 0;
                         dataPoints.push({ time: startTime.getTime(), value: val });
                     }
-                }
-                sortedHistory.forEach((h) => {
-                    const t = new Date(h.last_changed).getTime();
-                    if (t <= startTime.getTime())
-                        return;
-                    const val = GraphDataTransformer.normalizeSensorValue(h, key);
-                    if (val !== undefined) {
-                        dataPoints.push({ time: t, value: val });
-                    }
-                });
-                // Synthesize live point
-                const livePoint = GraphDataTransformer.synthesizeLiveDataPoint(key, this.device?.overview_entity_id ? { attributes: this.device } : null, now, dataPoints[dataPoints.length - 1]);
-                if (livePoint) {
-                    dataPoints.push(livePoint);
-                }
-                else if (dataPoints.length > 0) {
-                    const last = dataPoints[dataPoints.length - 1];
-                    dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
-                }
-            }
-            if (dataPoints.length > 0) {
-                let min = Math.min(...dataPoints.map((d) => d.value));
-                let max = Math.max(...dataPoints.map((d) => d.value));
-                const sum = dataPoints.reduce((acc, curr) => acc + curr.value, 0);
-                const avg = sum / dataPoints.length;
-                // Enforce specific ranges
-                if (key === 'exhaust' || key === 'humidifier' || key === 'circulation_fan') {
-                    min = 0;
-                    max = 10;
-                }
-                else if (key === 'dehumidifier') {
-                    min = 0;
-                    max = 1;
-                }
-                else if (config.type === 'step') {
-                    min = 0;
-                    max = 1;
-                } // Step graphs (optimal, irrigation, drain, light) are binary
-                // Add padding for single graphs only
-                if (!this.isCombined && max === min && config.type !== 'step') {
-                    max += 1;
-                    min -= 1;
-                }
-                const paddedRange = max - min || 1;
-                const pathStr = ChartUtils.generatePathFromValues(dataPoints, width, height, {
-                    min,
-                    max, // Use padded max/min for single graphs path generation to respect padding? 
-                    // Wait, 'min' and 'max' variables here are already adjusted for padding/ranges above (lines 281-296).
-                    // So we pass them as the forced scale.
-                    startTime: startTime.getTime(),
-                    endTime: startTime.getTime() + durationMillis,
-                    type: config.type === 'step' ? 'step' : 'line'
-                });
-                // Generate VPD segments for multi-colored rendering
-                let vpdSegments;
-                let seriesColor = config.color || '#fff';
-                if (key === 'vpd') {
-                    const thresholds = this._getVpdThresholds();
-                    const vpdPoints = dataPoints.map((p) => {
-                        const x = ((p.time - startTime.getTime()) / durationMillis) * width;
-                        const y = height - ((p.value - min) / paddedRange) * height;
-                        return { x, y, value: p.value };
+                    sortedHistory.forEach((h) => {
+                        const t = new Date(h.last_changed).getTime();
+                        if (t <= startTime.getTime())
+                            return;
+                        const val = h.state === 'on' ? 1 : 0;
+                        const reasons = h.attributes?.reasons;
+                        dataPoints.push({ time: t, value: val, meta: reasons ? { reasons } : undefined });
                     });
-                    vpdSegments = this._generateVpdSegments(vpdPoints, thresholds);
-                    // Use current VPD status color for header
+                    // Extend to NOW
                     if (dataPoints.length > 0) {
-                        const currentValue = dataPoints[dataPoints.length - 1].value;
-                        const currentStatus = this._getVpdStatusForValue(currentValue, thresholds);
-                        seriesColor = this._getVpdStatusColor(currentStatus);
+                        const last = dataPoints[dataPoints.length - 1];
+                        dataPoints.push({ time: now.getTime(), value: last.value });
                     }
                 }
-                seriesList.push({
-                    id: key,
-                    title: config.title || key,
-                    color: seriesColor,
-                    unit: config.unit || '',
-                    icon: config.icon || '',
-                    points: dataPoints,
-                    min,
-                    max,
-                    avg,
-                    path: pathStr,
-                    fillType: this.isCombined ? 'flat' : 'gradient',
-                    vpdSegments,
-                });
-            }
-        });
-        return seriesList;
-    }
-    render() {
-        if (!this.device)
-            return x ``;
-        // Dimensions (internal SVG coords)
-        const width = 800;
-        const height = 200;
-        const durationMillis = this._getDurationMillis(this.range);
-        const now = new Date(); // Only for display math if needed, but series are cached
-        const startTime = new Date(now.getTime() - durationMillis);
-        // Use cached render series
-        const series = this._renderSeries;
-        if (series.length === 0) {
-            return x `
+                else if (historySource.length > 0) {
+                    // Standard Sensor Logic
+                    const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+                    let initialState = sortedHistory[0];
+                    for (const h of sortedHistory) {
+                        const t = new Date(h.last_changed).getTime();
+                        if (t > startTime.getTime())
+                            break;
+                        initialState = h;
+                    }
+                    if (initialState) {
+                        const val = GraphDataTransformer.normalizeSensorValue(initialState, key);
+                        if (val !== undefined) {
+                            dataPoints.push({ time: startTime.getTime(), value: val });
+                        }
+                    }
+                    sortedHistory.forEach((h) => {
+                        const t = new Date(h.last_changed).getTime();
+                        if (t <= startTime.getTime())
+                            return;
+                        const val = GraphDataTransformer.normalizeSensorValue(h, key);
+                        if (val !== undefined) {
+                            dataPoints.push({ time: t, value: val });
+                        }
+                    });
+                    // Synthesize live point
+                    const livePoint = GraphDataTransformer.synthesizeLiveDataPoint(key, this.device?.overview_entity_id ? { attributes: this.device } : null, now, dataPoints[dataPoints.length - 1]);
+                    if (livePoint) {
+                        dataPoints.push(livePoint);
+                    }
+                    else if (dataPoints.length > 0) {
+                        const last = dataPoints[dataPoints.length - 1];
+                        dataPoints.push({ time: now.getTime(), value: last.value, meta: last.meta });
+                    }
+                }
+                if (dataPoints.length > 0) {
+                    let min = Math.min(...dataPoints.map((d) => d.value));
+                    let max = Math.max(...dataPoints.map((d) => d.value));
+                    const sum = dataPoints.reduce((acc, curr) => acc + curr.value, 0);
+                    const avg = sum / dataPoints.length;
+                    // Enforce specific ranges
+                    if (key === 'exhaust' || key === 'humidifier' || key === 'circulation_fan') {
+                        min = 0;
+                        max = 10;
+                    }
+                    else if (key === 'dehumidifier') {
+                        min = 0;
+                        max = 1;
+                    }
+                    else if (config.type === 'step') {
+                        min = 0;
+                        max = 1;
+                    } // Step graphs (optimal, irrigation, drain, light) are binary
+                    // Add padding for single graphs only
+                    if (!this.isCombined && max === min && config.type !== 'step') {
+                        max += 1;
+                        min -= 1;
+                    }
+                    const paddedRange = max - min || 1;
+                    const pathStr = ChartUtils.generatePathFromValues(dataPoints, width, height, {
+                        min,
+                        max, // Use padded max/min for single graphs path generation to respect padding? 
+                        // Wait, 'min' and 'max' variables here are already adjusted for padding/ranges above (lines 281-296).
+                        // So we pass them as the forced scale.
+                        startTime: startTime.getTime(),
+                        endTime: startTime.getTime() + durationMillis,
+                        type: config.type === 'step' ? 'step' : 'line'
+                    });
+                    // Generate VPD segments for multi-colored rendering
+                    let vpdSegments;
+                    let seriesColor = config.color || '#fff';
+                    if (key === 'vpd') {
+                        const thresholds = this._getVpdThresholds();
+                        const vpdPoints = dataPoints.map((p) => {
+                            const x = ((p.time - startTime.getTime()) / durationMillis) * width;
+                            const y = height - ((p.value - min) / paddedRange) * height;
+                            return { x, y, value: p.value };
+                        });
+                        vpdSegments = this._generateVpdSegments(vpdPoints, thresholds);
+                        // Use current VPD status color for header
+                        if (dataPoints.length > 0) {
+                            const currentValue = dataPoints[dataPoints.length - 1].value;
+                            const currentStatus = this._getVpdStatusForValue(currentValue, thresholds);
+                            seriesColor = this._getVpdStatusColor(currentStatus);
+                        }
+                    }
+                    seriesList.push({
+                        id: key,
+                        title: config.title || key,
+                        color: seriesColor,
+                        unit: config.unit || '',
+                        icon: config.icon || '',
+                        points: dataPoints,
+                        min,
+                        max,
+                        avg,
+                        path: pathStr,
+                        fillType: this.isCombined ? 'flat' : 'gradient',
+                        vpdSegments,
+                    });
+                }
+            });
+            return seriesList;
+        }
+        render() {
+            if (!this.device)
+                return x ``;
+            // Dimensions (internal SVG coords)
+            const width = 800;
+            const height = 200;
+            const durationMillis = this._getDurationMillis(this.range);
+            const now = new Date(); // Only for display math if needed, but series are cached
+            const startTime = new Date(now.getTime() - durationMillis);
+            // Use cached render series
+            const series = this._renderSeries;
+            if (series.length === 0) {
+                return x `
         <div class="gs-env-graph-card">
           <div class="gs-env-graph-header">
             <div style="display:flex; align-items:center; gap:8px;">
@@ -7146,25 +7295,25 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
           </div>
         </div>
       `;
-        }
-        return x `
+            }
+            return x `
       <div class="gs-env-graph-card">
         ${this.isCombined
-            ? this._renderCombinedHeader(series)
-            : this._renderSingleHeader(series[0])}
+                ? this._renderCombinedHeader(series)
+                : this._renderSingleHeader(series[0])}
 
         <div
           class="gs-env-chart-container"
           @mousemove=${(e) => this._handleGraphHover(e, series, startTime, durationMillis, width)}
           @mouseleave=${() => {
-            this._activeTooltip = null;
-            this._hoverTime = null;
-        }}
+                this._activeTooltip = null;
+                this._hoverTime = null;
+            }}
         >
           ${this._renderTooltip()}
           ${!this.isCombined
-            ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit)
-            : ''}
+                ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit)
+                : ''}
           ${this._renderXAxisHTML(this.range)}
 
           <svg
@@ -7174,62 +7323,62 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
           >
             ${this._renderGrid(width, height)}
             ${series.map((s) => {
-            // VPD with multi-colored segments
-            if (s.vpdSegments && s.vpdSegments.length > 0) {
-                return b `
+                // VPD with multi-colored segments
+                if (s.vpdSegments && s.vpdSegments.length > 0) {
+                    return b `
               ${s.vpdSegments.map(seg => b `
                 <path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
               `)}
             `;
-            }
-            else if (s.fillType === 'gradient') {
-                return b `
+                }
+                else if (s.fillType === 'gradient') {
+                    return b `
                                     <defs>
                                         ${this._renderGradient(s.id, s.color)}
                                     </defs>
                                     <path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />
                                     <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2.5" />
                                 `;
-            }
-            else {
-                return b `
+                }
+                else {
+                    return b `
                                      <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" />
                                      <!-- Optional: light fill for combined -->
                                      <path d="${s.path} V ${height} H ${s.points.length > 0 ? ((s.points[0].time - startTime.getTime()) / durationMillis) * width : 0} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />
                                 `;
-            }
-        })}
+                }
+            })}
           </svg>
         </div>
       </div>
     `;
-    }
-    _renderSingleHeader(series) {
-        let valStr = '-';
-        if (series.points.length > 0) {
-            const lastPoint = series.points[series.points.length - 1];
-            const val = lastPoint.value;
-            const defaults = SENSOR_CHART_DEFAULTS[series.id];
-            const isBinary = defaults?.binary === true ||
-                (series.unit === 'state' && defaults?.max === undefined) ||
-                series.id === 'optimal' ||
-                series.id === 'dehumidifier';
-            if (isBinary) {
-                if (series.id === 'optimal') {
-                    valStr = val === 1 ? 'Optimal' : lastPoint.meta?.reasons || 'Not Optimal';
+        }
+        _renderSingleHeader(series) {
+            let valStr = '-';
+            if (series.points.length > 0) {
+                const lastPoint = series.points[series.points.length - 1];
+                const val = lastPoint.value;
+                const defaults = SENSOR_CHART_DEFAULTS[series.id];
+                const isBinary = defaults?.binary === true ||
+                    (series.unit === 'state' && defaults?.max === undefined) ||
+                    series.id === 'optimal' ||
+                    series.id === 'dehumidifier';
+                if (isBinary) {
+                    if (series.id === 'optimal') {
+                        valStr = val === 1 ? 'Optimal' : lastPoint.meta?.reasons || 'Not Optimal';
+                    }
+                    else {
+                        valStr = val === 1 ? 'ON' : 'OFF';
+                    }
+                }
+                else if ((series.id === 'exhaust' || series.id === 'humidifier') && lastPoint.meta?.state) {
+                    valStr = lastPoint.meta.state;
                 }
                 else {
-                    valStr = val === 1 ? 'ON' : 'OFF';
+                    valStr = `${val.toFixed(1)} ${series.unit}`;
                 }
             }
-            else if ((series.id === 'exhaust' || series.id === 'humidifier') && lastPoint.meta?.state) {
-                valStr = lastPoint.meta.state;
-            }
-            else {
-                valStr = `${val.toFixed(1)} ${series.unit}`;
-            }
-        }
-        return x `
+            return x `
       <div
         class="gs-env-graph-header"
         @click=${() => this.dispatchEvent(new CustomEvent('toggle-graph', { detail: series.id, bubbles: true, composed: true }))}
@@ -7249,24 +7398,24 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         </div>
       </div>
     `;
-    }
-    _renderCombinedHeader(seriesList) {
-        return x `
+        }
+        _renderCombinedHeader(seriesList) {
+            return x `
       <div class="gs-env-graph-header">
         <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
           ${this._canScrollLeft
-            ? x `
+                ? x `
                 <div
                   class="scroll-nav left"
                   @click=${(e) => {
-                e.stopPropagation();
-                this._scrollChips('left');
-            }}
+                    e.stopPropagation();
+                    this._scrollChips('left');
+                }}
                 >
                   <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
                 </div>
               `
-            : ''}
+                : ''}
 
           <div
             class="chips-scroll-container"
@@ -7276,20 +7425,20 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             ${seriesList.map((s) => x `
                 <div
                   class=${e({
-            'gs-legend-item': true,
-            'mask-left': this._canScrollLeft,
-            'mask-right': this._canScrollRight,
-        })}
+                'gs-legend-item': true,
+                'mask-left': this._canScrollLeft,
+                'mask-right': this._canScrollRight,
+            })}
                   @click=${(e) => {
-            e.stopPropagation();
-            this.dispatchEvent(new CustomEvent('unlink-graph', { detail: s.id, bubbles: true, composed: true }));
-        }}
+                e.stopPropagation();
+                this.dispatchEvent(new CustomEvent('unlink-graph', { detail: s.id, bubbles: true, composed: true }));
+            }}
                 >
                   <span
                     style="display:inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${s.color}; margin-right: 6px; flex-shrink: 0;"
                   ></span>
                   ${s.icon
-            ? x `
+                ? x `
                         <div
                           style="width: 16px; height: 16px; color: ${s.color}; margin-right: 4px; display: inline-flex;"
                         >
@@ -7301,48 +7450,48 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                           </svg>
                         </div>
                       `
-            : ''}
+                : ''}
                   <span style="color: ${s.color}; font-weight: 500;">${s.title}</span>
                 </div>
               `)}
           </div>
 
           ${this._canScrollRight
-            ? x `
+                ? x `
                 <div
                   class="scroll-nav right"
                   @click=${(e) => {
-                e.stopPropagation();
-                this._scrollChips('right');
-            }}
+                    e.stopPropagation();
+                    this._scrollChips('right');
+                }}
                 >
                   <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
                 </div>
               `
-            : ''}
+                : ''}
         </div>
 
         </div>
 
         <div style="display:flex; gap: 8px; margin-left: 8px; flex-shrink: 0;">
           ${this.isCombined
-            ? x `
+                ? x `
                 <ha-icon-button
                   .path=${mdiLink}
                   @click=${() => this.dispatchEvent(new CustomEvent('unlink-graphs', { detail: -1, bubbles: true, composed: true }))}
                   title="Unlink Graphs"
                 ></ha-icon-button>
               `
-            : ''}
+                : ''}
         </div>
       </div>
     `;
-    }
-    _renderTooltip() {
-        if (!this._activeTooltip)
-            return x ``;
-        const { x: x$1, time, items } = this._activeTooltip;
-        return x `
+        }
+        _renderTooltip() {
+            if (!this._activeTooltip)
+                return x ``;
+            const { x: x$1, time, items } = this._activeTooltip;
+            return x `
       <div class="gs-tooltip" style=${o({ left: `${x$1}px`, top: '0' })}>
         <div
           style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 2px;"
@@ -7362,186 +7511,247 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
       <div
         class="gs-cursor-line"
         style=${o({
-            left: `${x$1}px`,
-            height: '100%',
-            top: '0',
-            position: 'absolute',
-            borderLeft: '1px dashed rgba(255,255,255,0.3)',
-            pointerEvents: 'none',
-        })}
+                left: `${x$1}px`,
+                height: '100%',
+                top: '0',
+                position: 'absolute',
+                borderLeft: '1px dashed rgba(255,255,255,0.3)',
+                pointerEvents: 'none',
+            })}
       ></div>
     `;
-    }
-    _renderGrid(width, height) {
-        return b `
+        }
+        _renderGrid(width, height) {
+            return b `
             <!-- Simple Grid -->
             <!-- Simple Grid -->
             <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="var(--divider-color, #333)" stroke-width="1" />
             <line x1="0" y1="0" x2="0" y2="${height}" stroke="var(--divider-color, #333)" stroke-width="1" />
             <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="var(--divider-color, #333)" stroke-width="0.5" stroke-dasharray="4 4" />
         `;
-    }
-    _renderGradient(key, color) {
-        return b `
+        }
+        _renderGradient(key, color) {
+            return b `
             <linearGradient id="grad-${key}" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stop-color="${color}" stop-opacity="0.4" />
                 <stop offset="100%" stop-color="${color}" stop-opacity="0" />
             </linearGradient>
         `;
-    }
-    _renderXAxisHTML(range) {
-        // Render X-Axis labels as HTML overlay
-        // Container padding: 20px 40px 30px 50px (top right bottom left)
-        // Labels usually at bottom. Bottom padding 30px is for these labels.
-        // We want them effectively at bottom: 10px?
-        const labelStyle = 'position: absolute; bottom: 8px; font-size: 10px; color: var(--secondary-text-color, #666); line-height: 1; pointer-events: none;';
-        return x `
+        }
+        _renderXAxisHTML(range) {
+            // Render X-Axis labels as HTML overlay
+            // Container padding: 20px 40px 30px 50px (top right bottom left)
+            // Labels usually at bottom. Bottom padding 30px is for these labels.
+            // We want them effectively at bottom: 10px?
+            const labelStyle = 'position: absolute; bottom: 8px; font-size: 10px; color: var(--secondary-text-color, #666); line-height: 1; pointer-events: none;';
+            return x `
       <div style="${labelStyle} left: 50px;">-${range}</div>
       <div style="${labelStyle} right: 40px;">Now</div>
     `;
-    }
-    _renderYAxisHTML(min, max, unit) {
-        // Render Y-Axis labels as HTML overlay to avoid SVG scaling distortion
-        // Container has padding: 20px 40px 30px 50px
-        // Top label at top of graph area (20px)
-        // Bottom label at bottom of graph area (20px + 100% height = approx bottom)
-        // Graph area height is 180px, defined by container height (which is content-box by default?)
-        // Let's assume standard box model. Height 180px is strictly the graph area?
-        // No, CSS says height: 180px and padding.
-        // If box-sizing is border-box (common in frameworks), height 180 includes padding. Graph area = 180 - 20 - 30 = 130px.
-        // If box-sizing is content-box (default), height 180 is graph area.
-        // In HA/Lit, usually we rely on user agent defaults unless reset.
-        // Let's assume content-box for now as that's standard CSS.
-        // Even if it's border-box, we can use percentages.
-        const labelStyle = 'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: var(--secondary-text-color, #aaa); line-height: 1; pointer-events: none;';
-        if (unit === 'state' || (max === 1 && min === 0)) {
-            return x `
+        }
+        _renderYAxisHTML(min, max, unit) {
+            // Render Y-Axis labels as HTML overlay to avoid SVG scaling distortion
+            // Container has padding: 20px 40px 30px 50px
+            // Top label at top of graph area (20px)
+            // Bottom label at bottom of graph area (20px + 100% height = approx bottom)
+            // Graph area height is 180px, defined by container height (which is content-box by default?)
+            // Let's assume standard box model. Height 180px is strictly the graph area?
+            // No, CSS says height: 180px and padding.
+            // If box-sizing is border-box (common in frameworks), height 180 includes padding. Graph area = 180 - 20 - 30 = 130px.
+            // If box-sizing is content-box (default), height 180 is graph area.
+            // In HA/Lit, usually we rely on user agent defaults unless reset.
+            // Let's assume content-box for now as that's standard CSS.
+            // Even if it's border-box, we can use percentages.
+            const labelStyle = 'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: var(--secondary-text-color, #aaa); line-height: 1; pointer-events: none;';
+            if (unit === 'state' || (max === 1 && min === 0)) {
+                return x `
         <div style="${labelStyle} top: 20px;">ON</div>
         <div style="${labelStyle} bottom: 30px;">OFF</div>
       `;
-        }
-        return x `
+            }
+            return x `
       <div style="${labelStyle} top: 20px;">${max}${unit}</div>
       <div style="${labelStyle} top: 50%; transform: translateY(-5px);">
         ${((max + min) / 2).toFixed(1)}
       </div>
       <div style="${labelStyle} bottom: 30px;">${min}${unit}</div>
     `;
-    }
-    _getDurationMillis(range) {
-        if (range === '1h')
-            return 60 * 60 * 1000;
-        if (range === '6h')
-            return 6 * 60 * 60 * 1000;
-        if (range === '7d')
-            return 7 * 24 * 60 * 60 * 1000;
-        return 24 * 60 * 60 * 1000;
-    }
-    _toggleEnvGraph() {
-        this.dispatchEvent(new CustomEvent('toggle-graph', { detail: this.metricKey, bubbles: true, composed: true }));
-    }
-    _unlinkGraphs(groupIndex) {
-        this.dispatchEvent(new CustomEvent('unlink-graphs', { detail: groupIndex, bubbles: true, composed: true }));
-    }
-    willUpdate(changedProperties) {
-        if (changedProperties.has('device') ||
-            changedProperties.has('sensorHistory') ||
-            changedProperties.has('range') ||
-            changedProperties.has('metricKey') ||
-            changedProperties.has('metrics') ||
-            changedProperties.has('isCombined') ||
-            changedProperties.has('metricConfig') ||
-            changedProperties.has('type') ||
-            changedProperties.has('color') ||
-            changedProperties.has('unit') ||
-            changedProperties.has('title') ||
-            changedProperties.has('icon')) {
-            const durationMillis = this._getDurationMillis(this.range);
-            const now = new Date();
-            const startTime = new Date(now.getTime() - durationMillis);
-            const width = 800;
-            const height = 200;
-            this._renderSeries = this._computeGraphSeries(width, height, startTime, durationMillis, now);
         }
-    }
-    _handleGraphHover(e, seriesList, startTime, durationMillis, width) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const contentWidth = rect.width - 90; // 50px left + 40px right padding
-        const relX = Math.max(0, Math.min(1, (e.clientX - rect.left - 50) / contentWidth));
-        const hoverTime = startTime.getTime() + relX * durationMillis;
-        // Find closest points and format values
-        const items = seriesList.map((s) => {
-            // Binary search (nearest neighbor)
-            const searchTime = hoverTime;
-            let closest = s.points[0];
-            let minDiff = Number.MAX_VALUE;
-            let lo = 0;
-            let hi = s.points.length - 1;
-            if (s.points.length > 0) {
-                while (lo < hi) {
-                    const mid = Math.floor((lo + hi) / 2);
-                    if (s.points[mid].time < searchTime) {
-                        lo = mid + 1;
+        _getDurationMillis(range) {
+            if (range === '1h')
+                return 60 * 60 * 1000;
+            if (range === '6h')
+                return 6 * 60 * 60 * 1000;
+            if (range === '7d')
+                return 7 * 24 * 60 * 60 * 1000;
+            return 24 * 60 * 60 * 1000;
+        }
+        _toggleEnvGraph() {
+            this.dispatchEvent(new CustomEvent('toggle-graph', { detail: this.metricKey, bubbles: true, composed: true }));
+        }
+        _unlinkGraphs(groupIndex) {
+            this.dispatchEvent(new CustomEvent('unlink-graphs', { detail: groupIndex, bubbles: true, composed: true }));
+        }
+        willUpdate(changedProperties) {
+            if (changedProperties.has('device') ||
+                changedProperties.has('sensorHistory') ||
+                changedProperties.has('range') ||
+                changedProperties.has('metricKey') ||
+                changedProperties.has('metrics') ||
+                changedProperties.has('isCombined') ||
+                changedProperties.has('metricConfig') ||
+                changedProperties.has('type') ||
+                changedProperties.has('color') ||
+                changedProperties.has('unit') ||
+                changedProperties.has('title') ||
+                changedProperties.has('icon')) {
+                const durationMillis = this._getDurationMillis(this.range);
+                const now = new Date();
+                const startTime = new Date(now.getTime() - durationMillis);
+                const width = 800;
+                const height = 200;
+                this._renderSeries = this._computeGraphSeries(width, height, startTime, durationMillis, now);
+            }
+        }
+        _handleGraphHover(e, seriesList, startTime, durationMillis, width) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const contentWidth = rect.width - 90; // 50px left + 40px right padding
+            const relX = Math.max(0, Math.min(1, (e.clientX - rect.left - 50) / contentWidth));
+            const hoverTime = startTime.getTime() + relX * durationMillis;
+            // Find closest points and format values
+            const items = seriesList.map((s) => {
+                // Binary search (nearest neighbor)
+                const searchTime = hoverTime;
+                let closest = s.points[0];
+                let minDiff = Number.MAX_VALUE;
+                let lo = 0;
+                let hi = s.points.length - 1;
+                if (s.points.length > 0) {
+                    while (lo < hi) {
+                        const mid = Math.floor((lo + hi) / 2);
+                        if (s.points[mid].time < searchTime) {
+                            lo = mid + 1;
+                        }
+                        else {
+                            hi = mid;
+                        }
+                    }
+                    const candidates = [lo, lo - 1, lo + 1].filter((i) => i >= 0 && i < s.points.length);
+                    candidates.forEach((i) => {
+                        const p = s.points[i];
+                        const diff = Math.abs(p.time - searchTime);
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            closest = p;
+                        }
+                    });
+                }
+                // Format Value
+                const defaults = SENSOR_CHART_DEFAULTS[s.id];
+                const isBinary = defaults?.binary === true ||
+                    (s.unit === 'state' && defaults?.max === undefined) ||
+                    s.id === 'optimal' ||
+                    s.id === 'dehumidifier';
+                let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
+                if (isBinary) {
+                    if (s.id === 'optimal') {
+                        if (closest.value === 1)
+                            valStr = 'Optimal';
+                        else
+                            valStr = closest.meta?.reasons || 'Not Optimal';
+                    }
+                    else if (s.id === 'dehumidifier') {
+                        valStr = closest.value === 1 ? 'ON' : 'OFF';
                     }
                     else {
-                        hi = mid;
+                        valStr = closest.value === 1 ? 'ON' : 'OFF';
                     }
                 }
-                const candidates = [lo, lo - 1, lo + 1].filter((i) => i >= 0 && i < s.points.length);
-                candidates.forEach((i) => {
-                    const p = s.points[i];
-                    const diff = Math.abs(p.time - searchTime);
-                    if (diff < minDiff) {
-                        minDiff = diff;
-                        closest = p;
-                    }
-                });
-            }
-            // Format Value
-            const defaults = SENSOR_CHART_DEFAULTS[s.id];
-            const isBinary = defaults?.binary === true ||
-                (s.unit === 'state' && defaults?.max === undefined) ||
-                s.id === 'optimal' ||
-                s.id === 'dehumidifier';
-            let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
-            if (isBinary) {
-                if (s.id === 'optimal') {
-                    if (closest.value === 1)
-                        valStr = 'Optimal';
-                    else
-                        valStr = closest.meta?.reasons || 'Not Optimal';
+                else if ((s.id === 'exhaust' || s.id === 'humidifier') && closest.meta?.state) {
+                    valStr = closest.meta.state;
                 }
-                else if (s.id === 'dehumidifier') {
-                    valStr = closest.value === 1 ? 'ON' : 'OFF';
-                }
-                else {
-                    valStr = closest.value === 1 ? 'ON' : 'OFF';
-                }
-            }
-            else if ((s.id === 'exhaust' || s.id === 'humidifier') && closest.meta?.state) {
-                valStr = closest.meta.state;
-            }
-            return { title: s.title, value: valStr, color: s.color };
-        });
-        const locale = this.hass?.locale?.language || undefined;
-        const timeStr = new Date(hoverTime).toLocaleTimeString(locale, {
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-        this._activeTooltip = {
-            id: 'hover',
-            x: e.clientX - rect.left,
-            time: timeStr,
-            items,
-        };
-        this._hoverTime = hoverTime;
-    }
-    _formatTime(date) {
-        const locale = this.hass?.locale?.language || undefined;
-        return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-    }
-};
-GrowspaceEnvChart.styles = i$6 `
+                return { title: s.title, value: valStr, color: s.color };
+            });
+            const locale = this.hass?.locale?.language || undefined;
+            const timeStr = new Date(hoverTime).toLocaleTimeString(locale, {
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+            this._activeTooltip = {
+                id: 'hover',
+                x: e.clientX - rect.left,
+                time: timeStr,
+                items,
+            };
+            this._hoverTime = hoverTime;
+        }
+        _formatTime(date) {
+            const locale = this.hass?.locale?.language || undefined;
+            return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+        }
+    };
+    _GrowspaceEnvChart_hass_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart_device_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart_sensorHistory_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart_metricKey_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart_unit_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart_color_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart_title_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart_icon_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart_range_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart_type_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart_metrics_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart_isCombined_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart_metricConfig_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart__activeTooltip_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart__hoverTime_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart__canScrollLeft_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart__canScrollRight_accessor_storage = new WeakMap();
+    _GrowspaceEnvChart__renderSeries_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "GrowspaceEnvChart");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _device_decorators = [n$5({ attribute: false })];
+        _sensorHistory_decorators = [n$5({ attribute: false })];
+        _metricKey_decorators = [n$5({ type: String })];
+        _unit_decorators = [n$5({ type: String })];
+        _color_decorators = [n$5({ type: String })];
+        _title_decorators = [n$5({ type: String })];
+        _icon_decorators = [n$5({ type: String })];
+        _range_decorators = [n$5({ type: String })];
+        _type_decorators = [n$5({ type: String })];
+        _metrics_decorators = [n$5({ type: Array })];
+        _isCombined_decorators = [n$5({ type: Boolean })];
+        _metricConfig_decorators = [n$5({ type: Object })];
+        __activeTooltip_decorators = [r$2()];
+        __hoverTime_decorators = [r$2()];
+        __canScrollLeft_decorators = [r$2()];
+        __canScrollRight_decorators = [r$2()];
+        __renderSeries_decorators = [r$2()];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _device_decorators, { kind: "accessor", name: "device", static: false, private: false, access: { has: obj => "device" in obj, get: obj => obj.device, set: (obj, value) => { obj.device = value; } }, metadata: _metadata }, _device_initializers, _device_extraInitializers);
+        __esDecorate(_classThis, null, _sensorHistory_decorators, { kind: "accessor", name: "sensorHistory", static: false, private: false, access: { has: obj => "sensorHistory" in obj, get: obj => obj.sensorHistory, set: (obj, value) => { obj.sensorHistory = value; } }, metadata: _metadata }, _sensorHistory_initializers, _sensorHistory_extraInitializers);
+        __esDecorate(_classThis, null, _metricKey_decorators, { kind: "accessor", name: "metricKey", static: false, private: false, access: { has: obj => "metricKey" in obj, get: obj => obj.metricKey, set: (obj, value) => { obj.metricKey = value; } }, metadata: _metadata }, _metricKey_initializers, _metricKey_extraInitializers);
+        __esDecorate(_classThis, null, _unit_decorators, { kind: "accessor", name: "unit", static: false, private: false, access: { has: obj => "unit" in obj, get: obj => obj.unit, set: (obj, value) => { obj.unit = value; } }, metadata: _metadata }, _unit_initializers, _unit_extraInitializers);
+        __esDecorate(_classThis, null, _color_decorators, { kind: "accessor", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
+        __esDecorate(_classThis, null, _title_decorators, { kind: "accessor", name: "title", static: false, private: false, access: { has: obj => "title" in obj, get: obj => obj.title, set: (obj, value) => { obj.title = value; } }, metadata: _metadata }, _title_initializers, _title_extraInitializers);
+        __esDecorate(_classThis, null, _icon_decorators, { kind: "accessor", name: "icon", static: false, private: false, access: { has: obj => "icon" in obj, get: obj => obj.icon, set: (obj, value) => { obj.icon = value; } }, metadata: _metadata }, _icon_initializers, _icon_extraInitializers);
+        __esDecorate(_classThis, null, _range_decorators, { kind: "accessor", name: "range", static: false, private: false, access: { has: obj => "range" in obj, get: obj => obj.range, set: (obj, value) => { obj.range = value; } }, metadata: _metadata }, _range_initializers, _range_extraInitializers);
+        __esDecorate(_classThis, null, _type_decorators, { kind: "accessor", name: "type", static: false, private: false, access: { has: obj => "type" in obj, get: obj => obj.type, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, _type_initializers, _type_extraInitializers);
+        __esDecorate(_classThis, null, _metrics_decorators, { kind: "accessor", name: "metrics", static: false, private: false, access: { has: obj => "metrics" in obj, get: obj => obj.metrics, set: (obj, value) => { obj.metrics = value; } }, metadata: _metadata }, _metrics_initializers, _metrics_extraInitializers);
+        __esDecorate(_classThis, null, _isCombined_decorators, { kind: "accessor", name: "isCombined", static: false, private: false, access: { has: obj => "isCombined" in obj, get: obj => obj.isCombined, set: (obj, value) => { obj.isCombined = value; } }, metadata: _metadata }, _isCombined_initializers, _isCombined_extraInitializers);
+        __esDecorate(_classThis, null, _metricConfig_decorators, { kind: "accessor", name: "metricConfig", static: false, private: false, access: { has: obj => "metricConfig" in obj, get: obj => obj.metricConfig, set: (obj, value) => { obj.metricConfig = value; } }, metadata: _metadata }, _metricConfig_initializers, _metricConfig_extraInitializers);
+        __esDecorate(_classThis, null, __activeTooltip_decorators, { kind: "accessor", name: "_activeTooltip", static: false, private: false, access: { has: obj => "_activeTooltip" in obj, get: obj => obj._activeTooltip, set: (obj, value) => { obj._activeTooltip = value; } }, metadata: _metadata }, __activeTooltip_initializers, __activeTooltip_extraInitializers);
+        __esDecorate(_classThis, null, __hoverTime_decorators, { kind: "accessor", name: "_hoverTime", static: false, private: false, access: { has: obj => "_hoverTime" in obj, get: obj => obj._hoverTime, set: (obj, value) => { obj._hoverTime = value; } }, metadata: _metadata }, __hoverTime_initializers, __hoverTime_extraInitializers);
+        __esDecorate(_classThis, null, __canScrollLeft_decorators, { kind: "accessor", name: "_canScrollLeft", static: false, private: false, access: { has: obj => "_canScrollLeft" in obj, get: obj => obj._canScrollLeft, set: (obj, value) => { obj._canScrollLeft = value; } }, metadata: _metadata }, __canScrollLeft_initializers, __canScrollLeft_extraInitializers);
+        __esDecorate(_classThis, null, __canScrollRight_decorators, { kind: "accessor", name: "_canScrollRight", static: false, private: false, access: { has: obj => "_canScrollRight" in obj, get: obj => obj._canScrollRight, set: (obj, value) => { obj._canScrollRight = value; } }, metadata: _metadata }, __canScrollRight_initializers, __canScrollRight_extraInitializers);
+        __esDecorate(_classThis, null, __renderSeries_decorators, { kind: "accessor", name: "_renderSeries", static: false, private: false, access: { has: obj => "_renderSeries" in obj, get: obj => obj._renderSeries, set: (obj, value) => { obj._renderSeries = value; } }, metadata: _metadata }, __renderSeries_initializers, __renderSeries_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = i$6 `
     :host {
       display: block;
       position: relative;
@@ -7688,1034 +7898,11 @@ GrowspaceEnvChart.styles = i$6 `
       }
     }
   `;
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "hass", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "device", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "sensorHistory", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "metricKey", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "unit", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "color", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "title", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "icon", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", String)
-], GrowspaceEnvChart.prototype, "range", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", String)
-], GrowspaceEnvChart.prototype, "type", void 0);
-__decorate([
-    n$5({ type: Array }),
-    __metadata("design:type", Array)
-], GrowspaceEnvChart.prototype, "metrics", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "isCombined", void 0);
-__decorate([
-    n$5({ type: Object }),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "metricConfig", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "_activeTooltip", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "_hoverTime", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "_canScrollLeft", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceEnvChart.prototype, "_canScrollRight", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Array)
-], GrowspaceEnvChart.prototype, "_renderSeries", void 0);
-GrowspaceEnvChart = __decorate([
-    t$2('growspace-env-chart')
-], GrowspaceEnvChart);
-
-class PlantClickEvent extends CustomEvent {
-    constructor(plant) {
-        super(PlantClickEvent.TYPE, {
-            detail: { plant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-PlantClickEvent.TYPE = 'plant-click';
-class AddPlantClickEvent extends CustomEvent {
-    constructor(row, col) {
-        super(AddPlantClickEvent.TYPE, {
-            detail: { row, col },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-AddPlantClickEvent.TYPE = 'add-plant-click';
-class PlantDropEvent extends CustomEvent {
-    constructor(originalEvent, targetRow, targetCol, targetPlant, sourcePlant) {
-        super(PlantDropEvent.TYPE, {
-            detail: { originalEvent, targetRow, targetCol, targetPlant, sourcePlant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-PlantDropEvent.TYPE = 'plant-drop';
-class SelectionChangedEvent extends CustomEvent {
-    constructor(selectedPlants) {
-        super(SelectionChangedEvent.TYPE, {
-            detail: { selectedPlants },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-SelectionChangedEvent.TYPE = 'selection-changed';
-class UpdatePlantEvent extends CustomEvent {
-    constructor(updates) {
-        super(UpdatePlantEvent.TYPE, {
-            detail: updates,
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-UpdatePlantEvent.TYPE = 'update-plant';
-class DeletePlantEvent extends CustomEvent {
-    constructor(plantId) {
-        super(DeletePlantEvent.TYPE, {
-            detail: { plantId },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-DeletePlantEvent.TYPE = 'delete-plant';
-class HarvestPlantEvent extends CustomEvent {
-    constructor(plant) {
-        super(HarvestPlantEvent.TYPE, {
-            detail: { plant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-HarvestPlantEvent.TYPE = 'harvest-plant';
-class FinishDryingEvent extends CustomEvent {
-    constructor(plant) {
-        super(FinishDryingEvent.TYPE, {
-            detail: { plant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-FinishDryingEvent.TYPE = 'finish-drying';
-class TakeCloneEvent extends CustomEvent {
-    constructor(plant, numClones) {
-        super(TakeCloneEvent.TYPE, {
-            detail: { plant, numClones },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-TakeCloneEvent.TYPE = 'take-clone';
-class MoveCloneEvent extends CustomEvent {
-    constructor(plant, targetGrowspace) {
-        super(MoveCloneEvent.TYPE, {
-            detail: { plant, targetGrowspace },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-MoveCloneEvent.TYPE = 'move-clone';
-class LibraryExportReadyEvent extends CustomEvent {
-    constructor(url) {
-        super(LibraryExportReadyEvent.TYPE, {
-            detail: { url },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-LibraryExportReadyEvent.TYPE = 'library-export-ready';
-
-class GrowspaceStore {
-    constructor(host) {
-        // State
-        this.state = {
-            selectedDevice: null,
-            strainLibrary: [],
-            activeDialog: { type: 'NONE' },
-            isEditMode: false,
-            selectedPlants: new Set(),
-            optimisticDeletedPlantIds: new Set(),
-            focusedPlantIndex: -1,
-            menuOpen: false,
-            notification: null,
-            isCompactView: false,
-            defaultApplied: false,
-            isLoading: true,
-            devices: [],
-            viewMode: 'standard',
-        };
-        this.wsDataCache = {};
-        this._isFetchingWS = false;
-        this.handleTakeClone = (motherPlant, numClones) => {
-            const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
-            this.dataService
-                .takeClone({
-                mother_plant_id: plantId,
-                num_clones: numClones,
-            })
-                .then(() => {
-                console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
-            })
-                .catch((error) => {
-                console.error(`Failed to take clone: ${error.message}`);
-            });
-        };
-        this.host = host;
-        host.addController(this);
-        // Wrap state in a proxy to auto-trigger updates
-        this.state = new Proxy(this.state, {
-            set: (target, prop, value) => {
-                const oldVal = target[prop];
-                if (oldVal !== value) {
-                    // Use type assertion to avoid 'any' is not assignable to 'never' error
-                    target[prop] = value;
-                    this.host.requestUpdate();
-                }
-                return true;
-            }
-        });
-        console.log('GrowspaceStore initialized with Reactive Proxy');
-        this.dataService = new DataService();
-    }
-    hostConnected() {
-        // Lifecycle hook
-        // We can't subscribe here because hass might not be set yet.
-        // Logic handled in updateHass/subscribe
-    }
-    hostDisconnected() {
-        if (this._unsubEvents) {
-            this._unsubEvents();
-            this._unsubEvents = undefined;
-        }
-    }
-    updateHass(hass) {
-        this.hass = hass;
-        this.dataService.updateHass(hass);
-        this._ensureEventSubscription();
-        // If cache empty, fetch initial
-        if (Object.keys(this.wsDataCache).length === 0 && !this._isFetchingWS) {
-            this._refreshGrowspaceData();
-        }
-        else {
-            // Just re-calculate derived state (sync) because entities might have changed
-            this._updateDevicesState();
-        }
-        if (!this.state.selectedDevice && this.state.devices.length > 0) {
-            this.state.selectedDevice = this.state.devices[0].device_id;
-            // Ensure the UI knows we are ready to display
-            if (this.state.isLoading) {
-                this.state.isLoading = false;
-            }
-        }
-        this.pruneOptimisticDeletions();
-    }
-    async _ensureEventSubscription() {
-        if (this._unsubEvents || !this.hass)
-            return;
-        try {
-            this._unsubEvents = await this.hass.connection.subscribeEvents(() => this._refreshGrowspaceData(), // specific logic to handle event payload? Msg is empty usually.
-            'growspace_manager_updated');
-        }
-        catch (err) {
-            console.error('Failed to subscribe to growspace events', err);
-        }
-    }
-    async refreshData() {
-        await this._refreshGrowspaceData();
-    }
-    async _refreshGrowspaceData() {
-        if (!this.hass || this._isFetchingWS)
-            return;
-        this._isFetchingWS = true;
-        // Show loading spinner if we have no devices yet
-        if (this.state.devices.length === 0) {
-            this.state.isLoading = true;
-        }
-        try {
-            // fetchGrowspaceData without ID returns Record<string, GrowspaceAPIResponse>
-            const data = await this.dataService.fetchGrowspaceData();
-            // We know it's a collection because we didn't pass an ID
-            this.wsDataCache = data || {};
-            this._updateDevicesState();
-        }
-        catch (e) {
-            console.error('Failed to fetch growspace data', e);
-        }
-        finally {
-            this._isFetchingWS = false;
-            // Only clear loading if we didn't find any devices OR if we already have a selection
-            // If we found devices but no selection, wait for auto-select logic in updateHass/initialize
-            if (this.state.devices.length === 0 || this.state.selectedDevice) {
-                this.state.isLoading = false;
-            }
-        }
-    }
-    _updateDevicesState() {
-        const devices = this.dataService.getGrowspaceDevices(this.wsDataCache);
-        this.state.devices = devices;
-        // Auto-select if needed (handles initial load race condition where updateHass hasn't run yet)
-        if (!this.state.selectedDevice && devices.length > 0) {
-            this.state.selectedDevice = devices[0].device_id;
-        }
-    }
-    requestUpdate() {
-        this.host.requestUpdate();
-    }
-    // --- Actions / Logic ---
-    // State Setters
-    setIsCompactView(value) {
-        this.state.isCompactView = value;
-        // Sync viewMode if toggled via old method
-        if (value) {
-            this.state.viewMode = 'compact';
-        }
-        else if (this.state.viewMode === 'compact') {
-            this.state.viewMode = 'standard';
-        }
-    }
-    setViewMode(mode) {
-        this.state.viewMode = mode;
-        // Sync legacy flag
-        this.state.isCompactView = mode === 'compact';
-    }
-    toggleHeaderExpansion() {
-        if (this.state.viewMode === 'header') {
-            this.setViewMode('standard');
-        }
-        else {
-            this.setViewMode('header');
-        }
-    }
-    setDefaultApplied(value) {
-        this.state.defaultApplied = value;
-    }
-    showToast(message, type = 'info') {
-        this.state.notification = { message, type };
-        setTimeout(() => {
-            this.state.notification = null;
-        }, 4000);
-    }
-    initializeSelectedDevice(config) {
-        // Handle View Mode Initialization
-        if (config?.initial_view_mode) {
-            this.state.viewMode = config.initial_view_mode;
-        }
-        else if (config?.compact) {
-            // Backward compatibility
-            this.state.viewMode = 'compact';
-        }
-        // Sync isCompactView for legacy support/internal use if needed
-        this.state.isCompactView = this.state.viewMode === 'compact';
-        const devices = this.state.devices;
-        if (!devices.length || this.state.selectedDevice)
-            return;
-        // Try to apply default from config
-        if (config?.default_growspace) {
-            const defaultDevice = devices.find((d) => d.device_id === config.default_growspace || d.name === config.default_growspace);
-            if (defaultDevice) {
-                this.state.selectedDevice = defaultDevice.device_id;
-                this.state.defaultApplied = true;
-                return;
-            }
-        }
-        // Fallback to first device
-        this.state.selectedDevice = devices[0].device_id;
-    }
-    // ...
-    fetchStrainLibrary(force = false) {
-        return this._fetchStrainLibraryImpl(force);
-    }
-    async _fetchStrainLibraryImpl(force) {
-        if (!this.hass)
-            return;
-        const CACHE_KEY = 'growspace_strain_library_v2';
-        const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
-        // 1. Try to load from cache
-        const cachedRaw = localStorage.getItem(CACHE_KEY);
-        let usedCache = false;
-        if (!force && cachedRaw) {
-            try {
-                const cache = JSON.parse(cachedRaw);
-                const age = Date.now() - (cache.timestamp || 0);
-                if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
-                    this.state.strainLibrary = cache.data;
-                    usedCache = true;
-                }
-            }
-            catch (e) {
-                console.warn('Failed to parse cached strain library', e);
-                localStorage.removeItem(CACHE_KEY); // Clear bad cache
-            }
-        }
-        // 2. Fetch from backend if no cache or invalid
-        if (!usedCache) {
-            try {
-                const currentStrains = await this.dataService.fetchStrainLibrary();
-                if (Array.isArray(currentStrains)) {
-                    this.state.strainLibrary = currentStrains;
-                    // Update cache
-                    const cacheData = {
-                        version: 2,
-                        timestamp: Date.now(),
-                        data: currentStrains,
-                    };
-                    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-                }
-            }
-            catch (e) {
-                console.error('Failed to fetch strain library:', e);
-            }
-        }
-    }
-    handleKeyboardNavigation(key) {
-        if (this.state.isEditMode && key === 'Escape') {
-            this.exitEditMode();
-            return;
-        }
-        if (!this.state.selectedDevice)
-            return;
-        const devices = this.state.devices;
-        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
-        if (!device)
-            return;
-        const plants = device.plants.filter((p) => !this.state.optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
-        if (plants.length === 0)
-            return;
-        if (key === 'ArrowRight') {
-            this.setFocusedPlantIndex((this.state.focusedPlantIndex + 1) % plants.length);
-        }
-        else if (key === 'ArrowLeft') {
-            this.setFocusedPlantIndex((this.state.focusedPlantIndex - 1 + plants.length) % plants.length);
-        }
-        else if (key === 'Enter' || key === ' ') {
-            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
-                this.handlePlantClick(plants[this.state.focusedPlantIndex]);
-            }
-        }
-        else if (key === 'Delete' || key === 'Backspace') {
-            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
-                const focusedPlant = plants[this.state.focusedPlantIndex];
-                if (focusedPlant) {
-                    this.handleDeletePlant(focusedPlant.entity_id);
-                }
-            }
-            else if (this.state.selectedPlants.size > 0) {
-                // If multiple plants are selected, delete them
-                this.handleDeletePlant(Array.from(this.state.selectedPlants));
-            }
-        }
-    }
-    handleDeviceChange(deviceId) {
-        this.state.selectedDevice = deviceId;
-    }
-    togglePlantSelection(plantOrId) {
-        const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
-        if (!plantId)
-            return;
-        const newSet = new Set(this.state.selectedPlants);
-        if (newSet.has(plantId)) {
-            newSet.delete(plantId);
-        }
-        else {
-            newSet.add(plantId);
-        }
-        this.state.selectedPlants = newSet;
-    }
-    selectAllPlants() {
-        if (!this.state.selectedDevice)
-            return;
-        const devices = this.state.devices;
-        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
-        if (selectedDeviceData && selectedDeviceData.plants) {
-            selectedDeviceData.plants.forEach((plant) => {
-                const pId = plant.attributes.plant_id;
-                if (pId && !this.state.optimisticDeletedPlantIds.has(pId)) {
-                    this.state.selectedPlants.add(pId);
-                }
-            });
-            // Force update to trigger proxy set trap on a property if we mutated distinct property? 
-            // Actually Set and Map mutations don't trigger proxy 'set'.
-            // We must reassign the Set to trigger the proxy trap.
-            this.state.selectedPlants = new Set(this.state.selectedPlants);
-        }
-    }
-    setSelectedPlants(plantIds) {
-        this.state.selectedPlants = new Set(plantIds);
-    }
-    setFocusedPlantIndex(index) {
-        this.state.focusedPlantIndex = index;
-    }
-    clearPlantSelection() {
-        this.state.selectedPlants = new Set();
-    }
-    exitEditMode() {
-        this.state.isEditMode = false;
-        this.state.selectedPlants = new Set();
-    }
-    setEditMode(value) {
-        this.state.isEditMode = value;
-    }
-    setMenuOpen(value) {
-        this.state.menuOpen = value;
-    }
-    setActiveDialog(dialogState) {
-        this.state.activeDialog = dialogState;
-    }
-    closeActiveDialog() {
-        this.state.activeDialog = { type: 'NONE' };
-    }
-    handlePlantClick(plant) {
-        if (this.state.isEditMode && this.state.selectedPlants.size > 0) {
-            const plantId = plant.attributes.plant_id;
-            if (plantId && !this.state.selectedPlants.has(plantId)) {
-                this.togglePlantSelection(plantId);
-            }
-            this.openPlantOverviewDialog(plant, Array.from(this.state.selectedPlants));
-        }
-        else {
-            this.openPlantOverviewDialog(plant);
-        }
-    }
-    openPlantOverviewDialog(plant, selectedIds) {
-        this.state.activeDialog = {
-            type: 'PLANT_OVERVIEW',
-            payload: {
-                plant,
-                editedAttributes: { ...plant.attributes },
-                activeTab: 'dashboard',
-                selectedPlantIds: selectedIds,
-            },
-        };
-    }
-    async updatePlantFromDialog(dialogState) {
-        const { plant, editedAttributes, selectedPlantIds } = dialogState;
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
-        const isBulkEdit = targetIds.length > 1;
-        // Use extracted pure function for payload generation
-        const payloadTemplate = PlantUtils.mapDialogToApiPayload(editedAttributes, isBulkEdit);
-        try {
-            const updatePromises = targetIds.map((id) => {
-                const payload = { ...payloadTemplate, plant_id: id };
-                return this.dataService.updatePlant(payload);
-            });
-            await Promise.all(updatePromises);
-            this.closeActiveDialog();
-            if (this.state.isEditMode) {
-                this.state.selectedPlants = new Set();
-                this.state.isEditMode = false;
-            }
-        }
-        catch (err) {
-            console.error('Error updating plant(s):', err);
-        }
-    }
-    async updatePlant(plantId, updates) {
-        try {
-            await this.dataService.updatePlant({ plant_id: plantId, ...updates });
-            this.showToast('Plant updated', 'success');
-            // Dialog might stay open or close? Usually stay open for overview.
-        }
-        catch (e) {
-            console.error('Failed to update plant:', e);
-            this.showToast(`Failed to update plant: ${e.message}`, 'error');
-        }
-    }
-    async handleDeletePlant(plantId) {
-        const ids = Array.isArray(plantId) ? plantId : [plantId];
-        const newOptimistic = new Set(this.state.optimisticDeletedPlantIds);
-        ids.forEach((id) => newOptimistic.add(id));
-        this.state.optimisticDeletedPlantIds = newOptimistic;
-        try {
-            // Check if backend supports bulk delete? If not, loop.
-            // Assuming dataService.deletePlant takes one ID.
-            await Promise.all(ids.map((id) => this.dataService.removePlant(id)));
-            this.showToast('Plant(s) deleted', 'success');
-            // Do NOT remove from optimistic set here.
-            // We wait for updateHass/pruneOptimisticDeletions to confirm they are gone from HA state.
-            ids.forEach((id) => {
-                this.state.selectedPlants.delete(id);
-            });
-            if (this.state.activeDialog.type === 'PLANT_OVERVIEW') {
-                this.closeActiveDialog();
-            }
-            this.updateGrid();
-        }
-        catch (e) {
-            console.error('Failed to delete plant:', e);
-            this.showToast(`Failed to delete: ${e.message}`, 'error');
-            const revertedOptimistic = new Set(this.state.optimisticDeletedPlantIds);
-            ids.forEach((id) => revertedOptimistic.delete(id));
-            this.state.optimisticDeletedPlantIds = revertedOptimistic;
-        }
-    }
-    pruneOptimisticDeletions() {
-        if (this.state.optimisticDeletedPlantIds.size === 0)
-            return;
-        const allPlantIds = new Set();
-        const devices = this.state.devices;
-        devices.forEach((d) => d.plants.forEach((p) => allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))));
-        const toRemove = new Set();
-        this.state.optimisticDeletedPlantIds.forEach((id) => {
-            // If the plant ID is NOT in the current data, it means deletion is confirmed/propagated.
-            // So we can stop masking it.
-            if (!allPlantIds.has(id)) {
-                toRemove.add(id);
-            }
-        });
-        if (toRemove.size > 0) {
-            const newOptimistic = new Set(this.state.optimisticDeletedPlantIds);
-            toRemove.forEach((id) => newOptimistic.delete(id));
-            this.state.optimisticDeletedPlantIds = newOptimistic;
-        }
-    }
-    async handleMovePlantToNextStage(plant) {
-        const stage = plant.attributes?.stage;
-        let targetGrowspace = '';
-        const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
-        if (!stage || !movableStages.has(stage)) {
-            this.showToast('Plant must be in mother or flower or dry or cure stage to move. stage is ' + stage, 'error');
-            return;
-        }
-        if (stage === 'flower') {
-            targetGrowspace = 'dry';
-        }
-        else if (stage === 'dry') {
-            targetGrowspace = 'cure';
-        }
-        else if (stage === 'mother') {
-            targetGrowspace = 'clone';
-        }
-        else {
-            console.error('Unknown stage, cannot move plant', targetGrowspace);
-            targetGrowspace = 'error';
-        }
-        try {
-            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-            await this.dataService.harvestPlant(plantId, targetGrowspace);
-            this.closeActiveDialog();
-        }
-        catch (err) {
-            console.error('Error moving plant to next stage:', err);
-        }
-    }
-    async movePlantToGrowspace(plant, targetGrowspace) {
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        const currentStage = plant.attributes?.stage || 'unknown';
-        try {
-            if (currentStage === 'clone') {
-                // Clones use specific service to handle transition to Veg
-                await this.dataService.moveClone(plantId, targetGrowspace);
-            }
-            else {
-                // Other stages use harvest loop (flower->dry->cure etc)
-                await this.dataService.harvestPlant(plantId, targetGrowspace);
-            }
-            this.showToast(`Plant moved to ${targetGrowspace}`, 'success');
-            await this.refreshData();
-            this.closeActiveDialog();
-        }
-        catch (err) {
-            console.error('Error moving plant:', err);
-            this.showToast(`Failed to move plant: ${err.message}`, 'error');
-        }
-    }
-    async addStrain(strainData) {
-        if (!strainData.strain)
-            return;
-        const payload = {
-            strain: strainData.strain,
-            phenotype: strainData.phenotype,
-            breeder: strainData.breeder,
-            type: strainData.type,
-            flowering_days_min: strainData.flowering_days_min
-                ? Number(strainData.flowering_days_min)
-                : undefined,
-            flowering_days_max: strainData.flowering_days_max
-                ? Number(strainData.flowering_days_max)
-                : undefined,
-            lineage: strainData.lineage,
-            sex: strainData.sex,
-            description: strainData.description,
-            image: strainData.image,
-            image_crop_meta: strainData.image_crop_meta,
-            sativa_percentage: strainData.sativa_percentage,
-            indica_percentage: strainData.indica_percentage,
-        };
-        try {
-            await this.dataService.addStrain(payload);
-            this.showToast('Strain saved successfully!', 'success');
-            await this.fetchStrainLibrary(true);
-        }
-        catch (err) {
-            console.error('Error adding strain:', err);
-        }
-    }
-    async removeStrain(strainKey) {
-        try {
-            const parts = strainKey.split('|');
-            const strain = parts[0];
-            const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
-            await this.dataService.removeStrain(strain, phenotype);
-            if (this.state.strainLibrary) {
-                this.state.strainLibrary = this.state.strainLibrary.filter((s) => s.key !== strainKey);
-            }
-            await this.fetchStrainLibrary(true);
-        }
-        catch (err) {
-            console.error('Error removing strain:', err);
-        }
-    }
-    updateGrid() {
-        // Force refresh from HA
-        if (this.hass) {
-            this.dataService.updateHass(this.hass);
-        }
-        // Trigger generic request update, but also maybe refresh WS data if we expect backend changes?
-        // Actions usually trigger backend changes which fire growspace_updated, so subscription handles it.
-        this.requestUpdate();
-    }
-    async handleDrop(targetRow, targetCol, targetPlant, sourcePlant) {
-        if (!sourcePlant || !this.state.selectedDevice)
-            return;
-        try {
-            if (targetPlant) {
-                const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
-                const targetId = targetPlant.attributes.plant_id || targetPlant.entity_id.replace('sensor.', '');
-                if (sourceId === targetId)
-                    return;
-                await this.dataService.swapPlants(sourceId, targetId);
-                this.updateGrid();
-            }
-            else {
-                await this.movePlant(sourcePlant, targetRow, targetCol);
-            }
-        }
-        catch (err) {
-            console.error('Error during drag-and-drop:', err);
-        }
-    }
-    async movePlant(plant, newRow, newCol) {
-        try {
-            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-            await this.dataService.updatePlant({
-                plant_id: plantId,
-                row: newRow,
-                col: newCol,
-            });
-            this.updateGrid();
-        }
-        catch (err) {
-            console.error('Error moving plant:', err);
-        }
-    }
-    async handleAddGrowspace(detail) {
-        const { name, rows, plants_per_row, notification_service } = detail;
-        if (!name) {
-            this.showToast('Name is required', 'error');
-            return;
-        }
-        try {
-            await this.dataService.addGrowspace({
-                name,
-                rows: rows || 4,
-                plants_per_row: plants_per_row || 4,
-                notification_service: notification_service || 'mobile_app_notify',
-            });
-            this.showToast('Growspace added successfully!', 'success');
-            await this.refreshData();
-            this.closeActiveDialog();
-        }
-        catch (e) {
-            this.showToast(`Error: ${e.message}`, 'error');
-        }
-    }
-    async handleUpdateGrowspace(detail) {
-        console.log('[GrowspaceStore] handleUpdateGrowspace', detail);
-        try {
-            await this.dataService.updateGrowspace({
-                growspace_id: detail.growspace_id,
-                name: detail.name,
-                rows: detail.rows,
-                plants_per_row: detail.plants_per_row,
-            });
-            this.showToast('Growspace updated successfully', 'success');
-            await this.refreshData();
-            this.closeActiveDialog();
-        }
-        catch (e) {
-            console.error('[GrowspaceStore] Update failed:', e);
-            this.showToast(`Failed to update growspace: ${e.message}`, 'error');
-        }
-    }
-    async harvestPlant(plant) {
-        await this.handleMovePlantToNextStage(plant);
-    }
-    async finishDryingPlant(plant) {
-        await this.handleMovePlantToNextStage(plant);
-    }
-    openAddPlantDialog(row, col) {
-        console.log('[GrowspaceStore] openAddPlantDialog called', { row, col });
-        // If row/col specified, use them (clicked from grid)
-        if (row !== undefined && col !== undefined) {
-            this.fetchStrainLibrary();
-            this.setActiveDialog({
-                type: 'ADD_PLANT',
-                payload: { row, col },
-            });
-            return;
-        }
-        // Auto-find free slot if not specified
-        if (!this.state.selectedDevice) {
-            console.warn('[GrowspaceStore] No selected device for Add Plant');
-            return;
-        }
-        const devices = this.state.devices;
-        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
-        if (device) {
-            const rows = device.rows || 4;
-            const cols = device.plants_per_row || 4;
-            const { row: targetRow, col: targetCol } = PlantUtils.findFirstAvailableSlot(device.plants || [], rows, cols);
-            console.log('[GrowspaceStore] Found slot', { targetRow, targetCol });
-            // If full, default to 1,1 or last found (let backend reject or user change)
-            this.fetchStrainLibrary();
-            // Convert 1-based backend coordinates to 0-based dialog coordinates
-            this.setActiveDialog({
-                type: 'ADD_PLANT',
-                payload: { row: targetRow - 1, col: targetCol - 1 },
-            });
-            console.log('[GrowspaceStore] Set Active Dialog ADD_PLANT');
-        }
-    }
-    async clonePlant(plant, numClones) {
-        await this.handleTakeClone(plant, numClones);
-    }
-    async confirmAddPlant(detail) {
-        const devices = this.state.devices;
-        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
-        if (!selectedDeviceData)
-            return;
-        // Convert 0-based dialog coordinates to 1-based backend coordinates
-        const row = detail.row + 1;
-        const col = detail.col + 1;
-        const { strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start, } = detail;
-        if (!strain) {
-            this.showToast('Please select a strain', 'error');
-            return;
-        }
-        try {
-            await this.dataService.addPlant({
-                growspace_id: selectedDeviceData.device_id,
-                strain,
-                phenotype: phenotype || '',
-                row,
-                col,
-                veg_start,
-                flower_start,
-                seedling_start,
-                mother_start,
-                clone_start,
-                dry_start,
-                cure_start,
-            });
-            this.showToast('Plant added successfully', 'success');
-            this.closeActiveDialog();
-        }
-        catch (e) {
-            console.error(e);
-            this.showToast('Failed to add plant', 'error');
-        }
-    }
-    async analyzeGrowspace(query, isGlobal = false) {
-        const dialogPayload = this.state.activeDialog.type === 'GROW_MASTER' ? this.state.activeDialog.payload : null;
-        if (!dialogPayload)
-            return;
-        // Update dialog state to loading
-        this.setActiveDialog({
-            type: 'GROW_MASTER',
-            payload: { ...dialogPayload, isLoading: true, response: null },
-        });
-        try {
-            let result;
-            if (isGlobal || dialogPayload.mode === 'all') {
-                result = await this.dataService.analyzeAllGrowspaces();
-            }
-            else {
-                result = await this.dataService.askGrowAdvice(this.state.selectedDevice || '', query);
-            }
-            const responseText = typeof result.response === 'string'
-                ? result.response
-                : result.response?.response || JSON.stringify(result);
-            this.setActiveDialog({
-                type: 'GROW_MASTER',
-                payload: { ...dialogPayload, isLoading: false, response: responseText },
-            });
-        }
-        catch (err) {
-            console.error('Error asking Grow Master:', err);
-            this.setActiveDialog({
-                type: 'GROW_MASTER',
-                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
-            });
-        }
-    }
-    async getStrainRecommendation(userQuery) {
-        const dialogPayload = this.state.activeDialog.type === 'STRAIN_RECOMMENDATION'
-            ? this.state.activeDialog.payload
-            : null;
-        if (!dialogPayload)
-            return;
-        this.setActiveDialog({
-            type: 'STRAIN_RECOMMENDATION',
-            payload: { ...dialogPayload, isLoading: true, response: null },
-        });
-        try {
-            const result = await this.dataService.getStrainRecommendation(userQuery);
-            const responseText = typeof result.response === 'string' ? result.response : JSON.stringify(result);
-            this.setActiveDialog({
-                type: 'STRAIN_RECOMMENDATION',
-                payload: { ...dialogPayload, isLoading: false, response: responseText },
-            });
-        }
-        catch (err) {
-            console.error('Error getting strain recommendation:', err);
-            this.setActiveDialog({
-                type: 'STRAIN_RECOMMENDATION',
-                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
-            });
-        }
-    }
-    openStrainRecommendationDialog() {
-        this.setActiveDialog({
-            type: 'STRAIN_RECOMMENDATION',
-            payload: {
-                isLoading: false,
-                response: null,
-            },
-        });
-    }
-    openLogbookDialog() {
-        if (!this.state.selectedDevice)
-            return;
-        this.setActiveDialog({
-            type: 'LOGBOOK',
-            payload: {
-                growspaceId: this.state.selectedDevice,
-            },
-        });
-    }
-    handleExportLibrary() {
-        // Logic needs to be adapted since event subscription on HASS connection is component specific?
-        // Actually we can do it here if we assume `hass` is available.
-        // But `subscribeEvents` is on `hass.connection`.
-        // We can emit a custom event or just implement the logic here.
-        // The download part triggers a browser action (window location or anchor click).
-        // It's better to keep DOM interaction like download in the component?
-        // Or pass a callback.
-        // I'll keep it simple: Implement logic here, but for the download part, creating an element on document
-        // might be slightly unclean in a store but it works.
-        this._handleExportLibraryLogic();
-    }
-    async _handleExportLibraryLogic() {
-        if (!this.hass)
-            return;
-        const unsubscribe = await this.hass.connection.subscribeEvents((event) => {
-            if (event.data && event.data.url) {
-                // Dispatch event to view layer for DOM-based download
-                this.host.dispatchEvent(new LibraryExportReadyEvent(event.data.url));
-                unsubscribe();
-            }
-        }, 'growspace_manager_strain_library_exported');
-        try {
-            await this.dataService.exportStrainLibrary();
-            this.showToast('Export started...', 'info');
-        }
-        catch (err) {
-            console.error('Failed to call export service', err);
-            unsubscribe();
-        }
-    }
-    async toggleDehumidifierControl(deviceId) {
-        const device = this.state.devices.find((d) => d.device_id === deviceId);
-        if (!device || !device.overview_entity_id || !this.hass)
-            return;
-        const stateObj = this.hass.states[device.overview_entity_id];
-        const attrs = stateObj?.attributes || {};
-        const currentStatus = attrs.dehumidifier_control_enabled === true;
-        try {
-            await this.dataService.setDehumidifierControl(deviceId, !currentStatus);
-            console.log(`Toggled dehumidifier control to ${!currentStatus} for ${deviceId}`);
-            this.showToast(`Dehumidifier control ${!currentStatus ? 'enabled' : 'disabled'}`, 'success');
-        }
-        catch (err) {
-            console.error('Failed to toggle dehumidifier control:', err);
-            this.showToast(`Failed to toggle dehumidifier: ${err.message}`, 'error');
-        }
-    }
-    async performImport(file, replace) {
-        if (!file)
-            return;
-        try {
-            const result = await this.dataService.importStrainLibrary(file, replace);
-            this.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
-            await this.fetchStrainLibrary(true);
-        }
-        catch (err) {
-            console.error('Import failed:', err);
-            this.showToast(`Import failed: ${err.message}`, 'error');
-        }
-    }
-}
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
 const sharedStyles = i$6 `
   /* --- Glassmorphism Surfaces --- */
@@ -9220,22 +8407,46 @@ const dialogStyles = [
 `
 ];
 
-let Md3TextInput = class Md3TextInput extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.label = '';
-        this.value = '';
-        this.type = 'text';
-        this.placeholder = '';
-        this.list = '';
-    }
-    _handleInput(e) {
-        const value = e.target.value;
-        this.value = value;
-        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
-    }
-    render() {
-        return x `
+(() => {
+    var _Md3TextInput_label_accessor_storage, _Md3TextInput_value_accessor_storage, _Md3TextInput_type_accessor_storage, _Md3TextInput_placeholder_accessor_storage, _Md3TextInput_list_accessor_storage;
+    let _classDecorators = [t$2('md3-text-input')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _label_decorators;
+    let _label_initializers = [];
+    let _label_extraInitializers = [];
+    let _value_decorators;
+    let _value_initializers = [];
+    let _value_extraInitializers = [];
+    let _type_decorators;
+    let _type_initializers = [];
+    let _type_extraInitializers = [];
+    let _placeholder_decorators;
+    let _placeholder_initializers = [];
+    let _placeholder_extraInitializers = [];
+    let _list_decorators;
+    let _list_initializers = [];
+    let _list_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get label() { return __classPrivateFieldGet(this, _Md3TextInput_label_accessor_storage, "f"); }
+        set label(value) { __classPrivateFieldSet(this, _Md3TextInput_label_accessor_storage, value, "f"); }
+        get value() { return __classPrivateFieldGet(this, _Md3TextInput_value_accessor_storage, "f"); }
+        set value(value) { __classPrivateFieldSet(this, _Md3TextInput_value_accessor_storage, value, "f"); }
+        get type() { return __classPrivateFieldGet(this, _Md3TextInput_type_accessor_storage, "f"); }
+        set type(value) { __classPrivateFieldSet(this, _Md3TextInput_type_accessor_storage, value, "f"); }
+        get placeholder() { return __classPrivateFieldGet(this, _Md3TextInput_placeholder_accessor_storage, "f"); }
+        set placeholder(value) { __classPrivateFieldSet(this, _Md3TextInput_placeholder_accessor_storage, value, "f"); }
+        get list() { return __classPrivateFieldGet(this, _Md3TextInput_list_accessor_storage, "f"); }
+        set list(value) { __classPrivateFieldSet(this, _Md3TextInput_list_accessor_storage, value, "f"); }
+        _handleInput(e) {
+            const value = e.target.value;
+            this.value = value;
+            this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+        }
+        render() {
+            return x `
       <div class="md3-input-group">
         <label class="md3-label">${this.label}</label>
         <input
@@ -9248,56 +8459,94 @@ let Md3TextInput = class Md3TextInput extends i$3 {
         />
       </div>
     `;
-    }
-};
-Md3TextInput.styles = [
-    dialogStyles,
-    i$6 `
+        }
+        constructor() {
+            super(...arguments);
+            _Md3TextInput_label_accessor_storage.set(this, __runInitializers(this, _label_initializers, ''));
+            _Md3TextInput_value_accessor_storage.set(this, (__runInitializers(this, _label_extraInitializers), __runInitializers(this, _value_initializers, '')));
+            _Md3TextInput_type_accessor_storage.set(this, (__runInitializers(this, _value_extraInitializers), __runInitializers(this, _type_initializers, 'text')));
+            _Md3TextInput_placeholder_accessor_storage.set(this, (__runInitializers(this, _type_extraInitializers), __runInitializers(this, _placeholder_initializers, '')));
+            _Md3TextInput_list_accessor_storage.set(this, (__runInitializers(this, _placeholder_extraInitializers), __runInitializers(this, _list_initializers, '')));
+            __runInitializers(this, _list_extraInitializers);
+        }
+    };
+    _Md3TextInput_label_accessor_storage = new WeakMap();
+    _Md3TextInput_value_accessor_storage = new WeakMap();
+    _Md3TextInput_type_accessor_storage = new WeakMap();
+    _Md3TextInput_placeholder_accessor_storage = new WeakMap();
+    _Md3TextInput_list_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "Md3TextInput");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _label_decorators = [n$5()];
+        _value_decorators = [n$5()];
+        _type_decorators = [n$5()];
+        _placeholder_decorators = [n$5()];
+        _list_decorators = [n$5()];
+        __esDecorate(_classThis, null, _label_decorators, { kind: "accessor", name: "label", static: false, private: false, access: { has: obj => "label" in obj, get: obj => obj.label, set: (obj, value) => { obj.label = value; } }, metadata: _metadata }, _label_initializers, _label_extraInitializers);
+        __esDecorate(_classThis, null, _value_decorators, { kind: "accessor", name: "value", static: false, private: false, access: { has: obj => "value" in obj, get: obj => obj.value, set: (obj, value) => { obj.value = value; } }, metadata: _metadata }, _value_initializers, _value_extraInitializers);
+        __esDecorate(_classThis, null, _type_decorators, { kind: "accessor", name: "type", static: false, private: false, access: { has: obj => "type" in obj, get: obj => obj.type, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, _type_initializers, _type_extraInitializers);
+        __esDecorate(_classThis, null, _placeholder_decorators, { kind: "accessor", name: "placeholder", static: false, private: false, access: { has: obj => "placeholder" in obj, get: obj => obj.placeholder, set: (obj, value) => { obj.placeholder = value; } }, metadata: _metadata }, _placeholder_initializers, _placeholder_extraInitializers);
+        __esDecorate(_classThis, null, _list_decorators, { kind: "accessor", name: "list", static: false, private: false, access: { has: obj => "list" in obj, get: obj => obj.list, set: (obj, value) => { obj.list = value; } }, metadata: _metadata }, _list_initializers, _list_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        dialogStyles,
+        i$6 `
       :host {
         display: block;
         width: 100%;
       }
     `,
-];
-__decorate([
-    n$5(),
-    __metadata("design:type", Object)
-], Md3TextInput.prototype, "label", void 0);
-__decorate([
-    n$5(),
-    __metadata("design:type", Object)
-], Md3TextInput.prototype, "value", void 0);
-__decorate([
-    n$5(),
-    __metadata("design:type", Object)
-], Md3TextInput.prototype, "type", void 0);
-__decorate([
-    n$5(),
-    __metadata("design:type", Object)
-], Md3TextInput.prototype, "placeholder", void 0);
-__decorate([
-    n$5(),
-    __metadata("design:type", Object)
-], Md3TextInput.prototype, "list", void 0);
-Md3TextInput = __decorate([
-    t$2('md3-text-input')
-], Md3TextInput);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let Md3NumberInput = class Md3NumberInput extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.label = '';
-        this.value = 0;
-        this.min = 0;
-        this.placeholder = '';
-    }
-    _handleInput(e) {
-        const value = e.target.value;
-        this.value = Number(value);
-        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
-    }
-    render() {
-        return x `
+(() => {
+    var _Md3NumberInput_label_accessor_storage, _Md3NumberInput_value_accessor_storage, _Md3NumberInput_min_accessor_storage, _Md3NumberInput_max_accessor_storage, _Md3NumberInput_placeholder_accessor_storage;
+    let _classDecorators = [t$2('md3-number-input')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _label_decorators;
+    let _label_initializers = [];
+    let _label_extraInitializers = [];
+    let _value_decorators;
+    let _value_initializers = [];
+    let _value_extraInitializers = [];
+    let _min_decorators;
+    let _min_initializers = [];
+    let _min_extraInitializers = [];
+    let _max_decorators;
+    let _max_initializers = [];
+    let _max_extraInitializers = [];
+    let _placeholder_decorators;
+    let _placeholder_initializers = [];
+    let _placeholder_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get label() { return __classPrivateFieldGet(this, _Md3NumberInput_label_accessor_storage, "f"); }
+        set label(value) { __classPrivateFieldSet(this, _Md3NumberInput_label_accessor_storage, value, "f"); }
+        get value() { return __classPrivateFieldGet(this, _Md3NumberInput_value_accessor_storage, "f"); }
+        set value(value) { __classPrivateFieldSet(this, _Md3NumberInput_value_accessor_storage, value, "f"); }
+        get min() { return __classPrivateFieldGet(this, _Md3NumberInput_min_accessor_storage, "f"); }
+        set min(value) { __classPrivateFieldSet(this, _Md3NumberInput_min_accessor_storage, value, "f"); }
+        get max() { return __classPrivateFieldGet(this, _Md3NumberInput_max_accessor_storage, "f"); }
+        set max(value) { __classPrivateFieldSet(this, _Md3NumberInput_max_accessor_storage, value, "f"); }
+        get placeholder() { return __classPrivateFieldGet(this, _Md3NumberInput_placeholder_accessor_storage, "f"); }
+        set placeholder(value) { __classPrivateFieldSet(this, _Md3NumberInput_placeholder_accessor_storage, value, "f"); }
+        _handleInput(e) {
+            const value = e.target.value;
+            this.value = Number(value);
+            this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+        }
+        render() {
+            return x `
       <div class="md3-input-group">
         <label class="md3-label">${this.label}</label>
         <input
@@ -9311,115 +8560,173 @@ let Md3NumberInput = class Md3NumberInput extends i$3 {
         />
       </div>
     `;
-    }
-};
-Md3NumberInput.styles = [
-    dialogStyles,
-    i$6 `
+        }
+        constructor() {
+            super(...arguments);
+            _Md3NumberInput_label_accessor_storage.set(this, __runInitializers(this, _label_initializers, ''));
+            _Md3NumberInput_value_accessor_storage.set(this, (__runInitializers(this, _label_extraInitializers), __runInitializers(this, _value_initializers, 0)));
+            _Md3NumberInput_min_accessor_storage.set(this, (__runInitializers(this, _value_extraInitializers), __runInitializers(this, _min_initializers, 0)));
+            _Md3NumberInput_max_accessor_storage.set(this, (__runInitializers(this, _min_extraInitializers), __runInitializers(this, _max_initializers, void 0)));
+            _Md3NumberInput_placeholder_accessor_storage.set(this, (__runInitializers(this, _max_extraInitializers), __runInitializers(this, _placeholder_initializers, '')));
+            __runInitializers(this, _placeholder_extraInitializers);
+        }
+    };
+    _Md3NumberInput_label_accessor_storage = new WeakMap();
+    _Md3NumberInput_value_accessor_storage = new WeakMap();
+    _Md3NumberInput_min_accessor_storage = new WeakMap();
+    _Md3NumberInput_max_accessor_storage = new WeakMap();
+    _Md3NumberInput_placeholder_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "Md3NumberInput");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _label_decorators = [n$5()];
+        _value_decorators = [n$5({ type: Number })];
+        _min_decorators = [n$5({ type: Number })];
+        _max_decorators = [n$5({ type: Number })];
+        _placeholder_decorators = [n$5()];
+        __esDecorate(_classThis, null, _label_decorators, { kind: "accessor", name: "label", static: false, private: false, access: { has: obj => "label" in obj, get: obj => obj.label, set: (obj, value) => { obj.label = value; } }, metadata: _metadata }, _label_initializers, _label_extraInitializers);
+        __esDecorate(_classThis, null, _value_decorators, { kind: "accessor", name: "value", static: false, private: false, access: { has: obj => "value" in obj, get: obj => obj.value, set: (obj, value) => { obj.value = value; } }, metadata: _metadata }, _value_initializers, _value_extraInitializers);
+        __esDecorate(_classThis, null, _min_decorators, { kind: "accessor", name: "min", static: false, private: false, access: { has: obj => "min" in obj, get: obj => obj.min, set: (obj, value) => { obj.min = value; } }, metadata: _metadata }, _min_initializers, _min_extraInitializers);
+        __esDecorate(_classThis, null, _max_decorators, { kind: "accessor", name: "max", static: false, private: false, access: { has: obj => "max" in obj, get: obj => obj.max, set: (obj, value) => { obj.max = value; } }, metadata: _metadata }, _max_initializers, _max_extraInitializers);
+        __esDecorate(_classThis, null, _placeholder_decorators, { kind: "accessor", name: "placeholder", static: false, private: false, access: { has: obj => "placeholder" in obj, get: obj => obj.placeholder, set: (obj, value) => { obj.placeholder = value; } }, metadata: _metadata }, _placeholder_initializers, _placeholder_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        dialogStyles,
+        i$6 `
       :host {
         display: block;
         width: 100%;
       }
     `,
-];
-__decorate([
-    n$5(),
-    __metadata("design:type", Object)
-], Md3NumberInput.prototype, "label", void 0);
-__decorate([
-    n$5({ type: Number }),
-    __metadata("design:type", Object)
-], Md3NumberInput.prototype, "value", void 0);
-__decorate([
-    n$5({ type: Number }),
-    __metadata("design:type", Object)
-], Md3NumberInput.prototype, "min", void 0);
-__decorate([
-    n$5({ type: Number }),
-    __metadata("design:type", Number)
-], Md3NumberInput.prototype, "max", void 0);
-__decorate([
-    n$5(),
-    __metadata("design:type", Object)
-], Md3NumberInput.prototype, "placeholder", void 0);
-Md3NumberInput = __decorate([
-    t$2('md3-number-input')
-], Md3NumberInput);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let Md3Select = class Md3Select extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.label = '';
-        this.value = '';
-        this.options = [];
-    }
-    _handleChange(e) {
-        const value = e.target.value;
-        this.value = value;
-        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
-    }
-    render() {
-        return x `
+(() => {
+    var _Md3Select_label_accessor_storage, _Md3Select_value_accessor_storage, _Md3Select_options_accessor_storage;
+    let _classDecorators = [t$2('md3-select')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _label_decorators;
+    let _label_initializers = [];
+    let _label_extraInitializers = [];
+    let _value_decorators;
+    let _value_initializers = [];
+    let _value_extraInitializers = [];
+    let _options_decorators;
+    let _options_initializers = [];
+    let _options_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get label() { return __classPrivateFieldGet(this, _Md3Select_label_accessor_storage, "f"); }
+        set label(value) { __classPrivateFieldSet(this, _Md3Select_label_accessor_storage, value, "f"); }
+        get value() { return __classPrivateFieldGet(this, _Md3Select_value_accessor_storage, "f"); }
+        set value(value) { __classPrivateFieldSet(this, _Md3Select_value_accessor_storage, value, "f"); }
+        get options() { return __classPrivateFieldGet(this, _Md3Select_options_accessor_storage, "f"); }
+        set options(value) { __classPrivateFieldSet(this, _Md3Select_options_accessor_storage, value, "f"); }
+        _handleChange(e) {
+            const value = e.target.value;
+            this.value = value;
+            this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+        }
+        render() {
+            return x `
       <div class="md3-input-group">
         <label class="md3-label">${this.label}</label>
         <select class="md3-input" .value=${this.value} @change=${this._handleChange}>
           <option value="">Select...</option>
           ${this.options.map((opt) => {
-            const label = typeof opt === 'string' ? opt : opt.label;
-            const val = typeof opt === 'string' ? opt : opt.value;
-            return x `<option value="${val}" ?selected=${val === this.value}>${label}</option>`;
-        })}
+                const label = typeof opt === 'string' ? opt : opt.label;
+                const val = typeof opt === 'string' ? opt : opt.value;
+                return x `<option value="${val}" ?selected=${val === this.value}>${label}</option>`;
+            })}
         </select>
       </div>
     `;
-    }
-};
-Md3Select.styles = [
-    dialogStyles,
-    i$6 `
+        }
+        constructor() {
+            super(...arguments);
+            _Md3Select_label_accessor_storage.set(this, __runInitializers(this, _label_initializers, ''));
+            _Md3Select_value_accessor_storage.set(this, (__runInitializers(this, _label_extraInitializers), __runInitializers(this, _value_initializers, '')));
+            _Md3Select_options_accessor_storage.set(this, (__runInitializers(this, _value_extraInitializers), __runInitializers(this, _options_initializers, [])));
+            __runInitializers(this, _options_extraInitializers);
+        }
+    };
+    _Md3Select_label_accessor_storage = new WeakMap();
+    _Md3Select_value_accessor_storage = new WeakMap();
+    _Md3Select_options_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "Md3Select");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _label_decorators = [n$5()];
+        _value_decorators = [n$5()];
+        _options_decorators = [n$5({ type: Array })];
+        __esDecorate(_classThis, null, _label_decorators, { kind: "accessor", name: "label", static: false, private: false, access: { has: obj => "label" in obj, get: obj => obj.label, set: (obj, value) => { obj.label = value; } }, metadata: _metadata }, _label_initializers, _label_extraInitializers);
+        __esDecorate(_classThis, null, _value_decorators, { kind: "accessor", name: "value", static: false, private: false, access: { has: obj => "value" in obj, get: obj => obj.value, set: (obj, value) => { obj.value = value; } }, metadata: _metadata }, _value_initializers, _value_extraInitializers);
+        __esDecorate(_classThis, null, _options_decorators, { kind: "accessor", name: "options", static: false, private: false, access: { has: obj => "options" in obj, get: obj => obj.options, set: (obj, value) => { obj.options = value; } }, metadata: _metadata }, _options_initializers, _options_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        dialogStyles,
+        i$6 `
       :host {
         display: block;
         width: 100%;
       }
     `,
-];
-__decorate([
-    n$5(),
-    __metadata("design:type", Object)
-], Md3Select.prototype, "label", void 0);
-__decorate([
-    n$5(),
-    __metadata("design:type", Object)
-], Md3Select.prototype, "value", void 0);
-__decorate([
-    n$5({ type: Array }),
-    __metadata("design:type", Array)
-], Md3Select.prototype, "options", void 0);
-Md3Select = __decorate([
-    t$2('md3-select')
-], Md3Select);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let Md3DateInput = class Md3DateInput extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.label = '';
-        this.value = '';
-        this.time = false; // if true, uses datetime-local
-    }
-    _handleInput(e) {
-        const value = e.target.value;
-        this.value = value;
-        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
-    }
-    render() {
-        let formattedValue = this.value;
-        if (this.time) {
-            formattedValue = PlantUtils.toDateTimeLocal(this.value);
+(() => {
+    var _Md3DateInput_label_accessor_storage, _Md3DateInput_value_accessor_storage, _Md3DateInput_time_accessor_storage;
+    let _classDecorators = [t$2('md3-date-input')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _label_decorators;
+    let _label_initializers = [];
+    let _label_extraInitializers = [];
+    let _value_decorators;
+    let _value_initializers = [];
+    let _value_extraInitializers = [];
+    let _time_decorators;
+    let _time_initializers = [];
+    let _time_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get label() { return __classPrivateFieldGet(this, _Md3DateInput_label_accessor_storage, "f"); }
+        set label(value) { __classPrivateFieldSet(this, _Md3DateInput_label_accessor_storage, value, "f"); }
+        get value() { return __classPrivateFieldGet(this, _Md3DateInput_value_accessor_storage, "f"); }
+        set value(value) { __classPrivateFieldSet(this, _Md3DateInput_value_accessor_storage, value, "f"); }
+        get time() { return __classPrivateFieldGet(this, _Md3DateInput_time_accessor_storage, "f"); } // if true, uses datetime-local
+        set time(value) { __classPrivateFieldSet(this, _Md3DateInput_time_accessor_storage, value, "f"); }
+        _handleInput(e) {
+            const value = e.target.value;
+            this.value = value;
+            this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
         }
-        else {
-            formattedValue = this.value ? this.value.split('T')[0] : '';
-        }
-        return x `
+        render() {
+            let formattedValue = this.value;
+            if (this.time) {
+                formattedValue = PlantUtils.toDateTimeLocal(this.value);
+            }
+            else {
+                formattedValue = this.value ? this.value.split('T')[0] : '';
+            }
+            return x `
       <div class="md3-input-group">
         <label class="md3-label">${this.label}</label>
         <input
@@ -9431,97 +8738,175 @@ let Md3DateInput = class Md3DateInput extends i$3 {
         />
       </div>
     `;
-    }
-};
-Md3DateInput.styles = [
-    dialogStyles,
-    i$6 `
+        }
+        constructor() {
+            super(...arguments);
+            _Md3DateInput_label_accessor_storage.set(this, __runInitializers(this, _label_initializers, ''));
+            _Md3DateInput_value_accessor_storage.set(this, (__runInitializers(this, _label_extraInitializers), __runInitializers(this, _value_initializers, '')));
+            _Md3DateInput_time_accessor_storage.set(this, (__runInitializers(this, _value_extraInitializers), __runInitializers(this, _time_initializers, false)));
+            __runInitializers(this, _time_extraInitializers);
+        }
+    };
+    _Md3DateInput_label_accessor_storage = new WeakMap();
+    _Md3DateInput_value_accessor_storage = new WeakMap();
+    _Md3DateInput_time_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "Md3DateInput");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _label_decorators = [n$5()];
+        _value_decorators = [n$5()];
+        _time_decorators = [n$5({ type: Boolean })];
+        __esDecorate(_classThis, null, _label_decorators, { kind: "accessor", name: "label", static: false, private: false, access: { has: obj => "label" in obj, get: obj => obj.label, set: (obj, value) => { obj.label = value; } }, metadata: _metadata }, _label_initializers, _label_extraInitializers);
+        __esDecorate(_classThis, null, _value_decorators, { kind: "accessor", name: "value", static: false, private: false, access: { has: obj => "value" in obj, get: obj => obj.value, set: (obj, value) => { obj.value = value; } }, metadata: _metadata }, _value_initializers, _value_extraInitializers);
+        __esDecorate(_classThis, null, _time_decorators, { kind: "accessor", name: "time", static: false, private: false, access: { has: obj => "time" in obj, get: obj => obj.time, set: (obj, value) => { obj.time = value; } }, metadata: _metadata }, _time_initializers, _time_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        dialogStyles,
+        i$6 `
       :host {
         display: block;
         width: 100%;
       }
     `,
-];
-__decorate([
-    n$5(),
-    __metadata("design:type", Object)
-], Md3DateInput.prototype, "label", void 0);
-__decorate([
-    n$5(),
-    __metadata("design:type", Object)
-], Md3DateInput.prototype, "value", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], Md3DateInput.prototype, "time", void 0);
-Md3DateInput = __decorate([
-    t$2('md3-date-input')
-], Md3DateInput);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let AddPlantDialog = class AddPlantDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.strainLibrary = [];
-        this.growspaceName = '';
-        this.open = false;
+(() => {
+    var _AddPlantDialog_hass_accessor_storage, _AddPlantDialog_strainLibrary_accessor_storage, _AddPlantDialog_growspaceName_accessor_storage, _AddPlantDialog_open_accessor_storage, _AddPlantDialog_strain_accessor_storage, _AddPlantDialog_phenotype_accessor_storage, _AddPlantDialog_row_accessor_storage, _AddPlantDialog_col_accessor_storage, _AddPlantDialog_veg_start_accessor_storage, _AddPlantDialog_flower_start_accessor_storage, _AddPlantDialog_seedling_start_accessor_storage, _AddPlantDialog_mother_start_accessor_storage, _AddPlantDialog_clone_start_accessor_storage, _AddPlantDialog_dry_start_accessor_storage, _AddPlantDialog_cure_start_accessor_storage;
+    let _classDecorators = [t$2('add-plant-dialog')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _strainLibrary_decorators;
+    let _strainLibrary_initializers = [];
+    let _strainLibrary_extraInitializers = [];
+    let _growspaceName_decorators;
+    let _growspaceName_initializers = [];
+    let _growspaceName_extraInitializers = [];
+    let _open_decorators;
+    let _open_initializers = [];
+    let _open_extraInitializers = [];
+    let _strain_decorators;
+    let _strain_initializers = [];
+    let _strain_extraInitializers = [];
+    let _phenotype_decorators;
+    let _phenotype_initializers = [];
+    let _phenotype_extraInitializers = [];
+    let _row_decorators;
+    let _row_initializers = [];
+    let _row_extraInitializers = [];
+    let _col_decorators;
+    let _col_initializers = [];
+    let _col_extraInitializers = [];
+    let _veg_start_decorators;
+    let _veg_start_initializers = [];
+    let _veg_start_extraInitializers = [];
+    let _flower_start_decorators;
+    let _flower_start_initializers = [];
+    let _flower_start_extraInitializers = [];
+    let _seedling_start_decorators;
+    let _seedling_start_initializers = [];
+    let _seedling_start_extraInitializers = [];
+    let _mother_start_decorators;
+    let _mother_start_initializers = [];
+    let _mother_start_extraInitializers = [];
+    let _clone_start_decorators;
+    let _clone_start_initializers = [];
+    let _clone_start_extraInitializers = [];
+    let _dry_start_decorators;
+    let _dry_start_initializers = [];
+    let _dry_start_extraInitializers = [];
+    let _cure_start_decorators;
+    let _cure_start_initializers = [];
+    let _cure_start_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get hass() { return __classPrivateFieldGet(this, _AddPlantDialog_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _AddPlantDialog_hass_accessor_storage, value, "f"); }
+        get strainLibrary() { return __classPrivateFieldGet(this, _AddPlantDialog_strainLibrary_accessor_storage, "f"); }
+        set strainLibrary(value) { __classPrivateFieldSet(this, _AddPlantDialog_strainLibrary_accessor_storage, value, "f"); }
+        get growspaceName() { return __classPrivateFieldGet(this, _AddPlantDialog_growspaceName_accessor_storage, "f"); }
+        set growspaceName(value) { __classPrivateFieldSet(this, _AddPlantDialog_growspaceName_accessor_storage, value, "f"); }
+        get open() { return __classPrivateFieldGet(this, _AddPlantDialog_open_accessor_storage, "f"); }
+        set open(value) { __classPrivateFieldSet(this, _AddPlantDialog_open_accessor_storage, value, "f"); }
         // Initialize with values passed via methods or defaults
-        this.strain = '';
-        this.phenotype = '';
-        this.row = 0;
-        this.col = 0;
+        get strain() { return __classPrivateFieldGet(this, _AddPlantDialog_strain_accessor_storage, "f"); }
+        set strain(value) { __classPrivateFieldSet(this, _AddPlantDialog_strain_accessor_storage, value, "f"); }
+        get phenotype() { return __classPrivateFieldGet(this, _AddPlantDialog_phenotype_accessor_storage, "f"); }
+        set phenotype(value) { __classPrivateFieldSet(this, _AddPlantDialog_phenotype_accessor_storage, value, "f"); }
+        get row() { return __classPrivateFieldGet(this, _AddPlantDialog_row_accessor_storage, "f"); }
+        set row(value) { __classPrivateFieldSet(this, _AddPlantDialog_row_accessor_storage, value, "f"); }
+        get col() { return __classPrivateFieldGet(this, _AddPlantDialog_col_accessor_storage, "f"); }
+        set col(value) { __classPrivateFieldSet(this, _AddPlantDialog_col_accessor_storage, value, "f"); }
         // Date fields
-        this.veg_start = '';
-        this.flower_start = '';
-        this.seedling_start = '';
-        this.mother_start = '';
-        this.clone_start = '';
-        this.dry_start = '';
-        this.cure_start = '';
-    }
-    // Provide a method to set initial data from parent if needed
-    setInitialState(row, col, strain = '', phenotype = '') {
-        this.row = row;
-        this.col = col;
-        this.strain = strain;
-        this.phenotype = phenotype;
-        // resetting dates
-        this.veg_start = '';
-        this.flower_start = '';
-        this.seedling_start = '';
-        this.mother_start = '';
-        this.clone_start = '';
-        this.dry_start = '';
-        this.cure_start = '';
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
-    _confirm() {
-        const payload = {
-            row: this.row,
-            col: this.col,
-            strain: this.strain,
-            phenotype: this.phenotype,
-            veg_start: this.veg_start,
-            flower_start: this.flower_start,
-            seedling_start: this.seedling_start,
-            mother_start: this.mother_start,
-            clone_start: this.clone_start,
-            dry_start: this.dry_start,
-            cure_start: this.cure_start,
-        };
-        this.dispatchEvent(new CustomEvent('add-plant-submit', {
-            detail: payload,
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    render() {
-        console.log('[AddPlantDialog] render called, open:', this.open, 'strains:', this.strainLibrary?.length);
-        if (!this.open)
-            return x ``;
-        const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
-        return x `
+        get veg_start() { return __classPrivateFieldGet(this, _AddPlantDialog_veg_start_accessor_storage, "f"); }
+        set veg_start(value) { __classPrivateFieldSet(this, _AddPlantDialog_veg_start_accessor_storage, value, "f"); }
+        get flower_start() { return __classPrivateFieldGet(this, _AddPlantDialog_flower_start_accessor_storage, "f"); }
+        set flower_start(value) { __classPrivateFieldSet(this, _AddPlantDialog_flower_start_accessor_storage, value, "f"); }
+        get seedling_start() { return __classPrivateFieldGet(this, _AddPlantDialog_seedling_start_accessor_storage, "f"); }
+        set seedling_start(value) { __classPrivateFieldSet(this, _AddPlantDialog_seedling_start_accessor_storage, value, "f"); }
+        get mother_start() { return __classPrivateFieldGet(this, _AddPlantDialog_mother_start_accessor_storage, "f"); }
+        set mother_start(value) { __classPrivateFieldSet(this, _AddPlantDialog_mother_start_accessor_storage, value, "f"); }
+        get clone_start() { return __classPrivateFieldGet(this, _AddPlantDialog_clone_start_accessor_storage, "f"); }
+        set clone_start(value) { __classPrivateFieldSet(this, _AddPlantDialog_clone_start_accessor_storage, value, "f"); }
+        get dry_start() { return __classPrivateFieldGet(this, _AddPlantDialog_dry_start_accessor_storage, "f"); }
+        set dry_start(value) { __classPrivateFieldSet(this, _AddPlantDialog_dry_start_accessor_storage, value, "f"); }
+        get cure_start() { return __classPrivateFieldGet(this, _AddPlantDialog_cure_start_accessor_storage, "f"); }
+        set cure_start(value) { __classPrivateFieldSet(this, _AddPlantDialog_cure_start_accessor_storage, value, "f"); }
+        // Provide a method to set initial data from parent if needed
+        setInitialState(row, col, strain = '', phenotype = '') {
+            this.row = row;
+            this.col = col;
+            this.strain = strain;
+            this.phenotype = phenotype;
+            // resetting dates
+            this.veg_start = '';
+            this.flower_start = '';
+            this.seedling_start = '';
+            this.mother_start = '';
+            this.clone_start = '';
+            this.dry_start = '';
+            this.cure_start = '';
+        }
+        _close() {
+            this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+        }
+        _confirm() {
+            const payload = {
+                row: this.row,
+                col: this.col,
+                strain: this.strain,
+                phenotype: this.phenotype,
+                veg_start: this.veg_start,
+                flower_start: this.flower_start,
+                seedling_start: this.seedling_start,
+                mother_start: this.mother_start,
+                clone_start: this.clone_start,
+                dry_start: this.dry_start,
+                cure_start: this.cure_start,
+            };
+            this.dispatchEvent(new CustomEvent('add-plant-submit', {
+                detail: payload,
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        render() {
+            console.log('[AddPlantDialog] render called, open:', this.open, 'strains:', this.strainLibrary?.length);
+            if (!this.open)
+                return x ``;
+            const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
+            return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -9601,39 +8986,39 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         </div>
       </ha-dialog>
     `;
-    }
-    renderTimelineContent() {
-        const name = this.growspaceName.toLowerCase();
-        if (name.includes('mother')) {
-            return x `<md3-date-input
+        }
+        renderTimelineContent() {
+            const name = this.growspaceName.toLowerCase();
+            if (name.includes('mother')) {
+                return x `<md3-date-input
         label="Mother Start"
         .value=${this.mother_start}
         @change=${(e) => (this.mother_start = e.detail)}
       ></md3-date-input>`;
-        }
-        else if (name.includes('clone')) {
-            return x `<md3-date-input
+            }
+            else if (name.includes('clone')) {
+                return x `<md3-date-input
         label="Clone Start"
         .value=${this.clone_start}
         @change=${(e) => (this.clone_start = e.detail)}
       ></md3-date-input>`;
-        }
-        else if (name.includes('dry')) {
-            return x `<md3-date-input
+            }
+            else if (name.includes('dry')) {
+                return x `<md3-date-input
         label="Dry Start"
         .value=${this.dry_start}
         @change=${(e) => (this.dry_start = e.detail)}
       ></md3-date-input>`;
-        }
-        else if (name.includes('cure')) {
-            return x `<md3-date-input
+            }
+            else if (name.includes('cure')) {
+                return x `<md3-date-input
         label="Cure Start"
         .value=${this.cure_start}
         @change=${(e) => (this.cure_start = e.detail)}
       ></md3-date-input>`;
-        }
-        else {
-            return x `
+            }
+            else {
+                return x `
         <md3-date-input
           label="Seedling Start"
           .value=${this.seedling_start}
@@ -9650,12 +9035,83 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           @change=${(e) => (this.flower_start = e.detail)}
         ></md3-date-input>
       `;
+            }
         }
-    }
-};
-AddPlantDialog.styles = [
-    dialogStyles,
-    i$6 `
+        constructor() {
+            super(...arguments);
+            _AddPlantDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _AddPlantDialog_strainLibrary_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _strainLibrary_initializers, [])));
+            _AddPlantDialog_growspaceName_accessor_storage.set(this, (__runInitializers(this, _strainLibrary_extraInitializers), __runInitializers(this, _growspaceName_initializers, '')));
+            _AddPlantDialog_open_accessor_storage.set(this, (__runInitializers(this, _growspaceName_extraInitializers), __runInitializers(this, _open_initializers, false)));
+            _AddPlantDialog_strain_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _strain_initializers, '')));
+            _AddPlantDialog_phenotype_accessor_storage.set(this, (__runInitializers(this, _strain_extraInitializers), __runInitializers(this, _phenotype_initializers, '')));
+            _AddPlantDialog_row_accessor_storage.set(this, (__runInitializers(this, _phenotype_extraInitializers), __runInitializers(this, _row_initializers, 0)));
+            _AddPlantDialog_col_accessor_storage.set(this, (__runInitializers(this, _row_extraInitializers), __runInitializers(this, _col_initializers, 0)));
+            _AddPlantDialog_veg_start_accessor_storage.set(this, (__runInitializers(this, _col_extraInitializers), __runInitializers(this, _veg_start_initializers, '')));
+            _AddPlantDialog_flower_start_accessor_storage.set(this, (__runInitializers(this, _veg_start_extraInitializers), __runInitializers(this, _flower_start_initializers, '')));
+            _AddPlantDialog_seedling_start_accessor_storage.set(this, (__runInitializers(this, _flower_start_extraInitializers), __runInitializers(this, _seedling_start_initializers, '')));
+            _AddPlantDialog_mother_start_accessor_storage.set(this, (__runInitializers(this, _seedling_start_extraInitializers), __runInitializers(this, _mother_start_initializers, '')));
+            _AddPlantDialog_clone_start_accessor_storage.set(this, (__runInitializers(this, _mother_start_extraInitializers), __runInitializers(this, _clone_start_initializers, '')));
+            _AddPlantDialog_dry_start_accessor_storage.set(this, (__runInitializers(this, _clone_start_extraInitializers), __runInitializers(this, _dry_start_initializers, '')));
+            _AddPlantDialog_cure_start_accessor_storage.set(this, (__runInitializers(this, _dry_start_extraInitializers), __runInitializers(this, _cure_start_initializers, '')));
+            __runInitializers(this, _cure_start_extraInitializers);
+        }
+    };
+    _AddPlantDialog_hass_accessor_storage = new WeakMap();
+    _AddPlantDialog_strainLibrary_accessor_storage = new WeakMap();
+    _AddPlantDialog_growspaceName_accessor_storage = new WeakMap();
+    _AddPlantDialog_open_accessor_storage = new WeakMap();
+    _AddPlantDialog_strain_accessor_storage = new WeakMap();
+    _AddPlantDialog_phenotype_accessor_storage = new WeakMap();
+    _AddPlantDialog_row_accessor_storage = new WeakMap();
+    _AddPlantDialog_col_accessor_storage = new WeakMap();
+    _AddPlantDialog_veg_start_accessor_storage = new WeakMap();
+    _AddPlantDialog_flower_start_accessor_storage = new WeakMap();
+    _AddPlantDialog_seedling_start_accessor_storage = new WeakMap();
+    _AddPlantDialog_mother_start_accessor_storage = new WeakMap();
+    _AddPlantDialog_clone_start_accessor_storage = new WeakMap();
+    _AddPlantDialog_dry_start_accessor_storage = new WeakMap();
+    _AddPlantDialog_cure_start_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "AddPlantDialog");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _strainLibrary_decorators = [n$5({ type: Array })];
+        _growspaceName_decorators = [n$5({ type: String })];
+        _open_decorators = [n$5({ type: Boolean, reflect: true })];
+        _strain_decorators = [r$2()];
+        _phenotype_decorators = [r$2()];
+        _row_decorators = [n$5({ type: Number })];
+        _col_decorators = [n$5({ type: Number })];
+        _veg_start_decorators = [r$2()];
+        _flower_start_decorators = [r$2()];
+        _seedling_start_decorators = [r$2()];
+        _mother_start_decorators = [r$2()];
+        _clone_start_decorators = [r$2()];
+        _dry_start_decorators = [r$2()];
+        _cure_start_decorators = [r$2()];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _strainLibrary_decorators, { kind: "accessor", name: "strainLibrary", static: false, private: false, access: { has: obj => "strainLibrary" in obj, get: obj => obj.strainLibrary, set: (obj, value) => { obj.strainLibrary = value; } }, metadata: _metadata }, _strainLibrary_initializers, _strainLibrary_extraInitializers);
+        __esDecorate(_classThis, null, _growspaceName_decorators, { kind: "accessor", name: "growspaceName", static: false, private: false, access: { has: obj => "growspaceName" in obj, get: obj => obj.growspaceName, set: (obj, value) => { obj.growspaceName = value; } }, metadata: _metadata }, _growspaceName_initializers, _growspaceName_extraInitializers);
+        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
+        __esDecorate(_classThis, null, _strain_decorators, { kind: "accessor", name: "strain", static: false, private: false, access: { has: obj => "strain" in obj, get: obj => obj.strain, set: (obj, value) => { obj.strain = value; } }, metadata: _metadata }, _strain_initializers, _strain_extraInitializers);
+        __esDecorate(_classThis, null, _phenotype_decorators, { kind: "accessor", name: "phenotype", static: false, private: false, access: { has: obj => "phenotype" in obj, get: obj => obj.phenotype, set: (obj, value) => { obj.phenotype = value; } }, metadata: _metadata }, _phenotype_initializers, _phenotype_extraInitializers);
+        __esDecorate(_classThis, null, _row_decorators, { kind: "accessor", name: "row", static: false, private: false, access: { has: obj => "row" in obj, get: obj => obj.row, set: (obj, value) => { obj.row = value; } }, metadata: _metadata }, _row_initializers, _row_extraInitializers);
+        __esDecorate(_classThis, null, _col_decorators, { kind: "accessor", name: "col", static: false, private: false, access: { has: obj => "col" in obj, get: obj => obj.col, set: (obj, value) => { obj.col = value; } }, metadata: _metadata }, _col_initializers, _col_extraInitializers);
+        __esDecorate(_classThis, null, _veg_start_decorators, { kind: "accessor", name: "veg_start", static: false, private: false, access: { has: obj => "veg_start" in obj, get: obj => obj.veg_start, set: (obj, value) => { obj.veg_start = value; } }, metadata: _metadata }, _veg_start_initializers, _veg_start_extraInitializers);
+        __esDecorate(_classThis, null, _flower_start_decorators, { kind: "accessor", name: "flower_start", static: false, private: false, access: { has: obj => "flower_start" in obj, get: obj => obj.flower_start, set: (obj, value) => { obj.flower_start = value; } }, metadata: _metadata }, _flower_start_initializers, _flower_start_extraInitializers);
+        __esDecorate(_classThis, null, _seedling_start_decorators, { kind: "accessor", name: "seedling_start", static: false, private: false, access: { has: obj => "seedling_start" in obj, get: obj => obj.seedling_start, set: (obj, value) => { obj.seedling_start = value; } }, metadata: _metadata }, _seedling_start_initializers, _seedling_start_extraInitializers);
+        __esDecorate(_classThis, null, _mother_start_decorators, { kind: "accessor", name: "mother_start", static: false, private: false, access: { has: obj => "mother_start" in obj, get: obj => obj.mother_start, set: (obj, value) => { obj.mother_start = value; } }, metadata: _metadata }, _mother_start_initializers, _mother_start_extraInitializers);
+        __esDecorate(_classThis, null, _clone_start_decorators, { kind: "accessor", name: "clone_start", static: false, private: false, access: { has: obj => "clone_start" in obj, get: obj => obj.clone_start, set: (obj, value) => { obj.clone_start = value; } }, metadata: _metadata }, _clone_start_initializers, _clone_start_extraInitializers);
+        __esDecorate(_classThis, null, _dry_start_decorators, { kind: "accessor", name: "dry_start", static: false, private: false, access: { has: obj => "dry_start" in obj, get: obj => obj.dry_start, set: (obj, value) => { obj.dry_start = value; } }, metadata: _metadata }, _dry_start_initializers, _dry_start_extraInitializers);
+        __esDecorate(_classThis, null, _cure_start_decorators, { kind: "accessor", name: "cure_start", static: false, private: false, access: { has: obj => "cure_start" in obj, get: obj => obj.cure_start, set: (obj, value) => { obj.cure_start = value; } }, metadata: _metadata }, _cure_start_initializers, _cure_start_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        dialogStyles,
+        i$6 `
       :host {
         display: block;
       }
@@ -9674,228 +9130,328 @@ AddPlantDialog.styles = [
         }
       }
     `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "hass", void 0);
-__decorate([
-    n$5({ type: Array }),
-    __metadata("design:type", Array)
-], AddPlantDialog.prototype, "strainLibrary", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "growspaceName", void 0);
-__decorate([
-    n$5({ type: Boolean, reflect: true }),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "open", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "strain", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "phenotype", void 0);
-__decorate([
-    n$5({ type: Number }),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "row", void 0);
-__decorate([
-    n$5({ type: Number }),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "col", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "veg_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "flower_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "seedling_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "mother_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "clone_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "dry_start", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], AddPlantDialog.prototype, "cure_start", void 0);
-AddPlantDialog = __decorate([
-    t$2('add-plant-dialog')
-], AddPlantDialog);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.growspaceOptions = {};
-        this.editedAttributes = {};
-        this.isEditing = true;
-        this.showAllDates = false;
-        this.cloneTargetId = '';
-        this._showDeleteConfirmation = false;
+class PlantClickEvent extends CustomEvent {
+    constructor(plant) {
+        super(PlantClickEvent.TYPE, {
+            detail: { plant },
+            bubbles: true,
+            composed: true,
+        });
     }
-    willUpdate(changedProps) {
-        // Handle dialog state object if passed (legacy/alternative usage)
-        if (changedProps.has('dialog') && this.dialog) {
-            this.plant = this.dialog.plant;
-            this.editedAttributes = this.dialog.editedAttributes || this._getAttributesFromPlant();
-            this.cloneTargetId = '';
+}
+PlantClickEvent.TYPE = 'plant-click';
+class AddPlantClickEvent extends CustomEvent {
+    constructor(row, col) {
+        super(AddPlantClickEvent.TYPE, {
+            detail: { row, col },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+AddPlantClickEvent.TYPE = 'add-plant-click';
+class PlantDropEvent extends CustomEvent {
+    constructor(originalEvent, targetRow, targetCol, targetPlant, sourcePlant) {
+        super(PlantDropEvent.TYPE, {
+            detail: { originalEvent, targetRow, targetCol, targetPlant, sourcePlant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+PlantDropEvent.TYPE = 'plant-drop';
+class SelectionChangedEvent extends CustomEvent {
+    constructor(selectedPlants) {
+        super(SelectionChangedEvent.TYPE, {
+            detail: { selectedPlants },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+SelectionChangedEvent.TYPE = 'selection-changed';
+class UpdatePlantEvent extends CustomEvent {
+    constructor(updates) {
+        super(UpdatePlantEvent.TYPE, {
+            detail: updates,
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+UpdatePlantEvent.TYPE = 'update-plant';
+class DeletePlantEvent extends CustomEvent {
+    constructor(plantId) {
+        super(DeletePlantEvent.TYPE, {
+            detail: { plantId },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+DeletePlantEvent.TYPE = 'delete-plant';
+class HarvestPlantEvent extends CustomEvent {
+    constructor(plant) {
+        super(HarvestPlantEvent.TYPE, {
+            detail: { plant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+HarvestPlantEvent.TYPE = 'harvest-plant';
+class FinishDryingEvent extends CustomEvent {
+    constructor(plant) {
+        super(FinishDryingEvent.TYPE, {
+            detail: { plant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+FinishDryingEvent.TYPE = 'finish-drying';
+class TakeCloneEvent extends CustomEvent {
+    constructor(plant, numClones) {
+        super(TakeCloneEvent.TYPE, {
+            detail: { plant, numClones },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+TakeCloneEvent.TYPE = 'take-clone';
+class MoveCloneEvent extends CustomEvent {
+    constructor(plant, targetGrowspace) {
+        super(MoveCloneEvent.TYPE, {
+            detail: { plant, targetGrowspace },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+MoveCloneEvent.TYPE = 'move-clone';
+class LibraryExportReadyEvent extends CustomEvent {
+    constructor(url) {
+        super(LibraryExportReadyEvent.TYPE, {
+            detail: { url },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+LibraryExportReadyEvent.TYPE = 'library-export-ready';
+
+(() => {
+    var _PlantOverviewDialog_hass_accessor_storage, _PlantOverviewDialog_open_accessor_storage, _PlantOverviewDialog_dialog_accessor_storage, _PlantOverviewDialog_plant_accessor_storage, _PlantOverviewDialog_growspaceOptions_accessor_storage, _PlantOverviewDialog_editedAttributes_accessor_storage, _PlantOverviewDialog_isEditing_accessor_storage, _PlantOverviewDialog_showAllDates_accessor_storage, _PlantOverviewDialog_cloneTargetId_accessor_storage, _PlantOverviewDialog__showDeleteConfirmation_accessor_storage;
+    let _classDecorators = [t$2('plant-overview-dialog')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _open_decorators;
+    let _open_initializers = [];
+    let _open_extraInitializers = [];
+    let _dialog_decorators;
+    let _dialog_initializers = [];
+    let _dialog_extraInitializers = [];
+    let _plant_decorators;
+    let _plant_initializers = [];
+    let _plant_extraInitializers = [];
+    let _growspaceOptions_decorators;
+    let _growspaceOptions_initializers = [];
+    let _growspaceOptions_extraInitializers = [];
+    let _editedAttributes_decorators;
+    let _editedAttributes_initializers = [];
+    let _editedAttributes_extraInitializers = [];
+    let _isEditing_decorators;
+    let _isEditing_initializers = [];
+    let _isEditing_extraInitializers = [];
+    let _showAllDates_decorators;
+    let _showAllDates_initializers = [];
+    let _showAllDates_extraInitializers = [];
+    let _cloneTargetId_decorators;
+    let _cloneTargetId_initializers = [];
+    let _cloneTargetId_extraInitializers = [];
+    let __showDeleteConfirmation_decorators;
+    let __showDeleteConfirmation_initializers = [];
+    let __showDeleteConfirmation_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get hass() { return __classPrivateFieldGet(this, _PlantOverviewDialog_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_hass_accessor_storage, value, "f"); }
+        get open() { return __classPrivateFieldGet(this, _PlantOverviewDialog_open_accessor_storage, "f"); }
+        set open(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_open_accessor_storage, value, "f"); }
+        get dialog() { return __classPrivateFieldGet(this, _PlantOverviewDialog_dialog_accessor_storage, "f"); }
+        set dialog(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_dialog_accessor_storage, value, "f"); }
+        get plant() { return __classPrivateFieldGet(this, _PlantOverviewDialog_plant_accessor_storage, "f"); }
+        set plant(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_plant_accessor_storage, value, "f"); }
+        get growspaceOptions() { return __classPrivateFieldGet(this, _PlantOverviewDialog_growspaceOptions_accessor_storage, "f"); }
+        set growspaceOptions(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_growspaceOptions_accessor_storage, value, "f"); }
+        get editedAttributes() { return __classPrivateFieldGet(this, _PlantOverviewDialog_editedAttributes_accessor_storage, "f"); }
+        set editedAttributes(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_editedAttributes_accessor_storage, value, "f"); }
+        get isEditing() { return __classPrivateFieldGet(this, _PlantOverviewDialog_isEditing_accessor_storage, "f"); }
+        set isEditing(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_isEditing_accessor_storage, value, "f"); }
+        get showAllDates() { return __classPrivateFieldGet(this, _PlantOverviewDialog_showAllDates_accessor_storage, "f"); }
+        set showAllDates(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_showAllDates_accessor_storage, value, "f"); }
+        get cloneTargetId() { return __classPrivateFieldGet(this, _PlantOverviewDialog_cloneTargetId_accessor_storage, "f"); }
+        set cloneTargetId(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_cloneTargetId_accessor_storage, value, "f"); }
+        get _showDeleteConfirmation() { return __classPrivateFieldGet(this, _PlantOverviewDialog__showDeleteConfirmation_accessor_storage, "f"); }
+        set _showDeleteConfirmation(value) { __classPrivateFieldSet(this, _PlantOverviewDialog__showDeleteConfirmation_accessor_storage, value, "f"); }
+        willUpdate(changedProps) {
+            // Handle dialog state object if passed (legacy/alternative usage)
+            if (changedProps.has('dialog') && this.dialog) {
+                this.plant = this.dialog.plant;
+                this.editedAttributes = this.dialog.editedAttributes || this._getAttributesFromPlant();
+                this.cloneTargetId = '';
+            }
+            // Handle direct prop injection (DialogHost usage)
+            // If editedAttributes is undefined/null (e.g. passed as null from parent), init it
+            if (!this.editedAttributes || (changedProps.has('plant') && !this.editedAttributes.strain)) {
+                this.editedAttributes = this.editedAttributes || this._getAttributesFromPlant();
+            }
         }
-        // Handle direct prop injection (DialogHost usage)
-        // If editedAttributes is undefined/null (e.g. passed as null from parent), init it
-        if (!this.editedAttributes || (changedProps.has('plant') && !this.editedAttributes.strain)) {
-            this.editedAttributes = this.editedAttributes || this._getAttributesFromPlant();
+        _getAttributesFromPlant() {
+            if (!this.plant)
+                return {};
+            return {
+                strain: this.plant?.attributes?.strain,
+                phenotype: this.plant?.attributes?.phenotype,
+                row: this.plant?.attributes?.row,
+                col: this.plant?.attributes?.col,
+                stage: this.plant?.state,
+                veg_start: this.plant?.attributes?.veg_start,
+                flower_start: this.plant?.attributes?.flower_start,
+                seedling_start: this.plant?.attributes?.seedling_start,
+                mother_start: this.plant?.attributes?.mother_start,
+                clone_start: this.plant?.attributes?.clone_start,
+                dry_start: this.plant?.attributes?.dry_start,
+                cure_start: this.plant?.attributes?.cure_start,
+            };
         }
-    }
-    _getAttributesFromPlant() {
-        if (!this.plant)
-            return {};
-        return {
-            strain: this.plant?.attributes?.strain,
-            phenotype: this.plant?.attributes?.phenotype,
-            row: this.plant?.attributes?.row,
-            col: this.plant?.attributes?.col,
-            stage: this.plant?.state,
-            veg_start: this.plant?.attributes?.veg_start,
-            flower_start: this.plant?.attributes?.flower_start,
-            seedling_start: this.plant?.attributes?.seedling_start,
-            mother_start: this.plant?.attributes?.mother_start,
-            clone_start: this.plant?.attributes?.clone_start,
-            dry_start: this.plant?.attributes?.dry_start,
-            cure_start: this.plant?.attributes?.cure_start,
-        };
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close'));
-    }
-    _update() {
-        this.dispatchEvent(new UpdatePlantEvent(this.editedAttributes));
-    }
-    _delete(plantId) {
-        this._showDeleteConfirmation = true;
-    }
-    _confirmDelete() {
-        if (this.plant) {
-            const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-            this.dispatchEvent(new DeletePlantEvent(plantId));
+        _close() {
+            this.dispatchEvent(new CustomEvent('close'));
+        }
+        _update() {
+            this.dispatchEvent(new UpdatePlantEvent(this.editedAttributes));
+        }
+        _delete(plantId) {
+            this._showDeleteConfirmation = true;
+        }
+        _confirmDelete() {
+            if (this.plant) {
+                const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+                this.dispatchEvent(new DeletePlantEvent(plantId));
+                this._showDeleteConfirmation = false;
+                this._close();
+            }
+        }
+        _cancelDelete() {
             this._showDeleteConfirmation = false;
-            this._close();
         }
-    }
-    _cancelDelete() {
-        this._showDeleteConfirmation = false;
-    }
-    _harvest(plant) {
-        this.dispatchEvent(new HarvestPlantEvent(plant));
-    }
-    _finishDrying(plant) {
-        this.dispatchEvent(new FinishDryingEvent(plant));
-    }
-    _takeClone(plant, numClones) {
-        this.dispatchEvent(new TakeCloneEvent(plant, numClones));
-    }
-    _moveClone(plant) {
-        if (!this.cloneTargetId) {
-            // alert is not ideal but keeping for now as per previous logic
-            alert('Select a growspace');
-            return;
+        _harvest(plant) {
+            this.dispatchEvent(new HarvestPlantEvent(plant));
         }
-        this.dispatchEvent(new MoveCloneEvent(plant, this.cloneTargetId));
-    }
-    _attributeChange(key, value) {
-        this.editedAttributes = { ...this.editedAttributes, [key]: value };
-        this.requestUpdate();
-    }
-    _toggleShowAllDates() {
-        this.showAllDates = !this.showAllDates;
-    }
-    _renderStatItem(label, value, unit = '') {
-        if (value === undefined || value === null || value === '')
-            return E;
-        return x `
+        _finishDrying(plant) {
+            this.dispatchEvent(new FinishDryingEvent(plant));
+        }
+        _takeClone(plant, numClones) {
+            this.dispatchEvent(new TakeCloneEvent(plant, numClones));
+        }
+        _moveClone(plant) {
+            if (!this.cloneTargetId) {
+                // alert is not ideal but keeping for now as per previous logic
+                alert('Select a growspace');
+                return;
+            }
+            this.dispatchEvent(new MoveCloneEvent(plant, this.cloneTargetId));
+        }
+        _attributeChange(key, value) {
+            this.editedAttributes = { ...this.editedAttributes, [key]: value };
+            this.requestUpdate();
+        }
+        _toggleShowAllDates() {
+            this.showAllDates = !this.showAllDates;
+        }
+        _renderStatItem(label, value, unit = '') {
+            if (value === undefined || value === null || value === '')
+                return E;
+            return x `
       <div class="stat-item">
         <span class="stat-value">${value} ${unit}</span>
         <span class="stat-label">${label}</span>
       </div>
     `;
-    }
-    _renderPlantStats(plant) {
-        if (!plant.attributes)
-            return E;
-        const currentStage = (plant.state || '').toLowerCase();
-        const normalize = (s) => {
-            if (s === 'veg' || s === 'vegetative')
-                return PlantStage.VEG;
-            if (s === 'mom')
-                return PlantStage.MOTHER;
-            return s;
-        };
-        const normCurrent = normalize(currentStage);
-        const stats = [
-            {
-                label: 'Vegetative Stage',
-                value: plant.attributes.veg_days,
-                unit: 'days',
-                stage: PlantStage.VEG,
-            },
-            {
-                label: 'Flowering Stage',
-                value: plant.attributes.flower_days,
-                unit: 'days',
-                stage: PlantStage.FLOWER,
-            },
-            {
-                label: 'Mother Stage',
-                value: plant.attributes.mom_days,
-                unit: 'days',
-                stage: PlantStage.MOTHER,
-            },
-            {
-                label: 'Clone Stage',
-                value: plant.attributes.clone_days,
-                unit: 'days',
-                stage: PlantStage.CLONE,
-            },
-            {
-                label: 'Drying Stage',
-                value: plant.attributes.dry_days,
-                unit: 'days',
-                stage: PlantStage.DRY,
-            },
-            {
-                label: 'Curing Stage',
-                value: plant.attributes.cure_days,
-                unit: 'days',
-                stage: PlantStage.CURE,
-            },
-        ].filter((s) => {
-            if (s.value === undefined || s.value === null)
-                return false;
-            const val = Number(s.value);
-            if (val > 0)
-                return true;
-            // Show if 0 but it's the current stage
-            return s.stage === normCurrent;
-        });
-        if (stats.length === 0)
-            return E;
-        return x `
+        }
+        _renderPlantStats(plant) {
+            if (!plant.attributes)
+                return E;
+            const currentStage = (plant.state || '').toLowerCase();
+            const normalize = (s) => {
+                if (s === 'veg' || s === 'vegetative')
+                    return PlantStage.VEG;
+                if (s === 'mom')
+                    return PlantStage.MOTHER;
+                return s;
+            };
+            const normCurrent = normalize(currentStage);
+            const stats = [
+                {
+                    label: 'Vegetative Stage',
+                    value: plant.attributes.veg_days,
+                    unit: 'days',
+                    stage: PlantStage.VEG,
+                },
+                {
+                    label: 'Flowering Stage',
+                    value: plant.attributes.flower_days,
+                    unit: 'days',
+                    stage: PlantStage.FLOWER,
+                },
+                {
+                    label: 'Mother Stage',
+                    value: plant.attributes.mom_days,
+                    unit: 'days',
+                    stage: PlantStage.MOTHER,
+                },
+                {
+                    label: 'Clone Stage',
+                    value: plant.attributes.clone_days,
+                    unit: 'days',
+                    stage: PlantStage.CLONE,
+                },
+                {
+                    label: 'Drying Stage',
+                    value: plant.attributes.dry_days,
+                    unit: 'days',
+                    stage: PlantStage.DRY,
+                },
+                {
+                    label: 'Curing Stage',
+                    value: plant.attributes.cure_days,
+                    unit: 'days',
+                    stage: PlantStage.CURE,
+                },
+            ].filter((s) => {
+                if (s.value === undefined || s.value === null)
+                    return false;
+                const val = Number(s.value);
+                if (val > 0)
+                    return true;
+                // Show if 0 but it's the current stage
+                return s.stage === normCurrent;
+            });
+            if (stats.length === 0)
+                return E;
+            return x `
       <div class="detail-card">
         <h3>Days in Stage</h3>
         <div class="stat-grid">
@@ -9903,9 +9459,9 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         </div>
       </div>
     `;
-    }
-    _renderDeleteOverlay() {
-        return x `
+        }
+        _renderDeleteOverlay() {
+            return x `
       <div
         class="dialog-overlay"
         style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:100; display:flex; align-items:center; justify-content:center;"
@@ -9932,14 +9488,14 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         </div>
       </div>
     `;
-    }
-    render() {
-        if (!this.plant)
-            return x ``;
-        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-        const stageColor = PlantUtils.getPlantStageColor(this.plant.state);
-        const stageIcon = PlantUtils.getPlantStageIcon(this.plant.state);
-        return x `
+        }
+        render() {
+            if (!this.plant)
+                return x ``;
+            const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+            const stageColor = PlantUtils.getPlantStageColor(this.plant.state);
+            const stageIcon = PlantUtils.getPlantStageIcon(this.plant.state);
+            return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -9979,7 +9535,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             <div class="detail-card">
               <h3>Identity & Location</h3>
               ${this.isEditing
-            ? x `
+                ? x `
                     <md3-text-input
                       label="Strain Name"
                       .value=${this.editedAttributes.strain || ''}
@@ -10004,7 +9560,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                       ></md3-number-input>
                     </div>
                   `
-            : x `
+                : x `
                     <div class="stat-grid">
                       <div class="stat-item">
                         <span class="stat-value">${this.plant.attributes?.strain}</span>
@@ -10046,7 +9602,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
               </div>
 
               ${this.showAllDates
-            ? x `
+                ? x `
                     <md3-date-input
                       label="Seedling Start"
                       .value=${this.editedAttributes.seedling_start ?? ''}
@@ -10090,9 +9646,9 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                       @change=${(e) => this._attributeChange('cure_start', e.detail)}
                     ></md3-date-input>
                   `
-            : x `
+                : x `
                     ${this.editedAttributes.stage === PlantStage.MOTHER
-                ? x `
+                    ? x `
                           <md3-date-input
                             label="Mother Start"
                             .value=${this.editedAttributes.mother_start ?? ''}
@@ -10100,9 +9656,9 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                             @change=${(e) => this._attributeChange('mother_start', e.detail)}
                           ></md3-date-input>
                         `
-                : E}
+                    : E}
                     ${this.editedAttributes.stage === PlantStage.CLONE
-                ? x `
+                    ? x `
                           <md3-date-input
                             label="Clone Start"
                             .value=${this.editedAttributes.clone_start ?? ''}
@@ -10110,10 +9666,10 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                             @change=${(e) => this._attributeChange('clone_start', e.detail)}
                           ></md3-date-input>
                         `
-                : E}
+                    : E}
                     ${this.editedAttributes.stage === PlantStage.VEG ||
-                this.editedAttributes.stage === PlantStage.FLOWER
-                ? x `
+                    this.editedAttributes.stage === PlantStage.FLOWER
+                    ? x `
                           <md3-date-input
                             label="Vegetative Start"
                             .value=${this.editedAttributes.veg_start ?? ''}
@@ -10121,9 +9677,9 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                             @change=${(e) => this._attributeChange('veg_start', e.detail)}
                           ></md3-date-input>
                         `
-                : E}
+                    : E}
                     ${this.editedAttributes.stage === PlantStage.FLOWER
-                ? x `
+                    ? x `
                           <md3-date-input
                             label="Flower Start"
                             .value=${this.editedAttributes.flower_start ?? ''}
@@ -10131,10 +9687,10 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                             @change=${(e) => this._attributeChange('flower_start', e.detail)}
                           ></md3-date-input>
                         `
-                : E}
+                    : E}
                     ${this.editedAttributes.stage === PlantStage.DRY ||
-                this.editedAttributes.stage === PlantStage.CURE
-                ? x `
+                    this.editedAttributes.stage === PlantStage.CURE
+                    ? x `
                           <md3-date-input
                             label="Dry Start"
                             .value=${this.editedAttributes.dry_start ?? ''}
@@ -10142,9 +9698,9 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                             @change=${(e) => this._attributeChange('dry_start', e.detail)}
                           ></md3-date-input>
                         `
-                : E}
+                    : E}
                     ${this.editedAttributes.stage === PlantStage.CURE
-                ? x `
+                    ? x `
                           <md3-date-input
                             label="Cure Start"
                             .value=${this.editedAttributes.cure_start ?? ''}
@@ -10152,7 +9708,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                             @change=${(e) => this._attributeChange('cure_start', e.detail)}
                           ></md3-date-input>
                         `
-                : E}
+                    : E}
                   `}
             </div>
           </div>
@@ -10175,7 +9731,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
 
             <!-- DYNAMIC ACTIONS -->
             ${(this.plant.state || '').toLowerCase() === PlantStage.MOTHER
-            ? x `
+                ? x `
                   <div
                     class="take-clone-container"
                     style="display:contents;"
@@ -10191,12 +9747,12 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                     <button
                       class="md3-button primary"
                       @click=${(e) => {
-                const btn = e.currentTarget;
-                const container = btn.parentElement;
-                const inputEl = container?.querySelector('md3-number-input');
-                const numClones = inputEl ? Number(inputEl.value) : 1;
-                this._takeClone(this.plant, numClones);
-            }}
+                    const btn = e.currentTarget;
+                    const container = btn.parentElement;
+                    const inputEl = container?.querySelector('md3-number-input');
+                    const numClones = inputEl ? Number(inputEl.value) : 1;
+                    this._takeClone(this.plant, numClones);
+                }}
                     >
                       <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
                         <path d="${mdiContentCopy}"></path>
@@ -10205,9 +9761,9 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                     </button>
                   </div>
                 `
-            : E}
+                : E}
             ${(this.plant.state || '').toLowerCase() === PlantStage.FLOWER
-            ? x `
+                ? x `
                   <button class="md3-button primary" @click=${() => this._harvest(this.plant)}>
                     <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
                       <path d="${mdiFlower}"></path>
@@ -10215,9 +9771,9 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                     Harvest
                   </button>
                 `
-            : E}
+                : E}
             ${(this.plant.state || '').toLowerCase() === PlantStage.DRY
-            ? x `
+                ? x `
                   <button
                     class="md3-button primary"
                     @click=${() => this._finishDrying(this.plant)}
@@ -10228,15 +9784,15 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                     Finish Drying
                   </button>
                 `
-            : E}
+                : E}
             ${(this.plant.state || '').toLowerCase() === PlantStage.CLONE
-            ? x `
+                ? x `
                   <div style="display:contents; display:flex; gap: 8px; align-items: center;">
                     <md3-select
                       .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({
-                label: name,
-                value: id,
-            }))}
+                    label: name,
+                    value: id,
+                }))}
                       .value=${this.cloneTargetId}
                       @change=${(e) => (this.cloneTargetId = e.detail)}
                       style="min-width: 150px;"
@@ -10249,16 +9805,67 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                     </button>
                   </div>
                 `
-            : E}
+                : E}
           </div>
         </div>
       </ha-dialog>
     `;
-    }
-};
-PlantOverviewDialog.styles = [
-    dialogStyles,
-    i$6 `
+        }
+        constructor() {
+            super(...arguments);
+            _PlantOverviewDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _PlantOverviewDialog_open_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _open_initializers, false)));
+            _PlantOverviewDialog_dialog_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _dialog_initializers, void 0)));
+            _PlantOverviewDialog_plant_accessor_storage.set(this, (__runInitializers(this, _dialog_extraInitializers), __runInitializers(this, _plant_initializers, void 0)));
+            _PlantOverviewDialog_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _plant_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
+            _PlantOverviewDialog_editedAttributes_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _editedAttributes_initializers, {})));
+            _PlantOverviewDialog_isEditing_accessor_storage.set(this, (__runInitializers(this, _editedAttributes_extraInitializers), __runInitializers(this, _isEditing_initializers, true)));
+            _PlantOverviewDialog_showAllDates_accessor_storage.set(this, (__runInitializers(this, _isEditing_extraInitializers), __runInitializers(this, _showAllDates_initializers, false)));
+            _PlantOverviewDialog_cloneTargetId_accessor_storage.set(this, (__runInitializers(this, _showAllDates_extraInitializers), __runInitializers(this, _cloneTargetId_initializers, '')));
+            _PlantOverviewDialog__showDeleteConfirmation_accessor_storage.set(this, (__runInitializers(this, _cloneTargetId_extraInitializers), __runInitializers(this, __showDeleteConfirmation_initializers, false)));
+            __runInitializers(this, __showDeleteConfirmation_extraInitializers);
+        }
+    };
+    _PlantOverviewDialog_hass_accessor_storage = new WeakMap();
+    _PlantOverviewDialog_open_accessor_storage = new WeakMap();
+    _PlantOverviewDialog_dialog_accessor_storage = new WeakMap();
+    _PlantOverviewDialog_plant_accessor_storage = new WeakMap();
+    _PlantOverviewDialog_growspaceOptions_accessor_storage = new WeakMap();
+    _PlantOverviewDialog_editedAttributes_accessor_storage = new WeakMap();
+    _PlantOverviewDialog_isEditing_accessor_storage = new WeakMap();
+    _PlantOverviewDialog_showAllDates_accessor_storage = new WeakMap();
+    _PlantOverviewDialog_cloneTargetId_accessor_storage = new WeakMap();
+    _PlantOverviewDialog__showDeleteConfirmation_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "PlantOverviewDialog");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _open_decorators = [n$5({ type: Boolean, reflect: true })];
+        _dialog_decorators = [n$5({ attribute: false })];
+        _plant_decorators = [n$5({ type: Object })];
+        _growspaceOptions_decorators = [n$5({ type: Object })];
+        _editedAttributes_decorators = [n$5({ attribute: false })];
+        _isEditing_decorators = [r$2()];
+        _showAllDates_decorators = [r$2()];
+        _cloneTargetId_decorators = [r$2()];
+        __showDeleteConfirmation_decorators = [r$2()];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
+        __esDecorate(_classThis, null, _dialog_decorators, { kind: "accessor", name: "dialog", static: false, private: false, access: { has: obj => "dialog" in obj, get: obj => obj.dialog, set: (obj, value) => { obj.dialog = value; } }, metadata: _metadata }, _dialog_initializers, _dialog_extraInitializers);
+        __esDecorate(_classThis, null, _plant_decorators, { kind: "accessor", name: "plant", static: false, private: false, access: { has: obj => "plant" in obj, get: obj => obj.plant, set: (obj, value) => { obj.plant = value; } }, metadata: _metadata }, _plant_initializers, _plant_extraInitializers);
+        __esDecorate(_classThis, null, _growspaceOptions_decorators, { kind: "accessor", name: "growspaceOptions", static: false, private: false, access: { has: obj => "growspaceOptions" in obj, get: obj => obj.growspaceOptions, set: (obj, value) => { obj.growspaceOptions = value; } }, metadata: _metadata }, _growspaceOptions_initializers, _growspaceOptions_extraInitializers);
+        __esDecorate(_classThis, null, _editedAttributes_decorators, { kind: "accessor", name: "editedAttributes", static: false, private: false, access: { has: obj => "editedAttributes" in obj, get: obj => obj.editedAttributes, set: (obj, value) => { obj.editedAttributes = value; } }, metadata: _metadata }, _editedAttributes_initializers, _editedAttributes_extraInitializers);
+        __esDecorate(_classThis, null, _isEditing_decorators, { kind: "accessor", name: "isEditing", static: false, private: false, access: { has: obj => "isEditing" in obj, get: obj => obj.isEditing, set: (obj, value) => { obj.isEditing = value; } }, metadata: _metadata }, _isEditing_initializers, _isEditing_extraInitializers);
+        __esDecorate(_classThis, null, _showAllDates_decorators, { kind: "accessor", name: "showAllDates", static: false, private: false, access: { has: obj => "showAllDates" in obj, get: obj => obj.showAllDates, set: (obj, value) => { obj.showAllDates = value; } }, metadata: _metadata }, _showAllDates_initializers, _showAllDates_extraInitializers);
+        __esDecorate(_classThis, null, _cloneTargetId_decorators, { kind: "accessor", name: "cloneTargetId", static: false, private: false, access: { has: obj => "cloneTargetId" in obj, get: obj => obj.cloneTargetId, set: (obj, value) => { obj.cloneTargetId = value; } }, metadata: _metadata }, _cloneTargetId_initializers, _cloneTargetId_extraInitializers);
+        __esDecorate(_classThis, null, __showDeleteConfirmation_decorators, { kind: "accessor", name: "_showDeleteConfirmation", static: false, private: false, access: { has: obj => "_showDeleteConfirmation" in obj, get: obj => obj._showDeleteConfirmation, set: (obj, value) => { obj._showDeleteConfirmation = value; } }, metadata: _metadata }, __showDeleteConfirmation_initializers, __showDeleteConfirmation_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        dialogStyles,
+        i$6 `
       :host {
         display: block;
       }
@@ -10380,163 +9987,192 @@ PlantOverviewDialog.styles = [
         }
       }
     `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "hass", void 0);
-__decorate([
-    n$5({ type: Boolean, reflect: true }),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "open", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "dialog", void 0);
-__decorate([
-    n$5({ type: Object }),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "plant", void 0);
-__decorate([
-    n$5({ type: Object }),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "growspaceOptions", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "editedAttributes", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "isEditing", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "showAllDates", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "cloneTargetId", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], PlantOverviewDialog.prototype, "_showDeleteConfirmation", void 0);
-PlantOverviewDialog = __decorate([
-    t$2('plant-overview-dialog')
-], PlantOverviewDialog);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.strains = [];
-        this._view = 'browse';
-        this._searchQuery = '';
-        this._editorState = {};
-        this._isCropping = false;
-        this._isImageSelectorOpen = false;
-        this._importDialogOpen = false;
-        this._mobileMenuOpen = false;
-        this._pendingDeleteKey = null;
-        this._importReplace = false;
+(() => {
+    var _StrainLibraryDialog_open_accessor_storage, _StrainLibraryDialog_strains_accessor_storage, _StrainLibraryDialog__view_accessor_storage, _StrainLibraryDialog__searchQuery_accessor_storage, _StrainLibraryDialog__editorState_accessor_storage, _StrainLibraryDialog__isCropping_accessor_storage, _StrainLibraryDialog__isImageSelectorOpen_accessor_storage, _StrainLibraryDialog__importDialogOpen_accessor_storage, _StrainLibraryDialog__mobileMenuOpen_accessor_storage, _StrainLibraryDialog__pendingDeleteKey_accessor_storage, _StrainLibraryDialog__importReplace_accessor_storage, _StrainLibraryDialog__currentPage_accessor_storage;
+    let _classDecorators = [t$2('strain-library-dialog')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _open_decorators;
+    let _open_initializers = [];
+    let _open_extraInitializers = [];
+    let _strains_decorators;
+    let _strains_initializers = [];
+    let _strains_extraInitializers = [];
+    let __view_decorators;
+    let __view_initializers = [];
+    let __view_extraInitializers = [];
+    let __searchQuery_decorators;
+    let __searchQuery_initializers = [];
+    let __searchQuery_extraInitializers = [];
+    let __editorState_decorators;
+    let __editorState_initializers = [];
+    let __editorState_extraInitializers = [];
+    let __isCropping_decorators;
+    let __isCropping_initializers = [];
+    let __isCropping_extraInitializers = [];
+    let __isImageSelectorOpen_decorators;
+    let __isImageSelectorOpen_initializers = [];
+    let __isImageSelectorOpen_extraInitializers = [];
+    let __importDialogOpen_decorators;
+    let __importDialogOpen_initializers = [];
+    let __importDialogOpen_extraInitializers = [];
+    let __mobileMenuOpen_decorators;
+    let __mobileMenuOpen_initializers = [];
+    let __mobileMenuOpen_extraInitializers = [];
+    let __pendingDeleteKey_decorators;
+    let __pendingDeleteKey_initializers = [];
+    let __pendingDeleteKey_extraInitializers = [];
+    let __importReplace_decorators;
+    let __importReplace_initializers = [];
+    let __importReplace_extraInitializers = [];
+    let __currentPage_decorators;
+    let __currentPage_initializers = [];
+    let __currentPage_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        constructor() {
+            super(...arguments);
+            _StrainLibraryDialog_open_accessor_storage.set(this, __runInitializers(this, _open_initializers, false));
+            _StrainLibraryDialog_strains_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _strains_initializers, [])));
+            _StrainLibraryDialog__view_accessor_storage.set(this, (__runInitializers(this, _strains_extraInitializers), __runInitializers(this, __view_initializers, 'browse')));
+            _StrainLibraryDialog__searchQuery_accessor_storage.set(this, (__runInitializers(this, __view_extraInitializers), __runInitializers(this, __searchQuery_initializers, '')));
+            _StrainLibraryDialog__editorState_accessor_storage.set(this, (__runInitializers(this, __searchQuery_extraInitializers), __runInitializers(this, __editorState_initializers, {})));
+            _StrainLibraryDialog__isCropping_accessor_storage.set(this, (__runInitializers(this, __editorState_extraInitializers), __runInitializers(this, __isCropping_initializers, false)));
+            _StrainLibraryDialog__isImageSelectorOpen_accessor_storage.set(this, (__runInitializers(this, __isCropping_extraInitializers), __runInitializers(this, __isImageSelectorOpen_initializers, false)));
+            _StrainLibraryDialog__importDialogOpen_accessor_storage.set(this, (__runInitializers(this, __isImageSelectorOpen_extraInitializers), __runInitializers(this, __importDialogOpen_initializers, false)));
+            _StrainLibraryDialog__mobileMenuOpen_accessor_storage.set(this, (__runInitializers(this, __importDialogOpen_extraInitializers), __runInitializers(this, __mobileMenuOpen_initializers, false)));
+            _StrainLibraryDialog__pendingDeleteKey_accessor_storage.set(this, (__runInitializers(this, __mobileMenuOpen_extraInitializers), __runInitializers(this, __pendingDeleteKey_initializers, null)));
+            _StrainLibraryDialog__importReplace_accessor_storage.set(this, (__runInitializers(this, __pendingDeleteKey_extraInitializers), __runInitializers(this, __importReplace_initializers, false)));
+            _StrainLibraryDialog__currentPage_accessor_storage.set(this, (__runInitializers(this, __importReplace_extraInitializers), __runInitializers(this, __currentPage_initializers, 1)));
+            this.ITEMS_PER_PAGE = (__runInitializers(this, __currentPage_extraInitializers), 15);
+        }
+        get open() { return __classPrivateFieldGet(this, _StrainLibraryDialog_open_accessor_storage, "f"); }
+        set open(value) { __classPrivateFieldSet(this, _StrainLibraryDialog_open_accessor_storage, value, "f"); }
+        get strains() { return __classPrivateFieldGet(this, _StrainLibraryDialog_strains_accessor_storage, "f"); }
+        set strains(value) { __classPrivateFieldSet(this, _StrainLibraryDialog_strains_accessor_storage, value, "f"); }
+        get _view() { return __classPrivateFieldGet(this, _StrainLibraryDialog__view_accessor_storage, "f"); }
+        set _view(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__view_accessor_storage, value, "f"); }
+        get _searchQuery() { return __classPrivateFieldGet(this, _StrainLibraryDialog__searchQuery_accessor_storage, "f"); }
+        set _searchQuery(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__searchQuery_accessor_storage, value, "f"); }
+        get _editorState() { return __classPrivateFieldGet(this, _StrainLibraryDialog__editorState_accessor_storage, "f"); }
+        set _editorState(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__editorState_accessor_storage, value, "f"); }
+        get _isCropping() { return __classPrivateFieldGet(this, _StrainLibraryDialog__isCropping_accessor_storage, "f"); }
+        set _isCropping(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__isCropping_accessor_storage, value, "f"); }
+        get _isImageSelectorOpen() { return __classPrivateFieldGet(this, _StrainLibraryDialog__isImageSelectorOpen_accessor_storage, "f"); }
+        set _isImageSelectorOpen(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__isImageSelectorOpen_accessor_storage, value, "f"); }
+        get _importDialogOpen() { return __classPrivateFieldGet(this, _StrainLibraryDialog__importDialogOpen_accessor_storage, "f"); }
+        set _importDialogOpen(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__importDialogOpen_accessor_storage, value, "f"); }
+        get _mobileMenuOpen() { return __classPrivateFieldGet(this, _StrainLibraryDialog__mobileMenuOpen_accessor_storage, "f"); }
+        set _mobileMenuOpen(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__mobileMenuOpen_accessor_storage, value, "f"); }
+        get _pendingDeleteKey() { return __classPrivateFieldGet(this, _StrainLibraryDialog__pendingDeleteKey_accessor_storage, "f"); }
+        set _pendingDeleteKey(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__pendingDeleteKey_accessor_storage, value, "f"); }
+        get _importReplace() { return __classPrivateFieldGet(this, _StrainLibraryDialog__importReplace_accessor_storage, "f"); }
+        set _importReplace(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__importReplace_accessor_storage, value, "f"); }
         // Pagination State
-        this._currentPage = 1;
-        this.ITEMS_PER_PAGE = 15;
-    }
-    _startEdit(strain) {
-        if (strain) {
-            this._editorState = { ...strain };
+        get _currentPage() { return __classPrivateFieldGet(this, _StrainLibraryDialog__currentPage_accessor_storage, "f"); }
+        set _currentPage(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__currentPage_accessor_storage, value, "f"); }
+        _startEdit(strain) {
+            if (strain) {
+                this._editorState = { ...strain };
+            }
+            else {
+                this._editorState = {
+                    strain: '',
+                    phenotype: '',
+                    breeder: '',
+                    type: 'Hybrid',
+                    flowering_days_min: 60,
+                    flowering_days_max: 70,
+                    lineage: '',
+                    sex: 'Feminized',
+                    description: '',
+                    image: '',
+                    sativa_percentage: 50,
+                    indica_percentage: 50,
+                };
+            }
+            this._view = 'editor';
         }
-        else {
-            this._editorState = {
-                strain: '',
-                phenotype: '',
-                breeder: '',
-                type: 'Hybrid',
-                flowering_days_min: 60,
-                flowering_days_max: 70,
-                lineage: '',
-                sex: 'Feminized',
-                description: '',
-                image: '',
-                sativa_percentage: 50,
-                indica_percentage: 50,
-            };
+        _handleSave() {
+            if (!this._editorState.strain)
+                return;
+            this.dispatchEvent(new CustomEvent('save-strain', { detail: this._editorState }));
+            this._view = 'browse';
         }
-        this._view = 'editor';
-    }
-    _handleSave() {
-        if (!this._editorState.strain)
-            return;
-        this.dispatchEvent(new CustomEvent('save-strain', { detail: this._editorState }));
-        this._view = 'browse';
-    }
-    _handleDelete(key) {
-        this._pendingDeleteKey = key;
-    }
-    _confirmDelete() {
-        if (this._pendingDeleteKey) {
-            this.dispatchEvent(new CustomEvent('delete-strain', { detail: { key: this._pendingDeleteKey } }));
+        _handleDelete(key) {
+            this._pendingDeleteKey = key;
+        }
+        _confirmDelete() {
+            if (this._pendingDeleteKey) {
+                this.dispatchEvent(new CustomEvent('delete-strain', { detail: { key: this._pendingDeleteKey } }));
+                this._pendingDeleteKey = null;
+            }
+        }
+        _cancelDelete() {
             this._pendingDeleteKey = null;
         }
-    }
-    _cancelDelete() {
-        this._pendingDeleteKey = null;
-    }
-    _handleEditorChange(field, value) {
-        this._editorState = { ...this._editorState, [field]: value };
-    }
-    _toggleCropMode(active) {
-        this._isCropping = active;
-    }
-    _toggleImageSelector(isOpen) {
-        this._isImageSelectorOpen = isOpen;
-    }
-    _handleSelectLibraryImage(imageUrl) {
-        this._editorState = { ...this._editorState, image: imageUrl };
-        // Find existing crop meta
-        const existing = this.strains.find((s) => s.image === imageUrl && !!s.image_crop_meta);
-        if (existing && existing.image_crop_meta) {
-            this._editorState.image_crop_meta = { ...existing.image_crop_meta };
+        _handleEditorChange(field, value) {
+            this._editorState = { ...this._editorState, [field]: value };
         }
-        else {
-            delete this._editorState.image_crop_meta;
+        _toggleCropMode(active) {
+            this._isCropping = active;
         }
-        this._isImageSelectorOpen = false;
-    }
-    _handleImportFile() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.zip';
-        input.onchange = (e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-                this.dispatchEvent(new CustomEvent('import-library', {
-                    detail: { file, replace: this._importReplace },
-                }));
-                this._importDialogOpen = false;
+        _toggleImageSelector(isOpen) {
+            this._isImageSelectorOpen = isOpen;
+        }
+        _handleSelectLibraryImage(imageUrl) {
+            this._editorState = { ...this._editorState, image: imageUrl };
+            // Find existing crop meta
+            const existing = this.strains.find((s) => s.image === imageUrl && !!s.image_crop_meta);
+            if (existing && existing.image_crop_meta) {
+                this._editorState.image_crop_meta = { ...existing.image_crop_meta };
             }
-        };
-        input.click();
-    }
-    getCropStyle(image, meta) {
-        if (!meta)
-            return `background-image: url('${image}')`;
-        return `
+            else {
+                delete this._editorState.image_crop_meta;
+            }
+            this._isImageSelectorOpen = false;
+        }
+        _handleImportFile() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.zip';
+            input.onchange = (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                    this.dispatchEvent(new CustomEvent('import-library', {
+                        detail: { file, replace: this._importReplace },
+                    }));
+                    this._importDialogOpen = false;
+                }
+            };
+            input.click();
+        }
+        getCropStyle(image, meta) {
+            if (!meta)
+                return `background-image: url('${image}')`;
+            return `
       background-image: url('${image}');
       background-size: ${meta.scale * 100}%;
       background-position: ${meta.x}% ${meta.y}%;
     `;
-    }
-    getImgStyle(meta) {
-        if (!meta)
-            return 'width: 100%; height: 100%; object-fit: cover;';
-        return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
-    }
-    render() {
-        if (!this.open)
-            return E;
-        return x `
+        }
+        getImgStyle(meta) {
+            if (!meta)
+                return 'width: 100%; height: 100%; object-fit: cover;';
+            return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
+        }
+        render() {
+            if (!this.open)
+                return E;
+            return x `
       <ha-dialog
         open
         @closed=${() => this.dispatchEvent(new CustomEvent('close'))}
@@ -10554,22 +10190,22 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         ${this._pendingDeleteKey ? this.renderDeleteConfirmation() : E}
       </ha-dialog>
     `;
-    }
-    renderBrowseView() {
-        const query = this._searchQuery.toLowerCase();
-        const filteredStrains = this.strains.filter((s) => s.strain.toLowerCase().includes(query) ||
-            (s.breeder && s.breeder.toLowerCase().includes(query)) ||
-            (s.phenotype && s.phenotype.toLowerCase().includes(query))).sort((a, b) => a.strain.localeCompare(b.strain));
-        // Pagination Logic
-        const totalPages = Math.ceil(filteredStrains.length / this.ITEMS_PER_PAGE);
-        if (this._currentPage > totalPages && totalPages > 0) {
-            this._currentPage = totalPages;
         }
-        if (this._currentPage < 1)
-            this._currentPage = 1;
-        const startIndex = (this._currentPage - 1) * this.ITEMS_PER_PAGE;
-        const paginatedStrains = filteredStrains.slice(startIndex, startIndex + this.ITEMS_PER_PAGE);
-        return x `
+        renderBrowseView() {
+            const query = this._searchQuery.toLowerCase();
+            const filteredStrains = this.strains.filter((s) => s.strain.toLowerCase().includes(query) ||
+                (s.breeder && s.breeder.toLowerCase().includes(query)) ||
+                (s.phenotype && s.phenotype.toLowerCase().includes(query))).sort((a, b) => a.strain.localeCompare(b.strain));
+            // Pagination Logic
+            const totalPages = Math.ceil(filteredStrains.length / this.ITEMS_PER_PAGE);
+            if (this._currentPage > totalPages && totalPages > 0) {
+                this._currentPage = totalPages;
+            }
+            if (this._currentPage < 1)
+                this._currentPage = 1;
+            const startIndex = (this._currentPage - 1) * this.ITEMS_PER_PAGE;
+            const paginatedStrains = filteredStrains.slice(startIndex, startIndex + this.ITEMS_PER_PAGE);
+            return x `
       <div class="dialog-header">
         <div class="dialog-icon">
           <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
@@ -10617,9 +10253,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
               placeholder="Search Strains by Name, Breeder..."
               .value=${this._searchQuery}
               @change=${(e) => {
-            this._searchQuery = e.detail;
-            this._currentPage = 1;
-        }}
+                this._searchQuery = e.detail;
+                this._currentPage = 1;
+            }}
             ></md3-text-input>
           </div>
         </div>
@@ -10629,7 +10265,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         </div>
 
         ${filteredStrains.length === 0
-            ? x `
+                ? x `
               <div style="text-align:center; padding: 40px; color: var(--secondary-text-color);">
                 <svg
                   style="width:48px;height:48px;fill:currentColor; opacity:0.5;"
@@ -10640,9 +10276,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 <p>No strains found matching "${query}"</p>
               </div>
             `
-            : E}
+                : E}
         ${totalPages > 1
-            ? x `
+                ? x `
               <div class="pagination-container">
                 <button
                   class="pagination-btn"
@@ -10665,44 +10301,44 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 </button>
               </div>
             `
-            : E}
+                : E}
       </div>
 
       <!-- Mobile Menu Dropdown -->
       ${this._mobileMenuOpen
-            ? x `
+                ? x `
             <div class="menu-overlay" @click=${() => (this._mobileMenuOpen = false)}></div>
             <div class="mobile-menu">
               <div
                 class="mobile-menu-item"
                 @click=${() => {
-                this.dispatchEvent(new CustomEvent('get-recommendation'));
-                this._mobileMenuOpen = false;
-            }}
+                    this.dispatchEvent(new CustomEvent('get-recommendation'));
+                    this._mobileMenuOpen = false;
+                }}
               >
                 <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg> Get Recommendation
               </div>
               <div
                 class="mobile-menu-item"
                 @click=${() => {
-                this._importDialogOpen = true;
-                this._mobileMenuOpen = false;
-            }}
+                    this._importDialogOpen = true;
+                    this._mobileMenuOpen = false;
+                }}
               >
                 <svg viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg> Import Strains
               </div>
               <div
                 class="mobile-menu-item"
                 @click=${() => {
-                this.dispatchEvent(new CustomEvent('export-library'));
-                this._mobileMenuOpen = false;
-            }}
+                    this.dispatchEvent(new CustomEvent('export-library'));
+                    this._mobileMenuOpen = false;
+                }}
               >
                 <svg viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg> Export Strains
               </div>
             </div>
           `
-            : E}
+                : E}
 
       <!-- Mobile FAB -->
       <button class="fab-btn" @click=${() => this._startEdit()}>
@@ -10744,28 +10380,28 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         </button>
       </div>
     `;
-    }
-    renderStrainCard(strain) {
-        let typeIcon = mdiLeaf;
-        const typeLabel = strain.type || 'Unknown';
-        const lowerType = (strain.type || '').toLowerCase();
-        if (lowerType.includes('indica'))
-            typeIcon = mdiWeatherNight;
-        else if (lowerType.includes('sativa'))
-            typeIcon = mdiWeatherSunny;
-        else if (lowerType.includes('hybrid'))
-            typeIcon = mdiTuneVariant;
-        return x `
+        }
+        renderStrainCard(strain) {
+            let typeIcon = mdiLeaf;
+            const typeLabel = strain.type || 'Unknown';
+            const lowerType = (strain.type || '').toLowerCase();
+            if (lowerType.includes('indica'))
+                typeIcon = mdiWeatherNight;
+            else if (lowerType.includes('sativa'))
+                typeIcon = mdiWeatherSunny;
+            else if (lowerType.includes('hybrid'))
+                typeIcon = mdiTuneVariant;
+            return x `
       <div class="strain-card" @click=${() => this._startEdit(strain)}>
         <div class="sc-thumb">
           ${strain.image
-            ? x `<img
+                ? x `<img
                 src="${strain.image}"
                 loading="lazy"
                 alt="${strain.strain}"
                 style="${this.getImgStyle(strain.image_crop_meta)}"
               />`
-            : x `<svg
+                : x `<svg
                 style="width:48px;height:48px;opacity:0.2;fill:currentColor;"
                 viewBox="0 0 24 24"
               >
@@ -10775,9 +10411,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             <button
               class="sc-action-btn"
               @click=${(e) => {
-            e.stopPropagation();
-            this._handleDelete(strain.key);
-        }}
+                e.stopPropagation();
+                this._handleDelete(strain.key);
+            }}
             >
               <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiDelete}"></path>
@@ -10797,34 +10433,34 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           </div>
           <div class="sc-meta">
             ${strain.flowering_days_min
-            ? x `<span
+                ? x `<span
                   >Flowering: ${strain.flowering_days_min}-${strain.flowering_days_max || '?'}
                   Days</span
                 >`
-            : E}
+                : E}
             ${strain.breeder ? x `<span>Breeder: ${strain.breeder}</span>` : E}
           </div>
         </div>
       </div>
     `;
-    }
-    renderEditorView() {
-        const s = this._editorState;
-        const isEdit = !!s.strain &&
-            this.strains.some((ex) => ex.strain === s.strain && ex.phenotype === s.phenotype);
-        const uniqueStrains = [...new Set(this.strains.map((st) => st.strain).filter(Boolean))].sort();
-        const uniqueBreeders = [
-            ...new Set(this.strains.map((st) => st.breeder).filter(Boolean)),
-        ].sort();
-        const handleFileChange = (e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-                PlantUtils.compressImage(file)
-                    .then((base64) => this._handleEditorChange('image', base64))
-                    .catch((err) => console.error('Error compressing image:', err));
-            }
-        };
-        return x `
+        }
+        renderEditorView() {
+            const s = this._editorState;
+            const isEdit = !!s.strain &&
+                this.strains.some((ex) => ex.strain === s.strain && ex.phenotype === s.phenotype);
+            const uniqueStrains = [...new Set(this.strains.map((st) => st.strain).filter(Boolean))].sort();
+            const uniqueBreeders = [
+                ...new Set(this.strains.map((st) => st.breeder).filter(Boolean)),
+            ].sort();
+            const handleFileChange = (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                    PlantUtils.compressImage(file)
+                        .then((base64) => this._handleEditorChange('image', base64))
+                        .catch((err) => console.error('Error compressing image:', err));
+                }
+            };
+            return x `
       <datalist id="strain-suggestions">
         ${uniqueStrains.map((name) => x `<option value="${name}"></option>`)}
       </datalist>
@@ -10867,33 +10503,33 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             <div
               class="photo-upload-area"
               @click=${(e) => {
-            const target = e.target;
-            if (!target.closest('.crop-btn') &&
-                !target.closest('.select-library-btn') &&
-                !target.closest('.md3-button')) {
-                e.currentTarget.querySelector('input')?.click();
-            }
-        }}
+                const target = e.target;
+                if (!target.closest('.crop-btn') &&
+                    !target.closest('.select-library-btn') &&
+                    !target.closest('.md3-button')) {
+                    e.currentTarget.querySelector('input')?.click();
+                }
+            }}
               @dragover=${(e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'copy';
-        }}
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+            }}
               @drop=${(e) => {
-            e.preventDefault();
-            const file = e.dataTransfer?.files[0];
-            if (file) {
-                PlantUtils.compressImage(file)
-                    .then((base64) => this._handleEditorChange('image', base64))
-                    .catch((err) => console.error('Error compressing image:', err));
-            }
-        }}
+                e.preventDefault();
+                const file = e.dataTransfer?.files[0];
+                if (file) {
+                    PlantUtils.compressImage(file)
+                        .then((base64) => this._handleEditorChange('image', base64))
+                        .catch((err) => console.error('Error compressing image:', err));
+                }
+            }}
             >
               <button
                 class="select-library-btn"
                 @click=${(e) => {
-            e.stopPropagation();
-            this._toggleImageSelector(true);
-        }}
+                e.stopPropagation();
+                this._toggleImageSelector(true);
+            }}
               >
                 <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
                   <path d="${mdiViewDashboard}"></path>
@@ -10902,12 +10538,12 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
               </button>
 
               ${s.image
-            ? x `
+                ? x `
                     ${s.image_crop_meta
-                ? x `<div
+                    ? x `<div
                           style="width:100%; height:100%; border-radius:10px; ${this.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"
                         ></div>`
-                : x `<img
+                    : x `<img
                           src="${s.image}"
                           style="width:100%; height:100%; object-fit:cover; border-radius:10px;"
                         />`}
@@ -10917,9 +10553,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                         class="crop-btn"
                         style="background:rgba(0,0,0,0.6); border:none; padding:6px; border-radius:50%; cursor:pointer; color:white;"
                         @click=${(e) => {
-                e.stopPropagation();
-                this._toggleCropMode(true);
-            }}
+                    e.stopPropagation();
+                    this._toggleCropMode(true);
+                }}
                         title="Crop Image"
                       >
                         <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
@@ -10935,7 +10571,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                       </div>
                     </div>
                   `
-            : x `
+                : x `
                     <div style="display: flex; gap: 16px; align-items: center;">
                       <div
                         style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
@@ -10943,7 +10579,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                         <button
                           class="md3-button tonal"
                           @click=${(e) => e.currentTarget
-                .nextElementSibling.click()}
+                    .nextElementSibling.click()}
                         >
                           <svg
                             style="width:24px;height:24px;fill:currentColor;"
@@ -10968,7 +10604,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                         <button
                           class="md3-button tonal"
                           @click=${(e) => e.currentTarget
-                .nextElementSibling.click()}
+                    .nextElementSibling.click()}
                         >
                           <svg
                             style="width:24px;height:24px;fill:currentColor;"
@@ -11032,15 +10668,15 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
               <label class="sd-label">Type *</label>
               <div class="type-selector-grid">
                 ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map((t) => {
-            let icon = mdiLeaf;
-            if (t === 'Indica')
-                icon = mdiWeatherNight;
-            if (t === 'Sativa')
-                icon = mdiWeatherSunny;
-            if (t === 'Hybrid')
-                icon = mdiTuneVariant;
-            const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
-            return x `
+                let icon = mdiLeaf;
+                if (t === 'Indica')
+                    icon = mdiWeatherNight;
+                if (t === 'Sativa')
+                    icon = mdiWeatherSunny;
+                if (t === 'Hybrid')
+                    icon = mdiTuneVariant;
+                const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
+                return x `
                     <div
                       class="type-option ${isActive ? 'active' : ''}"
                       @click=${() => this._handleEditorChange('type', t)}
@@ -11051,12 +10687,12 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                       >
                     </div>
                   `;
-        })}
+            })}
               </div>
             </div>
 
             ${(s.type || '').toLowerCase() === 'hybrid'
-            ? x `
+                ? x `
                   <div style="margin-bottom: 20px;">
                     <label
                       class="md3-label"
@@ -11080,14 +10716,14 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                             max="100"
                             .value=${s.indica_percentage || 0}
                             @input=${(e) => {
-                let val = Math.floor(parseFloat(e.target.value)) || 0;
-                if (val < 0)
-                    val = 0;
-                if (val > 100)
-                    val = 100;
-                this._handleEditorChange('indica_percentage', val);
-                this._handleEditorChange('sativa_percentage', 100 - val);
-            }}
+                    let val = Math.floor(parseFloat(e.target.value)) || 0;
+                    if (val < 0)
+                        val = 0;
+                    if (val > 100)
+                        val = 100;
+                    this._handleEditorChange('indica_percentage', val);
+                    this._handleEditorChange('sativa_percentage', 100 - val);
+                }}
                           />
                           <span>%</span>
                         </div>
@@ -11103,14 +10739,14 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                             max="100"
                             .value=${s.sativa_percentage || 0}
                             @input=${(e) => {
-                let val = Math.floor(parseFloat(e.target.value)) || 0;
-                if (val < 0)
-                    val = 0;
-                if (val > 100)
-                    val = 100;
-                this._handleEditorChange('sativa_percentage', val);
-                this._handleEditorChange('indica_percentage', 100 - val);
-            }}
+                    let val = Math.floor(parseFloat(e.target.value)) || 0;
+                    if (val < 0)
+                        val = 0;
+                    if (val > 100)
+                        val = 100;
+                    this._handleEditorChange('sativa_percentage', val);
+                    this._handleEditorChange('indica_percentage', 100 - val);
+                }}
                           />
                           <span>%</span>
                         </div>
@@ -11119,16 +10755,16 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                       <div
                         class="hg-bar-track"
                         @click=${(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                let percent = Math.round((x / rect.width) * 100);
-                if (percent < 0)
-                    percent = 0;
-                if (percent > 100)
-                    percent = 100;
-                this._handleEditorChange('indica_percentage', percent);
-                this._handleEditorChange('sativa_percentage', 100 - percent);
-            }}
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    let percent = Math.round((x / rect.width) * 100);
+                    if (percent < 0)
+                        percent = 0;
+                    if (percent > 100)
+                        percent = 100;
+                    this._handleEditorChange('indica_percentage', percent);
+                    this._handleEditorChange('sativa_percentage', 100 - percent);
+                }}
                       >
                         <div
                           class="hg-bar-indica"
@@ -11142,7 +10778,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                     </div>
                   </div>
                 `
-            : E}
+                : E}
 
             <div class="sd-form-group">
               <label class="sd-label">Flowering Time (Days)</label>
@@ -11208,7 +10844,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
 
       <div class="sd-footer" style="justify-content: space-between;">
         ${s.key
-            ? x `
+                ? x `
               <button
                 class="md3-button text"
                 style="color: var(--error-color, #f44336);"
@@ -11220,7 +10856,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 Delete
               </button>
             `
-            : x `<div></div>`}
+                : x `<div></div>`}
 
         <div style="display:flex; gap:12px;">
           <button class="md3-button tonal" @click=${() => (this._view = 'browse')}>Cancel</button>
@@ -11233,38 +10869,38 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         </div>
       </div>
     `;
-    }
-    renderCropOverlay() {
-        const s = this._editorState;
-        if (!s.image)
-            return E;
-        const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
-        const handleWheel = (e) => {
-            e.preventDefault();
-            const delta = e.deltaY * -0.001;
-            const newScale = Math.min(Math.max(meta.scale + delta, 1), 5);
-            this._handleEditorChange('image_crop_meta', { ...meta, scale: newScale });
-        };
-        const handleMouseDown = (e) => {
-            const startX = e.clientX;
-            const startY = e.clientY;
-            const startMetaX = meta.x;
-            const startMetaY = meta.y;
-            const onMouseMove = (ev) => {
-                const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
-                const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
-                const newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
-                const newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
-                this._handleEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
+        }
+        renderCropOverlay() {
+            const s = this._editorState;
+            if (!s.image)
+                return E;
+            const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
+            const handleWheel = (e) => {
+                e.preventDefault();
+                const delta = e.deltaY * -0.001;
+                const newScale = Math.min(Math.max(meta.scale + delta, 1), 5);
+                this._handleEditorChange('image_crop_meta', { ...meta, scale: newScale });
             };
-            const onMouseUp = () => {
-                window.removeEventListener('mousemove', onMouseMove);
-                window.removeEventListener('mouseup', onMouseUp);
+            const handleMouseDown = (e) => {
+                const startX = e.clientX;
+                const startY = e.clientY;
+                const startMetaX = meta.x;
+                const startMetaY = meta.y;
+                const onMouseMove = (ev) => {
+                    const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
+                    const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
+                    const newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
+                    const newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
+                    this._handleEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
+                };
+                const onMouseUp = () => {
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                };
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mouseup', onMouseUp);
             };
-            window.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('mouseup', onMouseUp);
-        };
-        return x `
+            return x `
       <div class="crop-overlay">
         <h3 style="color:white; margin-bottom:20px;">Adjust Image</h3>
         <div
@@ -11295,9 +10931,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             step="0.1"
             .value=${meta.scale.toString()}
             @input=${(e) => this._handleEditorChange('image_crop_meta', {
-            ...meta,
-            scale: parseFloat(e.target.value),
-        })}
+                ...meta,
+                scale: parseFloat(e.target.value),
+            })}
           />
 
           <div style="display:flex; gap:12px; margin-top:12px;">
@@ -11315,18 +10951,18 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         </div>
       </div>
     `;
-    }
-    renderImageSelector() {
-        const imageMap = new Map();
-        this.strains.forEach((s) => {
-            if (s.image) {
-                if (!imageMap.has(s.image)) {
-                    imageMap.set(s.image, []);
+        }
+        renderImageSelector() {
+            const imageMap = new Map();
+            this.strains.forEach((s) => {
+                if (s.image) {
+                    if (!imageMap.has(s.image)) {
+                        imageMap.set(s.image, []);
+                    }
+                    imageMap.get(s.image).push({ strain: s.strain, phenotype: s.phenotype || '' });
                 }
-                imageMap.get(s.image).push({ strain: s.strain, phenotype: s.phenotype || '' });
-            }
-        });
-        return x `
+            });
+            return x `
       <div class="crop-overlay">
         <div
           class="glass-dialog-container"
@@ -11360,8 +10996,8 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                       ${infoList.map((info, index) => x `
                           <div
                             style="${index < infoList.length - 1
-            ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);'
-            : ''}"
+                ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);'
+                : ''}"
                           >
                             <div style="font-weight: 700;">Strain: ${info.strain}</div>
                             <div style="opacity: 0.9;">Pheno: ${info.phenotype || 'N/A'}</div>
@@ -11372,19 +11008,19 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 `)}
             </div>
             ${imageMap.size === 0
-            ? x `<p
+                ? x `<p
                   style="text-align: center; color: var(--secondary-text-color); margin-top: 40px;"
                 >
                   No images found in library.
                 </p>`
-            : E}
+                : E}
           </div>
         </div>
       </div>
     `;
-    }
-    renderImportDialog() {
-        return x `
+        }
+        renderImportDialog() {
+            return x `
       <div class="crop-overlay">
         <div class="glass-dialog-container" style="width: 400px; max-width: 90vw; height: auto;">
           <div class="dialog-header">
@@ -11461,9 +11097,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         </div>
       </div>
     `;
-    }
-    renderDeleteConfirmation() {
-        return x `
+        }
+        renderDeleteConfirmation() {
+            return x `
       <div class="crop-overlay">
         <div
           class="glass-dialog-container"
@@ -11490,11 +11126,54 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         </div>
       </div>
     `;
-    }
-};
-StrainLibraryDialog.styles = [
-    dialogStyles,
-    i$6 `
+        }
+    };
+    _StrainLibraryDialog_open_accessor_storage = new WeakMap();
+    _StrainLibraryDialog_strains_accessor_storage = new WeakMap();
+    _StrainLibraryDialog__view_accessor_storage = new WeakMap();
+    _StrainLibraryDialog__searchQuery_accessor_storage = new WeakMap();
+    _StrainLibraryDialog__editorState_accessor_storage = new WeakMap();
+    _StrainLibraryDialog__isCropping_accessor_storage = new WeakMap();
+    _StrainLibraryDialog__isImageSelectorOpen_accessor_storage = new WeakMap();
+    _StrainLibraryDialog__importDialogOpen_accessor_storage = new WeakMap();
+    _StrainLibraryDialog__mobileMenuOpen_accessor_storage = new WeakMap();
+    _StrainLibraryDialog__pendingDeleteKey_accessor_storage = new WeakMap();
+    _StrainLibraryDialog__importReplace_accessor_storage = new WeakMap();
+    _StrainLibraryDialog__currentPage_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "StrainLibraryDialog");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _open_decorators = [n$5({ type: Boolean })];
+        _strains_decorators = [n$5({ type: Array })];
+        __view_decorators = [r$2()];
+        __searchQuery_decorators = [r$2()];
+        __editorState_decorators = [r$2()];
+        __isCropping_decorators = [r$2()];
+        __isImageSelectorOpen_decorators = [r$2()];
+        __importDialogOpen_decorators = [r$2()];
+        __mobileMenuOpen_decorators = [r$2()];
+        __pendingDeleteKey_decorators = [r$2()];
+        __importReplace_decorators = [r$2()];
+        __currentPage_decorators = [r$2()];
+        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
+        __esDecorate(_classThis, null, _strains_decorators, { kind: "accessor", name: "strains", static: false, private: false, access: { has: obj => "strains" in obj, get: obj => obj.strains, set: (obj, value) => { obj.strains = value; } }, metadata: _metadata }, _strains_initializers, _strains_extraInitializers);
+        __esDecorate(_classThis, null, __view_decorators, { kind: "accessor", name: "_view", static: false, private: false, access: { has: obj => "_view" in obj, get: obj => obj._view, set: (obj, value) => { obj._view = value; } }, metadata: _metadata }, __view_initializers, __view_extraInitializers);
+        __esDecorate(_classThis, null, __searchQuery_decorators, { kind: "accessor", name: "_searchQuery", static: false, private: false, access: { has: obj => "_searchQuery" in obj, get: obj => obj._searchQuery, set: (obj, value) => { obj._searchQuery = value; } }, metadata: _metadata }, __searchQuery_initializers, __searchQuery_extraInitializers);
+        __esDecorate(_classThis, null, __editorState_decorators, { kind: "accessor", name: "_editorState", static: false, private: false, access: { has: obj => "_editorState" in obj, get: obj => obj._editorState, set: (obj, value) => { obj._editorState = value; } }, metadata: _metadata }, __editorState_initializers, __editorState_extraInitializers);
+        __esDecorate(_classThis, null, __isCropping_decorators, { kind: "accessor", name: "_isCropping", static: false, private: false, access: { has: obj => "_isCropping" in obj, get: obj => obj._isCropping, set: (obj, value) => { obj._isCropping = value; } }, metadata: _metadata }, __isCropping_initializers, __isCropping_extraInitializers);
+        __esDecorate(_classThis, null, __isImageSelectorOpen_decorators, { kind: "accessor", name: "_isImageSelectorOpen", static: false, private: false, access: { has: obj => "_isImageSelectorOpen" in obj, get: obj => obj._isImageSelectorOpen, set: (obj, value) => { obj._isImageSelectorOpen = value; } }, metadata: _metadata }, __isImageSelectorOpen_initializers, __isImageSelectorOpen_extraInitializers);
+        __esDecorate(_classThis, null, __importDialogOpen_decorators, { kind: "accessor", name: "_importDialogOpen", static: false, private: false, access: { has: obj => "_importDialogOpen" in obj, get: obj => obj._importDialogOpen, set: (obj, value) => { obj._importDialogOpen = value; } }, metadata: _metadata }, __importDialogOpen_initializers, __importDialogOpen_extraInitializers);
+        __esDecorate(_classThis, null, __mobileMenuOpen_decorators, { kind: "accessor", name: "_mobileMenuOpen", static: false, private: false, access: { has: obj => "_mobileMenuOpen" in obj, get: obj => obj._mobileMenuOpen, set: (obj, value) => { obj._mobileMenuOpen = value; } }, metadata: _metadata }, __mobileMenuOpen_initializers, __mobileMenuOpen_extraInitializers);
+        __esDecorate(_classThis, null, __pendingDeleteKey_decorators, { kind: "accessor", name: "_pendingDeleteKey", static: false, private: false, access: { has: obj => "_pendingDeleteKey" in obj, get: obj => obj._pendingDeleteKey, set: (obj, value) => { obj._pendingDeleteKey = value; } }, metadata: _metadata }, __pendingDeleteKey_initializers, __pendingDeleteKey_extraInitializers);
+        __esDecorate(_classThis, null, __importReplace_decorators, { kind: "accessor", name: "_importReplace", static: false, private: false, access: { has: obj => "_importReplace" in obj, get: obj => obj._importReplace, set: (obj, value) => { obj._importReplace = value; } }, metadata: _metadata }, __importReplace_initializers, __importReplace_extraInitializers);
+        __esDecorate(_classThis, null, __currentPage_decorators, { kind: "accessor", name: "_currentPage", static: false, private: false, access: { has: obj => "_currentPage" in obj, get: obj => obj._currentPage, set: (obj, value) => { obj._currentPage = value; } }, metadata: _metadata }, __currentPage_initializers, __currentPage_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        dialogStyles,
+        i$6 `
       :host {
         --accent-green: #4caf50;
         /* Using dialogStyles variables where possible */
@@ -12029,207 +11708,257 @@ StrainLibraryDialog.styles = [
         z-index: 25;
       }
     `,
-];
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "open", void 0);
-__decorate([
-    n$5({ type: Array }),
-    __metadata("design:type", Array)
-], StrainLibraryDialog.prototype, "strains", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", String)
-], StrainLibraryDialog.prototype, "_view", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_searchQuery", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_editorState", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_isCropping", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_isImageSelectorOpen", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_importDialogOpen", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_mobileMenuOpen", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_pendingDeleteKey", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_importReplace", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], StrainLibraryDialog.prototype, "_currentPage", void 0);
-StrainLibraryDialog = __decorate([
-    t$2('strain-library-dialog')
-], StrainLibraryDialog);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let ConfigDialog = class ConfigDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.growspaceOptions = {};
-        this.devices = [];
-        this.initialTab = 'environment';
-        this.currentTab = 'environment';
-        this._initialStateApplied = false;
+(() => {
+    var _ConfigDialog_open_accessor_storage, _ConfigDialog_hass_accessor_storage, _ConfigDialog_growspaceOptions_accessor_storage, _ConfigDialog_devices_accessor_storage, _ConfigDialog_initialTab_accessor_storage, _ConfigDialog_currentTab_accessor_storage, _ConfigDialog_add_name_accessor_storage, _ConfigDialog_add_rows_accessor_storage, _ConfigDialog_add_plants_per_row_accessor_storage, _ConfigDialog_add_notification_service_accessor_storage, _ConfigDialog_edit_selectedId_accessor_storage, _ConfigDialog_edit_name_accessor_storage, _ConfigDialog_edit_rows_accessor_storage, _ConfigDialog_edit_plants_per_row_accessor_storage, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, _ConfigDialog_env_temp_sensor_accessor_storage, _ConfigDialog_env_humidity_sensor_accessor_storage, _ConfigDialog_env_vpd_sensor_accessor_storage, _ConfigDialog_env_co2_sensor_accessor_storage, _ConfigDialog_env_circulation_fan_accessor_storage, _ConfigDialog_env_stress_threshold_accessor_storage, _ConfigDialog_env_mold_threshold_accessor_storage, _ConfigDialog__showDeleteConfirm_accessor_storage;
+    let _classDecorators = [t$2('config-dialog')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _open_decorators;
+    let _open_initializers = [];
+    let _open_extraInitializers = [];
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _growspaceOptions_decorators;
+    let _growspaceOptions_initializers = [];
+    let _growspaceOptions_extraInitializers = [];
+    let _devices_decorators;
+    let _devices_initializers = [];
+    let _devices_extraInitializers = [];
+    let _initialTab_decorators;
+    let _initialTab_initializers = [];
+    let _initialTab_extraInitializers = [];
+    let _currentTab_decorators;
+    let _currentTab_initializers = [];
+    let _currentTab_extraInitializers = [];
+    let _add_name_decorators;
+    let _add_name_initializers = [];
+    let _add_name_extraInitializers = [];
+    let _add_rows_decorators;
+    let _add_rows_initializers = [];
+    let _add_rows_extraInitializers = [];
+    let _add_plants_per_row_decorators;
+    let _add_plants_per_row_initializers = [];
+    let _add_plants_per_row_extraInitializers = [];
+    let _add_notification_service_decorators;
+    let _add_notification_service_initializers = [];
+    let _add_notification_service_extraInitializers = [];
+    let _edit_selectedId_decorators;
+    let _edit_selectedId_initializers = [];
+    let _edit_selectedId_extraInitializers = [];
+    let _edit_name_decorators;
+    let _edit_name_initializers = [];
+    let _edit_name_extraInitializers = [];
+    let _edit_rows_decorators;
+    let _edit_rows_initializers = [];
+    let _edit_rows_extraInitializers = [];
+    let _edit_plants_per_row_decorators;
+    let _edit_plants_per_row_initializers = [];
+    let _edit_plants_per_row_extraInitializers = [];
+    let _env_selectedGrowspaceId_decorators;
+    let _env_selectedGrowspaceId_initializers = [];
+    let _env_selectedGrowspaceId_extraInitializers = [];
+    let _env_temp_sensor_decorators;
+    let _env_temp_sensor_initializers = [];
+    let _env_temp_sensor_extraInitializers = [];
+    let _env_humidity_sensor_decorators;
+    let _env_humidity_sensor_initializers = [];
+    let _env_humidity_sensor_extraInitializers = [];
+    let _env_vpd_sensor_decorators;
+    let _env_vpd_sensor_initializers = [];
+    let _env_vpd_sensor_extraInitializers = [];
+    let _env_co2_sensor_decorators;
+    let _env_co2_sensor_initializers = [];
+    let _env_co2_sensor_extraInitializers = [];
+    let _env_circulation_fan_decorators;
+    let _env_circulation_fan_initializers = [];
+    let _env_circulation_fan_extraInitializers = [];
+    let _env_stress_threshold_decorators;
+    let _env_stress_threshold_initializers = [];
+    let _env_stress_threshold_extraInitializers = [];
+    let _env_mold_threshold_decorators;
+    let _env_mold_threshold_initializers = [];
+    let _env_mold_threshold_extraInitializers = [];
+    let __showDeleteConfirm_decorators;
+    let __showDeleteConfirm_initializers = [];
+    let __showDeleteConfirm_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get open() { return __classPrivateFieldGet(this, _ConfigDialog_open_accessor_storage, "f"); }
+        set open(value) { __classPrivateFieldSet(this, _ConfigDialog_open_accessor_storage, value, "f"); }
+        get hass() { return __classPrivateFieldGet(this, _ConfigDialog_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _ConfigDialog_hass_accessor_storage, value, "f"); }
+        get growspaceOptions() { return __classPrivateFieldGet(this, _ConfigDialog_growspaceOptions_accessor_storage, "f"); }
+        set growspaceOptions(value) { __classPrivateFieldSet(this, _ConfigDialog_growspaceOptions_accessor_storage, value, "f"); }
+        get devices() { return __classPrivateFieldGet(this, _ConfigDialog_devices_accessor_storage, "f"); }
+        set devices(value) { __classPrivateFieldSet(this, _ConfigDialog_devices_accessor_storage, value, "f"); }
+        get initialTab() { return __classPrivateFieldGet(this, _ConfigDialog_initialTab_accessor_storage, "f"); }
+        set initialTab(value) { __classPrivateFieldSet(this, _ConfigDialog_initialTab_accessor_storage, value, "f"); }
+        get currentTab() { return __classPrivateFieldGet(this, _ConfigDialog_currentTab_accessor_storage, "f"); }
+        set currentTab(value) { __classPrivateFieldSet(this, _ConfigDialog_currentTab_accessor_storage, value, "f"); }
         // Add Growspace Data
-        this.add_name = '';
-        this.add_rows = 4;
-        this.add_plants_per_row = 4;
-        this.add_notification_service = 'mobile_app_notify';
+        get add_name() { return __classPrivateFieldGet(this, _ConfigDialog_add_name_accessor_storage, "f"); }
+        set add_name(value) { __classPrivateFieldSet(this, _ConfigDialog_add_name_accessor_storage, value, "f"); }
+        get add_rows() { return __classPrivateFieldGet(this, _ConfigDialog_add_rows_accessor_storage, "f"); }
+        set add_rows(value) { __classPrivateFieldSet(this, _ConfigDialog_add_rows_accessor_storage, value, "f"); }
+        get add_plants_per_row() { return __classPrivateFieldGet(this, _ConfigDialog_add_plants_per_row_accessor_storage, "f"); }
+        set add_plants_per_row(value) { __classPrivateFieldSet(this, _ConfigDialog_add_plants_per_row_accessor_storage, value, "f"); }
+        get add_notification_service() { return __classPrivateFieldGet(this, _ConfigDialog_add_notification_service_accessor_storage, "f"); }
+        set add_notification_service(value) { __classPrivateFieldSet(this, _ConfigDialog_add_notification_service_accessor_storage, value, "f"); }
         // Edit Growspace Data
-        this.edit_selectedId = '';
-        this.edit_name = '';
-        this.edit_rows = 0;
-        this.edit_plants_per_row = 0;
+        get edit_selectedId() { return __classPrivateFieldGet(this, _ConfigDialog_edit_selectedId_accessor_storage, "f"); }
+        set edit_selectedId(value) { __classPrivateFieldSet(this, _ConfigDialog_edit_selectedId_accessor_storage, value, "f"); }
+        get edit_name() { return __classPrivateFieldGet(this, _ConfigDialog_edit_name_accessor_storage, "f"); }
+        set edit_name(value) { __classPrivateFieldSet(this, _ConfigDialog_edit_name_accessor_storage, value, "f"); }
+        get edit_rows() { return __classPrivateFieldGet(this, _ConfigDialog_edit_rows_accessor_storage, "f"); }
+        set edit_rows(value) { __classPrivateFieldSet(this, _ConfigDialog_edit_rows_accessor_storage, value, "f"); }
+        get edit_plants_per_row() { return __classPrivateFieldGet(this, _ConfigDialog_edit_plants_per_row_accessor_storage, "f"); }
+        set edit_plants_per_row(value) { __classPrivateFieldSet(this, _ConfigDialog_edit_plants_per_row_accessor_storage, value, "f"); }
         // Environment Data
-        this.env_selectedGrowspaceId = '';
-        this.env_temp_sensor = '';
-        this.env_humidity_sensor = '';
-        this.env_vpd_sensor = '';
-        this.env_co2_sensor = '';
-        this.env_circulation_fan = '';
-        this.env_stress_threshold = 0.8;
-        this.env_mold_threshold = 0.8;
-        this._showDeleteConfirm = false;
-    }
-    updated(changedProperties) {
-        super.updated(changedProperties);
-        // Apply initial tab state only once when dialog opens
-        if (changedProperties.has('open')) {
-            if (this.open) {
-                if (!this._initialStateApplied) {
-                    if (this.currentTab) ;
-                    this._initialStateApplied = true;
+        get env_selectedGrowspaceId() { return __classPrivateFieldGet(this, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, "f"); }
+        set env_selectedGrowspaceId(value) { __classPrivateFieldSet(this, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, value, "f"); }
+        get env_temp_sensor() { return __classPrivateFieldGet(this, _ConfigDialog_env_temp_sensor_accessor_storage, "f"); }
+        set env_temp_sensor(value) { __classPrivateFieldSet(this, _ConfigDialog_env_temp_sensor_accessor_storage, value, "f"); }
+        get env_humidity_sensor() { return __classPrivateFieldGet(this, _ConfigDialog_env_humidity_sensor_accessor_storage, "f"); }
+        set env_humidity_sensor(value) { __classPrivateFieldSet(this, _ConfigDialog_env_humidity_sensor_accessor_storage, value, "f"); }
+        get env_vpd_sensor() { return __classPrivateFieldGet(this, _ConfigDialog_env_vpd_sensor_accessor_storage, "f"); }
+        set env_vpd_sensor(value) { __classPrivateFieldSet(this, _ConfigDialog_env_vpd_sensor_accessor_storage, value, "f"); }
+        get env_co2_sensor() { return __classPrivateFieldGet(this, _ConfigDialog_env_co2_sensor_accessor_storage, "f"); }
+        set env_co2_sensor(value) { __classPrivateFieldSet(this, _ConfigDialog_env_co2_sensor_accessor_storage, value, "f"); }
+        get env_circulation_fan() { return __classPrivateFieldGet(this, _ConfigDialog_env_circulation_fan_accessor_storage, "f"); }
+        set env_circulation_fan(value) { __classPrivateFieldSet(this, _ConfigDialog_env_circulation_fan_accessor_storage, value, "f"); }
+        get env_stress_threshold() { return __classPrivateFieldGet(this, _ConfigDialog_env_stress_threshold_accessor_storage, "f"); }
+        set env_stress_threshold(value) { __classPrivateFieldSet(this, _ConfigDialog_env_stress_threshold_accessor_storage, value, "f"); }
+        get env_mold_threshold() { return __classPrivateFieldGet(this, _ConfigDialog_env_mold_threshold_accessor_storage, "f"); }
+        set env_mold_threshold(value) { __classPrivateFieldSet(this, _ConfigDialog_env_mold_threshold_accessor_storage, value, "f"); }
+        updated(changedProperties) {
+            super.updated(changedProperties);
+            // Apply initial tab state only once when dialog opens
+            if (changedProperties.has('open')) {
+                if (this.open) {
+                    if (!this._initialStateApplied) {
+                        if (this.currentTab) ;
+                        this._initialStateApplied = true;
+                    }
+                }
+                else if (!this.open) {
+                    // Reset flag when dialog closes so next open respects initialTab again
+                    this._initialStateApplied = false;
                 }
             }
-            else if (!this.open) {
-                // Reset flag when dialog closes so next open respects initialTab again
-                this._initialStateApplied = false;
+        }
+        // Provide initial state setting from parent
+        setInitialState(currentTab = 'environment', environmentData) {
+            this.currentTab = currentTab;
+            if (environmentData) {
+                this.env_selectedGrowspaceId = environmentData.selectedGrowspaceId;
+                this.env_temp_sensor = environmentData.temp_sensor;
+                this.env_humidity_sensor = environmentData.humidity_sensor;
+                this.env_vpd_sensor = environmentData.vpd_sensor;
+                this.env_co2_sensor = environmentData.co2_sensor;
+                this.env_circulation_fan = environmentData.circulation_fan;
+                this.env_stress_threshold = environmentData.stress_threshold;
+                this.env_mold_threshold = environmentData.mold_threshold;
             }
         }
-    }
-    // Provide initial state setting from parent
-    setInitialState(currentTab = 'environment', environmentData) {
-        this.currentTab = currentTab;
-        if (environmentData) {
-            this.env_selectedGrowspaceId = environmentData.selectedGrowspaceId;
-            this.env_temp_sensor = environmentData.temp_sensor;
-            this.env_humidity_sensor = environmentData.humidity_sensor;
-            this.env_vpd_sensor = environmentData.vpd_sensor;
-            this.env_co2_sensor = environmentData.co2_sensor;
-            this.env_circulation_fan = environmentData.circulation_fan;
-            this.env_stress_threshold = environmentData.stress_threshold;
-            this.env_mold_threshold = environmentData.mold_threshold;
+        _close() {
+            this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
         }
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
-    _switchTab(tab) {
-        this.currentTab = tab;
-    }
-    // --- Submission Handlers ---
-    _submitAddGrowspace() {
-        this.dispatchEvent(new CustomEvent('add-growspace-submit', {
-            detail: {
-                name: this.add_name,
-                rows: this.add_rows,
-                plants_per_row: this.add_plants_per_row,
-                notification_service: this.add_notification_service,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _submitEnvironment() {
-        this.dispatchEvent(new CustomEvent('configure-environment-submit', {
-            detail: {
-                selectedGrowspaceId: this.env_selectedGrowspaceId,
-                temp_sensor: this.env_temp_sensor,
-                humidity_sensor: this.env_humidity_sensor,
-                vpd_sensor: this.env_vpd_sensor,
-                co2_sensor: this.env_co2_sensor,
-                circulation_fan: this.env_circulation_fan,
-                stress_threshold: this.env_stress_threshold,
-                mold_threshold: this.env_mold_threshold,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _submitEditGrowspace() {
-        if (!this.edit_selectedId)
-            return;
-        this.dispatchEvent(new CustomEvent('edit-growspace-submit', {
-            detail: {
-                growspace_id: this.edit_selectedId,
-                name: this.edit_name,
-                rows: this.edit_rows,
-                plants_per_row: this.edit_plants_per_row,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _submitDeleteGrowspace() {
-        if (!this.edit_selectedId)
-            return;
-        this._showDeleteConfirm = true;
-    }
-    _confirmDeleteGrowspace() {
-        this.dispatchEvent(new CustomEvent('delete-growspace-submit', {
-            detail: {
-                growspace_id: this.edit_selectedId,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-        // Reset selection after delete
-        this.edit_selectedId = '';
-        this.edit_name = '';
-        this.edit_rows = 0;
-        this.edit_plants_per_row = 0;
-        this._showDeleteConfirm = false;
-    }
-    _cancelDeleteGrowspace() {
-        this._showDeleteConfirm = false;
-    }
-    _handleEditSelection(e) {
-        const growspaceId = e.target.value;
-        this.edit_selectedId = growspaceId;
-        if (growspaceId && this.devices) {
-            const device = this.devices.find((d) => d.device_id === growspaceId);
-            if (device) {
-                this.edit_name = device.name;
-                this.edit_rows = device.rows || 4;
-                this.edit_plants_per_row = device.plants_per_row || 4;
+        _switchTab(tab) {
+            this.currentTab = tab;
+        }
+        // --- Submission Handlers ---
+        _submitAddGrowspace() {
+            this.dispatchEvent(new CustomEvent('add-growspace-submit', {
+                detail: {
+                    name: this.add_name,
+                    rows: this.add_rows,
+                    plants_per_row: this.add_plants_per_row,
+                    notification_service: this.add_notification_service,
+                },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        _submitEnvironment() {
+            this.dispatchEvent(new CustomEvent('configure-environment-submit', {
+                detail: {
+                    selectedGrowspaceId: this.env_selectedGrowspaceId,
+                    temp_sensor: this.env_temp_sensor,
+                    humidity_sensor: this.env_humidity_sensor,
+                    vpd_sensor: this.env_vpd_sensor,
+                    co2_sensor: this.env_co2_sensor,
+                    circulation_fan: this.env_circulation_fan,
+                    stress_threshold: this.env_stress_threshold,
+                    mold_threshold: this.env_mold_threshold,
+                },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        get _showDeleteConfirm() { return __classPrivateFieldGet(this, _ConfigDialog__showDeleteConfirm_accessor_storage, "f"); }
+        set _showDeleteConfirm(value) { __classPrivateFieldSet(this, _ConfigDialog__showDeleteConfirm_accessor_storage, value, "f"); }
+        _submitEditGrowspace() {
+            if (!this.edit_selectedId)
+                return;
+            this.dispatchEvent(new CustomEvent('edit-growspace-submit', {
+                detail: {
+                    growspace_id: this.edit_selectedId,
+                    name: this.edit_name,
+                    rows: this.edit_rows,
+                    plants_per_row: this.edit_plants_per_row,
+                },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        _submitDeleteGrowspace() {
+            if (!this.edit_selectedId)
+                return;
+            this._showDeleteConfirm = true;
+        }
+        _confirmDeleteGrowspace() {
+            this.dispatchEvent(new CustomEvent('delete-growspace-submit', {
+                detail: {
+                    growspace_id: this.edit_selectedId,
+                },
+                bubbles: true,
+                composed: true,
+            }));
+            // Reset selection after delete
+            this.edit_selectedId = '';
+            this.edit_name = '';
+            this.edit_rows = 0;
+            this.edit_plants_per_row = 0;
+            this._showDeleteConfirm = false;
+        }
+        _cancelDeleteGrowspace() {
+            this._showDeleteConfirm = false;
+        }
+        _handleEditSelection(e) {
+            const growspaceId = e.target.value;
+            this.edit_selectedId = growspaceId;
+            if (growspaceId && this.devices) {
+                const device = this.devices.find((d) => d.device_id === growspaceId);
+                if (device) {
+                    this.edit_name = device.name;
+                    this.edit_rows = device.rows || 4;
+                    this.edit_plants_per_row = device.plants_per_row || 4;
+                }
             }
         }
-    }
-    render() {
-        if (!this.open)
-            return x ``;
-        return x `
+        render() {
+            if (!this.open)
+                return x ``;
+            return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -12296,21 +12025,21 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           <div class="button-group">
             <button class="md3-button tonal" @click=${this._close}>Cancel</button>
             ${this.currentTab === 'add_growspace'
-            ? x `
+                ? x `
                   <button class="md3-button primary" @click=${this._submitAddGrowspace}>
                     Add Growspace
                   </button>
                 `
-            : E}
+                : E}
             ${this.currentTab === 'environment'
-            ? x `
+                ? x `
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
                     Save Sensors
                   </button>
                 `
-            : E}
+                : E}
             ${this.currentTab === 'edit_growspace' && !this._showDeleteConfirm
-            ? x `
+                ? x `
                   <button
                     class="md3-button tonal error"
                     @click=${this._submitDeleteGrowspace}
@@ -12332,14 +12061,14 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                     Save Changes
                   </button>
                 `
-            : E}
+                : E}
           </div>
         </div>
       </ha-dialog>
     `;
-    }
-    renderAddGrowspaceTab() {
-        return x `
+        }
+        renderAddGrowspaceTab() {
+            return x `
       <div style="display:flex; flex-direction:column; gap:20px;">
         <div class="detail-card">
           <h3>New Growspace Details</h3>
@@ -12368,28 +12097,28 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         </div>
       </div>
     `;
-    }
-    // Add helper to filter entities
-    _getEntities(domains, deviceClass) {
-        if (!this.hass)
-            return [];
-        return Object.values(this.hass.states)
-            .filter((stateObj) => {
-            const domain = stateObj.entity_id.split('.')[0];
-            if (!domains.includes(domain))
-                return false;
-            // If deviceClass is provided, match strictly. If null, match any (or no) device class.
-            if (deviceClass !== null) {
-                return stateObj.attributes.device_class === deviceClass;
-            }
-            return true;
-        })
-            .sort((a, b) => (a.attributes.friendly_name || a.entity_id).localeCompare(b.attributes.friendly_name || b.entity_id));
-    }
-    // Add helper to render selects
-    _renderEntitySelect(label, value, domains, deviceClass, changeHandler) {
-        const entities = this._getEntities(domains, deviceClass);
-        return x `
+        }
+        // Add helper to filter entities
+        _getEntities(domains, deviceClass) {
+            if (!this.hass)
+                return [];
+            return Object.values(this.hass.states)
+                .filter((stateObj) => {
+                const domain = stateObj.entity_id.split('.')[0];
+                if (!domains.includes(domain))
+                    return false;
+                // If deviceClass is provided, match strictly. If null, match any (or no) device class.
+                if (deviceClass !== null) {
+                    return stateObj.attributes.device_class === deviceClass;
+                }
+                return true;
+            })
+                .sort((a, b) => (a.attributes.friendly_name || a.entity_id).localeCompare(b.attributes.friendly_name || b.entity_id));
+        }
+        // Add helper to render selects
+        _renderEntitySelect(label, value, domains, deviceClass, changeHandler) {
+            const entities = this._getEntities(domains, deviceClass);
+            return x `
       <div class="md3-input-group">
         <label class="md3-label">${label}</label>
         <select class="md3-input" .value=${value} @change=${changeHandler}>
@@ -12400,10 +12129,10 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         </select>
       </div>
     `;
-    }
-    renderEditGrowspaceTab() {
-        if (this._showDeleteConfirm) {
-            return x `
+        }
+        renderEditGrowspaceTab() {
+            if (this._showDeleteConfirm) {
+                return x `
         <div class="detail-card" style="text-align: center; padding: 40px 20px;">
           <h3 style="color: var(--error-color, #ff5252);">Delete Growspace?</h3>
           <p style="margin-bottom: 30px; color: var(--secondary-text-color);">
@@ -12419,8 +12148,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           </div>
         </div>
       `;
-        }
-        return x `
+            }
+            return x `
       <div style="display:flex; flex-direction:column; gap:20px;">
         <div class="detail-card">
           <h3>Select Growspace to Edit</h3>
@@ -12438,7 +12167,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         </div>
 
         ${this.edit_selectedId
-            ? x `
+                ? x `
               <div class="detail-card">
                 <h3>Edit Details</h3>
                 <md3-text-input
@@ -12460,16 +12189,16 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 </div>
               </div>
             `
-            : x `
+                : x `
               <div style="text-align:center; padding: 20px; color: var(--secondary-text-color);">
                 Please select a growspace to edit.
               </div>
             `}
       </div>
     `;
-    }
-    renderEnvironmentTab() {
-        return x `
+        }
+        renderEnvironmentTab() {
+            return x `
       <div style="display:flex; flex-direction:column; gap:20px;">
         <div class="detail-card">
           <h3>Select Target</h3>
@@ -12514,11 +12243,115 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         </div>
       </div>
     `;
-    }
-};
-ConfigDialog.styles = [
-    dialogStyles,
-    i$6 `
+        }
+        constructor() {
+            super(...arguments);
+            _ConfigDialog_open_accessor_storage.set(this, __runInitializers(this, _open_initializers, false));
+            _ConfigDialog_hass_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _hass_initializers, void 0)));
+            _ConfigDialog_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
+            _ConfigDialog_devices_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _devices_initializers, [])));
+            _ConfigDialog_initialTab_accessor_storage.set(this, (__runInitializers(this, _devices_extraInitializers), __runInitializers(this, _initialTab_initializers, 'environment')));
+            _ConfigDialog_currentTab_accessor_storage.set(this, (__runInitializers(this, _initialTab_extraInitializers), __runInitializers(this, _currentTab_initializers, 'environment')));
+            this._initialStateApplied = (__runInitializers(this, _currentTab_extraInitializers), false);
+            _ConfigDialog_add_name_accessor_storage.set(this, __runInitializers(this, _add_name_initializers, ''));
+            _ConfigDialog_add_rows_accessor_storage.set(this, (__runInitializers(this, _add_name_extraInitializers), __runInitializers(this, _add_rows_initializers, 4)));
+            _ConfigDialog_add_plants_per_row_accessor_storage.set(this, (__runInitializers(this, _add_rows_extraInitializers), __runInitializers(this, _add_plants_per_row_initializers, 4)));
+            _ConfigDialog_add_notification_service_accessor_storage.set(this, (__runInitializers(this, _add_plants_per_row_extraInitializers), __runInitializers(this, _add_notification_service_initializers, 'mobile_app_notify')));
+            _ConfigDialog_edit_selectedId_accessor_storage.set(this, (__runInitializers(this, _add_notification_service_extraInitializers), __runInitializers(this, _edit_selectedId_initializers, '')));
+            _ConfigDialog_edit_name_accessor_storage.set(this, (__runInitializers(this, _edit_selectedId_extraInitializers), __runInitializers(this, _edit_name_initializers, '')));
+            _ConfigDialog_edit_rows_accessor_storage.set(this, (__runInitializers(this, _edit_name_extraInitializers), __runInitializers(this, _edit_rows_initializers, 0)));
+            _ConfigDialog_edit_plants_per_row_accessor_storage.set(this, (__runInitializers(this, _edit_rows_extraInitializers), __runInitializers(this, _edit_plants_per_row_initializers, 0)));
+            _ConfigDialog_env_selectedGrowspaceId_accessor_storage.set(this, (__runInitializers(this, _edit_plants_per_row_extraInitializers), __runInitializers(this, _env_selectedGrowspaceId_initializers, '')));
+            _ConfigDialog_env_temp_sensor_accessor_storage.set(this, (__runInitializers(this, _env_selectedGrowspaceId_extraInitializers), __runInitializers(this, _env_temp_sensor_initializers, '')));
+            _ConfigDialog_env_humidity_sensor_accessor_storage.set(this, (__runInitializers(this, _env_temp_sensor_extraInitializers), __runInitializers(this, _env_humidity_sensor_initializers, '')));
+            _ConfigDialog_env_vpd_sensor_accessor_storage.set(this, (__runInitializers(this, _env_humidity_sensor_extraInitializers), __runInitializers(this, _env_vpd_sensor_initializers, '')));
+            _ConfigDialog_env_co2_sensor_accessor_storage.set(this, (__runInitializers(this, _env_vpd_sensor_extraInitializers), __runInitializers(this, _env_co2_sensor_initializers, '')));
+            _ConfigDialog_env_circulation_fan_accessor_storage.set(this, (__runInitializers(this, _env_co2_sensor_extraInitializers), __runInitializers(this, _env_circulation_fan_initializers, '')));
+            _ConfigDialog_env_stress_threshold_accessor_storage.set(this, (__runInitializers(this, _env_circulation_fan_extraInitializers), __runInitializers(this, _env_stress_threshold_initializers, 0.8)));
+            _ConfigDialog_env_mold_threshold_accessor_storage.set(this, (__runInitializers(this, _env_stress_threshold_extraInitializers), __runInitializers(this, _env_mold_threshold_initializers, 0.8)));
+            _ConfigDialog__showDeleteConfirm_accessor_storage.set(this, (__runInitializers(this, _env_mold_threshold_extraInitializers), __runInitializers(this, __showDeleteConfirm_initializers, false)));
+            __runInitializers(this, __showDeleteConfirm_extraInitializers);
+        }
+    };
+    _ConfigDialog_open_accessor_storage = new WeakMap();
+    _ConfigDialog_hass_accessor_storage = new WeakMap();
+    _ConfigDialog_growspaceOptions_accessor_storage = new WeakMap();
+    _ConfigDialog_devices_accessor_storage = new WeakMap();
+    _ConfigDialog_initialTab_accessor_storage = new WeakMap();
+    _ConfigDialog_currentTab_accessor_storage = new WeakMap();
+    _ConfigDialog_add_name_accessor_storage = new WeakMap();
+    _ConfigDialog_add_rows_accessor_storage = new WeakMap();
+    _ConfigDialog_add_plants_per_row_accessor_storage = new WeakMap();
+    _ConfigDialog_add_notification_service_accessor_storage = new WeakMap();
+    _ConfigDialog_edit_selectedId_accessor_storage = new WeakMap();
+    _ConfigDialog_edit_name_accessor_storage = new WeakMap();
+    _ConfigDialog_edit_rows_accessor_storage = new WeakMap();
+    _ConfigDialog_edit_plants_per_row_accessor_storage = new WeakMap();
+    _ConfigDialog_env_selectedGrowspaceId_accessor_storage = new WeakMap();
+    _ConfigDialog_env_temp_sensor_accessor_storage = new WeakMap();
+    _ConfigDialog_env_humidity_sensor_accessor_storage = new WeakMap();
+    _ConfigDialog_env_vpd_sensor_accessor_storage = new WeakMap();
+    _ConfigDialog_env_co2_sensor_accessor_storage = new WeakMap();
+    _ConfigDialog_env_circulation_fan_accessor_storage = new WeakMap();
+    _ConfigDialog_env_stress_threshold_accessor_storage = new WeakMap();
+    _ConfigDialog_env_mold_threshold_accessor_storage = new WeakMap();
+    _ConfigDialog__showDeleteConfirm_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "ConfigDialog");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _open_decorators = [n$5({ type: Boolean, reflect: true })];
+        _hass_decorators = [n$5({ attribute: false })];
+        _growspaceOptions_decorators = [n$5({ type: Object })];
+        _devices_decorators = [n$5({ attribute: false })];
+        _initialTab_decorators = [n$5({ type: String })];
+        _currentTab_decorators = [n$5({ type: String })];
+        _add_name_decorators = [r$2()];
+        _add_rows_decorators = [r$2()];
+        _add_plants_per_row_decorators = [r$2()];
+        _add_notification_service_decorators = [r$2()];
+        _edit_selectedId_decorators = [r$2()];
+        _edit_name_decorators = [r$2()];
+        _edit_rows_decorators = [r$2()];
+        _edit_plants_per_row_decorators = [r$2()];
+        _env_selectedGrowspaceId_decorators = [r$2()];
+        _env_temp_sensor_decorators = [r$2()];
+        _env_humidity_sensor_decorators = [r$2()];
+        _env_vpd_sensor_decorators = [r$2()];
+        _env_co2_sensor_decorators = [r$2()];
+        _env_circulation_fan_decorators = [r$2()];
+        _env_stress_threshold_decorators = [r$2()];
+        _env_mold_threshold_decorators = [r$2()];
+        __showDeleteConfirm_decorators = [r$2()];
+        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _growspaceOptions_decorators, { kind: "accessor", name: "growspaceOptions", static: false, private: false, access: { has: obj => "growspaceOptions" in obj, get: obj => obj.growspaceOptions, set: (obj, value) => { obj.growspaceOptions = value; } }, metadata: _metadata }, _growspaceOptions_initializers, _growspaceOptions_extraInitializers);
+        __esDecorate(_classThis, null, _devices_decorators, { kind: "accessor", name: "devices", static: false, private: false, access: { has: obj => "devices" in obj, get: obj => obj.devices, set: (obj, value) => { obj.devices = value; } }, metadata: _metadata }, _devices_initializers, _devices_extraInitializers);
+        __esDecorate(_classThis, null, _initialTab_decorators, { kind: "accessor", name: "initialTab", static: false, private: false, access: { has: obj => "initialTab" in obj, get: obj => obj.initialTab, set: (obj, value) => { obj.initialTab = value; } }, metadata: _metadata }, _initialTab_initializers, _initialTab_extraInitializers);
+        __esDecorate(_classThis, null, _currentTab_decorators, { kind: "accessor", name: "currentTab", static: false, private: false, access: { has: obj => "currentTab" in obj, get: obj => obj.currentTab, set: (obj, value) => { obj.currentTab = value; } }, metadata: _metadata }, _currentTab_initializers, _currentTab_extraInitializers);
+        __esDecorate(_classThis, null, _add_name_decorators, { kind: "accessor", name: "add_name", static: false, private: false, access: { has: obj => "add_name" in obj, get: obj => obj.add_name, set: (obj, value) => { obj.add_name = value; } }, metadata: _metadata }, _add_name_initializers, _add_name_extraInitializers);
+        __esDecorate(_classThis, null, _add_rows_decorators, { kind: "accessor", name: "add_rows", static: false, private: false, access: { has: obj => "add_rows" in obj, get: obj => obj.add_rows, set: (obj, value) => { obj.add_rows = value; } }, metadata: _metadata }, _add_rows_initializers, _add_rows_extraInitializers);
+        __esDecorate(_classThis, null, _add_plants_per_row_decorators, { kind: "accessor", name: "add_plants_per_row", static: false, private: false, access: { has: obj => "add_plants_per_row" in obj, get: obj => obj.add_plants_per_row, set: (obj, value) => { obj.add_plants_per_row = value; } }, metadata: _metadata }, _add_plants_per_row_initializers, _add_plants_per_row_extraInitializers);
+        __esDecorate(_classThis, null, _add_notification_service_decorators, { kind: "accessor", name: "add_notification_service", static: false, private: false, access: { has: obj => "add_notification_service" in obj, get: obj => obj.add_notification_service, set: (obj, value) => { obj.add_notification_service = value; } }, metadata: _metadata }, _add_notification_service_initializers, _add_notification_service_extraInitializers);
+        __esDecorate(_classThis, null, _edit_selectedId_decorators, { kind: "accessor", name: "edit_selectedId", static: false, private: false, access: { has: obj => "edit_selectedId" in obj, get: obj => obj.edit_selectedId, set: (obj, value) => { obj.edit_selectedId = value; } }, metadata: _metadata }, _edit_selectedId_initializers, _edit_selectedId_extraInitializers);
+        __esDecorate(_classThis, null, _edit_name_decorators, { kind: "accessor", name: "edit_name", static: false, private: false, access: { has: obj => "edit_name" in obj, get: obj => obj.edit_name, set: (obj, value) => { obj.edit_name = value; } }, metadata: _metadata }, _edit_name_initializers, _edit_name_extraInitializers);
+        __esDecorate(_classThis, null, _edit_rows_decorators, { kind: "accessor", name: "edit_rows", static: false, private: false, access: { has: obj => "edit_rows" in obj, get: obj => obj.edit_rows, set: (obj, value) => { obj.edit_rows = value; } }, metadata: _metadata }, _edit_rows_initializers, _edit_rows_extraInitializers);
+        __esDecorate(_classThis, null, _edit_plants_per_row_decorators, { kind: "accessor", name: "edit_plants_per_row", static: false, private: false, access: { has: obj => "edit_plants_per_row" in obj, get: obj => obj.edit_plants_per_row, set: (obj, value) => { obj.edit_plants_per_row = value; } }, metadata: _metadata }, _edit_plants_per_row_initializers, _edit_plants_per_row_extraInitializers);
+        __esDecorate(_classThis, null, _env_selectedGrowspaceId_decorators, { kind: "accessor", name: "env_selectedGrowspaceId", static: false, private: false, access: { has: obj => "env_selectedGrowspaceId" in obj, get: obj => obj.env_selectedGrowspaceId, set: (obj, value) => { obj.env_selectedGrowspaceId = value; } }, metadata: _metadata }, _env_selectedGrowspaceId_initializers, _env_selectedGrowspaceId_extraInitializers);
+        __esDecorate(_classThis, null, _env_temp_sensor_decorators, { kind: "accessor", name: "env_temp_sensor", static: false, private: false, access: { has: obj => "env_temp_sensor" in obj, get: obj => obj.env_temp_sensor, set: (obj, value) => { obj.env_temp_sensor = value; } }, metadata: _metadata }, _env_temp_sensor_initializers, _env_temp_sensor_extraInitializers);
+        __esDecorate(_classThis, null, _env_humidity_sensor_decorators, { kind: "accessor", name: "env_humidity_sensor", static: false, private: false, access: { has: obj => "env_humidity_sensor" in obj, get: obj => obj.env_humidity_sensor, set: (obj, value) => { obj.env_humidity_sensor = value; } }, metadata: _metadata }, _env_humidity_sensor_initializers, _env_humidity_sensor_extraInitializers);
+        __esDecorate(_classThis, null, _env_vpd_sensor_decorators, { kind: "accessor", name: "env_vpd_sensor", static: false, private: false, access: { has: obj => "env_vpd_sensor" in obj, get: obj => obj.env_vpd_sensor, set: (obj, value) => { obj.env_vpd_sensor = value; } }, metadata: _metadata }, _env_vpd_sensor_initializers, _env_vpd_sensor_extraInitializers);
+        __esDecorate(_classThis, null, _env_co2_sensor_decorators, { kind: "accessor", name: "env_co2_sensor", static: false, private: false, access: { has: obj => "env_co2_sensor" in obj, get: obj => obj.env_co2_sensor, set: (obj, value) => { obj.env_co2_sensor = value; } }, metadata: _metadata }, _env_co2_sensor_initializers, _env_co2_sensor_extraInitializers);
+        __esDecorate(_classThis, null, _env_circulation_fan_decorators, { kind: "accessor", name: "env_circulation_fan", static: false, private: false, access: { has: obj => "env_circulation_fan" in obj, get: obj => obj.env_circulation_fan, set: (obj, value) => { obj.env_circulation_fan = value; } }, metadata: _metadata }, _env_circulation_fan_initializers, _env_circulation_fan_extraInitializers);
+        __esDecorate(_classThis, null, _env_stress_threshold_decorators, { kind: "accessor", name: "env_stress_threshold", static: false, private: false, access: { has: obj => "env_stress_threshold" in obj, get: obj => obj.env_stress_threshold, set: (obj, value) => { obj.env_stress_threshold = value; } }, metadata: _metadata }, _env_stress_threshold_initializers, _env_stress_threshold_extraInitializers);
+        __esDecorate(_classThis, null, _env_mold_threshold_decorators, { kind: "accessor", name: "env_mold_threshold", static: false, private: false, access: { has: obj => "env_mold_threshold" in obj, get: obj => obj.env_mold_threshold, set: (obj, value) => { obj.env_mold_threshold = value; } }, metadata: _metadata }, _env_mold_threshold_initializers, _env_mold_threshold_extraInitializers);
+        __esDecorate(_classThis, null, __showDeleteConfirm_decorators, { kind: "accessor", name: "_showDeleteConfirm", static: false, private: false, access: { has: obj => "_showDeleteConfirm" in obj, get: obj => obj._showDeleteConfirm, set: (obj, value) => { obj._showDeleteConfirm = value; } }, metadata: _metadata }, __showDeleteConfirm_initializers, __showDeleteConfirm_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        dialogStyles,
+        i$6 `
       :host {
         display: block;
       }
@@ -12592,136 +12425,75 @@ ConfigDialog.styles = [
         }
       }
     `,
-];
-__decorate([
-    n$5({ type: Boolean, reflect: true }),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "open", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "hass", void 0);
-__decorate([
-    n$5({ type: Object }),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "growspaceOptions", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], ConfigDialog.prototype, "devices", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", String)
-], ConfigDialog.prototype, "initialTab", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", String)
-], ConfigDialog.prototype, "currentTab", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "add_name", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "add_rows", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "add_plants_per_row", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "add_notification_service", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "edit_selectedId", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "edit_name", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "edit_rows", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "edit_plants_per_row", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_selectedGrowspaceId", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_temp_sensor", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_humidity_sensor", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_vpd_sensor", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_co2_sensor", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_circulation_fan", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_stress_threshold", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "env_mold_threshold", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], ConfigDialog.prototype, "_showDeleteConfirm", void 0);
-ConfigDialog = __decorate([
-    t$2('config-dialog')
-], ConfigDialog);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let GrowMasterDialog = class GrowMasterDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
+(() => {
+    var _GrowMasterDialog_open_accessor_storage, _GrowMasterDialog_isStressed_accessor_storage, _GrowMasterDialog_personality_accessor_storage, _GrowMasterDialog_isLoading_accessor_storage, _GrowMasterDialog_response_accessor_storage, _GrowMasterDialog_userQuery_accessor_storage;
+    let _classDecorators = [t$2('grow-master-dialog')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _open_decorators;
+    let _open_initializers = [];
+    let _open_extraInitializers = [];
+    let _isStressed_decorators;
+    let _isStressed_initializers = [];
+    let _isStressed_extraInitializers = [];
+    let _personality_decorators;
+    let _personality_initializers = [];
+    let _personality_extraInitializers = [];
+    let _isLoading_decorators;
+    let _isLoading_initializers = [];
+    let _isLoading_extraInitializers = [];
+    let _response_decorators;
+    let _response_initializers = [];
+    let _response_extraInitializers = [];
+    let _userQuery_decorators;
+    let _userQuery_initializers = [];
+    let _userQuery_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get open() { return __classPrivateFieldGet(this, _GrowMasterDialog_open_accessor_storage, "f"); }
+        set open(value) { __classPrivateFieldSet(this, _GrowMasterDialog_open_accessor_storage, value, "f"); }
         // Props from parent
-        this.isStressed = false;
-        this.isLoading = false;
-        this.response = null;
-        this.userQuery = '';
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
-    _analyze() {
-        this.dispatchEvent(new CustomEvent('analyze-growspace', {
-            detail: { query: this.userQuery },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _analyzeAll() {
-        this.dispatchEvent(new CustomEvent('analyze-all-growspaces', {
-            detail: { query: this.userQuery },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    render() {
-        if (!this.open)
-            return x ``;
-        const borderColor = this.isStressed ? '#FF9800' : '#4CAF50';
-        const title = this.personality ? `Ask the ${this.personality}` : 'Ask the Grow Master';
-        return x `
+        get isStressed() { return __classPrivateFieldGet(this, _GrowMasterDialog_isStressed_accessor_storage, "f"); }
+        set isStressed(value) { __classPrivateFieldSet(this, _GrowMasterDialog_isStressed_accessor_storage, value, "f"); }
+        get personality() { return __classPrivateFieldGet(this, _GrowMasterDialog_personality_accessor_storage, "f"); }
+        set personality(value) { __classPrivateFieldSet(this, _GrowMasterDialog_personality_accessor_storage, value, "f"); }
+        get isLoading() { return __classPrivateFieldGet(this, _GrowMasterDialog_isLoading_accessor_storage, "f"); }
+        set isLoading(value) { __classPrivateFieldSet(this, _GrowMasterDialog_isLoading_accessor_storage, value, "f"); }
+        get response() { return __classPrivateFieldGet(this, _GrowMasterDialog_response_accessor_storage, "f"); }
+        set response(value) { __classPrivateFieldSet(this, _GrowMasterDialog_response_accessor_storage, value, "f"); }
+        get userQuery() { return __classPrivateFieldGet(this, _GrowMasterDialog_userQuery_accessor_storage, "f"); }
+        set userQuery(value) { __classPrivateFieldSet(this, _GrowMasterDialog_userQuery_accessor_storage, value, "f"); }
+        _close() {
+            this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+        }
+        _analyze() {
+            this.dispatchEvent(new CustomEvent('analyze-growspace', {
+                detail: { query: this.userQuery },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        _analyzeAll() {
+            this.dispatchEvent(new CustomEvent('analyze-all-growspaces', {
+                detail: { query: this.userQuery },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        render() {
+            if (!this.open)
+                return x ``;
+            const borderColor = this.isStressed ? '#FF9800' : '#4CAF50';
+            const title = this.personality ? `Ask the ${this.personality}` : 'Ask the Grow Master';
+            return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -12788,7 +12560,7 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
 
             <!-- Response Area -->
             ${this.isLoading
-            ? x `
+                ? x `
                   <div class="gm-loading">
                     <svg class="spinner" viewBox="0 0 24 24">
                       <path d="${mdiLoading}" fill="currentColor"></path>
@@ -12796,23 +12568,58 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
                     <span>Consulting the archives...</span>
                   </div>
                 `
-            : E}
+                : E}
             ${!this.isLoading && this.response
-            ? x `
+                ? x `
                   <div class="gm-response-box" style="border: 2px solid ${borderColor};">
                     ${this.response}
                   </div>
                 `
-            : E}
+                : E}
           </div>
         </div>
       </ha-dialog>
     `;
-    }
-};
-GrowMasterDialog.styles = [
-    dialogStyles,
-    i$6 `
+        }
+        constructor() {
+            super(...arguments);
+            _GrowMasterDialog_open_accessor_storage.set(this, __runInitializers(this, _open_initializers, false));
+            _GrowMasterDialog_isStressed_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _isStressed_initializers, false)));
+            _GrowMasterDialog_personality_accessor_storage.set(this, (__runInitializers(this, _isStressed_extraInitializers), __runInitializers(this, _personality_initializers, void 0)));
+            _GrowMasterDialog_isLoading_accessor_storage.set(this, (__runInitializers(this, _personality_extraInitializers), __runInitializers(this, _isLoading_initializers, false)));
+            _GrowMasterDialog_response_accessor_storage.set(this, (__runInitializers(this, _isLoading_extraInitializers), __runInitializers(this, _response_initializers, null)));
+            _GrowMasterDialog_userQuery_accessor_storage.set(this, (__runInitializers(this, _response_extraInitializers), __runInitializers(this, _userQuery_initializers, '')));
+            __runInitializers(this, _userQuery_extraInitializers);
+        }
+    };
+    _GrowMasterDialog_open_accessor_storage = new WeakMap();
+    _GrowMasterDialog_isStressed_accessor_storage = new WeakMap();
+    _GrowMasterDialog_personality_accessor_storage = new WeakMap();
+    _GrowMasterDialog_isLoading_accessor_storage = new WeakMap();
+    _GrowMasterDialog_response_accessor_storage = new WeakMap();
+    _GrowMasterDialog_userQuery_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "GrowMasterDialog");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _open_decorators = [n$5({ type: Boolean, reflect: true })];
+        _isStressed_decorators = [n$5({ type: Boolean })];
+        _personality_decorators = [n$5({ type: String })];
+        _isLoading_decorators = [n$5({ type: Boolean })];
+        _response_decorators = [n$5({ type: String })];
+        _userQuery_decorators = [r$2()];
+        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
+        __esDecorate(_classThis, null, _isStressed_decorators, { kind: "accessor", name: "isStressed", static: false, private: false, access: { has: obj => "isStressed" in obj, get: obj => obj.isStressed, set: (obj, value) => { obj.isStressed = value; } }, metadata: _metadata }, _isStressed_initializers, _isStressed_extraInitializers);
+        __esDecorate(_classThis, null, _personality_decorators, { kind: "accessor", name: "personality", static: false, private: false, access: { has: obj => "personality" in obj, get: obj => obj.personality, set: (obj, value) => { obj.personality = value; } }, metadata: _metadata }, _personality_initializers, _personality_extraInitializers);
+        __esDecorate(_classThis, null, _isLoading_decorators, { kind: "accessor", name: "isLoading", static: false, private: false, access: { has: obj => "isLoading" in obj, get: obj => obj.isLoading, set: (obj, value) => { obj.isLoading = value; } }, metadata: _metadata }, _isLoading_initializers, _isLoading_extraInitializers);
+        __esDecorate(_classThis, null, _response_decorators, { kind: "accessor", name: "response", static: false, private: false, access: { has: obj => "response" in obj, get: obj => obj.response, set: (obj, value) => { obj.response = value; } }, metadata: _metadata }, _response_initializers, _response_extraInitializers);
+        __esDecorate(_classThis, null, _userQuery_decorators, { kind: "accessor", name: "userQuery", static: false, private: false, access: { has: obj => "userQuery" in obj, get: obj => obj.userQuery, set: (obj, value) => { obj.userQuery = value; } }, metadata: _metadata }, _userQuery_initializers, _userQuery_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        dialogStyles,
+        i$6 `
       :host {
         display: block;
       }
@@ -12873,57 +12680,60 @@ GrowMasterDialog.styles = [
         flex-direction: column;
       }
     `,
-];
-__decorate([
-    n$5({ type: Boolean, reflect: true }),
-    __metadata("design:type", Object)
-], GrowMasterDialog.prototype, "open", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], GrowMasterDialog.prototype, "isStressed", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", String)
-], GrowMasterDialog.prototype, "personality", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], GrowMasterDialog.prototype, "isLoading", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", Object)
-], GrowMasterDialog.prototype, "response", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowMasterDialog.prototype, "userQuery", void 0);
-GrowMasterDialog = __decorate([
-    t$2('grow-master-dialog')
-], GrowMasterDialog);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let StrainRecommendationDialog = class StrainRecommendationDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.isLoading = false;
-        this.response = null;
-        this.userQuery = '';
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
-    _handleGetRecommendation() {
-        this.dispatchEvent(new CustomEvent('get-recommendation', {
-            detail: { query: this.userQuery },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    render() {
-        if (!this.open)
-            return E;
-        return x `
+(() => {
+    var _StrainRecommendationDialog_hass_accessor_storage, _StrainRecommendationDialog_open_accessor_storage, _StrainRecommendationDialog_isLoading_accessor_storage, _StrainRecommendationDialog_response_accessor_storage, _StrainRecommendationDialog_userQuery_accessor_storage;
+    let _classDecorators = [t$2('strain-recommendation-dialog')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _open_decorators;
+    let _open_initializers = [];
+    let _open_extraInitializers = [];
+    let _isLoading_decorators;
+    let _isLoading_initializers = [];
+    let _isLoading_extraInitializers = [];
+    let _response_decorators;
+    let _response_initializers = [];
+    let _response_extraInitializers = [];
+    let _userQuery_decorators;
+    let _userQuery_initializers = [];
+    let _userQuery_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get hass() { return __classPrivateFieldGet(this, _StrainRecommendationDialog_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _StrainRecommendationDialog_hass_accessor_storage, value, "f"); }
+        get open() { return __classPrivateFieldGet(this, _StrainRecommendationDialog_open_accessor_storage, "f"); }
+        set open(value) { __classPrivateFieldSet(this, _StrainRecommendationDialog_open_accessor_storage, value, "f"); }
+        get isLoading() { return __classPrivateFieldGet(this, _StrainRecommendationDialog_isLoading_accessor_storage, "f"); }
+        set isLoading(value) { __classPrivateFieldSet(this, _StrainRecommendationDialog_isLoading_accessor_storage, value, "f"); }
+        get response() { return __classPrivateFieldGet(this, _StrainRecommendationDialog_response_accessor_storage, "f"); }
+        set response(value) { __classPrivateFieldSet(this, _StrainRecommendationDialog_response_accessor_storage, value, "f"); }
+        get userQuery() { return __classPrivateFieldGet(this, _StrainRecommendationDialog_userQuery_accessor_storage, "f"); }
+        set userQuery(value) { __classPrivateFieldSet(this, _StrainRecommendationDialog_userQuery_accessor_storage, value, "f"); }
+        _close() {
+            this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+        }
+        _handleGetRecommendation() {
+            this.dispatchEvent(new CustomEvent('get-recommendation', {
+                detail: { query: this.userQuery },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        render() {
+            if (!this.open)
+                return E;
+            return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -12979,7 +12789,7 @@ let StrainRecommendationDialog = class StrainRecommendationDialog extends i$3 {
             </div>
 
             ${this.isLoading
-            ? x `
+                ? x `
                   <div class="gm-loading">
                     <svg class="spinner" viewBox="0 0 24 24">
                       <path d="${mdiLoading}" fill="currentColor"></path>
@@ -12987,19 +12797,50 @@ let StrainRecommendationDialog = class StrainRecommendationDialog extends i$3 {
                     <span>Consulting the archives...</span>
                   </div>
                 `
-            : E}
+                : E}
             ${!this.isLoading && this.response
-            ? x ` <div class="gm-response-box">${this.response}</div> `
-            : E}
+                ? x ` <div class="gm-response-box">${this.response}</div> `
+                : E}
           </div>
         </div>
       </ha-dialog>
     `;
-    }
-};
-StrainRecommendationDialog.styles = [
-    dialogStyles,
-    i$6 `
+        }
+        constructor() {
+            super(...arguments);
+            _StrainRecommendationDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _StrainRecommendationDialog_open_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _open_initializers, false)));
+            _StrainRecommendationDialog_isLoading_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _isLoading_initializers, false)));
+            _StrainRecommendationDialog_response_accessor_storage.set(this, (__runInitializers(this, _isLoading_extraInitializers), __runInitializers(this, _response_initializers, null)));
+            _StrainRecommendationDialog_userQuery_accessor_storage.set(this, (__runInitializers(this, _response_extraInitializers), __runInitializers(this, _userQuery_initializers, '')));
+            __runInitializers(this, _userQuery_extraInitializers);
+        }
+    };
+    _StrainRecommendationDialog_hass_accessor_storage = new WeakMap();
+    _StrainRecommendationDialog_open_accessor_storage = new WeakMap();
+    _StrainRecommendationDialog_isLoading_accessor_storage = new WeakMap();
+    _StrainRecommendationDialog_response_accessor_storage = new WeakMap();
+    _StrainRecommendationDialog_userQuery_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "StrainRecommendationDialog");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _open_decorators = [n$5({ type: Boolean })];
+        _isLoading_decorators = [n$5({ type: Boolean })];
+        _response_decorators = [n$5({ attribute: false })];
+        _userQuery_decorators = [n$5({ type: String })];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
+        __esDecorate(_classThis, null, _isLoading_decorators, { kind: "accessor", name: "isLoading", static: false, private: false, access: { has: obj => "isLoading" in obj, get: obj => obj.isLoading, set: (obj, value) => { obj.isLoading = value; } }, metadata: _metadata }, _isLoading_initializers, _isLoading_extraInitializers);
+        __esDecorate(_classThis, null, _response_decorators, { kind: "accessor", name: "response", static: false, private: false, access: { has: obj => "response" in obj, get: obj => obj.response, set: (obj, value) => { obj.response = value; } }, metadata: _metadata }, _response_initializers, _response_extraInitializers);
+        __esDecorate(_classThis, null, _userQuery_decorators, { kind: "accessor", name: "userQuery", static: false, private: false, access: { has: obj => "userQuery" in obj, get: obj => obj.userQuery, set: (obj, value) => { obj.userQuery = value; } }, metadata: _metadata }, _userQuery_initializers, _userQuery_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        dialogStyles,
+        i$6 `
       :host {
         display: block;
       }
@@ -13053,49 +12894,43 @@ StrainRecommendationDialog.styles = [
         margin-top: 16px;
       }
     `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], StrainRecommendationDialog.prototype, "hass", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], StrainRecommendationDialog.prototype, "open", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], StrainRecommendationDialog.prototype, "isLoading", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], StrainRecommendationDialog.prototype, "response", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", String)
-], StrainRecommendationDialog.prototype, "userQuery", void 0);
-StrainRecommendationDialog = __decorate([
-    t$2('strain-recommendation-dialog')
-], StrainRecommendationDialog);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let Md3Switch = class Md3Switch extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.checked = false;
-        this.disabled = false;
-    }
-    _handleClick() {
-        if (this.disabled)
-            return;
-        this.checked = !this.checked;
-        this.dispatchEvent(new CustomEvent('change', {
-            detail: { checked: this.checked },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    render() {
-        return x `
+(() => {
+    var _Md3Switch_checked_accessor_storage, _Md3Switch_disabled_accessor_storage;
+    let _classDecorators = [t$2('md3-switch')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _checked_decorators;
+    let _checked_initializers = [];
+    let _checked_extraInitializers = [];
+    let _disabled_decorators;
+    let _disabled_initializers = [];
+    let _disabled_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get checked() { return __classPrivateFieldGet(this, _Md3Switch_checked_accessor_storage, "f"); }
+        set checked(value) { __classPrivateFieldSet(this, _Md3Switch_checked_accessor_storage, value, "f"); }
+        get disabled() { return __classPrivateFieldGet(this, _Md3Switch_disabled_accessor_storage, "f"); }
+        set disabled(value) { __classPrivateFieldSet(this, _Md3Switch_disabled_accessor_storage, value, "f"); }
+        _handleClick() {
+            if (this.disabled)
+                return;
+            this.checked = !this.checked;
+            this.dispatchEvent(new CustomEvent('change', {
+                detail: { checked: this.checked },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        render() {
+            return x `
       <button
         role="switch"
         aria-checked=${this.checked}
@@ -13105,9 +12940,28 @@ let Md3Switch = class Md3Switch extends i$3 {
         <div class="handle"></div>
       </button>
     `;
-    }
-};
-Md3Switch.styles = i$6 `
+        }
+        constructor() {
+            super(...arguments);
+            _Md3Switch_checked_accessor_storage.set(this, __runInitializers(this, _checked_initializers, false));
+            _Md3Switch_disabled_accessor_storage.set(this, (__runInitializers(this, _checked_extraInitializers), __runInitializers(this, _disabled_initializers, false)));
+            __runInitializers(this, _disabled_extraInitializers);
+        }
+    };
+    _Md3Switch_checked_accessor_storage = new WeakMap();
+    _Md3Switch_disabled_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "Md3Switch");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _checked_decorators = [n$5({ type: Boolean })];
+        _disabled_decorators = [n$5({ type: Boolean })];
+        __esDecorate(_classThis, null, _checked_decorators, { kind: "accessor", name: "checked", static: false, private: false, access: { has: obj => "checked" in obj, get: obj => obj.checked, set: (obj, value) => { obj.checked = value; } }, metadata: _metadata }, _checked_initializers, _checked_extraInitializers);
+        __esDecorate(_classThis, null, _disabled_decorators, { kind: "accessor", name: "disabled", static: false, private: false, access: { has: obj => "disabled" in obj, get: obj => obj.disabled, set: (obj, value) => { obj.disabled = value; } }, metadata: _metadata }, _disabled_initializers, _disabled_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = i$6 `
     :host {
       display: inline-block;
       vertical-align: middle;
@@ -13154,208 +13008,266 @@ Md3Switch.styles = i$6 `
       transform: translate(20px, -50%); /* 52 - 4 - 24 - 4 = 20px move */
     }
   `;
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], Md3Switch.prototype, "checked", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], Md3Switch.prototype, "disabled", void 0);
-Md3Switch = __decorate([
-    t$2('md3-switch')
-], Md3Switch);
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let IrrigationDialog = class IrrigationDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.growspaceName = '';
-        this._irrigation_pump_entity = '';
-        this._drain_pump_entity = '';
-        this._irrigation_duration = 60;
-        this._drain_duration = 60;
-        this._irrigation_times = [];
-        this._drain_times = [];
-        this._activeTab = 'schedules';
-        this._strategy = {};
-    }
-    willUpdate(changedProps) {
-        if ((changedProps.has('open') && this.open) || (changedProps.has('device') && this.device)) {
-            this._initializeState();
+(() => {
+    var _IrrigationDialog_hass_accessor_storage, _IrrigationDialog_open_accessor_storage, _IrrigationDialog_device_accessor_storage, _IrrigationDialog_growspaceName_accessor_storage, _IrrigationDialog__irrigation_pump_entity_accessor_storage, _IrrigationDialog__drain_pump_entity_accessor_storage, _IrrigationDialog__irrigation_duration_accessor_storage, _IrrigationDialog__drain_duration_accessor_storage, _IrrigationDialog__irrigation_times_accessor_storage, _IrrigationDialog__drain_times_accessor_storage, _IrrigationDialog__adding_irrigation_time_accessor_storage, _IrrigationDialog__adding_drain_time_accessor_storage, _IrrigationDialog__activeTab_accessor_storage, _IrrigationDialog__strategy_accessor_storage;
+    let _classDecorators = [t$2('irrigation-dialog')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _open_decorators;
+    let _open_initializers = [];
+    let _open_extraInitializers = [];
+    let _device_decorators;
+    let _device_initializers = [];
+    let _device_extraInitializers = [];
+    let _growspaceName_decorators;
+    let _growspaceName_initializers = [];
+    let _growspaceName_extraInitializers = [];
+    let __irrigation_pump_entity_decorators;
+    let __irrigation_pump_entity_initializers = [];
+    let __irrigation_pump_entity_extraInitializers = [];
+    let __drain_pump_entity_decorators;
+    let __drain_pump_entity_initializers = [];
+    let __drain_pump_entity_extraInitializers = [];
+    let __irrigation_duration_decorators;
+    let __irrigation_duration_initializers = [];
+    let __irrigation_duration_extraInitializers = [];
+    let __drain_duration_decorators;
+    let __drain_duration_initializers = [];
+    let __drain_duration_extraInitializers = [];
+    let __irrigation_times_decorators;
+    let __irrigation_times_initializers = [];
+    let __irrigation_times_extraInitializers = [];
+    let __drain_times_decorators;
+    let __drain_times_initializers = [];
+    let __drain_times_extraInitializers = [];
+    let __adding_irrigation_time_decorators;
+    let __adding_irrigation_time_initializers = [];
+    let __adding_irrigation_time_extraInitializers = [];
+    let __adding_drain_time_decorators;
+    let __adding_drain_time_initializers = [];
+    let __adding_drain_time_extraInitializers = [];
+    let __activeTab_decorators;
+    let __activeTab_initializers = [];
+    let __activeTab_extraInitializers = [];
+    let __strategy_decorators;
+    let __strategy_initializers = [];
+    let __strategy_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get hass() { return __classPrivateFieldGet(this, _IrrigationDialog_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _IrrigationDialog_hass_accessor_storage, value, "f"); }
+        get open() { return __classPrivateFieldGet(this, _IrrigationDialog_open_accessor_storage, "f"); }
+        set open(value) { __classPrivateFieldSet(this, _IrrigationDialog_open_accessor_storage, value, "f"); }
+        get device() { return __classPrivateFieldGet(this, _IrrigationDialog_device_accessor_storage, "f"); }
+        set device(value) { __classPrivateFieldSet(this, _IrrigationDialog_device_accessor_storage, value, "f"); }
+        get growspaceName() { return __classPrivateFieldGet(this, _IrrigationDialog_growspaceName_accessor_storage, "f"); }
+        set growspaceName(value) { __classPrivateFieldSet(this, _IrrigationDialog_growspaceName_accessor_storage, value, "f"); }
+        get _irrigation_pump_entity() { return __classPrivateFieldGet(this, _IrrigationDialog__irrigation_pump_entity_accessor_storage, "f"); }
+        set _irrigation_pump_entity(value) { __classPrivateFieldSet(this, _IrrigationDialog__irrigation_pump_entity_accessor_storage, value, "f"); }
+        get _drain_pump_entity() { return __classPrivateFieldGet(this, _IrrigationDialog__drain_pump_entity_accessor_storage, "f"); }
+        set _drain_pump_entity(value) { __classPrivateFieldSet(this, _IrrigationDialog__drain_pump_entity_accessor_storage, value, "f"); }
+        get _irrigation_duration() { return __classPrivateFieldGet(this, _IrrigationDialog__irrigation_duration_accessor_storage, "f"); }
+        set _irrigation_duration(value) { __classPrivateFieldSet(this, _IrrigationDialog__irrigation_duration_accessor_storage, value, "f"); }
+        get _drain_duration() { return __classPrivateFieldGet(this, _IrrigationDialog__drain_duration_accessor_storage, "f"); }
+        set _drain_duration(value) { __classPrivateFieldSet(this, _IrrigationDialog__drain_duration_accessor_storage, value, "f"); }
+        get _irrigation_times() { return __classPrivateFieldGet(this, _IrrigationDialog__irrigation_times_accessor_storage, "f"); }
+        set _irrigation_times(value) { __classPrivateFieldSet(this, _IrrigationDialog__irrigation_times_accessor_storage, value, "f"); }
+        get _drain_times() { return __classPrivateFieldGet(this, _IrrigationDialog__drain_times_accessor_storage, "f"); }
+        set _drain_times(value) { __classPrivateFieldSet(this, _IrrigationDialog__drain_times_accessor_storage, value, "f"); }
+        get _adding_irrigation_time() { return __classPrivateFieldGet(this, _IrrigationDialog__adding_irrigation_time_accessor_storage, "f"); }
+        set _adding_irrigation_time(value) { __classPrivateFieldSet(this, _IrrigationDialog__adding_irrigation_time_accessor_storage, value, "f"); }
+        get _adding_drain_time() { return __classPrivateFieldGet(this, _IrrigationDialog__adding_drain_time_accessor_storage, "f"); }
+        set _adding_drain_time(value) { __classPrivateFieldSet(this, _IrrigationDialog__adding_drain_time_accessor_storage, value, "f"); }
+        get _activeTab() { return __classPrivateFieldGet(this, _IrrigationDialog__activeTab_accessor_storage, "f"); }
+        set _activeTab(value) { __classPrivateFieldSet(this, _IrrigationDialog__activeTab_accessor_storage, value, "f"); }
+        get _strategy() { return __classPrivateFieldGet(this, _IrrigationDialog__strategy_accessor_storage, "f"); }
+        set _strategy(value) { __classPrivateFieldSet(this, _IrrigationDialog__strategy_accessor_storage, value, "f"); }
+        willUpdate(changedProps) {
+            if ((changedProps.has('open') && this.open) || (changedProps.has('device') && this.device)) {
+                this._initializeState();
+            }
+            if (this.hass && (changedProps.has('hass') || !this._dataService)) {
+                this._dataService = new DataService(this.hass);
+            }
         }
-        if (this.hass && (changedProps.has('hass') || !this._dataService)) {
-            this._dataService = new DataService(this.hass);
-        }
-    }
-    _initializeState() {
-        if (!this.device)
-            return;
-        const config = this.device.irrigation_config || {};
-        this._irrigation_pump_entity = config.irrigation_pump_entity || '';
-        this._drain_pump_entity = config.drain_pump_entity || '';
-        this._irrigation_duration = config.irrigation_duration || 60;
-        this._drain_duration = config.drain_duration || 60;
-        this._irrigation_times = this.device.irrigation_config?.irrigation_times || [];
-        this._drain_times = this.device.irrigation_config?.drain_times || [];
-        console.log('[IrrigationDialog] Initializing State', {
-            device: this.device,
-            irrigation_times: this._irrigation_times,
-            drain_times: this._drain_times,
-            raw_config: config,
-        });
-        // Initialize Strategy
-        const strat = this.device.irrigation_strategy;
-        this._strategy = {
-            enabled: strat?.enabled || false,
-            lights_on_time: strat?.lights_on_time || '06:00:00',
-            p0_duration_minutes: strat?.p0_duration_minutes || 60,
-            p2_stop_before_lights_off_minutes: strat?.p2_stop_before_lights_off_minutes || 120,
-            target_vwc_percent: strat?.target_vwc_percent || 45.0,
-            maintenance_dryback_percent: strat?.maintenance_dryback_percent || 3.0,
-            shot_duration_seconds: strat?.shot_duration_seconds || 15,
-            shot_interval_minutes: strat?.shot_interval_minutes || 15,
-        };
-    }
-    // ... (Keep existing _parseScheduleString, _saveSettings, _addIrrigationTime, etc. - ensure logical flow)
-    _parseScheduleString(scheduleString) {
-        if (Array.isArray(scheduleString))
-            return scheduleString;
-        if (!scheduleString)
-            return [];
-        return scheduleString.split(',').map((t) => {
-            const parts = t.trim().split('|');
-            return {
-                time: parts[0],
-                duration: parts[1] ? parseInt(parts[1]) : undefined,
+        _initializeState() {
+            if (!this.device)
+                return;
+            const config = this.device.irrigation_config || {};
+            this._irrigation_pump_entity = config.irrigation_pump_entity || '';
+            this._drain_pump_entity = config.drain_pump_entity || '';
+            this._irrigation_duration = config.irrigation_duration || 60;
+            this._drain_duration = config.drain_duration || 60;
+            this._irrigation_times = this.device.irrigation_config?.irrigation_times || [];
+            this._drain_times = this.device.irrigation_config?.drain_times || [];
+            console.log('[IrrigationDialog] Initializing State', {
+                device: this.device,
+                irrigation_times: this._irrigation_times,
+                drain_times: this._drain_times,
+                raw_config: config,
+            });
+            // Initialize Strategy
+            const strat = this.device.irrigation_strategy;
+            this._strategy = {
+                enabled: strat?.enabled || false,
+                lights_on_time: strat?.lights_on_time || '06:00:00',
+                p0_duration_minutes: strat?.p0_duration_minutes || 60,
+                p2_stop_before_lights_off_minutes: strat?.p2_stop_before_lights_off_minutes || 120,
+                target_vwc_percent: strat?.target_vwc_percent || 45.0,
+                maintenance_dryback_percent: strat?.maintenance_dryback_percent || 3.0,
+                shot_duration_seconds: strat?.shot_duration_seconds || 15,
+                shot_interval_minutes: strat?.shot_interval_minutes || 15,
             };
-        });
-    }
-    async _saveSettings() {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.setIrrigationSettings({
-                growspace_id: this.device.device_id,
-                irrigation_pump_entity: this._irrigation_pump_entity,
-                drain_pump_entity: this._drain_pump_entity,
-                irrigation_duration: this._irrigation_duration,
-                drain_duration: this._drain_duration,
+        }
+        // ... (Keep existing _parseScheduleString, _saveSettings, _addIrrigationTime, etc. - ensure logical flow)
+        _parseScheduleString(scheduleString) {
+            if (Array.isArray(scheduleString))
+                return scheduleString;
+            if (!scheduleString)
+                return [];
+            return scheduleString.split(',').map((t) => {
+                const parts = t.trim().split('|');
+                return {
+                    time: parts[0],
+                    duration: parts[1] ? parseInt(parts[1]) : undefined,
+                };
             });
         }
-        catch (e) {
-            console.error('Failed to save settings:', e);
+        async _saveSettings() {
+            if (!this.device?.device_id || !this._dataService)
+                return;
+            try {
+                await this._dataService.setIrrigationSettings({
+                    growspace_id: this.device.device_id,
+                    irrigation_pump_entity: this._irrigation_pump_entity,
+                    drain_pump_entity: this._drain_pump_entity,
+                    irrigation_duration: this._irrigation_duration,
+                    drain_duration: this._drain_duration,
+                });
+            }
+            catch (e) {
+                console.error('Failed to save settings:', e);
+            }
         }
-    }
-    async _addIrrigationTime(time, duration) {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.addIrrigationTime({
-                growspace_id: this.device.device_id,
-                time,
-                duration: duration || this._irrigation_duration,
-            });
-            // Optimistic update
-            const newTime = { time, duration: duration || this._irrigation_duration };
-            this._irrigation_times = [...this._irrigation_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
-            this._adding_irrigation_time = undefined;
+        async _addIrrigationTime(time, duration) {
+            if (!this.device?.device_id || !this._dataService)
+                return;
+            try {
+                await this._dataService.addIrrigationTime({
+                    growspace_id: this.device.device_id,
+                    time,
+                    duration: duration || this._irrigation_duration,
+                });
+                // Optimistic update
+                const newTime = { time, duration: duration || this._irrigation_duration };
+                this._irrigation_times = [...this._irrigation_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
+                this._adding_irrigation_time = undefined;
+            }
+            catch (e) {
+                console.error('Failed to add irrigation time:', e);
+            }
         }
-        catch (e) {
-            console.error('Failed to add irrigation time:', e);
+        async _removeIrrigationTime(time) {
+            if (!this.device?.device_id || !this._dataService)
+                return;
+            try {
+                await this._dataService.removeIrrigationTime({
+                    growspace_id: this.device.device_id,
+                    time,
+                });
+                // Optimistic update
+                this._irrigation_times = this._irrigation_times.filter((t) => t.time !== time);
+            }
+            catch (e) {
+                console.error('Failed to remove irrigation time:', e);
+            }
         }
-    }
-    async _removeIrrigationTime(time) {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.removeIrrigationTime({
-                growspace_id: this.device.device_id,
-                time,
-            });
-            // Optimistic update
-            this._irrigation_times = this._irrigation_times.filter((t) => t.time !== time);
+        async _addDrainTime(time, duration) {
+            if (!this.device?.device_id || !this._dataService)
+                return;
+            try {
+                await this._dataService.addDrainTime({
+                    growspace_id: this.device.device_id,
+                    time,
+                    duration: duration || this._drain_duration,
+                });
+                // Optimistic update
+                const newTime = { time, duration: duration || this._drain_duration };
+                this._drain_times = [...this._drain_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
+                this._adding_drain_time = undefined;
+            }
+            catch (e) {
+                console.error('Failed to add drain time:', e);
+            }
         }
-        catch (e) {
-            console.error('Failed to remove irrigation time:', e);
+        async _removeDrainTime(time) {
+            if (!this.device?.device_id || !this._dataService)
+                return;
+            try {
+                await this._dataService.removeDrainTime({
+                    growspace_id: this.device.device_id,
+                    time,
+                });
+                // Optimistic update
+                this._drain_times = this._drain_times.filter((t) => t.time !== time);
+            }
+            catch (e) {
+                console.error('Failed to remove drain time:', e);
+            }
         }
-    }
-    async _addDrainTime(time, duration) {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.addDrainTime({
-                growspace_id: this.device.device_id,
-                time,
-                duration: duration || this._drain_duration,
-            });
-            // Optimistic update
-            const newTime = { time, duration: duration || this._drain_duration };
-            this._drain_times = [...this._drain_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
-            this._adding_drain_time = undefined;
+        _startAddingIrrigationTime(x, width) {
+            const percentage = x / width;
+            const totalMinutes = Math.round(percentage * 24 * 60);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            this._adding_irrigation_time = {
+                time: timeStr,
+                duration: this._irrigation_duration,
+            };
         }
-        catch (e) {
-            console.error('Failed to add drain time:', e);
+        _startAddingDrainTime(x, width) {
+            const percentage = x / width;
+            const totalMinutes = Math.round(percentage * 24 * 60);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            this._adding_drain_time = {
+                time: timeStr,
+                duration: this._drain_duration,
+            };
         }
-    }
-    async _removeDrainTime(time) {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.removeDrainTime({
-                growspace_id: this.device.device_id,
-                time,
-            });
-            // Optimistic update
-            this._drain_times = this._drain_times.filter((t) => t.time !== time);
+        _close() {
+            this.dispatchEvent(new CustomEvent('close'));
         }
-        catch (e) {
-            console.error('Failed to remove drain time:', e);
+        async _saveStrategy() {
+            if (!this.device?.device_id || !this._dataService)
+                return;
+            try {
+                await this._dataService.setIrrigationStrategy(this.device.device_id, this._strategy);
+            }
+            catch (e) {
+                console.error('Failed to save strategy:', e);
+            }
         }
-    }
-    _startAddingIrrigationTime(x, width) {
-        const percentage = x / width;
-        const totalMinutes = Math.round(percentage * 24 * 60);
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        this._adding_irrigation_time = {
-            time: timeStr,
-            duration: this._irrigation_duration,
-        };
-    }
-    _startAddingDrainTime(x, width) {
-        const percentage = x / width;
-        const totalMinutes = Math.round(percentage * 24 * 60);
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        this._adding_drain_time = {
-            time: timeStr,
-            duration: this._drain_duration,
-        };
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close'));
-    }
-    async _saveStrategy() {
-        if (!this.device?.device_id || !this._dataService)
-            return;
-        try {
-            await this._dataService.setIrrigationStrategy(this.device.device_id, this._strategy);
+        _updateStrategyField(field, value) {
+            this._strategy = { ...this._strategy, [field]: value };
         }
-        catch (e) {
-            console.error('Failed to save strategy:', e);
-        }
-    }
-    _updateStrategyField(field, value) {
-        this._strategy = { ...this._strategy, [field]: value };
-    }
-    render() {
-        if (!this.open)
-            return E;
-        const dialogColor = '#2196F3';
-        return x `
+        render() {
+            if (!this.open)
+                return E;
+            const dialogColor = '#2196F3';
+            return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -13418,14 +13330,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
 
           <div class="dialog-body">
             ${this._activeTab === 'schedules'
-            ? this._renderSchedulesTab(dialogColor)
-            : this._renderSteeringTab(dialogColor)}
+                ? this._renderSchedulesTab(dialogColor)
+                : this._renderSteeringTab(dialogColor)}
           </div>
 
           <div class="button-group">
             <button class="md3-button tonal" @click=${this._close}>Close</button>
             ${this._activeTab === 'steering'
-            ? x `
+                ? x `
                   <button
                     class="md3-button primary"
                     style="background: ${dialogColor};"
@@ -13434,20 +13346,20 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     Save Strategy
                   </button>
                 `
-            : ''}
+                : ''}
           </div>
         </div>
       </ha-dialog>
     `;
-    }
-    _renderSchedulesTab(color) {
-        return x `
+        }
+        _renderSchedulesTab(color) {
+            return x `
       ${this._renderScheduleSection('Irrigation Schedule', this._irrigation_times, this._irrigation_duration, 'irrigation', color)}
       ${this._renderScheduleSection('Drain Schedule', this._drain_times, this._drain_duration, 'drain', '#FF9800')}
     `;
-    }
-    _renderSteeringTab(color) {
-        return x `
+        }
+        _renderSteeringTab(color) {
+            return x `
       <div class="detail-card">
         <h3 style="margin-top: 0;">Crop Steering Configuration</h3>
         <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 20px;">
@@ -13520,10 +13432,10 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         </div>
       </div>
     `;
-    }
-    _renderScheduleSection(title, times, defaultDuration, type, color) {
-        const addingTime = type === 'irrigation' ? this._adding_irrigation_time : this._adding_drain_time;
-        return x `
+        }
+        _renderScheduleSection(title, times, defaultDuration, type, color) {
+            const addingTime = type === 'irrigation' ? this._adding_irrigation_time : this._adding_drain_time;
+            return x `
       <div class="detail-card">
         <div
           style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"
@@ -13531,16 +13443,16 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           <h3 style="margin: 0;">${title}</h3>
           <button
             @click=${(e) => {
-            const container = e.target
-                .closest('.detail-card')
-                ?.querySelector(`.${type}-time-bar`);
-            if (container) {
-                const rect = container.getBoundingClientRect();
-                type === 'irrigation'
-                    ? this._startAddingIrrigationTime(rect.width / 2, rect.width)
-                    : this._startAddingDrainTime(rect.width / 2, rect.width);
-            }
-        }}
+                const container = e.target
+                    .closest('.detail-card')
+                    ?.querySelector(`.${type}-time-bar`);
+                if (container) {
+                    const rect = container.getBoundingClientRect();
+                    type === 'irrigation'
+                        ? this._startAddingIrrigationTime(rect.width / 2, rect.width)
+                        : this._startAddingDrainTime(rect.width / 2, rect.width);
+                }
+            }}
             class="md3-button primary"
             style="background: ${color};"
           >
@@ -13554,12 +13466,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         <div
           class="${type}-time-bar time-bar-container"
           @click=${(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            type === 'irrigation'
-                ? this._startAddingIrrigationTime(x, rect.width)
-                : this._startAddingDrainTime(x, rect.width);
-        }}
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                type === 'irrigation'
+                    ? this._startAddingIrrigationTime(x, rect.width)
+                    : this._startAddingDrainTime(x, rect.width);
+            }}
           style="border: 2px solid ${color}40;"
         >
           ${Array.from({ length: 25 }, (_, i) => i).map((hour) => x `
@@ -13568,24 +13480,24 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 style="left: ${(hour / 24) * 100}%;"
               >
                 ${hour % 3 === 0
-            ? x ` <span class="time-label">${hour.toString().padStart(2, '0')}:00</span> `
-            : ''}
+                ? x ` <span class="time-label">${hour.toString().padStart(2, '0')}:00</span> `
+                : ''}
               </div>
             `)}
           ${times.map((t) => {
-            const [hours, minutes] = t.time.split(':').map(Number);
-            const position = ((hours + minutes / 60) / 24) * 100;
-            return x `
+                const [hours, minutes] = t.time.split(':').map(Number);
+                const position = ((hours + minutes / 60) / 24) * 100;
+                return x `
               <div
                 class="chart-marker"
                 @click=${(e) => {
-                e.stopPropagation();
-                if (confirm(`Remove ${type} time ${t.time}?`)) {
-                    type === 'irrigation'
-                        ? this._removeIrrigationTime(t.time)
-                        : this._removeDrainTime(t.time);
-                }
-            }}
+                    e.stopPropagation();
+                    if (confirm(`Remove ${type} time ${t.time}?`)) {
+                        type === 'irrigation'
+                            ? this._removeIrrigationTime(t.time)
+                            : this._removeDrainTime(t.time);
+                    }
+                }}
                 style="left: ${position}%; background: ${color}; box-shadow: 0 0 8px ${color};"
                 title="${t.time} | Duration: ${t.duration || defaultDuration}seconds"
               >
@@ -13594,7 +13506,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 </div>
               </div>
             `;
-        })}
+            })}
         </div>
 
         <div class="legend-row">
@@ -13606,12 +13518,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         </div>
 
         ${addingTime
-            ? x `
+                ? x `
               <div
                 class="overlay-backdrop"
                 @click=${() => type === 'irrigation'
-                ? (this._adding_irrigation_time = undefined)
-                : (this._adding_drain_time = undefined)}
+                    ? (this._adding_irrigation_time = undefined)
+                    : (this._adding_drain_time = undefined)}
               >
                 <div
                   class="detail-card"
@@ -13625,15 +13537,15 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     type="time"
                     .value=${addingTime.time}
                     @change=${(e) => {
-                const val = e.target.value || e.detail; // md3-text-input uses detail
-                if (type === 'irrigation' && this._adding_irrigation_time)
-                    this._adding_irrigation_time = {
-                        ...this._adding_irrigation_time,
-                        time: val,
-                    };
-                if (type === 'drain' && this._adding_drain_time)
-                    this._adding_drain_time = { ...this._adding_drain_time, time: val };
-            }}
+                    const val = e.target.value || e.detail; // md3-text-input uses detail
+                    if (type === 'irrigation' && this._adding_irrigation_time)
+                        this._adding_irrigation_time = {
+                            ...this._adding_irrigation_time,
+                            time: val,
+                        };
+                    if (type === 'drain' && this._adding_drain_time)
+                        this._adding_drain_time = { ...this._adding_drain_time, time: val };
+                }}
                   ></md3-text-input>
 
                   <md3-number-input
@@ -13641,35 +13553,35 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     .value=${addingTime.duration}
                     .min=${1}
                     @change=${(e) => {
-                const val = parseInt(e.detail);
-                if (!isNaN(val)) {
-                    if (type === 'irrigation' && this._adding_irrigation_time)
-                        this._adding_irrigation_time = {
-                            ...this._adding_irrigation_time,
-                            duration: val,
-                        };
-                    if (type === 'drain' && this._adding_drain_time)
-                        this._adding_drain_time = { ...this._adding_drain_time, duration: val };
-                }
-            }}
+                    const val = parseInt(e.detail);
+                    if (!isNaN(val)) {
+                        if (type === 'irrigation' && this._adding_irrigation_time)
+                            this._adding_irrigation_time = {
+                                ...this._adding_irrigation_time,
+                                duration: val,
+                            };
+                        if (type === 'drain' && this._adding_drain_time)
+                            this._adding_drain_time = { ...this._adding_drain_time, duration: val };
+                    }
+                }}
                   ></md3-number-input>
 
                   <div class="button-group">
                     <button
                       class="md3-button tonal"
                       @click=${() => type === 'irrigation'
-                ? (this._adding_irrigation_time = undefined)
-                : (this._adding_drain_time = undefined)}
+                    ? (this._adding_irrigation_time = undefined)
+                    : (this._adding_drain_time = undefined)}
                     >
                       Cancel
                     </button>
                     <button
                       class="md3-button primary"
                       @click=${() => {
-                type === 'irrigation'
-                    ? this._addIrrigationTime(addingTime.time, addingTime.duration)
-                    : this._addDrainTime(addingTime.time, addingTime.duration);
-            }}
+                    type === 'irrigation'
+                        ? this._addIrrigationTime(addingTime.time, addingTime.duration)
+                        : this._addDrainTime(addingTime.time, addingTime.duration);
+                }}
                       style="background: ${color};"
                     >
                       Add Schedule
@@ -13678,14 +13590,82 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 </div>
               </div>
             `
-            : ''}
+                : ''}
       </div>
     `;
-    }
-};
-IrrigationDialog.styles = [
-    dialogStyles,
-    i$6 `
+        }
+        constructor() {
+            super(...arguments);
+            _IrrigationDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _IrrigationDialog_open_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _open_initializers, false)));
+            _IrrigationDialog_device_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _device_initializers, void 0)));
+            _IrrigationDialog_growspaceName_accessor_storage.set(this, (__runInitializers(this, _device_extraInitializers), __runInitializers(this, _growspaceName_initializers, '')));
+            _IrrigationDialog__irrigation_pump_entity_accessor_storage.set(this, (__runInitializers(this, _growspaceName_extraInitializers), __runInitializers(this, __irrigation_pump_entity_initializers, '')));
+            _IrrigationDialog__drain_pump_entity_accessor_storage.set(this, (__runInitializers(this, __irrigation_pump_entity_extraInitializers), __runInitializers(this, __drain_pump_entity_initializers, '')));
+            _IrrigationDialog__irrigation_duration_accessor_storage.set(this, (__runInitializers(this, __drain_pump_entity_extraInitializers), __runInitializers(this, __irrigation_duration_initializers, 60)));
+            _IrrigationDialog__drain_duration_accessor_storage.set(this, (__runInitializers(this, __irrigation_duration_extraInitializers), __runInitializers(this, __drain_duration_initializers, 60)));
+            _IrrigationDialog__irrigation_times_accessor_storage.set(this, (__runInitializers(this, __drain_duration_extraInitializers), __runInitializers(this, __irrigation_times_initializers, [])));
+            _IrrigationDialog__drain_times_accessor_storage.set(this, (__runInitializers(this, __irrigation_times_extraInitializers), __runInitializers(this, __drain_times_initializers, [])));
+            _IrrigationDialog__adding_irrigation_time_accessor_storage.set(this, (__runInitializers(this, __drain_times_extraInitializers), __runInitializers(this, __adding_irrigation_time_initializers, void 0)));
+            _IrrigationDialog__adding_drain_time_accessor_storage.set(this, (__runInitializers(this, __adding_irrigation_time_extraInitializers), __runInitializers(this, __adding_drain_time_initializers, void 0)));
+            this._dataService = __runInitializers(this, __adding_drain_time_extraInitializers);
+            _IrrigationDialog__activeTab_accessor_storage.set(this, __runInitializers(this, __activeTab_initializers, 'schedules'));
+            _IrrigationDialog__strategy_accessor_storage.set(this, (__runInitializers(this, __activeTab_extraInitializers), __runInitializers(this, __strategy_initializers, {})));
+            __runInitializers(this, __strategy_extraInitializers);
+        }
+    };
+    _IrrigationDialog_hass_accessor_storage = new WeakMap();
+    _IrrigationDialog_open_accessor_storage = new WeakMap();
+    _IrrigationDialog_device_accessor_storage = new WeakMap();
+    _IrrigationDialog_growspaceName_accessor_storage = new WeakMap();
+    _IrrigationDialog__irrigation_pump_entity_accessor_storage = new WeakMap();
+    _IrrigationDialog__drain_pump_entity_accessor_storage = new WeakMap();
+    _IrrigationDialog__irrigation_duration_accessor_storage = new WeakMap();
+    _IrrigationDialog__drain_duration_accessor_storage = new WeakMap();
+    _IrrigationDialog__irrigation_times_accessor_storage = new WeakMap();
+    _IrrigationDialog__drain_times_accessor_storage = new WeakMap();
+    _IrrigationDialog__adding_irrigation_time_accessor_storage = new WeakMap();
+    _IrrigationDialog__adding_drain_time_accessor_storage = new WeakMap();
+    _IrrigationDialog__activeTab_accessor_storage = new WeakMap();
+    _IrrigationDialog__strategy_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "IrrigationDialog");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _open_decorators = [n$5({ type: Boolean })];
+        _device_decorators = [n$5({ attribute: false })];
+        _growspaceName_decorators = [n$5({ type: String })];
+        __irrigation_pump_entity_decorators = [r$2()];
+        __drain_pump_entity_decorators = [r$2()];
+        __irrigation_duration_decorators = [r$2()];
+        __drain_duration_decorators = [r$2()];
+        __irrigation_times_decorators = [r$2()];
+        __drain_times_decorators = [r$2()];
+        __adding_irrigation_time_decorators = [r$2()];
+        __adding_drain_time_decorators = [r$2()];
+        __activeTab_decorators = [r$2()];
+        __strategy_decorators = [r$2()];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
+        __esDecorate(_classThis, null, _device_decorators, { kind: "accessor", name: "device", static: false, private: false, access: { has: obj => "device" in obj, get: obj => obj.device, set: (obj, value) => { obj.device = value; } }, metadata: _metadata }, _device_initializers, _device_extraInitializers);
+        __esDecorate(_classThis, null, _growspaceName_decorators, { kind: "accessor", name: "growspaceName", static: false, private: false, access: { has: obj => "growspaceName" in obj, get: obj => obj.growspaceName, set: (obj, value) => { obj.growspaceName = value; } }, metadata: _metadata }, _growspaceName_initializers, _growspaceName_extraInitializers);
+        __esDecorate(_classThis, null, __irrigation_pump_entity_decorators, { kind: "accessor", name: "_irrigation_pump_entity", static: false, private: false, access: { has: obj => "_irrigation_pump_entity" in obj, get: obj => obj._irrigation_pump_entity, set: (obj, value) => { obj._irrigation_pump_entity = value; } }, metadata: _metadata }, __irrigation_pump_entity_initializers, __irrigation_pump_entity_extraInitializers);
+        __esDecorate(_classThis, null, __drain_pump_entity_decorators, { kind: "accessor", name: "_drain_pump_entity", static: false, private: false, access: { has: obj => "_drain_pump_entity" in obj, get: obj => obj._drain_pump_entity, set: (obj, value) => { obj._drain_pump_entity = value; } }, metadata: _metadata }, __drain_pump_entity_initializers, __drain_pump_entity_extraInitializers);
+        __esDecorate(_classThis, null, __irrigation_duration_decorators, { kind: "accessor", name: "_irrigation_duration", static: false, private: false, access: { has: obj => "_irrigation_duration" in obj, get: obj => obj._irrigation_duration, set: (obj, value) => { obj._irrigation_duration = value; } }, metadata: _metadata }, __irrigation_duration_initializers, __irrigation_duration_extraInitializers);
+        __esDecorate(_classThis, null, __drain_duration_decorators, { kind: "accessor", name: "_drain_duration", static: false, private: false, access: { has: obj => "_drain_duration" in obj, get: obj => obj._drain_duration, set: (obj, value) => { obj._drain_duration = value; } }, metadata: _metadata }, __drain_duration_initializers, __drain_duration_extraInitializers);
+        __esDecorate(_classThis, null, __irrigation_times_decorators, { kind: "accessor", name: "_irrigation_times", static: false, private: false, access: { has: obj => "_irrigation_times" in obj, get: obj => obj._irrigation_times, set: (obj, value) => { obj._irrigation_times = value; } }, metadata: _metadata }, __irrigation_times_initializers, __irrigation_times_extraInitializers);
+        __esDecorate(_classThis, null, __drain_times_decorators, { kind: "accessor", name: "_drain_times", static: false, private: false, access: { has: obj => "_drain_times" in obj, get: obj => obj._drain_times, set: (obj, value) => { obj._drain_times = value; } }, metadata: _metadata }, __drain_times_initializers, __drain_times_extraInitializers);
+        __esDecorate(_classThis, null, __adding_irrigation_time_decorators, { kind: "accessor", name: "_adding_irrigation_time", static: false, private: false, access: { has: obj => "_adding_irrigation_time" in obj, get: obj => obj._adding_irrigation_time, set: (obj, value) => { obj._adding_irrigation_time = value; } }, metadata: _metadata }, __adding_irrigation_time_initializers, __adding_irrigation_time_extraInitializers);
+        __esDecorate(_classThis, null, __adding_drain_time_decorators, { kind: "accessor", name: "_adding_drain_time", static: false, private: false, access: { has: obj => "_adding_drain_time" in obj, get: obj => obj._adding_drain_time, set: (obj, value) => { obj._adding_drain_time = value; } }, metadata: _metadata }, __adding_drain_time_initializers, __adding_drain_time_extraInitializers);
+        __esDecorate(_classThis, null, __activeTab_decorators, { kind: "accessor", name: "_activeTab", static: false, private: false, access: { has: obj => "_activeTab" in obj, get: obj => obj._activeTab, set: (obj, value) => { obj._activeTab = value; } }, metadata: _metadata }, __activeTab_initializers, __activeTab_extraInitializers);
+        __esDecorate(_classThis, null, __strategy_decorators, { kind: "accessor", name: "_strategy", static: false, private: false, access: { has: obj => "_strategy" in obj, get: obj => obj._strategy, set: (obj, value) => { obj._strategy = value; } }, metadata: _metadata }, __strategy_initializers, __strategy_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        dialogStyles,
+        i$6 `
       :host {
         --mdc-dialog-min-width: 400px;
         --mdc-dialog-max-width: 1000px;
@@ -13772,66 +13752,12 @@ IrrigationDialog.styles = [
         z-index: 10000;
       }
     `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "hass", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "open", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "device", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "growspaceName", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_irrigation_pump_entity", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_drain_pump_entity", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_irrigation_duration", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_drain_duration", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Array)
-], IrrigationDialog.prototype, "_irrigation_times", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Array)
-], IrrigationDialog.prototype, "_drain_times", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_adding_irrigation_time", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_adding_drain_time", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", String)
-], IrrigationDialog.prototype, "_activeTab", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], IrrigationDialog.prototype, "_strategy", void 0);
-IrrigationDialog = __decorate([
-    t$2('irrigation-dialog')
-], IrrigationDialog);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
 class GrowspaceLogbookController {
     constructor(hass) {
@@ -13856,106 +13782,141 @@ class GrowspaceLogbookController {
     }
 }
 
-let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
-    constructor() {
-        super(...arguments);
-        this._events = [];
-        this._isLoading = false;
-        this._activeFilter = 'all';
-    }
-    firstUpdated() {
-        this._initController();
-    }
-    _getSeverityColor(severity, sensorType) {
-        if (sensorType?.toLowerCase() === 'optimal') {
-            if (severity >= 0.9)
-                return 'var(--success-color, #4CAF50)';
-            if (severity >= 0.75)
-                return 'var(--warning-color)';
-            return 'var(--error-color)';
+(() => {
+    var _GrowspaceLogbook_hass_accessor_storage, _GrowspaceLogbook_growspaceId_accessor_storage, _GrowspaceLogbook__events_accessor_storage, _GrowspaceLogbook__isLoading_accessor_storage, _GrowspaceLogbook__activeFilter_accessor_storage;
+    let _classDecorators = [t$2('growspace-logbook')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _growspaceId_decorators;
+    let _growspaceId_initializers = [];
+    let _growspaceId_extraInitializers = [];
+    let __events_decorators;
+    let __events_initializers = [];
+    let __events_extraInitializers = [];
+    let __isLoading_decorators;
+    let __isLoading_initializers = [];
+    let __isLoading_extraInitializers = [];
+    let __activeFilter_decorators;
+    let __activeFilter_initializers = [];
+    let __activeFilter_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        constructor() {
+            super(...arguments);
+            _GrowspaceLogbook_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _GrowspaceLogbook_growspaceId_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _growspaceId_initializers, void 0)));
+            _GrowspaceLogbook__events_accessor_storage.set(this, (__runInitializers(this, _growspaceId_extraInitializers), __runInitializers(this, __events_initializers, [])));
+            _GrowspaceLogbook__isLoading_accessor_storage.set(this, (__runInitializers(this, __events_extraInitializers), __runInitializers(this, __isLoading_initializers, false)));
+            _GrowspaceLogbook__activeFilter_accessor_storage.set(this, (__runInitializers(this, __isLoading_extraInitializers), __runInitializers(this, __activeFilter_initializers, 'all')));
+            this._controller = __runInitializers(this, __activeFilter_extraInitializers);
         }
-        // Default logic (High severity = Bad)
-        if (severity >= 0.9)
-            return 'var(--error-color)';
-        if (severity >= 0.75)
-            return 'var(--warning-color)';
-        return 'var(--primary-text-color)';
-    }
-    willUpdate(changedProps) {
-        if (changedProps.has('hass') && !this._controller) {
+        get hass() { return __classPrivateFieldGet(this, _GrowspaceLogbook_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _GrowspaceLogbook_hass_accessor_storage, value, "f"); }
+        get growspaceId() { return __classPrivateFieldGet(this, _GrowspaceLogbook_growspaceId_accessor_storage, "f"); }
+        set growspaceId(value) { __classPrivateFieldSet(this, _GrowspaceLogbook_growspaceId_accessor_storage, value, "f"); }
+        get _events() { return __classPrivateFieldGet(this, _GrowspaceLogbook__events_accessor_storage, "f"); }
+        set _events(value) { __classPrivateFieldSet(this, _GrowspaceLogbook__events_accessor_storage, value, "f"); }
+        get _isLoading() { return __classPrivateFieldGet(this, _GrowspaceLogbook__isLoading_accessor_storage, "f"); }
+        set _isLoading(value) { __classPrivateFieldSet(this, _GrowspaceLogbook__isLoading_accessor_storage, value, "f"); }
+        get _activeFilter() { return __classPrivateFieldGet(this, _GrowspaceLogbook__activeFilter_accessor_storage, "f"); }
+        set _activeFilter(value) { __classPrivateFieldSet(this, _GrowspaceLogbook__activeFilter_accessor_storage, value, "f"); }
+        firstUpdated() {
             this._initController();
         }
-        if (changedProps.has('growspaceId')) {
-            this._fetchEvents();
+        _getSeverityColor(severity, sensorType) {
+            if (sensorType?.toLowerCase() === 'optimal') {
+                if (severity >= 0.9)
+                    return 'var(--success-color, #4CAF50)';
+                if (severity >= 0.75)
+                    return 'var(--warning-color)';
+                return 'var(--error-color)';
+            }
+            // Default logic (High severity = Bad)
+            if (severity >= 0.9)
+                return 'var(--error-color)';
+            if (severity >= 0.75)
+                return 'var(--warning-color)';
+            return 'var(--primary-text-color)';
         }
-    }
-    _initController() {
-        if (this.hass && !this._controller) {
-            this._controller = new GrowspaceLogbookController(this.hass);
-            this._fetchEvents();
+        willUpdate(changedProps) {
+            if (changedProps.has('hass') && !this._controller) {
+                this._initController();
+            }
+            if (changedProps.has('growspaceId')) {
+                this._fetchEvents();
+            }
         }
-    }
-    async _fetchEvents() {
-        if (!this._controller || !this.growspaceId)
-            return;
-        this._isLoading = true;
-        try {
-            this._events = await this._controller.fetchEventLog(this.growspaceId);
+        _initController() {
+            if (this.hass && !this._controller) {
+                this._controller = new GrowspaceLogbookController(this.hass);
+                this._fetchEvents();
+            }
         }
-        finally {
-            this._isLoading = false;
+        async _fetchEvents() {
+            if (!this._controller || !this.growspaceId)
+                return;
+            this._isLoading = true;
+            try {
+                this._events = await this._controller.fetchEventLog(this.growspaceId);
+            }
+            finally {
+                this._isLoading = false;
+            }
         }
-    }
-    _formatDuration(seconds) {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}m ${secs}s`;
-    }
-    _formatProb(val) {
-        if (val === undefined || val === null || isNaN(val)) {
-            return '--%';
+        _formatDuration(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}m ${secs}s`;
         }
-        return `${Math.round(Number(val) * 100)}%`;
-    }
-    _formatTime(isoString) {
-        try {
-            const date = new Date(isoString);
-            return date.toLocaleString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-            });
+        _formatProb(val) {
+            if (val === undefined || val === null || isNaN(val)) {
+                return '--%';
+            }
+            return `${Math.round(Number(val) * 100)}%`;
         }
-        catch {
-            return isoString;
+        _formatTime(isoString) {
+            try {
+                const date = new Date(isoString);
+                return date.toLocaleString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+            }
+            catch {
+                return isoString;
+            }
         }
-    }
-    render() {
-        if (this._isLoading) {
-            return x `<div class="empty-state">Loading events...</div>`;
-        }
-        const allEvents = this._events || [];
-        // Filter logic
-        let filteredEvents = allEvents;
-        if (this._activeFilter === 'alerts') {
-            filteredEvents = allEvents.filter((e) => e.category === 'alert' || e.severity >= 0.75);
-        }
-        else if (this._activeFilter === 'irrigation') {
-            filteredEvents = allEvents.filter((e) => e.category === 'irrigation' || ['irrigation', 'drain'].includes(e.sensor_type));
-        }
-        else if (this._activeFilter === 'environment') {
-            filteredEvents = allEvents.filter((e) => ['temperature', 'humidity', 'vpd', 'co2'].includes(e.sensor_type));
-        }
-        // Sort by time descending (newest first)
-        const sortedEvents = [...filteredEvents].sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
-        const filters = [
-            { id: 'all', label: 'All' },
-            { id: 'alerts', label: 'Alerts' },
-            { id: 'irrigation', label: 'Irrigation' },
-            { id: 'environment', label: 'Environment' },
-        ];
-        return x `
+        render() {
+            if (this._isLoading) {
+                return x `<div class="empty-state">Loading events...</div>`;
+            }
+            const allEvents = this._events || [];
+            // Filter logic
+            let filteredEvents = allEvents;
+            if (this._activeFilter === 'alerts') {
+                filteredEvents = allEvents.filter((e) => e.category === 'alert' || e.severity >= 0.75);
+            }
+            else if (this._activeFilter === 'irrigation') {
+                filteredEvents = allEvents.filter((e) => e.category === 'irrigation' || ['irrigation', 'drain'].includes(e.sensor_type));
+            }
+            else if (this._activeFilter === 'environment') {
+                filteredEvents = allEvents.filter((e) => ['temperature', 'humidity', 'vpd', 'co2'].includes(e.sensor_type));
+            }
+            // Sort by time descending (newest first)
+            const sortedEvents = [...filteredEvents].sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+            const filters = [
+                { id: 'all', label: 'All' },
+                { id: 'alerts', label: 'Alerts' },
+                { id: 'irrigation', label: 'Irrigation' },
+                { id: 'environment', label: 'Environment' },
+            ];
+            return x `
       <div class="filter-bar">
         ${filters.map((filter) => x `
             <div
@@ -13969,7 +13930,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
 
       <div class="log-container">
         ${sortedEvents.length > 0
-            ? sortedEvents.map((event) => x `
+                ? sortedEvents.map((event) => x `
                 <div class="event-card">
                   <div class="event-header">
                     <span class="event-time">${this._formatTime(event.start_time)}</span>
@@ -13981,16 +13942,16 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
                       <div class="event-type">${event.sensor_type.replace(/_/g, ' ')}</div>
 
                       ${event.reasons && event.reasons.length > 0
-                ? x `
+                    ? x `
                             <div class="event-reasons">
                               ${event.reasons.map((reason) => x `<span class="reason-badge">${reason}</span>`)}
                             </div>
                           `
-                : E}
+                    : E}
                     </div>
 
                     ${event.category === 'alert'
-                ? x `
+                    ? x `
                           <div
                             class="event-probability"
                             style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}"
@@ -13998,7 +13959,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
                             ${this._formatProb(event.severity)}
                           </div>
                         `
-                : x `
+                    : x `
                           <div class="event-probability">
                             <ha-icon icon="mdi:water"></ha-icon>
                           </div>
@@ -14006,18 +13967,40 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
                   </div>
                 </div>
               `)
-            : x `
+                : x `
               <div class="empty-state">
                 No events found for "${filters.find((f) => f.id === this._activeFilter)?.label}".
               </div>
             `}
       </div>
     `;
-    }
-};
-GrowspaceLogbook.styles = [
-    dialogStyles,
-    i$6 `
+        }
+    };
+    _GrowspaceLogbook_hass_accessor_storage = new WeakMap();
+    _GrowspaceLogbook_growspaceId_accessor_storage = new WeakMap();
+    _GrowspaceLogbook__events_accessor_storage = new WeakMap();
+    _GrowspaceLogbook__isLoading_accessor_storage = new WeakMap();
+    _GrowspaceLogbook__activeFilter_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "GrowspaceLogbook");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _growspaceId_decorators = [n$5({ type: String })];
+        __events_decorators = [r$2()];
+        __isLoading_decorators = [r$2()];
+        __activeFilter_decorators = [r$2()];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _growspaceId_decorators, { kind: "accessor", name: "growspaceId", static: false, private: false, access: { has: obj => "growspaceId" in obj, get: obj => obj.growspaceId, set: (obj, value) => { obj.growspaceId = value; } }, metadata: _metadata }, _growspaceId_initializers, _growspaceId_extraInitializers);
+        __esDecorate(_classThis, null, __events_decorators, { kind: "accessor", name: "_events", static: false, private: false, access: { has: obj => "_events" in obj, get: obj => obj._events, set: (obj, value) => { obj._events = value; } }, metadata: _metadata }, __events_initializers, __events_extraInitializers);
+        __esDecorate(_classThis, null, __isLoading_decorators, { kind: "accessor", name: "_isLoading", static: false, private: false, access: { has: obj => "_isLoading" in obj, get: obj => obj._isLoading, set: (obj, value) => { obj._isLoading = value; } }, metadata: _metadata }, __isLoading_initializers, __isLoading_extraInitializers);
+        __esDecorate(_classThis, null, __activeFilter_decorators, { kind: "accessor", name: "_activeFilter", static: false, private: false, access: { has: obj => "_activeFilter" in obj, get: obj => obj._activeFilter, set: (obj, value) => { obj._activeFilter = value; } }, metadata: _metadata }, __activeFilter_initializers, __activeFilter_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        dialogStyles,
+        i$6 `
       :host {
         display: block;
         height: 100%;
@@ -14138,44 +14121,43 @@ GrowspaceLogbook.styles = [
         font-style: italic;
       }
     `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], GrowspaceLogbook.prototype, "hass", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", String)
-], GrowspaceLogbook.prototype, "growspaceId", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Array)
-], GrowspaceLogbook.prototype, "_events", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceLogbook.prototype, "_isLoading", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceLogbook.prototype, "_activeFilter", void 0);
-GrowspaceLogbook = __decorate([
-    t$2('growspace-logbook')
-], GrowspaceLogbook);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let LogbookDialog = class LogbookDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.growspaceId = '';
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close'));
-    }
-    render() {
-        if (!this.open)
-            return x ``;
-        return x `
+(() => {
+    var _LogbookDialog_hass_accessor_storage, _LogbookDialog_open_accessor_storage, _LogbookDialog_growspaceId_accessor_storage;
+    let _classDecorators = [t$2('logbook-dialog')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _open_decorators;
+    let _open_initializers = [];
+    let _open_extraInitializers = [];
+    let _growspaceId_decorators;
+    let _growspaceId_initializers = [];
+    let _growspaceId_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get hass() { return __classPrivateFieldGet(this, _LogbookDialog_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _LogbookDialog_hass_accessor_storage, value, "f"); }
+        get open() { return __classPrivateFieldGet(this, _LogbookDialog_open_accessor_storage, "f"); }
+        set open(value) { __classPrivateFieldSet(this, _LogbookDialog_open_accessor_storage, value, "f"); }
+        get growspaceId() { return __classPrivateFieldGet(this, _LogbookDialog_growspaceId_accessor_storage, "f"); }
+        set growspaceId(value) { __classPrivateFieldSet(this, _LogbookDialog_growspaceId_accessor_storage, value, "f"); }
+        _close() {
+            this.dispatchEvent(new CustomEvent('close'));
+        }
+        render() {
+            if (!this.open)
+                return x ``;
+            return x `
       <ha-dialog .open=${this.open} @closed=${this._close} hideActions .heading=${true}>
         <div slot="heading" class="dialog-header">
           <h2 class="dialog-title">Events Logbook</h2>
@@ -14198,11 +14180,34 @@ let LogbookDialog = class LogbookDialog extends i$3 {
         </div>
       </ha-dialog>
     `;
-    }
-};
-LogbookDialog.styles = [
-    dialogStyles,
-    i$6 `
+        }
+        constructor() {
+            super(...arguments);
+            _LogbookDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _LogbookDialog_open_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _open_initializers, false)));
+            _LogbookDialog_growspaceId_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _growspaceId_initializers, '')));
+            __runInitializers(this, _growspaceId_extraInitializers);
+        }
+    };
+    _LogbookDialog_hass_accessor_storage = new WeakMap();
+    _LogbookDialog_open_accessor_storage = new WeakMap();
+    _LogbookDialog_growspaceId_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "LogbookDialog");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _open_decorators = [n$5({ type: Boolean })];
+        _growspaceId_decorators = [n$5({ type: String })];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
+        __esDecorate(_classThis, null, _growspaceId_decorators, { kind: "accessor", name: "growspaceId", static: false, private: false, access: { has: obj => "growspaceId" in obj, get: obj => obj.growspaceId, set: (obj, value) => { obj.growspaceId = value; } }, metadata: _metadata }, _growspaceId_initializers, _growspaceId_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        dialogStyles,
+        i$6 `
       ha-dialog {
         --mdc-dialog-min-width: 90vw;
         --mdc-dialog-max-width: 90vw;
@@ -14238,70 +14243,87 @@ LogbookDialog.styles = [
         margin-top: 16px;
       }
     `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], LogbookDialog.prototype, "hass", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], LogbookDialog.prototype, "open", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", Object)
-], LogbookDialog.prototype, "growspaceId", void 0);
-LogbookDialog = __decorate([
-    t$2('logbook-dialog')
-], LogbookDialog);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let DialogHost = class DialogHost extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.devices = [];
-        this.strainLibrary = [];
-    }
-    render() {
-        if (!this.store)
-            return x ``;
-        const active = this.activeDialogState || this.store.state.activeDialog;
-        console.log('[DialogHost] Rendering with active type:', active.type);
-        if (active.type === 'NONE')
-            return x ``;
-        const strainLibrary = this.strainLibrary || [];
-        const devices = this.devices || this.store.state.devices;
-        const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
-        // Prepare options for select dropdowns if needed
-        const growspaceOptions = {};
-        devices.forEach((d) => {
-            growspaceOptions[d.device_id] = d.name;
-        });
-        switch (active.type) {
-            case 'ADD_PLANT':
-                return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
-            case 'PLANT_OVERVIEW':
-                return this._renderPlantOverviewDialog(active, growspaceOptions);
-            case 'STRAIN_LIBRARY':
-                return this._renderStrainLibraryDialog(active, strainLibrary);
-            case 'CONFIG':
-                return this._renderConfigDialog(active, growspaceOptions);
-            case 'GROW_MASTER':
-                return this._renderGrowMasterDialog(active);
-            case 'STRAIN_RECOMMENDATION':
-                return this._renderStrainRecommendationDialog(active);
-            case 'IRRIGATION':
-                return this._renderIrrigationDialog(active, selectedDeviceData);
-            case 'LOGBOOK':
-                return this._renderLogbookDialog(active);
-            default:
+(() => {
+    var _DialogHost_hass_accessor_storage, _DialogHost_store_accessor_storage, _DialogHost_activeDialogState_accessor_storage, _DialogHost_devices_accessor_storage, _DialogHost_strainLibrary_accessor_storage;
+    let _classDecorators = [t$2('growspace-dialog-host')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _store_decorators;
+    let _store_initializers = [];
+    let _store_extraInitializers = [];
+    let _activeDialogState_decorators;
+    let _activeDialogState_initializers = [];
+    let _activeDialogState_extraInitializers = [];
+    let _devices_decorators;
+    let _devices_initializers = [];
+    let _devices_extraInitializers = [];
+    let _strainLibrary_decorators;
+    let _strainLibrary_initializers = [];
+    let _strainLibrary_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get hass() { return __classPrivateFieldGet(this, _DialogHost_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _DialogHost_hass_accessor_storage, value, "f"); }
+        get store() { return __classPrivateFieldGet(this, _DialogHost_store_accessor_storage, "f"); }
+        set store(value) { __classPrivateFieldSet(this, _DialogHost_store_accessor_storage, value, "f"); }
+        get activeDialogState() { return __classPrivateFieldGet(this, _DialogHost_activeDialogState_accessor_storage, "f"); }
+        set activeDialogState(value) { __classPrivateFieldSet(this, _DialogHost_activeDialogState_accessor_storage, value, "f"); }
+        get devices() { return __classPrivateFieldGet(this, _DialogHost_devices_accessor_storage, "f"); }
+        set devices(value) { __classPrivateFieldSet(this, _DialogHost_devices_accessor_storage, value, "f"); }
+        get strainLibrary() { return __classPrivateFieldGet(this, _DialogHost_strainLibrary_accessor_storage, "f"); }
+        set strainLibrary(value) { __classPrivateFieldSet(this, _DialogHost_strainLibrary_accessor_storage, value, "f"); }
+        render() {
+            if (!this.store)
                 return x ``;
+            const active = this.activeDialogState || this.store.state.activeDialog;
+            console.log('[DialogHost] Rendering with active type:', active.type);
+            if (active.type === 'NONE')
+                return x ``;
+            const strainLibrary = this.strainLibrary || [];
+            const devices = this.devices || this.store.state.devices;
+            const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
+            // Prepare options for select dropdowns if needed
+            const growspaceOptions = {};
+            devices.forEach((d) => {
+                growspaceOptions[d.device_id] = d.name;
+            });
+            switch (active.type) {
+                case 'ADD_PLANT':
+                    return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
+                case 'PLANT_OVERVIEW':
+                    return this._renderPlantOverviewDialog(active, growspaceOptions);
+                case 'STRAIN_LIBRARY':
+                    return this._renderStrainLibraryDialog(active, strainLibrary);
+                case 'CONFIG':
+                    return this._renderConfigDialog(active, growspaceOptions);
+                case 'GROW_MASTER':
+                    return this._renderGrowMasterDialog(active);
+                case 'STRAIN_RECOMMENDATION':
+                    return this._renderStrainRecommendationDialog(active);
+                case 'IRRIGATION':
+                    return this._renderIrrigationDialog(active, selectedDeviceData);
+                case 'LOGBOOK':
+                    return this._renderLogbookDialog(active);
+                default:
+                    return x ``;
+            }
         }
-    }
-    _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
-        if (active.type !== 'ADD_PLANT')
-            return x ``;
-        const dialogState = active.payload;
-        return x `
+        _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
+            if (active.type !== 'ADD_PLANT')
+                return x ``;
+            const dialogState = active.payload;
+            return x `
         <add-plant-dialog
             .open=${true}
             .strainLibrary=${strainLibrary}
@@ -14312,12 +14334,12 @@ let DialogHost = class DialogHost extends i$3 {
             @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
         ></add-plant-dialog>
         `;
-    }
-    _renderPlantOverviewDialog(active, growspaceOptions) {
-        if (active.type !== 'PLANT_OVERVIEW')
-            return x ``;
-        const dialogState = active.payload;
-        return x `
+        }
+        _renderPlantOverviewDialog(active, growspaceOptions) {
+            if (active.type !== 'PLANT_OVERVIEW')
+                return x ``;
+            const dialogState = active.payload;
+            return x `
         <plant-overview-dialog
             .open=${true}
             .plant=${dialogState.plant}
@@ -14327,10 +14349,10 @@ let DialogHost = class DialogHost extends i$3 {
             .growspaceOptions=${growspaceOptions}
             @close=${() => this.store.closeActiveDialog()}
             @update-plant=${(e) => this.store.updatePlantFromDialog({
-            plant: dialogState.plant,
-            editedAttributes: e.detail, // Event detail is the attributes object
-            selectedPlantIds: dialogState.selectedPlantIds
-        })}
+                plant: dialogState.plant,
+                editedAttributes: e.detail, // Event detail is the attributes object
+                selectedPlantIds: dialogState.selectedPlantIds
+            })}
             @delete-plant=${(e) => this.store.handleDeletePlant(e.detail.plantId)}
             @harvest-plant=${(e) => this.store.harvestPlant(e.detail.plant)}
             @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
@@ -14338,11 +14360,11 @@ let DialogHost = class DialogHost extends i$3 {
             @move-clone=${(e) => this.store.movePlantToGrowspace(e.detail.plant, e.detail.targetGrowspace)}
         ></plant-overview-dialog>
         `;
-    }
-    _renderStrainLibraryDialog(active, strainLibrary) {
-        if (active.type !== 'STRAIN_LIBRARY')
-            return x ``;
-        return x `
+        }
+        _renderStrainLibraryDialog(active, strainLibrary) {
+            if (active.type !== 'STRAIN_LIBRARY')
+                return x ``;
+            return x `
         <strain-library-dialog
             .open=${true}
             .strains=${strainLibrary}
@@ -14353,25 +14375,25 @@ let DialogHost = class DialogHost extends i$3 {
             @export-library=${() => this.store.handleExportLibrary()}
         ></strain-library-dialog>
         `;
-    }
-    async _performImport(file, replace) {
-        if (!file)
-            return;
-        try {
-            const result = await this.store.dataService.importStrainLibrary(file, replace);
-            this.store.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
-            await this.store.fetchStrainLibrary();
         }
-        catch (err) {
-            console.error('Import failed:', err);
-            this.store.showToast(`Import failed: ${err.message}`, 'error');
+        async _performImport(file, replace) {
+            if (!file)
+                return;
+            try {
+                const result = await this.store.dataService.importStrainLibrary(file, replace);
+                this.store.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
+                await this.store.fetchStrainLibrary();
+            }
+            catch (err) {
+                console.error('Import failed:', err);
+                this.store.showToast(`Import failed: ${err.message}`, 'error');
+            }
         }
-    }
-    _renderConfigDialog(active, growspaceOptions) {
-        if (active.type !== 'CONFIG')
-            return x ``;
-        const dialogState = active.payload;
-        return x `
+        _renderConfigDialog(active, growspaceOptions) {
+            if (active.type !== 'CONFIG')
+                return x ``;
+            const dialogState = active.payload;
+            return x `
         <config-dialog
             .open=${true}
             .hass=${this.hass}
@@ -14385,62 +14407,62 @@ let DialogHost = class DialogHost extends i$3 {
             @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
         ></config-dialog>
         `;
-    }
-    async _handleEnvironmentConfig(detail) {
-        const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold, } = detail;
-        if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
-            this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
-            return;
         }
-        try {
-            await this.store.dataService.configureEnvironment({
-                growspace_id: selectedGrowspaceId,
-                temperature_sensor: temp_sensor,
-                humidity_sensor,
-                vpd_sensor: vpd_sensor || undefined,
-                co2_sensor: co2_sensor || undefined,
-                circulation_fan: circulation_fan || undefined,
-                stress_threshold,
-                mold_threshold,
-            });
-            this.store.showToast('Environment configured successfully!', 'success');
-            await this.store.refreshData();
-            this.store.closeActiveDialog();
+        async _handleEnvironmentConfig(detail) {
+            const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold, } = detail;
+            if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
+                this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
+                return;
+            }
+            try {
+                await this.store.dataService.configureEnvironment({
+                    growspace_id: selectedGrowspaceId,
+                    temperature_sensor: temp_sensor,
+                    humidity_sensor,
+                    vpd_sensor: vpd_sensor || undefined,
+                    co2_sensor: co2_sensor || undefined,
+                    circulation_fan: circulation_fan || undefined,
+                    stress_threshold,
+                    mold_threshold,
+                });
+                this.store.showToast('Environment configured successfully!', 'success');
+                await this.store.refreshData();
+                this.store.closeActiveDialog();
+            }
+            catch (e) {
+                this.store.showToast(`Error: ${e.message}`, 'error');
+            }
         }
-        catch (e) {
-            this.store.showToast(`Error: ${e.message}`, 'error');
-        }
-    }
-    _renderGrowMasterDialog(active) {
-        if (active.type !== 'GROW_MASTER')
-            return x ``;
-        const dialogState = active.payload;
-        // Determine stress state (logic moved from card or duplicated/simplified?)
-        // Ideally store should calculate this derived state or pass it in payload.
-        // For now, I'll access hass via store? No, store has hass but it's not reactive property of DialogHost
-        // But store.hass IS available.
-        let isStressed = false;
-        let personality;
-        if (this.store.state.selectedDevice && this.store.hass) {
-            const id = this.store.state.selectedDevice;
-            const stressEntityIds = [
-                `binary_sensor.${id}_plants_under_stress`,
-                `binary_sensor.${id}_stress`,
-                `binary_sensor.growspace_manager_${id}_stress`,
-            ];
-            for (const eid of stressEntityIds) {
-                const ent = this.store.hass.states[eid];
-                if (ent && ent.state === 'on') {
-                    isStressed = true;
-                    break;
+        _renderGrowMasterDialog(active) {
+            if (active.type !== 'GROW_MASTER')
+                return x ``;
+            const dialogState = active.payload;
+            // Determine stress state (logic moved from card or duplicated/simplified?)
+            // Ideally store should calculate this derived state or pass it in payload.
+            // For now, I'll access hass via store? No, store has hass but it's not reactive property of DialogHost
+            // But store.hass IS available.
+            let isStressed = false;
+            let personality;
+            if (this.store.state.selectedDevice && this.store.hass) {
+                const id = this.store.state.selectedDevice;
+                const stressEntityIds = [
+                    `binary_sensor.${id}_plants_under_stress`,
+                    `binary_sensor.${id}_stress`,
+                    `binary_sensor.growspace_manager_${id}_stress`,
+                ];
+                for (const eid of stressEntityIds) {
+                    const ent = this.store.hass.states[eid];
+                    if (ent && ent.state === 'on') {
+                        isStressed = true;
+                        break;
+                    }
+                }
+                const manager = this.store.hass.states['sensor.growspace_manager'];
+                if (manager && manager.attributes && manager.attributes.ai_settings) {
+                    personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
                 }
             }
-            const manager = this.store.hass.states['sensor.growspace_manager'];
-            if (manager && manager.attributes && manager.attributes.ai_settings) {
-                personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
-            }
-        }
-        return x `
+            return x `
         <grow-master-dialog
             .open=${true}
             .isStressed=${isStressed}
@@ -14452,12 +14474,12 @@ let DialogHost = class DialogHost extends i$3 {
             @analyze-all-growspaces=${(e) => this.store.analyzeGrowspace(e.detail.query, true)}
         ></grow-master-dialog>
         `;
-    }
-    _renderStrainRecommendationDialog(active) {
-        if (active.type !== 'STRAIN_RECOMMENDATION')
-            return x ``;
-        const dialogState = active.payload;
-        return x `
+        }
+        _renderStrainRecommendationDialog(active) {
+            if (active.type !== 'STRAIN_RECOMMENDATION')
+                return x ``;
+            const dialogState = active.payload;
+            return x `
         <strain-recommendation-dialog
             .open=${true}
             .isLoading=${dialogState.isLoading}
@@ -14466,11 +14488,11 @@ let DialogHost = class DialogHost extends i$3 {
             @get-recommendation=${(e) => this.store.getStrainRecommendation(e.detail.query)}
         ></strain-recommendation-dialog>
         `;
-    }
-    _renderIrrigationDialog(active, selectedDeviceData) {
-        if (active.type !== 'IRRIGATION')
-            return x ``;
-        return x `
+        }
+        _renderIrrigationDialog(active, selectedDeviceData) {
+            if (active.type !== 'IRRIGATION')
+                return x ``;
+            return x `
         <irrigation-dialog
             .open=${true}
             .device=${selectedDeviceData}
@@ -14479,298 +14501,338 @@ let DialogHost = class DialogHost extends i$3 {
             @closed=${() => this.store.closeActiveDialog()}
         ></irrigation-dialog>
         `;
-    }
-    _renderLogbookDialog(active) {
-        if (active.type !== 'LOGBOOK')
-            return x ``;
-        const dialogState = active.payload;
-        return x `
+        }
+        _renderLogbookDialog(active) {
+            if (active.type !== 'LOGBOOK')
+                return x ``;
+            const dialogState = active.payload;
+            return x `
         <logbook-dialog
             .open=${true}
             .growspaceId=${dialogState.growspaceId}
             @close=${() => this.store.closeActiveDialog()}
         ></logbook-dialog>
         `;
-    }
-};
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], DialogHost.prototype, "hass", void 0);
-__decorate([
-    c$2({ context: storeContext, subscribe: true }),
-    __metadata("design:type", GrowspaceStore)
-], DialogHost.prototype, "store", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], DialogHost.prototype, "activeDialogState", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], DialogHost.prototype, "devices", void 0);
-__decorate([
-    c$2({ context: strainLibraryContext, subscribe: true }),
-    __metadata("design:type", Array)
-], DialogHost.prototype, "strainLibrary", void 0);
-DialogHost = __decorate([
-    t$2('growspace-dialog-host')
-], DialogHost);
+        }
+        constructor() {
+            super(...arguments);
+            _DialogHost_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _DialogHost_store_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
+            _DialogHost_activeDialogState_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _activeDialogState_initializers, void 0)));
+            _DialogHost_devices_accessor_storage.set(this, (__runInitializers(this, _activeDialogState_extraInitializers), __runInitializers(this, _devices_initializers, [])));
+            _DialogHost_strainLibrary_accessor_storage.set(this, (__runInitializers(this, _devices_extraInitializers), __runInitializers(this, _strainLibrary_initializers, [])));
+            __runInitializers(this, _strainLibrary_extraInitializers);
+        }
+    };
+    _DialogHost_hass_accessor_storage = new WeakMap();
+    _DialogHost_store_accessor_storage = new WeakMap();
+    _DialogHost_activeDialogState_accessor_storage = new WeakMap();
+    _DialogHost_devices_accessor_storage = new WeakMap();
+    _DialogHost_strainLibrary_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "DialogHost");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _store_decorators = [c$2({ context: storeContext, subscribe: true })];
+        _activeDialogState_decorators = [n$5({ attribute: false })];
+        _devices_decorators = [n$5({ attribute: false })];
+        _strainLibrary_decorators = [c$2({ context: strainLibraryContext, subscribe: true })];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
+        __esDecorate(_classThis, null, _activeDialogState_decorators, { kind: "accessor", name: "activeDialogState", static: false, private: false, access: { has: obj => "activeDialogState" in obj, get: obj => obj.activeDialogState, set: (obj, value) => { obj.activeDialogState = value; } }, metadata: _metadata }, _activeDialogState_initializers, _activeDialogState_extraInitializers);
+        __esDecorate(_classThis, null, _devices_decorators, { kind: "accessor", name: "devices", static: false, private: false, access: { has: obj => "devices" in obj, get: obj => obj.devices, set: (obj, value) => { obj.devices = value; } }, metadata: _metadata }, _devices_initializers, _devices_extraInitializers);
+        __esDecorate(_classThis, null, _strainLibrary_decorators, { kind: "accessor", name: "strainLibrary", static: false, private: false, access: { has: obj => "strainLibrary" in obj, get: obj => obj.strainLibrary, set: (obj, value) => { obj.strainLibrary = value; } }, metadata: _metadata }, _strainLibrary_initializers, _strainLibrary_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.strainLibrary = [];
-        this.isEditMode = false;
-        this.selected = false;
-        this._displayData = null;
-        this._isDraggingMobile = false;
-        this._startX = 0;
-        this._startY = 0;
-        this._initialLeft = 0;
-        this._initialTop = 0;
-    }
-    willUpdate(changedProps) {
-        if (changedProps.has('plant') || changedProps.has('strainLibrary')) {
-            this._calculateDisplayData();
+(() => {
+    var _GrowspacePlantCard_plant_accessor_storage, _GrowspacePlantCard_row_accessor_storage, _GrowspacePlantCard_col_accessor_storage, _GrowspacePlantCard_strainLibrary_accessor_storage, _GrowspacePlantCard_isEditMode_accessor_storage, _GrowspacePlantCard_selected_accessor_storage, _GrowspacePlantCard__displayData_accessor_storage, _GrowspacePlantCard__longPressTimer_accessor_storage, _GrowspacePlantCard__isDraggingMobile_accessor_storage;
+    let _classDecorators = [t$2('growspace-plant-card')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _plant_decorators;
+    let _plant_initializers = [];
+    let _plant_extraInitializers = [];
+    let _row_decorators;
+    let _row_initializers = [];
+    let _row_extraInitializers = [];
+    let _col_decorators;
+    let _col_initializers = [];
+    let _col_extraInitializers = [];
+    let _strainLibrary_decorators;
+    let _strainLibrary_initializers = [];
+    let _strainLibrary_extraInitializers = [];
+    let _isEditMode_decorators;
+    let _isEditMode_initializers = [];
+    let _isEditMode_extraInitializers = [];
+    let _selected_decorators;
+    let _selected_initializers = [];
+    let _selected_extraInitializers = [];
+    let __displayData_decorators;
+    let __displayData_initializers = [];
+    let __displayData_extraInitializers = [];
+    let __longPressTimer_decorators;
+    let __longPressTimer_initializers = [];
+    let __longPressTimer_extraInitializers = [];
+    let __isDraggingMobile_decorators;
+    let __isDraggingMobile_initializers = [];
+    let __isDraggingMobile_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        constructor() {
+            super(...arguments);
+            _GrowspacePlantCard_plant_accessor_storage.set(this, __runInitializers(this, _plant_initializers, void 0));
+            _GrowspacePlantCard_row_accessor_storage.set(this, (__runInitializers(this, _plant_extraInitializers), __runInitializers(this, _row_initializers, void 0)));
+            _GrowspacePlantCard_col_accessor_storage.set(this, (__runInitializers(this, _row_extraInitializers), __runInitializers(this, _col_initializers, void 0)));
+            _GrowspacePlantCard_strainLibrary_accessor_storage.set(this, (__runInitializers(this, _col_extraInitializers), __runInitializers(this, _strainLibrary_initializers, [])));
+            _GrowspacePlantCard_isEditMode_accessor_storage.set(this, (__runInitializers(this, _strainLibrary_extraInitializers), __runInitializers(this, _isEditMode_initializers, false)));
+            _GrowspacePlantCard_selected_accessor_storage.set(this, (__runInitializers(this, _isEditMode_extraInitializers), __runInitializers(this, _selected_initializers, false)));
+            _GrowspacePlantCard__displayData_accessor_storage.set(this, (__runInitializers(this, _selected_extraInitializers), __runInitializers(this, __displayData_initializers, null)));
+            _GrowspacePlantCard__longPressTimer_accessor_storage.set(this, (__runInitializers(this, __displayData_extraInitializers), __runInitializers(this, __longPressTimer_initializers, void 0)));
+            _GrowspacePlantCard__isDraggingMobile_accessor_storage.set(this, (__runInitializers(this, __longPressTimer_extraInitializers), __runInitializers(this, __isDraggingMobile_initializers, false)));
+            this._startX = (__runInitializers(this, __isDraggingMobile_extraInitializers), 0);
+            this._startY = 0;
+            this._initialLeft = 0;
+            this._initialTop = 0;
         }
-    }
-    _calculateDisplayData() {
-        if (!this.plant) {
-            this._displayData = null;
-            return;
-        }
-        const plant = this.plant;
-        const stageColor = PlantUtils.getPlantStageColor(plant.state);
-        const strainName = plant.attributes?.strain || 'Unknown Strain';
-        const pheno = plant.attributes?.phenotype || '';
-        // Image logic
-        let imageUrl;
-        let imageCropMeta;
-        const library = this.strainLibrary || [];
-        if (strainName !== 'Unknown Strain') {
-            const phenoMatch = library.find((s) => s.strain === strainName && s.phenotype === pheno);
-            if (phenoMatch && phenoMatch.image) {
-                imageUrl = phenoMatch.image;
-                imageCropMeta = phenoMatch.image_crop_meta;
+        get plant() { return __classPrivateFieldGet(this, _GrowspacePlantCard_plant_accessor_storage, "f"); }
+        set plant(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_plant_accessor_storage, value, "f"); }
+        get row() { return __classPrivateFieldGet(this, _GrowspacePlantCard_row_accessor_storage, "f"); }
+        set row(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_row_accessor_storage, value, "f"); }
+        get col() { return __classPrivateFieldGet(this, _GrowspacePlantCard_col_accessor_storage, "f"); }
+        set col(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_col_accessor_storage, value, "f"); }
+        get strainLibrary() { return __classPrivateFieldGet(this, _GrowspacePlantCard_strainLibrary_accessor_storage, "f"); }
+        set strainLibrary(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_strainLibrary_accessor_storage, value, "f"); }
+        get isEditMode() { return __classPrivateFieldGet(this, _GrowspacePlantCard_isEditMode_accessor_storage, "f"); }
+        set isEditMode(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_isEditMode_accessor_storage, value, "f"); }
+        get selected() { return __classPrivateFieldGet(this, _GrowspacePlantCard_selected_accessor_storage, "f"); }
+        set selected(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_selected_accessor_storage, value, "f"); }
+        get _displayData() { return __classPrivateFieldGet(this, _GrowspacePlantCard__displayData_accessor_storage, "f"); }
+        set _displayData(value) { __classPrivateFieldSet(this, _GrowspacePlantCard__displayData_accessor_storage, value, "f"); }
+        get _longPressTimer() { return __classPrivateFieldGet(this, _GrowspacePlantCard__longPressTimer_accessor_storage, "f"); }
+        set _longPressTimer(value) { __classPrivateFieldSet(this, _GrowspacePlantCard__longPressTimer_accessor_storage, value, "f"); }
+        get _isDraggingMobile() { return __classPrivateFieldGet(this, _GrowspacePlantCard__isDraggingMobile_accessor_storage, "f"); }
+        set _isDraggingMobile(value) { __classPrivateFieldSet(this, _GrowspacePlantCard__isDraggingMobile_accessor_storage, value, "f"); }
+        willUpdate(changedProps) {
+            if (changedProps.has('plant') || changedProps.has('strainLibrary')) {
+                this._calculateDisplayData();
             }
-            else {
-                const strainMatch = library.find((s) => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
-                if (strainMatch && strainMatch.image) {
-                    imageUrl = strainMatch.image;
-                    imageCropMeta = strainMatch.image_crop_meta;
+        }
+        _calculateDisplayData() {
+            if (!this.plant) {
+                this._displayData = null;
+                return;
+            }
+            const plant = this.plant;
+            const stageColor = PlantUtils.getPlantStageColor(plant.state);
+            const strainName = plant.attributes?.strain || 'Unknown Strain';
+            const pheno = plant.attributes?.phenotype || '';
+            // Image logic
+            let imageUrl;
+            let imageCropMeta;
+            const library = this.strainLibrary || [];
+            if (strainName !== 'Unknown Strain') {
+                const phenoMatch = library.find((s) => s.strain === strainName && s.phenotype === pheno);
+                if (phenoMatch && phenoMatch.image) {
+                    imageUrl = phenoMatch.image;
+                    imageCropMeta = phenoMatch.image_crop_meta;
                 }
-                else if (!imageUrl) {
-                    const anyMatch = library.find((s) => s.strain === strainName && s.image);
-                    if (anyMatch) {
-                        imageUrl = anyMatch.image;
-                        imageCropMeta = anyMatch.image_crop_meta;
+                else {
+                    const strainMatch = library.find((s) => s.strain === strainName && (!s.phenotype || s.phenotype === 'default'));
+                    if (strainMatch && strainMatch.image) {
+                        imageUrl = strainMatch.image;
+                        imageCropMeta = strainMatch.image_crop_meta;
+                    }
+                    else if (!imageUrl) {
+                        const anyMatch = library.find((s) => s.strain === strainName && s.image);
+                        if (anyMatch) {
+                            imageUrl = anyMatch.image;
+                            imageCropMeta = anyMatch.image_crop_meta;
+                        }
                     }
                 }
             }
+            // Correction: I need to update imports first to include STAGE_CONFIG
+            // Assuming STAGE_CONFIG from ../types is available. 
+            // I will write the cleaned up logic below using STAGE_CONFIG imported from ../types
+            // Stages logic refactored
+            const stagesData = Object.entries(STAGE_CONFIG).map(([stage, config]) => {
+                const daysAttr = `${stage}_days`;
+                const days = plant.attributes?.[daysAttr];
+                return {
+                    days,
+                    stage: stage,
+                    icon: config.icon,
+                    title: config.title,
+                };
+            }).filter(d => d.days !== undefined && d.days !== null);
+            const currentStage = (plant.state || '').toLowerCase();
+            let visibleDays = stagesData.filter((d) => d.days);
+            if (currentStage === PlantStage.DRY) {
+                visibleDays = visibleDays.filter((d) => d.stage === PlantStage.DRY);
+            }
+            else if (currentStage === PlantStage.CURE) {
+                visibleDays = visibleDays.filter((d) => d.stage === PlantStage.CURE);
+            }
+            const normalizedCurrent = currentStage === 'veg' || currentStage === 'vegetative' ? PlantStage.VEG : currentStage;
+            const stages = visibleDays.map((d) => ({
+                days: d.days,
+                icon: d.icon,
+                title: d.title,
+                stage: d.stage,
+                isCurrent: d.stage === normalizedCurrent,
+                color: PlantUtils.getPlantStageColor(d.stage),
+            }));
+            this._displayData = {
+                stageColor,
+                strainName,
+                pheno,
+                imageUrl,
+                imageCropMeta,
+                stages,
+            };
         }
-        // Stages logic
-        const days = [
-            {
-                days: plant.attributes?.seedling_days,
-                icon: mdiSprout,
-                title: 'Seedling',
-                stage: PlantStage.SEEDLING,
-            },
-            {
-                days: plant.attributes?.mother_days,
-                icon: mdiSprout,
-                title: 'Mother',
-                stage: PlantStage.MOTHER,
-            },
-            {
-                days: plant.attributes?.clone_days,
-                icon: mdiSprout,
-                title: 'Clone',
-                stage: PlantStage.CLONE,
-            },
-            { days: plant.attributes?.veg_days, icon: mdiSprout, title: 'Veg', stage: PlantStage.VEG },
-            {
-                days: plant.attributes?.flower_days,
-                icon: mdiFlower,
-                title: 'Flower',
-                stage: PlantStage.FLOWER,
-            },
-            { days: plant.attributes?.dry_days, icon: mdiHairDryer, title: 'Dry', stage: PlantStage.DRY },
-            {
-                days: plant.attributes?.cure_days,
-                icon: mdiCannabis,
-                title: 'Cure',
-                stage: PlantStage.CURE,
-            },
-        ].filter((d) => d.days !== undefined && d.days !== null);
-        const currentStage = (plant.state || '').toLowerCase();
-        let visibleDays = days.filter((d) => d.days);
-        if (currentStage === PlantStage.DRY) {
-            visibleDays = visibleDays.filter((d) => d.stage === PlantStage.DRY);
-        }
-        else if (currentStage === PlantStage.CURE) {
-            visibleDays = visibleDays.filter((d) => d.stage === PlantStage.CURE);
-        }
-        const normalizedCurrent = currentStage === 'veg' || currentStage === 'vegetative' ? PlantStage.VEG : currentStage;
-        const stages = visibleDays.map((d) => ({
-            days: d.days,
-            icon: d.icon,
-            title: d.title,
-            stage: d.stage,
-            isCurrent: d.stage === normalizedCurrent,
-            color: PlantUtils.getPlantStageColor(d.stage),
-        }));
-        this._displayData = {
-            stageColor,
-            strainName,
-            pheno,
-            imageUrl,
-            imageCropMeta,
-            stages,
-        };
-    }
-    _handleTouchStart(e) {
-        if (this.isEditMode)
-            return;
-        // Only single touch
-        if (e.touches.length !== 1)
-            return;
-        this._startX = e.touches[0].clientX;
-        this._startY = e.touches[0].clientY;
-        const card = this.shadowRoot?.querySelector('.plant-card-rich');
-        const rect = card.getBoundingClientRect();
-        this._initialLeft = rect.left;
-        this._initialTop = rect.top;
-        this._longPressTimer = window.setTimeout(() => {
-            this._startMobileDrag(e);
-        }, 500);
-    }
-    _handleTouchMove(e) {
-        if (this._isDraggingMobile) {
-            e.preventDefault(); // Stop scrolling
-            const touch = e.touches[0];
+        _handleTouchStart(e) {
+            if (this.isEditMode)
+                return;
+            if (e.touches.length !== 1)
+                return;
+            this._startX = e.touches[0].clientX;
+            this._startY = e.touches[0].clientY;
             const card = this.shadowRoot?.querySelector('.plant-card-rich');
-            const deltaX = touch.clientX - this._startX;
-            const deltaY = touch.clientY - this._startY;
-            card.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.05)`;
+            const rect = card.getBoundingClientRect();
+            this._initialLeft = rect.left;
+            this._initialTop = rect.top;
+            this._longPressTimer = window.setTimeout(() => {
+                this._startMobileDrag(e);
+            }, 500);
         }
-        else {
-            // If moved significantly before timer fires, cancel timer
-            const touch = e.touches[0];
-            if (Math.abs(touch.clientX - this._startX) > 10 ||
-                Math.abs(touch.clientY - this._startY) > 10) {
-                clearTimeout(this._longPressTimer);
+        _handleTouchMove(e) {
+            if (this._isDraggingMobile) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const card = this.shadowRoot?.querySelector('.plant-card-rich');
+                const deltaX = touch.clientX - this._startX;
+                const deltaY = touch.clientY - this._startY;
+                card.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.05)`;
+            }
+            else {
+                const touch = e.touches[0];
+                if (Math.abs(touch.clientX - this._startX) > 10 ||
+                    Math.abs(touch.clientY - this._startY) > 10) {
+                    clearTimeout(this._longPressTimer);
+                }
             }
         }
-    }
-    _handleTouchEnd(e) {
-        clearTimeout(this._longPressTimer);
-        if (this._isDraggingMobile) {
-            this._endMobileDrag(e);
+        _handleTouchEnd(e) {
+            clearTimeout(this._longPressTimer);
+            if (this._isDraggingMobile) {
+                this._endMobileDrag(e);
+            }
         }
-    }
-    _startMobileDrag(e) {
-        this._isDraggingMobile = true;
-        const card = this.shadowRoot?.querySelector('.plant-card-rich');
-        card.classList.add('dragging-mobile');
-        // Dispatch event to notify grid/parent
-        this.dispatchEvent(new CustomEvent('mobile-drag-start', {
-            detail: { plant: this.plant },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _endMobileDrag(e) {
-        this._isDraggingMobile = false;
-        const card = this.shadowRoot?.querySelector('.plant-card-rich');
-        card.classList.remove('dragging-mobile');
-        card.style.transform = '';
-        const touch = e.changedTouches[0];
-        this.dispatchEvent(new CustomEvent('mobile-drop', {
-            detail: {
-                x: touch.clientX,
-                y: touch.clientY,
-                plant: this.plant,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _handleDragStart(e) {
-        if (this.isEditMode) {
+        _startMobileDrag(e) {
+            this._isDraggingMobile = true;
+            const card = this.shadowRoot?.querySelector('.plant-card-rich');
+            card.classList.add('dragging-mobile');
+            this.dispatchEvent(new CustomEvent('mobile-drag-start', {
+                detail: { plant: this.plant },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        _endMobileDrag(e) {
+            this._isDraggingMobile = false;
+            const card = this.shadowRoot?.querySelector('.plant-card-rich');
+            card.classList.remove('dragging-mobile');
+            card.style.transform = '';
+            const touch = e.changedTouches[0];
+            this.dispatchEvent(new CustomEvent('mobile-drop', {
+                detail: {
+                    x: touch.clientX,
+                    y: touch.clientY,
+                    plant: this.plant,
+                },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        _handleDragStart(e) {
+            if (this.isEditMode) {
+                e.preventDefault();
+                return;
+            }
+            const target = e.target;
+            target.classList.add('dragging');
+            if (e.dataTransfer) {
+                e.dataTransfer.setData('text/plain', JSON.stringify({ id: this.plant.entity_id }));
+                e.dataTransfer.effectAllowed = 'move';
+            }
+            this.dispatchEvent(new CustomEvent('plant-drag-start', {
+                detail: { plant: this.plant },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        _handleDragEnd(e) {
+            const target = e.target;
+            target.classList.remove('dragging');
+        }
+        _handleDrop(e) {
             e.preventDefault();
-            return;
+            if (this.isEditMode)
+                return;
+            this.dispatchEvent(new CustomEvent('plant-drop', {
+                detail: {
+                    originalEvent: e,
+                    row: this.row,
+                    col: this.col,
+                    plant: this.plant,
+                },
+                bubbles: true,
+                composed: true,
+            }));
         }
-        const target = e.target;
-        target.classList.add('dragging');
-        if (e.dataTransfer) {
-            e.dataTransfer.setData('text/plain', JSON.stringify({ id: this.plant.entity_id }));
-            e.dataTransfer.effectAllowed = 'move';
+        _handleDragOver(e) {
+            e.preventDefault();
         }
-        // Dispatch event to parent to track dragged plant state
-        this.dispatchEvent(new CustomEvent('plant-drag-start', {
-            detail: { plant: this.plant },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _handleDragEnd(e) {
-        const target = e.target;
-        target.classList.remove('dragging');
-    }
-    _handleDrop(e) {
-        e.preventDefault();
-        if (this.isEditMode)
-            return;
-        this.dispatchEvent(new CustomEvent('plant-drop', {
-            detail: {
-                originalEvent: e,
-                row: this.row,
-                col: this.col,
-                plant: this.plant,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _handleDragOver(e) {
-        e.preventDefault();
-        // Optional: Add visual feedback
-    }
-    _handleClick() {
-        this.dispatchEvent(new CustomEvent('plant-click', {
-            detail: { plant: this.plant },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _toggleSelection(e) {
-        e.stopPropagation();
-        this.dispatchEvent(new CustomEvent('plant-toggle-selection', {
-            detail: { plant: this.plant },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    renderPlantDaysRich(stages) {
-        return x `
-      ${stages.map((d) => {
-            // Logic for classMap if needed
+        _handleClick() {
+            this.dispatchEvent(new CustomEvent('plant-click', {
+                detail: { plant: this.plant },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        _toggleSelection(e) {
+            e.stopPropagation();
+            this.dispatchEvent(new CustomEvent('plant-toggle-selection', {
+                detail: { plant: this.plant },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        renderPlantDaysRich(stages) {
             return x `
+      ${stages.map((d) => {
+                return x `
           <div class="pc-stat-item ${d.isCurrent ? 'current-stage' : ''}">
             <svg style="color: ${d.color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
             <div class="pc-stat-text">${d.days}d</div>
           </div>
         `;
-        })}
+            })}
     `;
-    }
-    render() {
-        if (!this.plant || !this._displayData)
-            return x ``;
-        const { stageColor, strainName, pheno, imageUrl, imageCropMeta, stages } = this._displayData;
-        return x `
+        }
+        render() {
+            if (!this.plant || !this._displayData)
+                return x ``;
+            const { stageColor, strainName, pheno, imageUrl, imageCropMeta, stages } = this._displayData;
+            return x `
       <div
         class="plant-card-rich"
         style="--stage-color: ${stageColor}"
@@ -14785,7 +14847,7 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         @click=${this._handleClick}
       >
         ${imageUrl
-            ? x `
+                ? x `
               <img
                 class="plant-card-bg"
                 src="${imageUrl}"
@@ -14795,9 +14857,9 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
               />
               <div class="plant-card-overlay"></div>
             `
-            : ''}
+                : ''}
         ${this.isEditMode
-            ? x `
+                ? x `
               <div
                 class="plant-card-checkbox ${this.selected ? 'selected' : ''}"
                 @click=${this._toggleSelection}
@@ -14805,14 +14867,14 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
                 <svg
                   viewBox="0 0 24 24"
                   style="width: 24px; height: 24px; fill: ${this.selected
-                ? 'var(--primary-color)'
-                : 'rgba(255,255,255,0.7)'};"
+                    ? 'var(--primary-color)'
+                    : 'rgba(255,255,255,0.7)'};"
                 >
                   <path d="${this.selected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
                 </svg>
               </div>
             `
-            : ''}
+                : ''}
 
         <div class="plant-card-content">
           <div class="pc-info">
@@ -14825,11 +14887,45 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         </div>
       </div>
     `;
-    }
-};
-GrowspacePlantCard.styles = [
-    sharedStyles,
-    i$6 `
+        }
+    };
+    _GrowspacePlantCard_plant_accessor_storage = new WeakMap();
+    _GrowspacePlantCard_row_accessor_storage = new WeakMap();
+    _GrowspacePlantCard_col_accessor_storage = new WeakMap();
+    _GrowspacePlantCard_strainLibrary_accessor_storage = new WeakMap();
+    _GrowspacePlantCard_isEditMode_accessor_storage = new WeakMap();
+    _GrowspacePlantCard_selected_accessor_storage = new WeakMap();
+    _GrowspacePlantCard__displayData_accessor_storage = new WeakMap();
+    _GrowspacePlantCard__longPressTimer_accessor_storage = new WeakMap();
+    _GrowspacePlantCard__isDraggingMobile_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "GrowspacePlantCard");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _plant_decorators = [n$5({ attribute: false })];
+        _row_decorators = [n$5({ type: Number })];
+        _col_decorators = [n$5({ type: Number })];
+        _strainLibrary_decorators = [c$2({ context: strainLibraryContext, subscribe: true })];
+        _isEditMode_decorators = [n$5({ type: Boolean })];
+        _selected_decorators = [n$5({ type: Boolean })];
+        __displayData_decorators = [r$2()];
+        __longPressTimer_decorators = [r$2()];
+        __isDraggingMobile_decorators = [r$2()];
+        __esDecorate(_classThis, null, _plant_decorators, { kind: "accessor", name: "plant", static: false, private: false, access: { has: obj => "plant" in obj, get: obj => obj.plant, set: (obj, value) => { obj.plant = value; } }, metadata: _metadata }, _plant_initializers, _plant_extraInitializers);
+        __esDecorate(_classThis, null, _row_decorators, { kind: "accessor", name: "row", static: false, private: false, access: { has: obj => "row" in obj, get: obj => obj.row, set: (obj, value) => { obj.row = value; } }, metadata: _metadata }, _row_initializers, _row_extraInitializers);
+        __esDecorate(_classThis, null, _col_decorators, { kind: "accessor", name: "col", static: false, private: false, access: { has: obj => "col" in obj, get: obj => obj.col, set: (obj, value) => { obj.col = value; } }, metadata: _metadata }, _col_initializers, _col_extraInitializers);
+        __esDecorate(_classThis, null, _strainLibrary_decorators, { kind: "accessor", name: "strainLibrary", static: false, private: false, access: { has: obj => "strainLibrary" in obj, get: obj => obj.strainLibrary, set: (obj, value) => { obj.strainLibrary = value; } }, metadata: _metadata }, _strainLibrary_initializers, _strainLibrary_extraInitializers);
+        __esDecorate(_classThis, null, _isEditMode_decorators, { kind: "accessor", name: "isEditMode", static: false, private: false, access: { has: obj => "isEditMode" in obj, get: obj => obj.isEditMode, set: (obj, value) => { obj.isEditMode = value; } }, metadata: _metadata }, _isEditMode_initializers, _isEditMode_extraInitializers);
+        __esDecorate(_classThis, null, _selected_decorators, { kind: "accessor", name: "selected", static: false, private: false, access: { has: obj => "selected" in obj, get: obj => obj.selected, set: (obj, value) => { obj.selected = value; } }, metadata: _metadata }, _selected_initializers, _selected_extraInitializers);
+        __esDecorate(_classThis, null, __displayData_decorators, { kind: "accessor", name: "_displayData", static: false, private: false, access: { has: obj => "_displayData" in obj, get: obj => obj._displayData, set: (obj, value) => { obj._displayData = value; } }, metadata: _metadata }, __displayData_initializers, __displayData_extraInitializers);
+        __esDecorate(_classThis, null, __longPressTimer_decorators, { kind: "accessor", name: "_longPressTimer", static: false, private: false, access: { has: obj => "_longPressTimer" in obj, get: obj => obj._longPressTimer, set: (obj, value) => { obj._longPressTimer = value; } }, metadata: _metadata }, __longPressTimer_initializers, __longPressTimer_extraInitializers);
+        __esDecorate(_classThis, null, __isDraggingMobile_decorators, { kind: "accessor", name: "_isDraggingMobile", static: false, private: false, access: { has: obj => "_isDraggingMobile" in obj, get: obj => obj._isDraggingMobile, set: (obj, value) => { obj._isDraggingMobile = value; } }, metadata: _metadata }, __isDraggingMobile_initializers, __isDraggingMobile_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        sharedStyles,
+        i$6 `
     :host {
       display: block;
       width: 100%;
@@ -14875,6 +14971,7 @@ GrowspacePlantCard.styles = [
       height: 100%;
       background-size: cover;
       z-index: 0;
+      transition: filter 0.3s ease;
     }
 
     .plant-card-overlay {
@@ -15003,78 +15100,122 @@ GrowspacePlantCard.styles = [
       pointer-events: none; /* Let events pass through to grid for elementFromPoint */
     }
   `
-];
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspacePlantCard.prototype, "plant", void 0);
-__decorate([
-    n$5({ type: Number }),
-    __metadata("design:type", Number)
-], GrowspacePlantCard.prototype, "row", void 0);
-__decorate([
-    n$5({ type: Number }),
-    __metadata("design:type", Number)
-], GrowspacePlantCard.prototype, "col", void 0);
-__decorate([
-    c$2({ context: strainLibraryContext, subscribe: true }),
-    n$5({ attribute: false }),
-    __metadata("design:type", Array)
-], GrowspacePlantCard.prototype, "strainLibrary", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], GrowspacePlantCard.prototype, "isEditMode", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], GrowspacePlantCard.prototype, "selected", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspacePlantCard.prototype, "_displayData", void 0);
-GrowspacePlantCard = __decorate([
-    t$2('growspace-plant-card')
-], GrowspacePlantCard);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let GrowspaceChip = class GrowspaceChip extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.icon = '';
-        this.label = '';
-        this.value = undefined;
-        this.status = '';
-        this.active = false;
-        this.linked = false;
-        this.tooltip = '';
-    }
-    render() {
-        // Determine classes based on meaningful status string
-        const statusClass = this.status ? `status-${this.status}` : '';
-        return x `
+(() => {
+    var _GrowspaceChip_icon_accessor_storage, _GrowspaceChip_label_accessor_storage, _GrowspaceChip_value_accessor_storage, _GrowspaceChip_status_accessor_storage, _GrowspaceChip_active_accessor_storage, _GrowspaceChip_linked_accessor_storage, _GrowspaceChip_tooltip_accessor_storage;
+    let _classDecorators = [t$2('growspace-chip')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _icon_decorators;
+    let _icon_initializers = [];
+    let _icon_extraInitializers = [];
+    let _label_decorators;
+    let _label_initializers = [];
+    let _label_extraInitializers = [];
+    let _value_decorators;
+    let _value_initializers = [];
+    let _value_extraInitializers = [];
+    let _status_decorators;
+    let _status_initializers = [];
+    let _status_extraInitializers = [];
+    let _active_decorators;
+    let _active_initializers = [];
+    let _active_extraInitializers = [];
+    let _linked_decorators;
+    let _linked_initializers = [];
+    let _linked_extraInitializers = [];
+    let _tooltip_decorators;
+    let _tooltip_initializers = [];
+    let _tooltip_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get icon() { return __classPrivateFieldGet(this, _GrowspaceChip_icon_accessor_storage, "f"); }
+        set icon(value) { __classPrivateFieldSet(this, _GrowspaceChip_icon_accessor_storage, value, "f"); }
+        get label() { return __classPrivateFieldGet(this, _GrowspaceChip_label_accessor_storage, "f"); }
+        set label(value) { __classPrivateFieldSet(this, _GrowspaceChip_label_accessor_storage, value, "f"); }
+        get value() { return __classPrivateFieldGet(this, _GrowspaceChip_value_accessor_storage, "f"); }
+        set value(value) { __classPrivateFieldSet(this, _GrowspaceChip_value_accessor_storage, value, "f"); }
+        get status() { return __classPrivateFieldGet(this, _GrowspaceChip_status_accessor_storage, "f"); }
+        set status(value) { __classPrivateFieldSet(this, _GrowspaceChip_status_accessor_storage, value, "f"); }
+        get active() { return __classPrivateFieldGet(this, _GrowspaceChip_active_accessor_storage, "f"); }
+        set active(value) { __classPrivateFieldSet(this, _GrowspaceChip_active_accessor_storage, value, "f"); }
+        get linked() { return __classPrivateFieldGet(this, _GrowspaceChip_linked_accessor_storage, "f"); }
+        set linked(value) { __classPrivateFieldSet(this, _GrowspaceChip_linked_accessor_storage, value, "f"); }
+        get tooltip() { return __classPrivateFieldGet(this, _GrowspaceChip_tooltip_accessor_storage, "f"); }
+        set tooltip(value) { __classPrivateFieldSet(this, _GrowspaceChip_tooltip_accessor_storage, value, "f"); }
+        render() {
+            // Determine classes based on meaningful status string
+            const statusClass = this.status ? `status-${this.status}` : '';
+            return x `
       <div class="stat-chip ${statusClass}" title="${this.tooltip}">
         <div class="icon">
           <svg viewBox="0 0 24 24"><path d="${this.icon}"></path></svg>
         </div>
         ${this.label ? x `${this.label}: ` : ''}${this.value}
         ${this.linked
-            ? x `
+                ? x `
               <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">
                 <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
               </div>
             `
-            : ''}
+                : ''}
       </div>
     `;
-    }
-    _handleLinkClick(e) {
-        e.stopPropagation();
-        this.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
-    }
-};
-GrowspaceChip.styles = [
-    sharedStyles,
-    i$6 `
+        }
+        _handleLinkClick(e) {
+            e.stopPropagation();
+            this.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
+        }
+        constructor() {
+            super(...arguments);
+            _GrowspaceChip_icon_accessor_storage.set(this, __runInitializers(this, _icon_initializers, ''));
+            _GrowspaceChip_label_accessor_storage.set(this, (__runInitializers(this, _icon_extraInitializers), __runInitializers(this, _label_initializers, '')));
+            _GrowspaceChip_value_accessor_storage.set(this, (__runInitializers(this, _label_extraInitializers), __runInitializers(this, _value_initializers, undefined)));
+            _GrowspaceChip_status_accessor_storage.set(this, (__runInitializers(this, _value_extraInitializers), __runInitializers(this, _status_initializers, '')));
+            _GrowspaceChip_active_accessor_storage.set(this, (__runInitializers(this, _status_extraInitializers), __runInitializers(this, _active_initializers, false)));
+            _GrowspaceChip_linked_accessor_storage.set(this, (__runInitializers(this, _active_extraInitializers), __runInitializers(this, _linked_initializers, false)));
+            _GrowspaceChip_tooltip_accessor_storage.set(this, (__runInitializers(this, _linked_extraInitializers), __runInitializers(this, _tooltip_initializers, '')));
+            __runInitializers(this, _tooltip_extraInitializers);
+        }
+    };
+    _GrowspaceChip_icon_accessor_storage = new WeakMap();
+    _GrowspaceChip_label_accessor_storage = new WeakMap();
+    _GrowspaceChip_value_accessor_storage = new WeakMap();
+    _GrowspaceChip_status_accessor_storage = new WeakMap();
+    _GrowspaceChip_active_accessor_storage = new WeakMap();
+    _GrowspaceChip_linked_accessor_storage = new WeakMap();
+    _GrowspaceChip_tooltip_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "GrowspaceChip");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _icon_decorators = [n$5({ type: String })];
+        _label_decorators = [n$5({ type: String })];
+        _value_decorators = [n$5({ type: String })];
+        _status_decorators = [n$5({ type: String })];
+        _active_decorators = [n$5({ type: Boolean, reflect: true })];
+        _linked_decorators = [n$5({ type: Boolean })];
+        _tooltip_decorators = [n$5({ type: String })];
+        __esDecorate(_classThis, null, _icon_decorators, { kind: "accessor", name: "icon", static: false, private: false, access: { has: obj => "icon" in obj, get: obj => obj.icon, set: (obj, value) => { obj.icon = value; } }, metadata: _metadata }, _icon_initializers, _icon_extraInitializers);
+        __esDecorate(_classThis, null, _label_decorators, { kind: "accessor", name: "label", static: false, private: false, access: { has: obj => "label" in obj, get: obj => obj.label, set: (obj, value) => { obj.label = value; } }, metadata: _metadata }, _label_initializers, _label_extraInitializers);
+        __esDecorate(_classThis, null, _value_decorators, { kind: "accessor", name: "value", static: false, private: false, access: { has: obj => "value" in obj, get: obj => obj.value, set: (obj, value) => { obj.value = value; } }, metadata: _metadata }, _value_initializers, _value_extraInitializers);
+        __esDecorate(_classThis, null, _status_decorators, { kind: "accessor", name: "status", static: false, private: false, access: { has: obj => "status" in obj, get: obj => obj.status, set: (obj, value) => { obj.status = value; } }, metadata: _metadata }, _status_initializers, _status_extraInitializers);
+        __esDecorate(_classThis, null, _active_decorators, { kind: "accessor", name: "active", static: false, private: false, access: { has: obj => "active" in obj, get: obj => obj.active, set: (obj, value) => { obj.active = value; } }, metadata: _metadata }, _active_initializers, _active_extraInitializers);
+        __esDecorate(_classThis, null, _linked_decorators, { kind: "accessor", name: "linked", static: false, private: false, access: { has: obj => "linked" in obj, get: obj => obj.linked, set: (obj, value) => { obj.linked = value; } }, metadata: _metadata }, _linked_initializers, _linked_extraInitializers);
+        __esDecorate(_classThis, null, _tooltip_decorators, { kind: "accessor", name: "tooltip", static: false, private: false, access: { has: obj => "tooltip" in obj, get: obj => obj.tooltip, set: (obj, value) => { obj.tooltip = value; } }, metadata: _metadata }, _tooltip_initializers, _tooltip_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        sharedStyles,
+        i$6 `
     :host {
       display: inline-flex;
       vertical-align: middle;
@@ -15179,38 +15320,12 @@ GrowspaceChip.styles = [
       fill: var(--primary-color, #03a9f4);
     }
   `
-];
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceChip.prototype, "icon", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceChip.prototype, "label", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceChip.prototype, "value", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", String)
-], GrowspaceChip.prototype, "status", void 0);
-__decorate([
-    n$5({ type: Boolean, reflect: true }),
-    __metadata("design:type", Object)
-], GrowspaceChip.prototype, "active", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], GrowspaceChip.prototype, "linked", void 0);
-__decorate([
-    n$5({ type: String }),
-    __metadata("design:type", Object)
-], GrowspaceChip.prototype, "tooltip", void 0);
-GrowspaceChip = __decorate([
-    t$2('growspace-chip')
-], GrowspaceChip);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
 // these aren't really private, but nor are they really useful to document
 
@@ -23594,195 +23709,272 @@ class ResizeController {
     }
 }
 
-let GrowspaceHeader = class GrowspaceHeader extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.compact = false;
-        this.isEditMode = false;
-        // activeEnvGraphs and linkedGraphGroups removed as props, accessed via historyController in render or getters
-        this.growspaceOptions = {};
-        this.historyData = null;
-        this._canScrollLeft = false;
-        this._canScrollRight = false;
-        this._menuOpen = false;
-        this._mobileLink = false;
-        this._chipsContainerRef = e$1();
-        this._resizeController = new ResizeController(this, () => this._checkScroll());
-        // Cached metrics to avoid re-computation on every render
-        this._mainChips = [];
-        this._deviceChips = [];
-        this._draggedMetric = null;
-        this._handleControllerUpdate = () => {
-            this.requestUpdate();
-        };
-    }
-    // Helper getters for clarity in render/compute
-    get activeEnvGraphs() {
-        return this.historyController?.activeEnvGraphs || new Set();
-    }
-    _computeMetrics() {
-        if (!this.device || !this.hass)
-            return { mainChips: [], deviceChips: [], dominant: undefined, envAttrs: {} };
-        return MetricsUtils.computeHeaderMetrics(this.hass, this.device, this.activeEnvGraphs, this.historyController?.linkedGraphGroups || []);
-    }
-    _scrollChips(direction) {
-        const container = this._chipsContainerRef.value;
-        if (container) {
-            container.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
-        }
-    }
-    _checkScroll() {
-        const container = this._chipsContainerRef.value;
-        if (container) {
-            // 1px buffer to handle subpixels
-            this._canScrollLeft = container.scrollLeft > 1;
-            this._canScrollRight =
-                container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
-        }
-    }
-    willUpdate(changedProperties) {
-        if (changedProperties.has('device') ||
-            changedProperties.has('hass') ||
-            changedProperties.has('activeEnvGraphs') ||
-            changedProperties.has('linkedGraphGroups')) {
-            const { mainChips, deviceChips, dominant, envAttrs } = this._computeMetrics();
-            this._mainChips = mainChips;
-            this._deviceChips = deviceChips;
-            this._dominant = dominant;
-            this._envAttrs = envAttrs;
-        }
-    }
-    updated(changedProps) {
-        if (changedProps.has('activeEnvGraphs') ||
-            changedProps.has('linkedGraphGroups') ||
-            changedProps.has('device')) {
-            // Content might change size
-            setTimeout(() => this._checkScroll(), 0);
-        }
-    }
-    firstUpdated() {
-        const container = this._chipsContainerRef.value;
-        if (container) {
-            container.addEventListener('scroll', () => this._checkScroll());
-            this._resizeController.observe(container);
-            // Initial check
-            setTimeout(() => this._checkScroll(), 0);
-        }
-    }
-    _handleDeviceChange(e) {
-        const target = e.target;
-        this.store.handleDeviceChange(target.value);
-    }
-    _toggleEnvGraph(metric) {
-        if (!this.historyController)
-            return;
-        this.historyController.toggleEnvGraph({ metric, visible: true });
-    }
-    _handleChipDragStart(e, metric) {
-        this._draggedMetric = metric;
-        if (e.dataTransfer) {
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', metric);
-        }
-    }
-    _handleChipDrop(e, targetMetric) {
-        e.preventDefault();
-        if (!this._draggedMetric || this._draggedMetric === targetMetric) {
+(() => {
+    var _GrowspaceHeader_hass_accessor_storage, _GrowspaceHeader_store_accessor_storage, _GrowspaceHeader_historyController_accessor_storage, _GrowspaceHeader_config_accessor_storage, _GrowspaceHeader_device_accessor_storage, _GrowspaceHeader_compact_accessor_storage, _GrowspaceHeader_isEditMode_accessor_storage, _GrowspaceHeader_growspaceOptions_accessor_storage, _GrowspaceHeader_historyData_accessor_storage, _GrowspaceHeader__canScrollLeft_accessor_storage, _GrowspaceHeader__canScrollRight_accessor_storage, _GrowspaceHeader__menuOpen_accessor_storage, _GrowspaceHeader__mobileLink_accessor_storage;
+    let _classDecorators = [t$2('growspace-header')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _store_decorators;
+    let _store_initializers = [];
+    let _store_extraInitializers = [];
+    let _historyController_decorators;
+    let _historyController_initializers = [];
+    let _historyController_extraInitializers = [];
+    let _config_decorators;
+    let _config_initializers = [];
+    let _config_extraInitializers = [];
+    let _device_decorators;
+    let _device_initializers = [];
+    let _device_extraInitializers = [];
+    let _compact_decorators;
+    let _compact_initializers = [];
+    let _compact_extraInitializers = [];
+    let _isEditMode_decorators;
+    let _isEditMode_initializers = [];
+    let _isEditMode_extraInitializers = [];
+    let _growspaceOptions_decorators;
+    let _growspaceOptions_initializers = [];
+    let _growspaceOptions_extraInitializers = [];
+    let _historyData_decorators;
+    let _historyData_initializers = [];
+    let _historyData_extraInitializers = [];
+    let __canScrollLeft_decorators;
+    let __canScrollLeft_initializers = [];
+    let __canScrollLeft_extraInitializers = [];
+    let __canScrollRight_decorators;
+    let __canScrollRight_initializers = [];
+    let __canScrollRight_extraInitializers = [];
+    let __menuOpen_decorators;
+    let __menuOpen_initializers = [];
+    let __menuOpen_extraInitializers = [];
+    let __mobileLink_decorators;
+    let __mobileLink_initializers = [];
+    let __mobileLink_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        constructor() {
+            super(...arguments);
+            _GrowspaceHeader_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _GrowspaceHeader_store_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
+            _GrowspaceHeader_historyController_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _historyController_initializers, void 0)));
+            _GrowspaceHeader_config_accessor_storage.set(this, (__runInitializers(this, _historyController_extraInitializers), __runInitializers(this, _config_initializers, void 0)));
+            _GrowspaceHeader_device_accessor_storage.set(this, (__runInitializers(this, _config_extraInitializers), __runInitializers(this, _device_initializers, void 0)));
+            _GrowspaceHeader_compact_accessor_storage.set(this, (__runInitializers(this, _device_extraInitializers), __runInitializers(this, _compact_initializers, false)));
+            _GrowspaceHeader_isEditMode_accessor_storage.set(this, (__runInitializers(this, _compact_extraInitializers), __runInitializers(this, _isEditMode_initializers, false)));
+            _GrowspaceHeader_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _isEditMode_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
+            _GrowspaceHeader_historyData_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _historyData_initializers, null)));
+            _GrowspaceHeader__canScrollLeft_accessor_storage.set(this, (__runInitializers(this, _historyData_extraInitializers), __runInitializers(this, __canScrollLeft_initializers, false)));
+            _GrowspaceHeader__canScrollRight_accessor_storage.set(this, (__runInitializers(this, __canScrollLeft_extraInitializers), __runInitializers(this, __canScrollRight_initializers, false)));
+            _GrowspaceHeader__menuOpen_accessor_storage.set(this, (__runInitializers(this, __canScrollRight_extraInitializers), __runInitializers(this, __menuOpen_initializers, false)));
+            _GrowspaceHeader__mobileLink_accessor_storage.set(this, (__runInitializers(this, __menuOpen_extraInitializers), __runInitializers(this, __mobileLink_initializers, false)));
+            this._chipsContainerRef = (__runInitializers(this, __mobileLink_extraInitializers), e$1());
+            this._resizeController = new ResizeController(this, () => this._checkScroll());
+            // Cached metrics to avoid re-computation on every render
+            this._mainChips = [];
+            this._deviceChips = [];
             this._draggedMetric = null;
-            return;
+            this._handleControllerUpdate = () => {
+                this.requestUpdate();
+            };
         }
-        if (this.historyController) {
-            this.historyController.linkGraphs(this._draggedMetric, targetMetric);
+        get hass() { return __classPrivateFieldGet(this, _GrowspaceHeader_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _GrowspaceHeader_hass_accessor_storage, value, "f"); }
+        get store() { return __classPrivateFieldGet(this, _GrowspaceHeader_store_accessor_storage, "f"); }
+        set store(value) { __classPrivateFieldSet(this, _GrowspaceHeader_store_accessor_storage, value, "f"); }
+        get historyController() { return __classPrivateFieldGet(this, _GrowspaceHeader_historyController_accessor_storage, "f"); }
+        set historyController(value) { __classPrivateFieldSet(this, _GrowspaceHeader_historyController_accessor_storage, value, "f"); }
+        get config() { return __classPrivateFieldGet(this, _GrowspaceHeader_config_accessor_storage, "f"); }
+        set config(value) { __classPrivateFieldSet(this, _GrowspaceHeader_config_accessor_storage, value, "f"); }
+        get device() { return __classPrivateFieldGet(this, _GrowspaceHeader_device_accessor_storage, "f"); }
+        set device(value) { __classPrivateFieldSet(this, _GrowspaceHeader_device_accessor_storage, value, "f"); }
+        get compact() { return __classPrivateFieldGet(this, _GrowspaceHeader_compact_accessor_storage, "f"); }
+        set compact(value) { __classPrivateFieldSet(this, _GrowspaceHeader_compact_accessor_storage, value, "f"); }
+        get isEditMode() { return __classPrivateFieldGet(this, _GrowspaceHeader_isEditMode_accessor_storage, "f"); }
+        set isEditMode(value) { __classPrivateFieldSet(this, _GrowspaceHeader_isEditMode_accessor_storage, value, "f"); }
+        // activeEnvGraphs and linkedGraphGroups removed as props, accessed via historyController in render or getters
+        get growspaceOptions() { return __classPrivateFieldGet(this, _GrowspaceHeader_growspaceOptions_accessor_storage, "f"); }
+        set growspaceOptions(value) { __classPrivateFieldSet(this, _GrowspaceHeader_growspaceOptions_accessor_storage, value, "f"); }
+        get historyData() { return __classPrivateFieldGet(this, _GrowspaceHeader_historyData_accessor_storage, "f"); }
+        set historyData(value) { __classPrivateFieldSet(this, _GrowspaceHeader_historyData_accessor_storage, value, "f"); }
+        get _canScrollLeft() { return __classPrivateFieldGet(this, _GrowspaceHeader__canScrollLeft_accessor_storage, "f"); }
+        set _canScrollLeft(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollLeft_accessor_storage, value, "f"); }
+        get _canScrollRight() { return __classPrivateFieldGet(this, _GrowspaceHeader__canScrollRight_accessor_storage, "f"); }
+        set _canScrollRight(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollRight_accessor_storage, value, "f"); }
+        get _menuOpen() { return __classPrivateFieldGet(this, _GrowspaceHeader__menuOpen_accessor_storage, "f"); }
+        set _menuOpen(value) { __classPrivateFieldSet(this, _GrowspaceHeader__menuOpen_accessor_storage, value, "f"); }
+        get _mobileLink() { return __classPrivateFieldGet(this, _GrowspaceHeader__mobileLink_accessor_storage, "f"); }
+        set _mobileLink(value) { __classPrivateFieldSet(this, _GrowspaceHeader__mobileLink_accessor_storage, value, "f"); }
+        // Helper getters for clarity in render/compute
+        get activeEnvGraphs() {
+            return this.historyController?.activeEnvGraphs || new Set();
         }
-        this._draggedMetric = null;
-    }
-    _handleDragOver(e) {
-        if (this._draggedMetric) {
+        _computeMetrics() {
+            if (!this.device || !this.hass)
+                return { mainChips: [], deviceChips: [], dominant: undefined, envAttrs: {} };
+            return MetricsUtils.computeHeaderMetrics(this.hass, this.device, this.activeEnvGraphs, this.historyController?.linkedGraphGroups || []);
+        }
+        _scrollChips(direction) {
+            const container = this._chipsContainerRef.value;
+            if (container) {
+                container.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
+            }
+        }
+        _checkScroll() {
+            const container = this._chipsContainerRef.value;
+            if (container) {
+                // 1px buffer to handle subpixels
+                this._canScrollLeft = container.scrollLeft > 1;
+                this._canScrollRight =
+                    container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
+            }
+        }
+        willUpdate(changedProperties) {
+            if (changedProperties.has('device') ||
+                changedProperties.has('hass') ||
+                changedProperties.has('activeEnvGraphs') ||
+                changedProperties.has('linkedGraphGroups')) {
+                const { mainChips, deviceChips, dominant, envAttrs } = this._computeMetrics();
+                this._mainChips = mainChips;
+                this._deviceChips = deviceChips;
+                this._dominant = dominant;
+                this._envAttrs = envAttrs;
+            }
+        }
+        updated(changedProps) {
+            if (changedProps.has('activeEnvGraphs') ||
+                changedProps.has('linkedGraphGroups') ||
+                changedProps.has('device')) {
+                // Content might change size
+                setTimeout(() => this._checkScroll(), 0);
+            }
+        }
+        firstUpdated() {
+            const container = this._chipsContainerRef.value;
+            if (container) {
+                container.addEventListener('scroll', () => this._checkScroll());
+                this._resizeController.observe(container);
+                // Initial check
+                setTimeout(() => this._checkScroll(), 0);
+            }
+        }
+        _handleDeviceChange(e) {
+            const target = e.target;
+            this.store.handleDeviceChange(target.value);
+        }
+        _toggleEnvGraph(metric) {
+            if (!this.historyController)
+                return;
+            this.historyController.toggleEnvGraph({ metric, visible: true });
+        }
+        _handleChipDragStart(e, metric) {
+            this._draggedMetric = metric;
+            if (e.dataTransfer) {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', metric);
+            }
+        }
+        _handleChipDrop(e, targetMetric) {
             e.preventDefault();
+            if (!this._draggedMetric || this._draggedMetric === targetMetric) {
+                this._draggedMetric = null;
+                return;
+            }
+            if (this.historyController) {
+                this.historyController.linkGraphs(this._draggedMetric, targetMetric);
+            }
+            this._draggedMetric = null;
         }
-    }
-    _unlinkGraphs(groupIndex) {
-        if (this.historyController) {
-            this.historyController.unlinkGraphGroup(groupIndex);
+        _handleDragOver(e) {
+            if (this._draggedMetric) {
+                e.preventDefault();
+            }
         }
-    }
-    connectedCallback() {
-        super.connectedCallback();
-        if (this.historyController) {
-            this.historyController.addListener(this._handleControllerUpdate);
+        _unlinkGraphs(groupIndex) {
+            if (this.historyController) {
+                this.historyController.unlinkGraphGroup(groupIndex);
+            }
         }
-    }
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        if (this.historyController) {
-            this.historyController.removeListener(this._handleControllerUpdate);
+        connectedCallback() {
+            super.connectedCallback();
+            if (this.historyController) {
+                this.historyController.addListener(this._handleControllerUpdate);
+            }
         }
-    }
-    get _chipDraggable() {
-        if (this._resizeController.isMobile || this._resizeController.hasTouch) {
-            return this._mobileLink.toString();
+        disconnectedCallback() {
+            super.disconnectedCallback();
+            if (this.historyController) {
+                this.historyController.removeListener(this._handleControllerUpdate);
+            }
         }
-        return 'true';
-    }
-    _triggerAction(action) {
-        this._menuOpen = false;
-        // Direct store method calls
-        switch (action) {
-            case 'add_plant':
-                this.store.openAddPlantDialog();
-                break;
-            case 'config':
-                this.store.setActiveDialog({
-                    type: 'CONFIG',
-                    payload: {
-                        currentTab: 'environment', // Default tab
-                        environmentData: {
-                            selectedGrowspaceId: this.store.state.selectedDevice || '',
-                            // Pass minimal defaults; store handles merging usually, or fetching
-                            temp_sensor: '', humidity_sensor: '', vpd_sensor: '', co2_sensor: '',
-                            circulation_fan: '', stress_threshold: 0.8, mold_threshold: 0.8
+        get _chipDraggable() {
+            if (this._resizeController.isMobile || this._resizeController.hasTouch) {
+                return this._mobileLink.toString();
+            }
+            return 'true';
+        }
+        _triggerAction(action) {
+            this._menuOpen = false;
+            // Direct store method calls
+            switch (action) {
+                case 'add_plant':
+                    this.store.openAddPlantDialog();
+                    break;
+                case 'config':
+                    this.store.setActiveDialog({
+                        type: 'CONFIG',
+                        payload: {
+                            currentTab: 'environment', // Default tab
+                            environmentData: {
+                                selectedGrowspaceId: this.store.state.selectedDevice || '',
+                                // Pass minimal defaults; store handles merging usually, or fetching
+                                temp_sensor: '', humidity_sensor: '', vpd_sensor: '', co2_sensor: '',
+                                circulation_fan: '', stress_threshold: 0.8, mold_threshold: 0.8
+                            }
                         }
+                    });
+                    break;
+                case 'edit':
+                    this.store.setEditMode(!this.store.state.isEditMode);
+                    break;
+                case 'compact':
+                    // Legacy mapping; now should set ViewMode
+                    const currentMode = this.store.state.viewMode;
+                    this.store.setViewMode(currentMode === 'compact' ? 'standard' : 'compact');
+                    break;
+                case 'strains':
+                    this.store.fetchStrainLibrary();
+                    this.store.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
+                    break;
+                case 'irrigation':
+                    if (this.store.state.selectedDevice) {
+                        this.store.setActiveDialog({ type: 'IRRIGATION', payload: true });
                     }
-                });
-                break;
-            case 'edit':
-                this.store.setEditMode(!this.store.state.isEditMode);
-                break;
-            case 'compact':
-                // Legacy mapping; now should set ViewMode
-                const currentMode = this.store.state.viewMode;
-                this.store.setViewMode(currentMode === 'compact' ? 'standard' : 'compact');
-                break;
-            case 'strains':
-                this.store.fetchStrainLibrary();
-                this.store.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
-                break;
-            case 'irrigation':
-                if (this.store.state.selectedDevice) {
-                    this.store.setActiveDialog({ type: 'IRRIGATION', payload: true });
-                }
-                break;
-            case 'ai':
-                this.store.setActiveDialog({
-                    type: 'GROW_MASTER',
-                    payload: { growspaceId: this.store.state.selectedDevice || '', isLoading: false, response: null, mode: 'single' }
-                });
-                break;
-            case 'logbook':
-                this.store.openLogbookDialog();
-                break;
+                    break;
+                case 'ai':
+                    this.store.setActiveDialog({
+                        type: 'GROW_MASTER',
+                        payload: { growspaceId: this.store.state.selectedDevice || '', isLoading: false, response: null, mode: 'single' }
+                    });
+                    break;
+                case 'logbook':
+                    this.store.openLogbookDialog();
+                    break;
+            }
         }
-    }
-    render() {
-        if (!this.device || !this.hass)
-            return x ``;
-        const dominant = this._dominant;
-        // Split Chips
-        const heroKeys = ['temperature', 'humidity', 'vpd', 'co2'];
-        // Filter chips and force valid status/value if testing
-        const heroChips = this._mainChips.filter(c => heroKeys.includes(c.key));
-        const secondaryChips = this._mainChips.filter(c => !heroKeys.includes(c.key));
-        return x `
+        render() {
+            if (!this.device || !this.hass)
+                return x ``;
+            const dominant = this._dominant;
+            // Split Chips
+            const heroKeys = ['temperature', 'humidity', 'vpd', 'co2'];
+            // Filter chips and force valid status/value if testing
+            const heroChips = this._mainChips.filter(c => heroKeys.includes(c.key));
+            const secondaryChips = this._mainChips.filter(c => !heroKeys.includes(c.key));
+            return x `
       <div class="gs-stats-container">
         
         <!-- TOP HEADER: Title + Actions -->
@@ -23791,7 +23983,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
           <!-- Row 1 Left: Title/Select -->
           <div class="header-title-area">
             ${!this.config?.default_growspace
-            ? x `
+                ? x `
             <div class="select-wrapper">
                 <span class="select-sizer">${this.store.state.devices.find(d => d.device_id === this.device.device_id)?.name || this.device.name}</span>
                 <select
@@ -23802,7 +23994,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                     ${this.store.state.devices.map((d) => x `<option value=${d.device_id}>${d.name}</option>`)}
                 </select>
             </div>`
-            : x `<h1 class="gs-title">${this.device.name}</h1>`}
+                : x `<h1 class="gs-title">${this.device.name}</h1>`}
           </div>
 
           <!-- Row 1 Right: Header Actions (Device Chips + Menu) -->
@@ -23848,7 +24040,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
           <!-- Row 2 Left: Stage Chips -->
           <div class="header-stage-area">
             ${dominant
-            ? x `
+                ? x `
                     <div class="gs-stage-pill">
                         <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
                         ${dominant.daysLabel}
@@ -23858,7 +24050,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                         ${dominant.weeksLabel}
                     </div>
                   `
-            : ''}
+                : ''}
           </div>
 
           <!-- Row 2 Right: Secondary Strip -->
@@ -23904,38 +24096,38 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         </div>
       </div>
     `;
-    }
-    _renderHeroCard(chip) {
-        const match = String(chip.value || '').match(/^([\d.,]+)\s*(.*)$/);
-        const val = match ? match[1] : chip.value;
-        const unit = match ? match[2] : '';
-        // Generate sparkline path for this metric
-        const sparklineWidth = 140; // Approximate card width
-        const sparklineHeight = 80; // Approximate card height minus padding
-        // For VPD, try multi-segment coloring first, fall back to standard if no segments
-        const isVpd = chip.key === 'vpd';
-        let vpdSegments = [];
-        if (isVpd && this.historyController && this.device) {
-            const historyData = this.historyController.historyCache['vpd'];
-            // Get VPD thresholds from device overview entity
-            const overviewEntity = this.device.overview_entity_id
-                ? this.hass?.states[this.device.overview_entity_id]
-                : null;
-            const thresholds = {
-                targetMin: overviewEntity?.attributes?.vpd_target_min ?? 0.8,
-                targetMax: overviewEntity?.attributes?.vpd_target_max ?? 1.2,
-                dangerMin: overviewEntity?.attributes?.vpd_danger_min ?? 0.4,
-                dangerMax: overviewEntity?.attributes?.vpd_danger_max ?? 1.6,
-            };
-            vpdSegments = ChartUtils.generateVpdSparklineSegments(historyData, sparklineWidth, sparklineHeight, thresholds);
         }
-        const useVpdSegments = isVpd && vpdSegments.length > 0;
-        let sparklinePath = '';
-        if (!useVpdSegments && this.historyController) {
-            sparklinePath = ChartUtils.generateSparklinePath(this.historyController.historyCache[chip.key], sparklineWidth, sparklineHeight);
-        }
-        const sparklineColor = ChartUtils.getSparklineColor(chip.key, chip.status);
-        return x `
+        _renderHeroCard(chip) {
+            const match = String(chip.value || '').match(/^([\d.,]+)\s*(.*)$/);
+            const val = match ? match[1] : chip.value;
+            const unit = match ? match[2] : '';
+            // Generate sparkline path for this metric
+            const sparklineWidth = 140; // Approximate card width
+            const sparklineHeight = 80; // Approximate card height minus padding
+            // For VPD, try multi-segment coloring first, fall back to standard if no segments
+            const isVpd = chip.key === 'vpd';
+            let vpdSegments = [];
+            if (isVpd && this.historyController && this.device) {
+                const historyData = this.historyController.historyCache['vpd'];
+                // Get VPD thresholds from device overview entity
+                const overviewEntity = this.device.overview_entity_id
+                    ? this.hass?.states[this.device.overview_entity_id]
+                    : null;
+                const thresholds = {
+                    targetMin: overviewEntity?.attributes?.vpd_target_min ?? 0.8,
+                    targetMax: overviewEntity?.attributes?.vpd_target_max ?? 1.2,
+                    dangerMin: overviewEntity?.attributes?.vpd_danger_min ?? 0.4,
+                    dangerMax: overviewEntity?.attributes?.vpd_danger_max ?? 1.6,
+                };
+                vpdSegments = ChartUtils.generateVpdSparklineSegments(historyData, sparklineWidth, sparklineHeight, thresholds);
+            }
+            const useVpdSegments = isVpd && vpdSegments.length > 0;
+            let sparklinePath = '';
+            if (!useVpdSegments && this.historyController) {
+                sparklinePath = ChartUtils.generateSparklinePath(this.historyController.historyCache[chip.key], sparklineWidth, sparklineHeight);
+            }
+            const sparklineColor = ChartUtils.getSparklineColor(chip.key, chip.status);
+            return x `
         <div 
             class="hero-card ${chip.status ? `status-${chip.status}` : ''} ${chip.active ? 'active' : ''} ${chip.linked ? 'linked' : ''}"
             draggable="${this._chipDraggable}"
@@ -23999,11 +24191,11 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             </div>
         </div>
     `;
-    }
-    _renderMenu() {
-        if (!this._menuOpen)
-            return '';
-        return x `
+        }
+        _renderMenu() {
+            if (!this._menuOpen)
+                return '';
+            return x `
       <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
         <div class="menu-item" @click=${() => this._triggerAction('config')}>
             <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
@@ -24042,9 +24234,55 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         </div>
       </div>
     `;
-    }
-};
-GrowspaceHeader.styles = i$6 `
+        }
+    };
+    _GrowspaceHeader_hass_accessor_storage = new WeakMap();
+    _GrowspaceHeader_store_accessor_storage = new WeakMap();
+    _GrowspaceHeader_historyController_accessor_storage = new WeakMap();
+    _GrowspaceHeader_config_accessor_storage = new WeakMap();
+    _GrowspaceHeader_device_accessor_storage = new WeakMap();
+    _GrowspaceHeader_compact_accessor_storage = new WeakMap();
+    _GrowspaceHeader_isEditMode_accessor_storage = new WeakMap();
+    _GrowspaceHeader_growspaceOptions_accessor_storage = new WeakMap();
+    _GrowspaceHeader_historyData_accessor_storage = new WeakMap();
+    _GrowspaceHeader__canScrollLeft_accessor_storage = new WeakMap();
+    _GrowspaceHeader__canScrollRight_accessor_storage = new WeakMap();
+    _GrowspaceHeader__menuOpen_accessor_storage = new WeakMap();
+    _GrowspaceHeader__mobileLink_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "GrowspaceHeader");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _store_decorators = [c$2({ context: storeContext, subscribe: true })];
+        _historyController_decorators = [c$2({ context: historyContext, subscribe: true })];
+        _config_decorators = [c$2({ context: configContext, subscribe: true }), n$5({ attribute: false })];
+        _device_decorators = [n$5({ attribute: false })];
+        _compact_decorators = [n$5({ type: Boolean })];
+        _isEditMode_decorators = [n$5({ type: Boolean })];
+        _growspaceOptions_decorators = [n$5({ attribute: false })];
+        _historyData_decorators = [n$5({ attribute: false })];
+        __canScrollLeft_decorators = [r$2()];
+        __canScrollRight_decorators = [r$2()];
+        __menuOpen_decorators = [r$2()];
+        __mobileLink_decorators = [r$2()];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
+        __esDecorate(_classThis, null, _historyController_decorators, { kind: "accessor", name: "historyController", static: false, private: false, access: { has: obj => "historyController" in obj, get: obj => obj.historyController, set: (obj, value) => { obj.historyController = value; } }, metadata: _metadata }, _historyController_initializers, _historyController_extraInitializers);
+        __esDecorate(_classThis, null, _config_decorators, { kind: "accessor", name: "config", static: false, private: false, access: { has: obj => "config" in obj, get: obj => obj.config, set: (obj, value) => { obj.config = value; } }, metadata: _metadata }, _config_initializers, _config_extraInitializers);
+        __esDecorate(_classThis, null, _device_decorators, { kind: "accessor", name: "device", static: false, private: false, access: { has: obj => "device" in obj, get: obj => obj.device, set: (obj, value) => { obj.device = value; } }, metadata: _metadata }, _device_initializers, _device_extraInitializers);
+        __esDecorate(_classThis, null, _compact_decorators, { kind: "accessor", name: "compact", static: false, private: false, access: { has: obj => "compact" in obj, get: obj => obj.compact, set: (obj, value) => { obj.compact = value; } }, metadata: _metadata }, _compact_initializers, _compact_extraInitializers);
+        __esDecorate(_classThis, null, _isEditMode_decorators, { kind: "accessor", name: "isEditMode", static: false, private: false, access: { has: obj => "isEditMode" in obj, get: obj => obj.isEditMode, set: (obj, value) => { obj.isEditMode = value; } }, metadata: _metadata }, _isEditMode_initializers, _isEditMode_extraInitializers);
+        __esDecorate(_classThis, null, _growspaceOptions_decorators, { kind: "accessor", name: "growspaceOptions", static: false, private: false, access: { has: obj => "growspaceOptions" in obj, get: obj => obj.growspaceOptions, set: (obj, value) => { obj.growspaceOptions = value; } }, metadata: _metadata }, _growspaceOptions_initializers, _growspaceOptions_extraInitializers);
+        __esDecorate(_classThis, null, _historyData_decorators, { kind: "accessor", name: "historyData", static: false, private: false, access: { has: obj => "historyData" in obj, get: obj => obj.historyData, set: (obj, value) => { obj.historyData = value; } }, metadata: _metadata }, _historyData_initializers, _historyData_extraInitializers);
+        __esDecorate(_classThis, null, __canScrollLeft_decorators, { kind: "accessor", name: "_canScrollLeft", static: false, private: false, access: { has: obj => "_canScrollLeft" in obj, get: obj => obj._canScrollLeft, set: (obj, value) => { obj._canScrollLeft = value; } }, metadata: _metadata }, __canScrollLeft_initializers, __canScrollLeft_extraInitializers);
+        __esDecorate(_classThis, null, __canScrollRight_decorators, { kind: "accessor", name: "_canScrollRight", static: false, private: false, access: { has: obj => "_canScrollRight" in obj, get: obj => obj._canScrollRight, set: (obj, value) => { obj._canScrollRight = value; } }, metadata: _metadata }, __canScrollRight_initializers, __canScrollRight_extraInitializers);
+        __esDecorate(_classThis, null, __menuOpen_decorators, { kind: "accessor", name: "_menuOpen", static: false, private: false, access: { has: obj => "_menuOpen" in obj, get: obj => obj._menuOpen, set: (obj, value) => { obj._menuOpen = value; } }, metadata: _metadata }, __menuOpen_initializers, __menuOpen_extraInitializers);
+        __esDecorate(_classThis, null, __mobileLink_decorators, { kind: "accessor", name: "_mobileLink", static: false, private: false, access: { has: obj => "_mobileLink" in obj, get: obj => obj._mobileLink, set: (obj, value) => { obj._mobileLink = value; } }, metadata: _metadata }, __mobileLink_initializers, __mobileLink_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = i$6 `
     :host {
       display: block;
     }
@@ -24472,62 +24710,11 @@ GrowspaceHeader.styles = i$6 `
       transform: translateX(20px);
     }
   `;
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "hass", void 0);
-__decorate([
-    c$2({ context: storeContext, subscribe: true }),
-    __metadata("design:type", Function)
-], GrowspaceHeader.prototype, "store", void 0);
-__decorate([
-    c$2({ context: historyContext, subscribe: true }),
-    __metadata("design:type", Function)
-], GrowspaceHeader.prototype, "historyController", void 0);
-__decorate([
-    c$2({ context: configContext, subscribe: true }),
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "config", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "device", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "compact", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "isEditMode", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "growspaceOptions", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "historyData", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "_canScrollLeft", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "_canScrollRight", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "_menuOpen", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Object)
-], GrowspaceHeader.prototype, "_mobileLink", void 0);
-GrowspaceHeader = __decorate([
-    t$2('growspace-header')
-], GrowspaceHeader);
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
 /**
  * @license
@@ -24636,105 +24823,153 @@ const variables = i$6 `
   }
 `;
 
-let GrowspaceGrid = class GrowspaceGrid extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.plants = [];
-        this.rows = 3;
-        this.cols = 3;
-        this.isEditMode = false;
-        this.selectedPlants = new Set();
-        this.compact = false;
-        this.isLoading = false;
-        this._draggedPlant = null;
-        this._gridRef = e$1();
-    }
-    _handleDragStart(plant) {
-        this._draggedPlant = plant;
-    }
-    _handleDragOver(e) {
-        e.preventDefault();
-    }
-    _handleDrop(e, targetRow, targetCol, targetPlant) {
-        if (e)
+(() => {
+    var _GrowspaceGrid_store_accessor_storage, _GrowspaceGrid_plants_accessor_storage, _GrowspaceGrid_rows_accessor_storage, _GrowspaceGrid_cols_accessor_storage, _GrowspaceGrid_isEditMode_accessor_storage, _GrowspaceGrid_selectedPlants_accessor_storage, _GrowspaceGrid_compact_accessor_storage, _GrowspaceGrid_isLoading_accessor_storage;
+    let _classDecorators = [t$2('growspace-grid')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _store_decorators;
+    let _store_initializers = [];
+    let _store_extraInitializers = [];
+    let _plants_decorators;
+    let _plants_initializers = [];
+    let _plants_extraInitializers = [];
+    let _rows_decorators;
+    let _rows_initializers = [];
+    let _rows_extraInitializers = [];
+    let _cols_decorators;
+    let _cols_initializers = [];
+    let _cols_extraInitializers = [];
+    let _isEditMode_decorators;
+    let _isEditMode_initializers = [];
+    let _isEditMode_extraInitializers = [];
+    let _selectedPlants_decorators;
+    let _selectedPlants_initializers = [];
+    let _selectedPlants_extraInitializers = [];
+    let _compact_decorators;
+    let _compact_initializers = [];
+    let _compact_extraInitializers = [];
+    let _isLoading_decorators;
+    let _isLoading_initializers = [];
+    let _isLoading_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        constructor() {
+            super(...arguments);
+            _GrowspaceGrid_store_accessor_storage.set(this, __runInitializers(this, _store_initializers, void 0));
+            _GrowspaceGrid_plants_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _plants_initializers, [])));
+            _GrowspaceGrid_rows_accessor_storage.set(this, (__runInitializers(this, _plants_extraInitializers), __runInitializers(this, _rows_initializers, 3)));
+            _GrowspaceGrid_cols_accessor_storage.set(this, (__runInitializers(this, _rows_extraInitializers), __runInitializers(this, _cols_initializers, 3)));
+            _GrowspaceGrid_isEditMode_accessor_storage.set(this, (__runInitializers(this, _cols_extraInitializers), __runInitializers(this, _isEditMode_initializers, false)));
+            _GrowspaceGrid_selectedPlants_accessor_storage.set(this, (__runInitializers(this, _isEditMode_extraInitializers), __runInitializers(this, _selectedPlants_initializers, new Set())));
+            _GrowspaceGrid_compact_accessor_storage.set(this, (__runInitializers(this, _selectedPlants_extraInitializers), __runInitializers(this, _compact_initializers, false)));
+            _GrowspaceGrid_isLoading_accessor_storage.set(this, (__runInitializers(this, _compact_extraInitializers), __runInitializers(this, _isLoading_initializers, false)));
+            this._draggedPlant = (__runInitializers(this, _isLoading_extraInitializers), null);
+            this._gridRef = e$1();
+        }
+        get store() { return __classPrivateFieldGet(this, _GrowspaceGrid_store_accessor_storage, "f"); }
+        set store(value) { __classPrivateFieldSet(this, _GrowspaceGrid_store_accessor_storage, value, "f"); }
+        get plants() { return __classPrivateFieldGet(this, _GrowspaceGrid_plants_accessor_storage, "f"); }
+        set plants(value) { __classPrivateFieldSet(this, _GrowspaceGrid_plants_accessor_storage, value, "f"); }
+        get rows() { return __classPrivateFieldGet(this, _GrowspaceGrid_rows_accessor_storage, "f"); }
+        set rows(value) { __classPrivateFieldSet(this, _GrowspaceGrid_rows_accessor_storage, value, "f"); }
+        get cols() { return __classPrivateFieldGet(this, _GrowspaceGrid_cols_accessor_storage, "f"); }
+        set cols(value) { __classPrivateFieldSet(this, _GrowspaceGrid_cols_accessor_storage, value, "f"); }
+        get isEditMode() { return __classPrivateFieldGet(this, _GrowspaceGrid_isEditMode_accessor_storage, "f"); }
+        set isEditMode(value) { __classPrivateFieldSet(this, _GrowspaceGrid_isEditMode_accessor_storage, value, "f"); }
+        get selectedPlants() { return __classPrivateFieldGet(this, _GrowspaceGrid_selectedPlants_accessor_storage, "f"); }
+        set selectedPlants(value) { __classPrivateFieldSet(this, _GrowspaceGrid_selectedPlants_accessor_storage, value, "f"); }
+        get compact() { return __classPrivateFieldGet(this, _GrowspaceGrid_compact_accessor_storage, "f"); }
+        set compact(value) { __classPrivateFieldSet(this, _GrowspaceGrid_compact_accessor_storage, value, "f"); }
+        get isLoading() { return __classPrivateFieldGet(this, _GrowspaceGrid_isLoading_accessor_storage, "f"); }
+        set isLoading(value) { __classPrivateFieldSet(this, _GrowspaceGrid_isLoading_accessor_storage, value, "f"); }
+        _handleDragStart(plant) {
+            this._draggedPlant = plant;
+        }
+        _handleDragOver(e) {
             e.preventDefault();
-        if (!this._draggedPlant)
-            return;
-        // Direct store call
-        this.store.handleDrop(targetRow, targetCol, targetPlant, this._draggedPlant);
-        this._draggedPlant = null;
-    }
-    _handlePlantClick(plant) {
-        // Direct store call
-        this.store.handlePlantClick(plant);
-    }
-    _togglePlantSelection(plant) {
-        const plantId = plant.attributes.plant_id;
-        if (plantId) {
-            this.store.togglePlantSelection(plantId);
         }
-    }
-    _handleMobileDrop(e) {
-        const { x, y, plant } = e.detail;
-        const gridEl = this._gridRef.value;
-        if (!gridEl)
-            return;
-        // O(1) Math-based logic
-        // We assume the grid structure corresponds to rows/cols
-        // This logic principally works well for desktop grids.
-        // However, mobile layouts often stack elements vertically (flex-direction: column).
-        // If it's stacked, math based on cell width/height might be tricky if we assume a matrix.
-        // BUT: The instruction requested O(1) math logic.
-        // To handle both grid and list view robustly with O(1) is complex without knowing exact layout method.
-        // If it is indeed a CSS Grid:
-        const rect = gridEl.getBoundingClientRect();
-        const cellW = rect.width / this.cols;
-        const cellH = rect.height / this.rows;
-        // If list view (desktop or mobile), the logic changes implicitly because
-        // cols might be effectively 1.
-        // Let's rely on the grid layout properties.
-        // If elements are stacked vertically, cellW is full width, cellH is total height / (rows*cols).
-        // Let's refine based on media query check or compact prop? No, getComputedStyle is slow-ish but better than loop.
-        // Actually, "Smart" logic instructions were specific:
-        const isListView = this.cols > 5 || window.innerWidth <= 600; // Match render logic
-        let targetRow, targetCol;
-        if (isListView) {
-            // List view: items are stacked 1 column, N rows (effectively)
-            // Check if list view logic applies
-            const hitY = y - rect.top;
-            if (hitY < 0 || hitY > rect.height)
+        _handleDrop(e, targetRow, targetCol, targetPlant) {
+            if (e)
+                e.preventDefault();
+            if (!this._draggedPlant)
                 return;
-            // In list view, each item height?
-            const itemCount = this.rows * this.cols;
-            const itemHeight = rect.height / itemCount;
-            const index = Math.floor(hitY / itemHeight);
-            // Convert linear index back to row/col
-            targetRow = Math.floor(index / this.cols) + 1;
-            targetCol = (index % this.cols) + 1;
+            // Direct store call
+            this.store.handleDrop(targetRow, targetCol, targetPlant, this._draggedPlant);
+            this._draggedPlant = null;
         }
-        else {
-            // Grid View
-            const colIndex = Math.ceil((x - rect.left) / cellW);
-            const rowIndex = Math.ceil((y - rect.top) / cellH);
-            targetRow = rowIndex;
-            targetCol = colIndex;
+        _handlePlantClick(plant) {
+            // Direct store call
+            this.store.handlePlantClick(plant);
         }
-        if (targetCol > 0 && targetCol <= this.cols &&
-            targetRow > 0 && targetRow <= this.rows) {
-            // Identify target plant from array
-            // plants is (PlantEntity | null)[][]
-            // 0-based index access
-            const targetPlant = this.plants[targetRow - 1][targetCol - 1]; // Can be null or PlantEntity
-            this.store.handleDrop(targetRow, targetCol, targetPlant, plant);
+        _togglePlantSelection(plant) {
+            const plantId = plant.attributes.plant_id;
+            if (plantId) {
+                this.store.togglePlantSelection(plantId);
+            }
         }
-    }
-    render() {
-        const isListView = this.cols > 5; // Simplified check for inline style
-        const gridStyle = isListView
-            ? ''
-            : `grid-template-columns: repeat(${this.cols}, minmax(0, 1fr)); grid-template-rows: repeat(${this.rows}, 1fr);`;
-        const flatGrid = this.plants.flat();
-        return x `
+        _handleMobileDrop(e) {
+            const { x, y, plant } = e.detail;
+            const gridEl = this._gridRef.value;
+            if (!gridEl)
+                return;
+            // O(1) Math-based logic
+            // We assume the grid structure corresponds to rows/cols
+            // This logic principally works well for desktop grids.
+            // However, mobile layouts often stack elements vertically (flex-direction: column).
+            // If it's stacked, math based on cell width/height might be tricky if we assume a matrix.
+            // BUT: The instruction requested O(1) math logic.
+            // To handle both grid and list view robustly with O(1) is complex without knowing exact layout method.
+            // If it is indeed a CSS Grid:
+            const rect = gridEl.getBoundingClientRect();
+            const cellW = rect.width / this.cols;
+            const cellH = rect.height / this.rows;
+            // If list view (desktop or mobile), the logic changes implicitly because
+            // cols might be effectively 1.
+            // Let's rely on the grid layout properties.
+            // If elements are stacked vertically, cellW is full width, cellH is total height / (rows*cols).
+            // Let's refine based on media query check or compact prop? No, getComputedStyle is slow-ish but better than loop.
+            // Actually, "Smart" logic instructions were specific:
+            const isListView = this.cols > 5 || window.innerWidth <= 600; // Match render logic
+            let targetRow, targetCol;
+            if (isListView) {
+                // List view: items are stacked 1 column, N rows (effectively)
+                // Check if list view logic applies
+                const hitY = y - rect.top;
+                if (hitY < 0 || hitY > rect.height)
+                    return;
+                // In list view, each item height?
+                const itemCount = this.rows * this.cols;
+                const itemHeight = rect.height / itemCount;
+                const index = Math.floor(hitY / itemHeight);
+                // Convert linear index back to row/col
+                targetRow = Math.floor(index / this.cols) + 1;
+                targetCol = (index % this.cols) + 1;
+            }
+            else {
+                // Grid View
+                const colIndex = Math.ceil((x - rect.left) / cellW);
+                const rowIndex = Math.ceil((y - rect.top) / cellH);
+                targetRow = rowIndex;
+                targetCol = colIndex;
+            }
+            if (targetCol > 0 && targetCol <= this.cols &&
+                targetRow > 0 && targetRow <= this.rows) {
+                // Identify target plant from array
+                // plants is (PlantEntity | null)[][]
+                // 0-based index access
+                const targetPlant = this.plants[targetRow - 1][targetCol - 1]; // Can be null or PlantEntity
+                this.store.handleDrop(targetRow, targetCol, targetPlant, plant);
+            }
+        }
+        render() {
+            const isListView = this.cols > 5; // Simplified check for inline style
+            const gridStyle = isListView
+                ? ''
+                : `grid-template-columns: repeat(${this.cols}, minmax(0, 1fr)); grid-template-rows: repeat(${this.rows}, 1fr);`;
+            const flatGrid = this.plants.flat();
+            return x `
       <div
         class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
         style="${gridStyle}"
@@ -24743,15 +24978,15 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
       >
         ${this.isLoading ? this.renderSkeletonGrid() : ''}
         ${!this.isLoading
-            ? c(flatGrid, (plant, index) => plant ? plant.attributes?.plant_id || plant.entity_id : `empty-${index}`, (plant, index) => {
-                const row = Math.floor(index / this.cols) + 1;
-                const col = (index % this.cols) + 1;
-                if (!plant) {
-                    return this.renderEmptySlot(row, col);
-                }
-                const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-                const isSelected = this.selectedPlants.has(plantId);
-                return x `
+                ? c(flatGrid, (plant, index) => plant ? plant.attributes?.plant_id || plant.entity_id : `empty-${index}`, (plant, index) => {
+                    const row = Math.floor(index / this.cols) + 1;
+                    const col = (index % this.cols) + 1;
+                    if (!plant) {
+                        return this.renderEmptySlot(row, col);
+                    }
+                    const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+                    const isSelected = this.selectedPlants.has(plantId);
+                    return x `
                   <growspace-plant-card
                     .plant=${plant}
                     .row=${row}
@@ -24764,14 +24999,14 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
                     @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
                   ></growspace-plant-card>
                 `;
-            })
-            : ''}
+                })
+                : ''}
       </div>
     `;
-    }
-    renderEmptySlot(row, col) {
-        // 0-based for API
-        return x `
+        }
+        renderEmptySlot(row, col) {
+            // 0-based for API
+            return x `
       <div
         class="plant-card-empty"
         data-row="${row}"
@@ -24792,18 +25027,49 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
       </div>
     `;
-    }
-    renderSkeletonGrid() {
-        const count = this.rows * this.cols;
-        return Array(count)
-            .fill(0)
-            .map(() => x `<div class="skeleton-card"></div>`);
-    }
-};
-GrowspaceGrid.styles = [
-    variables,
-    sharedStyles,
-    i$6 `
+        }
+        renderSkeletonGrid() {
+            const count = this.rows * this.cols;
+            return Array(count)
+                .fill(0)
+                .map(() => x `<div class="skeleton-card"></div>`);
+        }
+    };
+    _GrowspaceGrid_store_accessor_storage = new WeakMap();
+    _GrowspaceGrid_plants_accessor_storage = new WeakMap();
+    _GrowspaceGrid_rows_accessor_storage = new WeakMap();
+    _GrowspaceGrid_cols_accessor_storage = new WeakMap();
+    _GrowspaceGrid_isEditMode_accessor_storage = new WeakMap();
+    _GrowspaceGrid_selectedPlants_accessor_storage = new WeakMap();
+    _GrowspaceGrid_compact_accessor_storage = new WeakMap();
+    _GrowspaceGrid_isLoading_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "GrowspaceGrid");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _store_decorators = [c$2({ context: storeContext })];
+        _plants_decorators = [n$5({ type: Array })];
+        _rows_decorators = [n$5({ type: Number })];
+        _cols_decorators = [n$5({ type: Number })];
+        _isEditMode_decorators = [n$5({ type: Boolean })];
+        _selectedPlants_decorators = [n$5({ type: Object })];
+        _compact_decorators = [n$5({ type: Boolean })];
+        _isLoading_decorators = [n$5({ type: Boolean })];
+        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
+        __esDecorate(_classThis, null, _plants_decorators, { kind: "accessor", name: "plants", static: false, private: false, access: { has: obj => "plants" in obj, get: obj => obj.plants, set: (obj, value) => { obj.plants = value; } }, metadata: _metadata }, _plants_initializers, _plants_extraInitializers);
+        __esDecorate(_classThis, null, _rows_decorators, { kind: "accessor", name: "rows", static: false, private: false, access: { has: obj => "rows" in obj, get: obj => obj.rows, set: (obj, value) => { obj.rows = value; } }, metadata: _metadata }, _rows_initializers, _rows_extraInitializers);
+        __esDecorate(_classThis, null, _cols_decorators, { kind: "accessor", name: "cols", static: false, private: false, access: { has: obj => "cols" in obj, get: obj => obj.cols, set: (obj, value) => { obj.cols = value; } }, metadata: _metadata }, _cols_initializers, _cols_extraInitializers);
+        __esDecorate(_classThis, null, _isEditMode_decorators, { kind: "accessor", name: "isEditMode", static: false, private: false, access: { has: obj => "isEditMode" in obj, get: obj => obj.isEditMode, set: (obj, value) => { obj.isEditMode = value; } }, metadata: _metadata }, _isEditMode_initializers, _isEditMode_extraInitializers);
+        __esDecorate(_classThis, null, _selectedPlants_decorators, { kind: "accessor", name: "selectedPlants", static: false, private: false, access: { has: obj => "selectedPlants" in obj, get: obj => obj.selectedPlants, set: (obj, value) => { obj.selectedPlants = value; } }, metadata: _metadata }, _selectedPlants_initializers, _selectedPlants_extraInitializers);
+        __esDecorate(_classThis, null, _compact_decorators, { kind: "accessor", name: "compact", static: false, private: false, access: { has: obj => "compact" in obj, get: obj => obj.compact, set: (obj, value) => { obj.compact = value; } }, metadata: _metadata }, _compact_initializers, _compact_extraInitializers);
+        __esDecorate(_classThis, null, _isLoading_decorators, { kind: "accessor", name: "isLoading", static: false, private: false, access: { has: obj => "isLoading" in obj, get: obj => obj.isLoading, set: (obj, value) => { obj.isLoading = value; } }, metadata: _metadata }, _isLoading_initializers, _isLoading_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        variables,
+        sharedStyles,
+        i$6 `
     :host {
       display: block;
     }
@@ -25069,42 +25335,12 @@ GrowspaceGrid.styles = [
       }
     }
   `
-];
-__decorate([
-    c$2({ context: storeContext }),
-    __metadata("design:type", Function)
-], GrowspaceGrid.prototype, "store", void 0);
-__decorate([
-    n$5({ type: Array }),
-    __metadata("design:type", Array)
-], GrowspaceGrid.prototype, "plants", void 0);
-__decorate([
-    n$5({ type: Number }),
-    __metadata("design:type", Number)
-], GrowspaceGrid.prototype, "rows", void 0);
-__decorate([
-    n$5({ type: Number }),
-    __metadata("design:type", Number)
-], GrowspaceGrid.prototype, "cols", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Boolean)
-], GrowspaceGrid.prototype, "isEditMode", void 0);
-__decorate([
-    n$5({ type: Object }),
-    __metadata("design:type", Set)
-], GrowspaceGrid.prototype, "selectedPlants", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Boolean)
-], GrowspaceGrid.prototype, "compact", void 0);
-__decorate([
-    n$5({ type: Boolean }),
-    __metadata("design:type", Boolean)
-], GrowspaceGrid.prototype, "isLoading", void 0);
-GrowspaceGrid = __decorate([
-    t$2('growspace-grid')
-], GrowspaceGrid);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
 const growspaceCardStyles = i$6 `
   :host {
@@ -26166,81 +26402,111 @@ const growspaceCardStyles = i$6 `
   }
 `;
 
-let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
-    constructor() {
-        super(...arguments);
-        this._itemsToRender = [];
-        this._handleControllerUpdate = () => {
-            this.requestUpdate();
-        };
-    }
-    connectedCallback() {
-        super.connectedCallback();
-        if (this.historyController) {
-            this.historyController.addListener(this._handleControllerUpdate);
+(() => {
+    var _GrowspaceAnalytics_hass_accessor_storage, _GrowspaceAnalytics_historyController_accessor_storage, _GrowspaceAnalytics_device_accessor_storage, _GrowspaceAnalytics__itemsToRender_accessor_storage;
+    let _classDecorators = [t$2('growspace-analytics')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _historyController_decorators;
+    let _historyController_initializers = [];
+    let _historyController_extraInitializers = [];
+    let _device_decorators;
+    let _device_initializers = [];
+    let _device_extraInitializers = [];
+    let __itemsToRender_decorators;
+    let __itemsToRender_initializers = [];
+    let __itemsToRender_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        constructor() {
+            super(...arguments);
+            _GrowspaceAnalytics_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _GrowspaceAnalytics_historyController_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _historyController_initializers, void 0)));
+            _GrowspaceAnalytics_device_accessor_storage.set(this, (__runInitializers(this, _historyController_extraInitializers), __runInitializers(this, _device_initializers, void 0)));
+            _GrowspaceAnalytics__itemsToRender_accessor_storage.set(this, (__runInitializers(this, _device_extraInitializers), __runInitializers(this, __itemsToRender_initializers, [])));
+            this._handleControllerUpdate = (__runInitializers(this, __itemsToRender_extraInitializers), () => {
+                this.requestUpdate();
+            });
         }
-    }
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        if (this.historyController) {
-            this.historyController.removeListener(this._handleControllerUpdate);
+        get hass() { return __classPrivateFieldGet(this, _GrowspaceAnalytics_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _GrowspaceAnalytics_hass_accessor_storage, value, "f"); }
+        get historyController() { return __classPrivateFieldGet(this, _GrowspaceAnalytics_historyController_accessor_storage, "f"); }
+        set historyController(value) { __classPrivateFieldSet(this, _GrowspaceAnalytics_historyController_accessor_storage, value, "f"); }
+        get device() { return __classPrivateFieldGet(this, _GrowspaceAnalytics_device_accessor_storage, "f"); }
+        set device(value) { __classPrivateFieldSet(this, _GrowspaceAnalytics_device_accessor_storage, value, "f"); }
+        get _itemsToRender() { return __classPrivateFieldGet(this, _GrowspaceAnalytics__itemsToRender_accessor_storage, "f"); }
+        set _itemsToRender(value) { __classPrivateFieldSet(this, _GrowspaceAnalytics__itemsToRender_accessor_storage, value, "f"); }
+        connectedCallback() {
+            super.connectedCallback();
+            if (this.historyController) {
+                this.historyController.addListener(this._handleControllerUpdate);
+            }
         }
-    }
-    willUpdate(changedProperties) {
-        // Recompute items whenever update is requested (controller notifies)
-        this._computeItemsToRender();
-    }
-    _computeItemsToRender() {
-        if (!this.historyController)
-            return;
-        const getSortIndex = (metric) => {
-            const index = METRIC_SORT_ORDER.indexOf(metric);
-            return index !== -1 ? index : 999;
-        };
-        const items = [];
-        const processedMetrics = new Set();
-        const activeEnvGraphs = this.historyController.activeEnvGraphs;
-        const linkedGraphGroups = this.historyController.linkedGraphGroups;
-        // Process Linked Groups
-        linkedGraphGroups.forEach((group) => {
-            const activeMetricsInGroup = group.filter((m) => activeEnvGraphs.has(m));
-            if (activeMetricsInGroup.length > 0) {
-                const minIndex = Math.min(...activeMetricsInGroup.map(getSortIndex));
-                items.push({
-                    type: 'group',
-                    metrics: activeMetricsInGroup,
-                    sortIndex: minIndex,
-                });
-                activeMetricsInGroup.forEach((m) => processedMetrics.add(m));
+        disconnectedCallback() {
+            super.disconnectedCallback();
+            if (this.historyController) {
+                this.historyController.removeListener(this._handleControllerUpdate);
             }
-        });
-        // Process Individual Metrics
-        activeEnvGraphs.forEach((metric) => {
-            if (!processedMetrics.has(metric)) {
-                items.push({
-                    type: 'single',
-                    metrics: [metric],
-                    sortIndex: getSortIndex(metric),
-                });
-            }
-        });
-        items.sort((a, b) => a.sortIndex - b.sortIndex);
-        this._itemsToRender = items;
-    }
-    render() {
-        if (!this.historyController || this.historyController.activeEnvGraphs.size === 0)
-            return x ``;
-        if (!this.device)
-            return x ``;
-        const sensorHistory = this.historyController.combinedHistory;
-        const range = this.historyController.getRange();
-        const graphs = c(this._itemsToRender, 
-        // Key function: Unique ID for the item
-        (item) => item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`, 
-        // Render function
-        (item) => {
-            if (item.type === 'group') {
-                return x `
+        }
+        willUpdate(changedProperties) {
+            // Recompute items whenever update is requested (controller notifies)
+            this._computeItemsToRender();
+        }
+        _computeItemsToRender() {
+            if (!this.historyController)
+                return;
+            const getSortIndex = (metric) => {
+                const index = METRIC_SORT_ORDER.indexOf(metric);
+                return index !== -1 ? index : 999;
+            };
+            const items = [];
+            const processedMetrics = new Set();
+            const activeEnvGraphs = this.historyController.activeEnvGraphs;
+            const linkedGraphGroups = this.historyController.linkedGraphGroups;
+            // Process Linked Groups
+            linkedGraphGroups.forEach((group) => {
+                const activeMetricsInGroup = group.filter((m) => activeEnvGraphs.has(m));
+                if (activeMetricsInGroup.length > 0) {
+                    const minIndex = Math.min(...activeMetricsInGroup.map(getSortIndex));
+                    items.push({
+                        type: 'group',
+                        metrics: activeMetricsInGroup,
+                        sortIndex: minIndex,
+                    });
+                    activeMetricsInGroup.forEach((m) => processedMetrics.add(m));
+                }
+            });
+            // Process Individual Metrics
+            activeEnvGraphs.forEach((metric) => {
+                if (!processedMetrics.has(metric)) {
+                    items.push({
+                        type: 'single',
+                        metrics: [metric],
+                        sortIndex: getSortIndex(metric),
+                    });
+                }
+            });
+            items.sort((a, b) => a.sortIndex - b.sortIndex);
+            this._itemsToRender = items;
+        }
+        render() {
+            if (!this.historyController || this.historyController.activeEnvGraphs.size === 0)
+                return x ``;
+            if (!this.device)
+                return x ``;
+            const sensorHistory = this.historyController.combinedHistory;
+            const range = this.historyController.getRange();
+            const graphs = c(this._itemsToRender, 
+            // Key function: Unique ID for the item
+            (item) => item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`, 
+            // Render function
+            (item) => {
+                if (item.type === 'group') {
+                    return x `
             <growspace-env-chart
               .hass=${this.hass}
               .device=${this.device}
@@ -26254,11 +26520,11 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
               @unlink-graph=${this._handleUnlinkGraphMetric}
             ></growspace-env-chart>
           `;
-            }
-            else {
-                const metric = item.metrics[0];
-                const config = METRIC_CONFIG[metric] || DEFAULT_METRIC_CONFIG;
-                return x `
+                }
+                else {
+                    const metric = item.metrics[0];
+                    const config = METRIC_CONFIG[metric] || DEFAULT_METRIC_CONFIG;
+                    return x `
             <growspace-env-chart
               .hass=${this.hass}
               .device=${this.device}
@@ -26273,13 +26539,13 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
               @toggle-graph=${this._handleToggleGraph}
             ></growspace-env-chart>
           `;
-            }
-        });
-        return x ` <div class="graphs-container">${this.renderTimeRangeSelector(range)} ${graphs}</div> `;
-    }
-    renderTimeRangeSelector(currentRange) {
-        const ranges = ['1h', '6h', '24h', '7d'];
-        return x `
+                }
+            });
+            return x ` <div class="graphs-container">${this.renderTimeRangeSelector(range)} ${graphs}</div> `;
+        }
+        renderTimeRangeSelector(currentRange) {
+            const ranges = ['1h', '6h', '24h', '7d'];
+            return x `
       <div class="time-range-selector">
         ${ranges.map((r) => x `
             <button
@@ -26291,44 +26557,63 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
           `)}
       </div>
     `;
-    }
-    _setGraphRange(range) {
-        // Call controller directly
-        this.historyController.setGraphRange(range);
-        // Deprecated event removed: this.dispatchEvent(new RangeChangeEvent(range));
-    }
-    _handleToggleGraph(e) {
-        e.stopPropagation();
-        const metric = e.detail.metric; // Assuming detail contains metric
-        if (metric) {
-            this.historyController.toggleEnvGraph({ metric, visible: false }); // Toggling off usually? Handled by controller logic
         }
-        // Actually, toggleEnvGraph event from chart usually means "close" or "toggle".
-        // The chart emits toggle-graph with detail: { metric }
-        this.historyController.toggleEnvGraph({ metric: e.detail, visible: false });
-        // Wait, e.detail from GrowspaceEnvChart might vary. 
-        // Let's assume e.detail is the metric string based on previous usage.
-    }
-    _handleUnlinkGraphs(e) {
-        e.stopPropagation();
-        // detail is likely groupIndex?
-        // But looking at header implementation, unlink emits groupIndex.
-        // From chart, we need to know what it emits.
-        // Assuming it emits the group index or metrics?
-        // Let's assume it emits groupIndex for now, or check code.
-        // But based on usage in stored method `unlinkGraphGroup(index)`, it expects index.
-        this.historyController.unlinkGraphGroup(e.detail);
-    }
-    _handleUnlinkGraphMetric(e) {
-        e.stopPropagation();
-        // detail is metric string
-        this.historyController.unlinkGraphMetric(e.detail);
-    }
-};
-GrowspaceAnalytics.styles = [
-    growspaceCardStyles,
-    sharedStyles,
-    i$6 `
+        _setGraphRange(range) {
+            // Call controller directly
+            this.historyController.setGraphRange(range);
+            // Deprecated event removed: this.dispatchEvent(new RangeChangeEvent(range));
+        }
+        _handleToggleGraph(e) {
+            e.stopPropagation();
+            const metric = e.detail.metric; // Assuming detail contains metric
+            if (metric) {
+                this.historyController.toggleEnvGraph({ metric, visible: false }); // Toggling off usually? Handled by controller logic
+            }
+            // Actually, toggleEnvGraph event from chart usually means "close" or "toggle".
+            // The chart emits toggle-graph with detail: { metric }
+            this.historyController.toggleEnvGraph({ metric: e.detail, visible: false });
+            // Wait, e.detail from GrowspaceEnvChart might vary. 
+            // Let's assume e.detail is the metric string based on previous usage.
+        }
+        _handleUnlinkGraphs(e) {
+            e.stopPropagation();
+            // detail is likely groupIndex?
+            // But looking at header implementation, unlink emits groupIndex.
+            // From chart, we need to know what it emits.
+            // Assuming it emits the group index or metrics?
+            // Let's assume it emits groupIndex for now, or check code.
+            // But based on usage in stored method `unlinkGraphGroup(index)`, it expects index.
+            this.historyController.unlinkGraphGroup(e.detail);
+        }
+        _handleUnlinkGraphMetric(e) {
+            e.stopPropagation();
+            // detail is metric string
+            this.historyController.unlinkGraphMetric(e.detail);
+        }
+    };
+    _GrowspaceAnalytics_hass_accessor_storage = new WeakMap();
+    _GrowspaceAnalytics_historyController_accessor_storage = new WeakMap();
+    _GrowspaceAnalytics_device_accessor_storage = new WeakMap();
+    _GrowspaceAnalytics__itemsToRender_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "GrowspaceAnalytics");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _historyController_decorators = [c$2({ context: historyContext, subscribe: true })];
+        _device_decorators = [n$5({ attribute: false })];
+        __itemsToRender_decorators = [r$2()];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _historyController_decorators, { kind: "accessor", name: "historyController", static: false, private: false, access: { has: obj => "historyController" in obj, get: obj => obj.historyController, set: (obj, value) => { obj.historyController = value; } }, metadata: _metadata }, _historyController_initializers, _historyController_extraInitializers);
+        __esDecorate(_classThis, null, _device_decorators, { kind: "accessor", name: "device", static: false, private: false, access: { has: obj => "device" in obj, get: obj => obj.device, set: (obj, value) => { obj.device = value; } }, metadata: _metadata }, _device_initializers, _device_extraInitializers);
+        __esDecorate(_classThis, null, __itemsToRender_decorators, { kind: "accessor", name: "_itemsToRender", static: false, private: false, access: { has: obj => "_itemsToRender" in obj, get: obj => obj._itemsToRender, set: (obj, value) => { obj._itemsToRender = value; } }, metadata: _metadata }, __itemsToRender_initializers, __itemsToRender_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [
+        growspaceCardStyles,
+        sharedStyles,
+        i$6 `
       :host {
         display: block;
       }
@@ -26338,26 +26623,854 @@ GrowspaceAnalytics.styles = [
         gap: 12px;
       }
     `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true }),
-    __metadata("design:type", Object)
-], GrowspaceAnalytics.prototype, "hass", void 0);
-__decorate([
-    c$2({ context: historyContext, subscribe: true }),
-    __metadata("design:type", Function)
-], GrowspaceAnalytics.prototype, "historyController", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspaceAnalytics.prototype, "device", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Array)
-], GrowspaceAnalytics.prototype, "_itemsToRender", void 0);
-GrowspaceAnalytics = __decorate([
-    t$2('growspace-analytics')
-], GrowspaceAnalytics);
+    ];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
+
+class GrowspaceStore {
+    constructor(host) {
+        // State
+        this.state = {
+            selectedDevice: null,
+            strainLibrary: [],
+            activeDialog: { type: 'NONE' },
+            isEditMode: false,
+            selectedPlants: new Set(),
+            optimisticDeletedPlantIds: new Set(),
+            focusedPlantIndex: -1,
+            menuOpen: false,
+            notification: null,
+            isCompactView: false,
+            defaultApplied: false,
+            isLoading: true,
+            devices: [],
+            viewMode: 'standard',
+        };
+        this.wsDataCache = {};
+        this._isFetchingWS = false;
+        this.handleTakeClone = (motherPlant, numClones) => {
+            const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
+            this.dataService
+                .takeClone({
+                mother_plant_id: plantId,
+                num_clones: numClones,
+            })
+                .then(() => {
+                console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
+            })
+                .catch((error) => {
+                console.error(`Failed to take clone: ${error.message}`);
+            });
+        };
+        this.host = host;
+        host.addController(this);
+        // Wrap state in a proxy to auto-trigger updates
+        this.state = new Proxy(this.state, {
+            set: (target, prop, value) => {
+                const oldVal = target[prop];
+                if (oldVal !== value) {
+                    // Use type assertion to avoid 'any' is not assignable to 'never' error
+                    target[prop] = value;
+                    this.host.requestUpdate();
+                }
+                return true;
+            }
+        });
+        console.log('GrowspaceStore initialized with Reactive Proxy');
+        this.dataService = new DataService();
+    }
+    hostConnected() {
+        // Lifecycle hook
+        // We can't subscribe here because hass might not be set yet.
+        // Logic handled in updateHass/subscribe
+    }
+    hostDisconnected() {
+        if (this._unsubEvents) {
+            this._unsubEvents();
+            this._unsubEvents = undefined;
+        }
+    }
+    updateHass(hass) {
+        this.hass = hass;
+        this.dataService.updateHass(hass);
+        this._ensureEventSubscription();
+        // If cache empty, fetch initial
+        if (Object.keys(this.wsDataCache).length === 0 && !this._isFetchingWS) {
+            this._refreshGrowspaceData();
+        }
+        else {
+            // Just re-calculate derived state (sync) because entities might have changed
+            this._updateDevicesState();
+        }
+        if (!this.state.selectedDevice && this.state.devices.length > 0) {
+            this.state.selectedDevice = this.state.devices[0].device_id;
+            // Ensure the UI knows we are ready to display
+            if (this.state.isLoading) {
+                this.state.isLoading = false;
+            }
+        }
+        this.pruneOptimisticDeletions();
+    }
+    async _ensureEventSubscription() {
+        if (this._unsubEvents || !this.hass)
+            return;
+        try {
+            this._unsubEvents = await this.hass.connection.subscribeEvents(() => this._refreshGrowspaceData(), // specific logic to handle event payload? Msg is empty usually.
+            'growspace_manager_updated');
+        }
+        catch (err) {
+            console.error('Failed to subscribe to growspace events', err);
+        }
+    }
+    async refreshData() {
+        await this._refreshGrowspaceData();
+    }
+    async _refreshGrowspaceData() {
+        if (!this.hass || this._isFetchingWS)
+            return;
+        this._isFetchingWS = true;
+        // Show loading spinner if we have no devices yet
+        if (this.state.devices.length === 0) {
+            this.state.isLoading = true;
+        }
+        try {
+            // fetchGrowspaceData without ID returns Record<string, GrowspaceAPIResponse>
+            const data = await this.dataService.fetchGrowspaceData();
+            // We know it's a collection because we didn't pass an ID
+            this.wsDataCache = data || {};
+            this._updateDevicesState();
+        }
+        catch (e) {
+            console.error('Failed to fetch growspace data', e);
+        }
+        finally {
+            this._isFetchingWS = false;
+            // Only clear loading if we didn't find any devices OR if we already have a selection
+            // If we found devices but no selection, wait for auto-select logic in updateHass/initialize
+            if (this.state.devices.length === 0 || this.state.selectedDevice) {
+                this.state.isLoading = false;
+            }
+        }
+    }
+    _updateDevicesState() {
+        const devices = this.dataService.getGrowspaceDevices(this.wsDataCache);
+        this.state.devices = devices;
+        // Auto-select if needed (handles initial load race condition where updateHass hasn't run yet)
+        if (!this.state.selectedDevice && devices.length > 0) {
+            this.state.selectedDevice = devices[0].device_id;
+        }
+    }
+    requestUpdate() {
+        this.host.requestUpdate();
+    }
+    // --- Actions / Logic ---
+    // State Setters
+    setIsCompactView(value) {
+        this.state.isCompactView = value;
+        // Sync viewMode if toggled via old method
+        if (value) {
+            this.state.viewMode = 'compact';
+        }
+        else if (this.state.viewMode === 'compact') {
+            this.state.viewMode = 'standard';
+        }
+    }
+    setViewMode(mode) {
+        this.state.viewMode = mode;
+        // Sync legacy flag
+        this.state.isCompactView = mode === 'compact';
+    }
+    toggleHeaderExpansion() {
+        if (this.state.viewMode === 'header') {
+            this.setViewMode('standard');
+        }
+        else {
+            this.setViewMode('header');
+        }
+    }
+    setDefaultApplied(value) {
+        this.state.defaultApplied = value;
+    }
+    showToast(message, type = 'info') {
+        this.state.notification = { message, type };
+        setTimeout(() => {
+            this.state.notification = null;
+        }, 4000);
+    }
+    initializeSelectedDevice(config) {
+        // Handle View Mode Initialization
+        if (config?.initial_view_mode) {
+            this.state.viewMode = config.initial_view_mode;
+        }
+        else if (config?.compact) {
+            // Backward compatibility
+            this.state.viewMode = 'compact';
+        }
+        // Sync isCompactView for legacy support/internal use if needed
+        this.state.isCompactView = this.state.viewMode === 'compact';
+        const devices = this.state.devices;
+        if (!devices.length || this.state.selectedDevice)
+            return;
+        // Try to apply default from config
+        if (config?.default_growspace) {
+            const defaultDevice = devices.find((d) => d.device_id === config.default_growspace || d.name === config.default_growspace);
+            if (defaultDevice) {
+                this.state.selectedDevice = defaultDevice.device_id;
+                this.state.defaultApplied = true;
+                return;
+            }
+        }
+        // Fallback to first device
+        this.state.selectedDevice = devices[0].device_id;
+    }
+    // ...
+    fetchStrainLibrary(force = false) {
+        return this._fetchStrainLibraryImpl(force);
+    }
+    async _fetchStrainLibraryImpl(force) {
+        if (!this.hass)
+            return;
+        const CACHE_KEY = 'growspace_strain_library_v2';
+        const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
+        // 1. Try to load from cache
+        const cachedRaw = localStorage.getItem(CACHE_KEY);
+        let usedCache = false;
+        if (!force && cachedRaw) {
+            try {
+                const cache = JSON.parse(cachedRaw);
+                const age = Date.now() - (cache.timestamp || 0);
+                if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
+                    this.state.strainLibrary = cache.data;
+                    usedCache = true;
+                }
+            }
+            catch (e) {
+                console.warn('Failed to parse cached strain library', e);
+                localStorage.removeItem(CACHE_KEY); // Clear bad cache
+            }
+        }
+        // 2. Fetch from backend if no cache or invalid
+        if (!usedCache) {
+            try {
+                const currentStrains = await this.dataService.fetchStrainLibrary();
+                if (Array.isArray(currentStrains)) {
+                    this.state.strainLibrary = currentStrains;
+                    // Update cache
+                    const cacheData = {
+                        version: 2,
+                        timestamp: Date.now(),
+                        data: currentStrains,
+                    };
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+                }
+            }
+            catch (e) {
+                console.error('Failed to fetch strain library:', e);
+            }
+        }
+    }
+    handleKeyboardNavigation(key) {
+        if (this.state.isEditMode && key === 'Escape') {
+            this.exitEditMode();
+            return;
+        }
+        if (!this.state.selectedDevice)
+            return;
+        const devices = this.state.devices;
+        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
+        if (!device)
+            return;
+        const plants = device.plants.filter((p) => !this.state.optimisticDeletedPlantIds.has(p.attributes.plant_id || ''));
+        if (plants.length === 0)
+            return;
+        if (key === 'ArrowRight') {
+            this.setFocusedPlantIndex((this.state.focusedPlantIndex + 1) % plants.length);
+        }
+        else if (key === 'ArrowLeft') {
+            this.setFocusedPlantIndex((this.state.focusedPlantIndex - 1 + plants.length) % plants.length);
+        }
+        else if (key === 'Enter' || key === ' ') {
+            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
+                this.handlePlantClick(plants[this.state.focusedPlantIndex]);
+            }
+        }
+        else if (key === 'Delete' || key === 'Backspace') {
+            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
+                const focusedPlant = plants[this.state.focusedPlantIndex];
+                if (focusedPlant) {
+                    this.handleDeletePlant(focusedPlant.entity_id);
+                }
+            }
+            else if (this.state.selectedPlants.size > 0) {
+                // If multiple plants are selected, delete them
+                this.handleDeletePlant(Array.from(this.state.selectedPlants));
+            }
+        }
+    }
+    handleDeviceChange(deviceId) {
+        this.state.selectedDevice = deviceId;
+    }
+    togglePlantSelection(plantOrId) {
+        const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
+        if (!plantId)
+            return;
+        const newSet = new Set(this.state.selectedPlants);
+        if (newSet.has(plantId)) {
+            newSet.delete(plantId);
+        }
+        else {
+            newSet.add(plantId);
+        }
+        this.state.selectedPlants = newSet;
+    }
+    selectAllPlants() {
+        if (!this.state.selectedDevice)
+            return;
+        const devices = this.state.devices;
+        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
+        if (selectedDeviceData && selectedDeviceData.plants) {
+            selectedDeviceData.plants.forEach((plant) => {
+                const pId = plant.attributes.plant_id;
+                if (pId && !this.state.optimisticDeletedPlantIds.has(pId)) {
+                    this.state.selectedPlants.add(pId);
+                }
+            });
+            // Force update to trigger proxy set trap on a property if we mutated distinct property? 
+            // Actually Set and Map mutations don't trigger proxy 'set'.
+            // We must reassign the Set to trigger the proxy trap.
+            this.state.selectedPlants = new Set(this.state.selectedPlants);
+        }
+    }
+    setSelectedPlants(plantIds) {
+        this.state.selectedPlants = new Set(plantIds);
+    }
+    setFocusedPlantIndex(index) {
+        this.state.focusedPlantIndex = index;
+    }
+    clearPlantSelection() {
+        this.state.selectedPlants = new Set();
+    }
+    exitEditMode() {
+        this.state.isEditMode = false;
+        this.state.selectedPlants = new Set();
+    }
+    setEditMode(value) {
+        this.state.isEditMode = value;
+    }
+    setMenuOpen(value) {
+        this.state.menuOpen = value;
+    }
+    setActiveDialog(dialogState) {
+        this.state.activeDialog = dialogState;
+    }
+    closeActiveDialog() {
+        this.state.activeDialog = { type: 'NONE' };
+    }
+    handlePlantClick(plant) {
+        if (this.state.isEditMode && this.state.selectedPlants.size > 0) {
+            const plantId = plant.attributes.plant_id;
+            if (plantId && !this.state.selectedPlants.has(plantId)) {
+                this.togglePlantSelection(plantId);
+            }
+            this.openPlantOverviewDialog(plant, Array.from(this.state.selectedPlants));
+        }
+        else {
+            this.openPlantOverviewDialog(plant);
+        }
+    }
+    openPlantOverviewDialog(plant, selectedIds) {
+        this.state.activeDialog = {
+            type: 'PLANT_OVERVIEW',
+            payload: {
+                plant,
+                editedAttributes: { ...plant.attributes },
+                activeTab: 'dashboard',
+                selectedPlantIds: selectedIds,
+            },
+        };
+    }
+    async updatePlantFromDialog(dialogState) {
+        const { plant, editedAttributes, selectedPlantIds } = dialogState;
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
+        const isBulkEdit = targetIds.length > 1;
+        // Use extracted pure function for payload generation
+        const payloadTemplate = PlantUtils.mapDialogToApiPayload(editedAttributes, isBulkEdit);
+        try {
+            const updatePromises = targetIds.map((id) => {
+                const payload = { ...payloadTemplate, plant_id: id };
+                return this.dataService.updatePlant(payload);
+            });
+            await Promise.all(updatePromises);
+            this.closeActiveDialog();
+            if (this.state.isEditMode) {
+                this.state.selectedPlants = new Set();
+                this.state.isEditMode = false;
+            }
+        }
+        catch (err) {
+            console.error('Error updating plant(s):', err);
+        }
+    }
+    async updatePlant(plantId, updates) {
+        try {
+            await this.dataService.updatePlant({ plant_id: plantId, ...updates });
+            this.showToast('Plant updated', 'success');
+            // Dialog might stay open or close? Usually stay open for overview.
+        }
+        catch (e) {
+            console.error('Failed to update plant:', e);
+            this.showToast(`Failed to update plant: ${e.message}`, 'error');
+        }
+    }
+    async handleDeletePlant(plantId) {
+        const ids = Array.isArray(plantId) ? plantId : [plantId];
+        const newOptimistic = new Set(this.state.optimisticDeletedPlantIds);
+        ids.forEach((id) => newOptimistic.add(id));
+        this.state.optimisticDeletedPlantIds = newOptimistic;
+        try {
+            // Check if backend supports bulk delete? If not, loop.
+            // Assuming dataService.deletePlant takes one ID.
+            await Promise.all(ids.map((id) => this.dataService.removePlant(id)));
+            this.showToast('Plant(s) deleted', 'success');
+            // Do NOT remove from optimistic set here.
+            // We wait for updateHass/pruneOptimisticDeletions to confirm they are gone from HA state.
+            ids.forEach((id) => {
+                this.state.selectedPlants.delete(id);
+            });
+            if (this.state.activeDialog.type === 'PLANT_OVERVIEW') {
+                this.closeActiveDialog();
+            }
+            this.updateGrid();
+        }
+        catch (e) {
+            console.error('Failed to delete plant:', e);
+            this.showToast(`Failed to delete: ${e.message}`, 'error');
+            const revertedOptimistic = new Set(this.state.optimisticDeletedPlantIds);
+            ids.forEach((id) => revertedOptimistic.delete(id));
+            this.state.optimisticDeletedPlantIds = revertedOptimistic;
+        }
+    }
+    pruneOptimisticDeletions() {
+        if (this.state.optimisticDeletedPlantIds.size === 0)
+            return;
+        const allPlantIds = new Set();
+        const devices = this.state.devices;
+        devices.forEach((d) => d.plants.forEach((p) => allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))));
+        const toRemove = new Set();
+        this.state.optimisticDeletedPlantIds.forEach((id) => {
+            // If the plant ID is NOT in the current data, it means deletion is confirmed/propagated.
+            // So we can stop masking it.
+            if (!allPlantIds.has(id)) {
+                toRemove.add(id);
+            }
+        });
+        if (toRemove.size > 0) {
+            const newOptimistic = new Set(this.state.optimisticDeletedPlantIds);
+            toRemove.forEach((id) => newOptimistic.delete(id));
+            this.state.optimisticDeletedPlantIds = newOptimistic;
+        }
+    }
+    async handleMovePlantToNextStage(plant) {
+        const stage = plant.attributes?.stage;
+        let targetGrowspace = '';
+        const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
+        if (!stage || !movableStages.has(stage)) {
+            this.showToast('Plant must be in mother or flower or dry or cure stage to move. stage is ' + stage, 'error');
+            return;
+        }
+        if (stage === 'flower') {
+            targetGrowspace = 'dry';
+        }
+        else if (stage === 'dry') {
+            targetGrowspace = 'cure';
+        }
+        else if (stage === 'mother') {
+            targetGrowspace = 'clone';
+        }
+        else {
+            console.error('Unknown stage, cannot move plant', targetGrowspace);
+            targetGrowspace = 'error';
+        }
+        try {
+            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+            await this.dataService.harvestPlant(plantId, targetGrowspace);
+            this.closeActiveDialog();
+        }
+        catch (err) {
+            console.error('Error moving plant to next stage:', err);
+        }
+    }
+    async movePlantToGrowspace(plant, targetGrowspace) {
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        const currentStage = plant.attributes?.stage || 'unknown';
+        try {
+            if (currentStage === 'clone') {
+                // Clones use specific service to handle transition to Veg
+                await this.dataService.moveClone(plantId, targetGrowspace);
+            }
+            else {
+                // Other stages use harvest loop (flower->dry->cure etc)
+                await this.dataService.harvestPlant(plantId, targetGrowspace);
+            }
+            this.showToast(`Plant moved to ${targetGrowspace}`, 'success');
+            await this.refreshData();
+            this.closeActiveDialog();
+        }
+        catch (err) {
+            console.error('Error moving plant:', err);
+            this.showToast(`Failed to move plant: ${err.message}`, 'error');
+        }
+    }
+    async addStrain(strainData) {
+        if (!strainData.strain)
+            return;
+        const payload = {
+            strain: strainData.strain,
+            phenotype: strainData.phenotype,
+            breeder: strainData.breeder,
+            type: strainData.type,
+            flowering_days_min: strainData.flowering_days_min
+                ? Number(strainData.flowering_days_min)
+                : undefined,
+            flowering_days_max: strainData.flowering_days_max
+                ? Number(strainData.flowering_days_max)
+                : undefined,
+            lineage: strainData.lineage,
+            sex: strainData.sex,
+            description: strainData.description,
+            image: strainData.image,
+            image_crop_meta: strainData.image_crop_meta,
+            sativa_percentage: strainData.sativa_percentage,
+            indica_percentage: strainData.indica_percentage,
+        };
+        try {
+            await this.dataService.addStrain(payload);
+            this.showToast('Strain saved successfully!', 'success');
+            await this.fetchStrainLibrary(true);
+        }
+        catch (err) {
+            console.error('Error adding strain:', err);
+        }
+    }
+    async removeStrain(strainKey) {
+        try {
+            const parts = strainKey.split('|');
+            const strain = parts[0];
+            const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
+            await this.dataService.removeStrain(strain, phenotype);
+            if (this.state.strainLibrary) {
+                this.state.strainLibrary = this.state.strainLibrary.filter((s) => s.key !== strainKey);
+            }
+            await this.fetchStrainLibrary(true);
+        }
+        catch (err) {
+            console.error('Error removing strain:', err);
+        }
+    }
+    updateGrid() {
+        // Force refresh from HA
+        if (this.hass) {
+            this.dataService.updateHass(this.hass);
+        }
+        // Trigger generic request update, but also maybe refresh WS data if we expect backend changes?
+        // Actions usually trigger backend changes which fire growspace_updated, so subscription handles it.
+        this.requestUpdate();
+    }
+    async handleDrop(targetRow, targetCol, targetPlant, sourcePlant) {
+        if (!sourcePlant || !this.state.selectedDevice)
+            return;
+        try {
+            if (targetPlant) {
+                const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
+                const targetId = targetPlant.attributes.plant_id || targetPlant.entity_id.replace('sensor.', '');
+                if (sourceId === targetId)
+                    return;
+                await this.dataService.swapPlants(sourceId, targetId);
+                this.updateGrid();
+            }
+            else {
+                await this.movePlant(sourcePlant, targetRow, targetCol);
+            }
+        }
+        catch (err) {
+            console.error('Error during drag-and-drop:', err);
+        }
+    }
+    async movePlant(plant, newRow, newCol) {
+        try {
+            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+            await this.dataService.updatePlant({
+                plant_id: plantId,
+                row: newRow,
+                col: newCol,
+            });
+            this.updateGrid();
+        }
+        catch (err) {
+            console.error('Error moving plant:', err);
+        }
+    }
+    async handleAddGrowspace(detail) {
+        const { name, rows, plants_per_row, notification_service } = detail;
+        if (!name) {
+            this.showToast('Name is required', 'error');
+            return;
+        }
+        try {
+            await this.dataService.addGrowspace({
+                name,
+                rows: rows || 4,
+                plants_per_row: plants_per_row || 4,
+                notification_service: notification_service || 'mobile_app_notify',
+            });
+            this.showToast('Growspace added successfully!', 'success');
+            await this.refreshData();
+            this.closeActiveDialog();
+        }
+        catch (e) {
+            this.showToast(`Error: ${e.message}`, 'error');
+        }
+    }
+    async handleUpdateGrowspace(detail) {
+        console.log('[GrowspaceStore] handleUpdateGrowspace', detail);
+        try {
+            await this.dataService.updateGrowspace({
+                growspace_id: detail.growspace_id,
+                name: detail.name,
+                rows: detail.rows,
+                plants_per_row: detail.plants_per_row,
+            });
+            this.showToast('Growspace updated successfully', 'success');
+            await this.refreshData();
+            this.closeActiveDialog();
+        }
+        catch (e) {
+            console.error('[GrowspaceStore] Update failed:', e);
+            this.showToast(`Failed to update growspace: ${e.message}`, 'error');
+        }
+    }
+    async harvestPlant(plant) {
+        await this.handleMovePlantToNextStage(plant);
+    }
+    async finishDryingPlant(plant) {
+        await this.handleMovePlantToNextStage(plant);
+    }
+    openAddPlantDialog(row, col) {
+        console.log('[GrowspaceStore] openAddPlantDialog called', { row, col });
+        // If row/col specified, use them (clicked from grid)
+        if (row !== undefined && col !== undefined) {
+            this.fetchStrainLibrary();
+            this.setActiveDialog({
+                type: 'ADD_PLANT',
+                payload: { row, col },
+            });
+            return;
+        }
+        // Auto-find free slot if not specified
+        if (!this.state.selectedDevice) {
+            console.warn('[GrowspaceStore] No selected device for Add Plant');
+            return;
+        }
+        const devices = this.state.devices;
+        const device = devices.find((d) => d.device_id === this.state.selectedDevice);
+        if (device) {
+            const rows = device.rows || 4;
+            const cols = device.plants_per_row || 4;
+            const { row: targetRow, col: targetCol } = PlantUtils.findFirstAvailableSlot(device.plants || [], rows, cols);
+            console.log('[GrowspaceStore] Found slot', { targetRow, targetCol });
+            // If full, default to 1,1 or last found (let backend reject or user change)
+            this.fetchStrainLibrary();
+            // Convert 1-based backend coordinates to 0-based dialog coordinates
+            this.setActiveDialog({
+                type: 'ADD_PLANT',
+                payload: { row: targetRow - 1, col: targetCol - 1 },
+            });
+            console.log('[GrowspaceStore] Set Active Dialog ADD_PLANT');
+        }
+    }
+    async clonePlant(plant, numClones) {
+        await this.handleTakeClone(plant, numClones);
+    }
+    async confirmAddPlant(detail) {
+        const devices = this.state.devices;
+        const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
+        if (!selectedDeviceData)
+            return;
+        // Convert 0-based dialog coordinates to 1-based backend coordinates
+        const row = detail.row + 1;
+        const col = detail.col + 1;
+        const { strain, phenotype, veg_start, flower_start, seedling_start, mother_start, clone_start, dry_start, cure_start, } = detail;
+        if (!strain) {
+            this.showToast('Please select a strain', 'error');
+            return;
+        }
+        try {
+            await this.dataService.addPlant({
+                growspace_id: selectedDeviceData.device_id,
+                strain,
+                phenotype: phenotype || '',
+                row,
+                col,
+                veg_start,
+                flower_start,
+                seedling_start,
+                mother_start,
+                clone_start,
+                dry_start,
+                cure_start,
+            });
+            this.showToast('Plant added successfully', 'success');
+            this.closeActiveDialog();
+        }
+        catch (e) {
+            console.error(e);
+            this.showToast('Failed to add plant', 'error');
+        }
+    }
+    async analyzeGrowspace(query, isGlobal = false) {
+        const dialogPayload = this.state.activeDialog.type === 'GROW_MASTER' ? this.state.activeDialog.payload : null;
+        if (!dialogPayload)
+            return;
+        // Update dialog state to loading
+        this.setActiveDialog({
+            type: 'GROW_MASTER',
+            payload: { ...dialogPayload, isLoading: true, response: null },
+        });
+        try {
+            let result;
+            if (isGlobal || dialogPayload.mode === 'all') {
+                result = await this.dataService.analyzeAllGrowspaces();
+            }
+            else {
+                result = await this.dataService.askGrowAdvice(this.state.selectedDevice || '', query);
+            }
+            const responseText = typeof result.response === 'string'
+                ? result.response
+                : result.response?.response || JSON.stringify(result);
+            this.setActiveDialog({
+                type: 'GROW_MASTER',
+                payload: { ...dialogPayload, isLoading: false, response: responseText },
+            });
+        }
+        catch (err) {
+            console.error('Error asking Grow Master:', err);
+            this.setActiveDialog({
+                type: 'GROW_MASTER',
+                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
+            });
+        }
+    }
+    async getStrainRecommendation(userQuery) {
+        const dialogPayload = this.state.activeDialog.type === 'STRAIN_RECOMMENDATION'
+            ? this.state.activeDialog.payload
+            : null;
+        if (!dialogPayload)
+            return;
+        this.setActiveDialog({
+            type: 'STRAIN_RECOMMENDATION',
+            payload: { ...dialogPayload, isLoading: true, response: null },
+        });
+        try {
+            const result = await this.dataService.getStrainRecommendation(userQuery);
+            const responseText = typeof result.response === 'string' ? result.response : JSON.stringify(result);
+            this.setActiveDialog({
+                type: 'STRAIN_RECOMMENDATION',
+                payload: { ...dialogPayload, isLoading: false, response: responseText },
+            });
+        }
+        catch (err) {
+            console.error('Error getting strain recommendation:', err);
+            this.setActiveDialog({
+                type: 'STRAIN_RECOMMENDATION',
+                payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
+            });
+        }
+    }
+    openStrainRecommendationDialog() {
+        this.setActiveDialog({
+            type: 'STRAIN_RECOMMENDATION',
+            payload: {
+                isLoading: false,
+                response: null,
+            },
+        });
+    }
+    openLogbookDialog() {
+        if (!this.state.selectedDevice)
+            return;
+        this.setActiveDialog({
+            type: 'LOGBOOK',
+            payload: {
+                growspaceId: this.state.selectedDevice,
+            },
+        });
+    }
+    handleExportLibrary() {
+        // Logic needs to be adapted since event subscription on HASS connection is component specific?
+        // Actually we can do it here if we assume `hass` is available.
+        // But `subscribeEvents` is on `hass.connection`.
+        // We can emit a custom event or just implement the logic here.
+        // The download part triggers a browser action (window location or anchor click).
+        // It's better to keep DOM interaction like download in the component?
+        // Or pass a callback.
+        // I'll keep it simple: Implement logic here, but for the download part, creating an element on document
+        // might be slightly unclean in a store but it works.
+        this._handleExportLibraryLogic();
+    }
+    async _handleExportLibraryLogic() {
+        if (!this.hass)
+            return;
+        const unsubscribe = await this.hass.connection.subscribeEvents((event) => {
+            if (event.data && event.data.url) {
+                // Dispatch event to view layer for DOM-based download
+                this.host.dispatchEvent(new LibraryExportReadyEvent(event.data.url));
+                unsubscribe();
+            }
+        }, 'growspace_manager_strain_library_exported');
+        try {
+            await this.dataService.exportStrainLibrary();
+            this.showToast('Export started...', 'info');
+        }
+        catch (err) {
+            console.error('Failed to call export service', err);
+            unsubscribe();
+        }
+    }
+    async toggleDehumidifierControl(deviceId) {
+        const device = this.state.devices.find((d) => d.device_id === deviceId);
+        if (!device || !device.overview_entity_id || !this.hass)
+            return;
+        const stateObj = this.hass.states[device.overview_entity_id];
+        const attrs = stateObj?.attributes || {};
+        const currentStatus = attrs.dehumidifier_control_enabled === true;
+        try {
+            await this.dataService.setDehumidifierControl(deviceId, !currentStatus);
+            console.log(`Toggled dehumidifier control to ${!currentStatus} for ${deviceId}`);
+            this.showToast(`Dehumidifier control ${!currentStatus ? 'enabled' : 'disabled'}`, 'success');
+        }
+        catch (err) {
+            console.error('Failed to toggle dehumidifier control:', err);
+            this.showToast(`Failed to toggle dehumidifier: ${err.message}`, 'error');
+        }
+    }
+    async performImport(file, replace) {
+        if (!file)
+            return;
+        try {
+            const result = await this.dataService.importStrainLibrary(file, replace);
+            this.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
+            await this.fetchStrainLibrary(true);
+        }
+        catch (err) {
+            console.error('Import failed:', err);
+            this.showToast(`Import failed: ${err.message}`, 'error');
+        }
+    }
+}
 
 class GrowspaceGridController {
     constructor(host, store) {
@@ -26410,158 +27523,192 @@ class GrowspaceGridController {
     }
 }
 
-let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.store = new GrowspaceStore(this);
+let GrowspaceManagerCard = (() => {
+    var _GrowspaceManagerCard_store_accessor_storage, _GrowspaceManagerCard_historyController_accessor_storage, _GrowspaceManagerCard__strainLibrary_accessor_storage, _GrowspaceManagerCard_hass_accessor_storage, _GrowspaceManagerCard__config_accessor_storage;
+    let _classDecorators = [t$2('growspace-manager-card')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _store_decorators;
+    let _store_initializers = [];
+    let _store_extraInitializers = [];
+    let _historyController_decorators;
+    let _historyController_initializers = [];
+    let _historyController_extraInitializers = [];
+    let __strainLibrary_decorators;
+    let __strainLibrary_initializers = [];
+    let __strainLibrary_extraInitializers = [];
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let __config_decorators;
+    let __config_initializers = [];
+    let __config_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        constructor() {
+            super(...arguments);
+            _GrowspaceManagerCard_store_accessor_storage.set(this, __runInitializers(this, _store_initializers, new GrowspaceStore(this)));
+            _GrowspaceManagerCard_historyController_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _historyController_initializers, new GrowspaceHistoryController(this))));
+            this.gridController = (__runInitializers(this, _historyController_extraInitializers), new GrowspaceGridController(this, this.store));
+            _GrowspaceManagerCard__strainLibrary_accessor_storage.set(this, __runInitializers(this, __strainLibrary_initializers, []));
+            _GrowspaceManagerCard_hass_accessor_storage.set(this, (__runInitializers(this, __strainLibrary_extraInitializers), __runInitializers(this, _hass_initializers, void 0)));
+            _GrowspaceManagerCard__config_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, __config_initializers, void 0)));
+            this._handleLibraryExportReady = (__runInitializers(this, __config_extraInitializers), (e) => {
+                this._downloadFile(e.detail.url);
+            });
+        }
+        get store() { return __classPrivateFieldGet(this, _GrowspaceManagerCard_store_accessor_storage, "f"); }
+        set store(value) { __classPrivateFieldSet(this, _GrowspaceManagerCard_store_accessor_storage, value, "f"); }
         // Controllers
-        this.historyController = new GrowspaceHistoryController(this);
-        this.gridController = new GrowspaceGridController(this, this.store);
-        this._strainLibrary = [];
-        this._handleLibraryExportReady = (e) => {
-            this._downloadFile(e.detail.url);
-        };
-    }
-    /* Getter for convenience/compatibility if needed, or update call sites */
-    get selectedDevice() {
-        return this.store.state.selectedDevice;
-    }
-    // Getter to satisfy GrowspaceCardHost interface and allow external access
-    get dataService() {
-        return this.store.dataService;
-    }
-    // Getter to provide pre-loaded devices to the history controller
-    get devices() {
-        return this.store.state.devices;
-    }
-    firstUpdated() {
-        this.store.updateHass(this.hass);
-        this.store.initializeSelectedDevice(this._config);
-        this.store.fetchStrainLibrary();
-    }
-    connectedCallback() {
-        super.connectedCallback();
-        // Listen for export ready events from store
-        this.addEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
-    }
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
-    }
-    willUpdate(changedProps) {
-        if (changedProps.has('hass')) {
+        get historyController() { return __classPrivateFieldGet(this, _GrowspaceManagerCard_historyController_accessor_storage, "f"); }
+        set historyController(value) { __classPrivateFieldSet(this, _GrowspaceManagerCard_historyController_accessor_storage, value, "f"); }
+        /* Getter for convenience/compatibility if needed, or update call sites */
+        get selectedDevice() {
+            return this.store.state.selectedDevice;
+        }
+        get _strainLibrary() { return __classPrivateFieldGet(this, _GrowspaceManagerCard__strainLibrary_accessor_storage, "f"); }
+        set _strainLibrary(value) { __classPrivateFieldSet(this, _GrowspaceManagerCard__strainLibrary_accessor_storage, value, "f"); }
+        // Getter to satisfy GrowspaceCardHost interface and allow external access
+        get dataService() {
+            return this.store.dataService;
+        }
+        // Getter to provide pre-loaded devices to the history controller
+        get devices() {
+            return this.store.state.devices;
+        }
+        get hass() { return __classPrivateFieldGet(this, _GrowspaceManagerCard_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _GrowspaceManagerCard_hass_accessor_storage, value, "f"); }
+        get _config() { return __classPrivateFieldGet(this, _GrowspaceManagerCard__config_accessor_storage, "f"); }
+        set _config(value) { __classPrivateFieldSet(this, _GrowspaceManagerCard__config_accessor_storage, value, "f"); }
+        firstUpdated() {
             this.store.updateHass(this.hass);
+            this.store.initializeSelectedDevice(this._config);
+            this.store.fetchStrainLibrary();
         }
-        // Sync strain library to context provider
-        if (this.store && this.store.state && this.store.state.strainLibrary !== this._strainLibrary) {
-            this._strainLibrary = this.store.state.strainLibrary || [];
+        connectedCallback() {
+            super.connectedCallback();
+            // Listen for export ready events from store
+            this.addEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
         }
-        // Apply default growspace logic
-        const devices = this.gridController.activeDevices;
-        if (!this.store.state.defaultApplied && this._config?.default_growspace && devices.length > 0) {
-            const match = devices.find((d) => d.device_id === this._config.default_growspace ||
-                d.name === this._config.default_growspace);
-            if (match) {
-                // We can't await this here, causing a potential race if it depends on async,
-                // but handleDeviceChange is essentially synchronous in setting state, though it might fetch data.
-                // It's better than in render() anyway.
-                // Use a timeout to avoid property change during update cycle errors if immediate state change is needed
-                // but since we are in willUpdate, state changes should be fine if strictly internal or upcoming.
-                this.store.handleDeviceChange(match.device_id);
+        disconnectedCallback() {
+            super.disconnectedCallback();
+            this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+        }
+        willUpdate(changedProps) {
+            if (changedProps.has('hass')) {
+                this.store.updateHass(this.hass);
             }
-            this.store.setDefaultApplied(true);
-        }
-    }
-    updated(changedProps) {
-        super.updated(changedProps);
-        // updateHass moved to willUpdate for immediate state consistency
-        // Handle focus update from store state
-        if (this.store.state.focusedPlantIndex >= 0) {
-            this._focusPlantByIndex(this.store.state.focusedPlantIndex);
-        }
-    }
-    static async getConfigElement() {
-        // path must match where the editor JS is served relative to the card script
-        await Promise.resolve().then(function () { return growspaceManagerCardEditor; });
-        const el = document.createElement('growspace-manager-card-editor');
-        return el;
-    }
-    static getStubConfig() {
-        return {
-            default_growspace: '4x4',
-            compact: true,
-        };
-    }
-    setConfig(config) {
-        if (!config)
-            throw new Error('Invalid configuration');
-        this._config = config;
-        // handled in initializeSelectedDevice or store setter, but we can set initial state here if store exists?
-        // Actually store exists in constructor.
-        if (this._config.initial_view_mode) ;
-        else if (this._config.compact !== undefined && this._config.compact) {
-            this.store.state.viewMode = 'compact';
-            // Sync legacy
-            this.store.state.isCompactView = true;
-        }
-    }
-    getCardSize() {
-        return 4;
-    }
-    // Event handlers
-    _handleKeyboardNav(e) {
-        this.store.handleKeyboardNavigation(e.key);
-    }
-    _focusPlantByIndex(index) {
-        const grid = this.shadowRoot?.querySelector('.growspace-grid');
-        if (grid) {
-            const plantCards = grid.querySelectorAll('.plant-card-rich');
-            if (plantCards[index]) {
-                plantCards[index].focus();
+            // Sync strain library to context provider
+            if (this.store && this.store.state && this.store.state.strainLibrary !== this._strainLibrary) {
+                this._strainLibrary = this.store.state.strainLibrary || [];
+            }
+            // Apply default growspace logic
+            const devices = this.gridController.activeDevices;
+            if (!this.store.state.defaultApplied && this._config?.default_growspace && devices.length > 0) {
+                const match = devices.find((d) => d.device_id === this._config.default_growspace ||
+                    d.name === this._config.default_growspace);
+                if (match) {
+                    // We can't await this here, causing a potential race if it depends on async,
+                    // but handleDeviceChange is essentially synchronous in setting state, though it might fetch data.
+                    // It's better than in render() anyway.
+                    // Use a timeout to avoid property change during update cycle errors if immediate state change is needed
+                    // but since we are in willUpdate, state changes should be fine if strictly internal or upcoming.
+                    this.store.handleDeviceChange(match.device_id);
+                }
+                this.store.setDefaultApplied(true);
             }
         }
-    }
-    _downloadFile(url) {
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = url.split('/').pop() || 'export.zip';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
-    render() {
-        if (!this.hass) {
-            return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
+        updated(changedProps) {
+            super.updated(changedProps);
+            // updateHass moved to willUpdate for immediate state consistency
+            // Handle focus update from store state
+            if (this.store.state.focusedPlantIndex >= 0) {
+                this._focusPlantByIndex(this.store.state.focusedPlantIndex);
+            }
         }
-        const devices = this.gridController.activeDevices;
-        // Show loading spinner if initially loading and no devices yet
-        if (this.store.state.isLoading) {
-            return x `
+        static async getConfigElement() {
+            // path must match where the editor JS is served relative to the card script
+            await Promise.resolve().then(function () { return growspaceManagerCardEditor; });
+            const el = document.createElement('growspace-manager-card-editor');
+            return el;
+        }
+        static getStubConfig() {
+            return {
+                default_growspace: '4x4',
+                compact: true,
+            };
+        }
+        setConfig(config) {
+            if (!config)
+                throw new Error('Invalid configuration');
+            this._config = config;
+            // handled in initializeSelectedDevice or store setter, but we can set initial state here if store exists?
+            // Actually store exists in constructor.
+            if (this._config.initial_view_mode) ;
+            else if (this._config.compact !== undefined && this._config.compact) {
+                this.store.state.viewMode = 'compact';
+                // Sync legacy
+                this.store.state.isCompactView = true;
+            }
+        }
+        getCardSize() {
+            return 4;
+        }
+        // Event handlers
+        _handleKeyboardNav(e) {
+            this.store.handleKeyboardNavigation(e.key);
+        }
+        _focusPlantByIndex(index) {
+            const grid = this.shadowRoot?.querySelector('.growspace-grid');
+            if (grid) {
+                const plantCards = grid.querySelectorAll('.plant-card-rich');
+                if (plantCards[index]) {
+                    plantCards[index].focus();
+                }
+            }
+        }
+        _downloadFile(url) {
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = url.split('/').pop() || 'export.zip';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+        render() {
+            if (!this.hass) {
+                return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
+            }
+            const devices = this.gridController.activeDevices;
+            // Show loading spinner if initially loading and no devices yet
+            if (this.store.state.isLoading) {
+                return x `
         <ha-card>
           <div class="loading-container">
             <div class="loading-spinner"></div>
           </div>
         </ha-card>
       `;
-        }
-        if (!devices.length) {
-            return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
-        }
-        // Apply default growspace logic - MOVED TO willUpdate
-        const selectedDeviceData = devices.find((d) => d.device_id === this.selectedDevice);
-        if (!selectedDeviceData) {
-            return x `<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
-        }
-        const growspaceOptions = {};
-        // Use cached devices to ensure dropdown matches available devices
-        devices.forEach((d) => {
-            growspaceOptions[d.device_id] = d.name;
-        });
-        // Calculate grid layout - now using cached value from willUpdate
-        const { effectiveRows, grid } = this.gridController.gridLayout;
-        const isWide = selectedDeviceData.plants_per_row > 7;
-        return x `
+            }
+            if (!devices.length) {
+                return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
+            }
+            // Apply default growspace logic - MOVED TO willUpdate
+            const selectedDeviceData = devices.find((d) => d.device_id === this.selectedDevice);
+            if (!selectedDeviceData) {
+                return x `<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
+            }
+            const growspaceOptions = {};
+            // Use cached devices to ensure dropdown matches available devices
+            devices.forEach((d) => {
+                growspaceOptions[d.device_id] = d.name;
+            });
+            // Calculate grid layout - now using cached value from willUpdate
+            const { effectiveRows, grid } = this.gridController.gridLayout;
+            const isWide = selectedDeviceData.plants_per_row > 7;
+            return x `
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="sr-only-announcer" aria-live="polite"></div>
         <div class="unified-growspace-card glass-surface glass-panel" tabindex="0" @keydown=${this._handleKeyboardNav}>
@@ -26570,19 +27717,19 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
       </ha-card>
 
       ${this.store.state.notification
-            ? x `
+                ? x `
             <div class="toast-notification ${this.store.state.notification.type}">
               ${this.store.state.notification.message}
             </div>
           `
-            : ''}
+                : ''}
       ${this.renderDialogs()}
     `;
-    }
-    renderEditModeBanner() {
-        if (!this.store.state.isEditMode)
-            return x ``;
-        return x `
+        }
+        renderEditModeBanner() {
+            if (!this.store.state.isEditMode)
+                return x ``;
+            return x `
       <div class="edit-mode-banner">
         <div class="banner-content">
           <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
@@ -26594,15 +27741,15 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
           <button class="md3-button text" @click=${() => this.store.selectAllPlants()}>Select All</button>
           <button class="md3-button text" @click=${() => this.store.clearPlantSelection()}>Clear</button>
           <button class="md3-button text" @click=${() => {
-            this.store.setEditMode(false);
-            this.store.clearPlantSelection();
-        }}>Exit</button>
+                this.store.setEditMode(false);
+                this.store.clearPlantSelection();
+            }}>Exit</button>
         </div>
       </div>
     `;
-    }
-    renderGrid(grid, rows, cols) {
-        return x `
+        }
+        renderGrid(grid, rows, cols) {
+            return x `
       <growspace-grid
         .plants=${grid}
         .rows=${rows}
@@ -26611,11 +27758,11 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         .isLoading=${this.store.state.isLoading}
       ></growspace-grid>
     `;
-    }
-    renderViewContent(selectedDeviceData, growspaceOptions, grid, effectiveRows) {
-        const viewMode = this.store.state.viewMode;
-        if (viewMode === 'compact') {
-            return x `
+        }
+        renderViewContent(selectedDeviceData, growspaceOptions, grid, effectiveRows) {
+            const viewMode = this.store.state.viewMode;
+            if (viewMode === 'compact') {
+                return x `
         <div class="view-mode-container compact">
           ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
           <button
@@ -26629,9 +27776,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
           </button>
         </div>
       `;
-        }
-        if (viewMode === 'header') {
-            return x `
+            }
+            if (viewMode === 'header') {
+                return x `
         <div class="view-mode-container header">
           <growspace-header
             .device=${selectedDeviceData}
@@ -26645,9 +27792,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
           </button>
         </div>
       `;
-        }
-        // Standard Mode
-        return x `
+            }
+            // Standard Mode
+            return x `
       <growspace-header
         .device=${selectedDeviceData}
         .growspaceOptions=${growspaceOptions}
@@ -26660,111 +27807,137 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
       ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
       
       ${this._config?.initial_view_mode === 'header'
-            ? x `
+                ? x `
             <button class="collapse-handle" @click=${() => this.store.toggleHeaderExpansion()}>
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiChevronUp}"></path>
               </svg>
             </button>
           `
-            : ''}
+                : ''}
     `;
-    }
-    renderDialogs() {
-        return x `<growspace-dialog-host
+        }
+        renderDialogs() {
+            return x `<growspace-dialog-host
       .activeDialogState=${this.store.state.activeDialog}
       .devices=${this.store.state.devices}
     ></growspace-dialog-host>`;
-    }
-};
-GrowspaceManagerCard.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
-__decorate([
-    e$3({ context: storeContext }),
-    __metadata("design:type", Object)
-], GrowspaceManagerCard.prototype, "store", void 0);
-__decorate([
-    e$3({ context: historyContext }),
-    __metadata("design:type", Object)
-], GrowspaceManagerCard.prototype, "historyController", void 0);
-__decorate([
-    e$3({ context: strainLibraryContext }),
-    r$2(),
-    __metadata("design:type", Array)
-], GrowspaceManagerCard.prototype, "_strainLibrary", void 0);
-__decorate([
-    e$3({ context: hassContext }),
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspaceManagerCard.prototype, "hass", void 0);
-__decorate([
-    e$3({ context: configContext }),
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspaceManagerCard.prototype, "_config", void 0);
-GrowspaceManagerCard = __decorate([
-    t$2('growspace-manager-card')
-], GrowspaceManagerCard);
+        }
+    };
+    _GrowspaceManagerCard_store_accessor_storage = new WeakMap();
+    _GrowspaceManagerCard_historyController_accessor_storage = new WeakMap();
+    _GrowspaceManagerCard__strainLibrary_accessor_storage = new WeakMap();
+    _GrowspaceManagerCard_hass_accessor_storage = new WeakMap();
+    _GrowspaceManagerCard__config_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "GrowspaceManagerCard");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _store_decorators = [e$3({ context: storeContext })];
+        _historyController_decorators = [e$3({ context: historyContext })];
+        __strainLibrary_decorators = [e$3({ context: strainLibraryContext }), r$2()];
+        _hass_decorators = [e$3({ context: hassContext }), n$5({ attribute: false })];
+        __config_decorators = [e$3({ context: configContext }), n$5({ attribute: false })];
+        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
+        __esDecorate(_classThis, null, _historyController_decorators, { kind: "accessor", name: "historyController", static: false, private: false, access: { has: obj => "historyController" in obj, get: obj => obj.historyController, set: (obj, value) => { obj.historyController = value; } }, metadata: _metadata }, _historyController_initializers, _historyController_extraInitializers);
+        __esDecorate(_classThis, null, __strainLibrary_decorators, { kind: "accessor", name: "_strainLibrary", static: false, private: false, access: { has: obj => "_strainLibrary" in obj, get: obj => obj._strainLibrary, set: (obj, value) => { obj._strainLibrary = value; } }, metadata: _metadata }, __strainLibrary_initializers, __strainLibrary_extraInitializers);
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, __config_decorators, { kind: "accessor", name: "_config", static: false, private: false, access: { has: obj => "_config" in obj, get: obj => obj._config, set: (obj, value) => { obj._config = value; } }, metadata: _metadata }, __config_initializers, __config_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
-let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
-    constructor() {
-        super(...arguments);
-        this._growspaceOptions = [];
-    }
-    setConfig(config) {
-        this._config = config;
-        this._loadGrowspaces();
-    }
-    updated(changedProps) {
-        if (changedProps.has('hass') && this.hass) {
+let GrowspaceManagerCardEditor = (() => {
+    var _GrowspaceManagerCardEditor_hass_accessor_storage, _GrowspaceManagerCardEditor__config_accessor_storage, _GrowspaceManagerCardEditor__growspaceOptions_accessor_storage;
+    let _classDecorators = [t$2('growspace-manager-card-editor')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let __config_decorators;
+    let __config_initializers = [];
+    let __config_extraInitializers = [];
+    let __growspaceOptions_decorators;
+    let __growspaceOptions_initializers = [];
+    let __growspaceOptions_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        constructor() {
+            super(...arguments);
+            _GrowspaceManagerCardEditor_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _GrowspaceManagerCardEditor__config_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, __config_initializers, void 0)));
+            _GrowspaceManagerCardEditor__growspaceOptions_accessor_storage.set(this, (__runInitializers(this, __config_extraInitializers), __runInitializers(this, __growspaceOptions_initializers, [])));
+            this._unsubStateChanged = __runInitializers(this, __growspaceOptions_extraInitializers);
+        }
+        get hass() { return __classPrivateFieldGet(this, _GrowspaceManagerCardEditor_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _GrowspaceManagerCardEditor_hass_accessor_storage, value, "f"); }
+        get _config() { return __classPrivateFieldGet(this, _GrowspaceManagerCardEditor__config_accessor_storage, "f"); }
+        set _config(value) { __classPrivateFieldSet(this, _GrowspaceManagerCardEditor__config_accessor_storage, value, "f"); }
+        get _growspaceOptions() { return __classPrivateFieldGet(this, _GrowspaceManagerCardEditor__growspaceOptions_accessor_storage, "f"); }
+        set _growspaceOptions(value) { __classPrivateFieldSet(this, _GrowspaceManagerCardEditor__growspaceOptions_accessor_storage, value, "f"); }
+        setConfig(config) {
+            this._config = config;
             this._loadGrowspaces();
-            this._subscribeToSensorUpdates();
         }
-    }
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        if (this._unsubStateChanged) {
-            this._unsubStateChanged();
-            this._unsubStateChanged = undefined;
-        }
-    }
-    async _subscribeToSensorUpdates() {
-        if (!this.hass || this._unsubStateChanged)
-            return;
-        this._unsubStateChanged = await this.hass.connection.subscribeEvents((event) => {
-            const newState = event.data.new_state;
-            if (newState?.entity_id === 'sensor.growspaces_list') {
-                const gsObj = newState.attributes.growspaces;
-                if (gsObj) {
-                    this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
-                        id,
-                        name: String(name),
-                    }));
-                }
-                else {
-                    this._growspaceOptions = [];
-                }
+        updated(changedProps) {
+            if (changedProps.has('hass') && this.hass) {
+                this._loadGrowspaces();
+                this._subscribeToSensorUpdates();
             }
-        }, 'state_changed');
-    }
-    _loadGrowspaces() {
-        if (!this.hass)
-            return;
-        const entity = this.hass.states['sensor.growspaces_list'];
-        if (entity && entity.attributes?.growspaces) {
-            const gsObj = entity.attributes.growspaces;
-            this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
-                id,
-                name: String(name),
-            }));
         }
-        else {
-            this._growspaceOptions = [];
+        disconnectedCallback() {
+            super.disconnectedCallback();
+            if (this._unsubStateChanged) {
+                this._unsubStateChanged();
+                this._unsubStateChanged = undefined;
+            }
         }
-    }
-    render() {
-        if (!this._config)
-            return x ``;
-        return x `
+        async _subscribeToSensorUpdates() {
+            if (!this.hass || this._unsubStateChanged)
+                return;
+            this._unsubStateChanged = await this.hass.connection.subscribeEvents((event) => {
+                const newState = event.data.new_state;
+                if (newState?.entity_id === 'sensor.growspaces_list') {
+                    const gsObj = newState.attributes.growspaces;
+                    if (gsObj) {
+                        this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
+                            id,
+                            name: String(name),
+                        }));
+                    }
+                    else {
+                        this._growspaceOptions = [];
+                    }
+                }
+            }, 'state_changed');
+        }
+        _loadGrowspaces() {
+            if (!this.hass)
+                return;
+            const entity = this.hass.states['sensor.growspaces_list'];
+            if (entity && entity.attributes?.growspaces) {
+                const gsObj = entity.attributes.growspaces;
+                this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
+                    id,
+                    name: String(name),
+                }));
+            }
+            else {
+                this._growspaceOptions = [];
+            }
+        }
+        render() {
+            if (!this._config)
+                return x ``;
+            return x `
       <div class="form-group">
         <label>Initial View Mode</label>
         <select
@@ -26785,24 +27958,40 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
         >
           <option value="">Select a growspace</option>
           ${this._growspaceOptions.length === 0
-            ? x `<option disabled>No growspaces found</option>`
-            : this._growspaceOptions.map((gs) => x `<option value="${gs.id}">${gs.name}</option>`)}
+                ? x `<option disabled>No growspaces found</option>`
+                : this._growspaceOptions.map((gs) => x `<option value="${gs.id}">${gs.name}</option>`)}
         </select>
       </div>
     `;
-    }
-    _valueChanged(key, value) {
-        if (!this._config)
-            return;
-        const newConfig = { ...this._config, [key]: value };
-        this.dispatchEvent(new CustomEvent('config-changed', {
-            detail: { config: newConfig },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-};
-GrowspaceManagerCardEditor.styles = i$6 `
+        }
+        _valueChanged(key, value) {
+            if (!this._config)
+                return;
+            const newConfig = { ...this._config, [key]: value };
+            this.dispatchEvent(new CustomEvent('config-changed', {
+                detail: { config: newConfig },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+    };
+    _GrowspaceManagerCardEditor_hass_accessor_storage = new WeakMap();
+    _GrowspaceManagerCardEditor__config_accessor_storage = new WeakMap();
+    _GrowspaceManagerCardEditor__growspaceOptions_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "GrowspaceManagerCardEditor");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [n$5({ attribute: false })];
+        __config_decorators = [n$5({ attribute: false })];
+        __growspaceOptions_decorators = [r$2()];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, __config_decorators, { kind: "accessor", name: "_config", static: false, private: false, access: { has: obj => "_config" in obj, get: obj => obj._config, set: (obj, value) => { obj._config = value; } }, metadata: _metadata }, __config_initializers, __config_extraInitializers);
+        __esDecorate(_classThis, null, __growspaceOptions_decorators, { kind: "accessor", name: "_growspaceOptions", static: false, private: false, access: { has: obj => "_growspaceOptions" in obj, get: obj => obj._growspaceOptions, set: (obj, value) => { obj._growspaceOptions = value; } }, metadata: _metadata }, __growspaceOptions_initializers, __growspaceOptions_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = i$6 `
     .form-group {
       margin-bottom: 12px;
     }
@@ -26817,26 +28006,16 @@ GrowspaceManagerCardEditor.styles = i$6 `
       box-sizing: border-box;
     }
   `;
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspaceManagerCardEditor.prototype, "hass", void 0);
-__decorate([
-    n$5({ attribute: false }),
-    __metadata("design:type", Object)
-], GrowspaceManagerCardEditor.prototype, "_config", void 0);
-__decorate([
-    r$2(),
-    __metadata("design:type", Array)
-], GrowspaceManagerCardEditor.prototype, "_growspaceOptions", void 0);
-GrowspaceManagerCardEditor = __decorate([
-    t$2('growspace-manager-card-editor')
-], GrowspaceManagerCardEditor);
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
 
 var growspaceManagerCardEditor = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    get GrowspaceManagerCardEditor () { return GrowspaceManagerCardEditor; }
+    GrowspaceManagerCardEditor: GrowspaceManagerCardEditor
 });
 
-export { DataService, GrowspaceManagerCard, PlantStage, PlantUtils, createGrowspaceDevice };
+export { DataService, GrowspaceManagerCard, PlantStage, PlantUtils, STAGE_CONFIG, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map

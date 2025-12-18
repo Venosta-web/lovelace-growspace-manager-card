@@ -5,9 +5,9 @@ import { PlantUtils } from '../../utils/plant-utils';
 
 @customElement('md3-date-input')
 export class Md3DateInput extends LitElement {
-  @property() label = '';
-  @property() value = '';
-  @property({ type: Boolean }) time = false; // if true, uses datetime-local
+  @property() accessor label = '';
+  @property() accessor value = '';
+  @property({ type: Boolean }) accessor time = false; // if true, uses datetime-local
 
   static styles = [
     dialogStyles,

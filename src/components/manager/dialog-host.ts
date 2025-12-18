@@ -20,19 +20,19 @@ import { HomeAssistant } from 'custom-card-helpers';
 @customElement('growspace-dialog-host')
 export class DialogHost extends LitElement {
     @consume({ context: hassContext, subscribe: true })
-    hass!: HomeAssistant;
+    accessor hass!: HomeAssistant;
 
     @consume({ context: storeContext, subscribe: true })
-    store!: GrowspaceStore;
+    accessor store!: GrowspaceStore;
 
     @property({ attribute: false })
-    activeDialogState!: ActiveDialogState;
+    accessor activeDialogState!: ActiveDialogState;
 
     @property({ attribute: false })
-    devices: GrowspaceDevice[] = [];
+    accessor devices: GrowspaceDevice[] = [];
 
     @consume({ context: strainLibraryContext, subscribe: true })
-    strainLibrary: StrainEntry[] = [];
+    accessor strainLibrary: StrainEntry[] = [];
 
     render() {
         if (!this.store) return html``;

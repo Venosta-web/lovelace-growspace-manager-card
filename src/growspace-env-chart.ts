@@ -24,32 +24,32 @@ import { hassContext } from './context';
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  hass!: HomeAssistant;
+  accessor hass!: HomeAssistant;
 
-  @property({ attribute: false }) device?: GrowspaceDevice;
-  @property({ attribute: false }) sensorHistory: SensorHistories = {};
+  @property({ attribute: false }) accessor device: GrowspaceDevice | undefined;
+  @property({ attribute: false }) accessor sensorHistory: SensorHistories = {};
 
-  @property({ type: String }) metricKey = '';
-  @property({ type: String }) unit = '';
-  @property({ type: String }) color = '#ffffff';
-  @property({ type: String }) title = '';
-  @property({ type: String }) icon = mdiMagnify;
-  @property({ type: String }) range: '1h' | '6h' | '24h' | '7d' = '24h';
-  @property({ type: String }) type: 'line' | 'step' = 'line';
+  @property({ type: String }) accessor metricKey = '';
+  @property({ type: String }) accessor unit = '';
+  @property({ type: String }) accessor color = '#ffffff';
+  @property({ type: String }) accessor title = '';
+  @property({ type: String }) accessor icon = mdiMagnify;
+  @property({ type: String }) accessor range: '1h' | '6h' | '24h' | '7d' = '24h';
+  @property({ type: String }) accessor type: 'line' | 'step' = 'line';
 
   // For combined graphs
-  @property({ type: Array }) metrics: string[] = [];
-  @property({ type: Boolean }) isCombined = false;
-  @property({ type: Object }) metricConfig: Record<
+  @property({ type: Array }) accessor metrics: string[] = [];
+  @property({ type: Boolean }) accessor isCombined = false;
+  @property({ type: Object }) accessor metricConfig: Record<
     string,
     { color: string; title: string; unit: string; icon?: string }
   > = {};
 
-  @state() private _activeTooltip: TooltipData | null = null;
-  @state() private _hoverTime: number | null = null;
-  @state() private _canScrollLeft = false;
-  @state() private _canScrollRight = false;
-  @state() private _renderSeries: GraphSeries[] = []; // Cached series renamed for clarity
+  @state() private accessor _activeTooltip: TooltipData | null = null;
+  @state() private accessor _hoverTime: number | null = null;
+  @state() private accessor _canScrollLeft = false;
+  @state() private accessor _canScrollRight = false;
+  @state() private accessor _renderSeries: GraphSeries[] = []; // Cached series renamed for clarity
 
   private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
 

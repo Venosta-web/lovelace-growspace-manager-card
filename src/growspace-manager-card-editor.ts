@@ -5,9 +5,9 @@ import type { GrowspaceManagerCardConfig } from './types';
 
 @customElement('growspace-manager-card-editor')
 export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCardEditor {
-  @property({ attribute: false }) public hass?: any;
-  @property({ attribute: false }) private _config?: GrowspaceManagerCardConfig;
-  @state() private _growspaceOptions: { id: string; name: string }[] = [];
+  @property({ attribute: false }) public accessor hass: any | undefined;
+  @property({ attribute: false }) private accessor _config: GrowspaceManagerCardConfig | undefined;
+  @state() private accessor _growspaceOptions: { id: string; name: string }[] = [];
 
   private _unsubStateChanged?: () => void;
 

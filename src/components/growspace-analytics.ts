@@ -16,12 +16,12 @@ import type { GrowspaceHistoryController } from '../controllers/growspace-histor
 @customElement('growspace-analytics')
 export class GrowspaceAnalytics extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  hass!: HomeAssistant;
+  accessor hass!: HomeAssistant;
 
   @consume({ context: historyContext, subscribe: true })
-  public historyController!: GrowspaceHistoryController;
+  public accessor historyController!: GrowspaceHistoryController;
 
-  @property({ attribute: false }) device?: GrowspaceDevice;
+  @property({ attribute: false }) accessor device: GrowspaceDevice | undefined;
 
   static styles = [
     growspaceCardStyles,
@@ -38,7 +38,7 @@ export class GrowspaceAnalytics extends LitElement {
     `,
   ];
 
-  @state() private _itemsToRender: {
+  @state() private accessor _itemsToRender: {
     type: 'group' | 'single';
     metrics: string[];
     sortIndex: number;

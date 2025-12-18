@@ -31,22 +31,22 @@ import '../components/ui/md3-number-input';
 
 @customElement('strain-library-dialog')
 export class StrainLibraryDialog extends LitElement {
-  @property({ type: Boolean }) open = false;
-  @property({ type: Array }) strains: StrainEntry[] = [];
+  @property({ type: Boolean }) accessor open = false;
+  @property({ type: Array }) accessor strains: StrainEntry[] = [];
 
-  @state() private _view: 'browse' | 'editor' = 'browse';
-  @state() private _searchQuery = '';
-  @state() private _editorState: Partial<StrainEntry> = {};
-  @state() private _isCropping = false;
-  @state() private _isImageSelectorOpen = false;
-  @state() private _importDialogOpen = false;
-  @state() private _mobileMenuOpen = false;
-  @state() private _pendingDeleteKey: string | null = null;
+  @state() private accessor _view: 'browse' | 'editor' = 'browse';
+  @state() private accessor _searchQuery = '';
+  @state() private accessor _editorState: Partial<StrainEntry> = {};
+  @state() private accessor _isCropping = false;
+  @state() private accessor _isImageSelectorOpen = false;
+  @state() private accessor _importDialogOpen = false;
+  @state() private accessor _mobileMenuOpen = false;
+  @state() private accessor _pendingDeleteKey: string | null = null;
 
-  @state() private _importReplace = false;
+  @state() private accessor _importReplace = false;
 
   // Pagination State
-  @state() private _currentPage = 1;
+  @state() private accessor _currentPage = 1;
   private readonly ITEMS_PER_PAGE = 15;
 
   static styles = [

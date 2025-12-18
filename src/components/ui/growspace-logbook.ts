@@ -11,13 +11,13 @@ import { hassContext } from '../../context';
 @customElement('growspace-logbook')
 export class GrowspaceLogbook extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  hass!: HomeAssistant;
+  accessor hass!: HomeAssistant;
 
-  @property({ type: String }) growspaceId!: string;
+  @property({ type: String }) accessor growspaceId!: string;
 
-  @state() private _events: GrowspaceEvent[] = [];
-  @state() private _isLoading = false;
-  @state() private _activeFilter = 'all';
+  @state() private accessor _events: GrowspaceEvent[] = [];
+  @state() private accessor _isLoading = false;
+  @state() private accessor _activeFilter = 'all';
 
   private _controller?: GrowspaceLogbookController;
 
@@ -253,7 +253,7 @@ export class GrowspaceLogbook extends LitElement {
     return html`
       <div class="filter-bar">
         ${filters.map(
-          (filter) => html`
+      (filter) => html`
             <div
               class="filter-chip ${this._activeFilter === filter.id ? 'active' : ''}"
               @click=${() => (this._activeFilter = filter.id)}
@@ -261,13 +261,13 @@ export class GrowspaceLogbook extends LitElement {
               ${filter.label}
             </div>
           `
-        )}
+    )}
       </div>
 
       <div class="log-container">
         ${sortedEvents.length > 0
-          ? sortedEvents.map(
-              (event) => html`
+        ? sortedEvents.map(
+          (event) => html`
                 <div class="event-card">
                   <div class="event-header">
                     <span class="event-time">${this._formatTime(event.start_time)}</span>
@@ -279,29 +279,29 @@ export class GrowspaceLogbook extends LitElement {
                       <div class="event-type">${event.sensor_type.replace(/_/g, ' ')}</div>
 
                       ${event.reasons && event.reasons.length > 0
-                        ? html`
+              ? html`
                             <div class="event-reasons">
                               ${event.reasons.map(
-                                (reason) => html`<span class="reason-badge">${reason}</span>`
-                              )}
+                (reason) => html`<span class="reason-badge">${reason}</span>`
+              )}
                             </div>
                           `
-                        : nothing}
+              : nothing}
                     </div>
 
                     ${event.category === 'alert'
-                      ? html`
+              ? html`
                           <div
                             class="event-probability"
                             style="color: ${this._getSeverityColor(
-                              event.severity,
-                              event.sensor_type
-                            )}"
+                event.severity,
+                event.sensor_type
+              )}"
                           >
                             ${this._formatProb(event.severity)}
                           </div>
                         `
-                      : html`
+              : html`
                           <div class="event-probability">
                             <ha-icon icon="mdi:water"></ha-icon>
                           </div>
@@ -309,8 +309,8 @@ export class GrowspaceLogbook extends LitElement {
                   </div>
                 </div>
               `
-            )
-          : html`
+        )
+        : html`
               <div class="empty-state">
                 No events found for "${filters.find((f) => f.id === this._activeFilter)?.label}".
               </div>

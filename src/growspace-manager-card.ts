@@ -40,11 +40,11 @@ import { GrowspaceGridController } from './controllers/grid-controller';
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard, GrowspaceCardHost {
   @provide({ context: storeContext })
-  public store = new GrowspaceStore(this);
+  accessor store = new GrowspaceStore(this);
 
   // Controllers
   @provide({ context: historyContext })
-  public historyController = new GrowspaceHistoryController(this);
+  accessor historyController = new GrowspaceHistoryController(this);
   public gridController = new GrowspaceGridController(this, this.store);
 
   /* Getter for convenience/compatibility if needed, or update call sites */
@@ -54,7 +54,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
   @provide({ context: strainLibraryContext })
   @state()
-  private _strainLibrary: StrainEntry[] = [];
+  accessor _strainLibrary: StrainEntry[] = [];
 
   // Getter to satisfy GrowspaceCardHost interface and allow external access
   get dataService() {
@@ -68,11 +68,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
   @provide({ context: hassContext })
   @property({ attribute: false })
-  public hass!: HomeAssistant;
+  accessor hass!: HomeAssistant;
 
   @provide({ context: configContext })
   @property({ attribute: false })
-  private _config!: GrowspaceManagerCardConfig;
+  accessor _config!: GrowspaceManagerCardConfig;
 
   static styles: CSSResultGroup = [variables, sharedStyles, uiStyles, growspaceCardStyles];
 

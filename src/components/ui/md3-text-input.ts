@@ -4,11 +4,11 @@ import { dialogStyles } from '../../styles/dialog.styles';
 
 @customElement('md3-text-input')
 export class Md3TextInput extends LitElement {
-  @property() label = '';
-  @property() value = '';
-  @property() type = 'text';
-  @property() placeholder = '';
-  @property() list = '';
+  @property() accessor label = '';
+  @property() accessor value = '';
+  @property() accessor type = 'text';
+  @property() accessor placeholder = '';
+  @property() accessor list = '';
 
   static styles = [
     dialogStyles,

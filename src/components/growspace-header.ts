@@ -31,29 +31,29 @@ import type { GrowspaceHistoryController } from '../controllers/growspace-histor
 @customElement('growspace-header')
 export class GrowspaceHeader extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  public hass!: HomeAssistant;
+  public accessor hass!: HomeAssistant;
 
   @consume({ context: storeContext, subscribe: true })
-  public store!: GrowspaceStore;
+  public accessor store!: GrowspaceStore;
 
   @consume({ context: historyContext, subscribe: true })
-  public historyController!: GrowspaceHistoryController;
+  public accessor historyController!: GrowspaceHistoryController;
 
   @consume({ context: configContext, subscribe: true })
   @property({ attribute: false })
-  public config!: GrowspaceManagerCardConfig;
+  public accessor config!: GrowspaceManagerCardConfig;
 
-  @property({ attribute: false }) public device!: GrowspaceDevice;
-  @property({ type: Boolean }) public compact = false;
-  @property({ type: Boolean }) public isEditMode = false;
+  @property({ attribute: false }) public accessor device!: GrowspaceDevice;
+  @property({ type: Boolean }) public accessor compact = false;
+  @property({ type: Boolean }) public accessor isEditMode = false;
   // activeEnvGraphs and linkedGraphGroups removed as props, accessed via historyController in render or getters
-  @property({ attribute: false }) public growspaceOptions: Record<string, string> = {};
-  @property({ attribute: false }) public historyData: any[] | null = null;
+  @property({ attribute: false }) public accessor growspaceOptions: Record<string, string> = {};
+  @property({ attribute: false }) public accessor historyData: any[] | null = null;
 
-  @state() private _canScrollLeft = false;
-  @state() private _canScrollRight = false;
-  @state() private _menuOpen = false;
-  @state() private _mobileLink = false;
+  @state() private accessor _canScrollLeft = false;
+  @state() private accessor _canScrollRight = false;
+  @state() private accessor _menuOpen = false;
+  @state() private accessor _mobileLink = false;
 
   private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
   private _resizeController = new ResizeController(this, () => this._checkScroll());

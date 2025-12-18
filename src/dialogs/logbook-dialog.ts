@@ -11,10 +11,10 @@ import { hassContext } from '../context';
 @customElement('logbook-dialog')
 export class LogbookDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  public hass!: HomeAssistant;
+  public accessor hass!: HomeAssistant;
 
-  @property({ type: Boolean }) public open = false;
-  @property({ type: String }) public growspaceId = '';
+  @property({ type: Boolean }) public accessor open = false;
+  @property({ type: String }) public accessor growspaceId = '';
 
   static styles = [
     dialogStyles,

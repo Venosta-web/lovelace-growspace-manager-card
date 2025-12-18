@@ -11,45 +11,45 @@ import { GrowspaceDevice } from '../types';
 
 @customElement('config-dialog')
 export class ConfigDialog extends LitElement {
-  @property({ type: Boolean, reflect: true }) open = false;
+  @property({ type: Boolean, reflect: true }) accessor open = false;
 
   @property({ attribute: false })
-  public hass!: HomeAssistant;
+  public accessor hass!: HomeAssistant;
 
   @property({ type: Object })
-  growspaceOptions: Record<string, string> = {};
+  accessor growspaceOptions: Record<string, string> = {};
 
   @property({ attribute: false })
-  public devices: GrowspaceDevice[] = [];
+  public accessor devices: GrowspaceDevice[] = [];
 
-  @property({ type: String }) initialTab: 'add_growspace' | 'edit_growspace' | 'environment' =
+  @property({ type: String }) accessor initialTab: 'add_growspace' | 'edit_growspace' | 'environment' =
     'environment';
   @property({ type: String })
-  public currentTab: 'add_growspace' | 'edit_growspace' | 'environment' = 'environment';
+  public accessor currentTab: 'add_growspace' | 'edit_growspace' | 'environment' = 'environment';
 
   private _initialStateApplied = false;
 
   // Add Growspace Data
-  @state() private add_name = '';
-  @state() private add_rows = 4;
-  @state() private add_plants_per_row = 4;
-  @state() private add_notification_service = 'mobile_app_notify';
+  @state() private accessor add_name = '';
+  @state() private accessor add_rows = 4;
+  @state() private accessor add_plants_per_row = 4;
+  @state() private accessor add_notification_service = 'mobile_app_notify';
 
   // Edit Growspace Data
-  @state() private edit_selectedId = '';
-  @state() private edit_name = '';
-  @state() private edit_rows = 0;
-  @state() private edit_plants_per_row = 0;
+  @state() private accessor edit_selectedId = '';
+  @state() private accessor edit_name = '';
+  @state() private accessor edit_rows = 0;
+  @state() private accessor edit_plants_per_row = 0;
 
   // Environment Data
-  @state() private env_selectedGrowspaceId = '';
-  @state() private env_temp_sensor = '';
-  @state() private env_humidity_sensor = '';
-  @state() private env_vpd_sensor = '';
-  @state() private env_co2_sensor = '';
-  @state() private env_circulation_fan = '';
-  @state() private env_stress_threshold = 0.8;
-  @state() private env_mold_threshold = 0.8;
+  @state() private accessor env_selectedGrowspaceId = '';
+  @state() private accessor env_temp_sensor = '';
+  @state() private accessor env_humidity_sensor = '';
+  @state() private accessor env_vpd_sensor = '';
+  @state() private accessor env_co2_sensor = '';
+  @state() private accessor env_circulation_fan = '';
+  @state() private accessor env_stress_threshold = 0.8;
+  @state() private accessor env_mold_threshold = 0.8;
 
   static styles = [
     dialogStyles,
@@ -219,7 +219,7 @@ export class ConfigDialog extends LitElement {
     );
   }
 
-  @state() private _showDeleteConfirm = false;
+  @state() private accessor _showDeleteConfirm = false;
 
   private _submitEditGrowspace() {
     if (!this.edit_selectedId) return;

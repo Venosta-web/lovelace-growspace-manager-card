@@ -14,16 +14,16 @@ import './plant-card';
 @customElement('growspace-grid')
 export class GrowspaceGrid extends LitElement {
   @consume({ context: storeContext })
-  private store!: GrowspaceStore;
+  private accessor store!: GrowspaceStore;
 
-  @property({ type: Array }) plants: (PlantEntity | null)[][] = [];
-  @property({ type: Number }) rows: number = 3;
-  @property({ type: Number }) cols: number = 3;
+  @property({ type: Array }) accessor plants: (PlantEntity | null)[][] = [];
+  @property({ type: Number }) accessor rows: number = 3;
+  @property({ type: Number }) accessor cols: number = 3;
 
-  @property({ type: Boolean }) isEditMode: boolean = false;
-  @property({ type: Object }) selectedPlants: Set<string> = new Set();
-  @property({ type: Boolean }) compact: boolean = false;
-  @property({ type: Boolean }) isLoading: boolean = false;
+  @property({ type: Boolean }) accessor isEditMode: boolean = false;
+  @property({ type: Object }) accessor selectedPlants: Set<string> = new Set();
+  @property({ type: Boolean }) accessor compact: boolean = false;
+  @property({ type: Boolean }) accessor isLoading: boolean = false;
 
   private _draggedPlant: PlantEntity | null = null;
   private _gridRef = createRef<HTMLDivElement>();

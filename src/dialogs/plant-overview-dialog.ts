@@ -38,18 +38,18 @@ import {
 @customElement('plant-overview-dialog')
 export class PlantOverviewDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  hass!: HomeAssistant;
+  accessor hass!: HomeAssistant;
 
-  @property({ type: Boolean, reflect: true }) open = false;
-  @property({ attribute: false }) dialog?: PlantOverviewDialogState;
-  @property({ type: Object }) plant?: PlantEntity;
-  @property({ type: Object }) growspaceOptions: Record<string, string> = {};
+  @property({ type: Boolean, reflect: true }) accessor open = false;
+  @property({ attribute: false }) accessor dialog: PlantOverviewDialogState | undefined;
+  @property({ type: Object }) accessor plant: PlantEntity | undefined;
+  @property({ type: Object }) accessor growspaceOptions: Record<string, string> = {};
 
-  @property({ attribute: false }) editedAttributes: PlantOverviewEditedAttributes = {};
-  @state() private isEditing = true;
-  @state() private showAllDates = false;
-  @state() private cloneTargetId = '';
-  @state() private _showDeleteConfirmation = false;
+  @property({ attribute: false }) accessor editedAttributes: PlantOverviewEditedAttributes = {};
+  @state() private accessor isEditing = true;
+  @state() private accessor showAllDates = false;
+  @state() private accessor cloneTargetId = '';
+  @state() private accessor _showDeleteConfirmation = false;
 
   willUpdate(changedProps: Map<string, any>) {
     // Handle dialog state object if passed (legacy/alternative usage)

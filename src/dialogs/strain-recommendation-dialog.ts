@@ -10,12 +10,12 @@ import { hassContext } from '../context';
 @customElement('strain-recommendation-dialog')
 export class StrainRecommendationDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  public hass!: HomeAssistant;
+  public accessor hass!: HomeAssistant;
 
-  @property({ type: Boolean }) public open = false;
-  @property({ type: Boolean }) public isLoading = false;
-  @property({ attribute: false }) public response: string | null = null;
-  @property({ type: String }) public userQuery: string = '';
+  @property({ type: Boolean }) public accessor open = false;
+  @property({ type: Boolean }) public accessor isLoading = false;
+  @property({ attribute: false }) public accessor response: string | null = null;
+  @property({ type: String }) public accessor userQuery: string = '';
 
   static styles = [
     dialogStyles,
@@ -148,7 +148,7 @@ export class StrainRecommendationDialog extends LitElement {
             </div>
 
             ${this.isLoading
-              ? html`
+        ? html`
                   <div class="gm-loading">
                     <svg class="spinner" viewBox="0 0 24 24">
                       <path d="${mdiLoading}" fill="currentColor"></path>
@@ -156,10 +156,10 @@ export class StrainRecommendationDialog extends LitElement {
                     <span>Consulting the archives...</span>
                   </div>
                 `
-              : nothing}
+        : nothing}
             ${!this.isLoading && this.response
-              ? html` <div class="gm-response-box">${this.response}</div> `
-              : nothing}
+        ? html` <div class="gm-response-box">${this.response}</div> `
+        : nothing}
           </div>
         </div>
       </ha-dialog>

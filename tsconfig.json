@@ -8,9 +8,9 @@
     "inlineSources": true,
     "inlineSourceMap": true,
     "importHelpers": true,
-    "experimentalDecorators": true,
+    "experimentalDecorators": false,
     "useDefineForClassFields": false,
-    "emitDecoratorMetadata": true,
+    "emitDecoratorMetadata": false,
     "strict": true,
     "esModuleInterop": true
   },
