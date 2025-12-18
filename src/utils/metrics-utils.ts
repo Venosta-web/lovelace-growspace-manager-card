@@ -185,8 +185,8 @@ export class MetricsUtils {
             return upcoming ? upcoming.toFormat('HH:mm') : undefined;
         };
 
-        const nextIrrigation = getNextEvent(device.irrigation_times);
-        const nextDrain = getNextEvent(device.drain_times);
+        const nextIrrigation = getNextEvent(device.irrigation_config?.irrigation_times);
+        const nextDrain = getNextEvent(device.irrigation_config?.drain_times);
 
         // Build Chips
         const createChipData = (

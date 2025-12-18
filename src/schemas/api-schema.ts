@@ -44,8 +44,13 @@ export const GrowspaceAPIResponseSchema = z.object({
 
     // Configs
     irrigation_config: z.object({
+        irrigation_pump_entity: z.string().nullable().optional(),
+        drain_pump_entity: z.string().nullable().optional(),
+        irrigation_duration: z.number().nullable().optional(),
+        drain_duration: z.number().nullable().optional(),
         irrigation_times: z.array(z.any()).optional(),
         drain_times: z.array(z.any()).optional(),
+        veg_day_hours: z.number().optional(),
     }).optional().default({}),
     irrigation_strategy: z.any().nullable().default(null),
 
@@ -61,6 +66,9 @@ export const GrowspaceAPIResponseSchema = z.object({
     dehumidifier_entity: z.string().optional(),
     dehumidifier_control_enabled: z.boolean().optional(),
     circulation_fan_entity: z.string().optional(),
+    vpd: z.string().optional(),
+    soil_moisture_value: z.string().optional(),
+    dehumidifier_state: z.string().optional(),
 
     // Statistics
     max_veg_days: z.number().optional().default(0),

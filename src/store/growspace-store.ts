@@ -137,9 +137,10 @@ export class GrowspaceStore implements ReactiveController {
         }
 
         try {
-            // fetchGrowspaceData without ID should return all data
+            // fetchGrowspaceData without ID returns Record<string, GrowspaceAPIResponse>
             const data = await this.dataService.fetchGrowspaceData();
-            this.wsDataCache = data || {};
+            // We know it's a collection because we didn't pass an ID
+            this.wsDataCache = (data as Record<string, GrowspaceAPIResponse>) || {};
             this._updateDevicesState();
         } catch (e) {
             console.error('Failed to fetch growspace data', e);

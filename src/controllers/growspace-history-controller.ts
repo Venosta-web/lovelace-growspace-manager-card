@@ -527,8 +527,10 @@ export class GrowspaceHistoryController implements ReactiveController {
 
     // Check based on source type
     if (mapping.source === 'irrigation') {
-      const entityId =
-        device.irrigation_config?.[mapping.primary as keyof typeof device.irrigation_config];
+      const config = device.irrigation_config;
+      const key = mapping.primary as keyof typeof config;
+      const entityId = config?.[key];
+
       if (entityId) return entityId as string;
       // Fallback: If not found in irrigation_config, continue to check environment_attributes/etc below
     }
@@ -561,6 +563,22 @@ export class GrowspaceHistoryController implements ReactiveController {
         entityId = calculatedId;
         console.log('[HistoryController] Using calculated VPD sensor fallback in getEntityIdForMetric:', entityId);
       }
+    }
+
+    // Special handling for Optimal Conditions
+    if ((!entityId && metricKey === 'optimal') || metricKey === 'optimal') {
+      let slug = device.name.toLowerCase().replace(/\s+/g, '_');
+      if (device.overview_entity_id) {
+        slug = device.overview_entity_id.replace('sensor.', '');
+      }
+
+      let optimalId = `binary_sensor.${slug}_optimal_conditions`;
+
+      // Legacy hardcoded slugs
+      if (slug === 'cure') optimalId = `binary_sensor.cure_optimal_curing`;
+      else if (slug === 'dry') optimalId = `binary_sensor.dry_optimal_drying`;
+
+      return optimalId;
     }
 
     return entityId || null;

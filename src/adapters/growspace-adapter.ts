@@ -1,4 +1,3 @@
-import { HassEntity } from 'home-assistant-js-websocket';
 import {
   GrowspaceDevice,
   GrowspaceType,
@@ -7,122 +6,63 @@ import {
   PlantStage,
   GrowspaceAPIResponse,
   GrowspaceOverviewEntity,
-  IrrigationTime,
-  IrrigationStrategy,
+  SerializedBiologicalMetrics,
+  SerializedEnvironmentAttributes,
+  SerializedStats,
 } from '../types';
+
+// Define keys for automatic extraction (DRY)
+// These must match the keys produced by serializers.py
+const BIO_KEYS: (keyof SerializedBiologicalMetrics)[] = [
+  'vpd_status', 'vpd_target_min', 'vpd_target_max', 'vpd_danger_min',
+  'vpd_danger_max', 'granular_stage', 'is_day', 'veg_week', 'flower_week', 'air_exchange'
+];
+
+const ENV_KEYS: (keyof SerializedEnvironmentAttributes)[] = [
+  'temperature_sensor', 'humidity_sensor', 'vpd_sensor', 'co2_sensor',
+  'soil_moisture_sensor', 'light_sensor', 'exhaust_entity', 'humidifier_entity',
+  'dehumidifier_entity', 'dehumidifier_control_enabled', 'circulation_fan_entity',
+  'dehumidifier_state', 'vpd', 'soil_moisture_value'
+];
+
+const STAT_KEYS: (keyof SerializedStats)[] = [
+  'max_veg_days', 'max_flower_days', 'veg_week', 'flower_week',
+  'max_stage_summary', 'total_plants'
+];
 
 export class GrowspaceAdapter {
   static transformGrowspace(
     overview: GrowspaceOverviewEntity,
     wsData: GrowspaceAPIResponse | null = null
-  ): GrowspaceDevice | null {
-    const attributes = overview.attributes;
-    const growspace_id = attributes.growspace_id;
-    const name = attributes.friendly_name || `Growspace ${growspace_id}`;
+  ): GrowspaceDevice {
+    const growspace_id = overview.attributes.growspace_id;
+    const name = overview.attributes.friendly_name || wsData?.name || `Growspace ${growspace_id}`;
 
-    // Default type if unknown
-    const type: GrowspaceType = (attributes.type as GrowspaceType) || 'normal';
-
-    // 1. Missing WebSocket Data -> Return Loading/Skeleton State
-    // The UI should see this as a valid device but with empty/loading data.
+    // 1. Loading State
     if (!wsData) {
       return createGrowspaceDevice({
         device_id: growspace_id,
         overview_entity_id: overview.entity_id,
         name,
-        type,
-        plants: [],
-        rows: attributes.rows || 3,
-        plants_per_row: attributes.plants_per_row || 3,
         last_updated: 'Loading...',
-        biological_metrics: {
-          vpd_status: 'unknown',
-          granular_stage: 'unknown',
-          is_day: false,
-          vpd_target_min: 0,
-          vpd_target_max: 0,
-          vpd_danger_min: 0,
-          vpd_danger_max: 0,
-          veg_week: 0,
-          flower_week: 0,
-          air_exchange: '0',
-        },
-        irrigation_times: [],
-        drain_times: [],
-        irrigation_config: {
-          irrigation_pump_entity: '',
-          drain_pump_entity: '',
-          irrigation_duration: 0,
-          drain_duration: 0,
-        },
-        environment_attributes: {},
-        stats: {
-          max_veg_days: 0,
-          max_flower_days: 0,
-          veg_week: 0,
-          flower_week: 0,
-          total_plants: 0,
-          max_stage_summary: '',
-        },
       });
     }
 
-    // 2. Map Flat API Data STRICTLY
-    const {
-      // Root Props
-      grid,
-      rows,
-      plants_per_row,
-      notification_target,
+    // 2. Extract Groups using Utility Helper
+    const biological_metrics = this.extractSubset<SerializedBiologicalMetrics>(wsData, BIO_KEYS);
+    const environment_attributes = this.extractSubset<SerializedEnvironmentAttributes>(wsData, ENV_KEYS);
+    const stats = this.extractSubset<SerializedStats>(wsData, STAT_KEYS);
 
-      // Configs
-      // Configs
-      irrigation_config,
-      irrigation_strategy,
-      // environment_config is removed from API response type
-
-      // Statistics (Root -> Stats)
-      max_veg_days,
-      max_flower_days,
-      veg_week,
-      flower_week,
-      max_stage_summary,
-      total_plants,
-
-      // Biological Metrics (Root -> Bio)
-      vpd_status,
-      vpd_target_min,
-      vpd_target_max,
-      vpd_danger_min,
-      vpd_danger_max,
-      granular_stage,
-      is_day,
-      air_exchange,
-
-      // Environment Attributes (Flattened in API)
-      temperature_sensor,
-      humidity_sensor,
-      vpd_sensor,
-      co2_sensor,
-      soil_moisture_sensor,
-      light_sensor,
-      exhaust_entity,
-      humidifier_entity,
-      dehumidifier_entity,
-      dehumidifier_control_enabled,
-      circulation_fan_entity,
-    } = wsData;
-
-    // --- Plants Mapping (Dictionary to Flat Array) ---
+    // 3. Transform Grid Dictionary to Plant Entity Array
     const plants: PlantEntity[] = [];
-    if (grid) {
-      Object.entries(grid).forEach(([key, slot]) => {
+    if (wsData.grid) {
+      Object.values(wsData.grid).forEach((slot) => {
         if (slot) {
           plants.push({
             entity_id: slot.entity_id,
             state: slot.stage || 'unknown',
             attributes: {
-              ...slot,
+              ...slot, // Spread raw plant data
               growspace_id,
               friendly_name: `${slot.strain} ${slot.phenotype}`,
               stage: (slot.stage as PlantStage) || 'unknown',
@@ -135,82 +75,46 @@ export class GrowspaceAdapter {
       });
     }
 
-    // --- Biological Metrics Grouping ---
-    const biological_metrics = {
-      vpd_status,
-      vpd_target_min,
-      vpd_target_max,
-      vpd_danger_min,
-      vpd_danger_max,
-      granular_stage,
-      is_day,
-      veg_week,
-      flower_week,
-      air_exchange,
-    };
-
-    // --- Environment Attributes Grouping (Map from flattened root props) ---
-    const environment_attributes = {
-      temperature_sensor,
-      humidity_sensor,
-      vpd_sensor,
-      co2_sensor,
-      soil_moisture_sensor,
-      light_sensor,
-      exhaust_entity,
-      humidifier_entity,
-      dehumidifier_entity,
-      dehumidifier_control_enabled,
-      circulation_fan_entity,
-
-      // Fallback/Legacy keys if needed, though strictly typed locally now
-      exhaust_sensor: exhaust_entity, // alias for safety if UI uses sensor key
-      humidifier_sensor: humidifier_entity,
-    };
-
-    // --- Stats Grouping ---
-    const stats = {
-      max_veg_days,
-      max_flower_days,
-      veg_week,
-      flower_week,
-      total_plants,
-      max_stage_summary,
-    };
-
-    // --- Irrigation (Strictly from config) ---
-    const irrigation_times = irrigation_config?.irrigation_times || [];
-    const drain_times = irrigation_config?.drain_times || [];
-
+    // 4. Construct Device
     return createGrowspaceDevice({
       device_id: growspace_id,
       overview_entity_id: overview.entity_id,
       name,
-      plants,
-      rows: rows,
-      plants_per_row: plants_per_row,
-      type: type as GrowspaceType,
+      type: wsData.type || 'normal',
+      rows: wsData.rows,
+      plants_per_row: wsData.plants_per_row,
       last_updated: overview.last_updated,
+
+      // Structural Data
+      plants,
+      grid: wsData.grid,
+
+      // Grouped Data
       biological_metrics,
-      irrigation_times,
-      drain_times,
-      irrigation_config,
-      irrigation_strategy: irrigation_strategy || undefined,
       environment_attributes,
       stats,
-      // Top-level stats
-      max_veg_days,
-      max_flower_days,
-      total_plants,
-      max_stage_summary
+
+      // Configs
+      irrigation_config: wsData.irrigation_config,
+      irrigation_strategy: wsData.irrigation_strategy || undefined,
     });
   }
 
   /**
-   * @deprecated Relies on attributes that are often empty. Use DataService.getGrowspaceDevices instead which uses WS data.
+   * Helper to extract specific keys from the flattened API response into a typed object.
    */
-  static transformToDevices(allStates: HassEntity[]): GrowspaceDevice[] {
-    // Legacy method stub - effectively disabled or returning empty if we enforce strict WS usage
+  private static extractSubset<T>(source: any, keys: (keyof T)[]): T {
+    const result = {} as T;
+    keys.forEach((key) => {
+      if (key in source) {
+        result[key] = source[key];
+      }
+    });
+    return result;
+  }
+
+  /** @deprecated */
+  static transformToDevices(): GrowspaceDevice[] {
     return [];
   }
 }

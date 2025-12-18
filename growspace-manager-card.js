@@ -1,3 +1,48 @@
+// --- Enums ---
+var PlantStage;
+(function (PlantStage) {
+    PlantStage["SEEDLING"] = "seedling";
+    PlantStage["CLONE"] = "clone";
+    PlantStage["MOTHER"] = "mother";
+    PlantStage["VEG"] = "veg";
+    PlantStage["FLOWER"] = "flower";
+    PlantStage["DRY"] = "dry";
+    PlantStage["CURE"] = "cure";
+})(PlantStage || (PlantStage = {}));
+// --- Utils ---
+function createGrowspaceDevice(params) {
+    return {
+        type: 'normal',
+        rows: 3,
+        plants_per_row: 3,
+        plants: [],
+        grid: {},
+        irrigation_config: { irrigation_times: [], drain_times: [] },
+        // Default Empty Objects to prevent UI crashes
+        biological_metrics: {
+            vpd_status: 'unknown',
+            vpd_target_min: 0,
+            vpd_target_max: 0,
+            vpd_danger_min: 0,
+            vpd_danger_max: 0,
+            granular_stage: 'unknown',
+            is_day: true,
+            veg_week: 0,
+            flower_week: 0
+        },
+        environment_attributes: {},
+        stats: {
+            max_veg_days: 0,
+            max_flower_days: 0,
+            veg_week: 0,
+            flower_week: 0,
+            max_stage_summary: '',
+            total_plants: 0
+        },
+        ...params,
+    };
+}
+
 // Material Design Icons v7.4.47
 var mdiAirFilter = "M19,18.31V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V16.3C4.54,16.12 3.95,16 3,16A1,1 0 0,1 2,15A1,1 0 0,1 3,14C3.82,14 4.47,14.08 5,14.21V12.3C4.54,12.12 3.95,12 3,12A1,1 0 0,1 2,11A1,1 0 0,1 3,10C3.82,10 4.47,10.08 5,10.21V8.3C4.54,8.12 3.95,8 3,8A1,1 0 0,1 2,7A1,1 0 0,1 3,6C3.82,6 4.47,6.08 5,6.21V4A2,2 0 0,1 7,2H17A2,2 0 0,1 19,4V6.16C20.78,6.47 21.54,7.13 21.71,7.29C22.1,7.68 22.1,8.32 21.71,8.71C21.32,9.1 20.8,9.09 20.29,8.71V8.71C20.29,8.71 19.25,8 17,8C15.74,8 14.91,8.41 13.95,8.9C12.91,9.41 11.74,10 10,10C9.64,10 9.31,10 9,9.96V7.95C9.3,8 9.63,8 10,8C11.26,8 12.09,7.59 13.05,7.11C14.09,6.59 15.27,6 17,6V4H7V20H17V18C18.5,18 18.97,18.29 19,18.31M17,10C15.27,10 14.09,10.59 13.05,11.11C12.09,11.59 11.26,12 10,12C9.63,12 9.3,12 9,11.95V13.96C9.31,14 9.64,14 10,14C11.74,14 12.91,13.41 13.95,12.9C14.91,12.42 15.74,12 17,12C19.25,12 20.29,12.71 20.29,12.71V12.71C20.8,13.1 21.32,13.1 21.71,12.71C22.1,12.32 22.1,11.69 21.71,11.29C21.5,11.08 20.25,10 17,10M17,14C15.27,14 14.09,14.59 13.05,15.11C12.09,15.59 11.26,16 10,16C9.63,16 9.3,16 9,15.95V17.96C9.31,18 9.64,18 10,18C11.74,18 12.91,17.41 13.95,16.9C14.91,16.42 15.74,16 17,16C19.25,16 20.29,16.71 20.29,16.71V16.71C20.8,17.1 21.32,17.1 21.71,16.71C22.1,16.32 22.1,15.69 21.71,15.29C21.5,15.08 20.25,14 17,14Z";
 var mdiAirHumidifier = "M11 9C8.79 9 7 10.79 7 13S8.79 17 11 17 15 15.21 15 13 13.21 9 11 9M11 15C9.9 15 9 14.11 9 13S9.9 11 11 11 13 11.9 13 13 12.11 15 11 15M7 4H14C16.21 4 18 5.79 18 8V9H16V8C16 6.9 15.11 6 14 6H7C5.9 6 5 6.9 5 8V20H16V18H18V22H3V8C3 5.79 4.79 4 7 4M19 10.5C19 10.5 21 12.67 21 14C21 15.1 20.1 16 19 16S17 15.1 17 14C17 12.67 19 10.5 19 10.5";
@@ -49,36 +94,6 @@ var mdiWaterPercent = "M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,
 var mdiWeatherCloudy = "M6,19A5,5 0 0,1 1,14A5,5 0 0,1 6,9C7,6.65 9.3,5 12,5C15.43,5 18.24,7.66 18.5,11.03L19,11A4,4 0 0,1 23,15A4,4 0 0,1 19,19H6M19,13H17V12A5,5 0 0,0 12,7C9.5,7 7.45,8.82 7.06,11.19C6.73,11.07 6.37,11 6,11A3,3 0 0,0 3,14A3,3 0 0,0 6,17H19A2,2 0 0,0 21,15A2,2 0 0,0 19,13Z";
 var mdiWeatherNight = "M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z";
 var mdiWeatherSunny = "M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,6.65C6.9,7.16 6.36,7.78 5.94,8.5C5.5,9.24 5.25,10 5.11,10.79L3.34,7M3.36,17L5.12,13.23C5.26,14 5.53,14.78 5.95,15.5C6.37,16.24 6.91,16.86 7.5,17.37L3.36,17M20.65,7L18.88,10.79C18.74,10 18.47,9.23 18.05,8.5C17.63,7.78 17.1,7.15 16.5,6.64L20.65,7M20.64,17L16.5,17.36C17.09,16.85 17.62,16.22 18.04,15.5C18.46,14.77 18.73,14 18.87,13.21L20.64,17M12,22L9.59,18.56C10.33,18.83 11.14,19 12,19C12.82,19 13.63,18.83 14.37,18.56L12,22Z";
-
-// -- Enums & Constants --
-var PlantStage;
-(function (PlantStage) {
-    PlantStage["SEEDLING"] = "seedling";
-    PlantStage["CLONE"] = "clone";
-    PlantStage["MOTHER"] = "mother";
-    PlantStage["VEG"] = "veg";
-    PlantStage["FLOWER"] = "flower";
-    PlantStage["DRY"] = "dry";
-    PlantStage["CURE"] = "cure";
-})(PlantStage || (PlantStage = {}));
-const stageInputs = {
-    [PlantStage.SEEDLING]: [{ label: 'metrics.planted_date', icon: mdiSprout, key: 'seedling_start' }],
-    [PlantStage.MOTHER]: [{ label: 'metrics.mother_start', icon: mdiSprout, key: 'mother_start' }],
-    [PlantStage.CLONE]: [{ label: 'metrics.clone_start', icon: mdiSprout, key: 'clone_start' }],
-    [PlantStage.VEG]: [{ label: 'metrics.veg_start', icon: mdiSprout, key: 'veg_start' }],
-    [PlantStage.FLOWER]: [
-        { label: 'metrics.veg_start', icon: mdiSprout, key: 'veg_start' },
-        { label: 'metrics.flower_start', icon: mdiFlower, key: 'flower_start' },
-    ],
-    [PlantStage.DRY]: [{ label: 'metrics.dry_start', icon: mdiHairDryer, key: 'dry_start' }],
-    [PlantStage.CURE]: [{ label: 'metrics.cure_start', icon: mdiCannabis, key: 'cure_start' }],
-};
-function createGrowspaceDevice(params) {
-    return {
-        ...params,
-        type: params.type ?? 'normal',
-    };
-}
 
 [
     PlantStage.SEEDLING,
@@ -504,80 +519,49 @@ PlantUtils.DATE_FIELDS = [
     'cure_start',
 ];
 
+// Define keys for automatic extraction (DRY)
+// These must match the keys produced by serializers.py
+const BIO_KEYS = [
+    'vpd_status', 'vpd_target_min', 'vpd_target_max', 'vpd_danger_min',
+    'vpd_danger_max', 'granular_stage', 'is_day', 'veg_week', 'flower_week', 'air_exchange'
+];
+const ENV_KEYS = [
+    'temperature_sensor', 'humidity_sensor', 'vpd_sensor', 'co2_sensor',
+    'soil_moisture_sensor', 'light_sensor', 'exhaust_entity', 'humidifier_entity',
+    'dehumidifier_entity', 'dehumidifier_control_enabled', 'circulation_fan_entity',
+    'dehumidifier_state', 'vpd', 'soil_moisture_value'
+];
+const STAT_KEYS = [
+    'max_veg_days', 'max_flower_days', 'veg_week', 'flower_week',
+    'max_stage_summary', 'total_plants'
+];
 class GrowspaceAdapter {
     static transformGrowspace(overview, wsData = null) {
-        const attributes = overview.attributes;
-        const growspace_id = attributes.growspace_id;
-        const name = attributes.friendly_name || `Growspace ${growspace_id}`;
-        // Default type if unknown
-        const type = attributes.type || 'normal';
-        // 1. Missing WebSocket Data -> Return Loading/Skeleton State
-        // The UI should see this as a valid device but with empty/loading data.
+        const growspace_id = overview.attributes.growspace_id;
+        const name = overview.attributes.friendly_name || wsData?.name || `Growspace ${growspace_id}`;
+        // 1. Loading State
         if (!wsData) {
             return createGrowspaceDevice({
                 device_id: growspace_id,
                 overview_entity_id: overview.entity_id,
                 name,
-                type,
-                plants: [],
-                rows: attributes.rows || 3,
-                plants_per_row: attributes.plants_per_row || 3,
                 last_updated: 'Loading...',
-                biological_metrics: {
-                    vpd_status: 'unknown',
-                    granular_stage: 'unknown',
-                    is_day: false,
-                    vpd_target_min: 0,
-                    vpd_target_max: 0,
-                    vpd_danger_min: 0,
-                    vpd_danger_max: 0,
-                    veg_week: 0,
-                    flower_week: 0,
-                    air_exchange: '0',
-                },
-                irrigation_times: [],
-                drain_times: [],
-                irrigation_config: {
-                    irrigation_pump_entity: '',
-                    drain_pump_entity: '',
-                    irrigation_duration: 0,
-                    drain_duration: 0,
-                },
-                environment_attributes: {},
-                stats: {
-                    max_veg_days: 0,
-                    max_flower_days: 0,
-                    veg_week: 0,
-                    flower_week: 0,
-                    total_plants: 0,
-                    max_stage_summary: '',
-                },
             });
         }
-        // 2. Map Flat API Data STRICTLY
-        const { 
-        // Root Props
-        grid, rows, plants_per_row, notification_target, 
-        // Configs
-        // Configs
-        irrigation_config, irrigation_strategy, 
-        // environment_config is removed from API response type
-        // Statistics (Root -> Stats)
-        max_veg_days, max_flower_days, veg_week, flower_week, max_stage_summary, total_plants, 
-        // Biological Metrics (Root -> Bio)
-        vpd_status, vpd_target_min, vpd_target_max, vpd_danger_min, vpd_danger_max, granular_stage, is_day, air_exchange, 
-        // Environment Attributes (Flattened in API)
-        temperature_sensor, humidity_sensor, vpd_sensor, co2_sensor, soil_moisture_sensor, light_sensor, exhaust_entity, humidifier_entity, dehumidifier_entity, dehumidifier_control_enabled, circulation_fan_entity, } = wsData;
-        // --- Plants Mapping (Dictionary to Flat Array) ---
+        // 2. Extract Groups using Utility Helper
+        const biological_metrics = this.extractSubset(wsData, BIO_KEYS);
+        const environment_attributes = this.extractSubset(wsData, ENV_KEYS);
+        const stats = this.extractSubset(wsData, STAT_KEYS);
+        // 3. Transform Grid Dictionary to Plant Entity Array
         const plants = [];
-        if (grid) {
-            Object.entries(grid).forEach(([key, slot]) => {
+        if (wsData.grid) {
+            Object.values(wsData.grid).forEach((slot) => {
                 if (slot) {
                     plants.push({
                         entity_id: slot.entity_id,
                         state: slot.stage || 'unknown',
                         attributes: {
-                            ...slot,
+                            ...slot, // Spread raw plant data
                             growspace_id,
                             friendly_name: `${slot.strain} ${slot.phenotype}`,
                             stage: slot.stage || 'unknown',
@@ -589,76 +573,41 @@ class GrowspaceAdapter {
                 }
             });
         }
-        // --- Biological Metrics Grouping ---
-        const biological_metrics = {
-            vpd_status,
-            vpd_target_min,
-            vpd_target_max,
-            vpd_danger_min,
-            vpd_danger_max,
-            granular_stage,
-            is_day,
-            veg_week,
-            flower_week,
-            air_exchange,
-        };
-        // --- Environment Attributes Grouping (Map from flattened root props) ---
-        const environment_attributes = {
-            temperature_sensor,
-            humidity_sensor,
-            vpd_sensor,
-            co2_sensor,
-            soil_moisture_sensor,
-            light_sensor,
-            exhaust_entity,
-            humidifier_entity,
-            dehumidifier_entity,
-            dehumidifier_control_enabled,
-            circulation_fan_entity,
-            // Fallback/Legacy keys if needed, though strictly typed locally now
-            exhaust_sensor: exhaust_entity, // alias for safety if UI uses sensor key
-            humidifier_sensor: humidifier_entity,
-        };
-        // --- Stats Grouping ---
-        const stats = {
-            max_veg_days,
-            max_flower_days,
-            veg_week,
-            flower_week,
-            total_plants,
-            max_stage_summary,
-        };
-        // --- Irrigation (Strictly from config) ---
-        const irrigation_times = irrigation_config?.irrigation_times || [];
-        const drain_times = irrigation_config?.drain_times || [];
+        // 4. Construct Device
         return createGrowspaceDevice({
             device_id: growspace_id,
             overview_entity_id: overview.entity_id,
             name,
-            plants,
-            rows: rows,
-            plants_per_row: plants_per_row,
-            type: type,
+            type: wsData.type || 'normal',
+            rows: wsData.rows,
+            plants_per_row: wsData.plants_per_row,
             last_updated: overview.last_updated,
+            // Structural Data
+            plants,
+            grid: wsData.grid,
+            // Grouped Data
             biological_metrics,
-            irrigation_times,
-            drain_times,
-            irrigation_config,
-            irrigation_strategy: irrigation_strategy || undefined,
             environment_attributes,
             stats,
-            // Top-level stats
-            max_veg_days,
-            max_flower_days,
-            total_plants,
-            max_stage_summary
+            // Configs
+            irrigation_config: wsData.irrigation_config,
+            irrigation_strategy: wsData.irrigation_strategy || undefined,
         });
     }
     /**
-     * @deprecated Relies on attributes that are often empty. Use DataService.getGrowspaceDevices instead which uses WS data.
+     * Helper to extract specific keys from the flattened API response into a typed object.
      */
-    static transformToDevices(allStates) {
-        // Legacy method stub - effectively disabled or returning empty if we enforce strict WS usage
+    static extractSubset(source, keys) {
+        const result = {};
+        keys.forEach((key) => {
+            if (key in source) {
+                result[key] = source[key];
+            }
+        });
+        return result;
+    }
+    /** @deprecated */
+    static transformToDevices() {
         return [];
     }
 }
@@ -5201,8 +5150,13 @@ const GrowspaceAPIResponseSchema = z$1.object({
     grid: z$1.record(z$1.string(), PlantSlotSchema).nullable().optional().transform(v => v ?? {}),
     // Configs
     irrigation_config: z$1.object({
+        irrigation_pump_entity: z$1.string().nullable().optional(),
+        drain_pump_entity: z$1.string().nullable().optional(),
+        irrigation_duration: z$1.number().nullable().optional(),
+        drain_duration: z$1.number().nullable().optional(),
         irrigation_times: z$1.array(z$1.any()).optional(),
         drain_times: z$1.array(z$1.any()).optional(),
+        veg_day_hours: z$1.number().optional(),
     }).optional().default({}),
     irrigation_strategy: z$1.any().nullable().default(null),
     // Flattened Environment Config (Root Level)
@@ -5217,6 +5171,9 @@ const GrowspaceAPIResponseSchema = z$1.object({
     dehumidifier_entity: z$1.string().optional(),
     dehumidifier_control_enabled: z$1.boolean().optional(),
     circulation_fan_entity: z$1.string().optional(),
+    vpd: z$1.string().optional(),
+    soil_moisture_value: z$1.string().optional(),
+    dehumidifier_state: z$1.string().optional(),
     // Statistics
     max_veg_days: z$1.number().optional().default(0),
     max_flower_days: z$1.number().optional().default(0),
@@ -6403,7 +6360,9 @@ class GrowspaceHistoryController {
             return null;
         // Check based on source type
         if (mapping.source === 'irrigation') {
-            const entityId = device.irrigation_config?.[mapping.primary];
+            const config = device.irrigation_config;
+            const key = mapping.primary;
+            const entityId = config?.[key];
             if (entityId)
                 return entityId;
             // Fallback: If not found in irrigation_config, continue to check environment_attributes/etc below
@@ -6431,6 +6390,20 @@ class GrowspaceHistoryController {
                 entityId = calculatedId;
                 console.log('[HistoryController] Using calculated VPD sensor fallback in getEntityIdForMetric:', entityId);
             }
+        }
+        // Special handling for Optimal Conditions
+        if ((!entityId && metricKey === 'optimal') || metricKey === 'optimal') {
+            let slug = device.name.toLowerCase().replace(/\s+/g, '_');
+            if (device.overview_entity_id) {
+                slug = device.overview_entity_id.replace('sensor.', '');
+            }
+            let optimalId = `binary_sensor.${slug}_optimal_conditions`;
+            // Legacy hardcoded slugs
+            if (slug === 'cure')
+                optimalId = `binary_sensor.cure_optimal_curing`;
+            else if (slug === 'dry')
+                optimalId = `binary_sensor.dry_optimal_drying`;
+            return optimalId;
         }
         return entityId || null;
     }
@@ -8009,8 +7982,9 @@ class GrowspaceStore {
             this.state.isLoading = true;
         }
         try {
-            // fetchGrowspaceData without ID should return all data
+            // fetchGrowspaceData without ID returns Record<string, GrowspaceAPIResponse>
             const data = await this.dataService.fetchGrowspaceData();
+            // We know it's a collection because we didn't pass an ID
             this.wsDataCache = data || {};
             this._updateDevicesState();
         }
@@ -8782,8 +8756,8 @@ const sharedStyles = i$6 `
 
   /* --- Cards --- */
   .detail-card {
-    background: var(--card-background-color, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
+    background: var(--secondary-background-color, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05);
     border-radius: var(--border-radius-md, 12px);
     padding: var(--spacing-md, 16px);
   }
@@ -13222,8 +13196,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._drain_pump_entity = config.drain_pump_entity || '';
         this._irrigation_duration = config.irrigation_duration || 60;
         this._drain_duration = config.drain_duration || 60;
-        this._irrigation_times = this.device.irrigation_times || [];
-        this._drain_times = this.device.drain_times || [];
+        this._irrigation_times = this.device.irrigation_config?.irrigation_times || [];
+        this._drain_times = this.device.irrigation_config?.drain_times || [];
         console.log('[IrrigationDialog] Initializing State', {
             device: this.device,
             irrigation_times: this._irrigation_times,
@@ -23506,8 +23480,8 @@ class MetricsUtils {
                 .sort((a, b) => a.toMillis() - b.toMillis())[0];
             return upcoming ? upcoming.toFormat('HH:mm') : undefined;
         };
-        const nextIrrigation = getNextEvent(device.irrigation_times);
-        const nextDrain = getNextEvent(device.drain_times);
+        const nextIrrigation = getNextEvent(device.irrigation_config?.irrigation_times);
+        const nextDrain = getNextEvent(device.irrigation_config?.drain_times);
         // Build Chips
         const createChipData = (key, icon, value, label, status, tooltip) => {
             if (value === undefined)
@@ -26864,5 +26838,5 @@ var growspaceManagerCardEditor = /*#__PURE__*/Object.freeze({
     get GrowspaceManagerCardEditor () { return GrowspaceManagerCardEditor; }
 });
 
-export { DataService, GrowspaceManagerCard, PlantStage, PlantUtils, createGrowspaceDevice, stageInputs };
+export { DataService, GrowspaceManagerCard, PlantStage, PlantUtils, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map
