@@ -123,13 +123,15 @@ describe('GrowspaceAdapter', () => {
             environment_config: {}, // Empty nested config
             // Root properties (Legacy/Flat)
             exhaust_entity: 'fan.exhaust',
-            humidifier_entity: 'humidifier.mist'
+            humidifier_entity: 'humidifier.mist',
+            dehumidifier_control_enabled: true
         } as any;
 
         const result = GrowspaceAdapter.transformGrowspace(mockOverview, mockWSData);
         expect(result).not.toBeNull();
         expect(result?.environment_attributes?.exhaust_entity).toBe('fan.exhaust');
         expect(result?.environment_attributes?.humidifier_entity).toBe('humidifier.mist');
+        expect(result?.environment_attributes?.dehumidifier_control_enabled).toBe(true);
     });
 
 });

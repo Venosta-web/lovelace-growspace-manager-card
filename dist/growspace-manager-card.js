@@ -567,7 +567,7 @@ class GrowspaceAdapter {
         // Biological Metrics (Root -> Bio)
         vpd_status, vpd_target_min, vpd_target_max, vpd_danger_min, vpd_danger_max, granular_stage, is_day, air_exchange, 
         // Environment Attributes (Flattened in API)
-        temperature_sensor, humidity_sensor, vpd_sensor, co2_sensor, soil_moisture_sensor, light_sensor, exhaust_entity, humidifier_entity, dehumidifier_entity, circulation_fan_entity, } = wsData;
+        temperature_sensor, humidity_sensor, vpd_sensor, co2_sensor, soil_moisture_sensor, light_sensor, exhaust_entity, humidifier_entity, dehumidifier_entity, dehumidifier_control_enabled, circulation_fan_entity, } = wsData;
         // --- Plants Mapping (Dictionary to Flat Array) ---
         const plants = [];
         if (grid) {
@@ -613,6 +613,7 @@ class GrowspaceAdapter {
             exhaust_entity,
             humidifier_entity,
             dehumidifier_entity,
+            dehumidifier_control_enabled,
             circulation_fan_entity,
             // Fallback/Legacy keys if needed, though strictly typed locally now
             exhaust_sensor: exhaust_entity, // alias for safety if UI uses sensor key
@@ -5214,6 +5215,7 @@ const GrowspaceAPIResponseSchema = z$1.object({
     exhaust_entity: z$1.string().optional(),
     humidifier_entity: z$1.string().optional(),
     dehumidifier_entity: z$1.string().optional(),
+    dehumidifier_control_enabled: z$1.boolean().optional(),
     circulation_fan_entity: z$1.string().optional(),
     // Statistics
     max_veg_days: z$1.number().optional().default(0),

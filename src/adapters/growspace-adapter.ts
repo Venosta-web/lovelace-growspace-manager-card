@@ -109,6 +109,7 @@ export class GrowspaceAdapter {
       exhaust_entity,
       humidifier_entity,
       dehumidifier_entity,
+      dehumidifier_control_enabled,
       circulation_fan_entity,
     } = wsData;
 
@@ -159,6 +160,7 @@ export class GrowspaceAdapter {
       exhaust_entity,
       humidifier_entity,
       dehumidifier_entity,
+      dehumidifier_control_enabled,
       circulation_fan_entity,
 
       // Fallback/Legacy keys if needed, though strictly typed locally now

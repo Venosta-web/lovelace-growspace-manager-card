@@ -201,6 +201,7 @@ export interface GrowspaceEnvironmentAttributes {
   soil_moisture_sensor?: string;
   light_sensor?: string;
   dehumidifier_entity?: string;
+  dehumidifier_control_enabled?: boolean;
   humidifier_entity?: string;
   exhaust_entity?: string;
   [key: string]: any;
@@ -399,6 +400,7 @@ export interface GrowspaceAPIResponse {
 
   // Environment Actuators (Flattened)
   dehumidifier_entity?: string;
+  dehumidifier_control_enabled?: boolean;
   humidifier_entity?: string;
   exhaust_entity?: string;
   circulation_fan_entity?: string;
