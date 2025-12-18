@@ -240,7 +240,7 @@ export class GrowspaceHeader extends LitElement {
     /* --- Header Top Section --- */
     .gs-header-top {
       display: grid;
-      grid-template-columns: minmax(300px, 25%) 1fr;
+      grid-template-columns: minmax(300px, 25%) minmax(0, 1fr);
       grid-template-rows: auto auto;
       align-items: center;
       gap: 4px 16px;
@@ -256,7 +256,7 @@ export class GrowspaceHeader extends LitElement {
     .header-actions {
         grid-column: 2;
         grid-row: 1;
-        justify-self: end;
+        justify-self: flex-start;
         display: flex;
         align-items: center;
         gap: 12px;
@@ -402,8 +402,10 @@ export class GrowspaceHeader extends LitElement {
         display: flex;
         align-items: center;
         border-radius: 16px;
-        flex: 1;
+        grid-column: 2;
         min-width: 0;
+        width: 100%;
+        overflow: hidden; 
         box-sizing: border-box;
     }
 
@@ -434,16 +436,21 @@ export class GrowspaceHeader extends LitElement {
 
     .secondary-strip {
         display: flex;
-        justify-content: flex-end;
+        justify-content: flex-start;
         align-items: center;
         gap: 12px;
         overflow-x: auto;
         overflow-y: hidden;
         flex: 1;
+        width: 0;
+        min-width: 0;
         scrollbar-width: none; /* Firefox */
         -ms-overflow-style: none; /* IE */
         padding: 8px 4px 8px 4px; 
         scroll-behavior: smooth;
+    }
+    .secondary-strip > growspace-chip:first-child {
+        margin-left: auto;
     }
     .secondary-strip::-webkit-scrollbar { display: none; }
 
