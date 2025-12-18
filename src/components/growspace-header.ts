@@ -408,7 +408,19 @@ export class GrowspaceHeader extends LitElement {
     }
     /* Active graph indication */
     .hero-card.active {
-        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);
+        background: color-mix(in srgb, var(--primary-color, #2196f3) 15%, var(--glass-bg, rgba(255, 255, 255, 0.05)));
+        border-color: var(--primary-color, #2196f3);
+        box-shadow: 
+            0 8px 32px -4px rgba(0, 0, 0, 0.3),
+            0 0 0 1px var(--primary-color, #2196f3) inset;
+    }
+    
+    .hero-card.active .hero-value,
+    .hero-card.active .hero-label, 
+    .hero-card.active .hero-unit,
+    .hero-card.active .hero-icon {
+        color: var(--primary-text-color, #fff) !important;
+        fill: var(--primary-text-color, #fff) !important;
     }
 
     /* Mini sparkline background for hero cards */

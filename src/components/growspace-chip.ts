@@ -82,8 +82,8 @@ export class GrowspaceChip extends LitElement {
     }
 
     :host([active]) .stat-chip {
-      background: var(--secondary-background-color, rgba(255, 255, 255, 0.15));
-      border-color: var(--divider-color, rgba(255, 255, 255, 0.4));
+      background: color-mix(in srgb, var(--primary-color, #03a9f4) 15%, var(--glass-bg, rgba(255, 255, 255, 0.05)));
+      border-color: var(--primary-color, #03a9f4);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       color: var(--primary-text-color, #fff);
     }
