@@ -154,9 +154,22 @@ export class GrowspaceStore implements ReactiveController {
         }
     }
 
+    private _areDeviceArraysEqual(a: GrowspaceDevice[], b: GrowspaceDevice[]): boolean {
+        if (a === b) return true;
+        if (a.length !== b.length) return false;
+        // Check referential equality of items (assuming device objects are stable if content is stable)
+        for (let i = 0; i < a.length; i++) {
+            if (a[i] !== b[i]) return false;
+        }
+        return true;
+    }
+
     private _updateDevicesState() {
         const devices = this.dataService.getGrowspaceDevices(this.wsDataCache);
-        this.state.devices = devices;
+
+        if (!this._areDeviceArraysEqual(this.state.devices, devices)) {
+            this.state.devices = devices;
+        }
 
         // Auto-select if needed (handles initial load race condition where updateHass hasn't run yet)
         if (!this.state.selectedDevice && devices.length > 0) {

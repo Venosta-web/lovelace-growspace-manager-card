@@ -62,6 +62,7 @@ export class GrowspacePlantCard extends LitElement {
       display: block;
       width: 100%;
       height: 100%;
+      contain: layout paint style;
     }
 
     .plant-card-rich {

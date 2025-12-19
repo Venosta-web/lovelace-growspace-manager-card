@@ -15017,6 +15017,7 @@ class GrowspaceLogbookController {
       display: block;
       width: 100%;
       height: 100%;
+      contain: layout paint style;
     }
 
     .plant-card-rich {
@@ -25310,7 +25311,8 @@ const variables = i$6 `
       display: grid;
       gap: var(--spacing-md);
       /* Position relative needed for coordinate calculation */
-      position: relative; 
+      position: relative;
+      contain: layout;
     }
 
     .grid.compact {
@@ -26987,9 +26989,23 @@ class GrowspaceStore {
             }
         }
     }
+    _areDeviceArraysEqual(a, b) {
+        if (a === b)
+            return true;
+        if (a.length !== b.length)
+            return false;
+        // Check referential equality of items (assuming device objects are stable if content is stable)
+        for (let i = 0; i < a.length; i++) {
+            if (a[i] !== b[i])
+                return false;
+        }
+        return true;
+    }
     _updateDevicesState() {
         const devices = this.dataService.getGrowspaceDevices(this.wsDataCache);
-        this.state.devices = devices;
+        if (!this._areDeviceArraysEqual(this.state.devices, devices)) {
+            this.state.devices = devices;
+        }
         // Auto-select if needed (handles initial load race condition where updateHass hasn't run yet)
         if (!this.state.selectedDevice && devices.length > 0) {
             this.state.selectedDevice = devices[0].device_id;

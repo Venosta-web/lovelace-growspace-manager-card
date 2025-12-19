@@ -40,7 +40,8 @@ export class GrowspaceGrid extends LitElement {
       display: grid;
       gap: var(--spacing-md);
       /* Position relative needed for coordinate calculation */
-      position: relative; 
+      position: relative;
+      contain: layout;
     }
 
     .grid.compact {
