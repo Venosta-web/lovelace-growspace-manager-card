@@ -1,4 +1,3 @@
-
 # Default Config
 default_config:
 
@@ -22,27 +21,35 @@ lovelace:
 # Fake Hardware Controls (for manual override if needed)
 input_number:
   sim_temp:
-    name: "Simulated Temp"
+    name: 'Simulated Temp'
     min: 10
     max: 40
     step: 0.5
-    unit_of_measurement: "°C"
+    unit_of_measurement: '°C'
     icon: mdi:thermometer
-  
+
   sim_humidity:
-    name: "Simulated Humidity"
+    name: 'Simulated Humidity'
     min: 0
     max: 100
     step: 1
-    unit_of_measurement: "%"
+    unit_of_measurement: '%'
     icon: mdi:water-percent
 
+  sim_vpd:
+    name: 'Simulated VPD'
+    min: 0
+    max: 3.0
+    step: 0.1
+    unit_of_measurement: 'kPa'
+    icon: mdi:weather-cloudy
+
   sim_co2:
-    name: "Simulated CO2"
+    name: 'Simulated CO2'
     min: 400
     max: 2000
     step: 10
-    unit_of_measurement: "ppm"
+    unit_of_measurement: 'ppm'
     icon: mdi:molecule-co2
 
 # Dynamic Test Sensors - oscillate using sine wave based on time
@@ -50,20 +57,20 @@ input_number:
 template:
   - sensor:
       # Temperature oscillates 20-25°C using sine wave (period ~5 minutes)
-      - name: "Test Temperature"
+      - name: 'Test Temperature'
         unique_id: test_temperature
-        unit_of_measurement: "°C"
+        unit_of_measurement: '°C'
         device_class: temperature
         state: >
           {% set minutes = now().minute + (now().second / 60) %}
           {% set base = 22.5 %}
           {% set amplitude = 2.5 %}
           {{ (base + amplitude * sin(minutes / 2.5 * 3.14159)) | round(1) }}
-      
+
       # Humidity oscillates 55-65% (inverse of temperature for realism)
-      - name: "Test Humidity"
+      - name: 'Test Humidity'
         unique_id: test_humidity
-        unit_of_measurement: "%"
+        unit_of_measurement: '%'
         device_class: humidity
         state: >
           {% set minutes = now().minute + (now().second / 60) %}
@@ -71,10 +78,21 @@ template:
           {% set amplitude = 5 %}
           {{ (base - amplitude * sin(minutes / 2.5 * 3.14159)) | round(0) | int }}
 
+      # VPD oscillates 1.2-1.8 kPa (period ~10 minutes)
+      - name: 'Test VPD'
+        unique_id: test_vpd
+        unit_of_measurement: 'kPa'
+        device_class: pressure
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 1.5 %}
+          {% set amplitude = 0.3 %}
+          {{ (base + amplitude * sin(minutes / 5 * 3.14159)) | round(1) }}
+
       # CO2 oscillates 800-1200 ppm (period ~10 minutes)
-      - name: "Test CO2"
+      - name: 'Test CO2'
         unique_id: test_co2
-        unit_of_measurement: "ppm"
+        unit_of_measurement: 'ppm'
         device_class: carbon_dioxide
         state: >
           {% set minutes = now().minute + (now().second / 60) %}
@@ -83,9 +101,9 @@ template:
           {{ (base + amplitude * sin(minutes / 5 * 3.14159)) | round(0) | int }}
 
       # Soil Moisture oscillates 40-60% (period ~15 minutes)
-      - name: "Test Soil Moisture"
+      - name: 'Test Soil Moisture'
         unique_id: test_soil_moisture
-        unit_of_measurement: "%"
+        unit_of_measurement: '%'
         device_class: moisture
         state: >
           {% set minutes = now().minute + (now().second / 60) %}
@@ -95,7 +113,7 @@ template:
 
       # Exhaust fan speed oscillates 0-10 (period ~3 minutes)
       # Domain: sensor (allowed for exhaust_entity)
-      - name: "Test Exhaust"
+      - name: 'Test Exhaust'
         unique_id: test_exhaust
         state_class: measurement
         device_class: power_factor
@@ -107,7 +125,7 @@ template:
 
       # Humidifier oscillates 0-10 (period ~4 minutes, offset phase)
       # Domain: sensor (allowed for humidifier_entity)
-      - name: "Test Humidifier"
+      - name: 'Test Humidifier'
         unique_id: test_humidifier
         state_class: measurement
         device_class: power_factor
@@ -119,7 +137,7 @@ template:
 
       # Circulation Fan speed oscillates 0-10 (period ~6 minutes)
       # Domain: sensor (allowed for circulation_fan)
-      - name: "Test Circulation Fan"
+      - name: 'Test Circulation Fan'
         unique_id: test_circulation_fan
         state_class: measurement
         device_class: power_factor
@@ -132,9 +150,9 @@ template:
       # Light sensor - oscillates 0-100% based on 12h cycle
       # Domain: sensor (allowed for light_sensor)
       # Full brightness during day (6:00-18:00), 0 at night
-      - name: "Test Light"
+      - name: 'Test Light'
         unique_id: test_light
-        unit_of_measurement: "%"
+        unit_of_measurement: '%'
         state_class: measurement
         device_class: power_factor
         icon: mdi:lightbulb-on-outline
@@ -148,20 +166,20 @@ template:
 
 input_boolean:
   test_irrigation_state:
-    name: "Test Irrigation State"
+    name: 'Test Irrigation State'
     icon: mdi:water-pump
   test_drain_state:
-    name: "Test Drain State"
+    name: 'Test Drain State'
     icon: mdi:water-pump
   test_dehumidifier_state:
-    name: "Test Dehumidifier State"
+    name: 'Test Dehumidifier State'
     icon: mdi:air-humidifier-off
 
 switch:
   - platform: template
     switches:
       test_irrigation_pump:
-        friendly_name: "Test Irrigation Pump"
+        friendly_name: 'Test Irrigation Pump'
         unique_id: test_irrigation_pump
         value_template: "{{ is_state('input_boolean.test_irrigation_state', 'on') }}"
         turn_on:
@@ -172,9 +190,9 @@ switch:
           service: input_boolean.turn_off
           target:
             entity_id: input_boolean.test_irrigation_state
-      
+
       test_drain_pump:
-        friendly_name: "Test Drain Pump"
+        friendly_name: 'Test Drain Pump'
         unique_id: test_drain_pump
         value_template: "{{ is_state('input_boolean.test_drain_state', 'on') }}"
         turn_on:
@@ -185,9 +203,9 @@ switch:
           service: input_boolean.turn_off
           target:
             entity_id: input_boolean.test_drain_state
-      
+
       test_dehumidifier:
-        friendly_name: "Test Dehumidifier"
+        friendly_name: 'Test Dehumidifier'
         unique_id: test_dehumidifier
         value_template: "{{ is_state('input_boolean.test_dehumidifier_state', 'on') }}"
         turn_on:
