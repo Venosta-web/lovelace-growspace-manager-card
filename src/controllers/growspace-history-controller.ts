@@ -58,7 +58,18 @@ export class GrowspaceHistoryController implements ReactiveController {
   }
 
   public get lightHistory() {
-    return this.historyCache.light || null;
+    if (this.historyCache.light && this.historyCache.light.length > 0) {
+      return this.historyCache.light;
+    }
+    // Fallback: Synthesize from optimal history if available
+    if (this.historyCache.optimal && this.historyCache.optimal.length > 0) {
+      return this.historyCache.optimal.map((entry) => ({
+        state: entry.attributes?.is_lights_on ? 'on' : 'off',
+        last_changed: entry.last_changed,
+        attributes: {},
+      }));
+    }
+    return null;
   }
 
   public get soilMoistureHistory() {
@@ -313,9 +324,12 @@ export class GrowspaceHistoryController implements ReactiveController {
       'drain'
     ];
 
-    await Promise.all(metricsToFetch.map(metric => this._fetchMetricHistory(metric, range)));
-
-    this.host.requestUpdate();
+    const chunkSize = 4;
+    for (let i = 0; i < metricsToFetch.length; i += chunkSize) {
+      const chunk = metricsToFetch.slice(i, i + chunkSize);
+      await Promise.all(chunk.map((metric) => this._fetchMetricHistory(metric, range)));
+      this.host.requestUpdate();
+    }
   }
 
   /**
@@ -339,7 +353,6 @@ export class GrowspaceHistoryController implements ReactiveController {
         `[HistoryController] ${metricKey} history fetched from ${entityId}, length: ${history?.length || 0}`
       );
       this.historyCache[metricKey] = history || [];
-      this.host.requestUpdate();
     } catch (e) {
       console.error(`Failed to fetch ${metricKey} history`, e);
     }

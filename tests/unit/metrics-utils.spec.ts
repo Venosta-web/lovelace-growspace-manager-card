@@ -39,8 +39,10 @@ describe('MetricsUtils', () => {
         name: 'Test Room',
         overview_entity_id: 'sensor.test_room',
         plants: [],
-        irrigation_times: [{ time: '12:00', duration: 10 }],
-        drain_times: [{ time: '13:00', duration: 5 }],
+        irrigation_config: {
+            irrigation_times: [{ time: '12:00', duration: 10 }],
+            drain_times: [{ time: '13:00', duration: 5 }],
+        },
         environment_attributes: {
             exhaust_entity: 'fan.exhaust',
             humidifier_entity: 'humidifier.main'

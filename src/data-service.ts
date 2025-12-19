@@ -58,6 +58,8 @@ export class DataService {
 
   // Cache for transformed devices to avoid expensive re-parsing on every HASS update
   private _deviceCache = new Map<string, { entity: any; wsData: any; result: GrowspaceDevice }>();
+  // Cache for growspace sensor IDs to avoid scanning all states
+  private _cachedGrowspaceSensorIds: string[] | null = null;
 
   getGrowspaceDevices(wsDataMap: Record<string, GrowspaceAPIResponse> = {}): GrowspaceDevice[] {
     if (!this.hass) {
@@ -65,25 +67,26 @@ export class DataService {
       return [];
     }
 
-    const allStates = Object.values(this.hass.states);
+    let overviewSensors: any[] = [];
 
-    const overviewSensors = allStates.filter(
-      (s: any) =>
-        s.entity_id.startsWith('sensor.') &&
-        s.attributes.growspace_id !== undefined &&
-        s.attributes.plants_per_row !== undefined &&
-        s.attributes.row === undefined &&
-        s.attributes.col === undefined
-    );
-
-    /*
-    console.log(
-      '[DataService] getGrowspaceDevices: found',
-      overviewSensors.length,
-      'sensors, total states:',
-      allStates.length
-    );
-    */
+    if (this._cachedGrowspaceSensorIds) {
+      // Fast path: use cached IDs
+      overviewSensors = this._cachedGrowspaceSensorIds
+        .map((id) => this.hass.states[id])
+        .filter((s) => s !== undefined);
+    } else {
+      // Slow path: scan all states (once)
+      const allStates = Object.values(this.hass.states);
+      overviewSensors = allStates.filter(
+        (s: any) =>
+          s.entity_id.startsWith('sensor.') &&
+          s.attributes.growspace_id !== undefined &&
+          s.attributes.plants_per_row !== undefined &&
+          s.attributes.row === undefined &&
+          s.attributes.col === undefined
+      );
+      this._cachedGrowspaceSensorIds = overviewSensors.map((s) => s.entity_id);
+    }
 
     const activeEntityIds = new Set<string>();
     const devices = overviewSensors
@@ -629,6 +632,7 @@ export class DataService {
         notification_target: data.notification_service, // Map to backend field
       };
       const res = await this.hass.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
+      this._cachedGrowspaceSensorIds = null; // Invalidate cache
       console.log('[DataService:addGrowspace] Response:', res);
       return res;
     } catch (err) {
@@ -669,6 +673,7 @@ export class DataService {
       const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
         growspace_id: growspaceId,
       });
+      this._cachedGrowspaceSensorIds = null; // Invalidate cache
       console.log('[DataService:removeGrowspace] Response:', res);
       return res;
     } catch (err) {

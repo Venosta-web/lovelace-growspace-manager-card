@@ -83,6 +83,7 @@ export class GrowspacePlantCard extends LitElement {
       aspect-ratio: 1;
       box-sizing: border-box;
       color: var(--primary-text-color);
+      will-change: transform;
     }
 
     .plant-card-rich:hover {
@@ -525,6 +526,7 @@ export class GrowspacePlantCard extends LitElement {
                 class="plant-card-bg"
                 src="${imageUrl}"
                 loading="lazy"
+                decoding="async"
                 alt="${strainName}"
                 style="${PlantUtils.getImgStyle(imageCropMeta)}"
               />

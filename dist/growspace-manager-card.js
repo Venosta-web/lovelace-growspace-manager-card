@@ -657,7 +657,7 @@ const METRIC_CONFIG = {
     drain: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: 'step' },
     exhaust: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
     circulation_fan: {
-        color: '#3f51b5',
+        color: '#243491',
         title: 'Circulation Fan',
         unit: '',
         icon: mdiFan,
@@ -5207,6 +5207,8 @@ class DataService {
     constructor(hass) {
         // Cache for transformed devices to avoid expensive re-parsing on every HASS update
         this._deviceCache = new Map();
+        // Cache for growspace sensor IDs to avoid scanning all states
+        this._cachedGrowspaceSensorIds = null;
         if (hass) {
             this.hass = hass;
         }
@@ -5255,20 +5257,23 @@ class DataService {
             // console.log('[DataService] getGrowspaceDevices: no hass');
             return [];
         }
-        const allStates = Object.values(this.hass.states);
-        const overviewSensors = allStates.filter((s) => s.entity_id.startsWith('sensor.') &&
-            s.attributes.growspace_id !== undefined &&
-            s.attributes.plants_per_row !== undefined &&
-            s.attributes.row === undefined &&
-            s.attributes.col === undefined);
-        /*
-        console.log(
-          '[DataService] getGrowspaceDevices: found',
-          overviewSensors.length,
-          'sensors, total states:',
-          allStates.length
-        );
-        */
+        let overviewSensors = [];
+        if (this._cachedGrowspaceSensorIds) {
+            // Fast path: use cached IDs
+            overviewSensors = this._cachedGrowspaceSensorIds
+                .map((id) => this.hass.states[id])
+                .filter((s) => s !== undefined);
+        }
+        else {
+            // Slow path: scan all states (once)
+            const allStates = Object.values(this.hass.states);
+            overviewSensors = allStates.filter((s) => s.entity_id.startsWith('sensor.') &&
+                s.attributes.growspace_id !== undefined &&
+                s.attributes.plants_per_row !== undefined &&
+                s.attributes.row === undefined &&
+                s.attributes.col === undefined);
+            this._cachedGrowspaceSensorIds = overviewSensors.map((s) => s.entity_id);
+        }
         const activeEntityIds = new Set();
         const devices = overviewSensors
             .map((sensor) => {
@@ -5738,6 +5743,7 @@ class DataService {
                 notification_target: data.notification_service, // Map to backend field
             };
             const res = await this.hass.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
+            this._cachedGrowspaceSensorIds = null; // Invalidate cache
             console.log('[DataService:addGrowspace] Response:', res);
             return res;
         }
@@ -5775,6 +5781,7 @@ class DataService {
             const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
                 growspace_id: growspaceId,
             });
+            this._cachedGrowspaceSensorIds = null; // Invalidate cache
             console.log('[DataService:removeGrowspace] Response:', res);
             return res;
         }
@@ -6047,7 +6054,18 @@ class GrowspaceHistoryController {
         return this.historyCache.co2 || null;
     }
     get lightHistory() {
-        return this.historyCache.light || null;
+        if (this.historyCache.light && this.historyCache.light.length > 0) {
+            return this.historyCache.light;
+        }
+        // Fallback: Synthesize from optimal history if available
+        if (this.historyCache.optimal && this.historyCache.optimal.length > 0) {
+            return this.historyCache.optimal.map((entry) => ({
+                state: entry.attributes?.is_lights_on ? 'on' : 'off',
+                last_changed: entry.last_changed,
+                attributes: {},
+            }));
+        }
+        return null;
     }
     get soilMoistureHistory() {
         return this.historyCache.soil_moisture || null;
@@ -6266,8 +6284,12 @@ class GrowspaceHistoryController {
             'irrigation',
             'drain'
         ];
-        await Promise.all(metricsToFetch.map(metric => this._fetchMetricHistory(metric, range)));
-        this.host.requestUpdate();
+        const chunkSize = 4;
+        for (let i = 0; i < metricsToFetch.length; i += chunkSize) {
+            const chunk = metricsToFetch.slice(i, i + chunkSize);
+            await Promise.all(chunk.map((metric) => this._fetchMetricHistory(metric, range)));
+            this.host.requestUpdate();
+        }
     }
     /**
      * Generic method to fetch history for any metric.
@@ -6287,7 +6309,6 @@ class GrowspaceHistoryController {
             const history = await this.host.dataService.getHistory(entityId, start, end);
             console.log(`[HistoryController] ${metricKey} history fetched from ${entityId}, length: ${history?.length || 0}`);
             this.historyCache[metricKey] = history || [];
-            this.host.requestUpdate();
         }
         catch (e) {
             console.error(`Failed to fetch ${metricKey} history`, e);
@@ -14917,6 +14938,7 @@ class GrowspaceLogbookController {
                 class="plant-card-bg"
                 src="${imageUrl}"
                 loading="lazy"
+                decoding="async"
                 alt="${strainName}"
                 style="${PlantUtils.getImgStyle(imageCropMeta)}"
               />
@@ -15016,6 +15038,7 @@ class GrowspaceLogbookController {
       aspect-ratio: 1;
       box-sizing: border-box;
       color: var(--primary-text-color);
+      will-change: transform;
     }
 
     .plant-card-rich:hover {
