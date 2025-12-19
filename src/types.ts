@@ -160,6 +160,7 @@ export interface GrowspaceAPIResponse extends SerializedBiologicalMetrics, Seria
   rows: number;
   plants_per_row: number;
   notification_target?: string | null;
+  overview_entity_id?: string;
 
   grid: Record<string, RawPlantData | null>;
   irrigation_config: IrrigationConfig;

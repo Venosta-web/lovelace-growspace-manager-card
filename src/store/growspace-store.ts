@@ -115,12 +115,82 @@ export class GrowspaceStore implements ReactiveController {
 
         try {
             this._unsubEvents = await this.hass.connection.subscribeEvents(
-                () => this._refreshGrowspaceData(), // specific logic to handle event payload? Msg is empty usually.
+                (event) => this.handleOptimisticEvent(event),
                 'growspace_manager_updated'
             );
         } catch (err) {
             console.error('Failed to subscribe to growspace events', err);
         }
+    }
+
+    private handleOptimisticEvent(event: any) {
+        const { event_type, data } = event.data;
+        console.log('[GrowspaceStore] Received optimistic event:', event_type, data);
+
+        // Map backend event types to actions
+        if (event_type === 'plant_added' || event_type === 'plant_updated') {
+            this._handlePlantUpdate(data.plant);
+        } else if (event_type === 'plant_removed') {
+            this._handlePlantRemoval(data.plant_id, data.growspace_id);
+        }
+    }
+
+    private _handlePlantUpdate(plantData: any) {
+        // 1. Find and remove old instance if exists (to handle moves)
+        this._removePlantFromCacheInAllGrowspaces(plantData.plant_id);
+
+        // 2. Add to new location
+        const gsId = plantData.growspace_id || plantData.attributes?.growspace_id;
+        if (gsId && this.wsDataCache[gsId]) {
+            const grid = this.wsDataCache[gsId].grid;
+            const posKey = plantData.position || `position_${plantData.row}_${plantData.col}`;
+            // Use position from payload (it was constructed in serializer as `position`)
+            // Backend serializer returns "position": "(r,c)" format? 
+            // Wait, serializers.py line 254: "position": f"({row_i},{col_i})"
+            // BUT GrowspaceSerializer._generate_rich_plant_grid used keys "position_r_c".
+            // Store uses grid keys "position_r_c".
+            // So I need to construct the key properly.
+            // Payload HAS 'row' and 'col'.
+            const correctKey = `position_${plantData.row}_${plantData.col}`;
+
+            // Note: plantData is the SERIALIZED plant from backend.
+            // Use it directly.
+            grid[correctKey] = plantData;
+
+            // Updates stats if needed (total_plants)
+            // this.wsDataCache[gsId].total_plants = ... (complex to track, maybe skip or naive increment?)
+
+            this._updateDevicesState();
+        }
+    }
+
+    private _handlePlantRemoval(plantId: string, growspaceId?: string) {
+        if (growspaceId) {
+            this._removePlantFromCache(growspaceId, plantId);
+        } else {
+            this._removePlantFromCacheInAllGrowspaces(plantId);
+        }
+        this._updateDevicesState();
+    }
+
+    private _removePlantFromCacheInAllGrowspaces(plantId: string) {
+        Object.keys(this.wsDataCache).forEach(gsId => {
+            this._removePlantFromCache(gsId, plantId);
+        });
+    }
+
+    private _removePlantFromCache(gsId: string, plantId: string) {
+        const cache = this.wsDataCache[gsId];
+        if (!cache || !cache.grid) return;
+
+        // Find key with this plant ID
+        // Since grid is keyed by position, we have to scan values
+        Object.keys(cache.grid).forEach(key => {
+            const plant = cache.grid[key];
+            if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
+                cache.grid[key] = null;
+            }
+        });
     }
 
     async refreshData() {

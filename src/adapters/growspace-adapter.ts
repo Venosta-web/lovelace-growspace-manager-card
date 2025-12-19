@@ -32,14 +32,18 @@ const STAT_KEYS: (keyof SerializedStats)[] = [
 
 export class GrowspaceAdapter {
   static transformGrowspace(
-    overview: GrowspaceOverviewEntity,
+    overview: GrowspaceOverviewEntity | null,
     wsData: GrowspaceAPIResponse | null = null
-  ): GrowspaceDevice {
-    const growspace_id = overview.attributes.growspace_id;
-    const name = overview.attributes.friendly_name || wsData?.name || `Growspace ${growspace_id}`;
+  ): GrowspaceDevice | null {
+    if (!wsData && !overview) return null;
+
+    const growspace_id = wsData?.growspace_id || overview?.attributes.growspace_id || 'unknown';
+    const name = wsData?.name || overview?.attributes.friendly_name || `Growspace ${growspace_id}`;
+    const overview_entity_id = wsData?.overview_entity_id || overview?.entity_id || '';
 
     // 1. Loading State
     if (!wsData) {
+      if (!overview) return null; // Should not happen given check above
       return createGrowspaceDevice({
         device_id: growspace_id,
         overview_entity_id: overview.entity_id,
@@ -78,13 +82,13 @@ export class GrowspaceAdapter {
     // 4. Construct Device
     return createGrowspaceDevice({
       device_id: growspace_id,
-      overview_entity_id: overview.entity_id,
+      overview_entity_id,
       name,
       type: wsData.type || 'normal',
       rows: wsData.rows,
       plants_per_row: wsData.plants_per_row,
       notification_target: wsData.notification_target,
-      last_updated: overview.last_updated,
+      last_updated: overview?.last_updated || new Date().toISOString(),
 
       // Structural Data
       plants,

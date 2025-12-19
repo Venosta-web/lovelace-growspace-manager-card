@@ -56,65 +56,40 @@ export class DataService {
     }
   }
 
-  // Cache for transformed devices to avoid expensive re-parsing on every HASS update
-  private _deviceCache = new Map<string, { entity: any; wsData: any; result: GrowspaceDevice }>();
-  // Cache for growspace sensor IDs to avoid scanning all states
-  private _cachedGrowspaceSensorIds: string[] | null = null;
+  // Cache for transformed devices locally
+  private _deviceCache = new Map<string, { wsData: GrowspaceAPIResponse; result: GrowspaceDevice }>();
 
   getGrowspaceDevices(wsDataMap: Record<string, GrowspaceAPIResponse> = {}): GrowspaceDevice[] {
-    if (!this.hass) {
-      // console.log('[DataService] getGrowspaceDevices: no hass');
-      return [];
-    }
+    if (!wsDataMap) return [];
 
-    let overviewSensors: any[] = [];
+    const activeIds = new Set<string>();
 
-    if (this._cachedGrowspaceSensorIds) {
-      // Fast path: use cached IDs
-      overviewSensors = this._cachedGrowspaceSensorIds
-        .map((id) => this.hass.states[id])
-        .filter((s) => s !== undefined);
-    } else {
-      // Slow path: scan all states (once)
-      const allStates = Object.values(this.hass.states);
-      overviewSensors = allStates.filter(
-        (s: any) =>
-          s.entity_id.startsWith('sensor.') &&
-          s.attributes.growspace_id !== undefined &&
-          s.attributes.plants_per_row !== undefined &&
-          s.attributes.row === undefined &&
-          s.attributes.col === undefined
-      );
-      this._cachedGrowspaceSensorIds = overviewSensors.map((s) => s.entity_id);
-    }
+    // Iterate WebSocket data directly
+    const devices = Object.values(wsDataMap).map((wsData) => {
+      const growspaceId = wsData.growspace_id;
 
-    const activeEntityIds = new Set<string>();
-    const devices = overviewSensors
-      .map((sensor: any) => {
-        const growspaceId = sensor.attributes.growspace_id;
-        const wsData = wsDataMap[growspaceId] || null;
+      // Cache Check
+      const cached = this._deviceCache.get(growspaceId);
+      if (cached && cached.wsData === wsData) {
+        activeIds.add(growspaceId);
+        return cached.result;
+      }
 
-        // Cache Check
-        const cached = this._deviceCache.get(sensor.entity_id);
-        if (cached && cached.entity === sensor && cached.wsData === wsData) {
-          activeEntityIds.add(sensor.entity_id);
-          return cached.result;
-        }
+      // Transform logic (no entity needed)
+      const device = GrowspaceAdapter.transformGrowspace(null, wsData);
 
-        // Cache Miss - Reprocess
-        const device = GrowspaceAdapter.transformGrowspace(sensor, wsData);
-        if (device) {
-          this._deviceCache.set(sensor.entity_id, { entity: sensor, wsData, result: device });
-          activeEntityIds.add(sensor.entity_id);
-        }
-        return device;
-      })
-      .filter((device): device is GrowspaceDevice => device !== null);
+      if (device) {
+        this._deviceCache.set(growspaceId, { wsData, result: device });
+        activeIds.add(growspaceId);
+      }
 
-    // Cleanup cache for removed entities
-    if (this._deviceCache.size > activeEntityIds.size) {
+      return device;
+    }).filter((d): d is GrowspaceDevice => d !== null);
+
+    // Cleanup cache
+    if (this._deviceCache.size > activeIds.size) {
       for (const id of this._deviceCache.keys()) {
-        if (!activeEntityIds.has(id)) {
+        if (!activeIds.has(id)) {
           this._deviceCache.delete(id);
         }
       }
@@ -124,7 +99,6 @@ export class DataService {
   }
 
   private getGrowspaceId(entity: any): string {
-    // Plant entities expose growspace_id directly
     return entity.attributes?.growspace_id || 'unknown';
   }
 
@@ -632,7 +606,7 @@ export class DataService {
         notification_target: data.notification_service, // Map to backend field
       };
       const res = await this.hass.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
-      this._cachedGrowspaceSensorIds = null; // Invalidate cache
+      // this._cachedGrowspaceSensorIds = null; // Cache removed
       console.log('[DataService:addGrowspace] Response:', res);
       return res;
     } catch (err) {
@@ -673,7 +647,7 @@ export class DataService {
       const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
         growspace_id: growspaceId,
       });
-      this._cachedGrowspaceSensorIds = null; // Invalidate cache
+      // this._cachedGrowspaceSensorIds = null; // Cache removed
       console.log('[DataService:removeGrowspace] Response:', res);
       return res;
     } catch (err) {
