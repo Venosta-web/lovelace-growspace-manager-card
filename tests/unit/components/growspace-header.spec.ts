@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GrowspaceHeader } from '../../../src/components/growspace-header';
 import { MetricsUtils } from '../../../src/utils/metrics-utils';
 import { ChartUtils } from '../../../src/utils/chart-utils';
+import { GrowspaceDevice } from '../../../src/types';
 // Mock dependencies
 vi.mock('../../../src/utils/metrics-utils', () => ({
     MetricsUtils: {
@@ -90,7 +91,8 @@ describe('GrowspaceHeader', () => {
             removeListener: vi.fn(),
             toggleEnvGraph: vi.fn(),
             linkGraphs: vi.fn(),
-            unlinkGraphGroup: vi.fn()
+            unlinkGraphGroup: vi.fn(),
+            getRange: vi.fn(() => '24h')
         };
 
         mockHass = { states: {} };
@@ -111,8 +113,26 @@ describe('GrowspaceHeader', () => {
             type: 'normal',
             plants: [],
             rows: 0,
-            plants_per_row: 0
-        };
+            plants_per_row: 0,
+            grid: { rows: [], size: 0 },
+            biological_metrics: {
+                average_plant_age: 0,
+                average_plant_height: 0,
+                weeks_in_stage: 0,
+                days_in_stage: 0
+            },
+            environment_attributes: {
+                temperature_sensor: 'sensor.t',
+                humidity_sensor: 'sensor.h'
+            },
+            stats: {
+                total_plants: 0
+            },
+            irrigation_config: {
+                irrigation_times: [],
+                drain_times: []
+            }
+        } as unknown as GrowspaceDevice;
         element.config = { default_growspace: 'd1' } as any;
 
         // Default Metrics Mock

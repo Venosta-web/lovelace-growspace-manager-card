@@ -32,6 +32,35 @@ describe('ChartUtils', () => {
             // Should be treated as 2 points
             expect(path.split(' L ').length).toBe(2);
         });
+        it('should downsample based on timeRange', () => {
+            const baseTime = new Date('2023-01-01T10:00:00Z').getTime();
+            const data: any[] = [];
+
+            // Add point every minute for 60 minutes
+            for (let i = 0; i <= 60; i++) {
+                data.push({
+                    state: String(i),
+                    last_changed: new Date(baseTime + i * 60000).toISOString()
+                });
+            }
+
+            // 7d -> XX:00 only.
+            // 10:00:00 (0 min) -> keep
+            // 11:00:00 (60 min) -> keep (also last point)
+            // Expect 2 points
+            const path7d = ChartUtils.generateSparklinePath(data, 100, 50, '7d');
+            expect(path7d.split(' L ').length).toBe(2);
+
+            // 24h -> Every 15 mins (0, 15, 30, 45, 60)
+            // Expect 5 points
+            const path24h = ChartUtils.generateSparklinePath(data, 100, 50, '24h');
+            expect(path24h.split(' L ').length).toBe(5);
+
+            // 6h -> Every 5 mins (0, 5, ..., 60)
+            // 13 points (0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60)
+            const path6h = ChartUtils.generateSparklinePath(data, 100, 50, '6h');
+            expect(path6h.split(' L ').length).toBe(13);
+        });
     });
 
     describe('getSparklineColor', () => {
@@ -120,6 +149,31 @@ describe('ChartUtils', () => {
             // L 100,100 (vert to p2 y)
 
             expect(path).toBe('M 0,100 L 50,100 L 50,0 L 100,0 L 100,100');
+        });
+
+        it('should downsample path points based on timeRange', () => {
+            const baseTime = new Date('2023-01-01T10:00:00Z').getTime();
+            const data: { time: number; value: number }[] = [];
+
+            // Add point every minute for 60 minutes
+            for (let i = 0; i <= 60; i++) {
+                data.push({
+                    time: baseTime + i * 60000,
+                    value: i
+                });
+            }
+
+            // 24h -> Every 15 mins (0, 15, 30, 45, 60)
+            const path24h = ChartUtils.generatePathFromValues(data, 100, 50, {
+                min: 0,
+                max: 60,
+                startTime: baseTime,
+                endTime: baseTime + 60 * 60000,
+                timeRange: '24h'
+            });
+
+            // 5 points: 0, 15, 30, 45, 60
+            expect(path24h.split(' L ').length).toBe(5);
         });
     });
 });

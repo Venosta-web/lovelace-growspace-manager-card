@@ -315,7 +315,8 @@ export class GrowspaceEnvChart extends LitElement {
             // So we pass them as the forced scale.
             startTime: startTime.getTime(),
             endTime: startTime.getTime() + durationMillis,
-            type: (config as any).type === 'step' ? 'step' : 'line'
+            type: (config as any).type === 'step' ? 'step' : 'line',
+            timeRange: this.range
           }
         );
 
@@ -845,6 +846,10 @@ export class GrowspaceEnvChart extends LitElement {
       border-radius: 8px;
       padding: 20px 40px 30px 50px;
       cursor: crosshair;
+    }
+
+    svg path {
+        transition: d 0.5s cubic-bezier(0.4, 0.0, 0.2, 1), stroke 0.3s ease, fill-opacity 0.3s ease;
     }
 
     .gs-tooltip {

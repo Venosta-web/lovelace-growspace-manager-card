@@ -18,7 +18,7 @@ import {
 } from '@mdi/js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
-import './growspace-chip'; // Import the new component
+import './growspace-chip';
 import { consume } from '@lit/context';
 import { hassContext, configContext, storeContext, historyContext } from '../context';
 import { GrowspaceDevice, GrowspaceManagerCardConfig, IrrigationTime } from '../types';
@@ -435,6 +435,14 @@ export class GrowspaceHeader extends LitElement {
         pointer-events: none;
         z-index: 0;
         opacity: 0.7;
+    }
+
+    .hero-sparkline path {
+        transition: d 0.5s cubic-bezier(0.4, 0.0, 0.2, 1), stroke 0.3s ease, fill 0.3s ease;
+    }
+
+    .hero-value, .hero-unit {
+        transition: color 0.3s ease, transform 0.3s ease;
     }
 
     .hero-value-group {
@@ -947,6 +955,9 @@ export class GrowspaceHeader extends LitElement {
     const sparklineWidth = 140; // Approximate card width
     const sparklineHeight = 80;  // Approximate card height minus padding
 
+    // Get current time range from controller
+    const timeRange = this.historyController?.getRange() || '24h';
+
     // For VPD, try multi-segment coloring first, fall back to standard if no segments
     const isVpd = chip.key === 'vpd';
 
@@ -966,14 +977,25 @@ export class GrowspaceHeader extends LitElement {
         dangerMax: overviewEntity?.attributes?.vpd_danger_max ?? 1.6,
       };
 
-      vpdSegments = ChartUtils.generateVpdSparklineSegments(historyData, sparklineWidth, sparklineHeight, thresholds);
+      vpdSegments = ChartUtils.generateVpdSparklineSegments(
+        historyData,
+        sparklineWidth,
+        sparklineHeight,
+        thresholds,
+        timeRange
+      );
     }
 
     const useVpdSegments = isVpd && vpdSegments.length > 0;
 
     let sparklinePath = '';
     if (!useVpdSegments && this.historyController) {
-      sparklinePath = ChartUtils.generateSparklinePath(this.historyController.historyCache[chip.key], sparklineWidth, sparklineHeight);
+      sparklinePath = ChartUtils.generateSparklinePath(
+        this.historyController.historyCache[chip.key],
+        sparklineWidth,
+        sparklineHeight,
+        timeRange
+      );
     }
 
     const sparklineColor = ChartUtils.getSparklineColor(chip.key, chip.status);

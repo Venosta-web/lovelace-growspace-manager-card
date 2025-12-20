@@ -6502,35 +6502,49 @@ class ChartUtils {
      * Returns empty string if not enough data points.
      * Downsamples to ~8 points per hour (192 points on 24h grid) for performance.
      */
-    static generateSparklinePath(historyData, width, height) {
+    static generateSparklinePath(historyData, width, height, timeRange = '24h') {
         if (!historyData || historyData.length < 2)
             return '';
-        // Sort by time and extract numeric values
-        let sortedData = [...historyData]
-            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
-            .filter(h => {
+        // Sort by time
+        const sortedData = [...historyData]
+            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+        // Helper for strict interval checks
+        const shouldKeepPoint = (dateStr, range) => {
+            const date = new Date(dateStr);
+            const minutes = date.getMinutes();
+            switch (range) {
+                case '7d': return minutes === 0; // Every hour
+                case '24h': return minutes % 15 === 0; // Every 15 mins
+                case '6h': return minutes % 5 === 0; // Every 5 mins
+                case '1h': return true; // Keep all for high fidelity
+                default: return minutes % 15 === 0;
+            }
+        };
+        // Filter valid numeric values AND apply time-based downsampling
+        const validData = sortedData.filter((h, index) => {
             const val = parseFloat(h.state);
-            return !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
+            const isValid = !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
+            if (!isValid)
+                return false;
+            // Always keep the LAST point to avoid graph cutoff
+            if (index === sortedData.length - 1)
+                return true;
+            // Apply time interval filter
+            return shouldKeepPoint(h.last_changed, timeRange);
         });
-        if (sortedData.length < 2)
+        if (validData.length < 2)
             return '';
-        // Downsample to ~192 points (8 per hour on 24h grid) for performance
-        const targetPoints = 192;
-        if (sortedData.length > targetPoints) {
-            const step = Math.ceil(sortedData.length / targetPoints);
-            sortedData = sortedData.filter((_, i) => i % step === 0 || i === sortedData.length - 1);
-        }
-        const values = sortedData.map(h => parseFloat(h.state));
-        const times = sortedData.map(h => new Date(h.last_changed).getTime());
+        const values = validData.map(h => parseFloat(h.state));
+        const times = validData.map(h => new Date(h.last_changed).getTime());
         const minVal = Math.min(...values);
         const maxVal = Math.max(...values);
         const minTime = Math.min(...times);
         const maxTime = Math.max(...times);
         const valueRange = maxVal - minVal || 1;
-        const timeRange = maxTime - minTime || 1;
+        const timeRangeVal = maxTime - minTime || 1;
         // Generate SVG path points
-        const points = sortedData.map((h, i) => {
-            const x = ((times[i] - minTime) / timeRange) * width;
+        const points = validData.map((h, i) => {
+            const x = ((times[i] - minTime) / timeRangeVal) * width;
             const y = height - ((values[i] - minVal) / valueRange) * height;
             return `${x},${y}`;
         });
@@ -6567,39 +6581,52 @@ class ChartUtils {
      * Generates colored VPD sparkline segments based on VPD value at each point.
      * Returns array of { path, color } objects for rendering.
      */
-    static generateVpdSparklineSegments(historyData, width, height, thresholds) {
+    static generateVpdSparklineSegments(historyData, width, height, thresholds, timeRange = '24h') {
         if (!historyData || historyData.length < 2)
             return [];
-        // Sort and filter data
-        let sortedData = [...historyData]
-            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
-            .filter(h => {
+        // Sort by time
+        const sortedData = [...historyData]
+            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+        // Helper for strict interval checks
+        const shouldKeepPoint = (dateStr, range) => {
+            const date = new Date(dateStr);
+            const minutes = date.getMinutes();
+            switch (range) {
+                case '7d': return minutes === 0; // Every hour
+                case '24h': return minutes % 15 === 0; // Every 15 mins
+                case '6h': return minutes % 5 === 0; // Every 5 mins
+                case '1h': return true; // Keep all
+                default: return minutes % 15 === 0;
+            }
+        };
+        // Filter valid numeric values AND apply time-based downsampling
+        const validData = sortedData.filter((h, index) => {
             const val = parseFloat(h.state);
-            return !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
+            const isValid = !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
+            if (!isValid)
+                return false;
+            // Always keep the LAST point
+            if (index === sortedData.length - 1)
+                return true;
+            return shouldKeepPoint(h.last_changed, timeRange);
         });
-        if (sortedData.length < 2)
+        if (validData.length < 2)
             return [];
-        // Downsample
-        const targetPoints = 192;
-        if (sortedData.length > targetPoints) {
-            const step = Math.ceil(sortedData.length / targetPoints);
-            sortedData = sortedData.filter((_, i) => i % step === 0 || i === sortedData.length - 1);
-        }
-        const values = sortedData.map(h => parseFloat(h.state));
-        const times = sortedData.map(h => new Date(h.last_changed).getTime());
+        const values = validData.map(h => parseFloat(h.state));
+        const times = validData.map(h => new Date(h.last_changed).getTime());
         const minVal = Math.min(...values);
         const maxVal = Math.max(...values);
         const minTime = Math.min(...times);
         const maxTime = Math.max(...times);
         const valueRange = maxVal - minVal || 1;
-        const timeRange = maxTime - minTime || 1;
+        const timeRangeVal = maxTime - minTime || 1;
         // Generate points with coordinates and status
         // Add padding so lines don't touch edges (5px top/bottom)
         const padding = 5;
         const usableHeight = height - (padding * 2);
-        const points = sortedData.map((h, i) => {
+        const points = validData.map((h, i) => {
             const value = values[i];
-            const x = ((times[i] - minTime) / timeRange) * width;
+            const x = ((times[i] - minTime) / timeRangeVal) * width;
             const y = padding + (usableHeight - ((value - minVal) / valueRange) * usableHeight);
             const status = this.getVpdStatusForValue(value, thresholds);
             return { x, y, status };
@@ -6646,17 +6673,46 @@ class ChartUtils {
     static generatePathFromValues(data, width, height, options = {}) {
         if (!data || data.length < 2)
             return '';
+        let processedData = data;
+        // Apply downsampling if timeRange is provided
+        if (options.timeRange) {
+            const shouldKeepPoint = (timestamp, range) => {
+                const date = new Date(timestamp);
+                const minutes = date.getMinutes();
+                switch (range) {
+                    case '7d': return minutes === 0; // Every hour
+                    case '24h': return minutes % 15 === 0; // Every 15 mins
+                    case '6h': return minutes % 5 === 0; // Every 5 mins
+                    case '1h': return true; // Keep all
+                    default: return minutes % 15 === 0;
+                }
+            };
+            processedData = data.filter((d, index) => {
+                // Always keep LAST point
+                if (index === data.length - 1)
+                    return true;
+                return shouldKeepPoint(d.time, options.timeRange);
+            });
+            if (processedData.length < 2)
+                return '';
+        }
         const type = options.type || 'line';
-        const vals = data.map(d => d.value);
-        const times = data.map(d => d.time);
+        const vals = processedData.map(d => d.value);
+        const times = processedData.map(d => d.time);
+        // Calculate ranges based on original data or options?
+        // Usually we want to scale based on the visible data?
+        // Or if min/max are provided use those.
+        // options.min/max are usually derived from the full dataset or fixed ranges.
+        // If we filter points, the local min/max might change, but usually we want to respect the intended scale.
+        // Assuming options.min/max are provided (as they are in GrowspaceEnvChart), we use those.
+        // If not, we re-calculate from processedData.
         const minVal = options.min !== undefined ? options.min : Math.min(...vals);
         const maxVal = options.max !== undefined ? options.max : Math.max(...vals);
-        // Ensure range is not zero
         const valueRange = (maxVal - minVal) || 1;
         const minTime = options.startTime !== undefined ? options.startTime : Math.min(...times);
         const maxTime = options.endTime !== undefined ? options.endTime : Math.max(...times);
         const timeRange = (maxTime - minTime) || 1;
-        const points = data.map(d => {
+        const points = processedData.map(d => {
             const x = ((d.time - minTime) / timeRange) * width;
             const y = height - ((d.value - minVal) / valueRange) * height;
             return [x, y];
@@ -6682,32 +6738,21 @@ class ChartUtils {
      * Generates an SVG path string for a step graph (binary/state) from history data.
      * Use generatePathFromValues for pre-processed data.
      */
-    static generateStepPath(historyData, width, height) {
-        // ... existing implementation wrapper or kept for compatibility ...
-        // For now, keeping previous logic but maybe we can reuse generatePathFromValues?
-        // Let's keep the previous implementation of generateStepPath as is for now to avoid breaking changes if used elsewhere,
-        // but ideally we refactor it to call generatePathFromValues.
-        // Since I just added it and its not used yet, I can replace it.
+    static generateStepPath(historyData, width, height, timeRange) {
         if (!historyData || historyData.length < 2)
             return '';
+        // Pre-filter valid binary/numeric data
         const sortedData = [...historyData]
             .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
             .filter(h => {
-            if (h.state === 'on' || h.state === 'off')
-                return true;
             const val = parseFloat(h.state);
-            return !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
+            const isBinary = h.state === 'on' || h.state === 'off';
+            return isBinary || (!isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown');
         });
         if (sortedData.length < 2)
             return '';
-        // Downsample
-        let processedData = sortedData;
-        const targetPoints = 192;
-        if (processedData.length > targetPoints) {
-            const step = Math.ceil(processedData.length / targetPoints);
-            processedData = processedData.filter((_, i) => i % step === 0 || i === sortedData.length - 1);
-        }
-        const values = processedData.map(h => {
+        // Map to { time, value }
+        const values = sortedData.map(h => {
             const t = new Date(h.last_changed).getTime();
             let v = 0;
             if (h.state === 'on')
@@ -6718,7 +6763,11 @@ class ChartUtils {
                 v = parseFloat(h.state);
             return { time: t, value: v };
         });
-        return this.generatePathFromValues(values, width, height, { type: 'step' });
+        // Delegate to generic generator with step type and downsampling
+        return this.generatePathFromValues(values, width, height, {
+            type: 'step',
+            timeRange
+        });
     }
 }
 
@@ -7197,7 +7246,8 @@ class GraphDataTransformer {
                         // So we pass them as the forced scale.
                         startTime: startTime.getTime(),
                         endTime: startTime.getTime() + durationMillis,
-                        type: config.type === 'step' ? 'step' : 'line'
+                        type: config.type === 'step' ? 'step' : 'line',
+                        timeRange: this.range
                     });
                     // Generate VPD segments for multi-colored rendering
                     let vpdSegments;
@@ -7744,6 +7794,10 @@ class GraphDataTransformer {
       border-radius: 8px;
       padding: 20px 40px 30px 50px;
       cursor: crosshair;
+    }
+
+    svg path {
+        transition: d 0.5s cubic-bezier(0.4, 0.0, 0.2, 1), stroke 0.3s ease, fill-opacity 0.3s ease;
     }
 
     .gs-tooltip {
@@ -24570,6 +24624,8 @@ class ResizeController {
             // Generate sparkline path for this metric
             const sparklineWidth = 140; // Approximate card width
             const sparklineHeight = 80; // Approximate card height minus padding
+            // Get current time range from controller
+            const timeRange = this.historyController?.getRange() || '24h';
             // For VPD, try multi-segment coloring first, fall back to standard if no segments
             const isVpd = chip.key === 'vpd';
             let vpdSegments = [];
@@ -24585,12 +24641,12 @@ class ResizeController {
                     dangerMin: overviewEntity?.attributes?.vpd_danger_min ?? 0.4,
                     dangerMax: overviewEntity?.attributes?.vpd_danger_max ?? 1.6,
                 };
-                vpdSegments = ChartUtils.generateVpdSparklineSegments(historyData, sparklineWidth, sparklineHeight, thresholds);
+                vpdSegments = ChartUtils.generateVpdSparklineSegments(historyData, sparklineWidth, sparklineHeight, thresholds, timeRange);
             }
             const useVpdSegments = isVpd && vpdSegments.length > 0;
             let sparklinePath = '';
             if (!useVpdSegments && this.historyController) {
-                sparklinePath = ChartUtils.generateSparklinePath(this.historyController.historyCache[chip.key], sparklineWidth, sparklineHeight);
+                sparklinePath = ChartUtils.generateSparklinePath(this.historyController.historyCache[chip.key], sparklineWidth, sparklineHeight, timeRange);
             }
             const sparklineColor = ChartUtils.getSparklineColor(chip.key, chip.status);
             return x `
@@ -25007,6 +25063,14 @@ class ResizeController {
         pointer-events: none;
         z-index: 0;
         opacity: 0.7;
+    }
+
+    .hero-sparkline path {
+        transition: d 0.5s cubic-bezier(0.4, 0.0, 0.2, 1), stroke 0.3s ease, fill 0.3s ease;
+    }
+
+    .hero-value, .hero-unit {
+        transition: color 0.3s ease, transform 0.3s ease;
     }
 
     .hero-value-group {
