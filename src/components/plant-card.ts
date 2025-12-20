@@ -5,37 +5,16 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { consume } from '@lit/context';
 import { strainLibraryContext } from '../context';
 import {
-  mdiSprout,
-  mdiFlower,
-  mdiHairDryer,
-  mdiCannabis,
   mdiCheckboxMarked,
   mdiCheckboxBlankOutline,
 } from '@mdi/js';
-import { PlantEntity, StrainEntry, PlantStage, STAGE_CONFIG } from '../types';
+import { PlantEntity, StrainEntry, PlantDisplayData, StageDisplay } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
+import { DragDropController, DragDropHost } from '../controllers/drag-drop-controller';
 import { sharedStyles } from '../styles/shared.styles';
 
-interface StageDisplay {
-  days: number;
-  icon: string;
-  title: string;
-  stage: PlantStage;
-  isCurrent: boolean;
-  color: string;
-}
-
-interface PlantDisplayData {
-  stageColor: string;
-  strainName: string;
-  pheno: string;
-  imageUrl?: string;
-  imageCropMeta?: any;
-  stages: StageDisplay[];
-}
-
 @customElement('growspace-plant-card')
-export class GrowspacePlantCard extends LitElement {
+export class GrowspacePlantCard extends LitElement implements DragDropHost {
   @property({ attribute: false }) accessor plant!: PlantEntity;
   @property({ type: Number }) accessor row!: number;
   @property({ type: Number }) accessor col!: number;
@@ -47,13 +26,9 @@ export class GrowspacePlantCard extends LitElement {
   @property({ type: Boolean }) accessor selected = false;
 
   @state() accessor _displayData: PlantDisplayData | null = null;
-  @state() accessor _longPressTimer: number | undefined;
-  @state() accessor _isDraggingMobile = false;
 
-  private _startX = 0;
-  private _startY = 0;
-  private _initialLeft = 0;
-  private _initialTop = 0;
+  // Instantiate controller
+  private dragController = new DragDropController(this);
 
   static styles = [
     sharedStyles,
@@ -73,7 +48,6 @@ export class GrowspacePlantCard extends LitElement {
       flex-direction: column;
       border-radius: 16px;
       overflow: hidden;
-      /* Default background if no image */
       background: var(--glass-bg);
       backdrop-filter: var(--glass-blur);
       -webkit-backdrop-filter: var(--glass-blur);
@@ -85,6 +59,7 @@ export class GrowspacePlantCard extends LitElement {
       box-sizing: border-box;
       color: var(--primary-text-color);
       will-change: transform;
+      user-select: none;
     }
 
     .plant-card-rich:hover {
@@ -227,9 +202,7 @@ export class GrowspacePlantCard extends LitElement {
       color: var(--primary-text-color, #fff);
     }
 
-    .current-stage {
-      /* Add any specific styles for current stage if needed */
-    }
+    .current-stage {}
 
     .plant-card-rich.dragging {
       opacity: 0.5;
@@ -241,7 +214,7 @@ export class GrowspacePlantCard extends LitElement {
       transform: scale(1.05);
       box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
       z-index: 1000;
-      pointer-events: none; /* Let events pass through to grid for elementFromPoint */
+      pointer-events: none;
     }
   `];
 
@@ -256,217 +229,11 @@ export class GrowspacePlantCard extends LitElement {
       this._displayData = null;
       return;
     }
-
-    const plant = this.plant;
-    const stageColor = PlantUtils.getPlantStageColor(plant.state);
-    const strainName = plant.attributes?.strain || 'Unknown Strain';
-    const pheno = plant.attributes?.phenotype || '';
-
-    // Image logic
-    let imageUrl: string | undefined;
-    let imageCropMeta: any | undefined;
-    const library = this.strainLibrary || [];
-
-    if (strainName !== 'Unknown Strain') {
-      const phenoMatch = library.find(
-        (s) => s.strain === strainName && s.phenotype === pheno
-      );
-      if (phenoMatch && phenoMatch.image) {
-        imageUrl = phenoMatch.image;
-        imageCropMeta = phenoMatch.image_crop_meta;
-      } else {
-        const strainMatch = library.find(
-          (s) => s.strain === strainName && (!s.phenotype || s.phenotype === 'default')
-        );
-        if (strainMatch && strainMatch.image) {
-          imageUrl = strainMatch.image;
-          imageCropMeta = strainMatch.image_crop_meta;
-        } else if (!imageUrl) {
-          const anyMatch = library.find((s) => s.strain === strainName && s.image);
-          if (anyMatch) {
-            imageUrl = anyMatch.image;
-            imageCropMeta = anyMatch.image_crop_meta;
-          }
-        }
-      }
-    }
-
-    // Correction: I need to update imports first to include STAGE_CONFIG
-    // Assuming STAGE_CONFIG from ../types is available. 
-    // I will write the cleaned up logic below using STAGE_CONFIG imported from ../types
-
-    // Stages logic refactored
-    const stagesData = Object.entries(STAGE_CONFIG).map(([stage, config]) => {
-      const daysAttr = `${stage}_days` as keyof typeof plant.attributes;
-      const days = plant.attributes?.[daysAttr] as number | undefined;
-      return {
-        days,
-        stage: stage as PlantStage,
-        icon: config.icon,
-        title: config.title,
-      };
-    }).filter(d => d.days !== undefined && d.days !== null);
-
-    const currentStage = (plant.state || '').toLowerCase();
-    let visibleDays = stagesData.filter((d) => d.days);
-
-    if (currentStage === PlantStage.DRY) {
-      visibleDays = visibleDays.filter((d) => d.stage === PlantStage.DRY);
-    } else if (currentStage === PlantStage.CURE) {
-      visibleDays = visibleDays.filter((d) => d.stage === PlantStage.CURE);
-    }
-
-    const normalizedCurrent =
-      currentStage === 'veg' || currentStage === 'vegetative' ? PlantStage.VEG : currentStage;
-
-    const stages: StageDisplay[] = visibleDays.map((d) => ({
-      days: d.days as number,
-      icon: d.icon,
-      title: d.title,
-      stage: d.stage,
-      isCurrent: d.stage === normalizedCurrent,
-      color: PlantUtils.getPlantStageColor(d.stage),
-    }));
-
-    this._displayData = {
-      stageColor,
-      strainName,
-      pheno,
-      imageUrl,
-      imageCropMeta,
-      stages,
-    };
+    // Use the utility to get display data
+    this._displayData = PlantUtils.getPlantDisplayData(this.plant, this.strainLibrary);
   }
 
-  private _handleTouchStart(e: TouchEvent) {
-    if (this.isEditMode) return;
-    if (e.touches.length !== 1) return;
-
-    this._startX = e.touches[0].clientX;
-    this._startY = e.touches[0].clientY;
-
-    const card = this.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
-    const rect = card.getBoundingClientRect();
-    this._initialLeft = rect.left;
-    this._initialTop = rect.top;
-
-    this._longPressTimer = window.setTimeout(() => {
-      this._startMobileDrag(e);
-    }, 500);
-  }
-
-  private _handleTouchMove(e: TouchEvent) {
-    if (this._isDraggingMobile) {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const card = this.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
-
-      const deltaX = touch.clientX - this._startX;
-      const deltaY = touch.clientY - this._startY;
-
-      card.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.05)`;
-    } else {
-      const touch = e.touches[0];
-      if (
-        Math.abs(touch.clientX - this._startX) > 10 ||
-        Math.abs(touch.clientY - this._startY) > 10
-      ) {
-        clearTimeout(this._longPressTimer);
-      }
-    }
-  }
-
-  private _handleTouchEnd(e: TouchEvent) {
-    clearTimeout(this._longPressTimer);
-    if (this._isDraggingMobile) {
-      this._endMobileDrag(e);
-    }
-  }
-
-  private _startMobileDrag(e: TouchEvent) {
-    this._isDraggingMobile = true;
-    const card = this.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
-    card.classList.add('dragging-mobile');
-
-    this.dispatchEvent(
-      new CustomEvent('mobile-drag-start', {
-        detail: { plant: this.plant },
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
-  private _endMobileDrag(e: TouchEvent) {
-    this._isDraggingMobile = false;
-    const card = this.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
-    card.classList.remove('dragging-mobile');
-    card.style.transform = '';
-
-    const touch = e.changedTouches[0];
-
-    this.dispatchEvent(
-      new CustomEvent('mobile-drop', {
-        detail: {
-          x: touch.clientX,
-          y: touch.clientY,
-          plant: this.plant,
-        },
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
-  private _handleDragStart(e: DragEvent) {
-    if (this.isEditMode) {
-      e.preventDefault();
-      return;
-    }
-
-    const target = e.target as HTMLElement;
-    target.classList.add('dragging');
-
-    if (e.dataTransfer) {
-      e.dataTransfer.setData('text/plain', JSON.stringify({ id: this.plant.entity_id }));
-      e.dataTransfer.effectAllowed = 'move';
-    }
-
-    this.dispatchEvent(
-      new CustomEvent('plant-drag-start', {
-        detail: { plant: this.plant },
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
-  private _handleDragEnd(e: DragEvent) {
-    const target = e.target as HTMLElement;
-    target.classList.remove('dragging');
-  }
-
-  private _handleDrop(e: DragEvent) {
-    e.preventDefault();
-    if (this.isEditMode) return;
-
-    this.dispatchEvent(
-      new CustomEvent('plant-drop', {
-        detail: {
-          originalEvent: e,
-          row: this.row,
-          col: this.col,
-          plant: this.plant,
-        },
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
-  private _handleDragOver(e: DragEvent) {
-    e.preventDefault();
-  }
+  // --- Click Handlers ---
 
   private _handleClick() {
     this.dispatchEvent(
@@ -512,13 +279,6 @@ export class GrowspacePlantCard extends LitElement {
         class="plant-card-rich"
         style="--stage-color: ${stageColor}"
         draggable="true"
-        @dragstart=${this._handleDragStart}
-        @dragend=${this._handleDragEnd}
-        @dragover=${this._handleDragOver}
-        @drop=${this._handleDrop}
-        @touchstart=${this._handleTouchStart}
-        @touchmove=${this._handleTouchMove}
-        @touchend=${this._handleTouchEnd}
         @click=${this._handleClick}
       >
         ${imageUrl

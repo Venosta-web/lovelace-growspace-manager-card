@@ -2,6 +2,8 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { LovelaceCardEditor } from 'custom-card-helpers';
 import type { GrowspaceManagerCardConfig } from './types';
+import '@material/web/select/filled-select.js';
+import '@material/web/select/select-option.js';
 
 @customElement('growspace-manager-card-editor')
 export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCardEditor {
@@ -69,15 +71,8 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
     .form-group {
       margin-bottom: 12px;
     }
-    label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 4px;
-    }
-    select {
+    md-filled-select {
       width: 100%;
-      padding: 4px;
-      box-sizing: border-box;
     }
   `;
 
@@ -86,32 +81,41 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
 
     return html`
       <div class="form-group">
-        <label>Initial View Mode</label>
-        <select
+        <md-filled-select
+          label="Initial View Mode"
           .value=${this._config.initial_view_mode || 'standard'}
           @change=${(e: Event) =>
-        this._valueChanged('initial_view_mode', (e.target as HTMLSelectElement).value)}
+        this._valueChanged('initial_view_mode', (e.target as any).value)}
         >
-          <option value="standard">Standard</option>
-          <option value="compact">Compact (Grid Only)</option>
-          <option value="header">Header Only (Collapsed)</option>
-        </select>
+          <md-select-option value="standard">
+            <div slot="headline">Standard</div>
+          </md-select-option>
+          <md-select-option value="compact">
+            <div slot="headline">Compact (Grid Only)</div>
+          </md-select-option>
+          <md-select-option value="header">
+            <div slot="headline">Header Only (Collapsed)</div>
+          </md-select-option>
+        </md-filled-select>
       </div>
 
       <div class="form-group">
-        <label>Default Growspace</label>
-        <select
+        <md-filled-select
+          label="Default Growspace"
           .value=${this._config.default_growspace ?? ''}
           @change=${(e: Event) =>
-        this._valueChanged('default_growspace', (e.target as HTMLSelectElement).value)}
+        this._valueChanged('default_growspace', (e.target as any).value)}
         >
-          <option value="">Select a growspace</option>
-          ${this._growspaceOptions.length === 0
-        ? html`<option disabled>No growspaces found</option>`
-        : this._growspaceOptions.map(
-          (gs) => html`<option value="${gs.id}">${gs.name}</option>`
+          <md-select-option value="">
+             <div slot="headline">Select a growspace</div>
+          </md-select-option>
+          ${this._growspaceOptions.map(
+          (gs) => html`
+            <md-select-option value="${gs.id}">
+                <div slot="headline">${gs.name}</div>
+            </md-select-option>`
         )}
-        </select>
+        </md-filled-select>
       </div>
     `;
   }

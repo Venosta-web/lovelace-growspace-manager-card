@@ -172,7 +172,7 @@ describe('PlantCard', () => {
             const card = element.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
             // Mock dataTransfer
             const dataTransfer = { setData: vi.fn(), effectAllowed: '' };
-            const evt = new DragEvent('dragstart', { bubbles: true, cancelable: true });
+            const evt = new DragEvent('dragstart', { bubbles: true, cancelable: true, composed: true });
             Object.defineProperty(evt, 'dataTransfer', { value: dataTransfer });
 
             card.dispatchEvent(evt);
@@ -188,7 +188,7 @@ describe('PlantCard', () => {
             element.row = 1; element.col = 2;
 
             const card = element.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
-            const evt = new DragEvent('drop', { bubbles: true, cancelable: true });
+            const evt = new DragEvent('drop', { bubbles: true, cancelable: true, composed: true });
             card.dispatchEvent(evt);
 
             expect(listener).toHaveBeenCalled();
@@ -201,7 +201,7 @@ describe('PlantCard', () => {
             const card = element.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
             card.classList.add('dragging');
 
-            const evt = new DragEvent('dragend');
+            const evt = new DragEvent('dragend', { bubbles: true, composed: true });
             card.dispatchEvent(evt);
 
             expect(card.classList.contains('dragging')).toBe(false);
@@ -227,7 +227,7 @@ describe('PlantCard', () => {
 
             // Touch Start
             const touch = { clientX: 10, clientY: 10 } as Touch;
-            const evt = new TouchEvent('touchstart', { touches: [touch] });
+            const evt = new TouchEvent('touchstart', { touches: [touch], bubbles: true, composed: true });
             card.dispatchEvent(evt);
 
             // Wait for timer
@@ -243,10 +243,10 @@ describe('PlantCard', () => {
             const card = element.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
 
             // Start
-            card.dispatchEvent(new TouchEvent('touchstart', { touches: [{ clientX: 10, clientY: 10 } as Touch] }));
+            card.dispatchEvent(new TouchEvent('touchstart', { touches: [{ clientX: 10, clientY: 10 } as Touch], bubbles: true, composed: true }));
 
             // Move significantly (delta > 10)
-            card.dispatchEvent(new TouchEvent('touchmove', { touches: [{ clientX: 50, clientY: 50 } as Touch] }));
+            card.dispatchEvent(new TouchEvent('touchmove', { touches: [{ clientX: 50, clientY: 50 } as Touch], bubbles: true, composed: true }));
 
             vi.advanceTimersByTime(600);
 
@@ -259,12 +259,14 @@ describe('PlantCard', () => {
             const card = element.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
 
             // Start & Drag
-            card.dispatchEvent(new TouchEvent('touchstart', { touches: [{ clientX: 10, clientY: 10 } as Touch] }));
+            card.dispatchEvent(new TouchEvent('touchstart', { touches: [{ clientX: 10, clientY: 10 } as Touch], bubbles: true, composed: true }));
             vi.advanceTimersByTime(600); // Trigger start
 
             // End
             card.dispatchEvent(new TouchEvent('touchend', {
-                changedTouches: [{ clientX: 100, clientY: 100 } as Touch]
+                changedTouches: [{ clientX: 100, clientY: 100 } as Touch],
+                bubbles: true,
+                composed: true
             } as any));
 
             expect(listener).toHaveBeenCalled();

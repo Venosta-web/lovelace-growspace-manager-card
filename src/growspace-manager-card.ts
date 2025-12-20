@@ -22,6 +22,7 @@ import {
 } from './controllers/growspace-history-controller';
 import './growspace-env-chart';
 import './components/manager/dialog-host';
+import './components/manager/edit-mode-banner';
 import './components/plant-card';
 import './components/growspace-header';
 import { LibraryExportReadyEvent } from './events';
@@ -259,22 +260,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     if (!this.store.state.isEditMode) return html``;
 
     return html`
-      <div class="edit-mode-banner">
-        <div class="banner-content">
-          <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiCheckboxMarked}"></path>
-          </svg>
-          <span>${this.store.state.selectedPlants.size} plant(s) selected</span>
-        </div>
-        <div class="banner-actions">
-          <button class="md3-button text" @click=${() => this.store.selectAllPlants()}>Select All</button>
-          <button class="md3-button text" @click=${() => this.store.clearPlantSelection()}>Clear</button>
-          <button class="md3-button text" @click=${() => {
+      <growspace-edit-mode-banner
+        .selectedCount=${this.store.state.selectedPlants.size}
+        @select-all=${() => this.store.selectAllPlants()}
+        @clear-selection=${() => this.store.clearPlantSelection()}
+        @exit-edit-mode=${() => {
         this.store.setEditMode(false);
         this.store.clearPlantSelection();
-      }}>Exit</button>
-        </div>
-      </div>
+      }}
+      ></growspace-edit-mode-banner>
     `;
   }
 

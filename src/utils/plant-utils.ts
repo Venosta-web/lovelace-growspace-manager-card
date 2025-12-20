@@ -5,7 +5,17 @@ import {
     mdiCannabis,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { PlantEntity, PlantStage, CropMeta, GrowspaceType, GrowspaceDevice } from '../types';
+import {
+    PlantEntity,
+    PlantStage,
+    CropMeta,
+    GrowspaceType,
+    GrowspaceDevice,
+    StrainEntry,
+    PlantDisplayData,
+    StageDisplay,
+    STAGE_CONFIG
+} from '../types';
 
 export const PLANT_STAGES: PlantStage[] = [
     PlantStage.SEEDLING,
@@ -470,5 +480,81 @@ export class PlantUtils {
             console.warn('[PlantUtils] Number formatting error:', e);
             return num.toString();
         }
+    }
+    static getPlantDisplayData(plant: PlantEntity, strainLibrary: StrainEntry[]): PlantDisplayData {
+        const stageColor = this.getPlantStageColor(plant.state);
+        const strainName = plant.attributes?.strain || 'Unknown Strain';
+        const pheno = plant.attributes?.phenotype || '';
+
+        // Image logic
+        let imageUrl: string | undefined;
+        let imageCropMeta: any | undefined;
+        const library = strainLibrary || [];
+
+        if (strainName !== 'Unknown Strain') {
+            const phenoMatch = library.find(
+                (s) => s.strain === strainName && s.phenotype === pheno
+            );
+            if (phenoMatch && phenoMatch.image) {
+                imageUrl = phenoMatch.image;
+                imageCropMeta = phenoMatch.image_crop_meta;
+            } else {
+                const strainMatch = library.find(
+                    (s) => s.strain === strainName && (!s.phenotype || s.phenotype === 'default')
+                );
+                if (strainMatch && strainMatch.image) {
+                    imageUrl = strainMatch.image;
+                    imageCropMeta = strainMatch.image_crop_meta;
+                } else if (!imageUrl) {
+                    const anyMatch = library.find((s) => s.strain === strainName && s.image);
+                    if (anyMatch) {
+                        imageUrl = anyMatch.image;
+                        imageCropMeta = anyMatch.image_crop_meta;
+                    }
+                }
+            }
+        }
+
+        // Stages logic
+        const stagesData = Object.entries(STAGE_CONFIG).map(([stage, config]) => {
+            const daysAttr = `${stage}_days` as keyof typeof plant.attributes;
+            const days = plant.attributes?.[daysAttr] as number | undefined;
+            return {
+                days,
+                stage: stage as PlantStage,
+                icon: config.icon,
+                title: config.title,
+            };
+        }).filter(d => d.days !== undefined && d.days !== null);
+
+        const currentStage = (plant.state || '').toLowerCase();
+        let visibleDays = stagesData.filter((d) => d.days);
+
+        if (currentStage === PlantStage.DRY) {
+            visibleDays = visibleDays.filter((d) => d.stage === PlantStage.DRY);
+        } else if (currentStage === PlantStage.CURE) {
+            visibleDays = visibleDays.filter((d) => d.stage === PlantStage.CURE);
+        }
+
+        const normalizedCurrent =
+            currentStage === 'veg' || currentStage === 'vegetative' ? PlantStage.VEG : currentStage;
+
+        const stages: StageDisplay[] = visibleDays.map((d) => ({
+            days: d.days as number,
+            icon: d.icon,
+            title: d.title,
+            stage: d.stage,
+            isCurrent: d.stage === normalizedCurrent,
+            color: this.getPlantStageColor(d.stage),
+        }));
+
+        return {
+            stageColor,
+            strainName,
+            pheno,
+            imageUrl,
+            imageCropMeta,
+            stages,
+        };
     }
 }

@@ -418,3 +418,23 @@ export interface TooltipData {
   time: string;
   items: TooltipItem[];
 }
+
+// --- Display Models ---
+
+export interface StageDisplay {
+  days: number;
+  icon: string;
+  title: string;
+  stage: PlantStage;
+  isCurrent: boolean;
+  color: string;
+}
+
+export interface PlantDisplayData {
+  stageColor: string;
+  strainName: string;
+  pheno: string;
+  imageUrl?: string;
+  imageCropMeta?: any;
+  stages: StageDisplay[];
+}
