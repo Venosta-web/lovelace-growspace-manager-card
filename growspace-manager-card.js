@@ -2,6 +2,7 @@
 var mdiAirFilter = "M19,18.31V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V16.3C4.54,16.12 3.95,16 3,16A1,1 0 0,1 2,15A1,1 0 0,1 3,14C3.82,14 4.47,14.08 5,14.21V12.3C4.54,12.12 3.95,12 3,12A1,1 0 0,1 2,11A1,1 0 0,1 3,10C3.82,10 4.47,10.08 5,10.21V8.3C4.54,8.12 3.95,8 3,8A1,1 0 0,1 2,7A1,1 0 0,1 3,6C3.82,6 4.47,6.08 5,6.21V4A2,2 0 0,1 7,2H17A2,2 0 0,1 19,4V6.16C20.78,6.47 21.54,7.13 21.71,7.29C22.1,7.68 22.1,8.32 21.71,8.71C21.32,9.1 20.8,9.09 20.29,8.71V8.71C20.29,8.71 19.25,8 17,8C15.74,8 14.91,8.41 13.95,8.9C12.91,9.41 11.74,10 10,10C9.64,10 9.31,10 9,9.96V7.95C9.3,8 9.63,8 10,8C11.26,8 12.09,7.59 13.05,7.11C14.09,6.59 15.27,6 17,6V4H7V20H17V18C18.5,18 18.97,18.29 19,18.31M17,10C15.27,10 14.09,10.59 13.05,11.11C12.09,11.59 11.26,12 10,12C9.63,12 9.3,12 9,11.95V13.96C9.31,14 9.64,14 10,14C11.74,14 12.91,13.41 13.95,12.9C14.91,12.42 15.74,12 17,12C19.25,12 20.29,12.71 20.29,12.71V12.71C20.8,13.1 21.32,13.1 21.71,12.71C22.1,12.32 22.1,11.69 21.71,11.29C21.5,11.08 20.25,10 17,10M17,14C15.27,14 14.09,14.59 13.05,15.11C12.09,15.59 11.26,16 10,16C9.63,16 9.3,16 9,15.95V17.96C9.31,18 9.64,18 10,18C11.74,18 12.91,17.41 13.95,16.9C14.91,16.42 15.74,16 17,16C19.25,16 20.29,16.71 20.29,16.71V16.71C20.8,17.1 21.32,17.1 21.71,16.71C22.1,16.32 22.1,15.69 21.71,15.29C21.5,15.08 20.25,14 17,14Z";
 var mdiAirHumidifier = "M11 9C8.79 9 7 10.79 7 13S8.79 17 11 17 15 15.21 15 13 13.21 9 11 9M11 15C9.9 15 9 14.11 9 13S9.9 11 11 11 13 11.9 13 13 12.11 15 11 15M7 4H14C16.21 4 18 5.79 18 8V9H16V8C16 6.9 15.11 6 14 6H7C5.9 6 5 6.9 5 8V20H16V18H18V22H3V8C3 5.79 4.79 4 7 4M19 10.5C19 10.5 21 12.67 21 14C21 15.1 20.1 16 19 16S17 15.1 17 14C17 12.67 19 10.5 19 10.5";
 var mdiAirHumidifierOff = "M22.1 21.5L2.4 1.7L1.1 3L3.8 5.7C3.3 6.3 3 7.1 3 8V22H18V19.9L20.8 22.7L22.1 21.5M9.6 11.5L12.4 14.3C12.1 14.7 11.6 15 11 15C9.9 15 9 14.1 9 13C9 12.4 9.3 11.9 9.6 11.5M16 17.9V20H5V8C5 7.7 5.1 7.4 5.2 7.1L8.2 10.1C7.5 10.8 7 11.9 7 13C7 15.2 8.8 17 11 17C12.1 17 13.2 16.5 13.9 15.8L16 17.9M17 13.8C17.1 12.5 19 10.5 19 10.5S21 12.7 21 14C21 15 20.2 15.9 19.2 16L17 13.8M9.2 6L7.2 4H14C16.2 4 18 5.8 18 8V9H16V8C16 6.9 15.1 6 14 6H9.2Z";
+var mdiAlert = "M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z";
 var mdiArrowLeft = "M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z";
 var mdiArrowRight = "M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z";
 var mdiBrain = "M21.33,12.91C21.42,14.46 20.71,15.95 19.44,16.86L20.21,18.35C20.44,18.8 20.47,19.33 20.27,19.8C20.08,20.27 19.69,20.64 19.21,20.8L18.42,21.05C18.25,21.11 18.06,21.14 17.88,21.14C17.37,21.14 16.89,20.91 16.56,20.5L14.44,18C13.55,17.85 12.71,17.47 12,16.9C11.5,17.05 11,17.13 10.5,17.13C9.62,17.13 8.74,16.86 8,16.34C7.47,16.5 6.93,16.57 6.38,16.56C5.59,16.57 4.81,16.41 4.08,16.11C2.65,15.47 1.7,14.07 1.65,12.5C1.57,11.78 1.69,11.05 2,10.39C1.71,9.64 1.68,8.82 1.93,8.06C2.3,7.11 3,6.32 3.87,5.82C4.45,4.13 6.08,3 7.87,3.12C9.47,1.62 11.92,1.46 13.7,2.75C14.12,2.64 14.56,2.58 15,2.58C16.36,2.55 17.65,3.15 18.5,4.22C20.54,4.75 22,6.57 22.08,8.69C22.13,9.8 21.83,10.89 21.22,11.82C21.29,12.18 21.33,12.54 21.33,12.91M16.33,11.5C16.9,11.57 17.35,12 17.35,12.57A1,1 0 0,1 16.35,13.57H15.72C15.4,14.47 14.84,15.26 14.1,15.86C14.35,15.95 14.61,16 14.87,16.07C20,16 19.4,12.87 19.4,12.82C19.34,11.39 18.14,10.27 16.71,10.33A1,1 0 0,1 15.71,9.33A1,1 0 0,1 16.71,8.33C17.94,8.36 19.12,8.82 20.04,9.63C20.09,9.34 20.12,9.04 20.12,8.74C20.06,7.5 19.5,6.42 17.25,6.21C16,3.25 12.85,4.89 12.85,5.81V5.81C12.82,6.04 13.06,6.53 13.1,6.56A1,1 0 0,1 14.1,7.56C14.1,8.11 13.65,8.56 13.1,8.56V8.56C12.57,8.54 12.07,8.34 11.67,8C11.19,8.31 10.64,8.5 10.07,8.56V8.56C9.5,8.61 9.03,8.21 9,7.66C8.92,7.1 9.33,6.61 9.88,6.56C10.04,6.54 10.82,6.42 10.82,5.79V5.79C10.82,5.13 11.07,4.5 11.5,4C10.58,3.75 9.59,4.08 8.59,5.29C6.75,5 6,5.25 5.45,7.2C4.5,7.67 4,8 3.78,9C4.86,8.78 5.97,8.87 7,9.25C7.5,9.44 7.78,10 7.59,10.54C7.4,11.06 6.82,11.32 6.3,11.13C5.57,10.81 4.75,10.79 4,11.07C3.68,11.34 3.68,11.9 3.68,12.34C3.68,13.08 4.05,13.77 4.68,14.17C5.21,14.44 5.8,14.58 6.39,14.57C6.24,14.31 6.11,14.04 6,13.76C5.81,13.22 6.1,12.63 6.64,12.44C7.18,12.25 7.77,12.54 7.96,13.08C8.36,14.22 9.38,15 10.58,15.13C11.95,15.06 13.17,14.25 13.77,13C14,11.62 15.11,11.5 16.33,11.5M18.33,18.97L17.71,17.67L17,17.83L18,19.08L18.33,18.97M13.68,10.36C13.7,9.83 13.3,9.38 12.77,9.33C12.06,9.29 11.37,9.53 10.84,10C10.27,10.58 9.97,11.38 10,12.19A1,1 0 0,0 11,13.19C11.57,13.19 12,12.74 12,12.19C12,11.92 12.07,11.65 12.23,11.43C12.35,11.33 12.5,11.28 12.66,11.28C13.21,11.31 13.68,10.9 13.68,10.36Z";
@@ -28,8 +29,10 @@ var mdiDownload = "M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z";
 var mdiFan = "M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z";
 var mdiFlower = "M3,13A9,9 0 0,0 12,22C12,17 7.97,13 3,13M12,5.5A2.5,2.5 0 0,1 14.5,8A2.5,2.5 0 0,1 12,10.5A2.5,2.5 0 0,1 9.5,8A2.5,2.5 0 0,1 12,5.5M5.6,10.25A2.5,2.5 0 0,0 8.1,12.75C8.63,12.75 9.12,12.58 9.5,12.31C9.5,12.37 9.5,12.43 9.5,12.5A2.5,2.5 0 0,0 12,15A2.5,2.5 0 0,0 14.5,12.5C14.5,12.43 14.5,12.37 14.5,12.31C14.88,12.58 15.37,12.75 15.9,12.75C17.28,12.75 18.4,11.63 18.4,10.25C18.4,9.25 17.81,8.4 16.97,8C17.81,7.6 18.4,6.74 18.4,5.75C18.4,4.37 17.28,3.25 15.9,3.25C15.37,3.25 14.88,3.41 14.5,3.69C14.5,3.63 14.5,3.56 14.5,3.5A2.5,2.5 0 0,0 12,1A2.5,2.5 0 0,0 9.5,3.5C9.5,3.56 9.5,3.63 9.5,3.69C9.12,3.41 8.63,3.25 8.1,3.25A2.5,2.5 0 0,0 5.6,5.75C5.6,6.74 6.19,7.6 7.03,8C6.19,8.4 5.6,9.25 5.6,10.25M12,22A9,9 0 0,0 21,13C16,13 12,17 12,22Z";
 var mdiFullscreenExit = "M14,14H19V16H16V19H14V14M5,14H10V19H8V16H5V14M8,5H10V10H5V8H8V5M19,8V10H14V5H16V8H19Z";
+var mdiGauge = "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.4 19,16.5 17.3,18C15.9,16.7 14,16 12,16C10,16 8.2,16.7 6.7,18C5,16.5 4,14.4 4,12A8,8 0 0,1 12,4M14,5.89C13.62,5.9 13.26,6.15 13.1,6.54L11.81,9.77L11.71,10C11,10.13 10.41,10.6 10.14,11.26C9.73,12.29 10.23,13.45 11.26,13.86C12.29,14.27 13.45,13.77 13.86,12.74C14.12,12.08 14,11.32 13.57,10.76L13.67,10.5L14.96,7.29L14.97,7.26C15.17,6.75 14.92,6.17 14.41,5.96C14.28,5.91 14.15,5.89 14,5.89M10,6A1,1 0 0,0 9,7A1,1 0 0,0 10,8A1,1 0 0,0 11,7A1,1 0 0,0 10,6M7,9A1,1 0 0,0 6,10A1,1 0 0,0 7,11A1,1 0 0,0 8,10A1,1 0 0,0 7,9M17,9A1,1 0 0,0 16,10A1,1 0 0,0 17,11A1,1 0 0,0 18,10A1,1 0 0,0 17,9Z";
 var mdiHairDryer = "M22 9A4.32 4.32 0 0 1 19.78 8.45A3.4 3.4 0 0 0 18 8V7A4.32 4.32 0 0 1 20.22 7.55A3.4 3.4 0 0 0 22 8M22 6A3.4 3.4 0 0 1 20.22 5.55A4.32 4.32 0 0 0 18 5V6A3.4 3.4 0 0 1 19.78 6.45A4.32 4.32 0 0 0 22 7M22 10A3.4 3.4 0 0 1 20.22 9.55A4.32 4.32 0 0 0 18 9V10A3.4 3.4 0 0 1 19.78 10.45A4.32 4.32 0 0 0 22 11M10 12.73A70.39 70.39 0 0 0 17 11V4S10.5 2 7.5 2A5.5 5.5 0 0 0 6.12 12.82L7 19H8A3 3 0 0 0 9.46 21.33A3.15 3.15 0 0 1 11 24H12A4.12 4.12 0 0 0 10.09 20.55C9.39 20 9 19.63 9 19H10M7.5 10A2.5 2.5 0 1 1 10 7.5A2.5 2.5 0 0 1 7.5 10Z";
 var mdiImage = "M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z";
+var mdiInformation = "M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiLeaf = "M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z";
 var mdiLightbulbOff = "M12,2C9.76,2 7.78,3.05 6.5,4.68L16.31,14.5C17.94,13.21 19,11.24 19,9A7,7 0 0,0 12,2M3.28,4L2,5.27L5.04,8.3C5,8.53 5,8.76 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H14.73L18.73,22L20,20.72L3.28,4M9,20V21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9Z";
 var mdiLightbulbOn = "M12,6A6,6 0 0,1 18,12C18,14.22 16.79,16.16 15,17.2V19A1,1 0 0,1 14,20H10A1,1 0 0,1 9,19V17.2C7.21,16.16 6,14.22 6,12A6,6 0 0,1 12,6M14,21V22A1,1 0 0,1 13,23H11A1,1 0 0,1 10,22V21H14M20,11H23V13H20V11M1,11H4V13H1V11M13,1V4H11V1H13M4.92,3.5L7.05,5.64L5.63,7.05L3.5,4.93L4.92,3.5M16.95,5.63L19.07,3.5L20.5,4.93L18.37,7.05L16.95,5.63Z";
@@ -49,6 +52,7 @@ var mdiWaterPercent = "M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,
 var mdiWeatherCloudy = "M6,19A5,5 0 0,1 1,14A5,5 0 0,1 6,9C7,6.65 9.3,5 12,5C15.43,5 18.24,7.66 18.5,11.03L19,11A4,4 0 0,1 23,15A4,4 0 0,1 19,19H6M19,13H17V12A5,5 0 0,0 12,7C9.5,7 7.45,8.82 7.06,11.19C6.73,11.07 6.37,11 6,11A3,3 0 0,0 3,14A3,3 0 0,0 6,17H19A2,2 0 0,0 21,15A2,2 0 0,0 19,13Z";
 var mdiWeatherNight = "M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z";
 var mdiWeatherSunny = "M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,6.65C6.9,7.16 6.36,7.78 5.94,8.5C5.5,9.24 5.25,10 5.11,10.79L3.34,7M3.36,17L5.12,13.23C5.26,14 5.53,14.78 5.95,15.5C6.37,16.24 6.91,16.86 7.5,17.37L3.36,17M20.65,7L18.88,10.79C18.74,10 18.47,9.23 18.05,8.5C17.63,7.78 17.1,7.15 16.5,6.64L20.65,7M20.64,17L16.5,17.36C17.09,16.85 17.62,16.22 18.04,15.5C18.46,14.77 18.73,14 18.87,13.21L20.64,17M12,22L9.59,18.56C10.33,18.83 11.14,19 12,19C12.82,19 13.63,18.83 14.37,18.56L12,22Z";
+var mdiWhiteBalanceSunny = "M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13";
 
 // --- Enums ---
 var PlantStage;
@@ -8394,7 +8398,7 @@ const dialogStyles = [
 })();
 
 (() => {
-    var _Md3NumberInput_label_accessor_storage, _Md3NumberInput_value_accessor_storage, _Md3NumberInput_min_accessor_storage, _Md3NumberInput_max_accessor_storage, _Md3NumberInput_placeholder_accessor_storage;
+    var _Md3NumberInput_label_accessor_storage, _Md3NumberInput_value_accessor_storage, _Md3NumberInput_min_accessor_storage, _Md3NumberInput_max_accessor_storage, _Md3NumberInput_placeholder_accessor_storage, _Md3NumberInput_unit_accessor_storage;
     let _classDecorators = [t$2('md3-number-input')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -8415,6 +8419,9 @@ const dialogStyles = [
     let _placeholder_decorators;
     let _placeholder_initializers = [];
     let _placeholder_extraInitializers = [];
+    let _unit_decorators;
+    let _unit_initializers = [];
+    let _unit_extraInitializers = [];
     _classThis = class extends _classSuper {
         get label() { return __classPrivateFieldGet(this, _Md3NumberInput_label_accessor_storage, "f"); }
         set label(value) { __classPrivateFieldSet(this, _Md3NumberInput_label_accessor_storage, value, "f"); }
@@ -8426,6 +8433,8 @@ const dialogStyles = [
         set max(value) { __classPrivateFieldSet(this, _Md3NumberInput_max_accessor_storage, value, "f"); }
         get placeholder() { return __classPrivateFieldGet(this, _Md3NumberInput_placeholder_accessor_storage, "f"); }
         set placeholder(value) { __classPrivateFieldSet(this, _Md3NumberInput_placeholder_accessor_storage, value, "f"); }
+        get unit() { return __classPrivateFieldGet(this, _Md3NumberInput_unit_accessor_storage, "f"); }
+        set unit(value) { __classPrivateFieldSet(this, _Md3NumberInput_unit_accessor_storage, value, "f"); }
         _handleInput(e) {
             const value = e.target.value;
             this.value = Number(value);
@@ -8435,15 +8444,29 @@ const dialogStyles = [
             return x `
       <div class="md3-input-group">
         <label class="md3-label">${this.label}</label>
-        <input
-          type="number"
-          class="md3-input"
-          .min=${this.min}
-          .max=${this.max}
-          .value=${this.value}
-          .placeholder=${this.placeholder}
-          @input=${this._handleInput}
-        />
+        <div style="display: flex; align-items: center;">
+             <input
+               type="number"
+               class="md3-input"
+               .min=${this.min}
+               .max=${this.max}
+               .value=${this.value}
+               .placeholder=${this.placeholder}
+               @input=${this._handleInput}
+               style="${this.unit ? 'padding-bottom: 16px;' : ''}"
+             />
+             ${this.unit
+                ? x `<span 
+                    style="
+                      position: absolute;
+                      right: 12px;
+                      pointer-events: none;
+                      color: var(--secondary-text-color, rgba(255,255,255,0.5));
+                      font-size: 0.9em;
+                    "
+                  >${this.unit}</span>`
+                : E}
+        </div>
       </div>
     `;
         }
@@ -8454,7 +8477,8 @@ const dialogStyles = [
             _Md3NumberInput_min_accessor_storage.set(this, (__runInitializers(this, _value_extraInitializers), __runInitializers(this, _min_initializers, 0)));
             _Md3NumberInput_max_accessor_storage.set(this, (__runInitializers(this, _min_extraInitializers), __runInitializers(this, _max_initializers, void 0)));
             _Md3NumberInput_placeholder_accessor_storage.set(this, (__runInitializers(this, _max_extraInitializers), __runInitializers(this, _placeholder_initializers, '')));
-            __runInitializers(this, _placeholder_extraInitializers);
+            _Md3NumberInput_unit_accessor_storage.set(this, (__runInitializers(this, _placeholder_extraInitializers), __runInitializers(this, _unit_initializers, '')));
+            __runInitializers(this, _unit_extraInitializers);
         }
     };
     _Md3NumberInput_label_accessor_storage = new WeakMap();
@@ -8462,6 +8486,7 @@ const dialogStyles = [
     _Md3NumberInput_min_accessor_storage = new WeakMap();
     _Md3NumberInput_max_accessor_storage = new WeakMap();
     _Md3NumberInput_placeholder_accessor_storage = new WeakMap();
+    _Md3NumberInput_unit_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "Md3NumberInput");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
@@ -8470,11 +8495,13 @@ const dialogStyles = [
         _min_decorators = [n$5({ type: Number })];
         _max_decorators = [n$5({ type: Number })];
         _placeholder_decorators = [n$5()];
+        _unit_decorators = [n$5()];
         __esDecorate(_classThis, null, _label_decorators, { kind: "accessor", name: "label", static: false, private: false, access: { has: obj => "label" in obj, get: obj => obj.label, set: (obj, value) => { obj.label = value; } }, metadata: _metadata }, _label_initializers, _label_extraInitializers);
         __esDecorate(_classThis, null, _value_decorators, { kind: "accessor", name: "value", static: false, private: false, access: { has: obj => "value" in obj, get: obj => obj.value, set: (obj, value) => { obj.value = value; } }, metadata: _metadata }, _value_initializers, _value_extraInitializers);
         __esDecorate(_classThis, null, _min_decorators, { kind: "accessor", name: "min", static: false, private: false, access: { has: obj => "min" in obj, get: obj => obj.min, set: (obj, value) => { obj.min = value; } }, metadata: _metadata }, _min_initializers, _min_extraInitializers);
         __esDecorate(_classThis, null, _max_decorators, { kind: "accessor", name: "max", static: false, private: false, access: { has: obj => "max" in obj, get: obj => obj.max, set: (obj, value) => { obj.max = value; } }, metadata: _metadata }, _max_initializers, _max_extraInitializers);
         __esDecorate(_classThis, null, _placeholder_decorators, { kind: "accessor", name: "placeholder", static: false, private: false, access: { has: obj => "placeholder" in obj, get: obj => obj.placeholder, set: (obj, value) => { obj.placeholder = value; } }, metadata: _metadata }, _placeholder_initializers, _placeholder_extraInitializers);
+        __esDecorate(_classThis, null, _unit_decorators, { kind: "accessor", name: "unit", static: false, private: false, access: { has: obj => "unit" in obj, get: obj => obj.unit, set: (obj, value) => { obj.unit = value; } }, metadata: _metadata }, _unit_initializers, _unit_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -11602,7 +11629,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
 })();
 
 (() => {
-    var _ConfigDialog_open_accessor_storage, _ConfigDialog_hass_accessor_storage, _ConfigDialog_growspaceOptions_accessor_storage, _ConfigDialog_devices_accessor_storage, _ConfigDialog_initialTab_accessor_storage, _ConfigDialog_currentTab_accessor_storage, _ConfigDialog_environmentData_accessor_storage, _ConfigDialog_add_name_accessor_storage, _ConfigDialog_add_rows_accessor_storage, _ConfigDialog_add_plants_per_row_accessor_storage, _ConfigDialog_add_notification_service_accessor_storage, _ConfigDialog_edit_selectedId_accessor_storage, _ConfigDialog_edit_name_accessor_storage, _ConfigDialog_edit_rows_accessor_storage, _ConfigDialog_edit_plants_per_row_accessor_storage, _ConfigDialog_edit_notification_service_accessor_storage, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, _ConfigDialog_env_temp_sensor_accessor_storage, _ConfigDialog_env_humidity_sensor_accessor_storage, _ConfigDialog_env_vpd_sensor_accessor_storage, _ConfigDialog_env_co2_sensor_accessor_storage, _ConfigDialog_env_circulation_fan_accessor_storage, _ConfigDialog_env_stress_threshold_accessor_storage, _ConfigDialog_env_mold_threshold_accessor_storage, _ConfigDialog_env_light_sensor_accessor_storage, _ConfigDialog_env_exhaust_entity_accessor_storage, _ConfigDialog_env_humidifier_entity_accessor_storage, _ConfigDialog_env_dehumidifier_entity_accessor_storage, _ConfigDialog_env_soil_moisture_sensor_accessor_storage, _ConfigDialog_env_control_dehumidifier_accessor_storage, _ConfigDialog_env_dehumidifier_thresholds_accessor_storage, _ConfigDialog__showDeleteConfirm_accessor_storage;
+    var _ConfigDialog_open_accessor_storage, _ConfigDialog_hass_accessor_storage, _ConfigDialog_growspaceOptions_accessor_storage, _ConfigDialog_devices_accessor_storage, _ConfigDialog_initialTab_accessor_storage, _ConfigDialog_currentTab_accessor_storage, _ConfigDialog_environmentData_accessor_storage, _ConfigDialog_add_name_accessor_storage, _ConfigDialog_add_rows_accessor_storage, _ConfigDialog_add_plants_per_row_accessor_storage, _ConfigDialog_add_notification_service_accessor_storage, _ConfigDialog_edit_selectedId_accessor_storage, _ConfigDialog_edit_name_accessor_storage, _ConfigDialog_edit_rows_accessor_storage, _ConfigDialog_edit_plants_per_row_accessor_storage, _ConfigDialog_edit_notification_service_accessor_storage, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, _ConfigDialog_env_temp_sensor_accessor_storage, _ConfigDialog_env_humidity_sensor_accessor_storage, _ConfigDialog_env_vpd_sensor_accessor_storage, _ConfigDialog_env_co2_sensor_accessor_storage, _ConfigDialog_env_circulation_fan_accessor_storage, _ConfigDialog_env_stress_threshold_accessor_storage, _ConfigDialog_env_mold_threshold_accessor_storage, _ConfigDialog_env_light_sensor_accessor_storage, _ConfigDialog_env_exhaust_entity_accessor_storage, _ConfigDialog_env_humidifier_entity_accessor_storage, _ConfigDialog_env_dehumidifier_entity_accessor_storage, _ConfigDialog_env_soil_moisture_sensor_accessor_storage, _ConfigDialog_env_control_dehumidifier_accessor_storage, _ConfigDialog_env_dehumidifier_thresholds_accessor_storage, _ConfigDialog__activeDehumidifierStage_accessor_storage, _ConfigDialog__showDeleteConfirm_accessor_storage;
     let _classDecorators = [t$2('config-dialog')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -11701,6 +11728,9 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
     let _env_dehumidifier_thresholds_decorators;
     let _env_dehumidifier_thresholds_initializers = [];
     let _env_dehumidifier_thresholds_extraInitializers = [];
+    let __activeDehumidifierStage_decorators;
+    let __activeDehumidifierStage_initializers = [];
+    let __activeDehumidifierStage_extraInitializers = [];
     let __showDeleteConfirm_decorators;
     let __showDeleteConfirm_initializers = [];
     let __showDeleteConfirm_extraInitializers = [];
@@ -11770,6 +11800,8 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         set env_control_dehumidifier(value) { __classPrivateFieldSet(this, _ConfigDialog_env_control_dehumidifier_accessor_storage, value, "f"); }
         get env_dehumidifier_thresholds() { return __classPrivateFieldGet(this, _ConfigDialog_env_dehumidifier_thresholds_accessor_storage, "f"); }
         set env_dehumidifier_thresholds(value) { __classPrivateFieldSet(this, _ConfigDialog_env_dehumidifier_thresholds_accessor_storage, value, "f"); }
+        get _activeDehumidifierStage() { return __classPrivateFieldGet(this, _ConfigDialog__activeDehumidifierStage_accessor_storage, "f"); }
+        set _activeDehumidifierStage(value) { __classPrivateFieldSet(this, _ConfigDialog__activeDehumidifierStage_accessor_storage, value, "f"); }
         willUpdate(changedProperties) {
             if (changedProperties.has('environmentData') && this.environmentData) {
                 this.setInitialState(this.currentTab, this.environmentData);
@@ -12213,6 +12245,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         renderEnvironmentTab() {
             return x `
       <div style="display:flex; flex-direction:column; gap:20px;">
+        <!-- Target Selection -->
         <div class="detail-card">
           <h3>Select Target</h3>
           <div class="md3-input-group">
@@ -12228,31 +12261,48 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
           </div>
         </div>
 
+        <!-- Monitoring Section -->
         <div class="detail-card">
-          <h3>Sensors</h3>
-          ${this._renderEntitySelect('Temperature Sensor', this.env_temp_sensor, ['sensor', 'input_number'], 'temperature', (e) => (this.env_temp_sensor = e.target.value))}
-          ${this._renderEntitySelect('Humidity Sensor', this.env_humidity_sensor, ['sensor', 'input_number'], 'humidity', (e) => (this.env_humidity_sensor = e.target.value))}
-          ${this._renderEntitySelect('VPD Sensor (Optional)', this.env_vpd_sensor, ['sensor', 'input_number'], 'pressure', (e) => (this.env_vpd_sensor = e.target.value))}
-        </div>
-
-        </div>
-
-        <div class="detail-card">
-          <h3>Optional</h3>
-          ${this._renderEntitySelect('CO2 Sensor', this.env_co2_sensor, ['sensor', 'input_number'], 'carbon_dioxide', (e) => (this.env_co2_sensor = e.target.value))}
-          ${this._renderEntitySelect('Circulation Fan / Switch', this.env_circulation_fan, ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'], null, (e) => (this.env_circulation_fan = e.target.value))}
-          ${this._renderEntitySelect('Light Source / Sensor', this.env_light_sensor, ['switch', 'light', 'input_boolean', 'sensor'], null, (e) => (this.env_light_sensor = e.target.value))}
-          ${this._renderEntitySelect('Soil Moisture Sensor', this.env_soil_moisture_sensor, ['sensor', 'input_number'], 'moisture', (e) => (this.env_soil_moisture_sensor = e.target.value))}
-        </div>
-
-        <div class="detail-card">
-          <h3>Climate Devices</h3>
-           ${this._renderEntitySelect('Exhaust Fan / Switch', this.env_exhaust_entity, ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (e) => (this.env_exhaust_entity = e.target.value))}
-           ${this._renderEntitySelect('Humidifier', this.env_humidifier_entity, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (e) => (this.env_humidifier_entity = e.target.value))}
-           ${this._renderEntitySelect('Dehumidifier', this.env_dehumidifier_entity, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'], null, (e) => (this.env_dehumidifier_entity = e.target.value))}
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); padding-bottom: 8px;">
+            <svg style="width:20px;height:20px;fill:var(--primary-color, #4caf50);" viewBox="0 0 24 24"><path d="${mdiGauge}"></path></svg>
+            <h3 style="margin:0; border:none; padding:0;">Monitoring</h3>
+          </div>
           
-          <div class="md3-input-group" style="flex-direction:row; align-items:center; justify-content:space-between;">
-             <label class="md3-label" style="margin:0">Control Dehumidifier</label>
+          <div class="row-col-grid">
+            ${this._renderEntitySelect('Temperature Sensor', this.env_temp_sensor, ['sensor', 'input_number'], 'temperature', (e) => (this.env_temp_sensor = e.target.value))}
+            ${this._renderEntitySelect('Humidity Sensor', this.env_humidity_sensor, ['sensor', 'input_number'], 'humidity', (e) => (this.env_humidity_sensor = e.target.value))}
+          </div>
+
+          <div class="row-col-grid" style="margin-top:16px;">
+            ${this._renderEntitySelect('VPD Sensor (Optional)', this.env_vpd_sensor, ['sensor', 'input_number'], 'pressure', (e) => (this.env_vpd_sensor = e.target.value))}
+            ${this._renderEntitySelect('CO2 Sensor', this.env_co2_sensor, ['sensor', 'input_number'], 'carbon_dioxide', (e) => (this.env_co2_sensor = e.target.value))}
+          </div>
+
+          <div class="row-col-grid" style="margin-top:16px;">
+             ${this._renderEntitySelect('Soil Moisture Sensor', this.env_soil_moisture_sensor, ['sensor', 'input_number'], 'moisture', (e) => (this.env_soil_moisture_sensor = e.target.value))}
+             ${this._renderEntitySelect('Light Source / Sensor', this.env_light_sensor, ['switch', 'light', 'input_boolean', 'sensor'], null, (e) => (this.env_light_sensor = e.target.value))}
+          </div>
+        </div>
+
+        <!-- Climate Control Section -->
+        <div class="detail-card">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); padding-bottom: 8px;">
+            <svg style="width:20px;height:20px;fill:var(--primary-color, #4caf50);" viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg>
+            <h3 style="margin:0; border:none; padding:0;">Climate Control</h3>
+          </div>
+
+          <div class="row-col-grid">
+             ${this._renderEntitySelect('Exhaust Fan / Switch', this.env_exhaust_entity, ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (e) => (this.env_exhaust_entity = e.target.value))}
+             ${this._renderEntitySelect('Circulation Fan / Switch', this.env_circulation_fan, ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'], null, (e) => (this.env_circulation_fan = e.target.value))}
+          </div>
+
+          <div class="row-col-grid" style="margin-top:16px;">
+             ${this._renderEntitySelect('Humidifier', this.env_humidifier_entity, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (e) => (this.env_humidifier_entity = e.target.value))}
+             ${this._renderEntitySelect('Dehumidifier', this.env_dehumidifier_entity, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'], null, (e) => (this.env_dehumidifier_entity = e.target.value))}
+          </div>
+          
+          <div class="md3-input-group" style=" display:flex; justify-content:flex-end; align-items:center; margin-top:16px;">
+             <label class="md3-label" style="margin:0">Control Dehumidifier via Manager</label>
              <input type="checkbox" 
                 .checked=${this.env_control_dehumidifier}
                 @change=${(e) => (this.env_control_dehumidifier = e.target.checked)}
@@ -12261,19 +12311,29 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
           </div>
         </div>
 
+        <!-- Thresholds Section -->
         <div class="detail-card">
-          <h3>Thresholds</h3>
-          <md3-number-input
-            label="Stress Threshold (0.0-1.0)"
-            .value=${this.env_stress_threshold}
-            @change=${(e) => (this.env_stress_threshold = parseFloat(e.detail))}
-          ></md3-number-input>
-          <md3-number-input
-            label="Mold Threshold (0.0-1.0)"
-            .value=${this.env_mold_threshold}
-            @change=${(e) => (this.env_mold_threshold = parseFloat(e.detail))}
-          ></md3-number-input>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); padding-bottom: 8px;">
+            <svg style="width:20px;height:20px;fill:#ff9800;" viewBox="0 0 24 24"><path d="${mdiAlert}"></path></svg>
+            <h3 style="margin:0; border:none; padding:0;">Thresholds</h3>
+          </div>
+
+          <div class="row-col-grid">
+            <md3-number-input
+              label="Stress Threshold (VPD)"
+              .value=${this.env_stress_threshold}
+              @change=${(e) => (this.env_stress_threshold = parseFloat(e.detail))}
+              step="0.01"
+            ></md3-number-input>
+            <md3-number-input
+              label="Mold Threshold (VPD)"
+              .value=${this.env_mold_threshold}
+              @change=${(e) => (this.env_mold_threshold = parseFloat(e.detail))}
+              step="0.01"
+            ></md3-number-input>
+          </div>
         </div>
+
       </div>
     `;
         }
@@ -12328,6 +12388,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                 { id: 'drying', label: 'Drying' },
                 { id: 'curing', label: 'Curing' }
             ];
+            const activeStage = stages.find(s => s.id === this._activeDehumidifierStage) || stages[0];
             return x `
       <div style="display:flex; flex-direction:column; gap:20px;">
         <div class="detail-card">
@@ -12347,51 +12408,81 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
 
         <div class="detail-card">
           <h3>Dehumidifier Thresholds (VPD/kPa)</h3>
-          <p style="font-size:0.8rem; opacity:0.7;">
-            Set VPD thresholds to control when the dehumidifier turns on/off for each growth stage.
-          </p>
-        </div>
+          
+          <!-- Sub-navigation for Stages -->
+          <div class="config-tabs sub-tabs" style="margin: 0 -16px; padding: 0 16px; overflow-x: auto; justify-content: flex-start;">
+            ${stages.map(stage => x `
+              <div
+                class="config-tab ${this._activeDehumidifierStage === stage.id ? 'active' : ''}"
+                @click=${() => this._activeDehumidifierStage = stage.id}
+                style="padding: 12px 16px; font-size: 0.9rem;"
+              >
+                ${stage.label}
+              </div>
+            `)}
+          </div>
 
-        ${stages.map(stage => x `
-          <div class="detail-card">
-            <h4>${stage.label}</h4>
-            <div class="row-col-grid">
+          <div style="padding-top: 24px;">
+             <!-- Info Box -->
+             <div style="display: flex; gap: 12px; padding: 12px; background: var(--secondary-background-color, rgba(255,255,255,0.05)); border-radius: 8px; margin-bottom: 24px; font-size: 0.85rem; line-height: 1.4; align-items: flex-start;">
+                <svg style="width:20px; height:20px; flex-shrink: 0; fill: var(--primary-color, #4caf50);" viewBox="0 0 24 24">
+                  <path d="${mdiInformation}"></path>
+                </svg>
+                <div style="opacity: 0.8;">
+                  Configuring <strong>${activeStage.label}</strong> stage.<br>
+                  Ensure <b>On</b> threshold is lower than <b>Off</b> threshold for proper hysteresis.
+                </div>
+             </div>
+
+             <div class="row-col-grid">
                <!-- Day Cycle -->
-               <div style="display:flex; flex-direction:column; gap:8px;">
-                 <h5>Day</h5>
+               <div style="display:flex; flex-direction:column; gap:12px; background: rgba(0,0,0,0.1); padding: 16px; border-radius: 12px;">
+                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; color: var(--primary-text-color);">
+                    <svg style="width:20px;height:20px;fill:#ff9800;" viewBox="0 0 24 24"><path d="${mdiWhiteBalanceSunny}"></path></svg>
+                    <h5 style="margin:0; font-size:1rem;">Day Cycle</h5>
+                 </div>
+                 
                  <md3-number-input
                     label="On"
-                    .value=${this._getThresholdValue(stage.id, 'day', 'on')}
-                    @change=${(e) => this._updateThreshold(stage.id, 'day', 'on', parseFloat(e.detail))}
+                    .value=${this._getThresholdValue(activeStage.id, 'day', 'on')}
+                    @change=${(e) => this._updateThreshold(activeStage.id, 'day', 'on', parseFloat(e.detail))}
                     step="0.01"
+                    .unit=${"kPa"}
                  ></md3-number-input>
                  <md3-number-input
                     label="Off"
-                    .value=${this._getThresholdValue(stage.id, 'day', 'off')}
-                    @change=${(e) => this._updateThreshold(stage.id, 'day', 'off', parseFloat(e.detail))}
+                    .value=${this._getThresholdValue(activeStage.id, 'day', 'off')}
+                    @change=${(e) => this._updateThreshold(activeStage.id, 'day', 'off', parseFloat(e.detail))}
                     step="0.01"
+                    .unit=${"kPa"}
                  ></md3-number-input>
                </div>
 
                <!-- Night Cycle -->
-               <div style="display:flex; flex-direction:column; gap:8px;">
-                 <h5>Night</h5>
+               <div style="display:flex; flex-direction:column; gap:12px; background: rgba(0,0,0,0.1); padding: 16px; border-radius: 12px;">
+                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; color: var(--primary-text-color);">
+                    <svg style="width:20px;height:20px;fill:#7986cb;" viewBox="0 0 24 24"><path d="${mdiWeatherNight}"></path></svg>
+                    <h5 style="margin:0; font-size:1rem;">Night Cycle</h5>
+                 </div>
+
                  <md3-number-input
                     label="On"
-                    .value=${this._getThresholdValue(stage.id, 'night', 'on')}
-                    @change=${(e) => this._updateThreshold(stage.id, 'night', 'on', parseFloat(e.detail))}
+                    .value=${this._getThresholdValue(activeStage.id, 'night', 'on')}
+                    @change=${(e) => this._updateThreshold(activeStage.id, 'night', 'on', parseFloat(e.detail))}
                     step="0.01"
+                    .unit=${"kPa"}
                  ></md3-number-input>
                  <md3-number-input
                     label="Off"
-                    .value=${this._getThresholdValue(stage.id, 'night', 'off')}
-                    @change=${(e) => this._updateThreshold(stage.id, 'night', 'off', parseFloat(e.detail))}
+                    .value=${this._getThresholdValue(activeStage.id, 'night', 'off')}
+                    @change=${(e) => this._updateThreshold(activeStage.id, 'night', 'off', parseFloat(e.detail))}
                     step="0.01"
+                    .unit=${"kPa"}
                  ></md3-number-input>
                </div>
             </div>
           </div>
-        `)}
+        </div>
       </div>
     `;
         }
@@ -12444,7 +12535,8 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
             _ConfigDialog_env_soil_moisture_sensor_accessor_storage.set(this, (__runInitializers(this, _env_dehumidifier_entity_extraInitializers), __runInitializers(this, _env_soil_moisture_sensor_initializers, '')));
             _ConfigDialog_env_control_dehumidifier_accessor_storage.set(this, (__runInitializers(this, _env_soil_moisture_sensor_extraInitializers), __runInitializers(this, _env_control_dehumidifier_initializers, false)));
             _ConfigDialog_env_dehumidifier_thresholds_accessor_storage.set(this, (__runInitializers(this, _env_control_dehumidifier_extraInitializers), __runInitializers(this, _env_dehumidifier_thresholds_initializers, {})));
-            _ConfigDialog__showDeleteConfirm_accessor_storage.set(this, (__runInitializers(this, _env_dehumidifier_thresholds_extraInitializers), __runInitializers(this, __showDeleteConfirm_initializers, false)));
+            _ConfigDialog__activeDehumidifierStage_accessor_storage.set(this, (__runInitializers(this, _env_dehumidifier_thresholds_extraInitializers), __runInitializers(this, __activeDehumidifierStage_initializers, 'seedling')));
+            _ConfigDialog__showDeleteConfirm_accessor_storage.set(this, (__runInitializers(this, __activeDehumidifierStage_extraInitializers), __runInitializers(this, __showDeleteConfirm_initializers, false)));
             __runInitializers(this, __showDeleteConfirm_extraInitializers);
         }
     };
@@ -12479,6 +12571,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
     _ConfigDialog_env_soil_moisture_sensor_accessor_storage = new WeakMap();
     _ConfigDialog_env_control_dehumidifier_accessor_storage = new WeakMap();
     _ConfigDialog_env_dehumidifier_thresholds_accessor_storage = new WeakMap();
+    _ConfigDialog__activeDehumidifierStage_accessor_storage = new WeakMap();
     _ConfigDialog__showDeleteConfirm_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "ConfigDialog");
     (() => {
@@ -12514,6 +12607,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         _env_soil_moisture_sensor_decorators = [r$2()];
         _env_control_dehumidifier_decorators = [r$2()];
         _env_dehumidifier_thresholds_decorators = [r$2()];
+        __activeDehumidifierStage_decorators = [r$2()];
         __showDeleteConfirm_decorators = [r$2()];
         __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
         __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
@@ -12546,6 +12640,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         __esDecorate(_classThis, null, _env_soil_moisture_sensor_decorators, { kind: "accessor", name: "env_soil_moisture_sensor", static: false, private: false, access: { has: obj => "env_soil_moisture_sensor" in obj, get: obj => obj.env_soil_moisture_sensor, set: (obj, value) => { obj.env_soil_moisture_sensor = value; } }, metadata: _metadata }, _env_soil_moisture_sensor_initializers, _env_soil_moisture_sensor_extraInitializers);
         __esDecorate(_classThis, null, _env_control_dehumidifier_decorators, { kind: "accessor", name: "env_control_dehumidifier", static: false, private: false, access: { has: obj => "env_control_dehumidifier" in obj, get: obj => obj.env_control_dehumidifier, set: (obj, value) => { obj.env_control_dehumidifier = value; } }, metadata: _metadata }, _env_control_dehumidifier_initializers, _env_control_dehumidifier_extraInitializers);
         __esDecorate(_classThis, null, _env_dehumidifier_thresholds_decorators, { kind: "accessor", name: "env_dehumidifier_thresholds", static: false, private: false, access: { has: obj => "env_dehumidifier_thresholds" in obj, get: obj => obj.env_dehumidifier_thresholds, set: (obj, value) => { obj.env_dehumidifier_thresholds = value; } }, metadata: _metadata }, _env_dehumidifier_thresholds_initializers, _env_dehumidifier_thresholds_extraInitializers);
+        __esDecorate(_classThis, null, __activeDehumidifierStage_decorators, { kind: "accessor", name: "_activeDehumidifierStage", static: false, private: false, access: { has: obj => "_activeDehumidifierStage" in obj, get: obj => obj._activeDehumidifierStage, set: (obj, value) => { obj._activeDehumidifierStage = value; } }, metadata: _metadata }, __activeDehumidifierStage_initializers, __activeDehumidifierStage_extraInitializers);
         __esDecorate(_classThis, null, __showDeleteConfirm_decorators, { kind: "accessor", name: "_showDeleteConfirm", static: false, private: false, access: { has: obj => "_showDeleteConfirm" in obj, get: obj => obj._showDeleteConfirm, set: (obj, value) => { obj._showDeleteConfirm = value; } }, metadata: _metadata }, __showDeleteConfirm_initializers, __showDeleteConfirm_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         _classThis = _classDescriptor.value;

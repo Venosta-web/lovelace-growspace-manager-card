@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { mdiClose, mdiCog, mdiViewDashboard, mdiThermometer, mdiPencil, mdiDelete, mdiWaterPercent } from '@mdi/js';
+import { mdiClose, mdiCog, mdiViewDashboard, mdiThermometer, mdiPencil, mdiDelete, mdiWaterPercent, mdiWhiteBalanceSunny, mdiWeatherNight, mdiInformation, mdiGauge, mdiFan, mdiAlert } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
@@ -61,6 +61,7 @@ export class ConfigDialog extends LitElement {
   @state() private accessor env_soil_moisture_sensor = '';
   @state() private accessor env_control_dehumidifier = false;
   @state() private accessor env_dehumidifier_thresholds: Record<string, Record<string, { on: number; off: number }>> = {};
+  @state() private accessor _activeDehumidifierStage = 'seedling';
 
   static styles = [
     dialogStyles,
@@ -655,6 +656,7 @@ export class ConfigDialog extends LitElement {
   private renderEnvironmentTab() {
     return html`
       <div style="display:flex; flex-direction:column; gap:20px;">
+        <!-- Target Selection -->
         <div class="detail-card">
           <h3>Select Target</h3>
           <div class="md3-input-group">
@@ -672,90 +674,107 @@ export class ConfigDialog extends LitElement {
           </div>
         </div>
 
+        <!-- Monitoring Section -->
         <div class="detail-card">
-          <h3>Sensors</h3>
-          ${this._renderEntitySelect(
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); padding-bottom: 8px;">
+            <svg style="width:20px;height:20px;fill:var(--primary-color, #4caf50);" viewBox="0 0 24 24"><path d="${mdiGauge}"></path></svg>
+            <h3 style="margin:0; border:none; padding:0;">Monitoring</h3>
+          </div>
+          
+          <div class="row-col-grid">
+            ${this._renderEntitySelect(
       'Temperature Sensor',
       this.env_temp_sensor,
       ['sensor', 'input_number'],
       'temperature',
       (e: Event) => (this.env_temp_sensor = (e.target as HTMLSelectElement).value)
     )}
-          ${this._renderEntitySelect(
+            ${this._renderEntitySelect(
       'Humidity Sensor',
       this.env_humidity_sensor,
       ['sensor', 'input_number'],
       'humidity',
       (e: Event) => (this.env_humidity_sensor = (e.target as HTMLSelectElement).value)
     )}
-          ${this._renderEntitySelect(
+          </div>
+
+          <div class="row-col-grid" style="margin-top:16px;">
+            ${this._renderEntitySelect(
       'VPD Sensor (Optional)',
       this.env_vpd_sensor,
       ['sensor', 'input_number'],
       'pressure',
       (e: Event) => (this.env_vpd_sensor = (e.target as HTMLSelectElement).value)
     )}
-        </div>
-
-        </div>
-
-        <div class="detail-card">
-          <h3>Optional</h3>
-          ${this._renderEntitySelect(
+            ${this._renderEntitySelect(
       'CO2 Sensor',
       this.env_co2_sensor,
       ['sensor', 'input_number'],
       'carbon_dioxide',
       (e: Event) => (this.env_co2_sensor = (e.target as HTMLSelectElement).value)
     )}
-          ${this._renderEntitySelect(
-      'Circulation Fan / Switch',
-      this.env_circulation_fan,
-      ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'],
-      null,
-      (e: Event) => (this.env_circulation_fan = (e.target as HTMLSelectElement).value)
-    )}
-          ${this._renderEntitySelect(
-      'Light Source / Sensor',
-      this.env_light_sensor,
-      ['switch', 'light', 'input_boolean', 'sensor'],
-      null,
-      (e: Event) => (this.env_light_sensor = (e.target as HTMLSelectElement).value)
-    )}
-          ${this._renderEntitySelect(
+          </div>
+
+          <div class="row-col-grid" style="margin-top:16px;">
+             ${this._renderEntitySelect(
       'Soil Moisture Sensor',
       this.env_soil_moisture_sensor,
       ['sensor', 'input_number'],
       'moisture',
       (e: Event) => (this.env_soil_moisture_sensor = (e.target as HTMLSelectElement).value)
     )}
+             ${this._renderEntitySelect(
+      'Light Source / Sensor',
+      this.env_light_sensor,
+      ['switch', 'light', 'input_boolean', 'sensor'],
+      null,
+      (e: Event) => (this.env_light_sensor = (e.target as HTMLSelectElement).value)
+    )}
+          </div>
         </div>
 
+        <!-- Climate Control Section -->
         <div class="detail-card">
-          <h3>Climate Devices</h3>
-           ${this._renderEntitySelect(
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); padding-bottom: 8px;">
+            <svg style="width:20px;height:20px;fill:var(--primary-color, #4caf50);" viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg>
+            <h3 style="margin:0; border:none; padding:0;">Climate Control</h3>
+          </div>
+
+          <div class="row-col-grid">
+             ${this._renderEntitySelect(
       'Exhaust Fan / Switch',
       this.env_exhaust_entity,
       ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
       null,
       (e: Event) => (this.env_exhaust_entity = (e.target as HTMLSelectElement).value)
     )}
-           ${this._renderEntitySelect(
+             ${this._renderEntitySelect(
+      'Circulation Fan / Switch',
+      this.env_circulation_fan,
+      ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'],
+      null,
+      (e: Event) => (this.env_circulation_fan = (e.target as HTMLSelectElement).value)
+    )}
+          </div>
+
+          <div class="row-col-grid" style="margin-top:16px;">
+             ${this._renderEntitySelect(
       'Humidifier',
       this.env_humidifier_entity,
       ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
       null,
       (e: Event) => (this.env_humidifier_entity = (e.target as HTMLSelectElement).value)
     )}
-           ${this._renderEntitySelect(
+             ${this._renderEntitySelect(
       'Dehumidifier',
       this.env_dehumidifier_entity,
       ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'],
       null,
       (e: Event) => (this.env_dehumidifier_entity = (e.target as HTMLSelectElement).value)
     )}
+          </div>
           
-          <div class="md3-input-group" style="flex-direction:row; align-items:center; justify-content:space-between;">
+          <div class="md3-input-group" style=" display:flex; justify-content:flex-end; align-items:center; margin-top:16px;">
              <label class="md3-label" style="margin:0">Control Dehumidifier</label>
              <input type="checkbox" 
                 .checked=${this.env_control_dehumidifier}
@@ -765,19 +784,29 @@ export class ConfigDialog extends LitElement {
           </div>
         </div>
 
+        <!-- Thresholds Section -->
         <div class="detail-card">
-          <h3>Thresholds</h3>
-          <md3-number-input
-            label="Stress Threshold (0.0-1.0)"
-            .value=${this.env_stress_threshold}
-            @change=${(e: CustomEvent) => (this.env_stress_threshold = parseFloat(e.detail))}
-          ></md3-number-input>
-          <md3-number-input
-            label="Mold Threshold (0.0-1.0)"
-            .value=${this.env_mold_threshold}
-            @change=${(e: CustomEvent) => (this.env_mold_threshold = parseFloat(e.detail))}
-          ></md3-number-input>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); padding-bottom: 8px;">
+            <svg style="width:20px;height:20px;fill:#ff9800;" viewBox="0 0 24 24"><path d="${mdiAlert}"></path></svg>
+            <h3 style="margin:0; border:none; padding:0;">Thresholds</h3>
+          </div>
+
+          <div class="row-col-grid">
+            <md3-number-input
+              label="Stress Threshold (VPD)"
+              .value=${this.env_stress_threshold}
+              @change=${(e: CustomEvent) => (this.env_stress_threshold = parseFloat(e.detail))}
+              step="0.01"
+            ></md3-number-input>
+            <md3-number-input
+              label="Mold Threshold (VPD)"
+              .value=${this.env_mold_threshold}
+              @change=${(e: CustomEvent) => (this.env_mold_threshold = parseFloat(e.detail))}
+              step="0.01"
+            ></md3-number-input>
+          </div>
         </div>
+
       </div>
     `;
   }
@@ -835,6 +864,8 @@ export class ConfigDialog extends LitElement {
       { id: 'curing', label: 'Curing' }
     ];
 
+    const activeStage = stages.find(s => s.id === this._activeDehumidifierStage) || stages[0];
+
     return html`
       <div style="display:flex; flex-direction:column; gap:20px;">
         <div class="detail-card">
@@ -856,51 +887,81 @@ export class ConfigDialog extends LitElement {
 
         <div class="detail-card">
           <h3>Dehumidifier Thresholds (VPD/kPa)</h3>
-          <p style="font-size:0.8rem; opacity:0.7;">
-            Set VPD thresholds to control when the dehumidifier turns on/off for each growth stage.
-          </p>
-        </div>
+          
+          <!-- Sub-navigation for Stages -->
+          <div class="config-tabs sub-tabs" style="margin: 0 -16px; padding: 0 16px; overflow-x: auto; justify-content: flex-start;">
+            ${stages.map(stage => html`
+              <div
+                class="config-tab ${this._activeDehumidifierStage === stage.id ? 'active' : ''}"
+                @click=${() => this._activeDehumidifierStage = stage.id}
+                style="padding: 12px 16px; font-size: 0.9rem;"
+              >
+                ${stage.label}
+              </div>
+            `)}
+          </div>
 
-        ${stages.map(stage => html`
-          <div class="detail-card">
-            <h4>${stage.label}</h4>
-            <div class="row-col-grid">
+          <div style="padding-top: 24px;">
+             <!-- Info Box -->
+             <div style="display: flex; gap: 12px; padding: 12px; background: var(--secondary-background-color, rgba(255,255,255,0.05)); border-radius: 8px; margin-bottom: 24px; font-size: 0.85rem; line-height: 1.4; align-items: flex-start;">
+                <svg style="width:20px; height:20px; flex-shrink: 0; fill: var(--primary-color, #4caf50);" viewBox="0 0 24 24">
+                  <path d="${mdiInformation}"></path>
+                </svg>
+                <div style="opacity: 0.8;">
+                  Configuring <strong>${activeStage.label}</strong> stage.<br>
+                  Ensure <b>On</b> threshold is lower than <b>Off</b> threshold for proper hysteresis.
+                </div>
+             </div>
+
+             <div class="row-col-grid">
                <!-- Day Cycle -->
-               <div style="display:flex; flex-direction:column; gap:8px;">
-                 <h5>Day</h5>
+               <div style="display:flex; flex-direction:column; gap:12px; background: rgba(0,0,0,0.1); padding: 16px; border-radius: 12px;">
+                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; color: var(--primary-text-color);">
+                    <svg style="width:20px;height:20px;fill:#ff9800;" viewBox="0 0 24 24"><path d="${mdiWhiteBalanceSunny}"></path></svg>
+                    <h5 style="margin:0; font-size:1rem;">Day Cycle</h5>
+                 </div>
+                 
                  <md3-number-input
                     label="On"
-                    .value=${this._getThresholdValue(stage.id, 'day', 'on')}
-                    @change=${(e: CustomEvent) => this._updateThreshold(stage.id, 'day', 'on', parseFloat(e.detail))}
+                    .value=${this._getThresholdValue(activeStage.id, 'day', 'on')}
+                    @change=${(e: CustomEvent) => this._updateThreshold(activeStage.id, 'day', 'on', parseFloat(e.detail))}
                     step="0.01"
+                    .unit=${"kPa"}
                  ></md3-number-input>
                  <md3-number-input
                     label="Off"
-                    .value=${this._getThresholdValue(stage.id, 'day', 'off')}
-                    @change=${(e: CustomEvent) => this._updateThreshold(stage.id, 'day', 'off', parseFloat(e.detail))}
+                    .value=${this._getThresholdValue(activeStage.id, 'day', 'off')}
+                    @change=${(e: CustomEvent) => this._updateThreshold(activeStage.id, 'day', 'off', parseFloat(e.detail))}
                     step="0.01"
+                    .unit=${"kPa"}
                  ></md3-number-input>
                </div>
 
                <!-- Night Cycle -->
-               <div style="display:flex; flex-direction:column; gap:8px;">
-                 <h5>Night</h5>
+               <div style="display:flex; flex-direction:column; gap:12px; background: rgba(0,0,0,0.1); padding: 16px; border-radius: 12px;">
+                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; color: var(--primary-text-color);">
+                    <svg style="width:20px;height:20px;fill:#7986cb;" viewBox="0 0 24 24"><path d="${mdiWeatherNight}"></path></svg>
+                    <h5 style="margin:0; font-size:1rem;">Night Cycle</h5>
+                 </div>
+
                  <md3-number-input
                     label="On"
-                    .value=${this._getThresholdValue(stage.id, 'night', 'on')}
-                    @change=${(e: CustomEvent) => this._updateThreshold(stage.id, 'night', 'on', parseFloat(e.detail))}
+                    .value=${this._getThresholdValue(activeStage.id, 'night', 'on')}
+                    @change=${(e: CustomEvent) => this._updateThreshold(activeStage.id, 'night', 'on', parseFloat(e.detail))}
                     step="0.01"
+                    .unit=${"kPa"}
                  ></md3-number-input>
                  <md3-number-input
                     label="Off"
-                    .value=${this._getThresholdValue(stage.id, 'night', 'off')}
-                    @change=${(e: CustomEvent) => this._updateThreshold(stage.id, 'night', 'off', parseFloat(e.detail))}
+                    .value=${this._getThresholdValue(activeStage.id, 'night', 'off')}
+                    @change=${(e: CustomEvent) => this._updateThreshold(activeStage.id, 'night', 'off', parseFloat(e.detail))}
                     step="0.01"
+                    .unit=${"kPa"}
                  ></md3-number-input>
                </div>
             </div>
           </div>
-        `)}
+        </div>
       </div>
     `;
   }
