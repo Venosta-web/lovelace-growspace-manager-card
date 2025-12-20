@@ -26,9 +26,7 @@ import './components/manager/edit-mode-banner';
 import './components/plant-card';
 import './components/growspace-header';
 import { LibraryExportReadyEvent } from './events';
-import './components/views/growspace-view-compact';
-import './components/views/growspace-view-header';
-import './components/views/growspace-view-standard';
+import './components/growspace-view-switcher';
 import { sharedStyles } from './styles/shared.styles';
 import { uiStyles } from './styles/ui.styles';
 import { growspaceCardStyles } from './styles/growspace-card.styles';
@@ -169,12 +167,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   }
 
   private _focusPlantByIndex(index: number) {
-    const activeView = this.shadowRoot?.querySelector(
-      'growspace-view-standard, growspace-view-compact'
-    );
-
-    if (activeView && 'focusPlant' in activeView) {
-      (activeView as any).focusPlant(index);
+    const switcher = this.shadowRoot?.querySelector('growspace-view-switcher') as any;
+    if (switcher && typeof switcher.focusPlant === 'function') {
+      switcher.focusPlant(index);
     }
   }
 
@@ -260,7 +255,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
             @clear-selection=${this._handleClearSelection}
             @exit-edit-mode=${this._handleExitEditMode}
         >
-          ${this._renderView(viewMode, selectedDeviceData, growspaceOptions, grid, effectiveRows)}
+          <growspace-view-switcher
+            .viewMode=${viewMode}
+            .device=${selectedDeviceData}
+            .growspaceOptions=${growspaceOptions}
+            .grid=${grid}
+            .rows=${effectiveRows}
+            .isEditMode=${this.store.state.isEditMode}
+            .isCompact=${this.store.state.isCompactView}
+            .selectedCount=${this.store.state.selectedPlants.size}
+            .config=${this._config}
+            .isLoading=${this.store.state.isLoading}
+          ></growspace-view-switcher>
         </div>
       </ha-card>
 
@@ -272,50 +278,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
           `
         : ''}
       ${this.renderDialogs()}
-    `;
-  }
-
-  private _renderView(
-    viewMode: string,
-    device: GrowspaceDevice,
-    growspaceOptions: Record<string, string>,
-    grid: (PlantEntity | null)[][],
-    effectiveRows: number
-  ): TemplateResult {
-    if (viewMode === 'compact') {
-      return html`
-        <growspace-view-compact
-            .grid=${grid}
-            .rows=${effectiveRows}
-            .cols=${device.plants_per_row}
-            .isLoading=${this.store.state.isLoading}
-        ></growspace-view-compact>
-      `;
-    }
-
-    if (viewMode === 'header') {
-      return html`
-        <growspace-view-header
-            .device=${device}
-            .growspaceOptions=${growspaceOptions}
-        ></growspace-view-header>
-      `;
-    }
-
-    // Standard Mode
-    return html`
-      <growspace-view-standard
-        .device=${device}
-        .growspaceOptions=${growspaceOptions}
-        .grid=${grid}
-        .rows=${effectiveRows}
-        .cols=${device.plants_per_row}
-        .isEditMode=${this.store.state.isEditMode}
-        .isCompact=${this.store.state.isCompactView}
-        .selectedCount=${this.store.state.selectedPlants.size}
-        .config=${this._config}
-        .isLoading=${this.store.state.isLoading}
-      ></growspace-view-standard>
     `;
   }
 

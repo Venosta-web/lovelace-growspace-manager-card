@@ -25015,6 +25015,7 @@ class ResizeController {
       display: flex;
       flex-direction: column;
       gap: 24px;
+      margin-bottom: 24px;
     }
 
     /* ABSOLUTE OVERLAY TRICK for Auto-Width Select */
@@ -27753,6 +27754,164 @@ const growspaceCardStyles = i$6 `
     return _classThis;
 })();
 
+(() => {
+    var _GrowspaceViewSwitcher_viewMode_accessor_storage, _GrowspaceViewSwitcher_device_accessor_storage, _GrowspaceViewSwitcher_growspaceOptions_accessor_storage, _GrowspaceViewSwitcher_grid_accessor_storage, _GrowspaceViewSwitcher_rows_accessor_storage, _GrowspaceViewSwitcher_isLoading_accessor_storage, _GrowspaceViewSwitcher_isEditMode_accessor_storage, _GrowspaceViewSwitcher_isCompact_accessor_storage, _GrowspaceViewSwitcher_selectedCount_accessor_storage, _GrowspaceViewSwitcher_config_accessor_storage;
+    let _classDecorators = [t$2('growspace-view-switcher')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _viewMode_decorators;
+    let _viewMode_initializers = [];
+    let _viewMode_extraInitializers = [];
+    let _device_decorators;
+    let _device_initializers = [];
+    let _device_extraInitializers = [];
+    let _growspaceOptions_decorators;
+    let _growspaceOptions_initializers = [];
+    let _growspaceOptions_extraInitializers = [];
+    let _grid_decorators;
+    let _grid_initializers = [];
+    let _grid_extraInitializers = [];
+    let _rows_decorators;
+    let _rows_initializers = [];
+    let _rows_extraInitializers = [];
+    let _isLoading_decorators;
+    let _isLoading_initializers = [];
+    let _isLoading_extraInitializers = [];
+    let _isEditMode_decorators;
+    let _isEditMode_initializers = [];
+    let _isEditMode_extraInitializers = [];
+    let _isCompact_decorators;
+    let _isCompact_initializers = [];
+    let _isCompact_extraInitializers = [];
+    let _selectedCount_decorators;
+    let _selectedCount_initializers = [];
+    let _selectedCount_extraInitializers = [];
+    let _config_decorators;
+    let _config_initializers = [];
+    let _config_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get viewMode() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_viewMode_accessor_storage, "f"); }
+        set viewMode(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_viewMode_accessor_storage, value, "f"); }
+        get device() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_device_accessor_storage, "f"); }
+        set device(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_device_accessor_storage, value, "f"); }
+        get growspaceOptions() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_growspaceOptions_accessor_storage, "f"); }
+        set growspaceOptions(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_growspaceOptions_accessor_storage, value, "f"); }
+        get grid() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_grid_accessor_storage, "f"); }
+        set grid(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_grid_accessor_storage, value, "f"); }
+        get rows() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_rows_accessor_storage, "f"); }
+        set rows(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_rows_accessor_storage, value, "f"); }
+        // View specific props
+        get isLoading() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_isLoading_accessor_storage, "f"); }
+        set isLoading(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_isLoading_accessor_storage, value, "f"); }
+        get isEditMode() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_isEditMode_accessor_storage, "f"); }
+        set isEditMode(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_isEditMode_accessor_storage, value, "f"); }
+        get isCompact() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_isCompact_accessor_storage, "f"); }
+        set isCompact(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_isCompact_accessor_storage, value, "f"); }
+        get selectedCount() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_selectedCount_accessor_storage, "f"); }
+        set selectedCount(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_selectedCount_accessor_storage, value, "f"); }
+        get config() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_config_accessor_storage, "f"); }
+        set config(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_config_accessor_storage, value, "f"); }
+        focusPlant(index) {
+            const activeView = this.shadowRoot?.querySelector('growspace-view-standard, growspace-view-compact');
+            if (activeView && 'focusPlant' in activeView) {
+                activeView.focusPlant(index);
+            }
+        }
+        render() {
+            if (!this.device)
+                return x ``;
+            if (this.viewMode === 'compact') {
+                return x `
+        <growspace-view-compact
+            .grid=${this.grid}
+            .rows=${this.rows}
+            .cols=${this.device.plants_per_row}
+            .isLoading=${this.isLoading}
+        ></growspace-view-compact>
+      `;
+            }
+            if (this.viewMode === 'header') {
+                return x `
+        <growspace-view-header
+            .device=${this.device}
+            .growspaceOptions=${this.growspaceOptions}
+        ></growspace-view-header>
+      `;
+            }
+            // Standard Mode
+            return x `
+      <growspace-view-standard
+        .device=${this.device}
+        .growspaceOptions=${this.growspaceOptions}
+        .grid=${this.grid}
+        .rows=${this.rows}
+        .cols=${this.device.plants_per_row}
+        .isEditMode=${this.isEditMode}
+        .isCompact=${this.isCompact}
+        .selectedCount=${this.selectedCount}
+        .config=${this.config}
+        .isLoading=${this.isLoading}
+      ></growspace-view-standard>
+    `;
+        }
+        constructor() {
+            super(...arguments);
+            _GrowspaceViewSwitcher_viewMode_accessor_storage.set(this, __runInitializers(this, _viewMode_initializers, 'standard'));
+            _GrowspaceViewSwitcher_device_accessor_storage.set(this, (__runInitializers(this, _viewMode_extraInitializers), __runInitializers(this, _device_initializers, void 0)));
+            _GrowspaceViewSwitcher_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _device_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
+            _GrowspaceViewSwitcher_grid_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _grid_initializers, [])));
+            _GrowspaceViewSwitcher_rows_accessor_storage.set(this, (__runInitializers(this, _grid_extraInitializers), __runInitializers(this, _rows_initializers, 0)));
+            _GrowspaceViewSwitcher_isLoading_accessor_storage.set(this, (__runInitializers(this, _rows_extraInitializers), __runInitializers(this, _isLoading_initializers, false)));
+            _GrowspaceViewSwitcher_isEditMode_accessor_storage.set(this, (__runInitializers(this, _isLoading_extraInitializers), __runInitializers(this, _isEditMode_initializers, false)));
+            _GrowspaceViewSwitcher_isCompact_accessor_storage.set(this, (__runInitializers(this, _isEditMode_extraInitializers), __runInitializers(this, _isCompact_initializers, false)));
+            _GrowspaceViewSwitcher_selectedCount_accessor_storage.set(this, (__runInitializers(this, _isCompact_extraInitializers), __runInitializers(this, _selectedCount_initializers, 0)));
+            _GrowspaceViewSwitcher_config_accessor_storage.set(this, (__runInitializers(this, _selectedCount_extraInitializers), __runInitializers(this, _config_initializers, void 0)));
+            __runInitializers(this, _config_extraInitializers);
+        }
+    };
+    _GrowspaceViewSwitcher_viewMode_accessor_storage = new WeakMap();
+    _GrowspaceViewSwitcher_device_accessor_storage = new WeakMap();
+    _GrowspaceViewSwitcher_growspaceOptions_accessor_storage = new WeakMap();
+    _GrowspaceViewSwitcher_grid_accessor_storage = new WeakMap();
+    _GrowspaceViewSwitcher_rows_accessor_storage = new WeakMap();
+    _GrowspaceViewSwitcher_isLoading_accessor_storage = new WeakMap();
+    _GrowspaceViewSwitcher_isEditMode_accessor_storage = new WeakMap();
+    _GrowspaceViewSwitcher_isCompact_accessor_storage = new WeakMap();
+    _GrowspaceViewSwitcher_selectedCount_accessor_storage = new WeakMap();
+    _GrowspaceViewSwitcher_config_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "GrowspaceViewSwitcher");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _viewMode_decorators = [n$5({ type: String })];
+        _device_decorators = [n$5({ attribute: false })];
+        _growspaceOptions_decorators = [n$5({ attribute: false })];
+        _grid_decorators = [n$5({ attribute: false })];
+        _rows_decorators = [n$5({ type: Number })];
+        _isLoading_decorators = [n$5({ type: Boolean })];
+        _isEditMode_decorators = [n$5({ type: Boolean })];
+        _isCompact_decorators = [n$5({ type: Boolean })];
+        _selectedCount_decorators = [n$5({ type: Number })];
+        _config_decorators = [n$5({ attribute: false })];
+        __esDecorate(_classThis, null, _viewMode_decorators, { kind: "accessor", name: "viewMode", static: false, private: false, access: { has: obj => "viewMode" in obj, get: obj => obj.viewMode, set: (obj, value) => { obj.viewMode = value; } }, metadata: _metadata }, _viewMode_initializers, _viewMode_extraInitializers);
+        __esDecorate(_classThis, null, _device_decorators, { kind: "accessor", name: "device", static: false, private: false, access: { has: obj => "device" in obj, get: obj => obj.device, set: (obj, value) => { obj.device = value; } }, metadata: _metadata }, _device_initializers, _device_extraInitializers);
+        __esDecorate(_classThis, null, _growspaceOptions_decorators, { kind: "accessor", name: "growspaceOptions", static: false, private: false, access: { has: obj => "growspaceOptions" in obj, get: obj => obj.growspaceOptions, set: (obj, value) => { obj.growspaceOptions = value; } }, metadata: _metadata }, _growspaceOptions_initializers, _growspaceOptions_extraInitializers);
+        __esDecorate(_classThis, null, _grid_decorators, { kind: "accessor", name: "grid", static: false, private: false, access: { has: obj => "grid" in obj, get: obj => obj.grid, set: (obj, value) => { obj.grid = value; } }, metadata: _metadata }, _grid_initializers, _grid_extraInitializers);
+        __esDecorate(_classThis, null, _rows_decorators, { kind: "accessor", name: "rows", static: false, private: false, access: { has: obj => "rows" in obj, get: obj => obj.rows, set: (obj, value) => { obj.rows = value; } }, metadata: _metadata }, _rows_initializers, _rows_extraInitializers);
+        __esDecorate(_classThis, null, _isLoading_decorators, { kind: "accessor", name: "isLoading", static: false, private: false, access: { has: obj => "isLoading" in obj, get: obj => obj.isLoading, set: (obj, value) => { obj.isLoading = value; } }, metadata: _metadata }, _isLoading_initializers, _isLoading_extraInitializers);
+        __esDecorate(_classThis, null, _isEditMode_decorators, { kind: "accessor", name: "isEditMode", static: false, private: false, access: { has: obj => "isEditMode" in obj, get: obj => obj.isEditMode, set: (obj, value) => { obj.isEditMode = value; } }, metadata: _metadata }, _isEditMode_initializers, _isEditMode_extraInitializers);
+        __esDecorate(_classThis, null, _isCompact_decorators, { kind: "accessor", name: "isCompact", static: false, private: false, access: { has: obj => "isCompact" in obj, get: obj => obj.isCompact, set: (obj, value) => { obj.isCompact = value; } }, metadata: _metadata }, _isCompact_initializers, _isCompact_extraInitializers);
+        __esDecorate(_classThis, null, _selectedCount_decorators, { kind: "accessor", name: "selectedCount", static: false, private: false, access: { has: obj => "selectedCount" in obj, get: obj => obj.selectedCount, set: (obj, value) => { obj.selectedCount = value; } }, metadata: _metadata }, _selectedCount_initializers, _selectedCount_extraInitializers);
+        __esDecorate(_classThis, null, _config_decorators, { kind: "accessor", name: "config", static: false, private: false, access: { has: obj => "config" in obj, get: obj => obj.config, set: (obj, value) => { obj.config = value; } }, metadata: _metadata }, _config_initializers, _config_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
+
 class GrowspaceStore {
     constructor(host) {
         // State
@@ -28871,9 +29030,9 @@ let GrowspaceManagerCard = (() => {
             this.store.handleKeyboardNavigation(e.key);
         }
         _focusPlantByIndex(index) {
-            const activeView = this.shadowRoot?.querySelector('growspace-view-standard, growspace-view-compact');
-            if (activeView && 'focusPlant' in activeView) {
-                activeView.focusPlant(index);
+            const switcher = this.shadowRoot?.querySelector('growspace-view-switcher');
+            if (switcher && typeof switcher.focusPlant === 'function') {
+                switcher.focusPlant(index);
             }
         }
         _downloadFile(url) {
@@ -28945,7 +29104,18 @@ let GrowspaceManagerCard = (() => {
             @clear-selection=${this._handleClearSelection}
             @exit-edit-mode=${this._handleExitEditMode}
         >
-          ${this._renderView(viewMode, selectedDeviceData, growspaceOptions, grid, effectiveRows)}
+          <growspace-view-switcher
+            .viewMode=${viewMode}
+            .device=${selectedDeviceData}
+            .growspaceOptions=${growspaceOptions}
+            .grid=${grid}
+            .rows=${effectiveRows}
+            .isEditMode=${this.store.state.isEditMode}
+            .isCompact=${this.store.state.isCompactView}
+            .selectedCount=${this.store.state.selectedPlants.size}
+            .config=${this._config}
+            .isLoading=${this.store.state.isLoading}
+          ></growspace-view-switcher>
         </div>
       </ha-card>
 
@@ -28957,41 +29127,6 @@ let GrowspaceManagerCard = (() => {
           `
                 : ''}
       ${this.renderDialogs()}
-    `;
-        }
-        _renderView(viewMode, device, growspaceOptions, grid, effectiveRows) {
-            if (viewMode === 'compact') {
-                return x `
-        <growspace-view-compact
-            .grid=${grid}
-            .rows=${effectiveRows}
-            .cols=${device.plants_per_row}
-            .isLoading=${this.store.state.isLoading}
-        ></growspace-view-compact>
-      `;
-            }
-            if (viewMode === 'header') {
-                return x `
-        <growspace-view-header
-            .device=${device}
-            .growspaceOptions=${growspaceOptions}
-        ></growspace-view-header>
-      `;
-            }
-            // Standard Mode
-            return x `
-      <growspace-view-standard
-        .device=${device}
-        .growspaceOptions=${growspaceOptions}
-        .grid=${grid}
-        .rows=${effectiveRows}
-        .cols=${device.plants_per_row}
-        .isEditMode=${this.store.state.isEditMode}
-        .isCompact=${this.store.state.isCompactView}
-        .selectedCount=${this.store.state.selectedPlants.size}
-        .config=${this._config}
-        .isLoading=${this.store.state.isLoading}
-      ></growspace-view-standard>
     `;
         }
         renderDialogs() {
