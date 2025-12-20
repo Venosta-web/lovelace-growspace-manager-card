@@ -26,17 +26,15 @@ import './components/manager/edit-mode-banner';
 import './components/plant-card';
 import './components/growspace-header';
 import { LibraryExportReadyEvent } from './events';
-import './components/growspace-grid';
-import './components/growspace-analytics';
+import './components/views/growspace-view-compact';
+import './components/views/growspace-view-header';
+import './components/views/growspace-view-standard';
 import { sharedStyles } from './styles/shared.styles';
 import { uiStyles } from './styles/ui.styles';
 import { growspaceCardStyles } from './styles/growspace-card.styles';
 import { variables } from './styles/variables';
 import { GrowspaceStore } from './store/growspace-store';
-
 import { GrowspaceGridController } from './controllers/grid-controller';
-
-
 
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard, GrowspaceCardHost {
@@ -117,11 +115,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
           d.name === this._config.default_growspace
       );
       if (match) {
-        // We can't await this here, causing a potential race if it depends on async,
-        // but handleDeviceChange is essentially synchronous in setting state, though it might fetch data.
-        // It's better than in render() anyway.
-        // Use a timeout to avoid property change during update cycle errors if immediate state change is needed
-        // but since we are in willUpdate, state changes should be fine if strictly internal or upcoming.
         this.store.handleDeviceChange(match.device_id);
       }
       this.store.setDefaultApplied(true);
@@ -130,7 +123,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
-    // updateHass moved to willUpdate for immediate state consistency
     // Handle focus update from store state
     if (this.store.state.focusedPlantIndex >= 0) {
       this._focusPlantByIndex(this.store.state.focusedPlantIndex);
@@ -156,13 +148,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   public setConfig(config: GrowspaceManagerCardConfig): void {
     if (!config) throw new Error('Invalid configuration');
     this._config = config;
-    // handled in initializeSelectedDevice or store setter, but we can set initial state here if store exists?
-    // Actually store exists in constructor.
     if (this._config.initial_view_mode) {
       // already valid if matched type
     } else if (this._config.compact !== undefined && this._config.compact) {
       this.store.state.viewMode = 'compact';
-      // Sync legacy
       this.store.state.isCompactView = true;
     }
   }
@@ -196,6 +185,27 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     document.body.removeChild(a);
   }
 
+  private _handleViewModeChanged(e: CustomEvent) {
+    this.store.setViewMode(e.detail.mode);
+  }
+
+  private _handleGrowspaceChanged(e: CustomEvent) {
+    this.store.handleDeviceChange(e.detail);
+  }
+
+  private _handleSelectAll() {
+    this.store.selectAllPlants();
+  }
+
+  private _handleClearSelection() {
+    this.store.clearPlantSelection();
+  }
+
+  private _handleExitEditMode() {
+    this.store.setEditMode(false);
+    this.store.clearPlantSelection();
+  }
+
   protected render(): TemplateResult {
     if (!this.hass) {
       return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
@@ -218,30 +228,36 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
     }
 
-    // Apply default growspace logic - MOVED TO willUpdate
-
-
     const selectedDeviceData = devices.find((d) => d.device_id === this.selectedDevice);
     if (!selectedDeviceData) {
       return html`<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
     }
 
     const growspaceOptions: Record<string, string> = {};
-    // Use cached devices to ensure dropdown matches available devices
     devices.forEach((d) => {
       growspaceOptions[d.device_id] = d.name;
     });
 
     // Calculate grid layout - now using cached value from willUpdate
     const { effectiveRows, grid } = this.gridController.gridLayout;
-
     const isWide = selectedDeviceData.plants_per_row > 7;
+    const viewMode = this.store.state.viewMode;
 
     return html`
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="sr-only-announcer" aria-live="polite"></div>
-        <div class="unified-growspace-card glass-surface glass-panel" tabindex="0" @keydown=${this._handleKeyboardNav}>
-          ${this.renderViewContent(selectedDeviceData, growspaceOptions, grid, effectiveRows)}
+        <div 
+            class="unified-growspace-card glass-surface glass-panel" 
+            tabindex="0" 
+            @keydown=${this._handleKeyboardNav}
+            @view-mode-changed=${this._handleViewModeChanged}
+            @growspace-changed=${this._handleGrowspaceChanged}
+            @toggle-expansion=${() => this.store.toggleHeaderExpansion()}
+            @select-all=${this._handleSelectAll}
+            @clear-selection=${this._handleClearSelection}
+            @exit-edit-mode=${this._handleExitEditMode}
+        >
+          ${this._renderView(viewMode, selectedDeviceData, growspaceOptions, grid, effectiveRows)}
         </div>
       </ha-card>
 
@@ -256,102 +272,47 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     `;
   }
 
-  private renderEditModeBanner(): TemplateResult {
-    if (!this.store.state.isEditMode) return html``;
-
-    return html`
-      <growspace-edit-mode-banner
-        .selectedCount=${this.store.state.selectedPlants.size}
-        @select-all=${() => this.store.selectAllPlants()}
-        @clear-selection=${() => this.store.clearPlantSelection()}
-        @exit-edit-mode=${() => {
-        this.store.setEditMode(false);
-        this.store.clearPlantSelection();
-      }}
-      ></growspace-edit-mode-banner>
-    `;
-  }
-
-  private renderGrid(
-    grid: (PlantEntity | null)[][],
-    rows: number,
-    cols: number
-  ): TemplateResult {
-    return html`
-      <growspace-grid
-        .plants=${grid}
-        .rows=${rows}
-        .cols=${cols}
-        .compact=${this.store.state.isCompactView}
-        .isLoading=${this.store.state.isLoading}
-      ></growspace-grid>
-    `;
-  }
-
-  private renderViewContent(
-    selectedDeviceData: GrowspaceDevice,
+  private _renderView(
+    viewMode: string,
+    device: GrowspaceDevice,
     growspaceOptions: Record<string, string>,
     grid: (PlantEntity | null)[][],
     effectiveRows: number
   ): TemplateResult {
-    const viewMode = this.store.state.viewMode;
-
     if (viewMode === 'compact') {
       return html`
-        <div class="view-mode-container compact">
-          ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
-          <button
-            class="md3-button compact-exit-fab"
-            @click=${() => this.store.setViewMode('standard')}
-            title="Exit Compact Mode"
-          >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiFullscreenExit}"></path>
-            </svg>
-          </button>
-        </div>
+        <growspace-view-compact
+            .grid=${grid}
+            .rows=${effectiveRows}
+            .cols=${device.plants_per_row}
+            .isLoading=${this.store.state.isLoading}
+        ></growspace-view-compact>
       `;
     }
 
     if (viewMode === 'header') {
       return html`
-        <div class="view-mode-container header">
-          <growspace-header
-            .device=${selectedDeviceData}
+        <growspace-view-header
+            .device=${device}
             .growspaceOptions=${growspaceOptions}
-            @growspace-changed=${(e: any) => this.store.handleDeviceChange(e.target.value)}
-          ></growspace-header>
-          <button class="expand-handle" @click=${() => this.store.toggleHeaderExpansion()}>
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiChevronDown}"></path>
-            </svg>
-          </button>
-        </div>
+        ></growspace-view-header>
       `;
     }
 
     // Standard Mode
     return html`
-      <growspace-header
-        .device=${selectedDeviceData}
+      <growspace-view-standard
+        .device=${device}
         .growspaceOptions=${growspaceOptions}
-        @growspace-changed=${(e: any) => this.store.handleDeviceChange(e.target.value)}
-      ></growspace-header>
-      <growspace-analytics
-        .device=${selectedDeviceData}
-      ></growspace-analytics>
-      ${this.renderEditModeBanner()}
-      ${this.renderGrid(grid, effectiveRows, selectedDeviceData.plants_per_row)}
-      
-      ${this._config?.initial_view_mode === 'header'
-        ? html`
-            <button class="collapse-handle" @click=${() => this.store.toggleHeaderExpansion()}>
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiChevronUp}"></path>
-              </svg>
-            </button>
-          `
-        : ''}
+        .grid=${grid}
+        .rows=${effectiveRows}
+        .cols=${device.plants_per_row}
+        .isEditMode=${this.store.state.isEditMode}
+        .isCompact=${this.store.state.isCompactView}
+        .selectedCount=${this.store.state.selectedPlants.size}
+        .config=${this._config}
+        .isLoading=${this.store.state.isLoading}
+      ></growspace-view-standard>
     `;
   }
 
@@ -362,3 +323,5 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     ></growspace-dialog-host>`;
   }
 }
+
+

@@ -2,8 +2,8 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { LovelaceCardEditor } from 'custom-card-helpers';
 import type { GrowspaceManagerCardConfig } from './types';
-import '@material/web/select/filled-select.js';
-import '@material/web/select/select-option.js';
+
+import { HassSubscriptionController } from './controllers/hass-subscription-controller';
 
 @customElement('growspace-manager-card-editor')
 export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCardEditor {
@@ -11,7 +11,8 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
   @property({ attribute: false }) private accessor _config: GrowspaceManagerCardConfig | undefined;
   @state() private accessor _growspaceOptions: { id: string; name: string }[] = [];
 
-  private _unsubStateChanged?: () => void;
+  private _subscriptionController = new HassSubscriptionController(this);
+  private _hasSubscription = false;
 
   public setConfig(config: GrowspaceManagerCardConfig): void {
     this._config = config;
@@ -27,29 +28,31 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    if (this._unsubStateChanged) {
-      this._unsubStateChanged();
-      this._unsubStateChanged = undefined;
-    }
+    this._hasSubscription = false;
   }
 
   private async _subscribeToSensorUpdates() {
-    if (!this.hass || this._unsubStateChanged) return;
+    if (!this.hass || this._hasSubscription) return;
 
-    this._unsubStateChanged = await this.hass.connection.subscribeEvents((event: any) => {
-      const newState = event.data.new_state;
-      if (newState?.entity_id === 'sensor.growspaces_list') {
-        const gsObj = newState.attributes.growspaces;
-        if (gsObj) {
-          this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
-            id,
-            name: String(name),
-          }));
-        } else {
-          this._growspaceOptions = [];
+    this._hasSubscription = true;
+    await this._subscriptionController.subscribeEvents(
+      this.hass,
+      (event: any) => {
+        const newState = event.data.new_state;
+        if (newState?.entity_id === 'sensor.growspaces_list') {
+          const gsObj = newState.attributes.growspaces;
+          if (gsObj) {
+            this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
+              id,
+              name: String(name),
+            }));
+          } else {
+            this._growspaceOptions = [];
+          }
         }
-      }
-    }, 'state_changed');
+      },
+      'state_changed'
+    );
   }
 
   private _loadGrowspaces() {
@@ -68,11 +71,28 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
   }
 
   static styles = css`
-    .form-group {
-      margin-bottom: 12px;
+    .card-config {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
-    md-filled-select {
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    label {
+      font-weight: 500;
+      color: var(--secondary-text-color);
+    }
+    select {
       width: 100%;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid var(--divider-color);
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      font-size: 1rem;
     }
   `;
 
@@ -80,42 +100,33 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
     if (!this._config) return html``;
 
     return html`
-      <div class="form-group">
-        <md-filled-select
-          label="Initial View Mode"
-          .value=${this._config.initial_view_mode || 'standard'}
-          @change=${(e: Event) =>
-        this._valueChanged('initial_view_mode', (e.target as any).value)}
-        >
-          <md-select-option value="standard">
-            <div slot="headline">Standard</div>
-          </md-select-option>
-          <md-select-option value="compact">
-            <div slot="headline">Compact (Grid Only)</div>
-          </md-select-option>
-          <md-select-option value="header">
-            <div slot="headline">Header Only (Collapsed)</div>
-          </md-select-option>
-        </md-filled-select>
-      </div>
+      <div class="card-config">
+        <div class="form-group">
+          <label>Initial View Mode</label>
+          <select
+            .value=${this._config.initial_view_mode || 'standard'}
+            @change=${(e: Event) =>
+        this._valueChanged('initial_view_mode', (e.target as HTMLSelectElement).value)}
+          >
+            <option value="standard">Standard</option>
+            <option value="compact">Compact (Grid Only)</option>
+            <option value="header">Header Only (Collapsed)</option>
+          </select>
+        </div>
 
-      <div class="form-group">
-        <md-filled-select
-          label="Default Growspace"
-          .value=${this._config.default_growspace ?? ''}
-          @change=${(e: Event) =>
-        this._valueChanged('default_growspace', (e.target as any).value)}
-        >
-          <md-select-option value="">
-             <div slot="headline">Select a growspace</div>
-          </md-select-option>
-          ${this._growspaceOptions.map(
-          (gs) => html`
-            <md-select-option value="${gs.id}">
-                <div slot="headline">${gs.name}</div>
-            </md-select-option>`
+        <div class="form-group">
+          <label>Default Growspace</label>
+          <select
+            .value=${this._config.default_growspace ?? ''}
+            @change=${(e: Event) =>
+        this._valueChanged('default_growspace', (e.target as HTMLSelectElement).value)}
+          >
+            <option value="">Select a growspace</option>
+            ${this._growspaceOptions.map(
+          (gs) => html`<option value="${gs.id}">${gs.name}</option>`
         )}
-        </md-filled-select>
+          </select>
+        </div>
       </div>
     `;
   }

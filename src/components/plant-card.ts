@@ -1,7 +1,5 @@
 import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { classMap } from 'lit/directives/class-map.js';
-import { styleMap } from 'lit/directives/style-map.js';
 import { consume } from '@lit/context';
 import { strainLibraryContext } from '../context';
 import {
@@ -25,10 +23,14 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
   @property({ type: Boolean }) accessor isEditMode = false;
   @property({ type: Boolean }) accessor selected = false;
 
-  @state() accessor _displayData: PlantDisplayData | null = null;
-
   // Instantiate controller
   private dragController = new DragDropController(this);
+
+  // Computed display data
+  get displayData(): PlantDisplayData | null {
+    if (!this.plant) return null;
+    return PlantUtils.getPlantDisplayData(this.plant, this.strainLibrary);
+  }
 
   static styles = [
     sharedStyles,
@@ -218,21 +220,6 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
     }
   `];
 
-  protected willUpdate(changedProps: PropertyValues): void {
-    if (changedProps.has('plant') || changedProps.has('strainLibrary')) {
-      this._calculateDisplayData();
-    }
-  }
-
-  private _calculateDisplayData() {
-    if (!this.plant) {
-      this._displayData = null;
-      return;
-    }
-    // Use the utility to get display data
-    this._displayData = PlantUtils.getPlantDisplayData(this.plant, this.strainLibrary);
-  }
-
   // --- Click Handlers ---
 
   private _handleClick() {
@@ -270,9 +257,10 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
   }
 
   render() {
-    if (!this.plant || !this._displayData) return html``;
+    const data = this.displayData;
+    if (!this.plant || !data) return html``;
 
-    const { stageColor, strainName, pheno, imageUrl, imageCropMeta, stages } = this._displayData;
+    const { stageColor, strainName, pheno, imageUrl, imageCropMeta, stages } = data;
 
     return html`
       <div

@@ -51,7 +51,6 @@
   "dependencies": {
     "@lit/context": "^1.1.6",
     "@lit/reactive-element": "^2.1.1",
-    "@material/web": "^2.2.0",
     "@mdi/js": "^7.4.47",
     "custom-card-helpers": "^1.9.0",
     "luxon": "^3.7.2",

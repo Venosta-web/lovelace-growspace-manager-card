@@ -14,6 +14,11 @@ export class GrowspaceGridController implements ReactiveController {
         grid: [],
     };
 
+    // Memoization references
+    private _lastDevicesRef: GrowspaceDevice[] | null = null;
+    private _lastSelectedDeviceRef: string | null = null;
+    private _lastDeletedIdsRef: Set<string> | null = null;
+
     constructor(host: ReactiveControllerHost, store: GrowspaceStore) {
         this.host = host;
         this.store = store;
@@ -21,11 +26,28 @@ export class GrowspaceGridController implements ReactiveController {
     }
 
     hostConnected() {
-        // Initial calculation if needed
+        // Force calculation on connect
         this.calculateGrid();
     }
 
     hostUpdate() {
+        const state = this.store.state;
+        if (!state) return;
+
+        // Check if relevant state has changed
+        if (
+            this._lastDevicesRef === state.devices &&
+            this._lastSelectedDeviceRef === state.selectedDevice &&
+            this._lastDeletedIdsRef === state.optimisticDeletedPlantIds
+        ) {
+            return;
+        }
+
+        // Update references
+        this._lastDevicesRef = state.devices;
+        this._lastSelectedDeviceRef = state.selectedDevice;
+        this._lastDeletedIdsRef = state.optimisticDeletedPlantIds;
+
         this.calculateGrid();
     }
 
@@ -35,8 +57,6 @@ export class GrowspaceGridController implements ReactiveController {
         // 1. Recalculate Active Devices
         // Filter out optimistically deleted plants
         const devices = this.store.state.devices || [];
-        // Only update if devices array reference changed or deep check? 
-        // For now, mirroring existing logic which runs on every update but is fast enough
         this.activeDevices = devices.map((d) => ({
             ...d,
             plants: d.plants.filter((p) => {
@@ -53,9 +73,6 @@ export class GrowspaceGridController implements ReactiveController {
 
         if (selectedDeviceData) {
             const effectiveRows = PlantUtils.calculateEffectiveRows(selectedDeviceData);
-            // This is the heavy part, maybe check if plants changed? 
-            // The store updates frequently so simple diff might be hard.
-            // Keeping it executed on hostUpdate for now as it was in willUpdate.
             const { grid } = PlantUtils.createGridLayout(
                 selectedDeviceData.plants,
                 effectiveRows,
@@ -67,3 +84,4 @@ export class GrowspaceGridController implements ReactiveController {
         }
     }
 }
+
