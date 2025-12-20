@@ -134,4 +134,42 @@ describe('GrowspaceAdapter', () => {
         expect(result?.environment_attributes?.dehumidifier_control_enabled).toBe(true);
     });
 
+    it('should handle store-injected plant data with partial fields', () => {
+        // Simulate structure injected by GrowspaceStore._handlePlantUpdate
+        const mockWSData: GrowspaceAPIResponse = {
+            growspace_id: 'gs1',
+            name: 'Room',
+            type: 'flower',
+            rows: 2,
+            plants_per_row: 2,
+            total_plants: 1,
+            grid: {
+                'position_1_2': {
+                    plant_id: 'p1',
+                    row: 1,
+                    col: 2,
+                    strain: 'Test Strain',
+                    entity_id: null,
+                    stage: 'flower'
+                } as any
+            } as any,
+            is_day: true,
+            vpd_status: 'ok',
+            environment_config: {}
+        } as any;
+
+        const result = GrowspaceAdapter.transformGrowspace(mockOverview, mockWSData);
+
+        expect(result).not.toBeNull();
+        expect(result?.plants).toHaveLength(1);
+        const plant = result?.plants[0];
+
+        expect(plant?.attributes.plant_id).toBe('p1');
+        expect(plant?.attributes.row).toBe(1);
+        expect(plant?.attributes.col).toBe(2);
+
+        // Entity ID handling
+        expect(plant?.entity_id).toBeNull();
+    });
+
 });

@@ -488,4 +488,58 @@ describe('GrowspaceStore', () => {
         });
     });
 
+    describe('Optimistic Updates', () => {
+        it('should trigger update when plant is modified in place', async () => {
+            // 1. Setup Initial State with valid cache
+            const initialGrid = {
+                'position_0_0': { plant_id: 'p1', growspace_id: 'gs1', row: 1, col: 1, attributes: {} }
+            };
+            const initialWsData = {
+                growspace_id: 'gs1',
+                config: { name: 'GS1', rows: 4, plants_per_row: 4 },
+                grid: initialGrid
+            };
+
+            // Mock fetch to populate cache
+            mockDataServiceInstance.fetchGrowspaceData.mockResolvedValue({ 'gs1': initialWsData });
+
+            // Mock DataService to return new object only if cache ref changes
+            let lastReturnedDevice: any = { device_id: 'gs1', plants: [{ attributes: { plant_id: 'p1' } }] };
+            let lastWsData: any = null;
+
+            mockDataServiceInstance.getGrowspaceDevices.mockImplementation((cacheFn) => {
+                const currentWsData = cacheFn['gs1'];
+                // Simulation: if wsData ref changed, return NEW device object
+                if (lastWsData && currentWsData !== lastWsData) {
+                    lastReturnedDevice = { ...lastReturnedDevice }; // New ref
+                }
+                lastWsData = currentWsData;
+                return [lastReturnedDevice];
+            });
+
+            // Set hass
+            store.hass = { connection: { subscribeEvents: vi.fn() } } as any;
+
+            // Initial Load
+            await store.refreshData();
+            expect(mockHost.requestUpdate).toHaveBeenCalled();
+            mockHost.requestUpdate.mockClear();
+
+            // 2. Trigger Optimistic Update
+            // This mutates initialWsData.grid in place inside the store
+            const event = {
+                data: {
+                    event_type: 'plant_updated',
+                    data: {
+                        plant: { plant_id: 'p1', growspace_id: 'gs1', row: 1, col: 1, attributes: { stage: 'flower' } } // Changed stage
+                    }
+                }
+            };
+
+            (store as any).handleOptimisticEvent(event);
+
+            // 3. Assert Update Triggered
+            expect(mockHost.requestUpdate).toHaveBeenCalled();
+        });
+    });
 });

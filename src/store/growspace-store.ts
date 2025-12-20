@@ -125,7 +125,6 @@ export class GrowspaceStore implements ReactiveController {
 
     private handleOptimisticEvent(event: any) {
         const { event_type, data } = event.data;
-        console.log('[GrowspaceStore] Received optimistic event:', event_type, data);
 
         // Map backend event types to actions
         if (event_type === 'plant_added' || event_type === 'plant_updated') {
@@ -142,7 +141,16 @@ export class GrowspaceStore implements ReactiveController {
         // 2. Add to new location
         const gsId = plantData.growspace_id || plantData.attributes?.growspace_id;
         if (gsId && this.wsDataCache[gsId]) {
-            const grid = this.wsDataCache[gsId].grid;
+            // Invalidate cache by shallow copying the growspace data object
+            // This ensures DataService sees a new reference and re-transforms the data
+            this.wsDataCache[gsId] = { ...this.wsDataCache[gsId] };
+
+            // Note: We also need to shallow copy the grid if we want perfect immutability,
+            // but for DataService.getGrowspaceDevices, changing the top-level object ref is enough.
+            // However, to be safe and cleaner properly:
+            const grid = { ...this.wsDataCache[gsId].grid };
+            this.wsDataCache[gsId].grid = grid;
+
             const posKey = plantData.position || `position_${plantData.row}_${plantData.col}`;
             // Use position from payload (it was constructed in serializer as `position`)
             // Backend serializer returns "position": "(r,c)" format? 
@@ -180,15 +188,19 @@ export class GrowspaceStore implements ReactiveController {
     }
 
     private _removePlantFromCache(gsId: string, plantId: string) {
-        const cache = this.wsDataCache[gsId];
-        if (!cache || !cache.grid) return;
+        if (!this.wsDataCache[gsId] || !this.wsDataCache[gsId].grid) return;
+
+        // Invalidate cache
+        this.wsDataCache[gsId] = { ...this.wsDataCache[gsId] };
+        const grid = { ...this.wsDataCache[gsId].grid };
+        this.wsDataCache[gsId].grid = grid;
 
         // Find key with this plant ID
         // Since grid is keyed by position, we have to scan values
-        Object.keys(cache.grid).forEach(key => {
-            const plant = cache.grid[key];
+        Object.keys(grid).forEach(key => {
+            const plant = grid[key];
             if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
-                cache.grid[key] = null;
+                grid[key] = null;
             }
         });
     }

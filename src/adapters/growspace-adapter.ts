@@ -67,6 +67,8 @@ export class GrowspaceAdapter {
             state: slot.stage || 'unknown',
             attributes: {
               ...slot, // Spread raw plant data
+              row: Number(slot.row),
+              col: Number(slot.col),
               growspace_id,
               friendly_name: `${slot.strain} ${slot.phenotype}`,
               stage: (slot.stage as PlantStage) || 'unknown',

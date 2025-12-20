@@ -577,6 +577,8 @@ class GrowspaceAdapter {
                         state: slot.stage || 'unknown',
                         attributes: {
                             ...slot, // Spread raw plant data
+                            row: Number(slot.row),
+                            col: Number(slot.col),
                             growspace_id,
                             friendly_name: `${slot.strain} ${slot.phenotype}`,
                             stage: slot.stage || 'unknown',
@@ -8053,7 +8055,6 @@ const uiStyles = i$6 `
     width: 100%;
     padding: 24px 16px 8px;
     border: none;
-    background: transparent;
     color: var(--primary-text-color, #ffffff);
     font-size: 1rem;
     font-family: 'Roboto', sans-serif;
@@ -11769,12 +11770,13 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         set env_control_dehumidifier(value) { __classPrivateFieldSet(this, _ConfigDialog_env_control_dehumidifier_accessor_storage, value, "f"); }
         get env_dehumidifier_thresholds() { return __classPrivateFieldGet(this, _ConfigDialog_env_dehumidifier_thresholds_accessor_storage, "f"); }
         set env_dehumidifier_thresholds(value) { __classPrivateFieldSet(this, _ConfigDialog_env_dehumidifier_thresholds_accessor_storage, value, "f"); }
-        updated(changedProperties) {
-            super.updated(changedProperties);
+        willUpdate(changedProperties) {
             if (changedProperties.has('environmentData') && this.environmentData) {
-                console.log('DEBUG: environmentData changed in ConfigDialog, calling setInitialState');
                 this.setInitialState(this.currentTab, this.environmentData);
             }
+        }
+        updated(changedProperties) {
+            super.updated(changedProperties);
             // Apply initial tab state only once when dialog opens
             if (changedProperties.has('open')) {
                 if (this.open) {
@@ -27079,7 +27081,6 @@ class GrowspaceStore {
     }
     handleOptimisticEvent(event) {
         const { event_type, data } = event.data;
-        console.log('[GrowspaceStore] Received optimistic event:', event_type, data);
         // Map backend event types to actions
         if (event_type === 'plant_added' || event_type === 'plant_updated') {
             this._handlePlantUpdate(data.plant);
@@ -27094,7 +27095,14 @@ class GrowspaceStore {
         // 2. Add to new location
         const gsId = plantData.growspace_id || plantData.attributes?.growspace_id;
         if (gsId && this.wsDataCache[gsId]) {
-            const grid = this.wsDataCache[gsId].grid;
+            // Invalidate cache by shallow copying the growspace data object
+            // This ensures DataService sees a new reference and re-transforms the data
+            this.wsDataCache[gsId] = { ...this.wsDataCache[gsId] };
+            // Note: We also need to shallow copy the grid if we want perfect immutability,
+            // but for DataService.getGrowspaceDevices, changing the top-level object ref is enough.
+            // However, to be safe and cleaner properly:
+            const grid = { ...this.wsDataCache[gsId].grid };
+            this.wsDataCache[gsId].grid = grid;
             plantData.position || `position_${plantData.row}_${plantData.col}`;
             // Use position from payload (it was constructed in serializer as `position`)
             // Backend serializer returns "position": "(r,c)" format? 
@@ -27127,15 +27135,18 @@ class GrowspaceStore {
         });
     }
     _removePlantFromCache(gsId, plantId) {
-        const cache = this.wsDataCache[gsId];
-        if (!cache || !cache.grid)
+        if (!this.wsDataCache[gsId] || !this.wsDataCache[gsId].grid)
             return;
+        // Invalidate cache
+        this.wsDataCache[gsId] = { ...this.wsDataCache[gsId] };
+        const grid = { ...this.wsDataCache[gsId].grid };
+        this.wsDataCache[gsId].grid = grid;
         // Find key with this plant ID
         // Since grid is keyed by position, we have to scan values
-        Object.keys(cache.grid).forEach(key => {
-            const plant = cache.grid[key];
+        Object.keys(grid).forEach(key => {
+            const plant = grid[key];
             if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
-                cache.grid[key] = null;
+                grid[key] = null;
             }
         });
     }
