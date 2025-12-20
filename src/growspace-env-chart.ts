@@ -52,6 +52,7 @@ export class GrowspaceEnvChart extends LitElement {
   @state() private accessor _renderSeries: GraphSeries[] = []; // Cached series renamed for clarity
 
   private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
+  private _scrollCheckTimeout: number | undefined;
 
   private _scrollChips(direction: 'left' | 'right') {
     const container = this._chipsContainerRef.value;
@@ -77,7 +78,7 @@ export class GrowspaceEnvChart extends LitElement {
       container.addEventListener('scroll', () => this._checkScroll());
       this._resizeObserver = new ResizeObserver(() => this._checkScroll());
       this._resizeObserver.observe(container);
-      setTimeout(() => this._checkScroll(), 100);
+      this._scrollCheckTimeout = window.setTimeout(() => this._checkScroll(), 100);
     }
   }
 
@@ -85,6 +86,9 @@ export class GrowspaceEnvChart extends LitElement {
     super.disconnectedCallback();
     if (this._resizeObserver) {
       this._resizeObserver.disconnect();
+    }
+    if (this._scrollCheckTimeout) {
+      clearTimeout(this._scrollCheckTimeout);
     }
   }
 
@@ -199,9 +203,10 @@ export class GrowspaceEnvChart extends LitElement {
 
       if (key === 'optimal' && historySource.length > 0) {
         // Optimal logic (Step Graph for Binary Sensor)
-        const sortedHistory = [...historySource].sort(
-          (a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()
-        );
+        // const sortedHistory = [...historySource].sort(
+        //   (a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()
+        // );
+        const sortedHistory = historySource;
 
         let initialState = sortedHistory[0];
         for (const h of sortedHistory) {
@@ -230,9 +235,10 @@ export class GrowspaceEnvChart extends LitElement {
         }
       } else if (historySource.length > 0) {
         // Standard Sensor Logic
-        const sortedHistory = [...historySource].sort(
-          (a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()
-        );
+        // const sortedHistory = [...historySource].sort(
+        //   (a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()
+        // );
+        const sortedHistory = historySource;
 
         let initialState = sortedHistory[0];
         for (const h of sortedHistory) {
@@ -809,11 +815,6 @@ export class GrowspaceEnvChart extends LitElement {
       items,
     };
     this._hoverTime = hoverTime;
-  }
-
-  private _formatTime(date: Date): string {
-    const locale = this.hass?.locale?.language || undefined;
-    return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   }
 
   static styles = css`

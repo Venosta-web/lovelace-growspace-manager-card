@@ -305,6 +305,9 @@ export class GrowspaceGrid extends LitElement {
 
   private _handleDragOver(e: DragEvent) {
     e.preventDefault();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
   }
 
   private _handleDrop(
@@ -411,6 +414,7 @@ export class GrowspaceGrid extends LitElement {
         class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
         style="${gridStyle}"
         @mobile-drop=${this._handleMobileDrop}
+        @dragover=${this._handleDragOver}
         ${ref(this._gridRef)}
       >
         ${this.isLoading ? this.renderSkeletonGrid() : ''}
@@ -461,7 +465,6 @@ export class GrowspaceGrid extends LitElement {
         data-col="${col}"
         style="grid-row: ${row}; grid-column: ${col}"
         @click=${() => this.store.openAddPlantDialog(row - 1, col - 1)}
-        @dragover=${this._handleDragOver}
         @drop=${(e: DragEvent) => this._handleDrop(e, row, col, null)}
       >
         <div class="plant-header">

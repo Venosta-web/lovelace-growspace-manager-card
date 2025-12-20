@@ -6020,6 +6020,7 @@ class GrowspaceHistoryController {
     }
     set historyData(value) {
         this.historyCache.main = value || [];
+        this._cachedCombinedHistory = null;
     }
     /** @deprecated Use historyCache['optimal'] instead */
     get optimalHistory() {
@@ -6027,6 +6028,7 @@ class GrowspaceHistoryController {
     }
     set optimalHistory(value) {
         this.historyCache.optimal = value || [];
+        this._cachedCombinedHistory = null;
     }
     // Backward compatibility getters for existing code that reads these properties
     get temperatureHistory() {
@@ -6078,21 +6080,24 @@ class GrowspaceHistoryController {
     }
     /** Returns all sensor histories as a combined object for analytics component */
     get combinedHistory() {
-        return {
-            temperature: this.historyCache.temperature || [],
-            humidity: this.historyCache.humidity || [],
-            vpd: this.historyCache.vpd || [],
-            co2: this.historyCache.co2 || [],
-            dehumidifier: this.historyCache.dehumidifier || [],
-            exhaust: this.historyCache.exhaust || [],
-            humidifier: this.historyCache.humidifier || [],
-            circulation_fan: this.historyCache.circulation_fan || [],
-            soil_moisture: this.historyCache.soil_moisture || [],
-            light: this.historyCache.light || [],
-            irrigation: this.historyCache.irrigation || [],
-            drain: this.historyCache.drain || [],
-            optimal: this.historyCache.optimal || [],
-        };
+        if (!this._cachedCombinedHistory) {
+            this._cachedCombinedHistory = {
+                temperature: this.historyCache.temperature || [],
+                humidity: this.historyCache.humidity || [],
+                vpd: this.historyCache.vpd || [],
+                co2: this.historyCache.co2 || [],
+                dehumidifier: this.historyCache.dehumidifier || [],
+                exhaust: this.historyCache.exhaust || [],
+                humidifier: this.historyCache.humidifier || [],
+                circulation_fan: this.historyCache.circulation_fan || [],
+                soil_moisture: this.historyCache.soil_moisture || [],
+                light: this.historyCache.light || [],
+                irrigation: this.historyCache.irrigation || [],
+                drain: this.historyCache.drain || [],
+                optimal: this.historyCache.optimal || [],
+            };
+        }
+        return this._cachedCombinedHistory;
     }
     constructor(host) {
         /**
@@ -6101,6 +6106,7 @@ class GrowspaceHistoryController {
          * Access via: this.historyCache['temperature'], this.historyCache['vpd'], etc.
          */
         this.historyCache = {};
+        this._cachedCombinedHistory = null;
         this.activeEnvGraphs = new Set();
         this.linkedGraphGroups = [];
         this.graphRanges = {};
@@ -6297,6 +6303,7 @@ class GrowspaceHistoryController {
             const history = await this.host.dataService.getHistory(entityId, start, end);
             console.log(`[HistoryController] ${metricKey} history fetched from ${entityId}, length: ${history?.length || 0}`);
             this.historyCache[metricKey] = history || [];
+            this._cachedCombinedHistory = null;
         }
         catch (e) {
             console.error(`Failed to fetch ${metricKey} history`, e);
@@ -6936,13 +6943,16 @@ class GraphDataTransformer {
                 container.addEventListener('scroll', () => this._checkScroll());
                 this._resizeObserver = new ResizeObserver(() => this._checkScroll());
                 this._resizeObserver.observe(container);
-                setTimeout(() => this._checkScroll(), 100);
+                this._scrollCheckTimeout = window.setTimeout(() => this._checkScroll(), 100);
             }
         }
         disconnectedCallback() {
             super.disconnectedCallback();
             if (this._resizeObserver) {
                 this._resizeObserver.disconnect();
+            }
+            if (this._scrollCheckTimeout) {
+                clearTimeout(this._scrollCheckTimeout);
             }
         }
         /**
@@ -7037,7 +7047,10 @@ class GraphDataTransformer {
                 const dataPoints = [];
                 if (key === 'optimal' && historySource.length > 0) {
                     // Optimal logic (Step Graph for Binary Sensor)
-                    const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+                    // const sortedHistory = [...historySource].sort(
+                    //   (a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()
+                    // );
+                    const sortedHistory = historySource;
                     let initialState = sortedHistory[0];
                     for (const h of sortedHistory) {
                         const t = new Date(h.last_changed).getTime();
@@ -7065,7 +7078,10 @@ class GraphDataTransformer {
                 }
                 else if (historySource.length > 0) {
                     // Standard Sensor Logic
-                    const sortedHistory = [...historySource].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+                    // const sortedHistory = [...historySource].sort(
+                    //   (a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()
+                    // );
+                    const sortedHistory = historySource;
                     let initialState = sortedHistory[0];
                     for (const h of sortedHistory) {
                         const t = new Date(h.last_changed).getTime();
@@ -7585,10 +7601,6 @@ class GraphDataTransformer {
                 items,
             };
             this._hoverTime = hoverTime;
-        }
-        _formatTime(date) {
-            const locale = this.hass?.locale?.language || undefined;
-            return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
         }
     };
     _GrowspaceEnvChart_hass_accessor_storage = new WeakMap();
@@ -12302,7 +12314,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
           </div>
           
           <div class="md3-input-group" style=" display:flex; justify-content:flex-end; align-items:center; margin-top:16px;">
-             <label class="md3-label" style="margin:0">Control Dehumidifier via Manager</label>
+             <label class="md3-label" style="margin:0">Control Dehumidifier</label>
              <input type="checkbox" 
                 .checked=${this.env_control_dehumidifier}
                 @change=${(e) => (this.env_control_dehumidifier = e.target.checked)}
@@ -12320,13 +12332,13 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
 
           <div class="row-col-grid">
             <md3-number-input
-              label="Stress Threshold (VPD)"
+              label="Stress Threshold %"
               .value=${this.env_stress_threshold}
               @change=${(e) => (this.env_stress_threshold = parseFloat(e.detail))}
               step="0.01"
             ></md3-number-input>
             <md3-number-input
-              label="Mold Threshold (VPD)"
+              label="Mold Threshold %"
               .value=${this.env_mold_threshold}
               @change=${(e) => (this.env_mold_threshold = parseFloat(e.detail))}
               step="0.01"
@@ -25338,6 +25350,9 @@ const variables = i$6 `
         }
         _handleDragOver(e) {
             e.preventDefault();
+            if (e.dataTransfer) {
+                e.dataTransfer.dropEffect = 'move';
+            }
         }
         _handleDrop(e, targetRow, targetCol, targetPlant) {
             if (e)
@@ -25423,6 +25438,7 @@ const variables = i$6 `
         class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
         style="${gridStyle}"
         @mobile-drop=${this._handleMobileDrop}
+        @dragover=${this._handleDragOver}
         ${n$2(this._gridRef)}
       >
         ${this.isLoading ? this.renderSkeletonGrid() : ''}
@@ -25462,7 +25478,6 @@ const variables = i$6 `
         data-col="${col}"
         style="grid-row: ${row}; grid-column: ${col}"
         @click=${() => this.store.openAddPlantDialog(row - 1, col - 1)}
-        @dragover=${this._handleDragOver}
         @drop=${(e) => this._handleDrop(e, row, col, null)}
       >
         <div class="plant-header">

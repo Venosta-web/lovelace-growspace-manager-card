@@ -22,6 +22,8 @@ export class GrowspaceHistoryController implements ReactiveController {
    */
   public historyCache: Record<string, HistorySensorState[]> = {};
 
+  private _cachedCombinedHistory: import('../types').SensorHistories | null = null;
+
   /** @deprecated Use historyCache['main'] instead */
   public get historyData(): HistorySensorState[] | null {
     return this.historyCache.main || null;
@@ -29,6 +31,7 @@ export class GrowspaceHistoryController implements ReactiveController {
 
   public set historyData(value: HistorySensorState[] | null) {
     this.historyCache.main = value || [];
+    this._cachedCombinedHistory = null;
   }
 
   /** @deprecated Use historyCache['optimal'] instead */
@@ -38,6 +41,7 @@ export class GrowspaceHistoryController implements ReactiveController {
 
   public set optimalHistory(value: HistorySensorState[] | null) {
     this.historyCache.optimal = value || [];
+    this._cachedCombinedHistory = null;
   }
 
   // Backward compatibility getters for existing code that reads these properties
@@ -102,21 +106,24 @@ export class GrowspaceHistoryController implements ReactiveController {
 
   /** Returns all sensor histories as a combined object for analytics component */
   public get combinedHistory(): import('../types').SensorHistories {
-    return {
-      temperature: this.historyCache.temperature || [],
-      humidity: this.historyCache.humidity || [],
-      vpd: this.historyCache.vpd || [],
-      co2: this.historyCache.co2 || [],
-      dehumidifier: this.historyCache.dehumidifier || [],
-      exhaust: this.historyCache.exhaust || [],
-      humidifier: this.historyCache.humidifier || [],
-      circulation_fan: this.historyCache.circulation_fan || [],
-      soil_moisture: this.historyCache.soil_moisture || [],
-      light: this.historyCache.light || [],
-      irrigation: this.historyCache.irrigation || [],
-      drain: this.historyCache.drain || [],
-      optimal: this.historyCache.optimal || [],
-    };
+    if (!this._cachedCombinedHistory) {
+      this._cachedCombinedHistory = {
+        temperature: this.historyCache.temperature || [],
+        humidity: this.historyCache.humidity || [],
+        vpd: this.historyCache.vpd || [],
+        co2: this.historyCache.co2 || [],
+        dehumidifier: this.historyCache.dehumidifier || [],
+        exhaust: this.historyCache.exhaust || [],
+        humidifier: this.historyCache.humidifier || [],
+        circulation_fan: this.historyCache.circulation_fan || [],
+        soil_moisture: this.historyCache.soil_moisture || [],
+        light: this.historyCache.light || [],
+        irrigation: this.historyCache.irrigation || [],
+        drain: this.historyCache.drain || [],
+        optimal: this.historyCache.optimal || [],
+      };
+    }
+    return this._cachedCombinedHistory;
   }
 
   public activeEnvGraphs: Set<string> = new Set();
@@ -353,6 +360,7 @@ export class GrowspaceHistoryController implements ReactiveController {
         `[HistoryController] ${metricKey} history fetched from ${entityId}, length: ${history?.length || 0}`
       );
       this.historyCache[metricKey] = history || [];
+      this._cachedCombinedHistory = null;
     } catch (e) {
       console.error(`Failed to fetch ${metricKey} history`, e);
     }

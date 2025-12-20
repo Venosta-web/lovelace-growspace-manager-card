@@ -793,13 +793,13 @@ export class ConfigDialog extends LitElement {
 
           <div class="row-col-grid">
             <md3-number-input
-              label="Stress Threshold (VPD)"
+              label="Stress Threshold %"
               .value=${this.env_stress_threshold}
               @change=${(e: CustomEvent) => (this.env_stress_threshold = parseFloat(e.detail))}
               step="0.01"
             ></md3-number-input>
             <md3-number-input
-              label="Mold Threshold (VPD)"
+              label="Mold Threshold %"
               .value=${this.env_mold_threshold}
               @change=${(e: CustomEvent) => (this.env_mold_threshold = parseFloat(e.detail))}
               step="0.01"

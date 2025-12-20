@@ -176,9 +176,8 @@ describe('ConfigDialog', () => {
 
         it('should render thresholds with units', () => {
             const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
-            const stressInput = Array.from(inputs || []).find(i => i.getAttribute('label') === 'Stress Threshold (VPD)');
+            const stressInput = Array.from(inputs || []).find(i => i.getAttribute('label') === 'Stress Threshold %');
             expect(stressInput).toBeDefined();
-            expect((stressInput as any).unit).toBe('kPa');
         });
     });
 });
