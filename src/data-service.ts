@@ -230,6 +230,41 @@ export class DataService {
     }
   }
 
+  async getBatchHistory(entityIds: string[], startTime: Date, endTime?: Date): Promise<Record<string, any[]>> {
+    if (!this.hass || entityIds.length === 0) return {};
+
+    const startStr = startTime.toISOString();
+    const entityList = entityIds.join(',');
+
+    // OPTIMIZATION: Request all entities in ONE call
+    let url = `history/period/${startStr}?filter_entity_id=${entityList}&minimal_response`;
+
+    if (endTime) {
+      url += `&end_time=${endTime.toISOString()}`;
+    }
+
+    try {
+      // HA returns an array of arrays (one array per entity)
+      const res = await this.hass.callApi<any[][]>('GET', url);
+
+      const resultMap: Record<string, any[]> = {};
+
+      if (res) {
+        res.forEach((entityHistory) => {
+          if (entityHistory && entityHistory.length > 0) {
+            // Map back to entity_id from the first record
+            const id = entityHistory[0].entity_id;
+            resultMap[id] = entityHistory;
+          }
+        });
+      }
+      return resultMap;
+    } catch (err) {
+      console.error('[DataService] Error fetching batch history:', err);
+      return {};
+    }
+  }
+
   // Service calls
   async addPlant(params: {
     growspace_id: string;

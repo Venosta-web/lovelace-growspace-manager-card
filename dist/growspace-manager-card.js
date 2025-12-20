@@ -5409,6 +5409,36 @@ class DataService {
             return [];
         }
     }
+    async getBatchHistory(entityIds, startTime, endTime) {
+        if (!this.hass || entityIds.length === 0)
+            return {};
+        const startStr = startTime.toISOString();
+        const entityList = entityIds.join(',');
+        // OPTIMIZATION: Request all entities in ONE call
+        let url = `history/period/${startStr}?filter_entity_id=${entityList}&minimal_response`;
+        if (endTime) {
+            url += `&end_time=${endTime.toISOString()}`;
+        }
+        try {
+            // HA returns an array of arrays (one array per entity)
+            const res = await this.hass.callApi('GET', url);
+            const resultMap = {};
+            if (res) {
+                res.forEach((entityHistory) => {
+                    if (entityHistory && entityHistory.length > 0) {
+                        // Map back to entity_id from the first record
+                        const id = entityHistory[0].entity_id;
+                        resultMap[id] = entityHistory;
+                    }
+                });
+            }
+            return resultMap;
+        }
+        catch (err) {
+            console.error('[DataService] Error fetching batch history:', err);
+            return {};
+        }
+    }
     // Service calls
     async addPlant(params) {
         console.log('[DataService:addPlant] Sending payload:', params);
@@ -6250,19 +6280,6 @@ class GrowspaceHistoryController {
         if (!device)
             return;
         const { start, end } = this.calculateTimeRange(range);
-        // 1. Fetch Main Sensor History (Temp, Humidity, VPD, etc.) via Overivew Entity
-        // We still fetch this manually because it populates 'main' history which is a special aggregate
-        if (device.overview_entity_id) {
-            try {
-                const history = await this.host.dataService.getHistory(device.overview_entity_id, start, end);
-                this.historyData = history;
-            }
-            catch (e) {
-                console.error('Failed to fetch main sensor history', e);
-            }
-        }
-        // 2. Fetch all other metrics using the standard specialized method
-        // This ensures hero graph metrics (which are just these keys) are populated
         const metricsToFetch = [
             'optimal',
             'temperature',
@@ -6278,11 +6295,46 @@ class GrowspaceHistoryController {
             'irrigation',
             'drain'
         ];
-        const chunkSize = 4;
-        for (let i = 0; i < metricsToFetch.length; i += chunkSize) {
-            const chunk = metricsToFetch.slice(i, i + chunkSize);
-            await Promise.all(chunk.map((metric) => this._fetchMetricHistory(metric, range)));
+        const entityMap = {};
+        const entitiesToFetch = new Set();
+        // 1. Identify Overview Entity
+        if (device.overview_entity_id) {
+            entitiesToFetch.add(device.overview_entity_id);
+        }
+        // 2. Identify Metric Entities
+        for (const metric of metricsToFetch) {
+            const entityId = this.getEntityIdForMetric(device, metric);
+            if (entityId) {
+                entityMap[metric] = entityId;
+                entitiesToFetch.add(entityId);
+            }
+        }
+        if (entitiesToFetch.size === 0)
+            return;
+        try {
+            // 3. Batch Fetch
+            const batchResults = await this.host.dataService.getBatchHistory(Array.from(entitiesToFetch), start, end);
+            // 4. Distribute Results
+            // Main
+            if (device.overview_entity_id && batchResults[device.overview_entity_id]) {
+                this.historyCache.main = batchResults[device.overview_entity_id];
+            }
+            // Metrics
+            for (const metric of metricsToFetch) {
+                const entityId = entityMap[metric];
+                if (entityId) {
+                    const result = batchResults[entityId] || [];
+                    this.historyCache[metric] = result;
+                    if (result.length > 0) {
+                        console.log(`[HistoryController] ${metric} history fetched via batch, length: ${result.length}`);
+                    }
+                }
+            }
+            this._cachedCombinedHistory = null;
             this.host.requestUpdate();
+        }
+        catch (e) {
+            console.error('Failed to fetch batch history', e);
         }
     }
     /**

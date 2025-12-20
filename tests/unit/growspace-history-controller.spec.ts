@@ -98,11 +98,15 @@ describe('GrowspaceHistoryController', () => {
         });
 
         it('should fetch main history', async () => {
-            mockDataService.getHistory.mockResolvedValue([{ state: '10' }]);
+            mockDataService.getBatchHistory.mockResolvedValue({
+                'sensor.tent_1': [{ state: '10' }]
+            });
             await (controller as any)._fetchHistory();
 
-            expect(mockDataService.getHistory).toHaveBeenCalledWith(
-                'sensor.tent_1', expect.any(Date), expect.any(Date)
+            expect(mockDataService.getBatchHistory).toHaveBeenCalledWith(
+                expect.arrayContaining(['sensor.tent_1']),
+                expect.any(Date),
+                expect.any(Date)
             );
             expect(controller.historyData).toHaveLength(1);
         });
@@ -112,26 +116,24 @@ describe('GrowspaceHistoryController', () => {
                 temperature_sensor: 'sensor.temp',
                 humidity_sensor: 'sensor.hum'
             };
-            mockDataService.getHistory.mockResolvedValue([]);
+            mockDataService.getBatchHistory.mockResolvedValue({});
 
             await (controller as any)._fetchHistory();
 
-            expect(mockDataService.getHistory).toHaveBeenCalledWith(
-                'sensor.temp', expect.any(Date), expect.any(Date)
-            );
-            expect(mockDataService.getHistory).toHaveBeenCalledWith(
-                'sensor.hum', expect.any(Date), expect.any(Date)
+            expect(mockDataService.getBatchHistory).toHaveBeenCalledWith(
+                expect.arrayContaining(['sensor.temp', 'sensor.hum']),
+                expect.any(Date),
+                expect.any(Date)
             );
         });
 
         it('should synthesize light history if missing but optimal exists', async () => {
             mockHost.devices[0].environment_attributes = {};
-            // Optimal history returns is_lights_on attribute
-            mockDataService.getHistory.mockImplementation((entity: string) => {
-                if (entity.includes('optimal')) {
-                    return [{ state: 'on', attributes: { is_lights_on: true } }];
-                }
-                return [];
+            // Mock batch response with optimal data
+            // Device name 'Tent 1', overview_entity_id 'sensor.tent_1' -> slug 'tent_1'
+            // optimal id -> binary_sensor.tent_1_optimal_conditions
+            mockDataService.getBatchHistory.mockResolvedValue({
+                'binary_sensor.tent_1_optimal_conditions': [{ state: 'on', attributes: { is_lights_on: true } }]
             });
 
             await (controller as any)._fetchHistory();
