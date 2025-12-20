@@ -539,7 +539,7 @@ const ENV_KEYS = [
     'temperature_sensor', 'humidity_sensor', 'vpd_sensor', 'co2_sensor',
     'soil_moisture_sensor', 'light_sensor', 'exhaust_entity', 'humidifier_entity',
     'dehumidifier_entity', 'dehumidifier_control_enabled', 'circulation_fan_entity',
-    'dehumidifier_state', 'vpd', 'soil_moisture_value'
+    'dehumidifier_state', 'dehumidifier_thresholds', 'vpd', 'soil_moisture_value'
 ];
 const STAT_KEYS = [
     'max_veg_days', 'max_flower_days', 'veg_week', 'flower_week',
@@ -5190,6 +5190,7 @@ const GrowspaceAPIResponseSchema = z$1.object({
     vpd: z$1.string().optional(),
     soil_moisture_value: z$1.string().optional(),
     dehumidifier_state: z$1.string().optional(),
+    dehumidifier_thresholds: z$1.record(z$1.string(), z$1.record(z$1.string(), z$1.object({ on: z$1.number(), off: z$1.number() }))).optional().default({}),
     // Statistics
     max_veg_days: z$1.number().optional().default(0),
     max_flower_days: z$1.number().optional().default(0),
@@ -11600,7 +11601,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
 })();
 
 (() => {
-    var _ConfigDialog_open_accessor_storage, _ConfigDialog_hass_accessor_storage, _ConfigDialog_growspaceOptions_accessor_storage, _ConfigDialog_devices_accessor_storage, _ConfigDialog_initialTab_accessor_storage, _ConfigDialog_currentTab_accessor_storage, _ConfigDialog_add_name_accessor_storage, _ConfigDialog_add_rows_accessor_storage, _ConfigDialog_add_plants_per_row_accessor_storage, _ConfigDialog_add_notification_service_accessor_storage, _ConfigDialog_edit_selectedId_accessor_storage, _ConfigDialog_edit_name_accessor_storage, _ConfigDialog_edit_rows_accessor_storage, _ConfigDialog_edit_plants_per_row_accessor_storage, _ConfigDialog_edit_notification_service_accessor_storage, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, _ConfigDialog_env_temp_sensor_accessor_storage, _ConfigDialog_env_humidity_sensor_accessor_storage, _ConfigDialog_env_vpd_sensor_accessor_storage, _ConfigDialog_env_co2_sensor_accessor_storage, _ConfigDialog_env_circulation_fan_accessor_storage, _ConfigDialog_env_stress_threshold_accessor_storage, _ConfigDialog_env_mold_threshold_accessor_storage, _ConfigDialog_env_light_sensor_accessor_storage, _ConfigDialog_env_exhaust_entity_accessor_storage, _ConfigDialog_env_humidifier_entity_accessor_storage, _ConfigDialog_env_dehumidifier_entity_accessor_storage, _ConfigDialog_env_soil_moisture_sensor_accessor_storage, _ConfigDialog_env_control_dehumidifier_accessor_storage, _ConfigDialog__showDeleteConfirm_accessor_storage;
+    var _ConfigDialog_open_accessor_storage, _ConfigDialog_hass_accessor_storage, _ConfigDialog_growspaceOptions_accessor_storage, _ConfigDialog_devices_accessor_storage, _ConfigDialog_initialTab_accessor_storage, _ConfigDialog_currentTab_accessor_storage, _ConfigDialog_environmentData_accessor_storage, _ConfigDialog_add_name_accessor_storage, _ConfigDialog_add_rows_accessor_storage, _ConfigDialog_add_plants_per_row_accessor_storage, _ConfigDialog_add_notification_service_accessor_storage, _ConfigDialog_edit_selectedId_accessor_storage, _ConfigDialog_edit_name_accessor_storage, _ConfigDialog_edit_rows_accessor_storage, _ConfigDialog_edit_plants_per_row_accessor_storage, _ConfigDialog_edit_notification_service_accessor_storage, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, _ConfigDialog_env_temp_sensor_accessor_storage, _ConfigDialog_env_humidity_sensor_accessor_storage, _ConfigDialog_env_vpd_sensor_accessor_storage, _ConfigDialog_env_co2_sensor_accessor_storage, _ConfigDialog_env_circulation_fan_accessor_storage, _ConfigDialog_env_stress_threshold_accessor_storage, _ConfigDialog_env_mold_threshold_accessor_storage, _ConfigDialog_env_light_sensor_accessor_storage, _ConfigDialog_env_exhaust_entity_accessor_storage, _ConfigDialog_env_humidifier_entity_accessor_storage, _ConfigDialog_env_dehumidifier_entity_accessor_storage, _ConfigDialog_env_soil_moisture_sensor_accessor_storage, _ConfigDialog_env_control_dehumidifier_accessor_storage, _ConfigDialog_env_dehumidifier_thresholds_accessor_storage, _ConfigDialog__showDeleteConfirm_accessor_storage;
     let _classDecorators = [t$2('config-dialog')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -11624,6 +11625,9 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
     let _currentTab_decorators;
     let _currentTab_initializers = [];
     let _currentTab_extraInitializers = [];
+    let _environmentData_decorators;
+    let _environmentData_initializers = [];
+    let _environmentData_extraInitializers = [];
     let _add_name_decorators;
     let _add_name_initializers = [];
     let _add_name_extraInitializers = [];
@@ -11693,6 +11697,9 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
     let _env_control_dehumidifier_decorators;
     let _env_control_dehumidifier_initializers = [];
     let _env_control_dehumidifier_extraInitializers = [];
+    let _env_dehumidifier_thresholds_decorators;
+    let _env_dehumidifier_thresholds_initializers = [];
+    let _env_dehumidifier_thresholds_extraInitializers = [];
     let __showDeleteConfirm_decorators;
     let __showDeleteConfirm_initializers = [];
     let __showDeleteConfirm_extraInitializers = [];
@@ -11709,6 +11716,8 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         set initialTab(value) { __classPrivateFieldSet(this, _ConfigDialog_initialTab_accessor_storage, value, "f"); }
         get currentTab() { return __classPrivateFieldGet(this, _ConfigDialog_currentTab_accessor_storage, "f"); }
         set currentTab(value) { __classPrivateFieldSet(this, _ConfigDialog_currentTab_accessor_storage, value, "f"); }
+        get environmentData() { return __classPrivateFieldGet(this, _ConfigDialog_environmentData_accessor_storage, "f"); }
+        set environmentData(value) { __classPrivateFieldSet(this, _ConfigDialog_environmentData_accessor_storage, value, "f"); }
         // Add Growspace Data
         get add_name() { return __classPrivateFieldGet(this, _ConfigDialog_add_name_accessor_storage, "f"); }
         set add_name(value) { __classPrivateFieldSet(this, _ConfigDialog_add_name_accessor_storage, value, "f"); }
@@ -11758,8 +11767,14 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         set env_soil_moisture_sensor(value) { __classPrivateFieldSet(this, _ConfigDialog_env_soil_moisture_sensor_accessor_storage, value, "f"); }
         get env_control_dehumidifier() { return __classPrivateFieldGet(this, _ConfigDialog_env_control_dehumidifier_accessor_storage, "f"); }
         set env_control_dehumidifier(value) { __classPrivateFieldSet(this, _ConfigDialog_env_control_dehumidifier_accessor_storage, value, "f"); }
+        get env_dehumidifier_thresholds() { return __classPrivateFieldGet(this, _ConfigDialog_env_dehumidifier_thresholds_accessor_storage, "f"); }
+        set env_dehumidifier_thresholds(value) { __classPrivateFieldSet(this, _ConfigDialog_env_dehumidifier_thresholds_accessor_storage, value, "f"); }
         updated(changedProperties) {
             super.updated(changedProperties);
+            if (changedProperties.has('environmentData') && this.environmentData) {
+                console.log('DEBUG: environmentData changed in ConfigDialog, calling setInitialState');
+                this.setInitialState(this.currentTab, this.environmentData);
+            }
             // Apply initial tab state only once when dialog opens
             if (changedProperties.has('open')) {
                 if (this.open) {
@@ -11792,6 +11807,12 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                 this.env_dehumidifier_entity = environmentData.dehumidifier_entity;
                 this.env_soil_moisture_sensor = environmentData.soil_moisture_sensor;
                 this.env_control_dehumidifier = environmentData.control_dehumidifier;
+                this.env_dehumidifier_thresholds = environmentData.dehumidifier_thresholds || {};
+                // Also pre-select for Edit/Delete actions
+                if (environmentData.selectedGrowspaceId) {
+                    console.log('DEBUG: Pre-selecting growspace for edit:', environmentData.selectedGrowspaceId);
+                    this._populateEditFields(environmentData.selectedGrowspaceId);
+                }
             }
         }
         _close() {
@@ -11828,6 +11849,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                     exhaust_entity: this.env_exhaust_entity,
                     humidifier_entity: this.env_humidifier_entity,
                     dehumidifier_entity: this.env_dehumidifier_entity,
+                    dehumidifier_thresholds: this.env_dehumidifier_thresholds,
                     soil_moisture_sensor: this.env_soil_moisture_sensor,
                     control_dehumidifier: this.env_control_dehumidifier,
                 },
@@ -11876,8 +11898,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         _cancelDeleteGrowspace() {
             this._showDeleteConfirm = false;
         }
-        _handleEditSelection(e) {
-            const growspaceId = e.target.value;
+        _populateEditFields(growspaceId) {
             this.edit_selectedId = growspaceId;
             if (growspaceId && this.devices) {
                 const device = this.devices.find((d) => d.device_id === growspaceId);
@@ -11888,6 +11909,10 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                     this.edit_notification_service = device.notification_target || '';
                 }
             }
+        }
+        _handleEditSelection(e) {
+            const growspaceId = e.target.value;
+            this._populateEditFields(growspaceId);
         }
         render() {
             if (!this.open)
@@ -11946,6 +11971,13 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
               <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
               Environment
             </div>
+            <div
+              class="config-tab ${this.currentTab === 'dehumidifier' ? 'active' : ''}"
+              @click=${() => this._switchTab('dehumidifier')}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>
+              Dehumidifier
+            </div>
           </div>
 
           <!-- Content -->
@@ -11953,6 +11985,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
             ${this.currentTab === 'add_growspace' ? this.renderAddGrowspaceTab() : E}
             ${this.currentTab === 'edit_growspace' ? this.renderEditGrowspaceTab() : E}
             ${this.currentTab === 'environment' ? this.renderEnvironmentTab() : E}
+            ${this.currentTab === 'dehumidifier' ? this.renderDehumidifierTab() : E}
           </div>
 
           <!-- Actions -->
@@ -11965,10 +11998,10 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                   </button>
                 `
                 : E}
-            ${this.currentTab === 'environment'
+            ${['environment', 'dehumidifier'].includes(this.currentTab)
                 ? x `
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
-                    Save Sensors
+                    Save Configuration
                   </button>
                 `
                 : E}
@@ -12123,7 +12156,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
               @change=${this._handleEditSelection}
             >
               <option value="">Select...</option>
-              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
+              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}" ?selected=${id === this.edit_selectedId}>${name}</option>`)}
             </select>
           </div>
         </div>
@@ -12188,7 +12221,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
               @change=${this._handleEnvGrowspaceChange}
             >
               <option value="">Select...</option>
-              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}">${name}</option>`)}
+              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}" ?selected=${id === this.env_selectedGrowspaceId}>${name}</option>`)}
             </select>
           </div>
         </div>
@@ -12261,6 +12294,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                 this.env_dehumidifier_entity = attrs.dehumidifier_entity || '';
                 this.env_soil_moisture_sensor = attrs.soil_moisture_sensor || '';
                 this.env_control_dehumidifier = attrs.dehumidifier_control_enabled || false;
+                this.env_dehumidifier_thresholds = attrs.dehumidifier_thresholds || {};
                 // Default or fetch if available (currently not in env attrs commonly exposed, or defaults are fine)
                 this.env_stress_threshold = 0.8;
                 this.env_mold_threshold = 0.8;
@@ -12278,7 +12312,101 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                 this.env_dehumidifier_entity = '';
                 this.env_soil_moisture_sensor = '';
                 this.env_control_dehumidifier = false;
+                this.env_dehumidifier_thresholds = {};
             }
+        }
+        renderDehumidifierTab() {
+            // Define structure for rendering
+            const stages = [
+                { id: 'seedling', label: 'Seedling' },
+                { id: 'veg', label: 'Vegetative' },
+                { id: 'early_flower', label: 'Early Flower' },
+                { id: 'mid_flower', label: 'Mid Flower' },
+                { id: 'late_flower', label: 'Late Flower' },
+                { id: 'drying', label: 'Drying' },
+                { id: 'curing', label: 'Curing' }
+            ];
+            return x `
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div class="detail-card">
+          <h3>Select Target</h3>
+          <div class="md3-input-group">
+            <label class="md3-label">Growspace</label>
+            <select
+              class="md3-input"
+              .value=${this.env_selectedGrowspaceId}
+              @change=${this._handleEnvGrowspaceChange}
+            >
+              <option value="">Select...</option>
+              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}" ?selected=${id === this.env_selectedGrowspaceId}>${name}</option>`)}
+            </select>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <h3>Dehumidifier Thresholds (VPD/kPa)</h3>
+          <p style="font-size:0.8rem; opacity:0.7;">
+            Set VPD thresholds to control when the dehumidifier turns on/off for each growth stage.
+          </p>
+        </div>
+
+        ${stages.map(stage => x `
+          <div class="detail-card">
+            <h4>${stage.label}</h4>
+            <div class="row-col-grid">
+               <!-- Day Cycle -->
+               <div style="display:flex; flex-direction:column; gap:8px;">
+                 <h5>Day</h5>
+                 <md3-number-input
+                    label="On"
+                    .value=${this._getThresholdValue(stage.id, 'day', 'on')}
+                    @change=${(e) => this._updateThreshold(stage.id, 'day', 'on', parseFloat(e.detail))}
+                    step="0.01"
+                 ></md3-number-input>
+                 <md3-number-input
+                    label="Off"
+                    .value=${this._getThresholdValue(stage.id, 'day', 'off')}
+                    @change=${(e) => this._updateThreshold(stage.id, 'day', 'off', parseFloat(e.detail))}
+                    step="0.01"
+                 ></md3-number-input>
+               </div>
+
+               <!-- Night Cycle -->
+               <div style="display:flex; flex-direction:column; gap:8px;">
+                 <h5>Night</h5>
+                 <md3-number-input
+                    label="On"
+                    .value=${this._getThresholdValue(stage.id, 'night', 'on')}
+                    @change=${(e) => this._updateThreshold(stage.id, 'night', 'on', parseFloat(e.detail))}
+                    step="0.01"
+                 ></md3-number-input>
+                 <md3-number-input
+                    label="Off"
+                    .value=${this._getThresholdValue(stage.id, 'night', 'off')}
+                    @change=${(e) => this._updateThreshold(stage.id, 'night', 'off', parseFloat(e.detail))}
+                    step="0.01"
+                 ></md3-number-input>
+               </div>
+            </div>
+          </div>
+        `)}
+      </div>
+    `;
+        }
+        _getThresholdValue(stage, cycle, point) {
+            return this.env_dehumidifier_thresholds?.[stage]?.[cycle]?.[point] ?? 0;
+        }
+        _updateThreshold(stage, cycle, point, value) {
+            if (isNaN(value))
+                return;
+            // Deep clone to trigger reactivity if needed, or just mutable update but assign new ref 
+            const newThresholds = JSON.parse(JSON.stringify(this.env_dehumidifier_thresholds || {}));
+            if (!newThresholds[stage])
+                newThresholds[stage] = {};
+            if (!newThresholds[stage][cycle])
+                newThresholds[stage][cycle] = { on: 0, off: 0 };
+            newThresholds[stage][cycle][point] = value;
+            this.env_dehumidifier_thresholds = newThresholds;
         }
         constructor() {
             super(...arguments);
@@ -12288,7 +12416,8 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
             _ConfigDialog_devices_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _devices_initializers, [])));
             _ConfigDialog_initialTab_accessor_storage.set(this, (__runInitializers(this, _devices_extraInitializers), __runInitializers(this, _initialTab_initializers, 'environment')));
             _ConfigDialog_currentTab_accessor_storage.set(this, (__runInitializers(this, _initialTab_extraInitializers), __runInitializers(this, _currentTab_initializers, 'environment')));
-            this._initialStateApplied = (__runInitializers(this, _currentTab_extraInitializers), false);
+            _ConfigDialog_environmentData_accessor_storage.set(this, (__runInitializers(this, _currentTab_extraInitializers), __runInitializers(this, _environmentData_initializers, void 0)));
+            this._initialStateApplied = (__runInitializers(this, _environmentData_extraInitializers), false);
             _ConfigDialog_add_name_accessor_storage.set(this, __runInitializers(this, _add_name_initializers, ''));
             _ConfigDialog_add_rows_accessor_storage.set(this, (__runInitializers(this, _add_name_extraInitializers), __runInitializers(this, _add_rows_initializers, 4)));
             _ConfigDialog_add_plants_per_row_accessor_storage.set(this, (__runInitializers(this, _add_rows_extraInitializers), __runInitializers(this, _add_plants_per_row_initializers, 4)));
@@ -12312,7 +12441,8 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
             _ConfigDialog_env_dehumidifier_entity_accessor_storage.set(this, (__runInitializers(this, _env_humidifier_entity_extraInitializers), __runInitializers(this, _env_dehumidifier_entity_initializers, '')));
             _ConfigDialog_env_soil_moisture_sensor_accessor_storage.set(this, (__runInitializers(this, _env_dehumidifier_entity_extraInitializers), __runInitializers(this, _env_soil_moisture_sensor_initializers, '')));
             _ConfigDialog_env_control_dehumidifier_accessor_storage.set(this, (__runInitializers(this, _env_soil_moisture_sensor_extraInitializers), __runInitializers(this, _env_control_dehumidifier_initializers, false)));
-            _ConfigDialog__showDeleteConfirm_accessor_storage.set(this, (__runInitializers(this, _env_control_dehumidifier_extraInitializers), __runInitializers(this, __showDeleteConfirm_initializers, false)));
+            _ConfigDialog_env_dehumidifier_thresholds_accessor_storage.set(this, (__runInitializers(this, _env_control_dehumidifier_extraInitializers), __runInitializers(this, _env_dehumidifier_thresholds_initializers, {})));
+            _ConfigDialog__showDeleteConfirm_accessor_storage.set(this, (__runInitializers(this, _env_dehumidifier_thresholds_extraInitializers), __runInitializers(this, __showDeleteConfirm_initializers, false)));
             __runInitializers(this, __showDeleteConfirm_extraInitializers);
         }
     };
@@ -12322,6 +12452,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
     _ConfigDialog_devices_accessor_storage = new WeakMap();
     _ConfigDialog_initialTab_accessor_storage = new WeakMap();
     _ConfigDialog_currentTab_accessor_storage = new WeakMap();
+    _ConfigDialog_environmentData_accessor_storage = new WeakMap();
     _ConfigDialog_add_name_accessor_storage = new WeakMap();
     _ConfigDialog_add_rows_accessor_storage = new WeakMap();
     _ConfigDialog_add_plants_per_row_accessor_storage = new WeakMap();
@@ -12345,6 +12476,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
     _ConfigDialog_env_dehumidifier_entity_accessor_storage = new WeakMap();
     _ConfigDialog_env_soil_moisture_sensor_accessor_storage = new WeakMap();
     _ConfigDialog_env_control_dehumidifier_accessor_storage = new WeakMap();
+    _ConfigDialog_env_dehumidifier_thresholds_accessor_storage = new WeakMap();
     _ConfigDialog__showDeleteConfirm_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "ConfigDialog");
     (() => {
@@ -12355,6 +12487,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         _devices_decorators = [n$5({ attribute: false })];
         _initialTab_decorators = [n$5({ type: String })];
         _currentTab_decorators = [n$5({ type: String })];
+        _environmentData_decorators = [n$5({ attribute: false })];
         _add_name_decorators = [r$2()];
         _add_rows_decorators = [r$2()];
         _add_plants_per_row_decorators = [r$2()];
@@ -12378,6 +12511,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         _env_dehumidifier_entity_decorators = [r$2()];
         _env_soil_moisture_sensor_decorators = [r$2()];
         _env_control_dehumidifier_decorators = [r$2()];
+        _env_dehumidifier_thresholds_decorators = [r$2()];
         __showDeleteConfirm_decorators = [r$2()];
         __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
         __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
@@ -12385,6 +12519,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         __esDecorate(_classThis, null, _devices_decorators, { kind: "accessor", name: "devices", static: false, private: false, access: { has: obj => "devices" in obj, get: obj => obj.devices, set: (obj, value) => { obj.devices = value; } }, metadata: _metadata }, _devices_initializers, _devices_extraInitializers);
         __esDecorate(_classThis, null, _initialTab_decorators, { kind: "accessor", name: "initialTab", static: false, private: false, access: { has: obj => "initialTab" in obj, get: obj => obj.initialTab, set: (obj, value) => { obj.initialTab = value; } }, metadata: _metadata }, _initialTab_initializers, _initialTab_extraInitializers);
         __esDecorate(_classThis, null, _currentTab_decorators, { kind: "accessor", name: "currentTab", static: false, private: false, access: { has: obj => "currentTab" in obj, get: obj => obj.currentTab, set: (obj, value) => { obj.currentTab = value; } }, metadata: _metadata }, _currentTab_initializers, _currentTab_extraInitializers);
+        __esDecorate(_classThis, null, _environmentData_decorators, { kind: "accessor", name: "environmentData", static: false, private: false, access: { has: obj => "environmentData" in obj, get: obj => obj.environmentData, set: (obj, value) => { obj.environmentData = value; } }, metadata: _metadata }, _environmentData_initializers, _environmentData_extraInitializers);
         __esDecorate(_classThis, null, _add_name_decorators, { kind: "accessor", name: "add_name", static: false, private: false, access: { has: obj => "add_name" in obj, get: obj => obj.add_name, set: (obj, value) => { obj.add_name = value; } }, metadata: _metadata }, _add_name_initializers, _add_name_extraInitializers);
         __esDecorate(_classThis, null, _add_rows_decorators, { kind: "accessor", name: "add_rows", static: false, private: false, access: { has: obj => "add_rows" in obj, get: obj => obj.add_rows, set: (obj, value) => { obj.add_rows = value; } }, metadata: _metadata }, _add_rows_initializers, _add_rows_extraInitializers);
         __esDecorate(_classThis, null, _add_plants_per_row_decorators, { kind: "accessor", name: "add_plants_per_row", static: false, private: false, access: { has: obj => "add_plants_per_row" in obj, get: obj => obj.add_plants_per_row, set: (obj, value) => { obj.add_plants_per_row = value; } }, metadata: _metadata }, _add_plants_per_row_initializers, _add_plants_per_row_extraInitializers);
@@ -12408,6 +12543,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         __esDecorate(_classThis, null, _env_dehumidifier_entity_decorators, { kind: "accessor", name: "env_dehumidifier_entity", static: false, private: false, access: { has: obj => "env_dehumidifier_entity" in obj, get: obj => obj.env_dehumidifier_entity, set: (obj, value) => { obj.env_dehumidifier_entity = value; } }, metadata: _metadata }, _env_dehumidifier_entity_initializers, _env_dehumidifier_entity_extraInitializers);
         __esDecorate(_classThis, null, _env_soil_moisture_sensor_decorators, { kind: "accessor", name: "env_soil_moisture_sensor", static: false, private: false, access: { has: obj => "env_soil_moisture_sensor" in obj, get: obj => obj.env_soil_moisture_sensor, set: (obj, value) => { obj.env_soil_moisture_sensor = value; } }, metadata: _metadata }, _env_soil_moisture_sensor_initializers, _env_soil_moisture_sensor_extraInitializers);
         __esDecorate(_classThis, null, _env_control_dehumidifier_decorators, { kind: "accessor", name: "env_control_dehumidifier", static: false, private: false, access: { has: obj => "env_control_dehumidifier" in obj, get: obj => obj.env_control_dehumidifier, set: (obj, value) => { obj.env_control_dehumidifier = value; } }, metadata: _metadata }, _env_control_dehumidifier_initializers, _env_control_dehumidifier_extraInitializers);
+        __esDecorate(_classThis, null, _env_dehumidifier_thresholds_decorators, { kind: "accessor", name: "env_dehumidifier_thresholds", static: false, private: false, access: { has: obj => "env_dehumidifier_thresholds" in obj, get: obj => obj.env_dehumidifier_thresholds, set: (obj, value) => { obj.env_dehumidifier_thresholds = value; } }, metadata: _metadata }, _env_dehumidifier_thresholds_initializers, _env_dehumidifier_thresholds_extraInitializers);
         __esDecorate(_classThis, null, __showDeleteConfirm_decorators, { kind: "accessor", name: "_showDeleteConfirm", static: false, private: false, access: { has: obj => "_showDeleteConfirm" in obj, get: obj => obj._showDeleteConfirm, set: (obj, value) => { obj._showDeleteConfirm = value; } }, metadata: _metadata }, __showDeleteConfirm_initializers, __showDeleteConfirm_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         _classThis = _classDescriptor.value;
@@ -14470,7 +14606,7 @@ class GrowspaceLogbookController {
         `;
         }
         async _handleEnvironmentConfig(detail) {
-            const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold, light_sensor, exhaust_entity, humidifier_entity, dehumidifier_entity, soil_moisture_sensor, control_dehumidifier, } = detail;
+            const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold, light_sensor, exhaust_entity, humidifier_entity, dehumidifier_entity, dehumidifier_thresholds, soil_moisture_sensor, control_dehumidifier, } = detail;
             if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
                 this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
                 return;
@@ -14482,13 +14618,14 @@ class GrowspaceLogbookController {
                     humidity_sensor,
                     vpd_sensor: vpd_sensor || undefined,
                     co2_sensor: co2_sensor || undefined,
-                    circulation_fan: circulation_fan || undefined,
+                    circulation_fan_entity: circulation_fan || undefined,
                     stress_threshold,
                     mold_threshold,
                     light_sensor: light_sensor || undefined,
                     exhaust_entity: exhaust_entity || undefined,
                     humidifier_entity: humidifier_entity || undefined,
                     dehumidifier_entity: dehumidifier_entity || undefined,
+                    dehumidifier_thresholds, // Pass thresholds if provided
                     soil_moisture_sensor: soil_moisture_sensor || undefined,
                     control_dehumidifier,
                 });
@@ -24083,6 +24220,7 @@ class ResizeController {
                                 dehumidifier_entity: this.device?.environment_attributes?.dehumidifier_entity || '',
                                 soil_moisture_sensor: this.device?.environment_attributes?.soil_moisture_sensor || '',
                                 control_dehumidifier: this.device?.environment_attributes?.dehumidifier_control_enabled || false,
+                                dehumidifier_thresholds: this.device?.environment_attributes?.dehumidifier_thresholds || {},
                             }
                         }
                     });

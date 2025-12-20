@@ -749,6 +749,7 @@ export class GrowspaceHeader extends LitElement {
               dehumidifier_entity: this.device?.environment_attributes?.dehumidifier_entity || '',
               soil_moisture_sensor: this.device?.environment_attributes?.soil_moisture_sensor || '',
               control_dehumidifier: this.device?.environment_attributes?.dehumidifier_control_enabled || false,
+              dehumidifier_thresholds: this.device?.environment_attributes?.dehumidifier_thresholds || {},
             }
           }
         });

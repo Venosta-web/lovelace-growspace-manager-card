@@ -193,6 +193,7 @@ export class DialogHost extends LitElement {
             exhaust_entity,
             humidifier_entity,
             dehumidifier_entity,
+            dehumidifier_thresholds,
             soil_moisture_sensor,
             control_dehumidifier,
         } = detail;
@@ -209,13 +210,14 @@ export class DialogHost extends LitElement {
                 humidity_sensor,
                 vpd_sensor: vpd_sensor || undefined,
                 co2_sensor: co2_sensor || undefined,
-                circulation_fan: circulation_fan || undefined,
+                circulation_fan_entity: circulation_fan || undefined,
                 stress_threshold,
                 mold_threshold,
                 light_sensor: light_sensor || undefined,
                 exhaust_entity: exhaust_entity || undefined,
                 humidifier_entity: humidifier_entity || undefined,
                 dehumidifier_entity: dehumidifier_entity || undefined,
+                dehumidifier_thresholds, // Pass thresholds if provided
                 soil_moisture_sensor: soil_moisture_sensor || undefined,
                 control_dehumidifier,
             });

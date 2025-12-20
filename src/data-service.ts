@@ -662,13 +662,14 @@ export class DataService {
     humidity_sensor: string;
     vpd_sensor?: string;
     co2_sensor?: string;
-    circulation_fan?: string;
+    circulation_fan_entity?: string;
     stress_threshold?: number;
     mold_threshold?: number;
     light_sensor?: string;
     exhaust_entity?: string;
     humidifier_entity?: string;
     dehumidifier_entity?: string;
+    dehumidifier_thresholds?: Record<string, Record<string, { on: number; off: number }>>;
     soil_moisture_sensor?: string;
     control_dehumidifier?: boolean;
     veg_day_hours?: number;

@@ -69,6 +69,7 @@ export const GrowspaceAPIResponseSchema = z.object({
     vpd: z.string().optional(),
     soil_moisture_value: z.string().optional(),
     dehumidifier_state: z.string().optional(),
+    dehumidifier_thresholds: z.record(z.string(), z.record(z.string(), z.object({ on: z.number(), off: z.number() }))).optional().default({}),
 
     // Statistics
     max_veg_days: z.number().optional().default(0),

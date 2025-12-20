@@ -100,6 +100,7 @@ export interface SerializedEnvironmentAttributes {
   // Actuators / Complex Entities
   dehumidifier_entity?: string;
   dehumidifier_control_enabled?: boolean;
+  dehumidifier_thresholds?: Record<string, Record<string, { on: number; off: number }>>;
   dehumidifier_state?: string;
   humidifier_entity?: string;
   exhaust_entity?: string;
@@ -317,7 +318,7 @@ export interface PlantOverviewDialogState {
 export interface StrainLibraryDialogState { }
 
 export interface ConfigDialogState {
-  currentTab: 'add_growspace' | 'environment';
+  currentTab: 'add_growspace' | 'environment' | 'dehumidifier';
   environmentData: {
     selectedGrowspaceId: string;
     temp_sensor: string;
@@ -331,6 +332,7 @@ export interface ConfigDialogState {
     exhaust_entity: string;
     humidifier_entity: string;
     dehumidifier_entity: string;
+    dehumidifier_thresholds?: Record<string, Record<string, { on: number; off: number }>>;
     soil_moisture_sensor: string;
     control_dehumidifier: boolean;
   };

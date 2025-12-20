@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { mdiClose, mdiCog, mdiViewDashboard, mdiThermometer, mdiPencil, mdiDelete } from '@mdi/js';
+import { mdiClose, mdiCog, mdiViewDashboard, mdiThermometer, mdiPencil, mdiDelete, mdiWaterPercent } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
@@ -22,10 +22,13 @@ export class ConfigDialog extends LitElement {
   @property({ attribute: false })
   public accessor devices: GrowspaceDevice[] = [];
 
-  @property({ type: String }) accessor initialTab: 'add_growspace' | 'edit_growspace' | 'environment' =
+  @property({ type: String }) accessor initialTab: 'add_growspace' | 'edit_growspace' | 'environment' | 'dehumidifier' =
     'environment';
   @property({ type: String })
-  public accessor currentTab: 'add_growspace' | 'edit_growspace' | 'environment' = 'environment';
+  public accessor currentTab: 'add_growspace' | 'edit_growspace' | 'environment' | 'dehumidifier' = 'environment';
+
+  @property({ attribute: false })
+  public accessor environmentData: any;
 
   private _initialStateApplied = false;
 
@@ -57,6 +60,7 @@ export class ConfigDialog extends LitElement {
   @state() private accessor env_dehumidifier_entity = '';
   @state() private accessor env_soil_moisture_sensor = '';
   @state() private accessor env_control_dehumidifier = false;
+  @state() private accessor env_dehumidifier_thresholds: Record<string, Record<string, { on: number; off: number }>> = {};
 
   static styles = [
     dialogStyles,
@@ -136,6 +140,12 @@ export class ConfigDialog extends LitElement {
     `,
   ];
 
+  protected willUpdate(changedProperties: Map<string, unknown>) {
+    if (changedProperties.has('environmentData') && this.environmentData) {
+      this.setInitialState(this.currentTab, this.environmentData);
+    }
+  }
+
   protected updated(changedProperties: Map<string, unknown>) {
     super.updated(changedProperties);
 
@@ -157,7 +167,7 @@ export class ConfigDialog extends LitElement {
 
   // Provide initial state setting from parent
   public setInitialState(
-    currentTab: 'add_growspace' | 'edit_growspace' | 'environment' = 'environment',
+    currentTab: 'add_growspace' | 'edit_growspace' | 'environment' | 'dehumidifier' = 'environment',
     environmentData?: {
       selectedGrowspaceId: string;
       temp_sensor: string;
@@ -173,9 +183,10 @@ export class ConfigDialog extends LitElement {
       dehumidifier_entity: string;
       soil_moisture_sensor: string;
       control_dehumidifier: boolean;
+      dehumidifier_thresholds: Record<string, Record<string, { on: number; off: number }>>;
     }
   ) {
-    this.currentTab = currentTab;
+    this.currentTab = currentTab as any;
     if (environmentData) {
       this.env_selectedGrowspaceId = environmentData.selectedGrowspaceId;
       this.env_temp_sensor = environmentData.temp_sensor;
@@ -191,6 +202,13 @@ export class ConfigDialog extends LitElement {
       this.env_dehumidifier_entity = environmentData.dehumidifier_entity;
       this.env_soil_moisture_sensor = environmentData.soil_moisture_sensor;
       this.env_control_dehumidifier = environmentData.control_dehumidifier;
+      this.env_dehumidifier_thresholds = environmentData.dehumidifier_thresholds || {};
+
+      // Also pre-select for Edit/Delete actions
+      if (environmentData.selectedGrowspaceId) {
+        console.log('DEBUG: Pre-selecting growspace for edit:', environmentData.selectedGrowspaceId);
+        this._populateEditFields(environmentData.selectedGrowspaceId);
+      }
     }
   }
 
@@ -198,7 +216,7 @@ export class ConfigDialog extends LitElement {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
-  private _switchTab(tab: 'add_growspace' | 'edit_growspace' | 'environment') {
+  private _switchTab(tab: 'add_growspace' | 'edit_growspace' | 'environment' | 'dehumidifier') {
     this.currentTab = tab;
   }
 
@@ -235,6 +253,7 @@ export class ConfigDialog extends LitElement {
           exhaust_entity: this.env_exhaust_entity,
           humidifier_entity: this.env_humidifier_entity,
           dehumidifier_entity: this.env_dehumidifier_entity,
+          dehumidifier_thresholds: this.env_dehumidifier_thresholds,
           soil_moisture_sensor: this.env_soil_moisture_sensor,
           control_dehumidifier: this.env_control_dehumidifier,
         },
@@ -292,8 +311,7 @@ export class ConfigDialog extends LitElement {
     this._showDeleteConfirm = false;
   }
 
-  private _handleEditSelection(e: Event) {
-    const growspaceId = (e.target as HTMLSelectElement).value;
+  private _populateEditFields(growspaceId: string) {
     this.edit_selectedId = growspaceId;
 
     if (growspaceId && this.devices) {
@@ -305,6 +323,11 @@ export class ConfigDialog extends LitElement {
         this.edit_notification_service = device.notification_target || '';
       }
     }
+  }
+
+  private _handleEditSelection(e: Event) {
+    const growspaceId = (e.target as HTMLSelectElement).value;
+    this._populateEditFields(growspaceId);
   }
 
   render() {
@@ -364,6 +387,13 @@ export class ConfigDialog extends LitElement {
               <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
               Environment
             </div>
+            <div
+              class="config-tab ${this.currentTab === 'dehumidifier' ? 'active' : ''}"
+              @click=${() => this._switchTab('dehumidifier')}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>
+              Dehumidifier
+            </div>
           </div>
 
           <!-- Content -->
@@ -371,6 +401,7 @@ export class ConfigDialog extends LitElement {
             ${this.currentTab === 'add_growspace' ? this.renderAddGrowspaceTab() : nothing}
             ${this.currentTab === 'edit_growspace' ? this.renderEditGrowspaceTab() : nothing}
             ${this.currentTab === 'environment' ? this.renderEnvironmentTab() : nothing}
+            ${this.currentTab === 'dehumidifier' ? this.renderDehumidifierTab() : nothing}
           </div>
 
           <!-- Actions -->
@@ -383,10 +414,10 @@ export class ConfigDialog extends LitElement {
                   </button>
                 `
         : nothing}
-            ${this.currentTab === 'environment'
+            ${['environment', 'dehumidifier'].includes(this.currentTab)
         ? html`
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
-                    Save Sensors
+                    Save Configuration
                   </button>
                 `
         : nothing}
@@ -563,7 +594,7 @@ export class ConfigDialog extends LitElement {
             >
               <option value="">Select...</option>
               ${Object.entries(this.growspaceOptions).map(
-      ([id, name]) => html`<option value="${id}">${name}</option>`
+      ([id, name]) => html`<option value="${id}" ?selected=${id === this.edit_selectedId}>${name}</option>`
     )}
             </select>
           </div>
@@ -635,7 +666,7 @@ export class ConfigDialog extends LitElement {
             >
               <option value="">Select...</option>
               ${Object.entries(this.growspaceOptions).map(
-      ([id, name]) => html`<option value="${id}">${name}</option>`
+      ([id, name]) => html`<option value="${id}" ?selected=${id === this.env_selectedGrowspaceId}>${name}</option>`
     )}
             </select>
           </div>
@@ -770,6 +801,8 @@ export class ConfigDialog extends LitElement {
       this.env_dehumidifier_entity = attrs.dehumidifier_entity || '';
       this.env_soil_moisture_sensor = attrs.soil_moisture_sensor || '';
       this.env_control_dehumidifier = attrs.dehumidifier_control_enabled || false;
+      this.env_dehumidifier_thresholds = attrs.dehumidifier_thresholds || {};
+
       // Default or fetch if available (currently not in env attrs commonly exposed, or defaults are fine)
       this.env_stress_threshold = 0.8;
       this.env_mold_threshold = 0.8;
@@ -786,6 +819,107 @@ export class ConfigDialog extends LitElement {
       this.env_dehumidifier_entity = '';
       this.env_soil_moisture_sensor = '';
       this.env_control_dehumidifier = false;
+      this.env_dehumidifier_thresholds = {};
     }
+  }
+
+  private renderDehumidifierTab() {
+    // Define structure for rendering
+    const stages = [
+      { id: 'seedling', label: 'Seedling' },
+      { id: 'veg', label: 'Vegetative' },
+      { id: 'early_flower', label: 'Early Flower' },
+      { id: 'mid_flower', label: 'Mid Flower' },
+      { id: 'late_flower', label: 'Late Flower' },
+      { id: 'drying', label: 'Drying' },
+      { id: 'curing', label: 'Curing' }
+    ];
+
+    return html`
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div class="detail-card">
+          <h3>Select Target</h3>
+          <div class="md3-input-group">
+            <label class="md3-label">Growspace</label>
+            <select
+              class="md3-input"
+              .value=${this.env_selectedGrowspaceId}
+              @change=${this._handleEnvGrowspaceChange}
+            >
+              <option value="">Select...</option>
+              ${Object.entries(this.growspaceOptions).map(
+      ([id, name]) => html`<option value="${id}" ?selected=${id === this.env_selectedGrowspaceId}>${name}</option>`
+    )}
+            </select>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <h3>Dehumidifier Thresholds (VPD/kPa)</h3>
+          <p style="font-size:0.8rem; opacity:0.7;">
+            Set VPD thresholds to control when the dehumidifier turns on/off for each growth stage.
+          </p>
+        </div>
+
+        ${stages.map(stage => html`
+          <div class="detail-card">
+            <h4>${stage.label}</h4>
+            <div class="row-col-grid">
+               <!-- Day Cycle -->
+               <div style="display:flex; flex-direction:column; gap:8px;">
+                 <h5>Day</h5>
+                 <md3-number-input
+                    label="On"
+                    .value=${this._getThresholdValue(stage.id, 'day', 'on')}
+                    @change=${(e: CustomEvent) => this._updateThreshold(stage.id, 'day', 'on', parseFloat(e.detail))}
+                    step="0.01"
+                 ></md3-number-input>
+                 <md3-number-input
+                    label="Off"
+                    .value=${this._getThresholdValue(stage.id, 'day', 'off')}
+                    @change=${(e: CustomEvent) => this._updateThreshold(stage.id, 'day', 'off', parseFloat(e.detail))}
+                    step="0.01"
+                 ></md3-number-input>
+               </div>
+
+               <!-- Night Cycle -->
+               <div style="display:flex; flex-direction:column; gap:8px;">
+                 <h5>Night</h5>
+                 <md3-number-input
+                    label="On"
+                    .value=${this._getThresholdValue(stage.id, 'night', 'on')}
+                    @change=${(e: CustomEvent) => this._updateThreshold(stage.id, 'night', 'on', parseFloat(e.detail))}
+                    step="0.01"
+                 ></md3-number-input>
+                 <md3-number-input
+                    label="Off"
+                    .value=${this._getThresholdValue(stage.id, 'night', 'off')}
+                    @change=${(e: CustomEvent) => this._updateThreshold(stage.id, 'night', 'off', parseFloat(e.detail))}
+                    step="0.01"
+                 ></md3-number-input>
+               </div>
+            </div>
+          </div>
+        `)}
+      </div>
+    `;
+  }
+
+  private _getThresholdValue(stage: string, cycle: string, point: 'on' | 'off'): number {
+    return this.env_dehumidifier_thresholds?.[stage]?.[cycle]?.[point] ?? 0;
+  }
+
+  private _updateThreshold(stage: string, cycle: string, point: 'on' | 'off', value: number) {
+    if (isNaN(value)) return;
+
+    // Deep clone to trigger reactivity if needed, or just mutable update but assign new ref 
+    const newThresholds = JSON.parse(JSON.stringify(this.env_dehumidifier_thresholds || {}));
+
+    if (!newThresholds[stage]) newThresholds[stage] = {};
+    if (!newThresholds[stage][cycle]) newThresholds[stage][cycle] = { on: 0, off: 0 };
+
+    newThresholds[stage][cycle][point] = value;
+
+    this.env_dehumidifier_thresholds = newThresholds;
   }
 }

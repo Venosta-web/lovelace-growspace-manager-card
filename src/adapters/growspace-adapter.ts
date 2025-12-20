@@ -22,7 +22,7 @@ const ENV_KEYS: (keyof SerializedEnvironmentAttributes)[] = [
   'temperature_sensor', 'humidity_sensor', 'vpd_sensor', 'co2_sensor',
   'soil_moisture_sensor', 'light_sensor', 'exhaust_entity', 'humidifier_entity',
   'dehumidifier_entity', 'dehumidifier_control_enabled', 'circulation_fan_entity',
-  'dehumidifier_state', 'vpd', 'soil_moisture_value'
+  'dehumidifier_state', 'dehumidifier_thresholds', 'vpd', 'soil_moisture_value'
 ];
 
 const STAT_KEYS: (keyof SerializedStats)[] = [
