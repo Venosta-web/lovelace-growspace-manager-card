@@ -28,6 +28,13 @@ export class GrowspaceGrid extends LitElement {
   private _draggedPlant: PlantEntity | null = null;
   private _gridRef = createRef<HTMLDivElement>();
 
+  public focusPlant(index: number) {
+    const cards = this.shadowRoot?.querySelectorAll('growspace-plant-card');
+    if (cards && cards[index]) {
+      (cards[index] as any).focus();
+    }
+  }
+
   static styles = [
     variables,
     sharedStyles,

@@ -15318,6 +15318,243 @@ function wrapperRemoveClass(el, cls) {
         el.classList.remove(cls);
 }
 
+const plantStatsStyles = i$6 `
+  :host {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0 12px;
+    box-sizing: border-box;
+  }
+
+  .pc-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .pc-stat-item svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+  }
+
+  .pc-stat-text {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--primary-text-color, #fff);
+  }
+
+  .current-stage {}
+`;
+
+(() => {
+    var _GrowspacePlantStats_stages_accessor_storage;
+    let _classDecorators = [t$2('growspace-plant-stats')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _stages_decorators;
+    let _stages_initializers = [];
+    let _stages_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get stages() { return __classPrivateFieldGet(this, _GrowspacePlantStats_stages_accessor_storage, "f"); }
+        set stages(value) { __classPrivateFieldSet(this, _GrowspacePlantStats_stages_accessor_storage, value, "f"); }
+        render() {
+            return x `
+      ${this.stages.map((d) => {
+                return x `
+          <div class=${e({ 'pc-stat-item': true, 'current-stage': d.isCurrent })}>
+            <svg style=${o({ color: d.color })} viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
+            <div class="pc-stat-text">${d.days}d</div>
+          </div>
+        `;
+            })}
+    `;
+        }
+        constructor() {
+            super(...arguments);
+            _GrowspacePlantStats_stages_accessor_storage.set(this, __runInitializers(this, _stages_initializers, []));
+            __runInitializers(this, _stages_extraInitializers);
+        }
+    };
+    _GrowspacePlantStats_stages_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "GrowspacePlantStats");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _stages_decorators = [n$5({ attribute: false })];
+        __esDecorate(_classThis, null, _stages_decorators, { kind: "accessor", name: "stages", static: false, private: false, access: { has: obj => "stages" in obj, get: obj => obj.stages, set: (obj, value) => { obj.stages = value; } }, metadata: _metadata }, _stages_initializers, _stages_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.styles = [plantStatsStyles];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
+
+const plantCardStyles = i$6 `
+  :host {
+    display: block;
+    width: 100%;
+    height: 100%;
+    contain: layout paint style;
+  }
+
+  .plant-card-rich {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+    box-shadow: var(--ha-card-box-shadow, 0 4px 6px rgba(0, 0, 0, 0.1));
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    aspect-ratio: 1;
+    box-sizing: border-box;
+    color: var(--primary-text-color);
+    will-change: transform;
+    user-select: none;
+  }
+
+  .plant-card-rich:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    border-color: var(--primary-color, rgba(255, 255, 255, 0.2));
+  }
+  .plant-card-rich:focus {
+    outline: 2px solid var(--primary-color, #22c55e);
+    outline-offset: 2px;
+  }
+
+  .plant-card-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    z-index: 0;
+    transition: filter 0.3s ease;
+  }
+
+  .plant-card-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.9) 0%,
+      rgba(0, 0, 0, 0.6) 50%,
+      rgba(0, 0, 0, 0.3) 100%
+    );
+    z-index: 1;
+  }
+
+  .plant-card-checkbox {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .plant-card-checkbox:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+  }
+
+  .plant-card-content {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    flex-direction: column;
+    justify-content: stretch;
+    gap: 16px;
+    padding: 16px;
+    box-sizing: border-box;
+    align-content: stretch;
+    align-items: end;
+    justify-items: center;
+    margin-top: auto;
+  }
+
+  .pc-info {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    backdrop-filter: blur(1px);
+    -webkit-backdrop-filter: blur(1px);
+
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
+    color: white;
+    --primary-text-color: white;
+    --secondary-text-color: rgba(255, 255, 255, 0.8);
+  }
+
+  .pc-strain-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary-text-color, #fff);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .pc-pheno {
+    font-size: 0.9rem;
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+    font-weight: 500;
+  }
+
+  .pc-stage {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 8px;
+    color: var(--stage-color);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    text-transform: capitalize;
+  }
+
+
+  .plant-card-rich.dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+  }
+
+  .plant-card-rich.dragging-mobile {
+    opacity: 0.8;
+    transform: scale(1.05);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    pointer-events: none;
+  }
+`;
+
 (() => {
     var _GrowspacePlantCard_plant_accessor_storage, _GrowspacePlantCard_row_accessor_storage, _GrowspacePlantCard_col_accessor_storage, _GrowspacePlantCard_strainLibrary_accessor_storage, _GrowspacePlantCard_isEditMode_accessor_storage, _GrowspacePlantCard_selected_accessor_storage;
     let _classDecorators = [t$2('growspace-plant-card')];
@@ -15374,6 +15611,15 @@ function wrapperRemoveClass(el, cls) {
             return PlantUtils.getPlantDisplayData(this.plant, this.strainLibrary);
         }
         // --- Click Handlers ---
+        focus(options) {
+            const card = this.shadowRoot?.querySelector('.plant-card-rich');
+            if (card) {
+                card.focus(options);
+            }
+            else {
+                super.focus(options);
+            }
+        }
         _handleClick() {
             this.dispatchEvent(new CustomEvent('plant-click', {
                 detail: { plant: this.plant },
@@ -15389,18 +15635,6 @@ function wrapperRemoveClass(el, cls) {
                 composed: true,
             }));
         }
-        renderPlantDaysRich(stages) {
-            return x `
-      ${stages.map((d) => {
-                return x `
-          <div class="pc-stat-item ${d.isCurrent ? 'current-stage' : ''}">
-            <svg style="color: ${d.color};" viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
-            <div class="pc-stat-text">${d.days}d</div>
-          </div>
-        `;
-            })}
-    `;
-        }
         render() {
             const data = this.displayData;
             if (!this.plant || !data)
@@ -15409,8 +15643,9 @@ function wrapperRemoveClass(el, cls) {
             return x `
       <div
         class="plant-card-rich"
-        style="--stage-color: ${stageColor}"
+        style=${o({ '--stage-color': stageColor })}
         draggable="true"
+        tabindex="0"
         @click=${this._handleClick}
       >
         ${imageUrl
@@ -15429,14 +15664,16 @@ function wrapperRemoveClass(el, cls) {
         ${this.isEditMode
                 ? x `
               <div
-                class="plant-card-checkbox ${this.selected ? 'selected' : ''}"
+                class=${e({ 'plant-card-checkbox': true, 'selected': this.selected })}
                 @click=${this._toggleSelection}
               >
                 <svg
                   viewBox="0 0 24 24"
-                  style="width: 24px; height: 24px; fill: ${this.selected
-                    ? 'var(--primary-color)'
-                    : 'rgba(255,255,255,0.7)'};"
+                  style=${o({
+                    width: '24px',
+                    height: '24px',
+                    fill: this.selected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)'
+                })}
                 >
                   <path d="${this.selected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
                 </svg>
@@ -15451,7 +15688,7 @@ function wrapperRemoveClass(el, cls) {
             <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
           </div>
 
-          <div class="pc-stats">${this.renderPlantDaysRich(stages)}</div>
+          <growspace-plant-stats .stages=${stages}></growspace-plant-stats>
         </div>
       </div>
     `;
@@ -15484,191 +15721,7 @@ function wrapperRemoveClass(el, cls) {
     })();
     _classThis.styles = [
         sharedStyles,
-        i$6 `
-    :host {
-      display: block;
-      width: 100%;
-      height: 100%;
-      contain: layout paint style;
-    }
-
-    .plant-card-rich {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      border-radius: 16px;
-      overflow: hidden;
-      background: var(--glass-bg);
-      backdrop-filter: var(--glass-blur);
-      -webkit-backdrop-filter: var(--glass-blur);
-      border: var(--glass-border);
-      box-shadow: var(--ha-card-box-shadow, 0 4px 6px rgba(0, 0, 0, 0.1));
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
-      aspect-ratio: 1;
-      box-sizing: border-box;
-      color: var(--primary-text-color);
-      will-change: transform;
-      user-select: none;
-    }
-
-    .plant-card-rich:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-      border-color: var(--primary-color, rgba(255, 255, 255, 0.2));
-    }
-    .plant-card-rich:focus {
-      outline: 2px solid var(--primary-color, #22c55e);
-      outline-offset: 2px;
-    }
-
-    .plant-card-bg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-size: cover;
-      z-index: 0;
-      transition: filter 0.3s ease;
-    }
-
-    .plant-card-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(
-        to top,
-        rgba(0, 0, 0, 0.9) 0%,
-        rgba(0, 0, 0, 0.6) 50%,
-        rgba(0, 0, 0, 0.3) 100%
-      );
-      z-index: 1;
-    }
-
-    .plant-card-checkbox {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      z-index: 10;
-      background: rgba(0, 0, 0, 0.5);
-      border-radius: 50%;
-      padding: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .plant-card-checkbox:hover {
-      background: rgba(0, 0, 0, 0.8);
-      transform: scale(1.1);
-    }
-
-    .plant-card-content {
-      position: relative;
-      z-index: 2;
-      display: grid;
-      flex-direction: column;
-      justify-content: stretch;
-      gap: 16px;
-      padding: 16px;
-      box-sizing: border-box;
-      align-content: stretch;
-      align-items: end;
-      justify-items: center;
-      margin-top: auto;
-  }
-
-    .pc-info {
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      align-items: center;
-      backdrop-filter: blur(1px);
-      -webkit-backdrop-filter: blur(1px);
-
-      border-top: 1px solid rgba(0, 0, 0, 0.2);
-      color: white;
-      --primary-text-color: white;
-      --secondary-text-color: rgba(255, 255, 255, 0.8);
-    }
-
-    .pc-strain-name {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--primary-text-color, #fff);
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
-    }
-
-    .pc-pheno {
-      font-size: 0.9rem;
-      color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-      font-weight: 500;
-    }
-
-    .pc-stage {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-top: 8px;
-      color: var(--stage-color);
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-      text-transform: capitalize;
-    }
-
-    .pc-stats {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-      padding: 0 12px;
-      box-sizing: border-box;
-    }
-
-    .pc-stat-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .pc-stat-item svg {
-      width: 24px;
-      height: 24px;
-      fill: currentColor;
-    }
-
-    .pc-stat-text {
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--primary-text-color, #fff);
-    }
-
-    .current-stage {}
-
-    .plant-card-rich.dragging {
-      opacity: 0.5;
-      transform: rotate(5deg);
-    }
-
-    .plant-card-rich.dragging-mobile {
-      opacity: 0.8;
-      transform: scale(1.05);
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
-      z-index: 1000;
-      pointer-events: none;
-    }
-  `
+        plantCardStyles
     ];
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
@@ -25598,6 +25651,12 @@ const variables = i$6 `
         set compact(value) { __classPrivateFieldSet(this, _GrowspaceGrid_compact_accessor_storage, value, "f"); }
         get isLoading() { return __classPrivateFieldGet(this, _GrowspaceGrid_isLoading_accessor_storage, "f"); }
         set isLoading(value) { __classPrivateFieldSet(this, _GrowspaceGrid_isLoading_accessor_storage, value, "f"); }
+        focusPlant(index) {
+            const cards = this.shadowRoot?.querySelectorAll('growspace-plant-card');
+            if (cards && cards[index]) {
+                cards[index].focus();
+            }
+        }
         _handleDragStart(plant) {
             this._draggedPlant = plant;
         }
@@ -27148,6 +27207,12 @@ const growspaceCardStyles = i$6 `
         set cols(value) { __classPrivateFieldSet(this, _GrowspaceViewCompact_cols_accessor_storage, value, "f"); }
         get isLoading() { return __classPrivateFieldGet(this, _GrowspaceViewCompact_isLoading_accessor_storage, "f"); }
         set isLoading(value) { __classPrivateFieldSet(this, _GrowspaceViewCompact_isLoading_accessor_storage, value, "f"); }
+        focusPlant(index) {
+            const grid = this.shadowRoot?.querySelector('growspace-grid');
+            if (grid) {
+                grid.focusPlant(index);
+            }
+        }
         render() {
             return x `
       <div class="view-mode-container compact">
@@ -27573,6 +27638,12 @@ const growspaceCardStyles = i$6 `
         set selectedCount(value) { __classPrivateFieldSet(this, _GrowspaceViewStandard_selectedCount_accessor_storage, value, "f"); }
         get config() { return __classPrivateFieldGet(this, _GrowspaceViewStandard_config_accessor_storage, "f"); }
         set config(value) { __classPrivateFieldSet(this, _GrowspaceViewStandard_config_accessor_storage, value, "f"); }
+        focusPlant(index) {
+            const grid = this.shadowRoot?.querySelector('growspace-grid');
+            if (grid) {
+                grid.focusPlant(index);
+            }
+        }
         render() {
             if (!this.device)
                 return x ``;
@@ -28744,6 +28815,10 @@ let GrowspaceManagerCard = (() => {
             this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
         }
         willUpdate(changedProps) {
+            // Logic moved to updated() to avoid side-effects during update cycle
+        }
+        updated(changedProps) {
+            super.updated(changedProps);
             if (changedProps.has('hass')) {
                 this.store.updateHass(this.hass);
             }
@@ -28761,9 +28836,6 @@ let GrowspaceManagerCard = (() => {
                 }
                 this.store.setDefaultApplied(true);
             }
-        }
-        updated(changedProps) {
-            super.updated(changedProps);
             // Handle focus update from store state
             if (this.store.state.focusedPlantIndex >= 0) {
                 this._focusPlantByIndex(this.store.state.focusedPlantIndex);
@@ -28799,12 +28871,9 @@ let GrowspaceManagerCard = (() => {
             this.store.handleKeyboardNavigation(e.key);
         }
         _focusPlantByIndex(index) {
-            const grid = this.shadowRoot?.querySelector('.growspace-grid');
-            if (grid) {
-                const plantCards = grid.querySelectorAll('.plant-card-rich');
-                if (plantCards[index]) {
-                    plantCards[index].focus();
-                }
+            const activeView = this.shadowRoot?.querySelector('growspace-view-standard, growspace-view-compact');
+            if (activeView && 'focusPlant' in activeView) {
+                activeView.focusPlant(index);
             }
         }
         _downloadFile(url) {

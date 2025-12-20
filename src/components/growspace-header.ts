@@ -197,6 +197,7 @@ export class GrowspaceHeader extends LitElement {
       display: flex;
       flex-direction: column;
       gap: 24px;
+      margin-bottom: 24px;
     }
 
     /* ABSOLUTE OVERLAY TRICK for Auto-Width Select */

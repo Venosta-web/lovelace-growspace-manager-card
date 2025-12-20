@@ -13,23 +13,30 @@ import { variables } from '../../styles/variables';
 
 @customElement('growspace-view-standard')
 export class GrowspaceViewStandard extends LitElement {
-    @property({ attribute: false }) accessor device: GrowspaceDevice | undefined;
-    @property({ attribute: false }) accessor growspaceOptions: Record<string, string> = {};
-    @property({ attribute: false }) accessor grid: (PlantEntity | null)[][] = [];
-    @property({ type: Number }) accessor rows = 0;
-    @property({ type: Number }) accessor cols = 0;
-    @property({ type: Boolean }) accessor isLoading = false;
-    @property({ type: Boolean }) accessor isEditMode = false;
-    @property({ type: Boolean }) accessor isCompact = false;
-    @property({ type: Number }) accessor selectedCount = 0;
-    @property({ attribute: false }) accessor config: GrowspaceManagerCardConfig | undefined;
+  @property({ attribute: false }) accessor device: GrowspaceDevice | undefined;
+  @property({ attribute: false }) accessor growspaceOptions: Record<string, string> = {};
+  @property({ attribute: false }) accessor grid: (PlantEntity | null)[][] = [];
+  @property({ type: Number }) accessor rows = 0;
+  @property({ type: Number }) accessor cols = 0;
+  @property({ type: Boolean }) accessor isLoading = false;
+  @property({ type: Boolean }) accessor isEditMode = false;
+  @property({ type: Boolean }) accessor isCompact = false;
+  @property({ type: Number }) accessor selectedCount = 0;
+  @property({ attribute: false }) accessor config: GrowspaceManagerCardConfig | undefined;
 
-    static styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+  public focusPlant(index: number) {
+    const grid = this.shadowRoot?.querySelector('growspace-grid');
+    if (grid) {
+      (grid as any).focusPlant(index);
+    }
+  }
 
-    protected render(): TemplateResult {
-        if (!this.device) return html``;
+  static styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
 
-        return html`
+  protected render(): TemplateResult {
+    if (!this.device) return html``;
+
+    return html`
       <growspace-header
         .device=${this.device}
         .growspaceOptions=${this.growspaceOptions}
@@ -39,12 +46,12 @@ export class GrowspaceViewStandard extends LitElement {
       <growspace-analytics .device=${this.device}></growspace-analytics>
 
       ${this.isEditMode
-                ? html`
+        ? html`
             <growspace-edit-mode-banner
               .selectedCount=${this.selectedCount}
             ></growspace-edit-mode-banner>
           `
-                : ''}
+        : ''}
 
       <growspace-grid
         .plants=${this.grid}
@@ -55,31 +62,31 @@ export class GrowspaceViewStandard extends LitElement {
       ></growspace-grid>
 
       ${this.config?.initial_view_mode === 'header'
-                ? html`
+        ? html`
             <button class="collapse-handle" @click=${this._dispatchToggle}>
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiChevronUp}"></path>
               </svg>
             </button>
           `
-                : ''}
+        : ''}
     `;
-    }
+  }
 
-    private _redispatch(e: CustomEvent, type: string) {
-        e.stopPropagation();
-        this.dispatchEvent(
-            new CustomEvent(type, {
-                detail: e.detail || (e.target as HTMLSelectElement).value,
-                bubbles: true,
-                composed: true,
-            })
-        );
-    }
+  private _redispatch(e: CustomEvent, type: string) {
+    e.stopPropagation();
+    this.dispatchEvent(
+      new CustomEvent(type, {
+        detail: e.detail || (e.target as HTMLSelectElement).value,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
 
-    private _dispatchToggle() {
-        this.dispatchEvent(
-            new CustomEvent('toggle-expansion', { bubbles: true, composed: true })
-        );
-    }
+  private _dispatchToggle() {
+    this.dispatchEvent(
+      new CustomEvent('toggle-expansion', { bubbles: true, composed: true })
+    );
+  }
 }

@@ -10,15 +10,22 @@ import { variables } from '../../styles/variables';
 
 @customElement('growspace-view-compact')
 export class GrowspaceViewCompact extends LitElement {
-    @property({ attribute: false }) accessor grid: (PlantEntity | null)[][] = [];
-    @property({ type: Number }) accessor rows = 0;
-    @property({ type: Number }) accessor cols = 0;
-    @property({ type: Boolean }) accessor isLoading = false;
+  @property({ attribute: false }) accessor grid: (PlantEntity | null)[][] = [];
+  @property({ type: Number }) accessor rows = 0;
+  @property({ type: Number }) accessor cols = 0;
+  @property({ type: Boolean }) accessor isLoading = false;
 
-    static styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+  public focusPlant(index: number) {
+    const grid = this.shadowRoot?.querySelector('growspace-grid');
+    if (grid) {
+      (grid as any).focusPlant(index);
+    }
+  }
 
-    protected render(): TemplateResult {
-        return html`
+  static styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+
+  protected render(): TemplateResult {
+    return html`
       <div class="view-mode-container compact">
         <growspace-grid
           .plants=${this.grid}
@@ -39,15 +46,15 @@ export class GrowspaceViewCompact extends LitElement {
         </button>
       </div>
     `;
-    }
+  }
 
-    private _dispatchModeChange(mode: string) {
-        this.dispatchEvent(
-            new CustomEvent('view-mode-changed', {
-                detail: { mode },
-                bubbles: true,
-                composed: true,
-            })
-        );
-    }
+  private _dispatchModeChange(mode: string) {
+    this.dispatchEvent(
+      new CustomEvent('view-mode-changed', {
+        detail: { mode },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
 }

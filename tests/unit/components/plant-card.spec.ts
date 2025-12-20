@@ -110,7 +110,14 @@ describe('PlantCard', () => {
             await element.updateComplete;
 
             // Should only show Dry stage
-            const stageItems = element.shadowRoot?.querySelectorAll('.pc-stat-item');
+            const stats = element.shadowRoot?.querySelector('growspace-plant-stats');
+            // Wait for stats component to update if needed, though usually updateComplete of parent handles children? 
+            // Lit's updateComplete waits for children if they return a promise, but standard properties update might be async.
+            // Let's assert stats exists and query its shadowRoot.
+            expect(stats).toBeTruthy();
+            await (stats as any).updateComplete;
+
+            const stageItems = stats?.shadowRoot?.querySelectorAll('.pc-stat-item');
             expect(stageItems?.length).toBe(1);
             expect(stageItems?.[0].textContent).toContain('5d');
             expect(stageItems?.[0].querySelector('path')?.getAttribute('d')).toBeTruthy(); // Check icon exists

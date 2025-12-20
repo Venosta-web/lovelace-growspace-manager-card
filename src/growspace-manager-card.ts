@@ -97,6 +97,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   };
 
   protected willUpdate(changedProps: PropertyValues): void {
+    // Logic moved to updated() to avoid side-effects during update cycle
+  }
+
+  protected updated(changedProps: PropertyValues): void {
+    super.updated(changedProps);
+
     if (changedProps.has('hass')) {
       this.store.updateHass(this.hass);
     }
@@ -119,10 +125,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       }
       this.store.setDefaultApplied(true);
     }
-  }
 
-  protected updated(changedProps: PropertyValues): void {
-    super.updated(changedProps);
     // Handle focus update from store state
     if (this.store.state.focusedPlantIndex >= 0) {
       this._focusPlantByIndex(this.store.state.focusedPlantIndex);
@@ -166,12 +169,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   }
 
   private _focusPlantByIndex(index: number) {
-    const grid = this.shadowRoot?.querySelector('.growspace-grid');
-    if (grid) {
-      const plantCards = grid.querySelectorAll('.plant-card-rich');
-      if (plantCards[index]) {
-        (plantCards[index] as HTMLElement).focus();
-      }
+    const activeView = this.shadowRoot?.querySelector(
+      'growspace-view-standard, growspace-view-compact'
+    );
+
+    if (activeView && 'focusPlant' in activeView) {
+      (activeView as any).focusPlant(index);
     }
   }
 
