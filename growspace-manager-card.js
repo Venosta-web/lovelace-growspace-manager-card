@@ -6591,19 +6591,23 @@ class ChartUtils {
             const minutes = date.getMinutes();
             let keep = false;
             switch (timeRange) {
+                // 7d: Every 4 hours (was 1h) - Reduced to 42 points
                 case '7d':
-                    keep = minutes === 0;
+                    keep = minutes === 0 && date.getHours() % 4 === 0;
                     break;
+                // 24h: Every 30 mins (was 15m) - Reduced to 48 points
                 case '24h':
+                    keep = minutes % 30 === 0;
+                    break;
+                // 6h: Every 15 mins (was 5m) - Reduced to 24 points
+                case '6h':
                     keep = minutes % 15 === 0;
                     break;
-                case '6h':
+                // 1h: Every 5 mins (was all) - Reduced to ~12 points
+                case '1h':
                     keep = minutes % 5 === 0;
                     break;
-                case '1h':
-                    keep = true;
-                    break;
-                default: keep = minutes % 15 === 0;
+                default: keep = minutes % 30 === 0;
             }
             if (keep)
                 validData.push(h);
@@ -6700,19 +6704,23 @@ class ChartUtils {
             const minutes = date.getMinutes();
             let keep = false;
             switch (timeRange) {
+                // 7d: Every 4 hours (was 1h) - Reduced to 42 points
                 case '7d':
-                    keep = minutes === 0;
+                    keep = minutes === 0 && date.getHours() % 4 === 0;
                     break;
+                // 24h: Every 30 mins (was 15m) - Reduced to 48 points
                 case '24h':
+                    keep = minutes % 30 === 0;
+                    break;
+                // 6h: Every 15 mins (was 5m) - Reduced to 24 points
+                case '6h':
                     keep = minutes % 15 === 0;
                     break;
-                case '6h':
+                // 1h: Every 5 mins (was all) - Reduced to ~12 points
+                case '1h':
                     keep = minutes % 5 === 0;
                     break;
-                case '1h':
-                    keep = true;
-                    break;
-                default: keep = minutes % 15 === 0;
+                default: keep = minutes % 30 === 0;
             }
             if (keep)
                 validData.push(h);
