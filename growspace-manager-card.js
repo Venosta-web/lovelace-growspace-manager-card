@@ -6572,49 +6572,83 @@ class ChartUtils {
         if (!historyData || historyData.length < 2)
             return '';
         // Sort by time
-        const sortedData = [...historyData]
-            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
-        // Helper for strict interval checks
-        const shouldKeepPoint = (dateStr, range) => {
-            const date = new Date(dateStr);
-            const minutes = date.getMinutes();
-            switch (range) {
-                case '7d': return minutes === 0; // Every hour
-                case '24h': return minutes % 15 === 0; // Every 15 mins
-                case '6h': return minutes % 5 === 0; // Every 5 mins
-                case '1h': return true; // Keep all for high fidelity
-                default: return minutes % 15 === 0;
-            }
-        };
+        const sortedData = [...historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
         // Filter valid numeric values AND apply time-based downsampling
-        const validData = sortedData.filter((h, index) => {
+        const validData = [];
+        const len = sortedData.length;
+        for (let i = 0; i < len; i++) {
+            const h = sortedData[i];
             const val = parseFloat(h.state);
             const isValid = !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
             if (!isValid)
-                return false;
-            // Always keep the LAST point to avoid graph cutoff
-            if (index === sortedData.length - 1)
-                return true;
-            // Apply time interval filter
-            return shouldKeepPoint(h.last_changed, timeRange);
-        });
+                continue;
+            // Always keep the LAST point
+            if (i === len - 1) {
+                validData.push(h);
+                continue;
+            }
+            const date = new Date(h.last_changed);
+            const minutes = date.getMinutes();
+            let keep = false;
+            switch (timeRange) {
+                case '7d':
+                    keep = minutes === 0;
+                    break;
+                case '24h':
+                    keep = minutes % 15 === 0;
+                    break;
+                case '6h':
+                    keep = minutes % 5 === 0;
+                    break;
+                case '1h':
+                    keep = true;
+                    break;
+                default: keep = minutes % 15 === 0;
+            }
+            if (keep)
+                validData.push(h);
+        }
         if (validData.length < 2)
             return '';
-        const values = validData.map(h => parseFloat(h.state));
-        const times = validData.map(h => new Date(h.last_changed).getTime());
-        const minVal = Math.min(...values);
-        const maxVal = Math.max(...values);
-        const minTime = Math.min(...times);
-        const maxTime = Math.max(...times);
+        // Calculate ranges
+        let minVal = Number.MAX_VALUE;
+        let maxVal = Number.MIN_VALUE;
+        let minTime = Number.MAX_VALUE;
+        let maxTime = Number.MIN_VALUE;
+        // First pass to find min/max
+        for (const d of validData) {
+            const val = parseFloat(d.state);
+            const t = new Date(d.last_changed).getTime();
+            if (val < minVal)
+                minVal = val;
+            if (val > maxVal)
+                maxVal = val;
+            if (t < minTime)
+                minTime = t;
+            if (t > maxTime)
+                maxTime = t;
+        }
         const valueRange = maxVal - minVal || 1;
         const timeRangeVal = maxTime - minTime || 1;
-        // Generate SVG path points
-        const points = validData.map((h, i) => {
-            const x = ((times[i] - minTime) / timeRangeVal) * width;
-            const y = height - ((values[i] - minVal) / valueRange) * height;
-            return `${x},${y}`;
-        });
-        return `M ${points.join(' L ')}`;
+        const xFactor = width / timeRangeVal;
+        const yFactor = height / valueRange;
+        // Generate Path
+        const pathCommands = [];
+        let first = true;
+        for (const d of validData) {
+            const val = parseFloat(d.state);
+            const t = new Date(d.last_changed).getTime();
+            const x = (t - minTime) * xFactor;
+            const y = height - (val - minVal) * yFactor;
+            if (first) {
+                pathCommands.push(`M ${x},${y}`);
+                first = false;
+            }
+            else {
+                pathCommands.push(`L ${x},${y}`);
+            }
+        }
+        return pathCommands.join(' ');
     }
     /**
      * Gets the sparkline color based on the metric's configured color from METRIC_CONFIG.
@@ -6645,89 +6679,118 @@ class ChartUtils {
     }
     /**
      * Generates colored VPD sparkline segments based on VPD value at each point.
-     * Returns array of { path, color } objects for rendering.
      */
     static generateVpdSparklineSegments(historyData, width, height, thresholds, timeRange = '24h') {
         if (!historyData || historyData.length < 2)
             return [];
-        // Sort by time
-        const sortedData = [...historyData]
-            .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
-        // Helper for strict interval checks
-        const shouldKeepPoint = (dateStr, range) => {
-            const date = new Date(dateStr);
-            const minutes = date.getMinutes();
-            switch (range) {
-                case '7d': return minutes === 0; // Every hour
-                case '24h': return minutes % 15 === 0; // Every 15 mins
-                case '6h': return minutes % 5 === 0; // Every 5 mins
-                case '1h': return true; // Keep all
-                default: return minutes % 15 === 0;
-            }
-        };
-        // Filter valid numeric values AND apply time-based downsampling
-        const validData = sortedData.filter((h, index) => {
+        const sortedData = [...historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+        const validData = [];
+        const len = sortedData.length;
+        for (let i = 0; i < len; i++) {
+            const h = sortedData[i];
             const val = parseFloat(h.state);
             const isValid = !isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown';
             if (!isValid)
-                return false;
-            // Always keep the LAST point
-            if (index === sortedData.length - 1)
-                return true;
-            return shouldKeepPoint(h.last_changed, timeRange);
-        });
+                continue;
+            if (i === len - 1) {
+                validData.push(h);
+                continue;
+            }
+            const date = new Date(h.last_changed);
+            const minutes = date.getMinutes();
+            let keep = false;
+            switch (timeRange) {
+                case '7d':
+                    keep = minutes === 0;
+                    break;
+                case '24h':
+                    keep = minutes % 15 === 0;
+                    break;
+                case '6h':
+                    keep = minutes % 5 === 0;
+                    break;
+                case '1h':
+                    keep = true;
+                    break;
+                default: keep = minutes % 15 === 0;
+            }
+            if (keep)
+                validData.push(h);
+        }
         if (validData.length < 2)
             return [];
-        const values = validData.map(h => parseFloat(h.state));
-        const times = validData.map(h => new Date(h.last_changed).getTime());
-        const minVal = Math.min(...values);
-        const maxVal = Math.max(...values);
-        const minTime = Math.min(...times);
-        const maxTime = Math.max(...times);
+        // Calculate Min/Max for scaling
+        let minVal = Number.MAX_VALUE;
+        let maxVal = Number.MIN_VALUE;
+        let minTime = Number.MAX_VALUE;
+        let maxTime = Number.MIN_VALUE;
+        for (const d of validData) {
+            const val = parseFloat(d.state);
+            const t = new Date(d.last_changed).getTime();
+            if (val < minVal)
+                minVal = val;
+            if (val > maxVal)
+                maxVal = val;
+            if (t < minTime)
+                minTime = t;
+            if (t > maxTime)
+                maxTime = t;
+        }
         const valueRange = maxVal - minVal || 1;
         const timeRangeVal = maxTime - minTime || 1;
-        // Generate points with coordinates and status
-        // Add padding so lines don't touch edges (5px top/bottom)
+        const xFactor = width / timeRangeVal;
         const padding = 5;
         const usableHeight = height - (padding * 2);
-        const points = validData.map((h, i) => {
-            const value = values[i];
-            const x = ((times[i] - minTime) / timeRangeVal) * width;
-            const y = padding + (usableHeight - ((value - minVal) / valueRange) * usableHeight);
-            const status = this.getVpdStatusForValue(value, thresholds);
+        const yFactor = usableHeight / valueRange;
+        // Generate Points with Status
+        const points = validData.map((d) => {
+            const val = parseFloat(d.state);
+            const t = new Date(d.last_changed).getTime();
+            const x = (t - minTime) * xFactor;
+            const y = padding + (usableHeight - (val - minVal) * yFactor);
+            const status = this.getVpdStatusForValue(val, thresholds);
             return { x, y, status };
         });
-        // Generate segments by color
+        // Generate segments
         const segments = [];
-        let currentSegment = [];
-        let currentStatus = points[0]?.status;
-        for (let i = 0; i < points.length; i++) {
+        if (points.length === 0)
+            return segments;
+        let currentSegmentX = [points[0].x];
+        let currentSegmentY = [points[0].y];
+        let currentStatus = points[0].status;
+        for (let i = 1; i < points.length; i++) {
             const p = points[i];
             if (p.status === currentStatus) {
-                currentSegment.push(p);
+                currentSegmentX.push(p.x);
+                currentSegmentY.push(p.y);
             }
             else {
-                // Status changed - finish current segment and start new one
-                if (currentSegment.length >= 1) {
-                    // Add connecting point to current segment
-                    currentSegment.push(p);
-                    const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
-                    segments.push({
-                        path: pathStr,
-                        color: this.getSparklineColor('vpd', currentStatus)
-                    });
+                // Close current segment
+                currentSegmentX.push(p.x);
+                currentSegmentY.push(p.y);
+                const pathCommands = [`M ${currentSegmentX[0]},${currentSegmentY[0]}`];
+                for (let j = 1; j < currentSegmentX.length; j++) {
+                    pathCommands.push(`L ${currentSegmentX[j]},${currentSegmentY[j]}`);
                 }
-                // Start new segment with this point
-                currentSegment = [p];
+                segments.push({
+                    path: pathCommands.join(' '),
+                    color: this.getSparklineColor('vpd', currentStatus),
+                });
+                // Start new segment
+                currentSegmentX = [p.x];
+                currentSegmentY = [p.y];
                 currentStatus = p.status;
             }
         }
         // Finish last segment
-        if (currentSegment.length >= 2) {
-            const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+        if (currentSegmentX.length >= 2) {
+            const pathCommands = [`M ${currentSegmentX[0]},${currentSegmentY[0]}`];
+            for (let j = 1; j < currentSegmentX.length; j++) {
+                pathCommands.push(`L ${currentSegmentX[j]},${currentSegmentY[j]}`);
+            }
             segments.push({
-                path: pathStr,
-                color: this.getSparklineColor('vpd', currentStatus)
+                path: pathCommands.join(' '),
+                color: this.getSparklineColor('vpd', currentStatus),
             });
         }
         return segments;
@@ -6735,79 +6798,95 @@ class ChartUtils {
     /**
      * Generates an SVG path string from pre-processed time/value points.
      * Handles scaling, optional min/max overrides, and line/step types.
+     * optimized for performance by single-pass processing and pixel culling.
      */
     static generatePathFromValues(data, width, height, options = {}) {
         if (!data || data.length < 2)
             return '';
+        // 1. Filter Data (Downsampling)
         let processedData = data;
-        // Apply downsampling if timeRange is provided
-        if (options.timeRange) {
-            const shouldKeepPoint = (timestamp, range) => {
-                const date = new Date(timestamp);
-                const minutes = date.getMinutes();
-                switch (range) {
-                    case '7d': return minutes === 0; // Every hour
-                    case '24h': return minutes % 15 === 0; // Every 15 mins
-                    case '6h': return minutes % 5 === 0; // Every 5 mins
-                    case '1h': return true; // Keep all
-                    default: return minutes % 15 === 0;
+        if (options.timeRange && options.timeRange !== '1h') {
+            processedData = [];
+            const len = data.length;
+            for (let i = 0; i < len; i++) {
+                // Always keep last point to prevent cutoff
+                if (i === len - 1) {
+                    processedData.push(data[i]);
+                    break;
                 }
-            };
-            processedData = data.filter((d, index) => {
-                // Always keep LAST point
-                if (index === data.length - 1)
-                    return true;
-                return shouldKeepPoint(d.time, options.timeRange);
-            });
-            if (processedData.length < 2)
-                return '';
-        }
-        const type = options.type || 'line';
-        const vals = processedData.map(d => d.value);
-        const times = processedData.map(d => d.time);
-        // Calculate ranges based on original data or options?
-        // Usually we want to scale based on the visible data?
-        // Or if min/max are provided use those.
-        // options.min/max are usually derived from the full dataset or fixed ranges.
-        // If we filter points, the local min/max might change, but usually we want to respect the intended scale.
-        // Assuming options.min/max are provided (as they are in GrowspaceEnvChart), we use those.
-        // If not, we re-calculate from processedData.
-        const minVal = options.min !== undefined ? options.min : Math.min(...vals);
-        const maxVal = options.max !== undefined ? options.max : Math.max(...vals);
-        const valueRange = (maxVal - minVal) || 1;
-        const minTime = options.startTime !== undefined ? options.startTime : Math.min(...times);
-        const maxTime = options.endTime !== undefined ? options.endTime : Math.max(...times);
-        const timeRange = (maxTime - minTime) || 1;
-        const points = processedData.map(d => {
-            const x = ((d.time - minTime) / timeRange) * width;
-            const y = height - ((d.value - minVal) / valueRange) * height;
-            return [x, y];
-        });
-        if (points.length === 0)
-            return '';
-        // Generate Path
-        if (type === 'step') {
-            let pathStr = `M ${points[0][0]},${points[0][1]}`;
-            for (let i = 1; i < points.length; i++) {
-                // Step: Horizontal to next X, prev Y, then Vertical to next Y
-                pathStr += ` L ${points[i][0]},${points[i - 1][1]}`;
-                pathStr += ` L ${points[i][0]},${points[i][1]}`;
+                const d = data[i];
+                const date = new Date(d.time);
+                const minutes = date.getMinutes();
+                let keep = false;
+                // Inline checks for speed
+                if (options.timeRange === '7d')
+                    keep = minutes === 0;
+                else if (options.timeRange === '6h')
+                    keep = minutes % 5 === 0;
+                else
+                    keep = minutes % 15 === 0; // 24h default
+                if (keep)
+                    processedData.push(d);
             }
-            return pathStr;
         }
-        else {
-            // Line
-            return `M ${points.map(p => `${p[0]},${p[1]}`).join(' L ')}`;
+        if (processedData.length < 2)
+            return '';
+        // 2. Determine Scale
+        const minVal = options.min !== undefined ? options.min : Math.min(...processedData.map(d => d.value));
+        const maxVal = options.max !== undefined ? options.max : Math.max(...processedData.map(d => d.value));
+        const valueRange = maxVal - minVal || 1;
+        const minTime = options.startTime !== undefined ? options.startTime : Math.min(...processedData.map(d => d.time));
+        const maxTime = options.endTime !== undefined ? options.endTime : Math.max(...processedData.map(d => d.time));
+        const timeRange = maxTime - minTime || 1;
+        // Pre-calculate factors to avoid division in loop
+        const xFactor = width / timeRange;
+        const yFactor = height / valueRange;
+        // 3. Generate Commands (Single Pass with Pixel Culling)
+        const type = options.type || 'line';
+        const pathCommands = [];
+        // Calculate first point
+        const startX = (processedData[0].time - minTime) * xFactor;
+        const startY = height - (processedData[0].value - minVal) * yFactor;
+        pathCommands.push(`M ${startX},${startY}`);
+        let prevX = startX;
+        let prevY = startY;
+        // Small epsilon to cull sub-pixel redundant moves (0.1px)
+        const EPSILON = 0.1;
+        for (let i = 1; i < processedData.length; i++) {
+            const d = processedData[i];
+            const x = (d.time - minTime) * xFactor;
+            const y = height - (d.value - minVal) * yFactor;
+            // SKIP if point is effectively on top of the previous one (redundant)
+            if (Math.abs(x - prevX) < EPSILON && Math.abs(y - prevY) < EPSILON) {
+                continue;
+            }
+            if (type === 'step') {
+                // Step: Draw Horizontal to new X, then Vertical to new Y
+                // Horizontal segment: (prevX, prevY) -> (x, prevY)
+                if (Math.abs(x - prevX) > EPSILON) {
+                    pathCommands.push(`L ${x},${prevY}`);
+                }
+                // Vertical segment: (x, prevY) -> (x, y)
+                if (Math.abs(y - prevY) > EPSILON) {
+                    pathCommands.push(`L ${x},${y}`);
+                }
+            }
+            else {
+                // Line: Direct draw
+                pathCommands.push(`L ${x},${y}`);
+            }
+            prevX = x;
+            prevY = y;
         }
+        return pathCommands.join(' ');
     }
     /**
      * Generates an SVG path string for a step graph (binary/state) from history data.
-     * Use generatePathFromValues for pre-processed data.
      */
     static generateStepPath(historyData, width, height, timeRange) {
         if (!historyData || historyData.length < 2)
             return '';
-        // Pre-filter valid binary/numeric data
+        // Filter valid binary/numeric data
         const sortedData = [...historyData]
             .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
             .filter(h => {
@@ -6829,7 +6908,7 @@ class ChartUtils {
                 v = parseFloat(h.state);
             return { time: t, value: v };
         });
-        // Delegate to generic generator with step type and downsampling
+        // Delegate to optimized generator
         return this.generatePathFromValues(values, width, height, {
             type: 'step',
             timeRange
@@ -9574,7 +9653,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
           </p>
           <div style="display:flex; justify-content:flex-end; gap:12px">
             <button class="md3-button tonal" @click=${this._cancelDelete}>Cancel</button>
-            <button class="md3-button danger" @click=${this._confirmDelete}>
+            <button class="md3-button danger" @click=${() => this._confirmDelete()}>
               <svg
                 style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
                 viewBox="0 0 24 24"
@@ -12000,7 +12079,6 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
             if (changedProperties.has('open')) {
                 if (this.open) {
                     if (!this._initialStateApplied) {
-                        if (this.currentTab) ;
                         this._initialStateApplied = true;
                     }
                 }
@@ -14034,6 +14112,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                     .value=${addingTime.duration}
                     .min=${1}
                     @change=${(e) => {
+                    console.log('DEBUG: Duration Change', e.detail);
                     const val = parseInt(e.detail);
                     if (!isNaN(val)) {
                         if (type === 'irrigation' && this._adding_irrigation_time)
@@ -14362,6 +14441,8 @@ class GrowspaceLogbookController {
         _formatTime(isoString) {
             try {
                 const date = new Date(isoString);
+                if (isNaN(date.getTime()))
+                    throw new Error('Invalid Time');
                 return date.toLocaleString(undefined, {
                     month: 'short',
                     day: 'numeric',
