@@ -6409,6 +6409,7 @@ class GrowspaceHistoryController {
     /**
      * Fetches delta (new data since last update) for all metrics.
      * Used by auto-refresh to minimize data transfer.
+     * Falls back to full fetch if no timestamps exist (fresh load).
      */
     async _fetchHistoryDelta() {
         if (!this.host.hass || !this.host.selectedDevice)
@@ -6416,6 +6417,13 @@ class GrowspaceHistoryController {
         const device = this.host.devices.find((d) => d.device_id === this.host.selectedDevice);
         if (!device)
             return;
+        // Check if we have any timestamps - if not, do a full fetch instead
+        const hasAnyTimestamps = Object.keys(this._lastTimestamps).length > 0;
+        if (!hasAnyTimestamps) {
+            console.log('[HistoryController] No timestamps found, falling back to full fetch');
+            await this._fetchHistory(this.getRange());
+            return;
+        }
         const now = new Date();
         const metricsToFetch = [
             'main', 'optimal', 'temperature', 'humidity', 'vpd', 'co2', 'light',
@@ -6442,8 +6450,10 @@ class GrowspaceHistoryController {
                 entitiesToFetch.add(entityId);
             }
         }
-        if (entitiesToFetch.size === 0)
+        if (entitiesToFetch.size === 0) {
+            console.log('[HistoryController] No entities to delta fetch, skipping');
             return;
+        }
         try {
             // Fetch only new data since the oldest last timestamp
             const oldestTimestamp = Math.min(...Object.values(this._lastTimestamps)

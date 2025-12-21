@@ -344,12 +344,21 @@ export class GrowspaceHistoryController implements ReactiveController {
   /**
    * Fetches delta (new data since last update) for all metrics.
    * Used by auto-refresh to minimize data transfer.
+   * Falls back to full fetch if no timestamps exist (fresh load).
    */
   private async _fetchHistoryDelta() {
     if (!this.host.hass || !this.host.selectedDevice) return;
 
     const device = this.host.devices.find((d) => d.device_id === this.host.selectedDevice);
     if (!device) return;
+
+    // Check if we have any timestamps - if not, do a full fetch instead
+    const hasAnyTimestamps = Object.keys(this._lastTimestamps).length > 0;
+    if (!hasAnyTimestamps) {
+      console.log('[HistoryController] No timestamps found, falling back to full fetch');
+      await this._fetchHistory(this.getRange());
+      return;
+    }
 
     const now = new Date();
     const metricsToFetch = [
@@ -380,7 +389,10 @@ export class GrowspaceHistoryController implements ReactiveController {
       }
     }
 
-    if (entitiesToFetch.size === 0) return;
+    if (entitiesToFetch.size === 0) {
+      console.log('[HistoryController] No entities to delta fetch, skipping');
+      return;
+    }
 
     try {
       // Fetch only new data since the oldest last timestamp
