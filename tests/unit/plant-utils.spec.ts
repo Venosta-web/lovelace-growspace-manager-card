@@ -261,8 +261,8 @@ describe('PlantUtils', () => {
         let originalImage: any;
 
         beforeEach(() => {
-            originalFileReader = global.FileReader;
-            originalImage = global.Image;
+            originalFileReader = globalThis.FileReader;
+            originalImage = globalThis.Image;
 
             // Mock FileReader
             class MockFileReader {
@@ -325,5 +325,329 @@ describe('PlantUtils', () => {
             // We can check if getContext was called or drawImage.
             // We'd need reference to mockContext.
         });
+    });
+
+    describe('getDominantStage', () => {
+        it('should recognize CURE as highest priority', () => {
+            const result = PlantUtils.getDominantStage([
+                { state: PlantStage.VEG, attributes: { veg_days: 10 } } as any,
+                { state: PlantStage.CURE, attributes: { cure_days: 5 } } as any
+            ]);
+            expect(result).toEqual({ stage: PlantStage.CURE, days: 5 });
+        });
+
+        it('should find max days for dominant stage', () => {
+            const result = PlantUtils.getDominantStage([
+                { state: PlantStage.VEG, attributes: { veg_days: 10 } } as any,
+                { state: PlantStage.VEG, attributes: { veg_days: 20 } } as any
+            ]);
+            expect(result).toEqual({ stage: PlantStage.VEG, days: 20 });
+        });
+
+        it('should return null for empty list', () => {
+            expect(PlantUtils.getDominantStage([])).toBeNull();
+        });
+    });
+
+    describe('getPlantDisplayData', () => {
+        const dummyStrainLibrary: any[] = [
+            { strain: 'OG Kush', phenotype: '1', image: 'og_1.jpg', image_crop_meta: { x: 10, y: 10 } },
+            { strain: 'Blue Dream', phenotype: 'default', image: 'bd_def.jpg' }
+        ];
+
+        it('should resolve specific phenotype image', () => {
+            const plant = {
+                state: PlantStage.FLOWER,
+                attributes: { strain: 'OG Kush', phenotype: '1', flower_days: 10 }
+            } as any;
+
+            const data = PlantUtils.getPlantDisplayData(plant, dummyStrainLibrary);
+            expect(data.imageUrl).toBe('og_1.jpg');
+            expect(data.imageCropMeta).toEqual({ x: 10, y: 10 });
+        });
+
+        it('should fallback to default phenotype image', () => {
+            const plant = {
+                state: PlantStage.VEG,
+                attributes: { strain: 'Blue Dream', phenotype: 'weird' }
+            } as any;
+            const data = PlantUtils.getPlantDisplayData(plant, dummyStrainLibrary);
+            expect(data.imageUrl).toBe('bd_def.jpg');
+        });
+
+        it('should filter chart stages correctly for DRY', () => {
+            const plant = {
+                state: PlantStage.DRY,
+                attributes: { dry_days: 5, flower_days: 60 }
+            } as any;
+            const data = PlantUtils.getPlantDisplayData(plant, []);
+            // Only DRY stage should be returned
+            expect(data.stages.length).toBe(1);
+            expect(data.stages[0].stage).toBe(PlantStage.DRY);
+        });
+
+        it('should handle missing strain library gracefully', () => {
+            const plant = { attributes: { strain: 'Unknown' } } as any;
+            const data = PlantUtils.getPlantDisplayData(plant, undefined as any);
+            expect(data.strainName).toBe('Unknown');
+        });
+    });
+
+    it('should fallback to ANY strain image if specific pheno not found', () => {
+        const library = [
+            { key: 'Amnesia|2', strain: 'Amnesia', phenotype: '2', image: 'amnesia_2.jpg' }
+        ] as any;
+        const plant = {
+            state: PlantStage.VEG,
+            attributes: { strain: 'Amnesia', phenotype: '1' }
+        } as any;
+
+        const data = PlantUtils.getPlantDisplayData(plant, library);
+        expect(data.imageUrl).toBe('amnesia_2.jpg');
+    });
+
+    it('should filter chart stages correctly for CURE', () => {
+        const plant = {
+            state: PlantStage.CURE,
+            attributes: { cure_days: 5, flower_days: 60 }
+        } as any;
+        const data = PlantUtils.getPlantDisplayData(plant, []);
+        // Only CURE stage should be returned
+        expect(data.stages.length).toBe(1);
+        expect(data.stages[0].stage).toBe(PlantStage.CURE);
+    });
+    describe('calculatePlantAge - All Stages', () => {
+        const makePlant = (stage: PlantStage, key: string, dateDiff: number) => {
+            const d = new Date(MOCK_DATE);
+            d.setDate(d.getDate() - dateDiff);
+            const dateStr = d.toISOString().split('T')[0];
+            return {
+                attributes: {
+                    [`${key}`]: dateStr
+                }
+            } as any;
+        };
+
+        it('should calculate age for MOTHER', () => {
+            const plant = makePlant(PlantStage.MOTHER, 'mom_start', 100);
+            expect(PlantUtils.calculatePlantAge(plant)).toBe(100);
+        });
+
+        it('should calculate age for CLONE', () => {
+            const plant = makePlant(PlantStage.CLONE, 'clone_start', 14);
+            expect(PlantUtils.calculatePlantAge(plant)).toBe(14);
+        });
+
+        it('should calculate age for SEEDLING', () => {
+            const plant = makePlant(PlantStage.SEEDLING, 'planted_date', 5);
+            // getPlantStage fallback to seedling if no other dates, so this works naturally
+            expect(PlantUtils.calculatePlantAge(plant)).toBe(5);
+        });
+
+        it('should calculate age for DRY', () => {
+            const plant = makePlant(PlantStage.DRY, 'dry_start', 3);
+            expect(PlantUtils.calculatePlantAge(plant)).toBe(3);
+        });
+
+        it('should calculate age for CURE', () => {
+            const plant = makePlant(PlantStage.CURE, 'cure_start', 20);
+            expect(PlantUtils.calculatePlantAge(plant)).toBe(20);
+        });
+
+        it('should return 0 if date is invalid', () => {
+            const plant = { attributes: { veg_start: 'invalid' } } as any;
+            expect(PlantUtils.calculatePlantAge(plant)).toBe(0);
+        });
+
+        it('should return 0 if plant has no attributes', () => {
+            expect(PlantUtils.calculatePlantAge({} as any)).toBe(0);
+            expect(PlantUtils.calculatePlantAge(null as any)).toBe(0);
+        });
+    });
+
+    describe('Date Helpers Edge Cases', () => {
+        it('should parse ISO string in formatDateForBackend fallback', () => {
+            // Already ISO roughly
+            expect(PlantUtils.formatDateForBackend('2023-12-25')).toBe('2023-12-25');
+            // Datetime string 
+            expect(PlantUtils.formatDateForBackend('2023-12-25T15:30:00')).toBe('2023-12-25');
+        });
+
+        it('should fallback to Date parsing in formatDateForBackend', () => {
+            // e.g. "12/25/2023" depending on locale, or full string
+            // MOCK_DATE is set, but this function creates new Date(value)
+            // explicit format
+            expect(PlantUtils.formatDateForBackend('Jan 01 2023')).toBe('2023-01-01');
+        });
+
+        it('should return undefined for invalid dates in formatDateForBackend', () => {
+            expect(PlantUtils.formatDateForBackend('not-a-date')).toBeUndefined();
+        });
+
+        it('should return empty string for invalid dates in toDateTimeLocal', () => {
+            expect(PlantUtils.toDateTimeLocal('invalid')).toBe('');
+        });
+    });
+
+});
+
+describe('Display Formatters', () => {
+    const mockHass = {
+        locale: { language: 'en-US' }
+    } as any;
+
+    it('should format numbers with Intl', () => {
+        expect(PlantUtils.formatNumber(1234.56, mockHass)).toBe('1,234.56'); // en-US standard
+    });
+
+    it('should format dates with Intl', () => {
+        const d = new Date('2023-01-01');
+        // en-US: Jan 1, 2023
+        expect(PlantUtils.formatDate(d, mockHass)).toContain('2023');
+        expect(PlantUtils.formatDate(d, mockHass)).toContain('Jan');
+    });
+
+    it('should handle formatting errors gracefully', () => {
+        // Not easy to force Intl error without bad locale, but
+        // passing undefined date/number logic check:
+        expect(PlantUtils.formatDate(undefined as any, mockHass)).toBe('');
+    });
+
+    it('should generate img styles', () => {
+        expect(PlantUtils.getImgStyle()).toContain('object-fit: cover');
+        expect(PlantUtils.getImgStyle({ x: 10, y: 20, scale: 2 })).toContain('transform: scale(2)');
+    });
+
+    it('should handle invalid inputs gracefully', () => {
+        expect(PlantUtils.formatDate('', mockHass)).toBe('');
+        expect(PlantUtils.formatDate('invalid-date', mockHass)).toBe('');
+        expect(PlantUtils.toDateTimeLocal('invalid')).toBe('');
+        expect(PlantUtils.parseDateTimeLocal('invalid')).toBeUndefined();
+    });
+    it('should fallback when Intl.DateTimeFormat fails', () => {
+        const spy = vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(() => {
+            throw new Error('Intl error');
+        });
+        const d = new Date('2023-01-01');
+        const res = PlantUtils.formatDate(d, mockHass);
+        expect(res).toBe(d.toLocaleDateString()); // Fallback
+
+        spy.mockRestore();
+    });
+
+    it('should fallback when Intl.NumberFormat fails', () => {
+        const spy = vi.spyOn(Intl, 'NumberFormat').mockImplementation(() => {
+            throw new Error('Intl error');
+        });
+        const res = PlantUtils.formatNumber(1234.56, mockHass);
+        expect(res).toBe('1234.56'); // Fallback to toString()
+
+        spy.mockRestore();
+    });
+});
+
+describe('preloadImage', () => {
+    it('should resolve on load', async () => {
+        vi.useRealTimers();
+        vi.stubGlobal('Image', class {
+            _src = '';
+            get src() { return this._src; }
+            set src(v: string) {
+                this._src = v;
+                setTimeout(() => {
+                    if (this.onload) this.onload();
+                }, 0);
+            }
+            onload: any;
+        });
+
+        await expect(PlantUtils.preloadImage('test.jpg')).resolves.not.toThrow();
+        vi.restoreAllMocks();
+    });
+
+    it('should reject on error', async () => {
+        vi.useRealTimers();
+        vi.stubGlobal('Image', class {
+            set src(v: string) {
+                setTimeout(() => { if (this.onerror) this.onerror(); }, 0);
+            }
+            onload: any;
+            onerror: any;
+        });
+        await expect(PlantUtils.preloadImage('bad.jpg')).rejects.toBeUndefined();
+        vi.restoreAllMocks();
+    });
+});
+
+describe('compressImage Error Handling', () => {
+    it('should reject if FileReader fails', async () => {
+        const file = new File([''], 'test.png', { type: 'image/png' });
+        vi.stubGlobal('FileReader', class {
+            readAsDataURL() { setTimeout(() => this.onerror(new Error('Read fail')), 0); }
+            onload: any;
+            onerror: any = () => { };
+        });
+
+        await expect(PlantUtils.compressImage(file)).rejects.toThrow('Read fail');
+        vi.restoreAllMocks();
+    });
+
+    it('should reject if Image loading fails', async () => {
+        const file = new File([''], 'test.png', { type: 'image/png' });
+        vi.stubGlobal('FileReader', class {
+            readAsDataURL() { setTimeout(() => this.onload({ target: { result: 'data:...' } } as any), 0); }
+            onload: any;
+            onerror: any;
+        });
+        vi.stubGlobal('Image', class {
+            set src(v: string) { setTimeout(() => this.onerror(new Error('Image fail')), 0); }
+            onload: any;
+            onerror: any;
+        });
+
+        await expect(PlantUtils.compressImage(file)).rejects.toThrow('Image fail');
+        vi.restoreAllMocks();
+    });
+
+    it('should reject if canvas context is null', async () => {
+        const file = new File([''], 'test.png', { type: 'image/png' });
+        vi.stubGlobal('FileReader', class {
+            readAsDataURL() { setTimeout(() => this.onload({ target: { result: 'data:...' } } as any), 0); }
+            onload: any;
+        });
+        vi.stubGlobal('Image', class {
+            width = 100;
+            height = 100;
+            set src(v) { setTimeout(() => this.onload(), 0); }
+            onload: any;
+        });
+
+        const mockCanvas = {
+            getContext: vi.fn().mockReturnValue(null) // Fail context
+        };
+        vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any);
+
+        await expect(PlantUtils.compressImage(file)).rejects.toThrow('Failed to get canvas context');
+        vi.restoreAllMocks();
+    });
+});
+
+describe('mapDialogToApiPayload Coverage', () => {
+    it('should handle null/undefined strictly for date fields', () => {
+        const attrs = {
+            seedling_start: 'null',
+            flower_start: 'undefined'
+        };
+        const payload = PlantUtils.mapDialogToApiPayload(attrs, false);
+        expect(payload.seedling_start).toBeNull();
+        expect(payload.flower_start).toBeNull();
+    });
+
+    it('should ignore non-date null attributes', () => {
+        const attrs = {
+            strain: null // should not be included
+        };
+        const payload = PlantUtils.mapDialogToApiPayload(attrs, false);
+        expect(payload).not.toHaveProperty('strain');
     });
 });

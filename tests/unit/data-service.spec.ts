@@ -369,4 +369,396 @@ describe('DataService', () => {
             );
         });
     });
+
+    describe('Validation', () => {
+        it('should handle single failure vs collection', async () => {
+            const badData = { gs1: { broken: true } }; // Invalid schema
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
+
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            const result = await service.fetchGrowspaceData();
+
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Validation Failed'), expect.any(Object));
+            // Should still return data per fallback logic
+            expect(result).toEqual(badData);
+        });
+
+        it('should return raw single response on validation failure', async () => {
+            const badData = { broken: true };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
+
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            const result = await service.fetchGrowspaceData('gs1');
+
+            expect(consoleSpy).toHaveBeenCalled();
+            expect(result).toEqual(badData);
+        });
+    });
+
+    describe('Growspace Devices & Caching', () => {
+        it('should return empty if no map', () => {
+            expect(service.getGrowspaceDevices(undefined as any)).toEqual([]);
+        });
+
+        it('should cache transformed devices', () => {
+            // Mock Adapter transform to return stable object
+            const wsData = { growspace_id: 'gs1', name: 'G1', rows: 1, plants_per_row: 1, grid: {}, type: 'normal' };
+            const wsMap = { gs1: wsData };
+
+            // First call
+            const devices1 = service.getGrowspaceDevices(wsMap as any);
+            expect(devices1).toHaveLength(1);
+            const dev1 = devices1[0];
+
+            // Second call with SAME object ref
+            const devices2 = service.getGrowspaceDevices(wsMap as any);
+            expect(devices2[0]).toBe(dev1); // Referential equality check
+
+            // Third call with NEW object ref (same data)
+            const wsMapNew = { gs1: { ...wsData } };
+            const devices3 = service.getGrowspaceDevices(wsMapNew as any);
+            expect(devices3[0]).not.toBe(dev1); // Should be new instance
+        });
+
+        it('should cleanup stale cache', () => {
+            const wsMap1 = {
+                gs1: { growspace_id: 'gs1', name: 'G1', type: 'normal', rows: 4, plants_per_row: 4, grid: {} }
+            };
+            service.getGrowspaceDevices(wsMap1 as any);
+            expect((service as any)._deviceCache.has('gs1')).toBe(true);
+
+            // Fetch with empty map -> should clear cache
+            service.getGrowspaceDevices({});
+            expect((service as any)._deviceCache.has('gs1')).toBe(false);
+        });
+    });
+
+    describe('Strain Library Internals', () => {
+        it('should parse array format from attributes', () => {
+            service.hass = {
+                states: {
+                    'sensor.strains': {
+                        attributes: { strains: ['OG Kush', 'Blue Dream'] }
+                    }
+                }
+            } as any;
+
+            const strains = service.getStrainLibrary();
+            expect(strains).toHaveLength(2);
+            expect(strains[0].key).toBe('OG Kush|default');
+        });
+
+        it('should parse object format with sorting', () => {
+            service.hass = {
+                states: {
+                    'sensor.strains': {
+                        attributes: {
+                            strains: {
+                                'B': { phenotypes: { '1': {} } },
+                                'A': { phenotypes: { '2': {} } }
+                            }
+                        }
+                    }
+                }
+            } as any;
+
+            const strains = service.getStrainLibrary();
+            expect(strains[0].strain).toBe('A');
+            expect(strains[1].strain).toBe('B');
+        });
+
+        it('should return empty if missing attributes', () => {
+            service.hass = { states: {} } as any;
+            expect(service.getStrainLibrary()).toEqual([]);
+        });
+
+        it('should handle fetchStrainLibrary errors', async () => {
+            (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('Fail'));
+            const res = await service.fetchStrainLibrary();
+            expect(res).toEqual([]);
+        });
+
+        it('should skip "response" key in strain library fetch', async () => {
+            const mockResponse = {
+                response: {
+                    response: 'meta', // Should be skipped
+                    'Kush': { phenotypes: { 'default': {} } }
+                }
+            };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(mockResponse);
+            const res = await service.fetchStrainLibrary();
+            expect(res).toHaveLength(1);
+            expect(res[0].strain).toBe('Kush');
+        });
+    });
+
+    describe('Batch History', () => {
+        it('should batch fetch and map results', async () => {
+            const historyData = [
+                [{ entity_id: 's1', state: '10' }],
+                [{ entity_id: 's2', state: '20' }]
+            ];
+            (mockHass.callApi as any).mockResolvedValue(historyData);
+
+            const res = await service.getBatchHistory(['s1', 's2'], new Date());
+
+            expect(res['s1']).toBeDefined();
+            expect(res['s2']).toBeDefined();
+        });
+
+        it('should handle empty ids', async () => {
+            const res = await service.getBatchHistory([], new Date());
+            expect(res).toEqual({});
+        });
+
+        it('should handle api errors gracefully', async () => {
+            (mockHass.callApi as any).mockRejectedValue(new Error('Fail'));
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            const res = await service.getBatchHistory(['s1'], new Date());
+            expect(res).toEqual({});
+            expect(consoleSpy).toHaveBeenCalled();
+        });
+    });
+
+    describe('Plant Actions Extensions', () => {
+        it('should set clone_start if growspace is clone', async () => {
+            await service.addPlant({ growspace_id: 'clone', strain: 'X', row: 1, col: 1 });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_plant', expect.objectContaining({
+                clone_start: expect.any(String)
+            }));
+        });
+
+        it('should clean undefined keys in addStrain', async () => {
+            await service.addStrain({ strain: 'X', breeder: undefined });
+            // Verify breeder is NOT in call
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_strain', {
+                strain: 'X'
+            });
+        });
+
+        it('should call takeClone and remove target if undefined', async () => {
+            // Technically target_growspace_id is omitted from payload if not present
+            await service.takeClone({ mother_plant_id: 'p1' });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'take_clone', { mother_plant_id: 'p1' });
+        });
+    });
+
+    describe('Harvest Logic Extensions', () => {
+        it('should map cure target hint', async () => {
+            await service.harvestPlant('p1', 'My Cure Tent');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'harvest_plant', {
+                plant_id: 'p1', target_growspace_id: 'cure'
+            });
+        });
+
+        it('should map mother target hint', async () => {
+            await service.harvestPlant('p1', 'mother room');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'harvest_plant', {
+                plant_id: 'p1', target_growspace_id: 'mother'
+            });
+        });
+
+        it('should map clone target hint', async () => {
+            await service.harvestPlant('p1', 'clone room');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'harvest_plant', {
+                plant_id: 'p1', target_growspace_id: 'clone'
+            });
+        });
+    });
+
+    describe('Additional Coverage', () => {
+        it('should handle fetchGrowspaceData returning unparsed data on validation error (single)', async () => {
+            const badData = { unknown_field: 123 };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+            const res = await service.fetchGrowspaceData('g1');
+
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('API Validation Failed'), expect.anything());
+            // It returns the raw result anyway
+            expect(res).toBe(badData);
+        });
+
+        it('should handle fetchGrowspaceData returning unparsed collection on validation error', async () => {
+            const badCollection = {
+                gs1: { missing_name: true } // Invalid
+            };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badCollection);
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+            const res = await service.fetchGrowspaceData();
+
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Validation Failed'), expect.anything());
+            expect(res).toBe(badCollection);
+        });
+
+        it('should throw error in addPlant if service call fails', async () => {
+            callServiceMock.mockRejectedValue(new Error('Service Fail'));
+            await expect(service.addPlant({ growspace_id: 'g1', strain: 'X', row: 1, col: 1 }))
+                .rejects.toThrow('Service Fail');
+        });
+
+        it('should throw simple error in addPlant if no message', async () => {
+            callServiceMock.mockRejectedValue('Unknown Error'); // String reject
+            await expect(service.addPlant({ growspace_id: 'g1', strain: 'X', row: 1, col: 1 }))
+                .rejects.toThrow('Failed to add plant');
+        });
+
+        it('should log error in askGrowAdvice failure', async () => {
+            (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('Advice Fail'));
+            await expect(service.askGrowAdvice('g1', 'q'))
+                .rejects.toThrow('Advice Fail');
+        });
+
+        it('should log error in askGrowAdvice failure with no message', async () => {
+            (mockHass.connection.sendMessagePromise as any).mockRejectedValue('Bad');
+            await expect(service.askGrowAdvice('g1', 'q'))
+                .rejects.toThrow('Failed to get advice');
+        });
+
+        it('should throw error in importStrainLibrary if fetch fails', async () => {
+            const mockFetch = vi.fn().mockRejectedValue(new Error('Network Error'));
+            mockHass.fetchWithAuth = mockFetch;
+            await expect(service.importStrainLibrary(new File([''], 'x'), false))
+                .rejects.toThrow('Network Error');
+        });
+
+        it('should throw error in importStrainLibrary if json result has error', async () => {
+            const mockFetch = vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({ success: false, error: 'Custom Backend Error' })
+            });
+            mockHass.fetchWithAuth = mockFetch;
+            await expect(service.importStrainLibrary(new File([''], 'x'), false))
+                .rejects.toThrow('Custom Backend Error');
+        });
+
+        it('should throw default error in importStrainLibrary if json result false with no message', async () => {
+            const mockFetch = vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({ success: false }) // Missing error prop
+            });
+            mockHass.fetchWithAuth = mockFetch;
+            await expect(service.importStrainLibrary(new File([''], 'x'), false))
+                .rejects.toThrow('Unknown import error');
+        });
+    });
+
+    describe('Service Error Handling (Full Coverage)', () => {
+        beforeEach(() => {
+            // Setup a generic failure for this block
+            callServiceMock.mockRejectedValue(new Error('Generic Service Failure'));
+        });
+
+        it('should handle error in addGrowspace', async () => {
+            await expect(service.addGrowspace({ name: 'G1', rows: 1, plants_per_row: 1 }))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in updateGrowspace', async () => {
+            await expect(service.updateGrowspace({ growspace_id: 'g1' }))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in removeGrowspace', async () => {
+            await expect(service.removeGrowspace('g1'))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in configureEnvironment', async () => {
+            await expect(service.configureEnvironment({ growspace_id: 'g1' } as any))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in setDehumidifierControl', async () => {
+            await expect(service.setDehumidifierControl('g1', true))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in setIrrigationSettings', async () => {
+            await expect(service.setIrrigationSettings({ growspace_id: 'g1' } as any))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in addIrrigationTime', async () => {
+            await expect(service.addIrrigationTime({ growspace_id: 'g1', time: '10:00' }))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in removeIrrigationTime', async () => {
+            await expect(service.removeIrrigationTime({ growspace_id: 'g1', time: '10:00' }))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in addDrainTime', async () => {
+            await expect(service.addDrainTime({ growspace_id: 'g1', time: '10:00' }))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in removeDrainTime', async () => {
+            await expect(service.removeDrainTime({ growspace_id: 'g1', time: '10:00' }))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in setIrrigationStrategy', async () => {
+            await expect(service.setIrrigationStrategy('g1', {}))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in exportStrainLibrary', async () => {
+            await expect(service.exportStrainLibrary())
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in clearStrainLibrary', async () => {
+            await expect(service.clearStrainLibrary())
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in updatePlant', async () => {
+            await expect(service.updatePlant({ plant_id: 'p1' }))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in removePlant', async () => {
+            await expect(service.removePlant('p1'))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in harvestPlant', async () => {
+            await expect(service.harvestPlant('p1'))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in takeClone', async () => {
+            await expect(service.takeClone({ mother_plant_id: 'p1' }))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in moveClone', async () => {
+            await expect(service.moveClone('p1', 'g2'))
+                .rejects.toThrow('Generic Service Failure');
+        });
+
+        it('should handle error in swapPlants', async () => {
+            await expect(service.swapPlants('p1', 'p2'))
+                .rejects.toThrow('Generic Service Failure');
+        });
+    });
+
+    describe('Analysis & Advice Error Handling', () => {
+        beforeEach(() => {
+            (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('WS Fail'));
+        });
+
+        it('should handle error in analyzeAllGrowspaces', async () => {
+            await expect(service.analyzeAllGrowspaces())
+                .rejects.toThrow('WS Fail');
+        });
+
+        it('should handle error in getStrainRecommendation', async () => {
+            await expect(service.getStrainRecommendation('q'))
+                .rejects.toThrow('WS Fail');
+        });
+    });
 });

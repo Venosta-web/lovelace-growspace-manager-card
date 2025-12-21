@@ -84,7 +84,7 @@ describe('GrowspaceGridController', () => {
             mockStore.state.selectedDevice = 'd1';
 
             vi.mocked(PlantUtils.calculateEffectiveRows).mockReturnValue(5);
-            vi.mocked(PlantUtils.createGridLayout).mockReturnValue({ grid: [['plant'] as any] });
+            vi.mocked(PlantUtils.createGridLayout).mockReturnValue({ rows: 5, cols: 4, grid: [['plant'] as any] });
 
             (controller as any).calculateGrid();
 
@@ -97,6 +97,62 @@ describe('GrowspaceGridController', () => {
             mockStore.state.selectedDevice = null;
             (controller as any).calculateGrid();
             expect(controller.gridLayout).toEqual({ effectiveRows: 0, grid: [] });
+        });
+    });
+
+    describe('hostUpdate memoization', () => {
+        it('should skip recalculation if state refs have not changed', () => {
+            // First call to set references
+            controller.hostUpdate();
+            const spy = vi.spyOn(controller as any, 'calculateGrid');
+
+            // Call again with same state references
+            controller.hostUpdate();
+
+            // Should not recalculate since references are the same
+            expect(spy).not.toHaveBeenCalled();
+        });
+
+        it('should recalculate if devices reference changes', () => {
+            controller.hostUpdate(); // Set initial refs
+            const spy = vi.spyOn(controller as any, 'calculateGrid');
+
+            // Change devices reference
+            mockStore.state.devices = [...mockStore.state.devices];
+            controller.hostUpdate();
+
+            expect(spy).toHaveBeenCalled();
+        });
+
+        it('should recalculate if selectedDevice changes', () => {
+            controller.hostUpdate(); // Set initial refs
+            const spy = vi.spyOn(controller as any, 'calculateGrid');
+
+            // Change selected device
+            mockStore.state.selectedDevice = 'different-device';
+            controller.hostUpdate();
+
+            expect(spy).toHaveBeenCalled();
+        });
+
+        it('should recalculate if optimisticDeletedPlantIds reference changes', () => {
+            controller.hostUpdate(); // Set initial refs
+            const spy = vi.spyOn(controller as any, 'calculateGrid');
+
+            // Change deleted IDs reference
+            mockStore.state.optimisticDeletedPlantIds = new Set(['p1']);
+            controller.hostUpdate();
+
+            expect(spy).toHaveBeenCalled();
+        });
+
+        it('should handle missing store state gracefully', () => {
+            mockStore.state = null;
+            const spy = vi.spyOn(controller as any, 'calculateGrid');
+
+            controller.hostUpdate();
+
+            expect(spy).not.toHaveBeenCalled();
         });
     });
 });

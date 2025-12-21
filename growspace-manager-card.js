@@ -9438,6 +9438,8 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
             this.dispatchEvent(new CustomEvent('close'));
         }
         _update() {
+            if (!this.editedAttributes)
+                return;
             this.dispatchEvent(new UpdatePlantEvent(this.editedAttributes));
         }
         _delete(plantId) {
@@ -9587,8 +9589,9 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
     `;
         }
         render() {
-            if (!this.plant)
+            if (!this.plant || !this.editedAttributes)
                 return x ``;
+            const attributes = this.editedAttributes;
             const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
             const stageColor = PlantUtils.getPlantStageColor(this.plant.state);
             const stageIcon = PlantUtils.getPlantStageIcon(this.plant.state);
@@ -9611,14 +9614,14 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">${this.editedAttributes.strain || 'Unknown Strain'}</h2>
+              <h2 class="dialog-title">${attributes.strain || 'Unknown Strain'}</h2>
               <div class="dialog-subtitle">
-                ${this.plant.state} Stage • ${this.editedAttributes.phenotype || 'No Phenotype'}
+                ${this.plant.state} Stage • ${attributes.phenotype || 'No Phenotype'}
               </div>
             </div>
             <button
               class="md3-button text"
-              @click=${this._close}
+              @click=${() => this._close()}
               style="min-width: auto; padding: 8px;"
             >
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
@@ -9635,24 +9638,24 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                 ? x `
                     <md3-text-input
                       label="Strain Name"
-                      .value=${this.editedAttributes.strain || ''}
+                      .value=${attributes.strain || ''}
                       @change=${(e) => this._attributeChange('strain', e.detail)}
                     ></md3-text-input>
                     <md3-text-input
                       label="Phenotype"
-                      .value=${this.editedAttributes.phenotype || ''}
+                      .value=${attributes.phenotype || ''}
                       @change=${(e) => this._attributeChange('phenotype', e.detail)}
                     ></md3-text-input>
 
                     <div style="display:flex; gap:16px;">
                       <md3-number-input
                         label="Row"
-                        .value=${this.editedAttributes.row ?? ''}
+                        .value=${attributes.row ?? ''}
                         @change=${(e) => this._attributeChange('row', e.detail)}
                       ></md3-number-input>
                       <md3-number-input
                         label="Column"
-                        .value=${this.editedAttributes.col ?? ''}
+                        .value=${attributes.col ?? ''}
                         @change=${(e) => this._attributeChange('col', e.detail)}
                       ></md3-number-input>
                     </div>
@@ -9702,105 +9705,105 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
                 ? x `
                     <md3-date-input
                       label="Seedling Start"
-                      .value=${this.editedAttributes.seedling_start ?? ''}
+                      .value=${attributes.seedling_start ?? ''}
                       ?time=${true}
                       @change=${(e) => this._attributeChange('seedling_start', e.detail)}
                     ></md3-date-input>
                     <md3-date-input
                       label="Mother Start"
-                      .value=${this.editedAttributes.mother_start ?? ''}
+                      .value=${attributes.mother_start ?? ''}
                       ?time=${true}
                       @change=${(e) => this._attributeChange('mother_start', e.detail)}
                     ></md3-date-input>
                     <md3-date-input
                       label="Clone Start"
-                      .value=${this.editedAttributes.clone_start ?? ''}
+                      .value=${attributes.clone_start ?? ''}
                       ?time=${true}
                       @change=${(e) => this._attributeChange('clone_start', e.detail)}
                     ></md3-date-input>
                     <md3-date-input
                       label="Vegetative Start"
-                      .value=${this.editedAttributes.veg_start ?? ''}
+                      .value=${attributes.veg_start ?? ''}
                       ?time=${true}
                       @change=${(e) => this._attributeChange('veg_start', e.detail)}
                     ></md3-date-input>
                     <md3-date-input
                       label="Flower Start"
-                      .value=${this.editedAttributes.flower_start ?? ''}
+                      .value=${attributes.flower_start ?? ''}
                       ?time=${true}
                       @change=${(e) => this._attributeChange('flower_start', e.detail)}
                     ></md3-date-input>
                     <md3-date-input
                       label="Dry Start"
-                      .value=${this.editedAttributes.dry_start ?? ''}
+                      .value=${attributes.dry_start ?? ''}
                       ?time=${true}
                       @change=${(e) => this._attributeChange('dry_start', e.detail)}
                     ></md3-date-input>
                     <md3-date-input
                       label="Cure Start"
-                      .value=${this.editedAttributes.cure_start ?? ''}
+                      .value=${attributes.cure_start ?? ''}
                       ?time=${true}
                       @change=${(e) => this._attributeChange('cure_start', e.detail)}
                     ></md3-date-input>
                   `
                 : x `
-                    ${this.editedAttributes.stage === PlantStage.MOTHER
+                    ${attributes.stage === PlantStage.MOTHER
                     ? x `
                           <md3-date-input
                             label="Mother Start"
-                            .value=${this.editedAttributes.mother_start ?? ''}
+                            .value=${attributes.mother_start ?? ''}
                             ?time=${true}
                             @change=${(e) => this._attributeChange('mother_start', e.detail)}
                           ></md3-date-input>
                         `
                     : E}
-                    ${this.editedAttributes.stage === PlantStage.CLONE
+                    ${attributes.stage === PlantStage.CLONE
                     ? x `
                           <md3-date-input
                             label="Clone Start"
-                            .value=${this.editedAttributes.clone_start ?? ''}
+                            .value=${attributes.clone_start ?? ''}
                             ?time=${true}
                             @change=${(e) => this._attributeChange('clone_start', e.detail)}
                           ></md3-date-input>
                         `
                     : E}
-                    ${this.editedAttributes.stage === PlantStage.VEG ||
-                    this.editedAttributes.stage === PlantStage.FLOWER
+                    ${attributes.stage === PlantStage.VEG ||
+                    attributes.stage === PlantStage.FLOWER
                     ? x `
                           <md3-date-input
                             label="Vegetative Start"
-                            .value=${this.editedAttributes.veg_start ?? ''}
+                            .value=${attributes.veg_start ?? ''}
                             ?time=${true}
                             @change=${(e) => this._attributeChange('veg_start', e.detail)}
                           ></md3-date-input>
                         `
                     : E}
-                    ${this.editedAttributes.stage === PlantStage.FLOWER
+                    ${attributes.stage === PlantStage.FLOWER
                     ? x `
                           <md3-date-input
                             label="Flower Start"
-                            .value=${this.editedAttributes.flower_start ?? ''}
+                            .value=${attributes.flower_start ?? ''}
                             ?time=${true}
                             @change=${(e) => this._attributeChange('flower_start', e.detail)}
                           ></md3-date-input>
                         `
                     : E}
-                    ${this.editedAttributes.stage === PlantStage.DRY ||
-                    this.editedAttributes.stage === PlantStage.CURE
+                    ${attributes.stage === PlantStage.DRY ||
+                    attributes.stage === PlantStage.CURE
                     ? x `
                           <md3-date-input
                             label="Dry Start"
-                            .value=${this.editedAttributes.dry_start ?? ''}
+                            .value=${attributes.dry_start ?? ''}
                             ?time=${true}
                             @change=${(e) => this._attributeChange('dry_start', e.detail)}
                           ></md3-date-input>
                         `
                     : E}
-                    ${this.editedAttributes.stage === PlantStage.CURE
+                    ${attributes.stage === PlantStage.CURE
                     ? x `
                           <md3-date-input
                             label="Cure Start"
-                            .value=${this.editedAttributes.cure_start ?? ''}
+                            .value=${attributes.cure_start ?? ''}
                             ?time=${true}
                             @change=${(e) => this._attributeChange('cure_start', e.detail)}
                           ></md3-date-input>
@@ -9819,7 +9822,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
               Delete
             </button>
 
-            <button class="md3-button tonal" @click=${this._update}>
+            <button class="md3-button tonal" @click=${() => this._update()}>
               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiCheck}"></path>
               </svg>
@@ -9915,7 +9918,7 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
             _PlantOverviewDialog_dialog_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _dialog_initializers, void 0)));
             _PlantOverviewDialog_plant_accessor_storage.set(this, (__runInitializers(this, _dialog_extraInitializers), __runInitializers(this, _plant_initializers, void 0)));
             _PlantOverviewDialog_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _plant_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
-            _PlantOverviewDialog_editedAttributes_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _editedAttributes_initializers, {})));
+            _PlantOverviewDialog_editedAttributes_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _editedAttributes_initializers, void 0)));
             _PlantOverviewDialog_isEditing_accessor_storage.set(this, (__runInitializers(this, _editedAttributes_extraInitializers), __runInitializers(this, _isEditing_initializers, true)));
             _PlantOverviewDialog_showAllDates_accessor_storage.set(this, (__runInitializers(this, _isEditing_extraInitializers), __runInitializers(this, _showAllDates_initializers, false)));
             _PlantOverviewDialog_cloneTargetId_accessor_storage.set(this, (__runInitializers(this, _showAllDates_extraInitializers), __runInitializers(this, _cloneTargetId_initializers, '')));

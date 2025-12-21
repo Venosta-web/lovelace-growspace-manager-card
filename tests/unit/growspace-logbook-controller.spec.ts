@@ -1,5 +1,5 @@
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrowspaceLogbookController } from '../../src/controllers/growspace-logbook-controller';
 
 describe('GrowspaceLogbookController', () => {
@@ -18,6 +18,15 @@ describe('GrowspaceLogbookController', () => {
     });
 
     describe('fetchEventLog', () => {
+        beforeEach(() => {
+            vi.spyOn(console, 'error').mockImplementation(() => { });
+            vi.spyOn(console, 'warn').mockImplementation(() => { });
+        });
+
+        afterEach(() => {
+            vi.restoreAllMocks();
+        });
+
         it('should return empty array if hass is missing', async () => {
             const ctrl = new GrowspaceLogbookController(undefined as any);
             const res = await ctrl.fetchEventLog('d1');

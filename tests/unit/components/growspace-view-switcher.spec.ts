@@ -66,4 +66,59 @@ describe('GrowspaceViewSwitcher', () => {
 
         document.body.removeChild(element);
     });
+
+    it('renders header view when mode is header', async () => {
+        element.viewMode = 'header';
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const header = element.shadowRoot?.querySelector('growspace-view-header');
+        expect(header).toBeTruthy();
+
+        document.body.removeChild(element);
+    });
+
+    it('renders nothing if device is undefined', async () => {
+        element.device = undefined;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        // Lit renders comments for empty templates. Check that NO element nodes exist.
+        // We verify that innerHTML contains Lit's comment marker or is empty-ish, but relying on exact string is fragile.
+        // Instead, check that querySelector('*') returns null (no element children).
+        const anyTag = element.shadowRoot?.querySelector('*');
+        expect(anyTag).toBeNull();
+
+        document.body.removeChild(element);
+    });
+
+    it('handles focusPlant safely if active view does not implementation method', async () => {
+        element.viewMode = 'header'; // header view mock doesn't have focusPlant mocked above
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        // Should not throw
+        element.focusPlant(1);
+
+        document.body.removeChild(element);
+    });
+
+    it('passes properties to standard view', async () => {
+        element.viewMode = 'standard';
+        element.isLoading = true;
+        element.rows = 5;
+        element.selectedCount = 3;
+
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const view = element.shadowRoot?.querySelector('growspace-view-standard') as any;
+        expect(view.isLoading).toBe(true);
+        expect(view.rows).toBe(5);
+        expect(view.selectedCount).toBe(3);
+        expect(view.cols).toBe(4); // from device mock
+
+        document.body.removeChild(element);
+    });
+
 });

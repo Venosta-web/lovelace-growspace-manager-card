@@ -644,6 +644,7 @@ export class IrrigationDialog extends LitElement {
                     .value=${addingTime.duration}
                     .min=${1}
                     @change=${(e: CustomEvent) => {
+            console.log('DEBUG: Duration Change', e.detail);
             const val = parseInt(e.detail);
             if (!isNaN(val)) {
               if (type === 'irrigation' && this._adding_irrigation_time)

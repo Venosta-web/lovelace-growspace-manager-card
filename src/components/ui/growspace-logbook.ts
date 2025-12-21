@@ -206,6 +206,7 @@ export class GrowspaceLogbook extends LitElement {
   private _formatTime(isoString: string): string {
     try {
       const date = new Date(isoString);
+      if (isNaN(date.getTime())) throw new Error('Invalid Time');
       return date.toLocaleString(undefined, {
         month: 'short',
         day: 'numeric',

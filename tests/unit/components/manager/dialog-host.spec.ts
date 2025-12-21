@@ -38,7 +38,7 @@ describe('DialogHost', () => {
             showToast: vi.fn(),
             fetchStrainLibrary: vi.fn(),
             handleAddGrowspace: vi.fn(),
-            handleUpdateGrowspace: vi.fn(), // Fixed typo in previous test logs?
+            handleUpdateGrowspace: vi.fn(),
             dataService: {
                 importStrainLibrary: vi.fn().mockResolvedValue({ imported_count: 5 }),
                 configureEnvironment: vi.fn().mockResolvedValue({})
@@ -90,9 +90,6 @@ describe('DialogHost', () => {
 
         const dialog = element.shadowRoot?.querySelector('add-plant-dialog');
         expect(dialog).not.toBeNull();
-        // Check props (attributes might need to be checked if they reflect)
-        // With lit, properties on custom elements are set directly on the object.
-        // We can check casting to any.
         expect((dialog as any).row).toBe(1);
 
         document.body.removeChild(element);
@@ -153,9 +150,6 @@ describe('DialogHost', () => {
         document.body.removeChild(element);
     });
 
-    // Test logic like _performImport or _handleEnvironmentConfig 
-    // These are private methods triggered by events.
-
     it('should handle environment config submission', async () => {
         element.activeDialogState = { type: 'CONFIG', payload: {} } as any;
         document.body.appendChild(element);
@@ -170,7 +164,6 @@ describe('DialogHost', () => {
 
         dialog.dispatchEvent(new CustomEvent('configure-environment-submit', { detail }));
 
-        // This is async, wait a tick
         await new Promise(r => setTimeout(r, 0));
 
         expect(mockStore.dataService.configureEnvironment).toHaveBeenCalled();
@@ -233,5 +226,173 @@ describe('DialogHost', () => {
         await element.updateComplete;
         expect(element.shadowRoot?.querySelector('irrigation-dialog')).not.toBeNull();
         document.body.removeChild(element);
+    });
+
+    describe('Enhanced Coverage Tests', () => {
+        it('should handle import library success', async () => {
+            element.activeDialogState = { type: 'STRAIN_LIBRARY', payload: {} } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('strain-library-dialog') as HTMLElement;
+            const file = new File([''], 'test.zip');
+
+            dialog.dispatchEvent(new CustomEvent('import-library', {
+                detail: { file, replace: true }
+            }));
+
+            await new Promise(r => setTimeout(r, 0));
+
+            expect(mockStore.dataService.importStrainLibrary).toHaveBeenCalledWith(file, true);
+            expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('successful'), 'success');
+            expect(mockStore.fetchStrainLibrary).toHaveBeenCalled();
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle import library failure', async () => {
+            mockStore.dataService.importStrainLibrary.mockRejectedValue(new Error('Fail'));
+
+            element.activeDialogState = { type: 'STRAIN_LIBRARY', payload: {} } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('strain-library-dialog') as HTMLElement;
+            dialog.dispatchEvent(new CustomEvent('import-library', { detail: { file: new File([''], 'f'), replace: false } }));
+
+            await new Promise(r => setTimeout(r, 0));
+
+            expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Fail'), 'error');
+            document.body.removeChild(element);
+        });
+
+        it('should calculate stress state for Grow Master', async () => {
+            // Mock selected device
+            mockStore.state.selectedDevice = 'd1';
+            // Mock hass states
+            mockHass.states = {
+                'binary_sensor.d1_stress': { state: 'on' },
+                'sensor.growspace_manager': { attributes: { ai_settings: { personality: 'Sassy' } } }
+            };
+            // Ensure store has access to hass for this logic
+            mockStore.hass = mockHass;
+
+            element.activeDialogState = { type: 'GROW_MASTER', payload: { isLoading: false } } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('grow-master-dialog') as any;
+            expect(dialog.isStressed).toBe(true);
+            expect(dialog.personality).toBe('Sassy');
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle all Plant Overview events', async () => {
+            const mockPlant = {
+                id: 'p1',
+                entity_id: 'sensor.p1',
+                attributes: { plant_id: 'p1', strain: 'Kush' }
+            };
+
+            element.activeDialogState = { type: 'PLANT_OVERVIEW', payload: { plant: mockPlant } } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('plant-overview-dialog') as HTMLElement;
+
+            // Delete
+            dialog.dispatchEvent(new CustomEvent('delete-plant', { detail: { plantId: 'p1' } }));
+            expect(mockStore.handleDeletePlant).toHaveBeenCalledWith('p1');
+
+            // Finish Drying
+            dialog.dispatchEvent(new CustomEvent('finish-drying', { detail: { plant: 'p1' } }));
+            expect(mockStore.finishDryingPlant).toHaveBeenCalledWith('p1');
+
+            // Take Clone
+            dialog.dispatchEvent(new CustomEvent('take-clone', { detail: { plant: 'p1', numClones: 2 } }));
+            expect(mockStore.clonePlant).toHaveBeenCalledWith('p1', 2);
+
+            // Move Clone
+            dialog.dispatchEvent(new CustomEvent('move-clone', { detail: { plant: 'p1', targetGrowspace: 'g2' } }));
+            expect(mockStore.movePlantToGrowspace).toHaveBeenCalledWith('p1', 'g2');
+
+            // Update Plant
+            dialog.dispatchEvent(new CustomEvent('update-plant', { detail: { notes: 'Hi' } }));
+            expect(mockStore.updatePlantFromDialog).toHaveBeenCalledWith(expect.objectContaining({
+                editedAttributes: { notes: 'Hi' }
+            }));
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle Strain Recommendation events', async () => {
+            element.activeDialogState = { type: 'STRAIN_RECOMMENDATION', payload: { isLoading: false } } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('strain-recommendation-dialog') as HTMLElement;
+            dialog.dispatchEvent(new CustomEvent('get-recommendation', { detail: { query: 'Sleep' } }));
+
+            expect(mockStore.getStrainRecommendation).toHaveBeenCalledWith('Sleep');
+            document.body.removeChild(element);
+        });
+
+        it('should guard against null file in import', async () => {
+            element.activeDialogState = { type: 'STRAIN_LIBRARY', payload: {} } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('strain-library-dialog') as HTMLElement;
+            dialog.dispatchEvent(new CustomEvent('import-library', { detail: { file: null } }));
+
+            await new Promise(r => setTimeout(r, 0));
+            expect(mockStore.dataService.importStrainLibrary).not.toHaveBeenCalled();
+
+            document.body.removeChild(element);
+        });
+    });
+
+    describe('Closure Coverage Tests', () => {
+        it('should close irrigation dialog events', async () => {
+            element.activeDialogState = { type: 'IRRIGATION', payload: {} } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('irrigation-dialog') as HTMLElement;
+            dialog.dispatchEvent(new CustomEvent('close'));
+            expect(mockStore.closeActiveDialog).toHaveBeenCalledTimes(1);
+
+            dialog.dispatchEvent(new CustomEvent('closed')); // Also triggers close
+            expect(mockStore.closeActiveDialog).toHaveBeenCalledTimes(2);
+
+            document.body.removeChild(element);
+        });
+
+        it('should close logbook dialog', async () => {
+            element.activeDialogState = { type: 'LOGBOOK', payload: { growspaceId: 'g1' } } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('logbook-dialog') as HTMLElement;
+            dialog.dispatchEvent(new CustomEvent('close'));
+            expect(mockStore.closeActiveDialog).toHaveBeenCalled();
+
+            document.body.removeChild(element);
+        });
+
+        it('should close add-plant dialog', async () => {
+            element.activeDialogState = { type: 'ADD_PLANT', payload: {} } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('add-plant-dialog') as HTMLElement;
+            // Ensure dialog is rendered first
+            expect(dialog).not.toBeNull();
+            dialog!.dispatchEvent(new CustomEvent('close'));
+            expect(mockStore.closeActiveDialog).toHaveBeenCalled();
+
+            document.body.removeChild(element);
+        });
     });
 });

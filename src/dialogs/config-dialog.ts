@@ -154,9 +154,6 @@ export class ConfigDialog extends LitElement {
     if (changedProperties.has('open')) {
       if (this.open) {
         if (!this._initialStateApplied) {
-          if (this.currentTab) {
-            // Tab already set via property, nothing to do
-          }
           this._initialStateApplied = true;
         }
       } else if (!this.open) {

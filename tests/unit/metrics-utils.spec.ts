@@ -257,4 +257,187 @@ describe('MetricsUtils', () => {
         // Should find 0.9 from sensor.aabbcc_112233_calculated_vpd
         expect(vpdChip.value).toBe('0.9 kPa');
     });
+
+    it('should determine isMetricLinked correctly', () => {
+        const linkedResult = MetricsUtils.computeHeaderMetrics(
+            mockHass,
+            mockDevice,
+            new Set(),
+            [['temperature', 'humidity'], ['co2', 'vpd']]
+        );
+
+        const temp = linkedResult.mainChips.find(c => c.key === 'temperature');
+        const hum = linkedResult.mainChips.find(c => c.key === 'humidity');
+        const co2 = linkedResult.mainChips.find(c => c.key === 'co2');
+        const vpd = linkedResult.mainChips.find(c => c.key === 'vpd');
+        const irr = linkedResult.mainChips.find(c => c.key === 'irrigation');
+
+        expect(temp.linked).toBe(true);
+        expect(temp.groupIndex).toBe(0);
+        expect(hum.linked).toBe(true);
+        expect(hum.groupIndex).toBe(0);
+        expect(co2.linked).toBe(true);
+        expect(co2.groupIndex).toBe(1);
+        expect(vpd.linked).toBe(true);
+        expect(vpd.groupIndex).toBe(1);
+        expect(irr.linked).toBe(false);
+        expect(irr.groupIndex).toBe(-1);
+    });
+
+    it('should sort next irrigation events correctly in getNextEvent', () => {
+        const simpleDevice = {
+            ...mockDevice,
+            irrigation_config: {
+                irrigation_times: [
+                    { time: '14:00', duration: 10 },
+                    { time: '13:00', duration: 10 }
+                ]
+            }
+        };
+
+        const res = MetricsUtils.computeHeaderMetrics(mockHass, simpleDevice, new Set(), []);
+        const chip = res.mainChips.find(c => c.key === 'irrigation');
+        expect(chip.value).toBe('13:00');
+    });
+
+    it('should handle legacy environment attributes correctly (slug matching)', () => {
+        const dryDevice = {
+            name: 'Dry',
+            overview_entity_id: 'sensor.dry',
+            environment_attributes: {}
+        } as any;
+
+        const dryHass = {
+            states: {
+                'binary_sensor.dry_optimal_drying': { state: 'on', attributes: { temperature: 20 } }
+            }
+        } as any;
+
+        const res = MetricsUtils.computeHeaderMetrics(dryHass, dryDevice, new Set(), []);
+        const temp = res.mainChips.find(c => c.key === 'temperature');
+        expect(temp).toBeDefined();
+    });
+
+    it('should determine VPD status branches (danger/warning)', () => {
+        const vpdHass = {
+            states: {
+                'binary_sensor.test_optimal_conditions': {
+                    state: 'on',
+                    attributes: { vpd: 1.5 }
+                },
+                'sensor.test': {
+                    attributes: {
+                        vpd_target_min: 0.8,
+                        vpd_target_max: 1.2,
+                        vpd_danger_min: 0.5,
+                        vpd_danger_max: 2.0
+                    }
+                }
+            }
+        } as any;
+
+        const dev = { name: 'Test', overview_entity_id: 'sensor.test' } as any;
+
+        let res = MetricsUtils.computeHeaderMetrics(vpdHass, dev, new Set(), []);
+        let vpdChip = res.mainChips.find(c => c.key === 'vpd');
+        expect(vpdChip.status).toBe('warning');
+
+        vpdHass.states['binary_sensor.test_optimal_conditions'].attributes.vpd = 2.5;
+        res = MetricsUtils.computeHeaderMetrics(vpdHass, dev, new Set(), []);
+        vpdChip = res.mainChips.find(c => c.key === 'vpd');
+        expect(vpdChip.status).toBe('danger');
+
+        vpdHass.states['binary_sensor.test_optimal_conditions'].attributes.vpd = 0.4;
+        res = MetricsUtils.computeHeaderMetrics(vpdHass, dev, new Set(), []);
+        vpdChip = res.mainChips.find(c => c.key === 'vpd');
+        expect(vpdChip.status).toBe('danger');
+
+        vpdHass.states['binary_sensor.test_optimal_conditions'].attributes.vpd = 1.0;
+        res = MetricsUtils.computeHeaderMetrics(vpdHass, dev, new Set(), []);
+        vpdChip = res.mainChips.find(c => c.key === 'vpd');
+        expect(vpdChip.status).toBe('optimal');
+    });
+
+    it('should handle missing VPD sensor gracefully in fallback', () => {
+        const hassMissingVpd = {
+            states: {
+                'binary_sensor.test_optimal_conditions': { state: 'on', attributes: {} },
+                'sensor.vpd_sensor': { state: 'unavailable' }
+            }
+        } as any;
+
+        const dev = {
+            name: 'Test',
+            environment_attributes: { vpd_sensor: 'sensor.vpd_sensor' }
+        } as any;
+
+        const res = MetricsUtils.computeHeaderMetrics(hassMissingVpd, dev, new Set(), []);
+        const vpdChip = res.mainChips.find(c => c.key === 'vpd');
+        expect(vpdChip).toBeUndefined();
+    });
+
+    it('should handle invalid numeric VPD values', () => {
+        const hassNaN = {
+            states: {
+                'binary_sensor.test_optimal_conditions': { state: 'on', attributes: {} },
+                'sensor.vpd_sensor': { state: 'not-a-number' }
+            }
+        } as any;
+        const dev = { name: 'Test', environment_attributes: { vpd_sensor: 'sensor.vpd_sensor' } } as any;
+
+        const res = MetricsUtils.computeHeaderMetrics(hassNaN, dev, new Set(), []);
+        const vpdChip = res.mainChips.find(c => c.key === 'vpd');
+        expect(vpdChip).toBeUndefined();
+    });
+    it('should return empty metrics if inputs are missing', () => {
+        expect(MetricsUtils.computeHeaderMetrics(undefined as any, undefined as any, new Set(), [])).toEqual({
+            mainChips: [], deviceChips: [], dominant: undefined, envAttrs: {}
+        });
+        expect(MetricsUtils.computeHeaderMetrics(mockHass, undefined as any, new Set(), [])).toEqual({
+            mainChips: [], deviceChips: [], dominant: undefined, envAttrs: {}
+        });
+    });
+
+    it('should retrieve values from observations attribute if present', () => {
+        const hassObs = {
+            states: {
+                'binary_sensor.obs_test_optimal_conditions': {
+                    state: 'on',
+                    attributes: {
+                        observations: {
+                            temperature: 25,
+                            humidity: 60
+                        }
+                    }
+                }
+            }
+        } as any;
+        const dev = { name: 'Obs Test', overview_entity_id: 'sensor.obs_test' } as any;
+        const res = MetricsUtils.computeHeaderMetrics(hassObs, dev, new Set(), []);
+
+        const temp = res.mainChips.find(c => c.key === 'temperature');
+        expect(temp.value).toBe('25°C');
+    });
+
+    it('should handle Cure specific env entity logic', () => {
+        const cureDevice = {
+            name: 'Cure', // -> cure slug
+            overview_entity_id: 'sensor.cure',
+            environment_attributes: {}
+        } as any;
+
+        const cureHass = {
+            states: {
+                'binary_sensor.cure_optimal_curing': {
+                    state: 'on',
+                    attributes: { temperature: 18 }
+                }
+            }
+        } as any;
+
+        const res = MetricsUtils.computeHeaderMetrics(cureHass, cureDevice, new Set(), []);
+        const temp = res.mainChips.find(c => c.key === 'temperature');
+        expect(temp).toBeDefined();
+        expect(temp.value).toBe('18°C');
+    });
 });

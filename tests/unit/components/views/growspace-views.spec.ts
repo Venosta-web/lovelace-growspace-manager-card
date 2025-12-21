@@ -1,0 +1,299 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { GrowspaceViewCompact } from '../../../../src/components/views/growspace-view-compact';
+import { GrowspaceViewHeader } from '../../../../src/components/views/growspace-view-header';
+import { GrowspaceViewStandard } from '../../../../src/components/views/growspace-view-standard';
+import { GrowspaceDevice } from '../../../../src/types';
+
+// Mocks
+vi.mock('../../../../src/components/growspace-grid', () => ({
+    GrowspaceGrid: class extends HTMLElement {
+        focusPlant = vi.fn();
+    }
+}));
+vi.mock('../../../../src/components/growspace-header', () => ({
+    GrowspaceHeader: class extends HTMLElement { }
+}));
+vi.mock('../../../../src/components/growspace-analytics', () => ({
+    GrowspaceAnalytics: class extends HTMLElement { }
+}));
+vi.mock('../../../../src/components/manager/edit-mode-banner', () => ({
+    GrowspaceEditModeBanner: class extends HTMLElement { }
+}));
+
+describe('Growspace Views', () => {
+
+    describe('GrowspaceViewCompact', () => {
+        let element: GrowspaceViewCompact;
+
+        beforeEach(() => {
+            element = new GrowspaceViewCompact();
+        });
+
+        it('should act as a Grid Host', async () => {
+            element.grid = [];
+            element.rows = 3;
+            element.cols = 4;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const grid = element.shadowRoot?.querySelector('growspace-grid');
+            expect(grid).toBeTruthy();
+            expect((grid as any).compact).toBe(true);
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle focusPlant delegation', async () => {
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const gridMock = element.shadowRoot?.querySelector('growspace-grid') as any;
+            gridMock.focusPlant = vi.fn();
+
+            element.focusPlant(1);
+            expect(gridMock.focusPlant).toHaveBeenCalledWith(1);
+
+            document.body.removeChild(element);
+        });
+
+        it('should safely handle focusPlant if grid not found', async () => {
+            document.body.appendChild(element);
+
+            // Mock querySelector to return null even if attached
+            const spy = vi.spyOn(element.shadowRoot!, 'querySelector').mockReturnValue(null);
+
+            // Should not throw
+            element.focusPlant(1);
+
+            expect(spy).toHaveBeenCalledWith('growspace-grid');
+
+            document.body.removeChild(element);
+        });
+
+        it('should dispatch view-mode-changed on exit button click', async () => {
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('view-mode-changed', listener);
+
+            const btn = element.shadowRoot?.querySelector('button');
+            btn?.click();
+
+            expect(listener).toHaveBeenCalled();
+            expect(listener.mock.calls[0][0].detail.mode).toBe('standard');
+
+            document.body.removeChild(element);
+        });
+    });
+
+    describe('GrowspaceViewHeader', () => {
+        let element: GrowspaceViewHeader;
+
+        beforeEach(() => {
+            element = new GrowspaceViewHeader();
+            element.device = { device_id: 'd1' } as any;
+        });
+
+        it('should render growspace-header', async () => {
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const header = element.shadowRoot?.querySelector('growspace-header');
+            expect(header).toBeTruthy();
+
+            document.body.removeChild(element);
+        });
+
+        it('should NOT render if device is undefined', async () => {
+            element.device = undefined;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const header = element.shadowRoot?.querySelector('growspace-header');
+            expect(header).toBeFalsy();
+
+            document.body.removeChild(element);
+        });
+
+        it('should redispatch growspace-changed event', async () => {
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('growspace-changed', listener);
+
+            const header = element.shadowRoot?.querySelector('growspace-header');
+            header?.dispatchEvent(new CustomEvent('growspace-changed', { detail: 'd2', bubbles: true, composed: true }));
+
+            // Wait for event propagation if needed, mostly synchronous here
+            expect(listener).toHaveBeenCalled();
+            expect(listener.mock.calls[0][0].detail).toBe('d2');
+
+            document.body.removeChild(element);
+        });
+
+        it('should redispatch with target value fallback if detail missing', async () => {
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('growspace-changed', listener);
+
+            // Mock event with target value but no detail
+            const event = new CustomEvent('growspace-changed', { bubbles: true, composed: true });
+            Object.defineProperty(event, 'target', { value: { value: 'fallback-val' }, writable: true });
+
+            const header = element.shadowRoot?.querySelector('growspace-header');
+            header?.dispatchEvent(event);
+
+            expect(listener).toHaveBeenCalled();
+            expect(listener.mock.calls[0][0].detail).toBe('fallback-val');
+
+            document.body.removeChild(element);
+        });
+
+        it('should dispatch toggle-expansion event', async () => {
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('toggle-expansion', listener);
+
+            const btn = element.shadowRoot?.querySelector('.expand-handle') as HTMLButtonElement;
+            expect(btn).toBeTruthy();
+            btn.click();
+
+            expect(listener).toHaveBeenCalled();
+            document.body.removeChild(element);
+        });
+    });
+
+    describe('GrowspaceViewStandard', () => {
+        let element: GrowspaceViewStandard;
+
+        beforeEach(() => {
+            element = new GrowspaceViewStandard();
+            element.device = { device_id: 'd1' } as any;
+        });
+
+        it('should render header, analytics and grid', async () => {
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            expect(element.shadowRoot?.querySelector('growspace-header')).toBeTruthy();
+            expect(element.shadowRoot?.querySelector('growspace-analytics')).toBeTruthy();
+            expect(element.shadowRoot?.querySelector('growspace-grid')).toBeTruthy();
+
+            document.body.removeChild(element);
+        });
+
+        it('should render edit banner when isEditMode is true', async () => {
+            element.isEditMode = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            expect(element.shadowRoot?.querySelector('growspace-edit-mode-banner')).toBeTruthy();
+
+            document.body.removeChild(element);
+        });
+
+        it('should Safely handle focusPlant if grid not found', async () => {
+            document.body.appendChild(element);
+
+            // Mock querySelector to return null
+            const spy = vi.spyOn(element.shadowRoot!, 'querySelector').mockReturnValue(null);
+
+            // Should not throw
+            element.focusPlant(5);
+            expect(spy).toHaveBeenCalledWith('growspace-grid');
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle focusPlant calls', async () => {
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const gridMock = element.shadowRoot?.querySelector('growspace-grid') as any;
+            gridMock.focusPlant = vi.fn();
+
+            element.focusPlant(5);
+            expect(gridMock.focusPlant).toHaveBeenCalledWith(5);
+
+            document.body.removeChild(element);
+        });
+
+        it('should redispatch growspace-changed event', async () => {
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('growspace-changed', listener);
+
+            const header = element.shadowRoot?.querySelector('growspace-header');
+            header?.dispatchEvent(new CustomEvent('growspace-changed', { detail: 'd2', bubbles: true, composed: true }));
+
+            expect(listener).toHaveBeenCalled();
+
+            document.body.removeChild(element);
+        });
+
+        it('should redispatch with target value fallback if detail missing', async () => {
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('growspace-changed', listener);
+
+            // Mock event with target value but no detail
+            const event = new CustomEvent('growspace-changed', { bubbles: true, composed: true });
+            Object.defineProperty(event, 'target', { value: { value: 'fallback-val' }, writable: true });
+
+            const header = element.shadowRoot?.querySelector('growspace-header');
+            header?.dispatchEvent(event);
+
+            expect(listener).toHaveBeenCalled();
+            expect(listener.mock.calls[0][0].detail).toBe('fallback-val');
+
+            document.body.removeChild(element);
+        });
+
+        it('should NOT render if device is undefined', async () => {
+            element.device = undefined;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const header = element.shadowRoot?.querySelector('growspace-header');
+            expect(header).toBeFalsy();
+
+            document.body.removeChild(element);
+        });
+
+        it('should render toggle button if initial_view_mode is header', async () => {
+            element.config = { initial_view_mode: 'header' } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const btn = element.shadowRoot?.querySelector('.collapse-handle');
+            expect(btn).toBeTruthy();
+
+            document.body.removeChild(element);
+        });
+
+        it('should dispatch toggle-expansion event when button clicked', async () => {
+            element.config = { initial_view_mode: 'header' } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('toggle-expansion', listener);
+
+            const btn = element.shadowRoot?.querySelector('.collapse-handle') as HTMLButtonElement;
+            btn.click();
+
+            expect(listener).toHaveBeenCalled();
+            document.body.removeChild(element);
+        });
+    });
+});
