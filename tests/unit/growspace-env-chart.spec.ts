@@ -148,6 +148,7 @@ describe('GrowspaceEnvChart', () => {
     });
 
     it('should show tooltip on hover', async () => {
+        vi.useFakeTimers();
         const now = Date.now();
         element.metricKey = 'temp';
         element.sensorHistory = {
@@ -169,14 +170,16 @@ describe('GrowspaceEnvChart', () => {
             bubbles: true,
             clientX: 400 // Middle
         }));
+
+        // Wait for RAF callback to execute
+        await vi.runAllTimersAsync();
         await element.updateComplete;
 
         const tooltip = element.shadowRoot?.querySelector('.gs-tooltip');
         expect(tooltip).toBeTruthy();
         expect(tooltip?.textContent).toContain('temp');
-        // Logic says binary search for closest. 
-        // If times are T-1h and T, middle is T-0.5h. Closest depends on exact math.
-        // Let's just check it exists.
+
+        vi.useRealTimers();
     });
 
     it('should render binary sensor graph correctly', async () => {
@@ -194,8 +197,8 @@ describe('GrowspaceEnvChart', () => {
         const path = element.shadowRoot?.querySelector('path');
         expect(path).toBeTruthy();
 
-        const headerValue = element.shadowRoot?.querySelector('.gs-env-graph-header div[style*="font-size: 1.2em"]');
-        expect(headerValue?.textContent).toContain('Not Optimal'); // Last state is off with reasons
+        const headerValue = element.shadowRoot?.querySelector('.gs-env-graph-header div div[style*="font-size:1.2em"]');
+        expect(headerValue?.textContent).toContain('Temp high'); // Optimized version displays reasons directly
     });
 
     it('should render VPD specific logic', async () => {
@@ -236,7 +239,7 @@ describe('GrowspaceEnvChart', () => {
         const path = element.shadowRoot?.querySelector('path');
         expect(path).toBeTruthy();
         // Check header value
-        const headerValue = element.shadowRoot?.querySelector('.gs-env-graph-header div[style*="font-size: 1.2em"]');
+        const headerValue = element.shadowRoot?.querySelector('.gs-env-graph-header div div[style*="font-size:1.2em"]');
         expect(headerValue?.textContent).toContain('22.0');
     });
 
@@ -298,6 +301,7 @@ describe('GrowspaceEnvChart', () => {
     });
 
     it('should format tooltip for dehumidifier binary sensor', async () => {
+        vi.useFakeTimers();
         const now = Date.now();
         element.metricKey = 'dehumidifier';
         element.sensorHistory = {
@@ -316,14 +320,19 @@ describe('GrowspaceEnvChart', () => {
             bubbles: true,
             clientX: 700 // Near end, should show OFF
         }));
+
+        // Wait for RAF callback
+        await vi.runAllTimersAsync();
         await element.updateComplete;
 
         const tooltip = element.shadowRoot?.querySelector('.gs-tooltip');
-        // It may show ON or OFF depending on which point is closest
         expect(tooltip).toBeTruthy();
+
+        vi.useRealTimers();
     });
 
     it('should format tooltip for optimal sensor with reasons', async () => {
+        vi.useFakeTimers();
         const now = Date.now();
         element.metricKey = 'optimal';
         element.sensorHistory = {
@@ -341,15 +350,20 @@ describe('GrowspaceEnvChart', () => {
             bubbles: true,
             clientX: 400
         }));
+
+        // Wait for RAF callback
+        await vi.runAllTimersAsync();
         await element.updateComplete;
 
         const tooltip = element.shadowRoot?.querySelector('.gs-tooltip');
-        // Should show either reasons or 'Not Optimal'
+        expect(tooltip).toBeTruthy();
         expect(tooltip?.textContent).toContain('optimal');
-        // The tooltip shows a formatted reasons array or 'Not Optimal'
+
+        vi.useRealTimers();
     });
 
     it('should format tooltip for exhaust/humidifier with state meta', async () => {
+        vi.useFakeTimers();
         const now = Date.now();
         element.metricKey = 'exhaust';
         element.sensorHistory = {
@@ -380,10 +394,14 @@ describe('GrowspaceEnvChart', () => {
             bubbles: true,
             clientX: 700
         }));
+
+        // Wait for RAF callback
+        await vi.runAllTimersAsync();
         await element.updateComplete;
 
         const tooltip = element.shadowRoot?.querySelector('.gs-tooltip');
-        // Meta injection might not propagate correctly - just verify tooltip renders
         expect(tooltip).toBeTruthy();
+
+        vi.useRealTimers();
     });
 });
