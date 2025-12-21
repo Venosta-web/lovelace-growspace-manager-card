@@ -122,6 +122,7 @@ export const METRIC_ENTITY_KEYS: Record<
 
 export const DOMAIN = 'growspace_manager';
 export const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
+export const WS_TYPE_GET_HISTORY_STATS = 'growspace_manager/get_history_stats';
 
 export const EVENTS = {
   GROWSPACE_UPDATED: "growspace_manager_updated",

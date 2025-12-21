@@ -36,8 +36,8 @@ describe('ChartUtils', () => {
             const baseTime = new Date('2023-01-01T10:00:00Z').getTime();
             const data: any[] = [];
 
-            // Add point every minute for 60 minutes
-            for (let i = 0; i <= 60; i++) {
+            // Add point every minute for 600 minutes (10 hours) to ensure downsampling triggers
+            for (let i = 0; i <= 600; i++) {
                 data.push({
                     state: String(i),
                     last_changed: new Date(baseTime + i * 60000).toISOString()
@@ -45,48 +45,30 @@ describe('ChartUtils', () => {
             }
 
             // 7d -> Every 4 hours.
-            // 10:00:00 -> Skip (10 % 4 != 0)
-            // ...
-            // Wait, baseTime is 10:00.
-            // 10:00 (H=10) -> Skip.
-            // 11:00 (H=11) -> Skip.
-            // Next 4h mark is 12:00.
-            // But my loop is only 60 mins (to 11:00).
-            // So we might get NO points other than LAST point?
-            // "Always keep the LAST point" (line 34).
-            // So expect 1 point (the last one)?
-            // Or maybe 0 if logic is strict?
-            // "if (i === len - 1) validData.push(h)"
-            // So last point always kept.
-            // Let's see what the failure said earlier: "expected 1 to be 2".
-            // So it got 1. (Length of split string " L " + 1 = points? No, split(' L ').length IS number of segments? No, points?)
-            // "M x,y L x,y". Split ' L ' -> ["M x,y", "x,y"]. Length 2.
-            // If 1 point, path is likely empty string? "if (validData.length < 2) return ''".
-            // So if only 1 point kept, it returns empty.
-            // failure said: "expected 1 to be 2".
-            // Wait, failure was "AssertionError: expected 1 to be 2".
-            // It means Received: 1. Expected: 2.
-            // "length" of array. If string is empty "", split returns [""] (length 1).
-            // So expected 1 means empty string.
-            // So for 7d with only 1 hour data starting at 10:00, we get NO valid points except last one, so total 1, so returns empty string.
-            // So expect length 1 (empty string array) or check for empty string.
+            // 10:00 (H=10, %4 != 0) - Skip
+            // 11:00 - Skip
+            // 12:00 (H=12, %4 == 0) - Kept
+            // 16:00 (H=16, %4 == 0) - Kept
+            // 20:00 (H=20, %4 == 0) - Kept (Last point)
+            // Total 3-4 points triggers valid path (>=2 points).
             const path7d = ChartUtils.generateSparklinePath(data, 100, 50, '7d');
-            expect(path7d).toBe('');
+            expect(path7d).not.toBe('');
+            const points7d = path7d.split(' L ').length;
+            expect(points7d).toBeGreaterThanOrEqual(3);
+            expect(points7d).toBeLessThanOrEqual(5); // Allow for timezone shifts or boundary inclusions
 
-            // 24h -> Every 30 mins (was 15).
-            // 10:00 (0), 10:30 (30), 11:00 (60).
-            // 3 points.
-            // "M ... L ... L ..." -> Split " L " -> 3 parts?
-            // M x,y L x,y L x,y.
-            // split(' L ') -> ["M x,y", "x,y", "x,y"]. Length 3.
+            // 24h -> Every 30 mins.
+            // 10 hours = 600 mins. / 30 = 20 intervals.
+            // 0, 30, ... 600.
+            // 20 segments + 1 start = 21 points.
             const path24h = ChartUtils.generateSparklinePath(data, 100, 50, '24h');
-            expect(path24h.split(' L ').length).toBe(3);
+            expect(path24h.split(' L ').length).toBe(21);
 
-            // 6h -> Every 15 mins (was 5).
-            // 10:00 (0), 10:15 (15), 10:30 (30), 10:45 (45), 11:00 (60).
-            // 5 points.
+            // 6h -> Every 15 mins.
+            // 600 / 15 = 40 intervals.
+            // 41 points.
             const path6h = ChartUtils.generateSparklinePath(data, 100, 50, '6h');
-            expect(path6h.split(' L ').length).toBe(5);
+            expect(path6h.split(' L ').length).toBe(41);
         });
     });
 
@@ -243,15 +225,8 @@ describe('ChartUtils', () => {
                 it('should handle "1h" range (keep all)', () => {
                     const subset = data.slice(0, 60); // 0..59 mins.
                     const path = ChartUtils.generateSparklinePath(subset, 100, 50, '1h');
-                    // 1h -> Every 5 mins.
-                    // 0, 5, 10, ... 55. (55/5 = 11, + 0 = 12 points).
-                    // Last point at 59 is kept?
-                    // Loop 0..59.
-                    // 55 keep.
-                    // 59 (last) keep.
-                    // 0..55 by 5 = 12 points (0,5,10,15,20,25,30,35,40,45,50,55).
-                    // + 59 = 13 points.
-                    expect(path.split(' L ').length).toBe(13);
+                    // With skipDownsampling, we keep all 60 points since 60 < 150
+                    expect(path.split(' L ').length).toBe(60);
                 });
 
                 it('should handle "6h" range (every 5 mins)', () => {
@@ -280,9 +255,9 @@ describe('ChartUtils', () => {
                 it('should handle "1h" range for VPD', () => {
                     const subset = data.slice(0, 60);
                     const segments = ChartUtils.generateVpdSparklineSegments(subset, 100, 50, thresholds, '1h');
-                    // 1h -> Every 5 mins. 13 points.
+                    // With skipDownsampling, we keep all 60 points
                     expect(segments.length).toBe(1);
-                    expect(segments[0].path.split(' L ').length).toBe(13);
+                    expect(segments[0].path.split(' L ').length).toBe(60);
                 });
 
                 it('should handle "6h" range for VPD (every 5 mins)', () => {

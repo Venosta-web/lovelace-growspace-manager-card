@@ -23,6 +23,11 @@ export class ChartUtils {
         const validData: any[] = [];
         const len = sortedData.length;
 
+        // AUTO-OPTIMIZATION: If we already have sparse data (e.g. from backend downsampling),
+        // skip further downsampling to prevent data loss.
+        // Assuming ~100px width, if we have < 150 points, just render them.
+        const skipDownsampling = len < (width * 1.5);
+
         for (let i = 0; i < len; i++) {
             const h = sortedData[i];
             const val = parseFloat(h.state);
@@ -40,16 +45,20 @@ export class ChartUtils {
             const minutes = date.getMinutes();
             let keep = false;
 
-            switch (timeRange) {
-                // 7d: Every 4 hours (was 1h) - Reduced to 42 points
-                case '7d': keep = minutes === 0 && date.getHours() % 4 === 0; break;
-                // 24h: Every 30 mins (was 15m) - Reduced to 48 points
-                case '24h': keep = minutes % 30 === 0; break;
-                // 6h: Every 15 mins (was 5m) - Reduced to 24 points
-                case '6h': keep = minutes % 15 === 0; break;
-                // 1h: Every 5 mins (was all) - Reduced to ~12 points
-                case '1h': keep = minutes % 5 === 0; break;
-                default: keep = minutes % 30 === 0;
+            if (skipDownsampling) {
+                keep = true;
+            } else {
+                switch (timeRange) {
+                    // 7d: Every 4 hours (was 1h) - Reduced to 42 points
+                    case '7d': keep = minutes === 0 && date.getHours() % 4 === 0; break;
+                    // 24h: Every 30 mins (was 15m) - Reduced to 48 points
+                    case '24h': keep = minutes % 30 === 0; break;
+                    // 6h: Every 15 mins (was 5m) - Reduced to 24 points
+                    case '6h': keep = minutes % 15 === 0; break;
+                    // 1h: Every 5 mins (was all) - Reduced to ~12 points
+                    case '1h': keep = minutes % 5 === 0; break;
+                    default: keep = minutes % 30 === 0;
+                }
             }
 
             if (keep) validData.push(h);
@@ -150,6 +159,9 @@ export class ChartUtils {
         const validData: any[] = [];
         const len = sortedData.length;
 
+        // AUTO-OPTIMIZATION: skip downsampling if data is already sparse
+        const skipDownsampling = len < (width * 1.5);
+
         for (let i = 0; i < len; i++) {
             const h = sortedData[i];
             const val = parseFloat(h.state);
@@ -165,16 +177,20 @@ export class ChartUtils {
             const minutes = date.getMinutes();
             let keep = false;
 
-            switch (timeRange) {
-                // 7d: Every 4 hours (was 1h) - Reduced to 42 points
-                case '7d': keep = minutes === 0 && date.getHours() % 4 === 0; break;
-                // 24h: Every 30 mins (was 15m) - Reduced to 48 points
-                case '24h': keep = minutes % 30 === 0; break;
-                // 6h: Every 15 mins (was 5m) - Reduced to 24 points
-                case '6h': keep = minutes % 15 === 0; break;
-                // 1h: Every 5 mins (was all) - Reduced to ~12 points
-                case '1h': keep = minutes % 5 === 0; break;
-                default: keep = minutes % 30 === 0;
+            if (skipDownsampling) {
+                keep = true;
+            } else {
+                switch (timeRange) {
+                    // 7d: Every 4 hours (was 1h) - Reduced to 42 points
+                    case '7d': keep = minutes === 0 && date.getHours() % 4 === 0; break;
+                    // 24h: Every 30 mins (was 15m) - Reduced to 48 points
+                    case '24h': keep = minutes % 30 === 0; break;
+                    // 6h: Every 15 mins (was 5m) - Reduced to 24 points
+                    case '6h': keep = minutes % 15 === 0; break;
+                    // 1h: Every 5 mins (was all) - Reduced to ~12 points
+                    case '1h': keep = minutes % 5 === 0; break;
+                    default: keep = minutes % 30 === 0;
+                }
             }
 
             if (keep) validData.push(h);

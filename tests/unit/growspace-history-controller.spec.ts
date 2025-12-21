@@ -10,7 +10,8 @@ describe('GrowspaceHistoryController', () => {
     beforeEach(() => {
         mockDataService = {
             getHistory: vi.fn(),
-            getBatchHistory: vi.fn()
+            getBatchHistory: vi.fn(),
+            getHistoryStats: vi.fn()
         };
         mockHost = {
             addController: vi.fn(),
@@ -102,15 +103,17 @@ describe('GrowspaceHistoryController', () => {
         });
 
         it('should fetch main history', async () => {
-            mockDataService.getBatchHistory.mockResolvedValue({
+            mockDataService.getHistoryStats.mockResolvedValue({
                 'sensor.tent_1': [{ state: '10' }]
             });
             await (controller as any)._fetchHistory();
 
-            expect(mockDataService.getBatchHistory).toHaveBeenCalledWith(
+            expect(mockDataService.getHistoryStats).toHaveBeenCalledWith(
                 expect.arrayContaining(['sensor.tent_1']),
                 expect.any(Date),
-                expect.any(Date)
+                expect.any(Date),
+                30, // 24h interval
+                true
             );
             expect(controller.historyData).toHaveLength(1);
         });
@@ -120,14 +123,16 @@ describe('GrowspaceHistoryController', () => {
                 temperature_sensor: 'sensor.temp',
                 humidity_sensor: 'sensor.hum'
             };
-            mockDataService.getBatchHistory.mockResolvedValue({});
+            mockDataService.getHistoryStats.mockResolvedValue({});
 
             await (controller as any)._fetchHistory();
 
-            expect(mockDataService.getBatchHistory).toHaveBeenCalledWith(
+            expect(mockDataService.getHistoryStats).toHaveBeenCalledWith(
                 expect.arrayContaining(['sensor.temp', 'sensor.hum']),
                 expect.any(Date),
-                expect.any(Date)
+                expect.any(Date),
+                30,
+                true
             );
         });
 
@@ -136,7 +141,7 @@ describe('GrowspaceHistoryController', () => {
             // Mock batch response with optimal data
             // Device name 'Tent 1', overview_entity_id 'sensor.tent_1' -> slug 'tent_1'
             // optimal id -> binary_sensor.tent_1_optimal_conditions
-            mockDataService.getBatchHistory.mockResolvedValue({
+            mockDataService.getHistoryStats.mockResolvedValue({
                 'binary_sensor.tent_1_optimal_conditions': [{ state: 'on', attributes: { is_lights_on: true } }]
             });
 
@@ -147,7 +152,7 @@ describe('GrowspaceHistoryController', () => {
         });
 
         it('should handle fetch errors gracefully', async () => {
-            mockDataService.getBatchHistory.mockRejectedValue(new Error('Fetch failed'));
+            mockDataService.getHistoryStats.mockRejectedValue(new Error('Fetch failed'));
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
             await (controller as any)._fetchHistory();

@@ -334,11 +334,30 @@ export class GrowspaceHistoryController implements ReactiveController {
     if (entitiesToFetch.size === 0) return;
 
     try {
-      // 3. Batch Fetch
-      const batchResults = await this.host.dataService.getBatchHistory(
+      // 3. Batch Fetch via optimized WebSocket endpoint
+      // Calculate interval based on time range to ensure small payload (5x optimization)
+      let intervalMinutes = 5;
+      switch (range) {
+        case '7d':
+          intervalMinutes = 240; // 4 hours
+          break;
+        case '24h':
+          intervalMinutes = 30;
+          break;
+        case '6h':
+          intervalMinutes = 15;
+          break;
+        case '1h':
+          intervalMinutes = 5;
+          break;
+      }
+
+      const batchResults = await this.host.dataService.getHistoryStats(
         Array.from(entitiesToFetch),
         start,
-        end
+        end,
+        intervalMinutes,
+        true // significant_changes_only
       );
 
       // 4. Distribute Results

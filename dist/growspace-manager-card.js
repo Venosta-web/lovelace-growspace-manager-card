@@ -789,6 +789,7 @@ const METRIC_ENTITY_KEYS = {
 };
 const DOMAIN = 'growspace_manager';
 const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
+const WS_TYPE_GET_HISTORY_STATS = 'growspace_manager/get_history_stats';
 const SERVICES = {
     GET_STRAIN_LIBRARY: 'get_strain_library',
     ADD_PLANT: 'add_plant',
@@ -5505,6 +5506,35 @@ class DataService {
             return {};
         }
     }
+    async getHistoryStats(entityIds, startTime, endTime, intervalMinutes = 15, significantChangesOnly = true) {
+        if (!this.hass || entityIds.length === 0)
+            return {};
+        try {
+            const result = await this.hass.callWS({
+                type: WS_TYPE_GET_HISTORY_STATS,
+                entity_ids: entityIds,
+                start_time: startTime.toISOString(),
+                end_time: endTime?.toISOString(),
+                interval_minutes: intervalMinutes,
+                significant_changes_only: significantChangesOnly,
+            });
+            // Map compact format back to standard formats for ChartUtils compatibility
+            const mappedResult = {};
+            for (const [entityId, points] of Object.entries(result)) {
+                mappedResult[entityId] = points.map((p) => ({
+                    state: p.s,
+                    last_changed: p.lu,
+                    last_updated: p.lu,
+                    attributes: {},
+                }));
+            }
+            return mappedResult;
+        }
+        catch (err) {
+            console.warn('[DataService] getHistoryStats WS failed (maybe old backend?), falling back to REST batch', err);
+            return this.getBatchHistory(entityIds, startTime, endTime);
+        }
+    }
     // Service calls
     async addPlant(params) {
         console.log('[DataService:addPlant] Sending payload:', params);
@@ -6378,8 +6408,25 @@ class GrowspaceHistoryController {
         if (entitiesToFetch.size === 0)
             return;
         try {
-            // 3. Batch Fetch
-            const batchResults = await this.host.dataService.getBatchHistory(Array.from(entitiesToFetch), start, end);
+            // 3. Batch Fetch via optimized WebSocket endpoint
+            // Calculate interval based on time range to ensure small payload (5x optimization)
+            let intervalMinutes = 5;
+            switch (range) {
+                case '7d':
+                    intervalMinutes = 240; // 4 hours
+                    break;
+                case '24h':
+                    intervalMinutes = 30;
+                    break;
+                case '6h':
+                    intervalMinutes = 15;
+                    break;
+                case '1h':
+                    intervalMinutes = 5;
+                    break;
+            }
+            const batchResults = await this.host.dataService.getHistoryStats(Array.from(entitiesToFetch), start, end, intervalMinutes, true // significant_changes_only
+            );
             // 4. Distribute Results
             // Main
             if (device.overview_entity_id && batchResults[device.overview_entity_id]) {
@@ -6576,6 +6623,10 @@ class ChartUtils {
         // Filter valid numeric values AND apply time-based downsampling
         const validData = [];
         const len = sortedData.length;
+        // AUTO-OPTIMIZATION: If we already have sparse data (e.g. from backend downsampling),
+        // skip further downsampling to prevent data loss.
+        // Assuming ~100px width, if we have < 150 points, just render them.
+        const skipDownsampling = len < (width * 1.5);
         for (let i = 0; i < len; i++) {
             const h = sortedData[i];
             const val = parseFloat(h.state);
@@ -6590,24 +6641,29 @@ class ChartUtils {
             const date = new Date(h.last_changed);
             const minutes = date.getMinutes();
             let keep = false;
-            switch (timeRange) {
-                // 7d: Every 4 hours (was 1h) - Reduced to 42 points
-                case '7d':
-                    keep = minutes === 0 && date.getHours() % 4 === 0;
-                    break;
-                // 24h: Every 30 mins (was 15m) - Reduced to 48 points
-                case '24h':
-                    keep = minutes % 30 === 0;
-                    break;
-                // 6h: Every 15 mins (was 5m) - Reduced to 24 points
-                case '6h':
-                    keep = minutes % 15 === 0;
-                    break;
-                // 1h: Every 5 mins (was all) - Reduced to ~12 points
-                case '1h':
-                    keep = minutes % 5 === 0;
-                    break;
-                default: keep = minutes % 30 === 0;
+            if (skipDownsampling) {
+                keep = true;
+            }
+            else {
+                switch (timeRange) {
+                    // 7d: Every 4 hours (was 1h) - Reduced to 42 points
+                    case '7d':
+                        keep = minutes === 0 && date.getHours() % 4 === 0;
+                        break;
+                    // 24h: Every 30 mins (was 15m) - Reduced to 48 points
+                    case '24h':
+                        keep = minutes % 30 === 0;
+                        break;
+                    // 6h: Every 15 mins (was 5m) - Reduced to 24 points
+                    case '6h':
+                        keep = minutes % 15 === 0;
+                        break;
+                    // 1h: Every 5 mins (was all) - Reduced to ~12 points
+                    case '1h':
+                        keep = minutes % 5 === 0;
+                        break;
+                    default: keep = minutes % 30 === 0;
+                }
             }
             if (keep)
                 validData.push(h);
@@ -6690,6 +6746,8 @@ class ChartUtils {
         const sortedData = [...historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
         const validData = [];
         const len = sortedData.length;
+        // AUTO-OPTIMIZATION: skip downsampling if data is already sparse
+        const skipDownsampling = len < (width * 1.5);
         for (let i = 0; i < len; i++) {
             const h = sortedData[i];
             const val = parseFloat(h.state);
@@ -6703,24 +6761,29 @@ class ChartUtils {
             const date = new Date(h.last_changed);
             const minutes = date.getMinutes();
             let keep = false;
-            switch (timeRange) {
-                // 7d: Every 4 hours (was 1h) - Reduced to 42 points
-                case '7d':
-                    keep = minutes === 0 && date.getHours() % 4 === 0;
-                    break;
-                // 24h: Every 30 mins (was 15m) - Reduced to 48 points
-                case '24h':
-                    keep = minutes % 30 === 0;
-                    break;
-                // 6h: Every 15 mins (was 5m) - Reduced to 24 points
-                case '6h':
-                    keep = minutes % 15 === 0;
-                    break;
-                // 1h: Every 5 mins (was all) - Reduced to ~12 points
-                case '1h':
-                    keep = minutes % 5 === 0;
-                    break;
-                default: keep = minutes % 30 === 0;
+            if (skipDownsampling) {
+                keep = true;
+            }
+            else {
+                switch (timeRange) {
+                    // 7d: Every 4 hours (was 1h) - Reduced to 42 points
+                    case '7d':
+                        keep = minutes === 0 && date.getHours() % 4 === 0;
+                        break;
+                    // 24h: Every 30 mins (was 15m) - Reduced to 48 points
+                    case '24h':
+                        keep = minutes % 30 === 0;
+                        break;
+                    // 6h: Every 15 mins (was 5m) - Reduced to 24 points
+                    case '6h':
+                        keep = minutes % 15 === 0;
+                        break;
+                    // 1h: Every 5 mins (was all) - Reduced to ~12 points
+                    case '1h':
+                        keep = minutes % 5 === 0;
+                        break;
+                    default: keep = minutes % 30 === 0;
+                }
             }
             if (keep)
                 validData.push(h);

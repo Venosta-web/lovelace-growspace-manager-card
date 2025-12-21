@@ -10,7 +10,8 @@ describe('GrowspaceHistoryController VPD Fallback', () => {
     beforeEach(() => {
         mockDataService = {
             getHistory: vi.fn(),
-            getBatchHistory: vi.fn()
+            getBatchHistory: vi.fn(),
+            getHistoryStats: vi.fn()
         };
         mockHost = {
             addController: vi.fn(),
@@ -46,16 +47,18 @@ describe('GrowspaceHistoryController VPD Fallback', () => {
             attributes: { unit_of_measurement: 'kPa' }
         };
 
-        mockDataService.getBatchHistory.mockResolvedValue({
+        mockDataService.getHistoryStats.mockResolvedValue({
             'sensor.test_growspace_calculated_vpd': [{ state: '1.2', last_changed: new Date().toISOString() }]
         });
 
         await (controller as any)._fetchHistory();
 
-        expect(mockDataService.getBatchHistory).toHaveBeenCalledWith(
+        expect(mockDataService.getHistoryStats).toHaveBeenCalledWith(
             expect.arrayContaining(['sensor.test_growspace_calculated_vpd']),
             expect.any(Date),
-            expect.any(Date)
+            expect.any(Date),
+            30,
+            true
         );
 
         expect(controller.historyCache.vpd).toHaveLength(1);
@@ -68,13 +71,15 @@ describe('GrowspaceHistoryController VPD Fallback', () => {
         await (controller as any)._fetchHistory();
 
         // Should try to fetch temp (configured) but NOT VPD
-        expect(mockDataService.getBatchHistory).toHaveBeenCalledWith(
+        expect(mockDataService.getHistoryStats).toHaveBeenCalledWith(
             expect.arrayContaining(['sensor.temp']),
             expect.any(Date),
-            expect.any(Date)
+            expect.any(Date),
+            30,
+            true
         );
 
-        const calls = mockDataService.getBatchHistory.mock.calls;
+        const calls = mockDataService.getHistoryStats.mock.calls;
         // Check that vpd sensor was NOT requested in the batch
         if (calls.length > 0) {
             const requestedEntities = calls[0][0];
@@ -88,14 +93,16 @@ describe('GrowspaceHistoryController VPD Fallback', () => {
         // Even if calculated exists, configured should take precedence
         mockHost.hass.states['sensor.test_growspace_calculated_vpd'] = { state: '1.2' };
 
-        mockDataService.getBatchHistory.mockResolvedValue({});
+        mockDataService.getHistoryStats.mockResolvedValue({});
 
         await (controller as any)._fetchHistory();
 
-        expect(mockDataService.getBatchHistory).toHaveBeenCalledWith(
+        expect(mockDataService.getHistoryStats).toHaveBeenCalledWith(
             expect.arrayContaining(['sensor.configured_vpd']),
             expect.any(Date),
-            expect.any(Date)
+            expect.any(Date),
+            30,
+            true
         );
     });
 

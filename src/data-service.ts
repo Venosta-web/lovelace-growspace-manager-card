@@ -2,7 +2,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy, GrowspaceAPIResponse } from './types';
 import { GrowspaceAdapter } from './adapters/growspace-adapter';
 import { noChange } from 'lit';
-import { DOMAIN, SERVICES, WS_TYPE_GET_DATA } from './constants';
+import { DOMAIN, SERVICES, WS_TYPE_GET_DATA, WS_TYPE_GET_HISTORY_STATS } from './constants';
 import { GrowspaceAPIResponseSchema, GrowspaceAPICollectionSchema, GrowspaceAPICollection } from './schemas/api-schema';
 
 export class DataService {
@@ -262,6 +262,43 @@ export class DataService {
     } catch (err) {
       console.error('[DataService] Error fetching batch history:', err);
       return {};
+    }
+  }
+
+  async getHistoryStats(
+    entityIds: string[],
+    startTime: Date,
+    endTime?: Date,
+    intervalMinutes: number = 15,
+    significantChangesOnly: boolean = true
+  ): Promise<Record<string, any[]>> {
+    if (!this.hass || entityIds.length === 0) return {};
+
+    try {
+      const result = await this.hass.callWS<Record<string, any[]>>({
+        type: WS_TYPE_GET_HISTORY_STATS,
+        entity_ids: entityIds,
+        start_time: startTime.toISOString(),
+        end_time: endTime?.toISOString(),
+        interval_minutes: intervalMinutes,
+        significant_changes_only: significantChangesOnly,
+      });
+
+      // Map compact format back to standard formats for ChartUtils compatibility
+      const mappedResult: Record<string, any[]> = {};
+      for (const [entityId, points] of Object.entries(result)) {
+        mappedResult[entityId] = points.map((p: any) => ({
+          state: p.s,
+          last_changed: p.lu,
+          last_updated: p.lu,
+          attributes: {},
+        }));
+      }
+      return mappedResult;
+
+    } catch (err) {
+      console.warn('[DataService] getHistoryStats WS failed (maybe old backend?), falling back to REST batch', err);
+      return this.getBatchHistory(entityIds, startTime, endTime);
     }
   }
 
