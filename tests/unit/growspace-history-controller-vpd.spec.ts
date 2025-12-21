@@ -109,15 +109,19 @@ describe('GrowspaceHistoryController VPD Fallback', () => {
     it('should correct resolve entity ID in _fetchMetricHistory (on-demand toggle)', async () => {
         // slugify('Test Growspace Calculated VPD') -> 'test_growspace_calculated_vpd'
         mockHost.hass.states['sensor.test_growspace_calculated_vpd'] = { state: '1.5' };
-        mockDataService.getHistory.mockResolvedValue([{ state: '1.5' }]);
+        mockDataService.getHistoryStats.mockResolvedValue({
+            'sensor.test_growspace_calculated_vpd': [{ state: '1.5', last_changed: new Date().toISOString(), last_updated: new Date().toISOString(), attributes: {} }]
+        });
 
         // Call private method directly as normally called by toggleEnvGraph
         await (controller as any)._fetchMetricHistory('vpd', '24h');
 
-        expect(mockDataService.getHistory).toHaveBeenCalledWith(
-            'sensor.test_growspace_calculated_vpd',
+        expect(mockDataService.getHistoryStats).toHaveBeenCalledWith(
+            ['sensor.test_growspace_calculated_vpd'],
             expect.any(Date),
-            expect.any(Date)
+            expect.any(Date),
+            30, // 24h interval
+            true
         );
         expect(controller.historyCache.vpd).toHaveLength(1);
     });

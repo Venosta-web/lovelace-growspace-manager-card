@@ -52,8 +52,8 @@ describe('GrowspaceHistoryController', () => {
     describe('Graph Management', () => {
         it('should set graph range and refetch', async () => {
             const spy = vi.spyOn(controller as any, '_fetchHistory').mockImplementation(() => Promise.resolve());
-            // Mock metrics
-            const spyMetric = vi.spyOn(controller as any, '_fetchMetricHistory').mockImplementation(() => Promise.resolve());
+            // Mock refreshSecondaryHistories which now batches all secondary metrics
+            const spyRefresh = vi.spyOn(controller as any, 'refreshSecondaryHistories').mockImplementation(() => Promise.resolve());
             controller.activeEnvGraphs.add('vpd');
 
             await controller.setGraphRange('7d');
@@ -61,7 +61,7 @@ describe('GrowspaceHistoryController', () => {
             expect(controller.graphRanges['d1']).toBe('7d');
             expect(mockHost.requestUpdate).toHaveBeenCalled();
             expect(spy).toHaveBeenCalledWith('7d');
-            expect(spyMetric).toHaveBeenCalledWith('vpd', '7d');
+            expect(spyRefresh).toHaveBeenCalledWith('7d');
         });
 
         it('should toggle env graph visibility', () => {
@@ -164,16 +164,17 @@ describe('GrowspaceHistoryController', () => {
     describe('Enhanced Coverage Tests', () => {
         it('should manage auto-refresh lifecycle', () => {
             vi.useFakeTimers();
+            const fetchSpy = vi.spyOn(controller as any, '_fetchHistoryDelta').mockImplementation(() => Promise.resolve());
+
             controller.hostConnected();
-            expect((controller as any)._refreshInterval).not.toBeNull();
+            expect((controller as any)._refreshInterval).toBeTruthy();
 
-            const fetchSpy = vi.spyOn(controller as any, '_fetchHistory').mockImplementation(() => Promise.resolve());
-
-            vi.advanceTimersByTime(5 * 60 * 1000 + 100);
+            vi.advanceTimersByTime(5 * 60 * 1000);
             expect(fetchSpy).toHaveBeenCalled();
 
             controller.hostDisconnected();
             expect((controller as any)._refreshInterval).toBeNull();
+
             vi.useRealTimers();
         });
 

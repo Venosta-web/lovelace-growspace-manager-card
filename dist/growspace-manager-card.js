@@ -6232,6 +6232,11 @@ class GrowspaceHistoryController {
          * Access via: this.historyCache['temperature'], this.historyCache['vpd'], etc.
          */
         this.historyCache = {};
+        /**
+         * Tracks the last timestamp for each metric to enable delta loading.
+         * Key: metric name, Value: ISO timestamp of the last data point
+         */
+        this._lastTimestamps = {};
         this._cachedCombinedHistory = null;
         this.activeEnvGraphs = new Set();
         this.linkedGraphGroups = [];
@@ -6261,7 +6266,8 @@ class GrowspaceHistoryController {
         if (this._refreshInterval)
             return;
         this._refreshInterval = window.setInterval(() => {
-            this._fetchHistory(this.getRange());
+            // Use delta loading for refresh - only fetch new data since last update
+            this._fetchHistoryDelta();
         }, 5 * 60 * 1000); // 5 minutes
     }
     stopAutoRefresh() {
@@ -6360,14 +6366,139 @@ class GrowspaceHistoryController {
     }
     /**
      * Refreshes history data for all currently active environment graphs.
+     * OPTIMIZED: Batches all secondary metrics into a single request.
      */
-    refreshSecondaryHistories(range) {
+    async refreshSecondaryHistories(range) {
+        const device = this.host.devices.find((d) => d.device_id === this.host.selectedDevice);
+        if (!device)
+            return;
+        const metricsToFetch = [];
+        const entityMap = {};
         for (const metricKey of this.activeEnvGraphs) {
             // Skip 'main' and 'optimal' as those are fetched by _fetchHistory
             if (metricKey === 'main' || metricKey === 'optimal')
                 continue;
-            this._fetchMetricHistory(metricKey, range);
+            const entityId = this.getEntityIdForMetric(device, metricKey);
+            if (entityId) {
+                metricsToFetch.push(metricKey);
+                entityMap[metricKey] = entityId;
+            }
         }
+        if (metricsToFetch.length === 0)
+            return;
+        // OPTIMIZATION: Batch all secondary metrics into ONE request
+        const { start, end } = this.calculateTimeRange(range);
+        const entityIds = Object.values(entityMap);
+        try {
+            const batchResults = await this.host.dataService.getHistoryStats(entityIds, start, end, this._getIntervalForRange(range), true);
+            // Distribute results
+            for (const metricKey of metricsToFetch) {
+                const entityId = entityMap[metricKey];
+                if (entityId && batchResults[entityId]) {
+                    this.historyCache[metricKey] = batchResults[entityId];
+                    console.log(`[HistoryController] ${metricKey} history fetched via batch, length: ${batchResults[entityId].length}`);
+                }
+            }
+            this._cachedCombinedHistory = null;
+            this.host.requestUpdate();
+        }
+        catch (e) {
+            console.error('[HistoryController] Failed to batch fetch secondary histories', e);
+        }
+    }
+    /**
+     * Fetches delta (new data since last update) for all metrics.
+     * Used by auto-refresh to minimize data transfer.
+     */
+    async _fetchHistoryDelta() {
+        if (!this.host.hass || !this.host.selectedDevice)
+            return;
+        const device = this.host.devices.find((d) => d.device_id === this.host.selectedDevice);
+        if (!device)
+            return;
+        const now = new Date();
+        const metricsToFetch = [
+            'main', 'optimal', 'temperature', 'humidity', 'vpd', 'co2', 'light',
+            'soil_moisture', 'exhaust', 'humidifier', 'dehumidifier',
+            'circulation_fan', 'irrigation', 'drain'
+        ];
+        const entityMap = {};
+        const entitiesToFetch = new Set();
+        // Identify entities and their last timestamps
+        if (device.overview_entity_id) {
+            const lastTimestamp = this._lastTimestamps['main'];
+            if (lastTimestamp) {
+                entityMap['main'] = device.overview_entity_id;
+                entitiesToFetch.add(device.overview_entity_id);
+            }
+        }
+        for (const metric of metricsToFetch) {
+            if (metric === 'main')
+                continue; // Already handled
+            const entityId = this.getEntityIdForMetric(device, metric);
+            const lastTimestamp = this._lastTimestamps[metric];
+            if (entityId && lastTimestamp) {
+                entityMap[metric] = entityId;
+                entitiesToFetch.add(entityId);
+            }
+        }
+        if (entitiesToFetch.size === 0)
+            return;
+        try {
+            // Fetch only new data since the oldest last timestamp
+            const oldestTimestamp = Math.min(...Object.values(this._lastTimestamps)
+                .filter(t => t)
+                .map(t => new Date(t).getTime()));
+            const start = new Date(oldestTimestamp);
+            const batchResults = await this.host.dataService.getHistoryStats(Array.from(entitiesToFetch), start, now, 5, // Small interval for delta
+            true);
+            // Merge delta with cached data
+            for (const [metric, entityId] of Object.entries(entityMap)) {
+                const deltaData = batchResults[entityId] || [];
+                if (deltaData.length > 0) {
+                    this._mergeDeltaData(metric, deltaData);
+                }
+            }
+            this._cachedCombinedHistory = null;
+            this.host.requestUpdate();
+        }
+        catch (e) {
+            console.error('[HistoryController] Failed to fetch delta history', e);
+        }
+    }
+    /**
+     * Merges new delta data with existing cached data.
+     * Removes duplicates and maintains chronological order.
+     */
+    _mergeDeltaData(metric, deltaData) {
+        const existing = this.historyCache[metric] || [];
+        if (existing.length === 0) {
+            this.historyCache[metric] = deltaData;
+            this._updateLastTimestamp(metric, deltaData);
+            return;
+        }
+        // Find the last timestamp in existing data
+        const lastExisting = existing[existing.length - 1];
+        const lastTimestamp = new Date(lastExisting.last_updated || lastExisting.last_changed).getTime();
+        // Filter delta to only include newer data
+        const newData = deltaData.filter(point => {
+            const pointTime = new Date(point.last_updated || point.last_changed).getTime();
+            return pointTime > lastTimestamp;
+        });
+        if (newData.length > 0) {
+            this.historyCache[metric] = [...existing, ...newData];
+            this._updateLastTimestamp(metric, newData);
+            console.log(`[HistoryController] Merged ${newData.length} new points for ${metric}`);
+        }
+    }
+    /**
+     * Updates the last known timestamp for a metric.
+     */
+    _updateLastTimestamp(metric, data) {
+        if (data.length === 0)
+            return;
+        const lastPoint = data[data.length - 1];
+        this._lastTimestamps[metric] = lastPoint.last_updated || lastPoint.last_changed;
     }
     async _fetchHistory(range = '24h') {
         if (!this.host.hass || !this.host.selectedDevice)
@@ -6409,28 +6540,14 @@ class GrowspaceHistoryController {
             return;
         try {
             // 3. Batch Fetch via optimized WebSocket endpoint
-            // Calculate interval based on time range to ensure small payload (5x optimization)
-            let intervalMinutes = 5;
-            switch (range) {
-                case '7d':
-                    intervalMinutes = 240; // 4 hours
-                    break;
-                case '24h':
-                    intervalMinutes = 30;
-                    break;
-                case '6h':
-                    intervalMinutes = 15;
-                    break;
-                case '1h':
-                    intervalMinutes = 5;
-                    break;
-            }
-            const batchResults = await this.host.dataService.getHistoryStats(Array.from(entitiesToFetch), start, end, intervalMinutes, true // significant_changes_only
+            const batchResults = await this.host.dataService.getHistoryStats(Array.from(entitiesToFetch), start, end, this._getIntervalForRange(range), true // significant_changes_only
             );
-            // 4. Distribute Results
+            // 4. Distribute Results and Update Timestamps
             // Main
             if (device.overview_entity_id && batchResults[device.overview_entity_id]) {
-                this.historyCache.main = batchResults[device.overview_entity_id];
+                const data = batchResults[device.overview_entity_id];
+                this.historyCache.main = data;
+                this._updateLastTimestamp('main', data);
             }
             // Metrics
             for (const metric of metricsToFetch) {
@@ -6438,6 +6555,7 @@ class GrowspaceHistoryController {
                 if (entityId) {
                     const result = batchResults[entityId] || [];
                     this.historyCache[metric] = result;
+                    this._updateLastTimestamp(metric, result);
                     if (result.length > 0) {
                         console.log(`[HistoryController] ${metric} history fetched via batch, length: ${result.length}`);
                     }
@@ -6452,7 +6570,7 @@ class GrowspaceHistoryController {
     }
     /**
      * Generic method to fetch history for any metric.
-     * Uses METRIC_ENTITY_KEYS to resolve the entity ID from device attributes.
+     * OPTIMIZED: Uses batched getHistoryStats instead of individual getHistory.
      */
     async _fetchMetricHistory(metricKey, range) {
         const device = this.host.devices.find((d) => d.device_id === this.host.selectedDevice);
@@ -6465,9 +6583,11 @@ class GrowspaceHistoryController {
         }
         const { start, end } = this.calculateTimeRange(range);
         try {
-            const history = await this.host.dataService.getHistory(entityId, start, end);
-            console.log(`[HistoryController] ${metricKey} history fetched from ${entityId}, length: ${history?.length || 0}`);
-            this.historyCache[metricKey] = history || [];
+            // OPTIMIZATION: Use batched getHistoryStats instead of individual getHistory
+            const batchResults = await this.host.dataService.getHistoryStats([entityId], start, end, this._getIntervalForRange(range), true);
+            const history = batchResults[entityId] || [];
+            console.log(`[HistoryController] ${metricKey} history fetched from ${entityId}, length: ${history.length}`);
+            this.historyCache[metricKey] = history;
             this._cachedCombinedHistory = null;
         }
         catch (e) {
@@ -6553,6 +6673,23 @@ class GrowspaceHistoryController {
                 device.environment_attributes?.[entityAttr];
         }
         return { device, entityId };
+    }
+    /**
+     * Helper to calculate interval minutes based on time range for downsampling.
+     */
+    _getIntervalForRange(range) {
+        switch (range) {
+            case '7d':
+                return 240; // 4 hours
+            case '24h':
+                return 30;
+            case '6h':
+                return 15;
+            case '1h':
+                return 5;
+            default:
+                return 15;
+        }
     }
     calculateTimeRange(range) {
         const now = new Date();
