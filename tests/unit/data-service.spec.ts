@@ -299,27 +299,16 @@ describe('DataService', () => {
             );
         });
 
-        it('should handle custom target names correctly', async () => {
-            // Logic in DataService attempts to map 'dry' -> 'dry', 'cure' -> 'cure'
-            // If we pass 'My Custom Dry Room', it passes it through unless it detects keywords?
-            // "if (hint.includes('dry') && target !== 'dry') payload.target_growspace_id = 'dry';"
-
-            await service.harvestPlant('plant_123', 'My Dry Room');
-            // 'My Dry Room' includes 'dry' but is not 'dry'.
-            // The logic: 
-            // const hint = target.toLowerCase(); 
-            // if (hint.includes('dry') && target !== 'dry') payload.target_growspace_id = 'dry';
-
-            // So for 'My Dry Room', we expect payload to be 'dry' if logic stands, 
-            // OR if the user intended to support custom IDs.
-            // Let's verify the CURRENT implementation logic via test.
+        it('should pass custom target IDs directly', async () => {
+            // No legacy mapping - pass IDs directly
+            await service.harvestPlant('plant_123', 'my_custom_dry_room');
 
             expect(callServiceMock).toHaveBeenCalledWith(
                 'growspace_manager',
                 'harvest_plant',
                 {
                     plant_id: 'plant_123',
-                    target_growspace_id: 'dry' // Because it contained 'dry'
+                    target_growspace_id: 'my_custom_dry_room'
                 }
             );
         });
@@ -395,41 +384,28 @@ describe('DataService', () => {
         });
     });
 
-    describe('Growspace Devices & Caching', () => {
+    describe('Growspace Devices (Stateless)', () => {
         it('should return empty if no map', () => {
             expect(service.getGrowspaceDevices(undefined as any)).toEqual([]);
         });
 
-        it('should cache transformed devices', () => {
-            // Mock Adapter transform to return stable object
+        it('should transform devices without caching', () => {
             const wsData = { growspace_id: 'gs1', name: 'G1', rows: 1, plants_per_row: 1, grid: {}, type: 'normal' };
             const wsMap = { gs1: wsData };
 
             // First call
             const devices1 = service.getGrowspaceDevices(wsMap as any);
             expect(devices1).toHaveLength(1);
-            const dev1 = devices1[0];
 
-            // Second call with SAME object ref
+            // Second call with same data creates new instances (no caching)
             const devices2 = service.getGrowspaceDevices(wsMap as any);
-            expect(devices2[0]).toBe(dev1); // Referential equality check
-
-            // Third call with NEW object ref (same data)
-            const wsMapNew = { gs1: { ...wsData } };
-            const devices3 = service.getGrowspaceDevices(wsMapNew as any);
-            expect(devices3[0]).not.toBe(dev1); // Should be new instance
+            expect(devices2).toHaveLength(1);
+            // Each call transforms fresh, so they should be equal in value but not necessarily reference
         });
 
-        it('should cleanup stale cache', () => {
-            const wsMap1 = {
-                gs1: { growspace_id: 'gs1', name: 'G1', type: 'normal', rows: 4, plants_per_row: 4, grid: {} }
-            };
-            service.getGrowspaceDevices(wsMap1 as any);
-            expect((service as any)._deviceCache.has('gs1')).toBe(true);
-
-            // Fetch with empty map -> should clear cache
-            service.getGrowspaceDevices({});
-            expect((service as any)._deviceCache.has('gs1')).toBe(false);
+        it('should handle empty map gracefully', () => {
+            const devices = service.getGrowspaceDevices({});
+            expect(devices).toEqual([]);
         });
     });
 
@@ -543,25 +519,26 @@ describe('DataService', () => {
         });
     });
 
-    describe('Harvest Logic Extensions', () => {
-        it('should map cure target hint', async () => {
-            await service.harvestPlant('p1', 'My Cure Tent');
+    describe('Harvest Strict ID Passing', () => {
+        it('should pass target ID directly without transformation', async () => {
+            // Since legacy mapping was removed, IDs are passed directly
+            await service.harvestPlant('p1', 'cure');
             expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'harvest_plant', {
                 plant_id: 'p1', target_growspace_id: 'cure'
             });
         });
 
-        it('should map mother target hint', async () => {
-            await service.harvestPlant('p1', 'mother room');
+        it('should pass any custom growspace ID as-is', async () => {
+            await service.harvestPlant('p1', 'my_custom_room_123');
             expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'harvest_plant', {
-                plant_id: 'p1', target_growspace_id: 'mother'
+                plant_id: 'p1', target_growspace_id: 'my_custom_room_123'
             });
         });
 
-        it('should map clone target hint', async () => {
-            await service.harvestPlant('p1', 'clone room');
+        it('should use default target of dry', async () => {
+            await service.harvestPlant('p1');
             expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'harvest_plant', {
-                plant_id: 'p1', target_growspace_id: 'clone'
+                plant_id: 'p1', target_growspace_id: 'dry'
             });
         });
     });

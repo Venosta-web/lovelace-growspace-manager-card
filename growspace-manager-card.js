@@ -568,36 +568,56 @@ class PlantUtils {
         };
     }
 }
-PlantUtils.stageColors = {
-    [PlantStage.MOTHER]: '#E91E63',
-    [PlantStage.CLONE]: '#FF5722',
-    [PlantStage.SEEDLING]: '#4CAF50',
-    [PlantStage.VEG]: '#8BC34A',
-    [PlantStage.FLOWER]: '#FF9800',
-    [PlantStage.DRY]: '#795548',
-    [PlantStage.CURE]: '#9C27B0',
-};
-PlantUtils.stageIcons = {
-    [PlantStage.MOTHER]: mdiSprout,
-    [PlantStage.CLONE]: mdiSprout,
-    [PlantStage.SEEDLING]: mdiSprout,
-    [PlantStage.VEG]: mdiSprout,
-    [PlantStage.FLOWER]: mdiFlower,
-    [PlantStage.DRY]: mdiHairDryer,
-    [PlantStage.CURE]: mdiCannabis,
-};
+Object.defineProperty(PlantUtils, "stageColors", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: {
+        [PlantStage.MOTHER]: '#E91E63',
+        [PlantStage.CLONE]: '#FF5722',
+        [PlantStage.SEEDLING]: '#4CAF50',
+        [PlantStage.VEG]: '#8BC34A',
+        [PlantStage.FLOWER]: '#FF9800',
+        [PlantStage.DRY]: '#795548',
+        [PlantStage.CURE]: '#9C27B0',
+    }
+});
+Object.defineProperty(PlantUtils, "stageIcons", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: {
+        [PlantStage.MOTHER]: mdiSprout,
+        [PlantStage.CLONE]: mdiSprout,
+        [PlantStage.SEEDLING]: mdiSprout,
+        [PlantStage.VEG]: mdiSprout,
+        [PlantStage.FLOWER]: mdiFlower,
+        [PlantStage.DRY]: mdiHairDryer,
+        [PlantStage.CURE]: mdiCannabis,
+    }
+});
 /** Growspace types that support dynamic row expansion */
-PlantUtils.DYNAMIC_ROW_TYPES = ['dry', 'cure', 'mother', 'clone'];
+Object.defineProperty(PlantUtils, "DYNAMIC_ROW_TYPES", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: ['dry', 'cure', 'mother', 'clone']
+});
 /** Date fields used for plant lifecycle */
-PlantUtils.DATE_FIELDS = [
-    'seedling_start',
-    'mother_start',
-    'clone_start',
-    'veg_start',
-    'flower_start',
-    'dry_start',
-    'cure_start',
-];
+Object.defineProperty(PlantUtils, "DATE_FIELDS", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: [
+        'seedling_start',
+        'mother_start',
+        'clone_start',
+        'veg_start',
+        'flower_start',
+        'dry_start',
+        'cure_start',
+    ]
+});
 
 // Define keys for automatic extraction (DRY)
 // These must match the keys produced by serializers.py
@@ -817,6 +837,29 @@ const SERVICES = {
     ASK_GROW_ADVICE: 'ask_grow_advice',
     ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
     STRAIN_RECOMMENDATION: 'strain_recommendation',
+};
+/**
+ * Default configuration values to replace magic numbers throughout the codebase.
+ */
+const DEFAULTS = {
+    /** Default number of plant rows in a growspace */
+    ROWS: 4,
+    /** Default number of plants per row */
+    PLANTS_PER_ROW: 4,
+    /** Default view mode for the card */
+    INITIAL_VIEW_MODE: 'standard',
+    /** VPD thresholds */
+    VPD: {
+        TARGET_MIN: 0.8,
+        TARGET_MAX: 1.2,
+        DANGER_MIN: 0.4,
+        DANGER_MAX: 1.6,
+    },
+    /** History chart defaults */
+    CHART: {
+        HOURS_RANGE: 24,
+        REFRESH_INTERVAL_MS: 60000,
+    },
 };
 
 var util;
@@ -4762,8 +4805,12 @@ const GrowspaceAPICollectionSchema = recordType(stringType(), GrowspaceAPIRespon
 
 class DataService {
     constructor(hass) {
-        // Cache for transformed devices locally
-        this._deviceCache = new Map();
+        Object.defineProperty(this, "hass", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         if (hass) {
             this.hass = hass;
         }
@@ -4807,36 +4854,16 @@ class DataService {
             return null;
         }
     }
+    /**
+     * Pure transformation: converts WebSocket data map to GrowspaceDevice array.
+     * Stateless - no internal caching. Caller (GrowspaceStore) is responsible for caching.
+     */
     getGrowspaceDevices(wsDataMap = {}) {
         if (!wsDataMap)
             return [];
-        const activeIds = new Set();
-        // Iterate WebSocket data directly
-        const devices = Object.values(wsDataMap).map((wsData) => {
-            const growspaceId = wsData.growspace_id;
-            // Cache Check
-            const cached = this._deviceCache.get(growspaceId);
-            if (cached && cached.wsData === wsData) {
-                activeIds.add(growspaceId);
-                return cached.result;
-            }
-            // Transform logic (no entity needed)
-            const device = GrowspaceAdapter.transformGrowspace(null, wsData);
-            if (device) {
-                this._deviceCache.set(growspaceId, { wsData, result: device });
-                activeIds.add(growspaceId);
-            }
-            return device;
-        }).filter((d) => d !== null);
-        // Cleanup cache
-        if (this._deviceCache.size > activeIds.size) {
-            for (const id of this._deviceCache.keys()) {
-                if (!activeIds.has(id)) {
-                    this._deviceCache.delete(id);
-                }
-            }
-        }
-        return devices;
+        return Object.values(wsDataMap)
+            .map((wsData) => GrowspaceAdapter.transformGrowspace(null, wsData))
+            .filter((d) => d !== null);
     }
     getGrowspaceId(entity) {
         return entity.attributes?.growspace_id || 'unknown';
@@ -5065,18 +5092,8 @@ class DataService {
         try {
             const payload = {
                 plant_id: plantId,
-                target_growspace_id: target // Pass the ID directly
+                target_growspace_id: target
             };
-            // Legacy mapping if needed (optional safety)
-            const hint = (target || '').toLowerCase();
-            if (hint.includes('dry') && target !== 'dry')
-                payload.target_growspace_id = 'dry';
-            if (hint.includes('cure') && target !== 'cure')
-                payload.target_growspace_id = 'cure';
-            if (hint.includes('mother') && target !== 'mother')
-                payload.target_growspace_id = 'mother';
-            if (hint.includes('clone') && target !== 'clone')
-                payload.target_growspace_id = 'clone';
             const res = await this.hass.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
             console.log('[DataService:harvestPlant] Response:', res);
             return res;
@@ -5708,32 +5725,103 @@ class GrowspaceHistoryController {
         return this._cachedCombinedHistory;
     }
     constructor(host) {
+        Object.defineProperty(this, "host", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         /**
          * Unified history cache keyed by metric name.
          * Replaces individual properties like temperatureHistory, humidityHistory, etc.
          * Access via: this.historyCache['temperature'], this.historyCache['vpd'], etc.
          */
-        this.historyCache = {};
+        Object.defineProperty(this, "historyCache", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {}
+        });
         /**
          * Tracks the last timestamp for each metric to enable delta loading.
          * Key: metric name, Value: ISO timestamp of the last data point
          */
-        this._lastTimestamps = {};
-        this._cachedCombinedHistory = null;
+        Object.defineProperty(this, "_lastTimestamps", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {}
+        });
+        Object.defineProperty(this, "_cachedCombinedHistory", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
         /**
          * Lazy loading flags
          */
-        this.isHistoryLoaded = false;
-        this.isHistoryLoading = false;
-        this.activeEnvGraphs = new Set();
-        this.linkedGraphGroups = [];
-        this.graphRanges = {};
-        this._listeners = [];
+        Object.defineProperty(this, "isHistoryLoaded", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "isHistoryLoading", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "activeEnvGraphs", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "linkedGraphGroups", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: []
+        });
+        Object.defineProperty(this, "graphRanges", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {}
+        });
+        Object.defineProperty(this, "_listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: []
+        });
         // Storage constants
-        this.STORAGE_KEY_PREFIX = 'growspace_history_';
-        this.CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
-        this._refreshInterval = null;
-        this._prevSelectedDevice = null;
+        Object.defineProperty(this, "STORAGE_KEY_PREFIX", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 'growspace_history_'
+        });
+        Object.defineProperty(this, "CACHE_VALIDITY_MS", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 24 * 60 * 60 * 1000
+        }); // 24 hours
+        Object.defineProperty(this, "_refreshInterval", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "_prevSelectedDevice", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
         (this.host = host).addController(this);
     }
     addListener(callback) {
@@ -6986,18 +7074,60 @@ class GraphDataTransformer {
             _GrowspaceEnvChart__canScrollLeft_accessor_storage.set(this, (__runInitializers(this, __hoverTime_extraInitializers), __runInitializers(this, __canScrollLeft_initializers, false)));
             _GrowspaceEnvChart__canScrollRight_accessor_storage.set(this, (__runInitializers(this, __canScrollLeft_extraInitializers), __runInitializers(this, __canScrollRight_initializers, false)));
             _GrowspaceEnvChart__renderSeries_accessor_storage.set(this, (__runInitializers(this, __canScrollRight_extraInitializers), __runInitializers(this, __renderSeries_initializers, [])));
-            this._chipsContainerRef = (__runInitializers(this, __renderSeries_extraInitializers), e$1());
-            this._chartContainerRef = e$1();
+            Object.defineProperty(this, "_chipsContainerRef", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, __renderSeries_extraInitializers), e$1())
+            });
+            Object.defineProperty(this, "_chartContainerRef", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: e$1()
+            });
+            Object.defineProperty(this, "_scrollCheckTimeout", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: void 0
+            });
             // Optimization: Cache bounding rect for tooltip
-            this._cachedChartRect = null;
-            this._tooltipRafId = null;
-            this._invalidateRectCacheBound = () => this._invalidateRectCache();
-            this._onMouseLeave = () => {
-                if (this._tooltipRafId)
-                    cancelAnimationFrame(this._tooltipRafId);
-                this._activeTooltip = null;
-                this._hoverTime = null;
-            };
+            Object.defineProperty(this, "_cachedChartRect", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: null
+            });
+            Object.defineProperty(this, "_tooltipRafId", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: null
+            });
+            Object.defineProperty(this, "_resizeObserver", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: void 0
+            });
+            Object.defineProperty(this, "_invalidateRectCacheBound", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: () => this._invalidateRectCache()
+            });
+            Object.defineProperty(this, "_onMouseLeave", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: () => {
+                    if (this._tooltipRafId)
+                        cancelAnimationFrame(this._tooltipRafId);
+                    this._activeTooltip = null;
+                    this._hoverTime = null;
+                }
+            });
         }
         get hass() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_hass_accessor_storage, "f"); }
         set hass(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_hass_accessor_storage, value, "f"); }
@@ -7089,7 +7219,10 @@ class GraphDataTransformer {
         }
         _getVpdThresholds() {
             const defaultThresholds = {
-                targetMin: 0.8, targetMax: 1.2, dangerMin: 0.4, dangerMax: 1.6
+                targetMin: DEFAULTS.VPD.TARGET_MIN,
+                targetMax: DEFAULTS.VPD.TARGET_MAX,
+                dangerMin: DEFAULTS.VPD.DANGER_MIN,
+                dangerMax: DEFAULTS.VPD.DANGER_MAX,
             };
             const overviewEntity = this.device?.overview_entity_id
                 ? this.hass?.states[this.device.overview_entity_id]
@@ -7099,12 +7232,13 @@ class GraphDataTransformer {
             const attrs = overviewEntity.attributes;
             // Day targets
             const day = {
-                targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? 0.8,
-                targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? 1.2,
-                dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? 0.4,
-                dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? 1.6,
+                targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? DEFAULTS.VPD.TARGET_MIN,
+                targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? DEFAULTS.VPD.TARGET_MAX,
+                dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? DEFAULTS.VPD.DANGER_MIN,
+                dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? DEFAULTS.VPD.DANGER_MAX,
             };
-            // Night targets - fallback to day if not present (backward compat)
+            // Night targets - use day values as sensible defaults if night not explicitly configured
+            // This is intentional default behavior, not backward compatibility
             const night = {
                 targetMin: attrs.night_vpd_target_min ?? day.targetMin,
                 targetMax: attrs.night_vpd_target_max ?? day.targetMax,
@@ -7623,7 +7757,11 @@ class GraphDataTransformer {
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: i$6 `
     :host { display: block; position: relative; }
     .gs-env-graph-card { margin-top: 12px; background: var(--card-background-color, #1a1a1a); border-radius: 12px; padding: 16px; contain: content; }
     .gs-env-graph-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer; }
@@ -7649,7 +7787,8 @@ class GraphDataTransformer {
     .scroll-nav:hover { opacity: 1; }
     .scroll-nav svg { width: 24px; height: 24px; fill: currentColor; }
     @media (pointer: coarse) { .scroll-nav { display: none; } }
-  `;
+  `
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -8748,15 +8887,20 @@ const dialogStyles = [
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        dialogStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
       :host {
         display: block;
         width: 100%;
       }
     `,
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -8872,15 +9016,20 @@ const dialogStyles = [
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        dialogStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
       :host {
         display: block;
         width: 100%;
       }
     `,
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -8954,15 +9103,20 @@ const dialogStyles = [
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        dialogStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
       :host {
         display: block;
         width: 100%;
       }
     `,
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -9042,15 +9196,20 @@ const dialogStyles = [
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        dialogStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
       :host {
         display: block;
         width: 100%;
       }
     `,
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -9388,9 +9547,13 @@ const dialogStyles = [
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        dialogStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
       :host {
         display: block;
       }
@@ -9409,53 +9572,14 @@ const dialogStyles = [
         }
       }
     `,
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return _classThis;
 })();
 
-class PlantClickEvent extends CustomEvent {
-    constructor(plant) {
-        super(PlantClickEvent.TYPE, {
-            detail: { plant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-PlantClickEvent.TYPE = 'plant-click';
-class AddPlantClickEvent extends CustomEvent {
-    constructor(row, col) {
-        super(AddPlantClickEvent.TYPE, {
-            detail: { row, col },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-AddPlantClickEvent.TYPE = 'add-plant-click';
-class PlantDropEvent extends CustomEvent {
-    constructor(originalEvent, targetRow, targetCol, targetPlant, sourcePlant) {
-        super(PlantDropEvent.TYPE, {
-            detail: { originalEvent, targetRow, targetCol, targetPlant, sourcePlant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-PlantDropEvent.TYPE = 'plant-drop';
-class SelectionChangedEvent extends CustomEvent {
-    constructor(selectedPlants) {
-        super(SelectionChangedEvent.TYPE, {
-            detail: { selectedPlants },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-SelectionChangedEvent.TYPE = 'selection-changed';
 class UpdatePlantEvent extends CustomEvent {
     constructor(updates) {
         super(UpdatePlantEvent.TYPE, {
@@ -9465,7 +9589,12 @@ class UpdatePlantEvent extends CustomEvent {
         });
     }
 }
-UpdatePlantEvent.TYPE = 'update-plant';
+Object.defineProperty(UpdatePlantEvent, "TYPE", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 'update-plant'
+});
 class DeletePlantEvent extends CustomEvent {
     constructor(plantId) {
         super(DeletePlantEvent.TYPE, {
@@ -9475,7 +9604,12 @@ class DeletePlantEvent extends CustomEvent {
         });
     }
 }
-DeletePlantEvent.TYPE = 'delete-plant';
+Object.defineProperty(DeletePlantEvent, "TYPE", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 'delete-plant'
+});
 class HarvestPlantEvent extends CustomEvent {
     constructor(plant) {
         super(HarvestPlantEvent.TYPE, {
@@ -9485,7 +9619,12 @@ class HarvestPlantEvent extends CustomEvent {
         });
     }
 }
-HarvestPlantEvent.TYPE = 'harvest-plant';
+Object.defineProperty(HarvestPlantEvent, "TYPE", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 'harvest-plant'
+});
 class FinishDryingEvent extends CustomEvent {
     constructor(plant) {
         super(FinishDryingEvent.TYPE, {
@@ -9495,7 +9634,12 @@ class FinishDryingEvent extends CustomEvent {
         });
     }
 }
-FinishDryingEvent.TYPE = 'finish-drying';
+Object.defineProperty(FinishDryingEvent, "TYPE", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 'finish-drying'
+});
 class TakeCloneEvent extends CustomEvent {
     constructor(plant, numClones) {
         super(TakeCloneEvent.TYPE, {
@@ -9505,7 +9649,12 @@ class TakeCloneEvent extends CustomEvent {
         });
     }
 }
-TakeCloneEvent.TYPE = 'take-clone';
+Object.defineProperty(TakeCloneEvent, "TYPE", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 'take-clone'
+});
 class MoveCloneEvent extends CustomEvent {
     constructor(plant, targetGrowspace) {
         super(MoveCloneEvent.TYPE, {
@@ -9515,7 +9664,12 @@ class MoveCloneEvent extends CustomEvent {
         });
     }
 }
-MoveCloneEvent.TYPE = 'move-clone';
+Object.defineProperty(MoveCloneEvent, "TYPE", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 'move-clone'
+});
 class LibraryExportReadyEvent extends CustomEvent {
     constructor(url) {
         super(LibraryExportReadyEvent.TYPE, {
@@ -9525,7 +9679,12 @@ class LibraryExportReadyEvent extends CustomEvent {
         });
     }
 }
-LibraryExportReadyEvent.TYPE = 'library-export-ready';
+Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 'library-export-ready'
+});
 
 (() => {
     var _PlantOverviewDialog_hass_accessor_storage, _PlantOverviewDialog_open_accessor_storage, _PlantOverviewDialog_dialog_accessor_storage, _PlantOverviewDialog_plant_accessor_storage, _PlantOverviewDialog_growspaceOptions_accessor_storage, _PlantOverviewDialog_editedAttributes_accessor_storage, _PlantOverviewDialog_isEditing_accessor_storage, _PlantOverviewDialog_showAllDates_accessor_storage, _PlantOverviewDialog_cloneTargetId_accessor_storage, _PlantOverviewDialog__showDeleteConfirmation_accessor_storage;
@@ -10145,9 +10304,13 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        dialogStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
       :host {
         display: block;
       }
@@ -10269,7 +10432,8 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         }
       }
     `,
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -10334,7 +10498,12 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
             _StrainLibraryDialog__pendingDeleteKey_accessor_storage.set(this, (__runInitializers(this, __mobileMenuOpen_extraInitializers), __runInitializers(this, __pendingDeleteKey_initializers, null)));
             _StrainLibraryDialog__importReplace_accessor_storage.set(this, (__runInitializers(this, __pendingDeleteKey_extraInitializers), __runInitializers(this, __importReplace_initializers, false)));
             _StrainLibraryDialog__currentPage_accessor_storage.set(this, (__runInitializers(this, __importReplace_extraInitializers), __runInitializers(this, __currentPage_initializers, 1)));
-            this.ITEMS_PER_PAGE = (__runInitializers(this, __currentPage_extraInitializers), 15);
+            Object.defineProperty(this, "ITEMS_PER_PAGE", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, __currentPage_extraInitializers), 15)
+            });
         }
         get open() { return __classPrivateFieldGet(this, _StrainLibraryDialog_open_accessor_storage, "f"); }
         set open(value) { __classPrivateFieldSet(this, _StrainLibraryDialog_open_accessor_storage, value, "f"); }
@@ -11453,9 +11622,13 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        dialogStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
       :host {
         --accent-green: #4caf50;
         /* Using dialogStyles variables where possible */
@@ -11990,7 +12163,8 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         z-index: 25;
       }
     `,
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -12878,7 +13052,12 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
             _ConfigDialog_initialTab_accessor_storage.set(this, (__runInitializers(this, _devices_extraInitializers), __runInitializers(this, _initialTab_initializers, 'environment')));
             _ConfigDialog_currentTab_accessor_storage.set(this, (__runInitializers(this, _initialTab_extraInitializers), __runInitializers(this, _currentTab_initializers, 'environment')));
             _ConfigDialog_environmentData_accessor_storage.set(this, (__runInitializers(this, _currentTab_extraInitializers), __runInitializers(this, _environmentData_initializers, void 0)));
-            this._initialStateApplied = (__runInitializers(this, _environmentData_extraInitializers), false);
+            Object.defineProperty(this, "_initialStateApplied", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, _environmentData_extraInitializers), false)
+            });
             _ConfigDialog_add_name_accessor_storage.set(this, __runInitializers(this, _add_name_initializers, ''));
             _ConfigDialog_add_rows_accessor_storage.set(this, (__runInitializers(this, _add_name_extraInitializers), __runInitializers(this, _add_rows_initializers, 4)));
             _ConfigDialog_add_plants_per_row_accessor_storage.set(this, (__runInitializers(this, _add_rows_extraInitializers), __runInitializers(this, _add_plants_per_row_initializers, 4)));
@@ -13014,9 +13193,13 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        dialogStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
       :host {
         display: block;
       }
@@ -13090,7 +13273,8 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         }
       }
     `,
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -13281,9 +13465,13 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        dialogStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
       :host {
         display: block;
       }
@@ -13343,7 +13531,8 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         flex-direction: column;
       }
     `,
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -13501,9 +13690,13 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        dialogStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
       :host {
         display: block;
       }
@@ -13556,7 +13749,8 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         margin-top: 16px;
       }
     `,
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -13623,7 +13817,11 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: i$6 `
     :host {
       display: inline-block;
       vertical-align: middle;
@@ -13669,7 +13867,8 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
     :host([checked]) .handle {
       transform: translate(20px, -50%); /* 52 - 4 - 24 - 4 = 20px move */
     }
-  `;
+  `
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -14271,7 +14470,12 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
             _IrrigationDialog__drain_times_accessor_storage.set(this, (__runInitializers(this, __irrigation_times_extraInitializers), __runInitializers(this, __drain_times_initializers, [])));
             _IrrigationDialog__adding_irrigation_time_accessor_storage.set(this, (__runInitializers(this, __drain_times_extraInitializers), __runInitializers(this, __adding_irrigation_time_initializers, void 0)));
             _IrrigationDialog__adding_drain_time_accessor_storage.set(this, (__runInitializers(this, __adding_irrigation_time_extraInitializers), __runInitializers(this, __adding_drain_time_initializers, void 0)));
-            this._dataService = __runInitializers(this, __adding_drain_time_extraInitializers);
+            Object.defineProperty(this, "_dataService", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: __runInitializers(this, __adding_drain_time_extraInitializers)
+            });
             _IrrigationDialog__activeTab_accessor_storage.set(this, __runInitializers(this, __activeTab_initializers, 'schedules'));
             _IrrigationDialog__strategy_accessor_storage.set(this, (__runInitializers(this, __activeTab_extraInitializers), __runInitializers(this, __strategy_initializers, {})));
             __runInitializers(this, __strategy_extraInitializers);
@@ -14326,9 +14530,13 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        dialogStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
       :host {
         --mdc-dialog-min-width: 400px;
         --mdc-dialog-max-width: 1000px;
@@ -14415,7 +14623,8 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
         z-index: 10000;
       }
     `,
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -14424,6 +14633,12 @@ LibraryExportReadyEvent.TYPE = 'library-export-ready';
 
 class GrowspaceLogbookController {
     constructor(hass) {
+        Object.defineProperty(this, "hass", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this.hass = hass;
     }
     async fetchEventLog(growspaceId) {
@@ -14475,7 +14690,12 @@ class GrowspaceLogbookController {
             _GrowspaceLogbook__events_accessor_storage.set(this, (__runInitializers(this, _growspaceId_extraInitializers), __runInitializers(this, __events_initializers, [])));
             _GrowspaceLogbook__isLoading_accessor_storage.set(this, (__runInitializers(this, __events_extraInitializers), __runInitializers(this, __isLoading_initializers, false)));
             _GrowspaceLogbook__activeFilter_accessor_storage.set(this, (__runInitializers(this, __isLoading_extraInitializers), __runInitializers(this, __activeFilter_initializers, 'all')));
-            this._controller = __runInitializers(this, __activeFilter_extraInitializers);
+            Object.defineProperty(this, "_controller", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: __runInitializers(this, __activeFilter_extraInitializers)
+            });
         }
         get hass() { return __classPrivateFieldGet(this, _GrowspaceLogbook_hass_accessor_storage, "f"); }
         set hass(value) { __classPrivateFieldSet(this, _GrowspaceLogbook_hass_accessor_storage, value, "f"); }
@@ -14663,9 +14883,13 @@ class GrowspaceLogbookController {
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        dialogStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
       :host {
         display: block;
         height: 100%;
@@ -14786,7 +15010,8 @@ class GrowspaceLogbookController {
         font-style: italic;
       }
     `,
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -14870,9 +15095,13 @@ class GrowspaceLogbookController {
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        dialogStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
       ha-dialog {
         --mdc-dialog-min-width: 90vw;
         --mdc-dialog-max-width: 90vw;
@@ -14908,7 +15137,8 @@ class GrowspaceLogbookController {
         margin-top: 16px;
       }
     `,
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -15193,7 +15423,12 @@ class GrowspaceLogbookController {
             _DialogHost_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
             _DialogHost_store_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
             // Replace @property with StoreController
-            this._activeDialogController = (__runInitializers(this, _store_extraInitializers), new libExports.StoreController(this, $activeDialog));
+            Object.defineProperty(this, "_activeDialogController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, _store_extraInitializers), new libExports.StoreController(this, $activeDialog))
+            });
             _DialogHost_devices_accessor_storage.set(this, __runInitializers(this, _devices_initializers, []));
             _DialogHost_strainLibrary_accessor_storage.set(this, (__runInitializers(this, _devices_extraInitializers), __runInitializers(this, _strainLibrary_initializers, [])));
             __runInitializers(this, _strainLibrary_extraInitializers);
@@ -15271,10 +15506,14 @@ class GrowspaceLogbookController {
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        sharedStyles,
-        uiStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            sharedStyles,
+            uiStyles,
+            i$6 `
       :host {
         display: block;
       }
@@ -15321,7 +15560,8 @@ class GrowspaceLogbookController {
         gap: 8px;
       }
     `
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -15330,20 +15570,93 @@ class GrowspaceLogbookController {
 
 class DragDropController {
     constructor(host) {
-        this._isDraggingMobile = false;
-        this._startX = 0;
-        this._startY = 0;
+        Object.defineProperty(this, "host", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        // State for mobile gestures
+        Object.defineProperty(this, "_longPressTimer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_isDraggingMobile", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "_startX", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "_startY", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
         // Constants
-        this.LONG_PRESS_DELAY = 500;
-        this.DRAG_THRESHOLD = 10;
+        Object.defineProperty(this, "LONG_PRESS_DELAY", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 500
+        });
+        Object.defineProperty(this, "DRAG_THRESHOLD", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 10
+        });
         // Bind methods to preserve 'this'
-        this._handleTouchStartBound = (e) => this.handleTouchStart(e);
-        this._handleTouchMoveBound = (e) => this.handleTouchMove(e);
-        this._handleTouchEndBound = (e) => this.handleTouchEnd(e);
-        this.handleDragStartBound = (e) => this.handleDragStart(e);
-        this.handleDragEndBound = (e) => this.handleDragEnd(e);
-        this.handleDropBound = (e) => this.handleDrop(e);
-        this.handleDragOverBound = (e) => this.handleDragOver(e);
+        Object.defineProperty(this, "_handleTouchStartBound", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (e) => this.handleTouchStart(e)
+        });
+        Object.defineProperty(this, "_handleTouchMoveBound", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (e) => this.handleTouchMove(e)
+        });
+        Object.defineProperty(this, "_handleTouchEndBound", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (e) => this.handleTouchEnd(e)
+        });
+        Object.defineProperty(this, "handleDragStartBound", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (e) => this.handleDragStart(e)
+        });
+        Object.defineProperty(this, "handleDragEndBound", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (e) => this.handleDragEnd(e)
+        });
+        Object.defineProperty(this, "handleDropBound", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (e) => this.handleDrop(e)
+        });
+        Object.defineProperty(this, "handleDragOverBound", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (e) => this.handleDragOver(e)
+        });
         this.host = host;
         host.addController(this);
     }
@@ -15578,7 +15891,12 @@ const plantStatsStyles = i$6 `
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [plantStatsStyles];
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [plantStatsStyles]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -15743,7 +16061,7 @@ const plantCardStyles = i$6 `
 `;
 
 (() => {
-    var _GrowspacePlantCard_plant_accessor_storage, _GrowspacePlantCard_row_accessor_storage, _GrowspacePlantCard_col_accessor_storage, _GrowspacePlantCard_strainLibrary_accessor_storage, _GrowspacePlantCard_isEditMode_accessor_storage, _GrowspacePlantCard_selected_accessor_storage;
+    var _GrowspacePlantCard_plant_accessor_storage, _GrowspacePlantCard_row_accessor_storage, _GrowspacePlantCard_col_accessor_storage, _GrowspacePlantCard_strainLibrary_accessor_storage;
     let _classDecorators = [t$2('growspace-plant-card')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -15761,12 +16079,6 @@ const plantCardStyles = i$6 `
     let _strainLibrary_decorators;
     let _strainLibrary_initializers = [];
     let _strainLibrary_extraInitializers = [];
-    let _isEditMode_decorators;
-    let _isEditMode_initializers = [];
-    let _isEditMode_extraInitializers = [];
-    let _selected_decorators;
-    let _selected_initializers = [];
-    let _selected_extraInitializers = [];
     _classThis = class extends _classSuper {
         constructor() {
             super(...arguments);
@@ -15774,10 +16086,26 @@ const plantCardStyles = i$6 `
             _GrowspacePlantCard_row_accessor_storage.set(this, (__runInitializers(this, _plant_extraInitializers), __runInitializers(this, _row_initializers, void 0)));
             _GrowspacePlantCard_col_accessor_storage.set(this, (__runInitializers(this, _row_extraInitializers), __runInitializers(this, _col_initializers, void 0)));
             _GrowspacePlantCard_strainLibrary_accessor_storage.set(this, (__runInitializers(this, _col_extraInitializers), __runInitializers(this, _strainLibrary_initializers, [])));
-            _GrowspacePlantCard_isEditMode_accessor_storage.set(this, (__runInitializers(this, _strainLibrary_extraInitializers), __runInitializers(this, _isEditMode_initializers, false)));
-            _GrowspacePlantCard_selected_accessor_storage.set(this, (__runInitializers(this, _isEditMode_extraInitializers), __runInitializers(this, _selected_initializers, false)));
+            // UI state via StoreController - direct subscription to atoms
+            Object.defineProperty(this, "_isEditModeController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, _strainLibrary_extraInitializers), new libExports.StoreController(this, $isEditMode))
+            });
+            Object.defineProperty(this, "_selectedPlantsController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $selectedPlants)
+            });
             // Instantiate controller
-            this.dragController = (__runInitializers(this, _selected_extraInitializers), new DragDropController(this));
+            Object.defineProperty(this, "dragController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new DragDropController(this)
+            });
         }
         get plant() { return __classPrivateFieldGet(this, _GrowspacePlantCard_plant_accessor_storage, "f"); }
         set plant(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_plant_accessor_storage, value, "f"); }
@@ -15787,10 +16115,14 @@ const plantCardStyles = i$6 `
         set col(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_col_accessor_storage, value, "f"); }
         get strainLibrary() { return __classPrivateFieldGet(this, _GrowspacePlantCard_strainLibrary_accessor_storage, "f"); }
         set strainLibrary(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_strainLibrary_accessor_storage, value, "f"); }
-        get isEditMode() { return __classPrivateFieldGet(this, _GrowspacePlantCard_isEditMode_accessor_storage, "f"); }
-        set isEditMode(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_isEditMode_accessor_storage, value, "f"); }
-        get selected() { return __classPrivateFieldGet(this, _GrowspacePlantCard_selected_accessor_storage, "f"); }
-        set selected(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_selected_accessor_storage, value, "f"); }
+        // Getters to satisfy DragDropHost interface
+        get isEditMode() {
+            return this._isEditModeController.value;
+        }
+        get selected() {
+            const plantId = this.plant?.attributes?.plant_id;
+            return plantId ? this._selectedPlantsController.value.has(plantId) : false;
+        }
         // Computed display data
         get displayData() {
             if (!this.plant)
@@ -15895,8 +16227,6 @@ const plantCardStyles = i$6 `
     _GrowspacePlantCard_row_accessor_storage = new WeakMap();
     _GrowspacePlantCard_col_accessor_storage = new WeakMap();
     _GrowspacePlantCard_strainLibrary_accessor_storage = new WeakMap();
-    _GrowspacePlantCard_isEditMode_accessor_storage = new WeakMap();
-    _GrowspacePlantCard_selected_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "GrowspacePlantCard");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
@@ -15904,22 +16234,23 @@ const plantCardStyles = i$6 `
         _row_decorators = [n$5({ type: Number })];
         _col_decorators = [n$5({ type: Number })];
         _strainLibrary_decorators = [c$2({ context: strainLibraryContext, subscribe: true })];
-        _isEditMode_decorators = [n$5({ type: Boolean })];
-        _selected_decorators = [n$5({ type: Boolean })];
         __esDecorate(_classThis, null, _plant_decorators, { kind: "accessor", name: "plant", static: false, private: false, access: { has: obj => "plant" in obj, get: obj => obj.plant, set: (obj, value) => { obj.plant = value; } }, metadata: _metadata }, _plant_initializers, _plant_extraInitializers);
         __esDecorate(_classThis, null, _row_decorators, { kind: "accessor", name: "row", static: false, private: false, access: { has: obj => "row" in obj, get: obj => obj.row, set: (obj, value) => { obj.row = value; } }, metadata: _metadata }, _row_initializers, _row_extraInitializers);
         __esDecorate(_classThis, null, _col_decorators, { kind: "accessor", name: "col", static: false, private: false, access: { has: obj => "col" in obj, get: obj => obj.col, set: (obj, value) => { obj.col = value; } }, metadata: _metadata }, _col_initializers, _col_extraInitializers);
         __esDecorate(_classThis, null, _strainLibrary_decorators, { kind: "accessor", name: "strainLibrary", static: false, private: false, access: { has: obj => "strainLibrary" in obj, get: obj => obj.strainLibrary, set: (obj, value) => { obj.strainLibrary = value; } }, metadata: _metadata }, _strainLibrary_initializers, _strainLibrary_extraInitializers);
-        __esDecorate(_classThis, null, _isEditMode_decorators, { kind: "accessor", name: "isEditMode", static: false, private: false, access: { has: obj => "isEditMode" in obj, get: obj => obj.isEditMode, set: (obj, value) => { obj.isEditMode = value; } }, metadata: _metadata }, _isEditMode_initializers, _isEditMode_extraInitializers);
-        __esDecorate(_classThis, null, _selected_decorators, { kind: "accessor", name: "selected", static: false, private: false, access: { has: obj => "selected" in obj, get: obj => obj.selected, set: (obj, value) => { obj.selected = value; } }, metadata: _metadata }, _selected_initializers, _selected_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        sharedStyles,
-        plantCardStyles
-    ];
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            sharedStyles,
+            plantCardStyles
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -16032,9 +16363,13 @@ const plantCardStyles = i$6 `
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        sharedStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            sharedStyles,
+            i$6 `
     :host {
       display: inline-flex;
       vertical-align: middle;
@@ -16139,7 +16474,8 @@ const plantCardStyles = i$6 `
       fill: var(--primary-color, #03a9f4);
     }
   `
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -24479,9 +24815,48 @@ class MetricsUtils {
 
 class ResizeController {
     constructor(host, callback) {
-        this.isMobile = false;
-        this.hasTouch = false;
-        this._checkMobileBound = () => this._checkMobile();
+        Object.defineProperty(this, "host", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "isMobile", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "hasTouch", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "_resizeObserver", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_elementToObserve", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_callback", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_checkMobileBound", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this._checkMobile()
+        });
         this.host = host;
         this._callback = callback;
         host.addController(this);
@@ -24607,21 +24982,89 @@ class ResizeController {
             _GrowspaceHeader__menuOpen_accessor_storage.set(this, (__runInitializers(this, __canScrollDeviceRight_extraInitializers), __runInitializers(this, __menuOpen_initializers, false)));
             _GrowspaceHeader__mobileLink_accessor_storage.set(this, (__runInitializers(this, __menuOpen_extraInitializers), __runInitializers(this, __mobileLink_initializers, false)));
             // Reactivity Controllers
-            this._viewModeController = (__runInitializers(this, __mobileLink_extraInitializers), new libExports.StoreController(this, $viewMode));
-            this._isEditModeController = new libExports.StoreController(this, $isEditMode);
-            this._chipsContainerRef = e$1();
-            this._stageContainerRef = e$1();
-            this._deviceChipsContainerRef = e$1();
-            this._resizeController = new ResizeController(this, () => this._checkScroll());
+            Object.defineProperty(this, "_viewModeController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, __mobileLink_extraInitializers), new libExports.StoreController(this, $viewMode))
+            });
+            Object.defineProperty(this, "_isEditModeController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $isEditMode)
+            });
+            Object.defineProperty(this, "_chipsContainerRef", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: e$1()
+            });
+            Object.defineProperty(this, "_stageContainerRef", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: e$1()
+            });
+            Object.defineProperty(this, "_deviceChipsContainerRef", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: e$1()
+            });
+            Object.defineProperty(this, "_resizeController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new ResizeController(this, () => this._checkScroll())
+            });
             // Cached metrics to avoid re-computation on every render
-            this._mainChips = [];
-            this._deviceChips = [];
-            this._draggedMetric = null;
-            this._handleControllerUpdate = () => {
-                // Explicitly recompute metrics when controller state (like active env graphs) changes
-                this._updateMetrics();
-                this.requestUpdate();
-            };
+            Object.defineProperty(this, "_mainChips", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: []
+            });
+            Object.defineProperty(this, "_deviceChips", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: []
+            });
+            Object.defineProperty(this, "_dominant", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: void 0
+            });
+            Object.defineProperty(this, "_envAttrs", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: void 0
+            });
+            Object.defineProperty(this, "_draggedMetric", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: null
+            });
+            Object.defineProperty(this, "_subscribedController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: void 0
+            });
+            Object.defineProperty(this, "_handleControllerUpdate", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: () => {
+                    // Explicitly recompute metrics when controller state (like active env graphs) changes
+                    this._updateMetrics();
+                    this.requestUpdate();
+                }
+            });
         }
         get hass() { return __classPrivateFieldGet(this, _GrowspaceHeader_hass_accessor_storage, "f"); }
         set hass(value) { __classPrivateFieldSet(this, _GrowspaceHeader_hass_accessor_storage, value, "f"); }
@@ -25245,7 +25688,11 @@ class ResizeController {
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: i$6 `
     :host {
       display: block;
     }
@@ -25715,7 +26162,8 @@ class ResizeController {
     .menu-toggle-switch.active::after {
       transform: translateX(20px);
     }
-  `;
+  `
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -25831,7 +26279,7 @@ const variables = i$6 `
 `;
 
 (() => {
-    var _GrowspaceGrid_store_accessor_storage, _GrowspaceGrid_plants_accessor_storage, _GrowspaceGrid_rows_accessor_storage, _GrowspaceGrid_cols_accessor_storage, _GrowspaceGrid_isEditMode_accessor_storage, _GrowspaceGrid_selectedPlants_accessor_storage, _GrowspaceGrid_compact_accessor_storage, _GrowspaceGrid_isLoading_accessor_storage;
+    var _GrowspaceGrid_store_accessor_storage, _GrowspaceGrid_plants_accessor_storage, _GrowspaceGrid_rows_accessor_storage, _GrowspaceGrid_cols_accessor_storage;
     let _classDecorators = [t$2('growspace-grid')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -25849,18 +26297,6 @@ const variables = i$6 `
     let _cols_decorators;
     let _cols_initializers = [];
     let _cols_extraInitializers = [];
-    let _isEditMode_decorators;
-    let _isEditMode_initializers = [];
-    let _isEditMode_extraInitializers = [];
-    let _selectedPlants_decorators;
-    let _selectedPlants_initializers = [];
-    let _selectedPlants_extraInitializers = [];
-    let _compact_decorators;
-    let _compact_initializers = [];
-    let _compact_extraInitializers = [];
-    let _isLoading_decorators;
-    let _isLoading_initializers = [];
-    let _isLoading_extraInitializers = [];
     _classThis = class extends _classSuper {
         constructor() {
             super(...arguments);
@@ -25868,12 +26304,43 @@ const variables = i$6 `
             _GrowspaceGrid_plants_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _plants_initializers, [])));
             _GrowspaceGrid_rows_accessor_storage.set(this, (__runInitializers(this, _plants_extraInitializers), __runInitializers(this, _rows_initializers, 3)));
             _GrowspaceGrid_cols_accessor_storage.set(this, (__runInitializers(this, _rows_extraInitializers), __runInitializers(this, _cols_initializers, 3)));
-            _GrowspaceGrid_isEditMode_accessor_storage.set(this, (__runInitializers(this, _cols_extraInitializers), __runInitializers(this, _isEditMode_initializers, false)));
-            _GrowspaceGrid_selectedPlants_accessor_storage.set(this, (__runInitializers(this, _isEditMode_extraInitializers), __runInitializers(this, _selectedPlants_initializers, new Set())));
-            _GrowspaceGrid_compact_accessor_storage.set(this, (__runInitializers(this, _selectedPlants_extraInitializers), __runInitializers(this, _compact_initializers, false)));
-            _GrowspaceGrid_isLoading_accessor_storage.set(this, (__runInitializers(this, _compact_extraInitializers), __runInitializers(this, _isLoading_initializers, false)));
-            this._draggedPlant = (__runInitializers(this, _isLoading_extraInitializers), null);
-            this._gridRef = e$1();
+            // UI state via StoreController - direct subscription to atoms
+            Object.defineProperty(this, "_isEditModeController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, _cols_extraInitializers), new libExports.StoreController(this, $isEditMode))
+            });
+            Object.defineProperty(this, "_selectedPlantsController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $selectedPlants)
+            });
+            Object.defineProperty(this, "_isCompactController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $isCompactView)
+            });
+            Object.defineProperty(this, "_isLoadingController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $isLoading)
+            });
+            Object.defineProperty(this, "_draggedPlant", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: null
+            });
+            Object.defineProperty(this, "_gridRef", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: e$1()
+            });
         }
         get store() { return __classPrivateFieldGet(this, _GrowspaceGrid_store_accessor_storage, "f"); }
         set store(value) { __classPrivateFieldSet(this, _GrowspaceGrid_store_accessor_storage, value, "f"); }
@@ -25883,14 +26350,6 @@ const variables = i$6 `
         set rows(value) { __classPrivateFieldSet(this, _GrowspaceGrid_rows_accessor_storage, value, "f"); }
         get cols() { return __classPrivateFieldGet(this, _GrowspaceGrid_cols_accessor_storage, "f"); }
         set cols(value) { __classPrivateFieldSet(this, _GrowspaceGrid_cols_accessor_storage, value, "f"); }
-        get isEditMode() { return __classPrivateFieldGet(this, _GrowspaceGrid_isEditMode_accessor_storage, "f"); }
-        set isEditMode(value) { __classPrivateFieldSet(this, _GrowspaceGrid_isEditMode_accessor_storage, value, "f"); }
-        get selectedPlants() { return __classPrivateFieldGet(this, _GrowspaceGrid_selectedPlants_accessor_storage, "f"); }
-        set selectedPlants(value) { __classPrivateFieldSet(this, _GrowspaceGrid_selectedPlants_accessor_storage, value, "f"); }
-        get compact() { return __classPrivateFieldGet(this, _GrowspaceGrid_compact_accessor_storage, "f"); }
-        set compact(value) { __classPrivateFieldSet(this, _GrowspaceGrid_compact_accessor_storage, value, "f"); }
-        get isLoading() { return __classPrivateFieldGet(this, _GrowspaceGrid_isLoading_accessor_storage, "f"); }
-        set isLoading(value) { __classPrivateFieldSet(this, _GrowspaceGrid_isLoading_accessor_storage, value, "f"); }
         focusPlant(index) {
             const cards = this.shadowRoot?.querySelectorAll('growspace-plant-card');
             if (cards && cards[index]) {
@@ -25987,29 +26446,25 @@ const variables = i$6 `
             const flatGrid = this.plants.flat();
             return x `
       <div
-        class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
+        class="grid ${this._isCompactController.value ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
         style="${gridStyle}"
         @mobile-drop=${this._handleMobileDrop}
         @dragover=${this._handleDragOver}
         ${n$2(this._gridRef)}
       >
-        ${this.isLoading ? this.renderSkeletonGrid() : ''}
-        ${!this.isLoading
+        ${this._isLoadingController.value ? this.renderSkeletonGrid() : ''}
+        ${!this._isLoadingController.value
                 ? c(flatGrid, (plant, index) => plant ? plant.attributes?.plant_id || plant.entity_id : `empty-${index}`, (plant, index) => {
                     const row = Math.floor(index / this.cols) + 1;
                     const col = (index % this.cols) + 1;
                     if (!plant) {
                         return this.renderEmptySlot(row, col);
                     }
-                    const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-                    const isSelected = this.selectedPlants.has(plantId);
                     return x `
                   <growspace-plant-card
                     .plant=${plant}
                     .row=${row}
                     .col=${col}
-                    .isEditMode=${this.isEditMode}
-                    .selected=${isSelected}
                     @plant-click=${() => this._handlePlantClick(plant)}
                     @plant-drag-start=${() => this._handleDragStart(plant)}
                     @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, row, col, plant)}
@@ -26055,10 +26510,6 @@ const variables = i$6 `
     _GrowspaceGrid_plants_accessor_storage = new WeakMap();
     _GrowspaceGrid_rows_accessor_storage = new WeakMap();
     _GrowspaceGrid_cols_accessor_storage = new WeakMap();
-    _GrowspaceGrid_isEditMode_accessor_storage = new WeakMap();
-    _GrowspaceGrid_selectedPlants_accessor_storage = new WeakMap();
-    _GrowspaceGrid_compact_accessor_storage = new WeakMap();
-    _GrowspaceGrid_isLoading_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "GrowspaceGrid");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
@@ -26066,26 +26517,22 @@ const variables = i$6 `
         _plants_decorators = [n$5({ type: Array })];
         _rows_decorators = [n$5({ type: Number })];
         _cols_decorators = [n$5({ type: Number })];
-        _isEditMode_decorators = [n$5({ type: Boolean })];
-        _selectedPlants_decorators = [n$5({ type: Object })];
-        _compact_decorators = [n$5({ type: Boolean })];
-        _isLoading_decorators = [n$5({ type: Boolean })];
         __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
         __esDecorate(_classThis, null, _plants_decorators, { kind: "accessor", name: "plants", static: false, private: false, access: { has: obj => "plants" in obj, get: obj => obj.plants, set: (obj, value) => { obj.plants = value; } }, metadata: _metadata }, _plants_initializers, _plants_extraInitializers);
         __esDecorate(_classThis, null, _rows_decorators, { kind: "accessor", name: "rows", static: false, private: false, access: { has: obj => "rows" in obj, get: obj => obj.rows, set: (obj, value) => { obj.rows = value; } }, metadata: _metadata }, _rows_initializers, _rows_extraInitializers);
         __esDecorate(_classThis, null, _cols_decorators, { kind: "accessor", name: "cols", static: false, private: false, access: { has: obj => "cols" in obj, get: obj => obj.cols, set: (obj, value) => { obj.cols = value; } }, metadata: _metadata }, _cols_initializers, _cols_extraInitializers);
-        __esDecorate(_classThis, null, _isEditMode_decorators, { kind: "accessor", name: "isEditMode", static: false, private: false, access: { has: obj => "isEditMode" in obj, get: obj => obj.isEditMode, set: (obj, value) => { obj.isEditMode = value; } }, metadata: _metadata }, _isEditMode_initializers, _isEditMode_extraInitializers);
-        __esDecorate(_classThis, null, _selectedPlants_decorators, { kind: "accessor", name: "selectedPlants", static: false, private: false, access: { has: obj => "selectedPlants" in obj, get: obj => obj.selectedPlants, set: (obj, value) => { obj.selectedPlants = value; } }, metadata: _metadata }, _selectedPlants_initializers, _selectedPlants_extraInitializers);
-        __esDecorate(_classThis, null, _compact_decorators, { kind: "accessor", name: "compact", static: false, private: false, access: { has: obj => "compact" in obj, get: obj => obj.compact, set: (obj, value) => { obj.compact = value; } }, metadata: _metadata }, _compact_initializers, _compact_extraInitializers);
-        __esDecorate(_classThis, null, _isLoading_decorators, { kind: "accessor", name: "isLoading", static: false, private: false, access: { has: obj => "isLoading" in obj, get: obj => obj.isLoading, set: (obj, value) => { obj.isLoading = value; } }, metadata: _metadata }, _isLoading_initializers, _isLoading_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        variables,
-        sharedStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            variables,
+            sharedStyles,
+            i$6 `
     :host {
       display: block;
     }
@@ -26352,7 +26799,8 @@ const variables = i$6 `
       }
     }
   `
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -27460,8 +27908,6 @@ const growspaceCardStyles = i$6 `
           .plants=${this.grid}
           .rows=${this.rows}
           .cols=${this.cols}
-          .compact=${true}
-          .isLoading=${this.isLoading}
         ></growspace-grid>
 
         <button
@@ -27511,7 +27957,12 @@ const growspaceCardStyles = i$6 `
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [variables, sharedStyles, uiStyles, growspaceCardStyles]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -27585,7 +28036,12 @@ const growspaceCardStyles = i$6 `
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [variables, sharedStyles, uiStyles, growspaceCardStyles]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -27618,8 +28074,13 @@ const growspaceCardStyles = i$6 `
             _GrowspaceAnalytics_historyController_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _historyController_initializers, void 0)));
             _GrowspaceAnalytics_device_accessor_storage.set(this, (__runInitializers(this, _historyController_extraInitializers), __runInitializers(this, _device_initializers, void 0)));
             _GrowspaceAnalytics__itemsToRender_accessor_storage.set(this, (__runInitializers(this, _device_extraInitializers), __runInitializers(this, __itemsToRender_initializers, [])));
-            this._handleControllerUpdate = (__runInitializers(this, __itemsToRender_extraInitializers), () => {
-                this.requestUpdate();
+            Object.defineProperty(this, "_handleControllerUpdate", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, __itemsToRender_extraInitializers), () => {
+                    this.requestUpdate();
+                })
             });
         }
         get hass() { return __classPrivateFieldGet(this, _GrowspaceAnalytics_hass_accessor_storage, "f"); }
@@ -27824,10 +28285,14 @@ const growspaceCardStyles = i$6 `
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [
-        growspaceCardStyles,
-        sharedStyles,
-        i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            growspaceCardStyles,
+            sharedStyles,
+            i$6 `
       :host {
         display: block;
       }
@@ -27840,7 +28305,8 @@ const growspaceCardStyles = i$6 `
         to { transform: rotate(360deg); }
       }
     `,
-    ];
+        ]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -27935,8 +28401,6 @@ const growspaceCardStyles = i$6 `
         .plants=${this.grid}
         .rows=${this.rows}
         .cols=${this.cols}
-        .compact=${this.isCompact}
-        .isLoading=${this.isLoading}
       ></growspace-grid>
 
       ${this.config?.initial_view_mode === 'header'
@@ -28013,7 +28477,12 @@ const growspaceCardStyles = i$6 `
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [variables, sharedStyles, uiStyles, growspaceCardStyles]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -28195,39 +28664,89 @@ const growspaceCardStyles = i$6 `
 
 class GrowspaceStore {
     constructor(host) {
+        Object.defineProperty(this, "host", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "dataService", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "hass", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         // State
-        this.state = new Proxy({
-            devices: [],
-            selectedDevice: null,
-            config: {},
-            strainLibrary: [],
-            optimisticDeletedPlantIds: new Set(),
-        }, {
-            set: (target, prop, value) => {
-                const oldVal = target[prop];
-                if (oldVal !== value) {
-                    target[prop] = value;
-                    this.host.requestUpdate();
+        Object.defineProperty(this, "state", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Proxy({
+                devices: [],
+                selectedDevice: null,
+                config: {},
+                strainLibrary: [],
+                optimisticDeletedPlantIds: new Set(),
+            }, {
+                set: (target, prop, value) => {
+                    const oldVal = target[prop];
+                    if (oldVal !== value) {
+                        target[prop] = value;
+                        this.host.requestUpdate();
+                    }
+                    return true;
                 }
-                return true;
+            })
+        });
+        Object.defineProperty(this, "wsDataCache", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {}
+        });
+        Object.defineProperty(this, "_unsubEvents", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_isFetchingWS", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "_config", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        }); // Store config here
+        Object.defineProperty(this, "handleTakeClone", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (motherPlant, numClones) => {
+                const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
+                this.dataService
+                    .takeClone({
+                    mother_plant_id: plantId,
+                    num_clones: numClones,
+                })
+                    .then(() => {
+                    console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
+                })
+                    .catch((error) => {
+                    console.error(`Failed to take clone: ${error.message}`);
+                });
             }
         });
-        this.wsDataCache = {};
-        this._isFetchingWS = false;
-        this.handleTakeClone = (motherPlant, numClones) => {
-            const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
-            this.dataService
-                .takeClone({
-                mother_plant_id: plantId,
-                num_clones: numClones,
-            })
-                .then(() => {
-                console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
-            })
-                .catch((error) => {
-                console.error(`Failed to take clone: ${error.message}`);
-            });
-        };
         this.host = host;
         host.addController(this);
         console.log('GrowspaceStore initialized with Reactive Proxy');
@@ -28439,19 +28958,14 @@ class GrowspaceStore {
         showToast(message, type); // Update atom
     }
     initializeSelectedDevice(config) {
-        this.state.config = config; // Save config for later use
-        // Handle View Mode Initialization
+        this.state.config = config;
+        // Set view mode from config
         if (config?.initial_view_mode) {
             setViewMode(config.initial_view_mode);
-        }
-        else if (config?.compact) {
-            // Backward compatibility
-            setViewMode('compact');
         }
         // Trigger update logic in case devices are already loaded
         this._updateDevicesState();
     }
-    // ...
     fetchStrainLibrary(force = false) {
         return this._fetchStrainLibraryImpl(force);
     }
@@ -29085,16 +29599,59 @@ class GrowspaceStore {
 
 class GrowspaceGridController {
     constructor(host, store) {
+        Object.defineProperty(this, "host", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "store", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         // Cached state
-        this.activeDevices = [];
-        this.gridLayout = {
-            effectiveRows: 0,
-            grid: [],
-        };
+        Object.defineProperty(this, "activeDevices", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: []
+        });
+        Object.defineProperty(this, "gridLayout", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {
+                effectiveRows: 0,
+                grid: [],
+            }
+        });
+        Object.defineProperty(this, "growspaceOptions", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {}
+        });
         // Memoization references
-        this._lastDevicesRef = null;
-        this._lastSelectedDeviceRef = null;
-        this._lastDeletedIdsRef = null;
+        Object.defineProperty(this, "_lastDevicesRef", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "_lastSelectedDeviceRef", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "_lastDeletedIdsRef", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
         this.host = host;
         this.store = store;
         host.addController(this);
@@ -29132,7 +29689,12 @@ class GrowspaceGridController {
                 return !this.store.state.optimisticDeletedPlantIds.has(pId);
             }),
         }));
-        // 2. Recalculate Grid Layout
+        // 2. Compute growspace options (memoized, no longer in render)
+        this.growspaceOptions = {};
+        this.activeDevices.forEach((d) => {
+            this.growspaceOptions[d.device_id] = d.name;
+        });
+        // 3. Recalculate Grid Layout
         const selectedDeviceId = this.store.state.selectedDevice;
         const selectedDeviceData = this.activeDevices.find((d) => d.device_id === selectedDeviceId);
         if (selectedDeviceData) {
@@ -29173,21 +29735,71 @@ let GrowspaceManagerCard = (() => {
             super(...arguments);
             _GrowspaceManagerCard_store_accessor_storage.set(this, __runInitializers(this, _store_initializers, new GrowspaceStore(this)));
             // UI Store Controllers
-            this._viewModeController = (__runInitializers(this, _store_extraInitializers), new libExports.StoreController(this, $viewMode));
-            this._isLoadingController = new libExports.StoreController(this, $isLoading);
-            this._focusedPlantIndexController = new libExports.StoreController(this, $focusedPlantIndex);
-            this._activeDialogController = new libExports.StoreController(this, $activeDialog);
-            this._isEditModeController = new libExports.StoreController(this, $isEditMode);
-            this._isCompactController = new libExports.StoreController(this, $isCompactView); // Computed
-            this._selectedPlantsController = new libExports.StoreController(this, $selectedPlants);
-            this._notificationController = new libExports.StoreController(this, $notification);
+            Object.defineProperty(this, "_viewModeController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, _store_extraInitializers), new libExports.StoreController(this, $viewMode))
+            });
+            Object.defineProperty(this, "_isLoadingController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $isLoading)
+            });
+            Object.defineProperty(this, "_focusedPlantIndexController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $focusedPlantIndex)
+            });
+            Object.defineProperty(this, "_activeDialogController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $activeDialog)
+            });
+            Object.defineProperty(this, "_isEditModeController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $isEditMode)
+            });
+            Object.defineProperty(this, "_isCompactController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $isCompactView)
+            }); // Computed
+            Object.defineProperty(this, "_selectedPlantsController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $selectedPlants)
+            });
+            Object.defineProperty(this, "_notificationController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $notification)
+            });
             _GrowspaceManagerCard_historyController_accessor_storage.set(this, __runInitializers(this, _historyController_initializers, new GrowspaceHistoryController(this)));
-            this.gridController = (__runInitializers(this, _historyController_extraInitializers), new GrowspaceGridController(this, this.store));
+            Object.defineProperty(this, "gridController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, _historyController_extraInitializers), new GrowspaceGridController(this, this.store))
+            });
             _GrowspaceManagerCard__strainLibrary_accessor_storage.set(this, __runInitializers(this, __strainLibrary_initializers, []));
             _GrowspaceManagerCard_hass_accessor_storage.set(this, (__runInitializers(this, __strainLibrary_extraInitializers), __runInitializers(this, _hass_initializers, void 0)));
             _GrowspaceManagerCard__config_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, __config_initializers, void 0)));
-            this._handleLibraryExportReady = (__runInitializers(this, __config_extraInitializers), (e) => {
-                this._downloadFile(e.detail.url);
+            Object.defineProperty(this, "_handleLibraryExportReady", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, __config_extraInitializers), (e) => {
+                    this._downloadFile(e.detail.url);
+                })
             });
         }
         get store() { return __classPrivateFieldGet(this, _GrowspaceManagerCard_store_accessor_storage, "f"); }
@@ -29324,11 +29936,8 @@ let GrowspaceManagerCard = (() => {
             if (!selectedDeviceData) {
                 return x `<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
             }
-            const growspaceOptions = {};
-            devices.forEach((d) => {
-                growspaceOptions[d.device_id] = d.name;
-            });
-            // Calculate grid layout - now using cached value from willUpdate
+            // Use memoized values from grid controller
+            const growspaceOptions = this.gridController.growspaceOptions;
             const { effectiveRows, grid } = this.gridController.gridLayout;
             const isWide = selectedDeviceData.plants_per_row > 7;
             // const viewMode unused here if passed directly to switcher, but let's keep var if check needed logic
@@ -29401,7 +30010,12 @@ let GrowspaceManagerCard = (() => {
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [variables, sharedStyles, uiStyles, growspaceCardStyles]
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -29410,7 +30024,18 @@ let GrowspaceManagerCard = (() => {
 
 class HassSubscriptionController {
     constructor(host) {
-        this._unsubscribes = [];
+        Object.defineProperty(this, "_host", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_unsubscribes", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: []
+        });
         this._host = host;
         host.addController(this);
     }
@@ -29478,8 +30103,18 @@ let GrowspaceManagerCardEditor = (() => {
             _GrowspaceManagerCardEditor_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
             _GrowspaceManagerCardEditor__config_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, __config_initializers, void 0)));
             _GrowspaceManagerCardEditor__growspaceOptions_accessor_storage.set(this, (__runInitializers(this, __config_extraInitializers), __runInitializers(this, __growspaceOptions_initializers, [])));
-            this._subscriptionController = (__runInitializers(this, __growspaceOptions_extraInitializers), new HassSubscriptionController(this));
-            this._hasSubscription = false;
+            Object.defineProperty(this, "_subscriptionController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, __growspaceOptions_extraInitializers), new HassSubscriptionController(this))
+            });
+            Object.defineProperty(this, "_hasSubscription", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: false
+            });
         }
         get hass() { return __classPrivateFieldGet(this, _GrowspaceManagerCardEditor_hass_accessor_storage, "f"); }
         set hass(value) { __classPrivateFieldSet(this, _GrowspaceManagerCardEditor_hass_accessor_storage, value, "f"); }
@@ -29593,7 +30228,11 @@ let GrowspaceManagerCardEditor = (() => {
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.styles = i$6 `
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: i$6 `
     .card-config {
       display: flex;
       flex-direction: column;
@@ -29617,7 +30256,8 @@ let GrowspaceManagerCardEditor = (() => {
       color: var(--primary-text-color);
       font-size: 1rem;
     }
-  `;
+  `
+    });
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();

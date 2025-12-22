@@ -285,21 +285,16 @@ export class GrowspaceStore implements ReactiveController {
     }
 
     initializeSelectedDevice(config: GrowspaceManagerCardConfig) {
-        this.state.config = config; // Save config for later use
+        this.state.config = config;
 
-        // Handle View Mode Initialization
+        // Set view mode from config
         if (config?.initial_view_mode) {
             uiStore.setViewMode(config.initial_view_mode);
-        } else if (config?.compact) {
-            // Backward compatibility
-            uiStore.setViewMode('compact');
         }
 
         // Trigger update logic in case devices are already loaded
         this._updateDevicesState();
     }
-
-    // ...
 
     fetchStrainLibrary(force: boolean = false) {
         return this._fetchStrainLibraryImpl(force);

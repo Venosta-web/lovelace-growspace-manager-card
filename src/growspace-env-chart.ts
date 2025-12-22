@@ -14,7 +14,7 @@ import {
 } from './types';
 import { ChartUtils } from './utils/chart-utils';
 import { GraphDataTransformer } from './graph-data-transformer';
-import { SENSOR_CHART_DEFAULTS, METRIC_CONFIG } from './constants';
+import { SENSOR_CHART_DEFAULTS, METRIC_CONFIG, DEFAULTS } from './constants';
 
 import { consume } from '@lit/context';
 import { hassContext } from './context';
@@ -118,7 +118,10 @@ export class GrowspaceEnvChart extends LitElement {
 
   private _getVpdThresholds() {
     const defaultThresholds = {
-      targetMin: 0.8, targetMax: 1.2, dangerMin: 0.4, dangerMax: 1.6
+      targetMin: DEFAULTS.VPD.TARGET_MIN,
+      targetMax: DEFAULTS.VPD.TARGET_MAX,
+      dangerMin: DEFAULTS.VPD.DANGER_MIN,
+      dangerMax: DEFAULTS.VPD.DANGER_MAX,
     };
 
     const overviewEntity = this.device?.overview_entity_id
@@ -131,13 +134,14 @@ export class GrowspaceEnvChart extends LitElement {
 
     // Day targets
     const day = {
-      targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? 0.8,
-      targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? 1.2,
-      dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? 0.4,
-      dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? 1.6,
+      targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? DEFAULTS.VPD.TARGET_MIN,
+      targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? DEFAULTS.VPD.TARGET_MAX,
+      dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? DEFAULTS.VPD.DANGER_MIN,
+      dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? DEFAULTS.VPD.DANGER_MAX,
     };
 
-    // Night targets - fallback to day if not present (backward compat)
+    // Night targets - use day values as sensible defaults if night not explicitly configured
+    // This is intentional default behavior, not backward compatibility
     const night = {
       targetMin: attrs.night_vpd_target_min ?? day.targetMin,
       targetMax: attrs.night_vpd_target_max ?? day.targetMax,

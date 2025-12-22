@@ -56,46 +56,16 @@ export class DataService {
     }
   }
 
-  // Cache for transformed devices locally
-  private _deviceCache = new Map<string, { wsData: GrowspaceAPIResponse; result: GrowspaceDevice }>();
-
+  /**
+   * Pure transformation: converts WebSocket data map to GrowspaceDevice array.
+   * Stateless - no internal caching. Caller (GrowspaceStore) is responsible for caching.
+   */
   getGrowspaceDevices(wsDataMap: Record<string, GrowspaceAPIResponse> = {}): GrowspaceDevice[] {
     if (!wsDataMap) return [];
 
-    const activeIds = new Set<string>();
-
-    // Iterate WebSocket data directly
-    const devices = Object.values(wsDataMap).map((wsData) => {
-      const growspaceId = wsData.growspace_id;
-
-      // Cache Check
-      const cached = this._deviceCache.get(growspaceId);
-      if (cached && cached.wsData === wsData) {
-        activeIds.add(growspaceId);
-        return cached.result;
-      }
-
-      // Transform logic (no entity needed)
-      const device = GrowspaceAdapter.transformGrowspace(null, wsData);
-
-      if (device) {
-        this._deviceCache.set(growspaceId, { wsData, result: device });
-        activeIds.add(growspaceId);
-      }
-
-      return device;
-    }).filter((d): d is GrowspaceDevice => d !== null);
-
-    // Cleanup cache
-    if (this._deviceCache.size > activeIds.size) {
-      for (const id of this._deviceCache.keys()) {
-        if (!activeIds.has(id)) {
-          this._deviceCache.delete(id);
-        }
-      }
-    }
-
-    return devices;
+    return Object.values(wsDataMap)
+      .map((wsData) => GrowspaceAdapter.transformGrowspace(null, wsData))
+      .filter((d): d is GrowspaceDevice => d !== null);
   }
 
   private getGrowspaceId(entity: any): string {
@@ -366,17 +336,10 @@ export class DataService {
   async harvestPlant(plantId: string, target: string = 'dry') {
     console.log('[DataService:harvestPlant] Harvesting plant:', plantId, '→ target:', target);
     try {
-      const payload: any = {
+      const payload = {
         plant_id: plantId,
-        target_growspace_id: target // Pass the ID directly
+        target_growspace_id: target
       };
-
-      // Legacy mapping if needed (optional safety)
-      const hint = (target || '').toLowerCase();
-      if (hint.includes('dry') && target !== 'dry') payload.target_growspace_id = 'dry';
-      if (hint.includes('cure') && target !== 'cure') payload.target_growspace_id = 'cure';
-      if (hint.includes('mother') && target !== 'mother') payload.target_growspace_id = 'mother';
-      if (hint.includes('clone') && target !== 'clone') payload.target_growspace_id = 'clone';
 
       const res = await this.hass.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
       console.log('[DataService:harvestPlant] Response:', res);

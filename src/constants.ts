@@ -166,3 +166,27 @@ export const SERVICES = {
   ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
   STRAIN_RECOMMENDATION: 'strain_recommendation',
 };
+
+/**
+ * Default configuration values to replace magic numbers throughout the codebase.
+ */
+export const DEFAULTS = {
+  /** Default number of plant rows in a growspace */
+  ROWS: 4,
+  /** Default number of plants per row */
+  PLANTS_PER_ROW: 4,
+  /** Default view mode for the card */
+  INITIAL_VIEW_MODE: 'standard' as const,
+  /** VPD thresholds */
+  VPD: {
+    TARGET_MIN: 0.8,
+    TARGET_MAX: 1.2,
+    DANGER_MIN: 0.4,
+    DANGER_MAX: 1.6,
+  },
+  /** History chart defaults */
+  CHART: {
+    HOURS_RANGE: 24,
+    REFRESH_INTERVAL_MS: 60000,
+  },
+} as const;

@@ -13,6 +13,7 @@ export class GrowspaceGridController implements ReactiveController {
         effectiveRows: 0,
         grid: [],
     };
+    public growspaceOptions: Record<string, string> = {};
 
     // Memoization references
     private _lastDevicesRef: GrowspaceDevice[] | null = null;
@@ -65,7 +66,13 @@ export class GrowspaceGridController implements ReactiveController {
             }),
         }));
 
-        // 2. Recalculate Grid Layout
+        // 2. Compute growspace options (memoized, no longer in render)
+        this.growspaceOptions = {};
+        this.activeDevices.forEach((d) => {
+            this.growspaceOptions[d.device_id] = d.name;
+        });
+
+        // 3. Recalculate Grid Layout
         const selectedDeviceId = this.store.state.selectedDevice;
         const selectedDeviceData = this.activeDevices.find(
             (d) => d.device_id === selectedDeviceId
@@ -84,4 +91,5 @@ export class GrowspaceGridController implements ReactiveController {
         }
     }
 }
+
 

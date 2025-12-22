@@ -225,12 +225,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       return html`<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
     }
 
-    const growspaceOptions: Record<string, string> = {};
-    devices.forEach((d) => {
-      growspaceOptions[d.device_id] = d.name;
-    });
-
-    // Calculate grid layout - now using cached value from willUpdate
+    // Use memoized values from grid controller
+    const growspaceOptions = this.gridController.growspaceOptions;
     const { effectiveRows, grid } = this.gridController.gridLayout;
     const isWide = selectedDeviceData.plants_per_row > 7;
     // const viewMode unused here if passed directly to switcher, but let's keep var if check needed logic
