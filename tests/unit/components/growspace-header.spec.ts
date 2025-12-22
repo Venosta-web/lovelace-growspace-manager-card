@@ -665,6 +665,9 @@ describe('GrowspaceHeader', () => {
         });
 
         it('should clean up on disconnectedCallback', () => {
+            // Setup subscription first
+            (element as any)._updateSubscription();
+
             const spy = vi.spyOn(mockHistory, 'removeListener');
             (element as any).disconnectedCallback();
 

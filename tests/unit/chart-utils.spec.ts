@@ -125,7 +125,7 @@ describe('ChartUtils', () => {
             expect(path).toBe('M 0,100 L 50,100 L 50,0 L 100,0 L 100,100');
         });
 
-        it('should downsample path points based on timeRange', () => {
+        it('should use all path points (no downsampling) based on timeRange', () => {
             const baseTime = new Date('2023-01-01T10:00:00Z').getTime();
             const data: { time: number; value: number }[] = [];
             for (let i = 0; i <= 60; i++) {
@@ -135,12 +135,11 @@ describe('ChartUtils', () => {
                 });
             }
 
-            // 24h -> Every 15 mins (Default for generatePathFromValues - Unchanged)
-            // 0, 15, 30, 45, 60 -> 5 points
+            // No downsampling: 61 points
             const path24h = ChartUtils.generatePathFromValues(data, 100, 50, {
                 min: 0, max: 60, startTime: baseTime, endTime: baseTime + 60 * 60000, timeRange: '24h'
             });
-            expect(path24h.split(' L ').length).toBe(5);
+            expect(path24h.split(' L ').length).toBe(61);
         });
     });
 
@@ -287,6 +286,13 @@ describe('ChartUtils', () => {
             });
 
             describe('generatePathFromValues Time Ranges', () => {
+                const generateValueData = (count: number, intervalMin: number = 1) => {
+                    const baseTime = new Date('2023-01-01T00:00:00Z').getTime();
+                    return Array.from({ length: count }, (_, i) => ({
+                        value: 10,
+                        time: baseTime + i * intervalMin * 60000
+                    }));
+                };
                 const data = generateValueData(361);
 
                 it('should handle "1h" range', () => {
@@ -297,20 +303,20 @@ describe('ChartUtils', () => {
 
                 it('should handle "6h" range', () => {
                     const path = ChartUtils.generatePathFromValues(data, 100, 50, { timeRange: '6h' });
-                    // 73 points expected
-                    expect(path.split(' L ').length).toBe(73);
+                    // No downsampling: 361 points
+                    expect(path.split(' L ').length).toBe(361);
                 });
 
                 it('should handle "7d" range', () => {
                     const path = ChartUtils.generatePathFromValues(data, 100, 50, { timeRange: '7d' });
-                    // 0, 60, ... 360. 7 points.
-                    expect(path.split(' L ').length).toBe(7);
+                    // No downsampling: 361 points
+                    expect(path.split(' L ').length).toBe(361);
                 });
 
                 it('should fallback to default for unknown range', () => {
                     const path = ChartUtils.generatePathFromValues(data, 100, 50, { timeRange: 'foo' as any });
-                    // 15 min default. 25 points.
-                    expect(path.split(' L ').length).toBe(25);
+                    // No downsampling: 361 points
+                    expect(path.split(' L ').length).toBe(361);
                 });
             });
 

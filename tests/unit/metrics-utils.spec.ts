@@ -1,5 +1,5 @@
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { MetricsUtils } from '../../src/utils/metrics-utils';
 import { PlantStage } from '../../src/types';
 
@@ -285,6 +285,12 @@ describe('MetricsUtils', () => {
     });
 
     it('should sort next irrigation events correctly in getNextEvent', () => {
+        // Freeze time at 10:00 to ensure 13:00 and 14:00 are in the future
+        vi.useFakeTimers();
+        const mockDate = new Date();
+        mockDate.setHours(10, 0, 0, 0);
+        vi.setSystemTime(mockDate);
+
         const simpleDevice = {
             ...mockDevice,
             irrigation_config: {
@@ -298,6 +304,8 @@ describe('MetricsUtils', () => {
         const res = MetricsUtils.computeHeaderMetrics(mockHass, simpleDevice, new Set(), []);
         const chip = res.mainChips.find(c => c.key === 'irrigation');
         expect(chip.value).toBe('13:00');
+
+        vi.useRealTimers();
     });
 
     it('should handle legacy environment attributes correctly (slug matching)', () => {

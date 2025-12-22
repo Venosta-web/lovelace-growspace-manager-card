@@ -180,6 +180,8 @@ describe('GrowspaceHistoryController', () => {
 
         it('should handle host updates resetting state for new device', async () => {
             const spy = vi.spyOn(controller as any, '_notifyUpdate');
+            // Mock storage load to return false (not found) so we can test reset logic properly
+            vi.spyOn(controller as any, '_loadFromStorage').mockReturnValue(false);
 
             // Initial update - previous selection was null/undefined
             await controller.hostUpdate();
