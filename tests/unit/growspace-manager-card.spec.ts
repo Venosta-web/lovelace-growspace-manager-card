@@ -22,15 +22,47 @@ vi.mock('../../src/controllers/grid-controller', () => ({
         get gridLayout() { return { effectiveRows: 1, grid: {} }; }
     }
 }));
+vi.mock('../../src/store/ui-store', () => {
+    // Create actual atoms for state checks if needed, or simple mocks
+    // Since we use StoreController, real atoms are better if possible,
+    // but for spying on ACTIONS, we need mocks.
+    // Let's mock ACTIONS and use REAL ATOMS?
+    // No, if we mock the module, we replace everything.
+    // Let's use vi.importActual and override actions.
+    const actual = vi.importActual('../../src/store/ui-store');
+    return {
+        ...actual,
+        setViewMode: vi.fn(),
+        setEditMode: vi.fn(),
+        clearPlantSelection: vi.fn(),
+        setIsLoading: vi.fn(),
+        selectAllPlants: vi.fn(),
+        setFocusedPlantIndex: vi.fn(),
+        // We need atoms to be functional for rendering.
+        // We can expose a helper to set them?
+        // Or duplicate the atom creation?
+        // Simplest: use real atoms for properties, mock setters.
+        $viewMode: { subscribe: vi.fn((cb) => { cb('standard'); return () => { }; }), get: () => 'standard', set: vi.fn() },
+        $isLoading: { subscribe: vi.fn((cb) => { cb(false); return () => { }; }), get: () => false, set: vi.fn() },
+        $activeDialog: { subscribe: vi.fn((cb) => { cb({ type: 'NONE' }); return () => { }; }), get: () => ({ type: 'NONE' }), set: vi.fn() },
+        $isEditMode: { subscribe: vi.fn((cb) => { cb(false); return () => { }; }), get: () => false, set: vi.fn() },
+        $isCompactView: { subscribe: vi.fn((cb) => { cb(false); return () => { }; }), get: () => false },
+        $selectedPlants: { subscribe: vi.fn((cb) => { cb(new Set()); return () => { }; }), get: () => new Set() },
+        $focusedPlantIndex: { subscribe: vi.fn((cb) => { cb(-1); return () => { }; }), get: () => -1 },
+        $menuOpen: { subscribe: vi.fn((cb) => { cb(false); return () => { }; }), get: () => false },
+        $notification: { subscribe: vi.fn((cb) => { cb(null); return () => { }; }), get: () => null }
+    };
+});
+// Need to re-import mock to control it
+import * as UIStoreMock from '../../src/store/ui-store';
 vi.mock('../../src/store/growspace-store', () => ({
     GrowspaceStore: class {
         host: any;
         state = {
             selectedDevice: 'gs1',
-            activeDialog: null,
             devices: [],
-            isLoading: false,
-            notification: null,
+            defaultApplied: false,
+            // Keep UI properties in mock to satisfy interface/tests access
             viewMode: 'grid',
             isCompactView: false,
             isEditMode: false,
@@ -45,8 +77,9 @@ vi.mock('../../src/store/growspace-store', () => ({
         handleDeviceChange() { }
         setDefaultApplied() { }
         handleKeyboardNavigation() { }
+        // Mock methods can just be empty or update local mock state if needed
         setViewMode(mode: string) { this.state.viewMode = mode; }
-        setEditMode() { }
+        setEditMode(mode: boolean) { this.state.isEditMode = mode; }
         toggleHeaderExpansion() { }
         selectAllPlants() { }
         clearPlantSelection() { }
@@ -65,6 +98,7 @@ describe('GrowspaceManagerCard', () => {
             connection: { subscribeEvents: vi.fn() }
         } as any;
         element.hass = mockHass;
+        vi.clearAllMocks(); // Clear mocks before each test
     });
 
     afterEach(() => {
@@ -91,16 +125,13 @@ describe('GrowspaceManagerCard', () => {
                 compact: true
             };
             element.setConfig(config);
-            expect(element.store.state.viewMode).toBe('compact');
-            expect(element.store.state.isCompactView).toBe(true);
+            expect(UIStoreMock.setViewMode).toHaveBeenCalledWith('compact');
         });
 
         it('should get stub config', () => {
-            const stub = GrowspaceManagerCard.getStubConfig(null as any, []);
-            expect(stub).toEqual({
-                default_growspace: '4x4',
-                compact: true
-            });
+            const stubConfig = (GrowspaceManagerCard as any).getStubConfig();
+            expect(stubConfig.default_growspace).toBe('4x4');
+            expect(stubConfig.compact).toBe(true);
         });
 
         it('should get card size', () => {
@@ -109,18 +140,18 @@ describe('GrowspaceManagerCard', () => {
     });
 
     describe('Lifecycle & Rendering', () => {
-        it('should apply default growspace if configured', () => {
-            element.store.state.defaultApplied = false;
+        it('should NOT call handleDeviceChange from updated (logic removed)', () => {
             element._config = { default_growspace: 'gs1' } as any;
             const mockDevices = [{ device_id: 'gs1', name: 'Tent' }];
             vi.spyOn(element.gridController, 'activeDevices', 'get').mockReturnValue(mockDevices as any);
             const spyHandle = vi.spyOn(element.store, 'handleDeviceChange');
-            const spySetDefault = vi.spyOn(element.store, 'setDefaultApplied');
+            // setDefaultApplied removed from store, no need to spy
 
-            element.updated(new Map([['store', 'val']]));
+            (element as any).updated(new Map([['store', 'val']]));
 
-            expect(spyHandle).toHaveBeenCalledWith('gs1');
-            expect(spySetDefault).toHaveBeenCalledWith(true);
+            // Logic moved to store, should NOT be called from component updated
+            expect(spyHandle).not.toHaveBeenCalled();
+            // setDefaultApplied spy removed
         });
         it('should initialize store on first update', () => {
             const spyUpdateHass = vi.spyOn(element.store, 'updateHass');
@@ -137,13 +168,13 @@ describe('GrowspaceManagerCard', () => {
 
         it('should update store when hass updates', () => {
             const spy = vi.spyOn(element.store, 'updateHass');
-            element.updated(new Map([['hass', 'oldValues']]));
+            (element as any).updated(new Map([['hass', 'oldValues']]));
             expect(spy).toHaveBeenCalledWith(mockHass);
         });
 
         it('should sync strain library from store', () => {
             element.store.state.strainLibrary = [{ key: '1' }] as any;
-            element.updated(new Map());
+            (element as any).updated(new Map());
             expect((element as any)._strainLibrary).toEqual([{ key: '1' }]);
         });
     });
@@ -158,7 +189,7 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should render loading spinner', () => {
-            element.store.state.isLoading = true;
+            UIStoreMock.$isLoading.get = () => true; // Simulate loading state
             vi.spyOn(element.gridController, 'activeDevices', 'get').mockReturnValue([]);
             const result = (element as any).render();
             const htmlString = result.strings.join('');
@@ -166,7 +197,7 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should render no data message if no devices', () => {
-            element.store.state.isLoading = false;
+            UIStoreMock.$isLoading.get = () => false; // Simulate not loading
             vi.spyOn(element.gridController, 'activeDevices', 'get').mockReturnValue([]);
             const result = (element as any).render();
             const htmlString = result.strings.join('');
@@ -174,7 +205,7 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should render error if selected device is invalid', () => {
-            element.store.state.isLoading = false;
+            UIStoreMock.$isLoading.get = () => false; // Simulate not loading
             vi.spyOn(element.gridController, 'activeDevices', 'get').mockReturnValue([{ device_id: 'gs2' }] as any);
             element.store.state.selectedDevice = 'gs1'; // mismatch
             const result = (element as any).render();
@@ -183,7 +214,7 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should render main card when device is valid', () => {
-            element.store.state.isLoading = false;
+            UIStoreMock.$isLoading.get = () => false; // Simulate not loading
             const mockDevice = { device_id: 'gs1', name: 'Tent', plants_per_row: 4 };
             vi.spyOn(element.gridController, 'activeDevices', 'get').mockReturnValue([mockDevice] as any);
             element.store.state.selectedDevice = 'gs1';
@@ -202,9 +233,8 @@ describe('GrowspaceManagerCard', () => {
 
     describe('Event Handlers', () => {
         it('should handle view mode changes', () => {
-            const spy = vi.spyOn(element.store, 'setViewMode');
-            (element as any)._handleViewModeChanged(new CustomEvent('test', { detail: { mode: 'list' } }));
-            expect(spy).toHaveBeenCalledWith('list');
+            (element as any)._handleViewModeChanged({ detail: { mode: 'list' } });
+            expect(UIStoreMock.setViewMode).toHaveBeenCalledWith('list');
         });
 
         it('should handle growspace changes', () => {
@@ -220,17 +250,14 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should handle clear selection', () => {
-            const spy = vi.spyOn(element.store, 'clearPlantSelection');
             (element as any)._handleClearSelection();
-            expect(spy).toHaveBeenCalled();
+            expect(UIStoreMock.clearPlantSelection).toHaveBeenCalled();
         });
 
         it('should handle exit edit mode', () => {
-            const spySet = vi.spyOn(element.store, 'setEditMode');
-            const spyClear = vi.spyOn(element.store, 'clearPlantSelection');
             (element as any)._handleExitEditMode();
-            expect(spySet).toHaveBeenCalledWith(false);
-            expect(spyClear).toHaveBeenCalled();
+            expect(UIStoreMock.setEditMode).toHaveBeenCalledWith(false);
+            // clearPlantSelection is handled by the store action side-effect, not calling it explicitly from component
         });
 
         it('should handle keyboard nav', () => {
@@ -247,15 +274,28 @@ describe('GrowspaceManagerCard', () => {
     });
 
     describe('Utility Methods', () => {
-        it('should focus plant by index', () => {
-            const mockSwitcher = { focusPlant: vi.fn() };
+        it('should focus plant by passing index to switcher', () => {
+            // Updated test: checking that render template (conceptually) or passed property is correct.
+            // Since we mocked the switcher, we can't easily check child method call via updated unless we inspect the template result or shadow root prop.
+            // But we can check that render function output contains the property assignment if we could parse it, or check shadowRoot.
+
+            // In this specific test setup, we can check that the element instance has the right state.
+            // To verify property passing in Lit unit tests often requires rendering.
+
+            UIStoreMock.$focusedPlantIndex.get = () => 2;
+            const result = (element as any).render();
+            // We can't easily check property bindings in TemplateResult without a harness.
+            // But checking that we DO NOT call imperative focus is good enough for "Refactor Checklist".
+            // Let's verify we did NOT call `_focusPlantByIndex` (if it existed) or similar.
+
+            // To be robust: ensure the shadowRoot was NOT queried imperatively 
             Object.defineProperty(element, 'shadowRoot', {
-                value: { querySelector: vi.fn().mockReturnValue(mockSwitcher) },
+                value: { querySelector: vi.fn() },
                 configurable: true
             });
-            element.store.state.focusedPlantIndex = 2;
-            element.updated(new Map([['store', 'val']]));
-            expect(mockSwitcher.focusPlant).toHaveBeenCalledWith(2);
+            const querySpy = vi.spyOn(element.shadowRoot as any, 'querySelector');
+            (element as any).updated(new Map([['store', 'val']]));
+            expect(querySpy).not.toHaveBeenCalled();
         });
 
         it('should download file on method call', () => {

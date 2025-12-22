@@ -2,6 +2,31 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrowspacePlantCard } from '../../../src/components/plant-card';
 import { PlantEntity, PlantStage } from '../../../src/types';
+import * as uiStore from '../../../src/store/ui-store';
+
+// Mock ui-store
+vi.mock('../../../src/store/ui-store', () => ({
+    $activeDialog: { get: vi.fn(() => ({ type: 'NONE' })), set: vi.fn(), subscribe: vi.fn() },
+    $focusedPlantIndex: { get: vi.fn(() => -1), set: vi.fn(), subscribe: vi.fn() },
+    $selectedPlants: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn() },
+    $isEditMode: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    $viewMode: { get: vi.fn(() => 'standard'), set: vi.fn(), subscribe: vi.fn() },
+    $isCompactView: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    $isLoading: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    $defaultApplied: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    setEditMode: vi.fn(),
+    setViewMode: vi.fn(),
+    setIsLoading: vi.fn(),
+    closeDialog: vi.fn(),
+    setDefaultApplied: vi.fn(),
+    setFocusedPlantIndex: vi.fn(),
+    togglePlantSelection: vi.fn(),
+    selectAllPlants: vi.fn(),
+    clearPlantSelection: vi.fn(),
+    setMenuOpen: vi.fn(),
+    showToast: vi.fn(),
+    $notification: { set: vi.fn() }
+}));
 
 // Mock shared styles
 vi.mock('../../../src/styles/shared.styles', () => ({
@@ -34,6 +59,10 @@ describe('PlantCard', () => {
     let container: HTMLElement;
 
     beforeEach(async () => {
+        // Reset mocks to default values
+        (uiStore.$isEditMode.get as any).mockReturnValue(false);
+        (uiStore.$selectedPlants.get as any).mockReturnValue(new Set());
+
         container = document.createElement('div');
         document.body.appendChild(container);
         element = new GrowspacePlantCard();
@@ -131,14 +160,16 @@ describe('PlantCard', () => {
         });
 
         it('should show checkbox in edit mode', async () => {
-            element.isEditMode = true;
+            (uiStore.$isEditMode.get as any).mockReturnValue(true);
+            await element.requestUpdate();
             await element.updateComplete;
             const checkbox = element.shadowRoot?.querySelector('.plant-card-checkbox');
             expect(checkbox).toBeTruthy();
         });
 
         it('should emit selection toggle event', async () => {
-            element.isEditMode = true;
+            (uiStore.$isEditMode.get as any).mockReturnValue(true);
+            await element.requestUpdate();
             await element.updateComplete;
 
             const listener = vi.fn();
@@ -152,7 +183,8 @@ describe('PlantCard', () => {
         });
 
         it('should prevent drag in edit mode', async () => {
-            element.isEditMode = true;
+            (uiStore.$isEditMode.get as any).mockReturnValue(true);
+            await element.requestUpdate();
             await element.updateComplete;
 
             const listener = vi.fn();

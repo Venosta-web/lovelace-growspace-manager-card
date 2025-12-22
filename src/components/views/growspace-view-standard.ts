@@ -57,8 +57,6 @@ export class GrowspaceViewStandard extends LitElement {
         .plants=${this.grid}
         .rows=${this.rows}
         .cols=${this.cols}
-        .compact=${this.isCompact}
-        .isLoading=${this.isLoading}
       ></growspace-grid>
 
       ${this.config?.initial_view_mode === 'header'

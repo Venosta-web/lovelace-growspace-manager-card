@@ -1,6 +1,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
 import { GrowspaceHeader } from '../../../src/components/growspace-header';
+import { GrowspaceStore } from '../../../src/store/growspace-store';
+import * as uiStore from '../../../src/store/ui-store';
 import { MetricsUtils } from '../../../src/utils/metrics-utils';
 import { ChartUtils } from '../../../src/utils/chart-utils';
 import { GrowspaceDevice } from '../../../src/types';
@@ -32,11 +34,32 @@ vi.mock('../../../src/controllers/resize-controller', () => {
 });
 
 vi.mock('../../../src/components/growspace-chip', () => {
-    // Basic mock for the chip
     return {
         GrowspaceChip: class { }
     };
 });
+
+vi.mock('../../../src/store/ui-store', () => ({
+    $activeDialog: { get: vi.fn(() => ({ type: 'NONE' })), set: vi.fn(), subscribe: vi.fn() },
+    $focusedPlantIndex: { get: vi.fn(() => -1), set: vi.fn(), subscribe: vi.fn() },
+    $selectedPlants: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn() },
+    $isEditMode: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    $viewMode: { get: vi.fn(() => 'standard'), set: vi.fn(), subscribe: vi.fn() },
+    $defaultApplied: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    $isLoading: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    setEditMode: vi.fn(),
+    setViewMode: vi.fn(),
+    setIsLoading: vi.fn(),
+    closeDialog: vi.fn(),
+    setDefaultApplied: vi.fn(),
+    setFocusedPlantIndex: vi.fn(),
+    togglePlantSelection: vi.fn(),
+    selectAllPlants: vi.fn(),
+    clearPlantSelection: vi.fn(),
+    setMenuOpen: vi.fn(),
+    showToast: vi.fn(),
+    $notification: { set: vi.fn() }
+}));
 
 describe('GrowspaceHeader', () => {
     let element: GrowspaceHeader;
@@ -61,6 +84,7 @@ describe('GrowspaceHeader', () => {
         });
 
         // Setup Mocks
+
         mockStore = {
             state: {
                 devices: [
@@ -249,17 +273,15 @@ describe('GrowspaceHeader', () => {
             // Config
             const configItem = menu?.querySelectorAll('.menu-item')[0] as HTMLElement; // Config is usually first
             configItem.click();
-            expect(mockStore.setActiveDialog).toHaveBeenCalledWith(
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'CONFIG' })
             );
 
             // Strains
-            const strainsItem = menu?.querySelectorAll('.menu-item')[4] as HTMLElement; // Index 4 based on render order? 
-            // Better to find by text if possible, but structure is fixed in code: Config, Edit, Compact, ControlHum, Strains...
-            // Config=0, Edit=1, Compact=2, Control=3, Strains=4
+            const strainsItem = menu?.querySelectorAll('.menu-item')[4] as HTMLElement;
             strainsItem.click();
             expect(mockStore.fetchStrainLibrary).toHaveBeenCalled();
-            expect(mockStore.setActiveDialog).toHaveBeenCalledWith(
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'STRAIN_LIBRARY' })
             );
 
@@ -334,36 +356,36 @@ describe('GrowspaceHeader', () => {
         });
 
         it('should handle edit action', () => {
-            mockStore.state.isEditMode = false;
+            (uiStore.$isEditMode.get as any).mockReturnValue(true);
+            (element as any)._isEditModeController = { value: false };
             (element as any)._triggerAction('edit');
-            expect(mockStore.setEditMode).toHaveBeenCalledWith(true);
+            expect(uiStore.setEditMode).toHaveBeenCalledWith(true);
         });
 
-        it('should handle compact action', () => {
-            mockStore.state.viewMode = 'standard';
-            (element as any)._triggerAction('compact');
-            expect(mockStore.setViewMode).toHaveBeenCalledWith('compact');
+        it('should handle compact action', async () => {
+            uiStore.$viewMode.set('compact');
+            (element as any)._viewModeController = { value: 'compact' };
+            await element.updateComplete;
 
-            mockStore.state.viewMode = 'compact';
             (element as any)._triggerAction('compact');
-            expect(mockStore.setViewMode).toHaveBeenCalledWith('standard');
+            expect(uiStore.setViewMode).toHaveBeenCalledWith('standard');
         });
 
         it('should handle irrigation action', () => {
             mockStore.state.selectedDevice = 'd1';
             (element as any)._triggerAction('irrigation');
-            expect(mockStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'IRRIGATION', payload: true }));
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({ type: 'IRRIGATION', payload: {} }));
 
             mockStore.state.selectedDevice = null;
             vi.clearAllMocks();
             (element as any)._triggerAction('irrigation');
-            expect(mockStore.setActiveDialog).not.toHaveBeenCalled();
+            expect(uiStore.$activeDialog.set).not.toHaveBeenCalled();
         });
 
         it('should handle ai action', () => {
             mockStore.state.selectedDevice = 'd1';
             (element as any)._triggerAction('ai');
-            expect(mockStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
                 type: 'GROW_MASTER',
                 payload: expect.objectContaining({ growspaceId: 'd1', mode: 'single' })
             }));
@@ -372,6 +394,139 @@ describe('GrowspaceHeader', () => {
         it('should handle logbook action', () => {
             (element as any)._triggerAction('logbook');
             expect(mockStore.openLogbookDialog).toHaveBeenCalled();
+        });
+
+        it('should handle config action', () => {
+            mockStore.state.selectedDevice = 'd1';
+            (element as any)._triggerAction('config');
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'CONFIG',
+                payload: expect.objectContaining({
+                    currentTab: 'environment'
+                })
+            }));
+        });
+
+        it('should handle strains action', () => {
+            (element as any)._triggerAction('strains');
+            expect(mockStore.fetchStrainLibrary).toHaveBeenCalled();
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'STRAIN_LIBRARY'
+            }));
+        });
+
+        it('should handle control_dehumidifier action (no-op in switch)', () => {
+            // control_dehumidifier is in the menu but not handled in switch  
+            // This test documents that it does nothing
+            (element as any)._triggerAction('control_dehumidifier');
+            // Should not throw and menu should be closed
+            expect((element as any)._menuOpen).toBe(false);
+        });
+    });
+
+    describe('Render Methods Coverage', () => {
+        beforeEach(async () => {
+            document.body.appendChild(element);
+            await element.updateComplete;
+        });
+
+        afterEach(() => {
+            document.body.removeChild(element);
+        });
+
+        it('should render menu when open', async () => {
+            (element as any)._menuOpen = true;
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const menu = element.shadowRoot?.querySelector('.menu-dropdown');
+            expect(menu).not.toBeNull();
+
+            const menuItems = element.shadowRoot?.querySelectorAll('.menu-item');
+            expect(menuItems?.length).toBeGreaterThan(0);
+        });
+
+        it('should not render menu when closed', async () => {
+            (element as any)._menuOpen = false;
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const menu = element.shadowRoot?.querySelector('.menu-dropdown');
+            expect(menu).toBeNull();
+        });
+
+        it('should render hero card for main chips', async () => {
+            const heroCards = element.shadowRoot?.querySelectorAll('.hero-card');
+            // Should have some hero cards based on mocked mainChips
+            expect(heroCards?.length).toBeGreaterThan(0);
+        });
+
+        it('should call _renderMenu method directly', () => {
+            (element as any)._menuOpen = false;
+            const result = (element as any)._renderMenu();
+            expect(result).toBe('');
+
+            (element as any)._menuOpen = true;
+            const menuResult = (element as any)._renderMenu();
+            expect(menuResult).not.toBe('');
+        });
+
+        it('should call _renderHeroCard method directly', () => {
+            const chip = { key: 'temperature', value: '25°C', label: 'Temp', icon: 'path', status: 'ok' };
+            const result = (element as any)._renderHeroCard(chip);
+            expect(result).toBeDefined();
+        });
+
+        it('should call _renderHeroCard with vpd chip', () => {
+            const chip = { key: 'vpd', value: '1.2', label: 'VPD', icon: 'path', status: 'warning' };
+            const result = (element as any)._renderHeroCard(chip);
+            expect(result).toBeDefined();
+        });
+
+        it('should call _renderHeroCard with optimal chip', () => {
+            const chip = { key: 'optimal', value: 'Yes', label: 'Optimal', icon: 'path', status: 'ok' };
+            const result = (element as any)._renderHeroCard(chip);
+            expect(result).toBeDefined();
+        });
+
+        it('should call render method and return template', async () => {
+            const result = element.render();
+            expect(result).toBeDefined();
+        });
+
+        it('should call _updateMetrics method', () => {
+            (element as any)._updateMetrics();
+            // Should set internal state
+            expect((element as any)._mainChips).toBeDefined();
+        });
+
+        it('should call _computeMetrics with all dependencies', () => {
+            element.hass = mockHass;
+            element.device = {
+                device_id: 'd1',
+                name: 'Test',
+                overview_entity_id: 'sensor.ov'
+            } as any;
+            element.historyController = mockHistory;
+
+            const result = (element as any)._computeMetrics();
+            expect(result.mainChips).toBeDefined();
+            expect(result.deviceChips).toBeDefined();
+        });
+
+        it('should handle updated lifecycle method', () => {
+            vi.useFakeTimers();
+            const changedProps = new Map([['device', true]]);
+            element.updated(changedProps);
+            vi.runAllTimers();
+            vi.useRealTimers();
+            // Should trigger scroll check without error
+        });
+
+        it('should handle firstUpdated with containers', async () => {
+            // Call firstUpdated directly
+            element.firstUpdated();
+            // Should set up observers without throwing
         });
     });
 
@@ -672,6 +827,92 @@ describe('GrowspaceHeader', () => {
             (element as any).disconnectedCallback();
 
             expect(spy).toHaveBeenCalled();
+        });
+
+        it('should update subscription when historyController changes', () => {
+            const changedProps = new Map([['historyController', true]]);
+            const updateSubSpy = vi.spyOn(element as any, '_updateSubscription');
+
+            (element as any).willUpdate(changedProps);
+
+            expect(updateSubSpy).toHaveBeenCalled();
+        });
+
+        it('should update metrics when device changes', () => {
+            const changedProps = new Map([['device', true]]);
+            const updateMetricsSpy = vi.spyOn(element as any, '_updateMetrics');
+
+            (element as any).willUpdate(changedProps);
+
+            expect(updateMetricsSpy).toHaveBeenCalled();
+        });
+
+        it('should update metrics when hass changes', () => {
+            const changedProps = new Map([['hass', true]]);
+            const updateMetricsSpy = vi.spyOn(element as any, '_updateMetrics');
+
+            (element as any).willUpdate(changedProps);
+
+            expect(updateMetricsSpy).toHaveBeenCalled();
+        });
+
+        it('should handle _updateSubscription with controller change', () => {
+            const oldController = {
+                addListener: vi.fn(),
+                removeListener: vi.fn()
+            };
+            const newController = {
+                addListener: vi.fn(),
+                removeListener: vi.fn()
+            };
+
+            // Set up old subscription
+            (element as any)._subscribedController = oldController;
+            element.historyController = newController as any;
+
+            (element as any)._updateSubscription();
+
+            expect(oldController.removeListener).toHaveBeenCalled();
+            expect(newController.addListener).toHaveBeenCalled();
+        });
+
+        it('should handle _handleControllerUpdate callback', () => {
+            const updateMetricsSpy = vi.spyOn(element as any, '_updateMetrics');
+            const requestUpdateSpy = vi.spyOn(element, 'requestUpdate');
+
+            (element as any)._handleControllerUpdate();
+
+            expect(updateMetricsSpy).toHaveBeenCalled();
+            expect(requestUpdateSpy).toHaveBeenCalled();
+        });
+
+        it('should call firstUpdated successfully', async () => {
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // firstUpdated should have been called
+            expect((element as any)._resizeController).toBeDefined();
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle _handleDeviceChange', async () => {
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            mockStore.handleDeviceChange = vi.fn();
+            const event = { target: { value: 'd2' } };
+            (element as any)._handleDeviceChange(event);
+
+            expect(mockStore.handleDeviceChange).toHaveBeenCalledWith('d2');
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle _toggleEnvGraph without history controller', () => {
+            element.historyController = undefined as any;
+            // Should not throw
+            expect(() => (element as any)._toggleEnvGraph('temperature')).not.toThrow();
         });
     });
 

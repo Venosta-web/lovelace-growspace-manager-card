@@ -22,6 +22,15 @@ export class GrowspaceViewSwitcher extends LitElement {
     @property({ type: Number }) accessor selectedCount = 0;
     @property({ attribute: false }) accessor config: GrowspaceManagerCardConfig | undefined;
 
+    @property({ type: Number }) accessor focusedPlantIndex = -1;
+
+    protected updated(changedProps: Map<string | number | symbol, unknown>): void {
+        super.updated(changedProps);
+        if (changedProps.has('focusedPlantIndex') && this.focusedPlantIndex >= 0) {
+            this.focusPlant(this.focusedPlantIndex);
+        }
+    }
+
     public focusPlant(index: number) {
         const activeView = this.shadowRoot?.querySelector(
             'growspace-view-standard, growspace-view-compact'

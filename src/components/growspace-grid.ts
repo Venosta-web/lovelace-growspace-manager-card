@@ -4,9 +4,11 @@ import { consume } from '@lit/context';
 import { createRef, ref } from 'lit/directives/ref.js';
 import { mdiPlus } from '@mdi/js';
 import { repeat } from 'lit/directives/repeat.js';
+import { StoreController } from '@nanostores/lit';
 import { PlantEntity, StrainEntry } from '../types';
 import { storeContext } from '../context';
 import type { GrowspaceStore } from '../store/growspace-store';
+import { $isEditMode, $selectedPlants, $isCompactView, $isLoading } from '../store/ui-store';
 import { variables } from '../styles/variables';
 import { sharedStyles } from '../styles/shared.styles';
 import './plant-card';
@@ -20,10 +22,11 @@ export class GrowspaceGrid extends LitElement {
   @property({ type: Number }) accessor rows: number = 3;
   @property({ type: Number }) accessor cols: number = 3;
 
-  @property({ type: Boolean }) accessor isEditMode: boolean = false;
-  @property({ type: Object }) accessor selectedPlants: Set<string> = new Set();
-  @property({ type: Boolean }) accessor compact: boolean = false;
-  @property({ type: Boolean }) accessor isLoading: boolean = false;
+  // UI state via StoreController - direct subscription to atoms
+  private _isEditModeController = new StoreController(this, $isEditMode);
+  private _selectedPlantsController = new StoreController(this, $selectedPlants);
+  private _isCompactController = new StoreController(this, $isCompactView);
+  private _isLoadingController = new StoreController(this, $isLoading);
 
   private _draggedPlant: PlantEntity | null = null;
   private _gridRef = createRef<HTMLDivElement>();
@@ -418,14 +421,14 @@ export class GrowspaceGrid extends LitElement {
 
     return html`
       <div
-        class="grid ${this.compact ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
+        class="grid ${this._isCompactController.value ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
         style="${gridStyle}"
         @mobile-drop=${this._handleMobileDrop}
         @dragover=${this._handleDragOver}
         ${ref(this._gridRef)}
       >
-        ${this.isLoading ? this.renderSkeletonGrid() : ''}
-        ${!this.isLoading
+        ${this._isLoadingController.value ? this.renderSkeletonGrid() : ''}
+        ${!this._isLoadingController.value
         ? repeat(
           flatGrid,
           (plant, index) =>
@@ -438,17 +441,11 @@ export class GrowspaceGrid extends LitElement {
               return this.renderEmptySlot(row, col);
             }
 
-            const plantId =
-              plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-            const isSelected = this.selectedPlants.has(plantId);
-
             return html`
                   <growspace-plant-card
                     .plant=${plant}
                     .row=${row}
                     .col=${col}
-                    .isEditMode=${this.isEditMode}
-                    .selected=${isSelected}
                     @plant-click=${() => this._handlePlantClick(plant)}
                     @plant-drag-start=${() => this._handleDragStart(plant)}
                     @plant-drop=${(e: CustomEvent) =>

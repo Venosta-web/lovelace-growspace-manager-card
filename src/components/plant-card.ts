@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import { StoreController } from '@nanostores/lit';
 import { strainLibraryContext } from '../context';
 import {
   mdiCheckboxMarked,
@@ -11,6 +12,7 @@ import {
 import { PlantEntity, StrainEntry, PlantDisplayData, StageDisplay } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { DragDropController, DragDropHost } from '../controllers/drag-drop-controller';
+import { $isEditMode, $selectedPlants } from '../store/ui-store';
 import './plant/plant-stats';
 import { plantCardStyles } from '../styles/plant-card.styles';
 import { sharedStyles } from '../styles/shared.styles';
@@ -24,8 +26,19 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
   @consume({ context: strainLibraryContext, subscribe: true })
   accessor strainLibrary: StrainEntry[] = [];
 
-  @property({ type: Boolean }) accessor isEditMode = false;
-  @property({ type: Boolean }) accessor selected = false;
+  // UI state via StoreController - direct subscription to atoms
+  private _isEditModeController = new StoreController(this, $isEditMode);
+  private _selectedPlantsController = new StoreController(this, $selectedPlants);
+
+  // Getters to satisfy DragDropHost interface
+  get isEditMode(): boolean {
+    return this._isEditModeController.value;
+  }
+
+  get selected(): boolean {
+    const plantId = this.plant?.attributes?.plant_id;
+    return plantId ? this._selectedPlantsController.value.has(plantId) : false;
+  }
 
   // Instantiate controller
   private dragController = new DragDropController(this);

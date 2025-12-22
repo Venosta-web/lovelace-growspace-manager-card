@@ -3,6 +3,31 @@ import { GrowspaceViewCompact } from '../../../../src/components/views/growspace
 import { GrowspaceViewHeader } from '../../../../src/components/views/growspace-view-header';
 import { GrowspaceViewStandard } from '../../../../src/components/views/growspace-view-standard';
 import { GrowspaceDevice } from '../../../../src/types';
+import * as uiStore from '../../../../src/store/ui-store';
+
+// Mock ui-store
+vi.mock('../../../../src/store/ui-store', () => ({
+    $activeDialog: { get: vi.fn(() => ({ type: 'NONE' })), set: vi.fn(), subscribe: vi.fn() },
+    $focusedPlantIndex: { get: vi.fn(() => -1), set: vi.fn(), subscribe: vi.fn() },
+    $selectedPlants: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn() },
+    $isEditMode: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    $viewMode: { get: vi.fn(() => 'standard'), set: vi.fn(), subscribe: vi.fn() },
+    $isCompactView: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    $isLoading: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    $defaultApplied: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    setEditMode: vi.fn(),
+    setViewMode: vi.fn(),
+    setIsLoading: vi.fn(),
+    closeDialog: vi.fn(),
+    setDefaultApplied: vi.fn(),
+    setFocusedPlantIndex: vi.fn(),
+    togglePlantSelection: vi.fn(),
+    selectAllPlants: vi.fn(),
+    clearPlantSelection: vi.fn(),
+    setMenuOpen: vi.fn(),
+    showToast: vi.fn(),
+    $notification: { set: vi.fn() }
+}));
 
 // Mocks
 vi.mock('../../../../src/components/growspace-grid', () => ({
@@ -38,7 +63,7 @@ describe('Growspace Views', () => {
 
             const grid = element.shadowRoot?.querySelector('growspace-grid');
             expect(grid).toBeTruthy();
-            expect((grid as any).compact).toBe(true);
+            // Note: compact is now controlled by StoreController, not a property
 
             document.body.removeChild(element);
         });
@@ -189,6 +214,8 @@ describe('Growspace Views', () => {
         });
 
         it('should render edit banner when isEditMode is true', async () => {
+            // Mock isEditMode to return true
+            (uiStore.$isEditMode.get as any).mockReturnValue(true);
             element.isEditMode = true;
             document.body.appendChild(element);
             await element.updateComplete;

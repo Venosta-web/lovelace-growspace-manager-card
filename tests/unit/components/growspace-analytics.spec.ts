@@ -147,4 +147,130 @@ describe('GrowspaceAnalytics', () => {
             visible: false
         });
     });
+
+    it('should handle toggle graph event with metric property in detail', async () => {
+        historyControllerMock.activeEnvGraphs = new Set(['temperature']);
+        (element as any)._computeItemsToRender();
+        element.requestUpdate();
+        await element.updateComplete;
+
+        const chart = element.shadowRoot?.querySelector('growspace-env-chart');
+        chart?.dispatchEvent(new CustomEvent('toggle-graph', {
+            detail: { metric: 'temperature' }
+        }));
+
+        // Should handle both detail.metric and direct detail string
+        expect(historyControllerMock.toggleEnvGraph).toHaveBeenCalled();
+    });
+
+    it('should handle unlink-graphs event from combined chart', async () => {
+        historyControllerMock.activeEnvGraphs = new Set(['temperature', 'humidity']);
+        historyControllerMock.linkedGraphGroups = [['temperature', 'humidity']];
+        (element as any)._computeItemsToRender();
+        element.requestUpdate();
+        await element.updateComplete;
+
+        const chart = element.shadowRoot?.querySelector('growspace-env-chart');
+        chart?.dispatchEvent(new CustomEvent('unlink-graphs', {
+            detail: 0,  // groupIndex
+            bubbles: true
+        }));
+
+        expect(historyControllerMock.unlinkGraphGroup).toHaveBeenCalledWith(0);
+    });
+
+    it('should handle unlink-graph event for single metric', async () => {
+        historyControllerMock.activeEnvGraphs = new Set(['temperature', 'humidity']);
+        historyControllerMock.linkedGraphGroups = [['temperature', 'humidity']];
+        (element as any)._computeItemsToRender();
+        element.requestUpdate();
+        await element.updateComplete;
+
+        const chart = element.shadowRoot?.querySelector('growspace-env-chart');
+        chart?.dispatchEvent(new CustomEvent('unlink-graph', {
+            detail: 'temperature',
+            bubbles: true
+        }));
+
+        expect(historyControllerMock.unlinkGraphMetric).toHaveBeenCalledWith('temperature');
+    });
+
+    it('should render loading state when history is loading', async () => {
+        historyControllerMock.activeEnvGraphs = new Set(['temperature']);
+        historyControllerMock.isHistoryLoading = true;
+        element.requestUpdate();
+        await element.updateComplete;
+
+        const loadingSpinner = element.shadowRoot?.querySelector('.loading-spinner');
+        expect(loadingSpinner).toBeTruthy();
+
+        const loadingText = element.shadowRoot?.textContent;
+        expect(loadingText).toContain('Loading history data');
+    });
+
+    it('should trigger lazy load in firstUpdated when not loaded', async () => {
+        historyControllerMock.isHistoryLoaded = false;
+        historyControllerMock.loadHistoryOnDemand.mockClear();
+
+        vi.spyOn(console, 'log').mockImplementation(() => { });
+
+        element.firstUpdated();
+
+        expect(historyControllerMock.loadHistoryOnDemand).toHaveBeenCalled();
+    });
+
+    it('should trigger lazy load in willUpdate when not loaded and not loading', async () => {
+        historyControllerMock.isHistoryLoaded = false;
+        historyControllerMock.isHistoryLoading = false;
+        historyControllerMock.loadHistoryOnDemand.mockClear();
+
+        vi.spyOn(console, 'log').mockImplementation(() => { });
+
+        // Trigger willUpdate
+        element.requestUpdate();
+        await element.updateComplete;
+
+        expect(historyControllerMock.loadHistoryOnDemand).toHaveBeenCalled();
+    });
+
+    it('should not render if device is missing', async () => {
+        historyControllerMock.activeEnvGraphs = new Set(['temperature']);
+        element.device = undefined;
+        element.requestUpdate();
+        await element.updateComplete;
+
+        const charts = element.shadowRoot?.querySelectorAll('growspace-env-chart');
+        expect(charts?.length).toBe(0);
+
+        const graphsContainer = element.shadowRoot?.querySelector('.graphs-container');
+        expect(graphsContainer).toBeFalsy();
+    });
+
+    it('should handle getSortIndex for unknown metric', async () => {
+        historyControllerMock.activeEnvGraphs = new Set(['unknown_metric']);
+        (element as any)._computeItemsToRender();
+
+        const items = (element as any)._itemsToRender;
+        expect(items[0].sortIndex).toBe(999); // Default for unknown
+    });
+
+    it('should skip linked groups with no active metrics', async () => {
+        historyControllerMock.activeEnvGraphs = new Set(['temperature']);
+        historyControllerMock.linkedGraphGroups = [['humidity', 'vpd']]; // No active metrics in group
+
+        (element as any)._computeItemsToRender();
+
+        const items = (element as any)._itemsToRender;
+        // Should only have the single temperature, not the group
+        expect(items.length).toBe(1);
+        expect(items[0].type).toBe('single');
+    });
+
+    it('should handle _handleControllerUpdate callback', () => {
+        const requestUpdateSpy = vi.spyOn(element, 'requestUpdate');
+
+        (element as any)._handleControllerUpdate();
+
+        expect(requestUpdateSpy).toHaveBeenCalled();
+    });
 });

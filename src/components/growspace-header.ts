@@ -1,5 +1,7 @@
 import { LitElement, html, css, svg, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { StoreController } from '@nanostores/lit';
+import { $viewMode, $isEditMode, $activeDialog, setViewMode, setEditMode } from '../store/ui-store';
 import { HomeAssistant } from 'custom-card-helpers';
 
 import {
@@ -59,6 +61,10 @@ export class GrowspaceHeader extends LitElement {
   @state() private accessor _canScrollDeviceRight = false;
   @state() private accessor _menuOpen = false;
   @state() private accessor _mobileLink = false;
+
+  // Reactivity Controllers
+  private _viewModeController = new StoreController(this, $viewMode);
+  private _isEditModeController = new StoreController(this, $isEditMode);
 
   private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
   private _stageContainerRef: Ref<HTMLDivElement> = createRef();
@@ -784,10 +790,10 @@ export class GrowspaceHeader extends LitElement {
         this.store.openAddPlantDialog();
         break;
       case 'config':
-        this.store.setActiveDialog({
+        $activeDialog.set({
           type: 'CONFIG',
           payload: {
-            currentTab: 'environment', // Default tab
+            currentTab: 'environment',
             environmentData: {
               selectedGrowspaceId: this.store.state.selectedDevice || '',
               temp_sensor: this.device?.environment_attributes?.temperature_sensor || '',
@@ -804,31 +810,31 @@ export class GrowspaceHeader extends LitElement {
               soil_moisture_sensor: this.device?.environment_attributes?.soil_moisture_sensor || '',
               control_dehumidifier: this.device?.environment_attributes?.dehumidifier_control_enabled || false,
               dehumidifier_thresholds: this.device?.environment_attributes?.dehumidifier_thresholds || {},
-            }
+            } as any
           }
         });
         break;
       case 'edit':
-        this.store.setEditMode(!this.store.state.isEditMode);
+        setEditMode(!this._isEditModeController.value);
         break;
       case 'compact':
         // Legacy mapping; now should set ViewMode
-        const currentMode = this.store.state.viewMode;
-        this.store.setViewMode(currentMode === 'compact' ? 'standard' : 'compact');
+        const currentMode = this._viewModeController.value;
+        setViewMode(currentMode === 'compact' ? 'standard' : 'compact');
         break;
       case 'strains':
         this.store.fetchStrainLibrary();
-        this.store.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
+        $activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
         break;
       case 'irrigation':
         if (this.store.state.selectedDevice) {
-          this.store.setActiveDialog({ type: 'IRRIGATION', payload: true });
+          $activeDialog.set({ type: 'IRRIGATION', payload: {} });
         }
         break;
       case 'ai':
-        this.store.setActiveDialog({
+        $activeDialog.set({
           type: 'GROW_MASTER',
-          payload: { growspaceId: this.store.state.selectedDevice || '', isLoading: false, response: null, mode: 'single' }
+          payload: { growspaceId: this.store.state.selectedDevice || '', isLoading: false, response: '', mode: 'single' }
         });
         break;
       case 'logbook':
@@ -1136,12 +1142,12 @@ export class GrowspaceHeader extends LitElement {
         <div class="menu-item" @click=${() => this._triggerAction('edit')}>
             <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
             <span class="menu-item-label">Edit</span>
-            <div class=${classMap({ 'menu-toggle-switch': true, active: this.store.state.isEditMode })}></div>
+            <div class=${classMap({ 'menu-toggle-switch': true, active: this._isEditModeController.value })}></div>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('compact')}>
             <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
             <span class="menu-item-label">Compact View</span>
-            <div class=${classMap({ 'menu-toggle-switch': true, active: this.store.state.viewMode === 'compact' })}></div>
+            <div class=${classMap({ 'menu-toggle-switch': true, active: this._viewModeController.value === 'compact' })}></div>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
             <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>

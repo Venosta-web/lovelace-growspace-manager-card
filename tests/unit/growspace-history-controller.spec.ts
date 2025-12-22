@@ -31,6 +31,49 @@ describe('GrowspaceHistoryController', () => {
         expect(controller.historyCache).toEqual({});
     });
 
+    describe('Listener Management', () => {
+        it('should add and invoke listeners on notify', () => {
+            const listener1 = vi.fn();
+            const listener2 = vi.fn();
+
+            controller.addListener(listener1);
+            controller.addListener(listener2);
+
+            // Trigger notification via private method
+            (controller as any)._notifyUpdate();
+
+            expect(listener1).toHaveBeenCalled();
+            expect(listener2).toHaveBeenCalled();
+        });
+
+        it('should remove listeners correctly', () => {
+            const listener = vi.fn();
+
+            controller.addListener(listener);
+            controller.removeListener(listener);
+
+            (controller as any)._notifyUpdate();
+
+            expect(listener).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('loadHistoryOnDemand', () => {
+        it('should successfully load history and set flags', async () => {
+            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+            vi.spyOn(controller as any, '_fetchHistory').mockResolvedValue(undefined);
+
+            controller.isHistoryLoaded = false;
+            controller.isHistoryLoading = false;
+
+            await controller.loadHistoryOnDemand();
+
+            expect(controller.isHistoryLoaded).toBe(true);
+            expect(controller.isHistoryLoading).toBe(false);
+            expect(consoleSpy).toHaveBeenCalledWith('[HistoryController] History loaded successfully');
+        });
+    });
+
     describe('Getters/Setters compatibility', () => {
         it('should support legacy getters/setters', () => {
             const data = [{ state: '20' }] as any;
@@ -46,6 +89,50 @@ describe('GrowspaceHistoryController', () => {
         it('should provide specific cache getters', () => {
             controller.historyCache.temperature = [{ state: '25' }] as any;
             expect(controller.temperatureHistory).toEqual([{ state: '25' }]);
+        });
+
+        it('should return null for empty cache getters', () => {
+            controller.historyCache = {};
+            expect(controller.humidityHistory).toBeNull();
+            expect(controller.vpdHistory).toBeNull();
+            expect(controller.co2History).toBeNull();
+        });
+
+        it('should return lightHistory directly when available', () => {
+            const lightData = [{ state: 'on', last_changed: '2023-01-01' }] as any;
+            controller.historyCache.light = lightData;
+
+            expect(controller.lightHistory).toBe(lightData);
+        });
+
+        it('should synthesize lightHistory from optimal when light cache is empty', () => {
+            controller.historyCache = {
+                optimal: [
+                    { state: 'on', last_changed: '2023-01-01T12:00:00Z', attributes: { is_lights_on: true } },
+                    { state: 'on', last_changed: '2023-01-01T18:00:00Z', attributes: { is_lights_on: false } }
+                ] as any
+            };
+
+            const synthesized = controller.lightHistory;
+
+            expect(synthesized).toHaveLength(2);
+            expect(synthesized![0].state).toBe('on');
+            expect(synthesized![1].state).toBe('off');
+        });
+
+        it('should return null for lightHistory when both caches are empty', () => {
+            controller.historyCache = {};
+            expect(controller.lightHistory).toBeNull();
+        });
+
+        it('should set historyData to empty array when null is passed', () => {
+            controller.historyData = null;
+            expect(controller.historyCache.main).toEqual([]);
+        });
+
+        it('should set optimalHistory to empty array when null is passed', () => {
+            controller.optimalHistory = null;
+            expect(controller.historyCache.optimal).toEqual([]);
         });
     });
 
@@ -265,6 +352,218 @@ describe('GrowspaceHistoryController', () => {
             expect(controller.getEntityIdForMetric(cureDevice, 'optimal')).toBe('binary_sensor.cure_optimal_curing');
         });
 
+        it('should resolve dry legacy slug for optimal', () => {
+            // Test the "dry" legacy slug branch (line 723)
+            const dryDevice = {
+                name: 'Dry',
+                overview_entity_id: undefined,
+                environment_attributes: {}
+            } as any;
+            expect(controller.getEntityIdForMetric(dryDevice, 'optimal')).toBe('binary_sensor.dry_optimal_drying');
+        });
+
+        it('should return null for unknown metric key', () => {
+            const device = { name: 'Test', environment_attributes: {} } as any;
+            expect(controller.getEntityIdForMetric(device, 'unknown_metric')).toBeNull();
+        });
+
+        it('should handle _getIntervalForRange default case', () => {
+            // Access private method to test default case (line 813)
+            const getInterval = (controller as any)._getIntervalForRange.bind(controller);
+
+            // Test all known ranges
+            expect(getInterval('7d')).toBe(240);
+            expect(getInterval('24h')).toBe(30);
+            expect(getInterval('6h')).toBe(15);
+            expect(getInterval('1h')).toBe(5);
+
+            // Test default/fallthrough case with unknown value
+            expect(getInterval('unknown' as any)).toBe(15);
+        });
+
+        it('should handle _fetchMetricHistory when entity not found', async () => {
+            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+
+            // Make getEntityIdForMetric return null
+            vi.spyOn(controller, 'getEntityIdForMetric').mockReturnValue(null);
+
+            await (controller as any)._fetchMetricHistory('nonexistent_metric', '24h');
+
+            expect(consoleSpy).toHaveBeenCalledWith(
+                expect.stringContaining('No entity ID found for metric: nonexistent_metric')
+            );
+        });
+
+        it('should handle _fetchMetricHistory error gracefully', async () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            vi.spyOn(console, 'log').mockImplementation(() => { });
+
+            // Make getEntityIdForMetric return a valid entity
+            vi.spyOn(controller, 'getEntityIdForMetric').mockReturnValue('sensor.test');
+
+            // Make the fetch fail
+            mockDataService.getHistoryStats.mockRejectedValue(new Error('Network error'));
+
+            await (controller as any)._fetchMetricHistory('test_metric', '24h');
+
+            expect(consoleSpy).toHaveBeenCalledWith(
+                expect.stringContaining('Failed to fetch test_metric history'),
+                expect.any(Error)
+            );
+        });
+
+        it('should handle refreshSecondaryHistories error gracefully', async () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            vi.spyOn(console, 'log').mockImplementation(() => { });
+
+            controller.activeEnvGraphs.add('temperature');
+            vi.spyOn(controller, 'getEntityIdForMetric').mockReturnValue('sensor.temp');
+
+            mockDataService.getHistoryStats.mockRejectedValue(new Error('Batch error'));
+
+            await (controller as any).refreshSecondaryHistories('24h');
+
+            expect(consoleSpy).toHaveBeenCalledWith(
+                expect.stringContaining('Failed to batch fetch secondary histories'),
+                expect.any(Error)
+            );
+        });
+
+        it('should handle _fetchHistoryDelta error gracefully', async () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            vi.spyOn(console, 'log').mockImplementation(() => { });
+
+            // Set up timestamps so delta fetch doesn't fallback to full fetch
+            (controller as any)._lastTimestamps = { main: '2023-01-01T12:00:00Z' };
+
+            vi.spyOn(controller, 'getEntityIdForMetric').mockReturnValue('sensor.test');
+            mockDataService.getHistoryStats.mockRejectedValue(new Error('Delta error'));
+
+            await (controller as any)._fetchHistoryDelta();
+
+            expect(consoleSpy).toHaveBeenCalledWith(
+                expect.stringContaining('Failed to fetch delta history'),
+                expect.any(Error)
+            );
+        });
+
+        it('should skip delta fetch if no entities to fetch', async () => {
+            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+
+            // Set up timestamps for metrics but no entity IDs found
+            (controller as any)._lastTimestamps = { temperature: '2023-01-01' };
+            vi.spyOn(controller, 'getEntityIdForMetric').mockReturnValue(null);
+            mockHost.devices[0].overview_entity_id = null;
+
+            await (controller as any)._fetchHistoryDelta();
+
+            expect(consoleSpy).toHaveBeenCalledWith(
+                expect.stringContaining('No entities to delta fetch')
+            );
+        });
+
+        it('should handle refreshSecondaryHistories with no metrics to fetch', async () => {
+            // Clear active graphs - should return early
+            controller.activeEnvGraphs.clear();
+
+            await (controller as any).refreshSecondaryHistories('24h');
+
+            // Should not call getHistoryStats
+            expect(mockDataService.getHistoryStats).not.toHaveBeenCalled();
+        });
+
+        it('should handle refreshSecondaryHistories skipping main and optimal', async () => {
+            vi.spyOn(console, 'log').mockImplementation(() => { });
+
+            // Add main and optimal to active graphs - these should be skipped
+            controller.activeEnvGraphs.add('main');
+            controller.activeEnvGraphs.add('optimal');
+            controller.activeEnvGraphs.add('temperature');
+
+            vi.spyOn(controller, 'getEntityIdForMetric').mockReturnValue('sensor.temp');
+            mockDataService.getHistoryStats.mockResolvedValue({ 'sensor.temp': [] });
+
+            await (controller as any).refreshSecondaryHistories('24h');
+
+            // Should only fetch temperature, not main/optimal
+            const callArgs = mockDataService.getHistoryStats.mock.calls[0];
+            expect(callArgs[0]).toHaveLength(1);
+            expect(callArgs[0]).toContain('sensor.temp');
+        });
+
+        it('should handle _mergeDeltaData with empty existing cache', () => {
+            // Test when cache is empty - should just set the delta data
+            controller.historyCache = {};
+            const deltaData = [{ state: '20', last_updated: '2023-01-01T12:00:00Z' }];
+
+            (controller as any)._mergeDeltaData('temperature', deltaData as any);
+
+            expect(controller.historyCache.temperature).toEqual(deltaData);
+        });
+
+        it('should not save to storage if no device selected', () => {
+            mockHost.selectedDevice = null;
+            // Just verify it doesn't throw when no device selected
+            expect(() => (controller as any)._saveToStorage()).not.toThrow();
+        });
+
+        it('should not set graph range if no device selected', () => {
+            mockHost.selectedDevice = null;
+            const fetchSpy = vi.spyOn(controller as any, '_fetchHistory').mockResolvedValue(undefined);
+
+            controller.setGraphRange('7d');
+
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
+
+        it('should return early from loadHistoryOnDemand if already loaded or loading', async () => {
+            const fetchSpy = vi.spyOn(controller as any, '_fetchHistory').mockResolvedValue(undefined);
+
+            // Test already loaded
+            controller.isHistoryLoaded = true;
+            await controller.loadHistoryOnDemand();
+            expect(fetchSpy).not.toHaveBeenCalled();
+
+            // Test already loading
+            controller.isHistoryLoaded = false;
+            controller.isHistoryLoading = true;
+            await controller.loadHistoryOnDemand();
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
+
+        it('should return early from _fetchHistory if no hass or no device', async () => {
+            mockHost.hass = null;
+            await (controller as any)._fetchHistory('24h');
+            expect(mockDataService.getHistoryStats).not.toHaveBeenCalled();
+
+            mockHost.hass = { states: {} };
+            mockHost.devices = []; // No devices
+            await (controller as any)._fetchHistory('24h');
+            expect(mockDataService.getHistoryStats).not.toHaveBeenCalled();
+        });
+
+        it('should return early from _fetchMetricHistory if no device', async () => {
+            mockHost.devices = [];
+            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+
+            await (controller as any)._fetchMetricHistory('temperature', '24h');
+
+            expect(mockDataService.getHistoryStats).not.toHaveBeenCalled();
+        });
+
+        it('should handle unlinkGraphGroup with invalid index', () => {
+            controller.linkedGraphGroups = [['a', 'b']];
+
+            // Invalid indices should not modify the array
+            controller.unlinkGraphGroup(-1);
+            expect(controller.linkedGraphGroups).toHaveLength(1);
+
+            controller.unlinkGraphGroup(10);
+            expect(controller.linkedGraphGroups).toHaveLength(1);
+        });
+
+        // Note: _loadFromStorage invalid JSON and missing version tests are in the Storage & Caching describe block
+
         it('should cache combined history', () => {
             controller.historyCache.temperature = [{ state: '1' }] as any;
             const combined = controller.combinedHistory;
@@ -420,6 +719,25 @@ describe('GrowspaceHistoryController', () => {
 
                 // Should not throw
                 expect(() => (controller as any)._saveToStorage()).not.toThrow();
+            });
+
+            it('should handle _loadFromStorage with invalid JSON', () => {
+                const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+                (localStorage.getItem as any).mockReturnValue('invalid json');
+
+                const result = (controller as any)._loadFromStorage('d1');
+
+                expect(result).toBe(false);
+                expect(consoleSpy).toHaveBeenCalled();
+            });
+
+            it('should handle _loadFromStorage with missing version', () => {
+                const invalidData = { timestamp: Date.now(), history: {} };
+                (localStorage.getItem as any).mockReturnValue(JSON.stringify(invalidData));
+
+                const result = (controller as any)._loadFromStorage('d1');
+
+                expect(result).toBe(false);
             });
         });
 

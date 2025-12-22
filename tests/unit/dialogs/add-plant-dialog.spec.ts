@@ -61,6 +61,13 @@ describe('AddPlantDialog', () => {
         expect(dialog).toBeTruthy();
     });
 
+    it('should render nothing when closed', async () => {
+        element.open = false;
+        await element.updateComplete;
+        const dialog = element.shadowRoot?.querySelector('ha-dialog');
+        expect(dialog).toBeNull();
+    });
+
     it('should populate strain options', () => {
         const select = element.shadowRoot?.querySelector('md3-select') as any;
         expect(select).toBeTruthy();
@@ -96,7 +103,7 @@ describe('AddPlantDialog', () => {
             expect(labels).not.toContain('Mother Start');
         });
 
-        it('should show mother input for mother growspace', async () => {
+        it('should show mother input for mother growspace and handle change', async () => {
             element.growspaceName = 'Mother Tent';
             await element.updateComplete;
 
@@ -105,9 +112,12 @@ describe('AddPlantDialog', () => {
 
             expect(labels).toContain('Mother Start');
             expect(labels).not.toContain('Flower Start');
+
+            const motherInput = element.shadowRoot?.querySelector('md3-date-input[label="Mother Start"]') as any;
+            motherInput.dispatchEvent(new CustomEvent('change', { detail: '2023-01-01', bubbles: true, composed: true }));
         });
 
-        it('should show cure input for cure growspace', async () => {
+        it('should show cure input for cure growspace and handle change', async () => {
             element.growspaceName = 'Cure Tent';
             await element.updateComplete;
 
@@ -119,6 +129,73 @@ describe('AddPlantDialog', () => {
             // Trigger change coverage for Cure
             const cureInput = element.shadowRoot?.querySelector('md3-date-input[label="Cure Start"]') as any;
             cureInput.dispatchEvent(new CustomEvent('change', { detail: '2023-01-01', bubbles: true, composed: true }));
+        });
+
+        it('should show clone input for clone growspace and handle change', async () => {
+            element.growspaceName = 'Clone Room';
+            await element.updateComplete;
+
+            const labels = Array.from(element.shadowRoot?.querySelectorAll('md3-date-input') || [])
+                .map(el => el.getAttribute('label'));
+
+            expect(labels).toContain('Clone Start');
+
+            const cloneInput = element.shadowRoot?.querySelector('md3-date-input[label="Clone Start"]') as any;
+            cloneInput.dispatchEvent(new CustomEvent('change', { detail: '2023-05-01', bubbles: true, composed: true }));
+        });
+
+        it('should show dry input for dry growspace and handle change', async () => {
+            element.growspaceName = 'Dry Room';
+            await element.updateComplete;
+
+            const labels = Array.from(element.shadowRoot?.querySelectorAll('md3-date-input') || [])
+                .map(el => el.getAttribute('label'));
+
+            expect(labels).toContain('Dry Start');
+
+            const dryInput = element.shadowRoot?.querySelector('md3-date-input[label="Dry Start"]') as any;
+            dryInput.dispatchEvent(new CustomEvent('change', { detail: '2023-06-01', bubbles: true, composed: true }));
+        });
+    });
+
+    describe('Interaction Tests', () => {
+        it('should handle Row and Col changes', async () => {
+            element.setInitialState(0, 0); // 1-indexed view is 1, 1
+            await element.updateComplete;
+
+            const rowInput = element.shadowRoot?.querySelector('md3-number-input[label="Row"]') as any;
+            const colInput = element.shadowRoot?.querySelector('md3-number-input[label="Col"]') as any;
+
+            // User changes Row to "2" (index 1)
+            rowInput.dispatchEvent(new CustomEvent('change', { detail: '2', bubbles: true, composed: true }));
+            // User changes Col to "3" (index 2)
+            colInput.dispatchEvent(new CustomEvent('change', { detail: '3', bubbles: true, composed: true }));
+
+            await element.updateComplete;
+
+            // Verify internal state (0-indexed)
+            expect(element.row).toBe(1);
+            expect(element.col).toBe(2);
+        });
+
+        it('should dispatch close event on cancel', async () => {
+            const listener = vi.fn();
+            element.addEventListener('close', listener);
+
+            const cancelBtn = element.shadowRoot?.querySelector('button.tonal') as HTMLElement;
+            cancelBtn.click();
+
+            expect(listener).toHaveBeenCalled();
+        });
+
+        it('should dispatch close event on verify close button', async () => {
+            const listener = vi.fn();
+            element.addEventListener('close', listener);
+
+            const closeIconBtn = element.shadowRoot?.querySelector('.dialog-header .md3-button.text') as HTMLElement;
+            closeIconBtn.click();
+
+            expect(listener).toHaveBeenCalled();
         });
     });
 

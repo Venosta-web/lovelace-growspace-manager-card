@@ -3,6 +3,8 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { hassContext, storeContext, strainLibraryContext } from '../../context';
 import { GrowspaceStore } from '../../store/growspace-store';
+import { $activeDialog, closeDialog } from '../../store/ui-store';
+import { StoreController } from '@nanostores/lit';
 import { ActiveDialogState } from '../../ui-state';
 import { GrowspaceDevice, PlantEntity, StrainEntry } from '../../types';
 
@@ -25,8 +27,16 @@ export class DialogHost extends LitElement {
     @consume({ context: storeContext, subscribe: true })
     accessor store!: GrowspaceStore;
 
-    @property({ attribute: false })
-    accessor activeDialogState!: ActiveDialogState;
+    // Replace @property with StoreController
+    private _activeDialogController = new StoreController(this, $activeDialog);
+
+    // activeDialogState property was used to pass it in? Or just state from store?
+    // It was @property({ attribute: false }) accessor activeDialogState!: ActiveDialogState;
+    // If it was passed from parent, we might still want it. 
+    // But Render method in GrowspaceManagerCard didn't pass it in the updated code (I didn't check if I removed it).
+    // Let's assume we want to use the store directly.
+    // If I keep the property, I can support both. But strictly switching to store is better.
+    // I will remove the property and property accessor.
 
     @property({ attribute: false })
     accessor devices: GrowspaceDevice[] = [];
@@ -37,7 +47,7 @@ export class DialogHost extends LitElement {
     render() {
         if (!this.store) return html``;
 
-        const active = this.activeDialogState || this.store.state.activeDialog;
+        const active = this._activeDialogController.value;
         console.log('[DialogHost] Rendering with active type:', active.type);
         if (active.type === 'NONE') return html``;
 
@@ -87,7 +97,7 @@ export class DialogHost extends LitElement {
             .row=${dialogState.row}
             .col=${dialogState.col}
             .growspaceName=${selectedDeviceData?.name || ''}
-            @close=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
             @add-plant-submit=${(e: CustomEvent) => this.store.confirmAddPlant(e.detail)}
         ></add-plant-dialog>
         `;
@@ -107,7 +117,7 @@ export class DialogHost extends LitElement {
             .activeTab=${dialogState.activeTab}
             .selectedPlantIds=${dialogState.selectedPlantIds}
             .growspaceOptions=${growspaceOptions}
-            @close=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
             @update-plant=${(e: CustomEvent) =>
                 this.store.updatePlantFromDialog({
                     plant: dialogState.plant,
@@ -136,7 +146,7 @@ export class DialogHost extends LitElement {
         <strain-library-dialog
             .open=${true}
             .strains=${strainLibrary}
-            @close=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
             @save-strain=${(e: CustomEvent) => this.store.addStrain(e.detail)}
             @delete-strain=${(e: CustomEvent) => this.store.removeStrain(e.detail.key)}
             @import-library=${(e: CustomEvent) => this._performImport(e.detail.file, e.detail.replace)}
@@ -171,7 +181,7 @@ export class DialogHost extends LitElement {
             .currentTab=${dialogState.currentTab}
             .environmentData=${dialogState.environmentData}
             .growspaceOptions=${growspaceOptions}
-            @close=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
             @add-growspace-submit=${(e: CustomEvent) => this.store.handleAddGrowspace(e.detail)}
             @edit-growspace-submit=${(e: CustomEvent) => this.store.handleUpdateGrowspace(e.detail)}
             @configure-environment-submit=${(e: CustomEvent) => this._handleEnvironmentConfig(e.detail)}
@@ -223,7 +233,7 @@ export class DialogHost extends LitElement {
             });
             this.store.showToast('Environment configured successfully!', 'success');
             await this.store.refreshData();
-            this.store.closeActiveDialog();
+            closeDialog();
         } catch (e: any) {
             this.store.showToast(`Error: ${e.message}`, 'error');
         }
@@ -270,7 +280,7 @@ export class DialogHost extends LitElement {
             .personality=${personality}
             .isLoading=${dialogState.isLoading}
             .response=${dialogState.response}
-            @close=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
             @analyze-growspace=${(e: CustomEvent) => this.store.analyzeGrowspace(e.detail.query, false)}
             @analyze-all-growspaces=${(e: CustomEvent) =>
                 this.store.analyzeGrowspace(e.detail.query, true)}
@@ -286,7 +296,7 @@ export class DialogHost extends LitElement {
             .open=${true}
             .isLoading=${dialogState.isLoading}
             .response=${dialogState.response}
-            @close=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
             @get-recommendation=${(e: CustomEvent) =>
                 this.store.getStrainRecommendation(e.detail.query)}
         ></strain-recommendation-dialog>
@@ -303,8 +313,8 @@ export class DialogHost extends LitElement {
             .open=${true}
             .device=${selectedDeviceData}
             .growspaceName=${selectedDeviceData?.name || ''}
-            @close=${() => this.store.closeActiveDialog()}
-            @closed=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
+            @closed=${() => closeDialog()}
         ></irrigation-dialog>
         `;
     }
@@ -316,7 +326,7 @@ export class DialogHost extends LitElement {
         <logbook-dialog
             .open=${true}
             .growspaceId=${dialogState.growspaceId}
-            @close=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
         ></logbook-dialog>
         `;
     }

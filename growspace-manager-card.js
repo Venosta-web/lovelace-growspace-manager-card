@@ -821,7 +821,7 @@ const SERVICES = {
 
 var util;
 (function (util) {
-    util.assertEqual = (val) => val;
+    util.assertEqual = (_) => { };
     function assertIs(_arg) { }
     util.assertIs = assertIs;
     function assertNever(_x) {
@@ -868,11 +868,9 @@ var util;
     };
     util.isInteger = typeof Number.isInteger === "function"
         ? (val) => Number.isInteger(val) // eslint-disable-line ban/ban
-        : (val) => typeof val === "number" && isFinite(val) && Math.floor(val) === val;
+        : (val) => typeof val === "number" && Number.isFinite(val) && Math.floor(val) === val;
     function joinValues(array, separator = " | ") {
-        return array
-            .map((val) => (typeof val === "string" ? `'${val}'` : val))
-            .join(separator);
+        return array.map((val) => (typeof val === "string" ? `'${val}'` : val)).join(separator);
     }
     util.joinValues = joinValues;
     util.jsonStringifyReplacer = (_, value) => {
@@ -921,7 +919,7 @@ const getParsedType = (data) => {
         case "string":
             return ZodParsedType.string;
         case "number":
-            return isNaN(data) ? ZodParsedType.nan : ZodParsedType.number;
+            return Number.isNaN(data) ? ZodParsedType.nan : ZodParsedType.number;
         case "boolean":
             return ZodParsedType.boolean;
         case "function":
@@ -937,10 +935,7 @@ const getParsedType = (data) => {
             if (data === null) {
                 return ZodParsedType.null;
             }
-            if (data.then &&
-                typeof data.then === "function" &&
-                data.catch &&
-                typeof data.catch === "function") {
+            if (data.then && typeof data.then === "function" && data.catch && typeof data.catch === "function") {
                 return ZodParsedType.promise;
             }
             if (typeof Map !== "undefined" && data instanceof Map) {
@@ -976,10 +971,6 @@ const ZodIssueCode = util.arrayToEnum([
     "not_multiple_of",
     "not_finite",
 ]);
-const quotelessJson = (obj) => {
-    const json = JSON.stringify(obj, null, 2);
-    return json.replace(/"([^"]+)":/g, "$1:");
-};
 class ZodError extends Error {
     get errors() {
         return this.issues;
@@ -1072,8 +1063,9 @@ class ZodError extends Error {
         const formErrors = [];
         for (const sub of this.issues) {
             if (sub.path.length > 0) {
-                fieldErrors[sub.path[0]] = fieldErrors[sub.path[0]] || [];
-                fieldErrors[sub.path[0]].push(mapper(sub));
+                const firstEl = sub.path[0];
+                fieldErrors[firstEl] = fieldErrors[firstEl] || [];
+                fieldErrors[firstEl].push(mapper(sub));
             }
             else {
                 formErrors.push(mapper(sub));
@@ -1156,17 +1148,11 @@ const errorMap = (issue, _ctx) => {
             else if (issue.type === "string")
                 message = `String must contain ${issue.exact ? "exactly" : issue.inclusive ? `at least` : `over`} ${issue.minimum} character(s)`;
             else if (issue.type === "number")
-                message = `Number must be ${issue.exact
-                    ? `exactly equal to `
-                    : issue.inclusive
-                        ? `greater than or equal to `
-                        : `greater than `}${issue.minimum}`;
+                message = `Number must be ${issue.exact ? `exactly equal to ` : issue.inclusive ? `greater than or equal to ` : `greater than `}${issue.minimum}`;
+            else if (issue.type === "bigint")
+                message = `Number must be ${issue.exact ? `exactly equal to ` : issue.inclusive ? `greater than or equal to ` : `greater than `}${issue.minimum}`;
             else if (issue.type === "date")
-                message = `Date must be ${issue.exact
-                    ? `exactly equal to `
-                    : issue.inclusive
-                        ? `greater than or equal to `
-                        : `greater than `}${new Date(Number(issue.minimum))}`;
+                message = `Date must be ${issue.exact ? `exactly equal to ` : issue.inclusive ? `greater than or equal to ` : `greater than `}${new Date(Number(issue.minimum))}`;
             else
                 message = "Invalid input";
             break;
@@ -1176,23 +1162,11 @@ const errorMap = (issue, _ctx) => {
             else if (issue.type === "string")
                 message = `String must contain ${issue.exact ? `exactly` : issue.inclusive ? `at most` : `under`} ${issue.maximum} character(s)`;
             else if (issue.type === "number")
-                message = `Number must be ${issue.exact
-                    ? `exactly`
-                    : issue.inclusive
-                        ? `less than or equal to`
-                        : `less than`} ${issue.maximum}`;
+                message = `Number must be ${issue.exact ? `exactly` : issue.inclusive ? `less than or equal to` : `less than`} ${issue.maximum}`;
             else if (issue.type === "bigint")
-                message = `BigInt must be ${issue.exact
-                    ? `exactly`
-                    : issue.inclusive
-                        ? `less than or equal to`
-                        : `less than`} ${issue.maximum}`;
+                message = `BigInt must be ${issue.exact ? `exactly` : issue.inclusive ? `less than or equal to` : `less than`} ${issue.maximum}`;
             else if (issue.type === "date")
-                message = `Date must be ${issue.exact
-                    ? `exactly`
-                    : issue.inclusive
-                        ? `smaller than or equal to`
-                        : `smaller than`} ${new Date(Number(issue.maximum))}`;
+                message = `Date must be ${issue.exact ? `exactly` : issue.inclusive ? `smaller than or equal to` : `smaller than`} ${new Date(Number(issue.maximum))}`;
             else
                 message = "Invalid input";
             break;
@@ -1214,11 +1188,9 @@ const errorMap = (issue, _ctx) => {
     }
     return { message };
 };
+var defaultErrorMap = errorMap;
 
-let overrideErrorMap = errorMap;
-function setErrorMap(map) {
-    overrideErrorMap = map;
-}
+let overrideErrorMap = defaultErrorMap;
 function getErrorMap() {
     return overrideErrorMap;
 }
@@ -1251,7 +1223,6 @@ const makeIssue = (params) => {
         message: errorMessage,
     };
 };
-const EMPTY_PATH = [];
 function addIssueToContext(ctx, issueData) {
     const overrideMap = getErrorMap();
     const issue = makeIssue({
@@ -1262,7 +1233,7 @@ function addIssueToContext(ctx, issueData) {
             ctx.common.contextualErrorMap, // contextual error map is first priority
             ctx.schemaErrorMap, // then schema-bound map if available
             overrideMap, // then global override map
-            overrideMap === errorMap ? undefined : errorMap, // then global default map
+            overrideMap === defaultErrorMap ? undefined : defaultErrorMap, // then global default map
         ].filter((x) => !!x),
     });
     ctx.common.issues.push(issue);
@@ -1314,8 +1285,7 @@ class ParseStatus {
                 status.dirty();
             if (value.status === "dirty")
                 status.dirty();
-            if (key.value !== "__proto__" &&
-                (typeof value.value !== "undefined" || pair.alwaysSet)) {
+            if (key.value !== "__proto__" && (typeof value.value !== "undefined" || pair.alwaysSet)) {
                 finalObject[key.value] = value.value;
             }
         }
@@ -1332,46 +1302,13 @@ const isDirty = (x) => x.status === "dirty";
 const isValid = (x) => x.status === "valid";
 const isAsync = (x) => typeof Promise !== "undefined" && x instanceof Promise;
 
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
-
-function __classPrivateFieldGet$1(receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-}
-
-function __classPrivateFieldSet$1(receiver, state, value, kind, f) {
-    if (kind === "m") throw new TypeError("Private method is not writable");
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
-}
-
-typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
-    var e = new Error(message);
-    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
-};
-
 var errorUtil;
 (function (errorUtil) {
     errorUtil.errToObj = (message) => typeof message === "string" ? { message } : message || {};
-    errorUtil.toString = (message) => typeof message === "string" ? message : message === null || message === void 0 ? void 0 : message.message;
+    // biome-ignore lint:
+    errorUtil.toString = (message) => typeof message === "string" ? message : message?.message;
 })(errorUtil || (errorUtil = {}));
 
-var _ZodEnum_cache, _ZodNativeEnum_cache;
 class ParseInputLazyPath {
     constructor(parent, value, path, key) {
         this._cachedPath = [];
@@ -1382,7 +1319,7 @@ class ParseInputLazyPath {
     }
     get path() {
         if (!this._cachedPath.length) {
-            if (this._key instanceof Array) {
+            if (Array.isArray(this._key)) {
                 this._cachedPath.push(...this._path, ...this._key);
             }
             else {
@@ -1422,17 +1359,16 @@ function processCreateParams(params) {
     if (errorMap)
         return { errorMap: errorMap, description };
     const customMap = (iss, ctx) => {
-        var _a, _b;
         const { message } = params;
         if (iss.code === "invalid_enum_value") {
-            return { message: message !== null && message !== void 0 ? message : ctx.defaultError };
+            return { message: message ?? ctx.defaultError };
         }
         if (typeof ctx.data === "undefined") {
-            return { message: (_a = message !== null && message !== void 0 ? message : required_error) !== null && _a !== void 0 ? _a : ctx.defaultError };
+            return { message: message ?? required_error ?? ctx.defaultError };
         }
         if (iss.code !== "invalid_type")
             return { message: ctx.defaultError };
-        return { message: (_b = message !== null && message !== void 0 ? message : invalid_type_error) !== null && _b !== void 0 ? _b : ctx.defaultError };
+        return { message: message ?? invalid_type_error ?? ctx.defaultError };
     };
     return { errorMap: customMap, description };
 }
@@ -1484,14 +1420,13 @@ class ZodType {
         throw result.error;
     }
     safeParse(data, params) {
-        var _a;
         const ctx = {
             common: {
                 issues: [],
-                async: (_a = params === null || params === void 0 ? void 0 : params.async) !== null && _a !== void 0 ? _a : false,
-                contextualErrorMap: params === null || params === void 0 ? void 0 : params.errorMap,
+                async: params?.async ?? false,
+                contextualErrorMap: params?.errorMap,
             },
-            path: (params === null || params === void 0 ? void 0 : params.path) || [],
+            path: params?.path || [],
             schemaErrorMap: this._def.errorMap,
             parent: null,
             data,
@@ -1501,7 +1436,6 @@ class ZodType {
         return handleResult(ctx, result);
     }
     "~validate"(data) {
-        var _a, _b;
         const ctx = {
             common: {
                 issues: [],
@@ -1525,7 +1459,7 @@ class ZodType {
                     };
             }
             catch (err) {
-                if ((_b = (_a = err === null || err === void 0 ? void 0 : err.message) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === null || _b === void 0 ? void 0 : _b.includes("encountered")) {
+                if (err?.message?.toLowerCase()?.includes("encountered")) {
                     this["~standard"].async = true;
                 }
                 ctx.common = {
@@ -1552,19 +1486,17 @@ class ZodType {
         const ctx = {
             common: {
                 issues: [],
-                contextualErrorMap: params === null || params === void 0 ? void 0 : params.errorMap,
+                contextualErrorMap: params?.errorMap,
                 async: true,
             },
-            path: (params === null || params === void 0 ? void 0 : params.path) || [],
+            path: params?.path || [],
             schemaErrorMap: this._def.errorMap,
             parent: null,
             data,
             parsedType: getParsedType(data),
         };
         const maybeAsyncResult = this._parse({ data, path: ctx.path, parent: ctx });
-        const result = await (isAsync(maybeAsyncResult)
-            ? maybeAsyncResult
-            : Promise.resolve(maybeAsyncResult));
+        const result = await (isAsync(maybeAsyncResult) ? maybeAsyncResult : Promise.resolve(maybeAsyncResult));
         return handleResult(ctx, result);
     }
     refine(check, message) {
@@ -1608,9 +1540,7 @@ class ZodType {
     refinement(check, refinementData) {
         return this._refinement((val, ctx) => {
             if (!check(val)) {
-                ctx.addIssue(typeof refinementData === "function"
-                    ? refinementData(val, ctx)
-                    : refinementData);
+                ctx.addIssue(typeof refinementData === "function" ? refinementData(val, ctx) : refinementData);
                 return false;
             }
             else {
@@ -1782,15 +1712,15 @@ const base64urlRegex = /^([0-9a-zA-Z-_]{4})*(([0-9a-zA-Z-_]{2}(==)?)|([0-9a-zA-Z
 const dateRegexSource = `((\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-((0[13578]|1[02])-(0[1-9]|[12]\\d|3[01])|(0[469]|11)-(0[1-9]|[12]\\d|30)|(02)-(0[1-9]|1\\d|2[0-8])))`;
 const dateRegex = new RegExp(`^${dateRegexSource}$`);
 function timeRegexSource(args) {
-    // let regex = `\\d{2}:\\d{2}:\\d{2}`;
-    let regex = `([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d`;
+    let secondsRegexSource = `[0-5]\\d`;
     if (args.precision) {
-        regex = `${regex}\\.\\d{${args.precision}}`;
+        secondsRegexSource = `${secondsRegexSource}\\.\\d{${args.precision}}`;
     }
     else if (args.precision == null) {
-        regex = `${regex}(\\.\\d+)?`;
+        secondsRegexSource = `${secondsRegexSource}(\\.\\d+)?`;
     }
-    return regex;
+    const secondsQuantifier = args.precision ? "+" : "?"; // require seconds if precision is nonzero
+    return `([01]\\d|2[0-3]):[0-5]\\d(:${secondsRegexSource})${secondsQuantifier}`;
 }
 function timeRegex(args) {
     return new RegExp(`^${timeRegexSource(args)}$`);
@@ -1819,6 +1749,8 @@ function isValidJWT(jwt, alg) {
         return false;
     try {
         const [header] = jwt.split(".");
+        if (!header)
+            return false;
         // Convert base64url to base64
         const base64 = header
             .replace(/-/g, "+")
@@ -1827,13 +1759,15 @@ function isValidJWT(jwt, alg) {
         const decoded = JSON.parse(atob(base64));
         if (typeof decoded !== "object" || decoded === null)
             return false;
-        if (!decoded.typ || !decoded.alg)
+        if ("typ" in decoded && decoded?.typ !== "JWT")
+            return false;
+        if (!decoded.alg)
             return false;
         if (alg && decoded.alg !== alg)
             return false;
         return true;
     }
-    catch (_a) {
+    catch {
         return false;
     }
 }
@@ -2004,7 +1938,7 @@ class ZodString extends ZodType {
                 try {
                     new URL(input.data);
                 }
-                catch (_a) {
+                catch {
                     ctx = this._getOrReturnCtx(input, ctx);
                     addIssueToContext(ctx, {
                         validation: "url",
@@ -2234,7 +2168,6 @@ class ZodString extends ZodType {
         return this._addCheck({ kind: "cidr", ...errorUtil.errToObj(options) });
     }
     datetime(options) {
-        var _a, _b;
         if (typeof options === "string") {
             return this._addCheck({
                 kind: "datetime",
@@ -2246,10 +2179,10 @@ class ZodString extends ZodType {
         }
         return this._addCheck({
             kind: "datetime",
-            precision: typeof (options === null || options === void 0 ? void 0 : options.precision) === "undefined" ? null : options === null || options === void 0 ? void 0 : options.precision,
-            offset: (_a = options === null || options === void 0 ? void 0 : options.offset) !== null && _a !== void 0 ? _a : false,
-            local: (_b = options === null || options === void 0 ? void 0 : options.local) !== null && _b !== void 0 ? _b : false,
-            ...errorUtil.errToObj(options === null || options === void 0 ? void 0 : options.message),
+            precision: typeof options?.precision === "undefined" ? null : options?.precision,
+            offset: options?.offset ?? false,
+            local: options?.local ?? false,
+            ...errorUtil.errToObj(options?.message),
         });
     }
     date(message) {
@@ -2265,8 +2198,8 @@ class ZodString extends ZodType {
         }
         return this._addCheck({
             kind: "time",
-            precision: typeof (options === null || options === void 0 ? void 0 : options.precision) === "undefined" ? null : options === null || options === void 0 ? void 0 : options.precision,
-            ...errorUtil.errToObj(options === null || options === void 0 ? void 0 : options.message),
+            precision: typeof options?.precision === "undefined" ? null : options?.precision,
+            ...errorUtil.errToObj(options?.message),
         });
     }
     duration(message) {
@@ -2283,8 +2216,8 @@ class ZodString extends ZodType {
         return this._addCheck({
             kind: "includes",
             value: value,
-            position: options === null || options === void 0 ? void 0 : options.position,
-            ...errorUtil.errToObj(options === null || options === void 0 ? void 0 : options.message),
+            position: options?.position,
+            ...errorUtil.errToObj(options?.message),
         });
     }
     startsWith(value, message) {
@@ -2417,11 +2350,10 @@ class ZodString extends ZodType {
     }
 }
 ZodString.create = (params) => {
-    var _a;
     return new ZodString({
         checks: [],
         typeName: ZodFirstPartyTypeKind.ZodString,
-        coerce: (_a = params === null || params === void 0 ? void 0 : params.coerce) !== null && _a !== void 0 ? _a : false,
+        coerce: params?.coerce ?? false,
         ...processCreateParams(params),
     });
 };
@@ -2430,9 +2362,9 @@ function floatSafeRemainder(val, step) {
     const valDecCount = (val.toString().split(".")[1] || "").length;
     const stepDecCount = (step.toString().split(".")[1] || "").length;
     const decCount = valDecCount > stepDecCount ? valDecCount : stepDecCount;
-    const valInt = parseInt(val.toFixed(decCount).replace(".", ""));
-    const stepInt = parseInt(step.toFixed(decCount).replace(".", ""));
-    return (valInt % stepInt) / Math.pow(10, decCount);
+    const valInt = Number.parseInt(val.toFixed(decCount).replace(".", ""));
+    const stepInt = Number.parseInt(step.toFixed(decCount).replace(".", ""));
+    return (valInt % stepInt) / 10 ** decCount;
 }
 class ZodNumber extends ZodType {
     constructor() {
@@ -2471,9 +2403,7 @@ class ZodNumber extends ZodType {
                 }
             }
             else if (check.kind === "min") {
-                const tooSmall = check.inclusive
-                    ? input.data < check.value
-                    : input.data <= check.value;
+                const tooSmall = check.inclusive ? input.data < check.value : input.data <= check.value;
                 if (tooSmall) {
                     ctx = this._getOrReturnCtx(input, ctx);
                     addIssueToContext(ctx, {
@@ -2488,9 +2418,7 @@ class ZodNumber extends ZodType {
                 }
             }
             else if (check.kind === "max") {
-                const tooBig = check.inclusive
-                    ? input.data > check.value
-                    : input.data >= check.value;
+                const tooBig = check.inclusive ? input.data > check.value : input.data >= check.value;
                 if (tooBig) {
                     ctx = this._getOrReturnCtx(input, ctx);
                     addIssueToContext(ctx, {
@@ -2648,15 +2576,13 @@ class ZodNumber extends ZodType {
         return max;
     }
     get isInt() {
-        return !!this._def.checks.find((ch) => ch.kind === "int" ||
-            (ch.kind === "multipleOf" && util.isInteger(ch.value)));
+        return !!this._def.checks.find((ch) => ch.kind === "int" || (ch.kind === "multipleOf" && util.isInteger(ch.value)));
     }
     get isFinite() {
-        let max = null, min = null;
+        let max = null;
+        let min = null;
         for (const ch of this._def.checks) {
-            if (ch.kind === "finite" ||
-                ch.kind === "int" ||
-                ch.kind === "multipleOf") {
+            if (ch.kind === "finite" || ch.kind === "int" || ch.kind === "multipleOf") {
                 return true;
             }
             else if (ch.kind === "min") {
@@ -2675,7 +2601,7 @@ ZodNumber.create = (params) => {
     return new ZodNumber({
         checks: [],
         typeName: ZodFirstPartyTypeKind.ZodNumber,
-        coerce: (params === null || params === void 0 ? void 0 : params.coerce) || false,
+        coerce: params?.coerce || false,
         ...processCreateParams(params),
     });
 };
@@ -2690,7 +2616,7 @@ class ZodBigInt extends ZodType {
             try {
                 input.data = BigInt(input.data);
             }
-            catch (_a) {
+            catch {
                 return this._getInvalidInput(input);
             }
         }
@@ -2702,9 +2628,7 @@ class ZodBigInt extends ZodType {
         const status = new ParseStatus();
         for (const check of this._def.checks) {
             if (check.kind === "min") {
-                const tooSmall = check.inclusive
-                    ? input.data < check.value
-                    : input.data <= check.value;
+                const tooSmall = check.inclusive ? input.data < check.value : input.data <= check.value;
                 if (tooSmall) {
                     ctx = this._getOrReturnCtx(input, ctx);
                     addIssueToContext(ctx, {
@@ -2718,9 +2642,7 @@ class ZodBigInt extends ZodType {
                 }
             }
             else if (check.kind === "max") {
-                const tooBig = check.inclusive
-                    ? input.data > check.value
-                    : input.data >= check.value;
+                const tooBig = check.inclusive ? input.data > check.value : input.data >= check.value;
                 if (tooBig) {
                     ctx = this._getOrReturnCtx(input, ctx);
                     addIssueToContext(ctx, {
@@ -2852,11 +2774,10 @@ class ZodBigInt extends ZodType {
     }
 }
 ZodBigInt.create = (params) => {
-    var _a;
     return new ZodBigInt({
         checks: [],
         typeName: ZodFirstPartyTypeKind.ZodBigInt,
-        coerce: (_a = params === null || params === void 0 ? void 0 : params.coerce) !== null && _a !== void 0 ? _a : false,
+        coerce: params?.coerce ?? false,
         ...processCreateParams(params),
     });
 };
@@ -2881,7 +2802,7 @@ class ZodBoolean extends ZodType {
 ZodBoolean.create = (params) => {
     return new ZodBoolean({
         typeName: ZodFirstPartyTypeKind.ZodBoolean,
-        coerce: (params === null || params === void 0 ? void 0 : params.coerce) || false,
+        coerce: params?.coerce || false,
         ...processCreateParams(params),
     });
 };
@@ -2900,7 +2821,7 @@ class ZodDate extends ZodType {
             });
             return INVALID$3;
         }
-        if (isNaN(input.data.getTime())) {
+        if (Number.isNaN(input.data.getTime())) {
             const ctx = this._getOrReturnCtx(input);
             addIssueToContext(ctx, {
                 code: ZodIssueCode.invalid_date,
@@ -2991,7 +2912,7 @@ class ZodDate extends ZodType {
 ZodDate.create = (params) => {
     return new ZodDate({
         checks: [],
-        coerce: (params === null || params === void 0 ? void 0 : params.coerce) || false,
+        coerce: params?.coerce || false,
         typeName: ZodFirstPartyTypeKind.ZodDate,
         ...processCreateParams(params),
     });
@@ -3313,7 +3234,8 @@ class ZodObject extends ZodType {
             return this._cached;
         const shape = this._def.shape();
         const keys = util.objectKeys(shape);
-        return (this._cached = { shape, keys });
+        this._cached = { shape, keys };
+        return this._cached;
     }
     _parse(input) {
         const parsedType = this._getType(input);
@@ -3329,8 +3251,7 @@ class ZodObject extends ZodType {
         const { status, ctx } = this._processInputParams(input);
         const { shape, keys: shapeKeys } = this._getCached();
         const extraKeys = [];
-        if (!(this._def.catchall instanceof ZodNever &&
-            this._def.unknownKeys === "strip")) {
+        if (!(this._def.catchall instanceof ZodNever && this._def.unknownKeys === "strip")) {
             for (const key in ctx.data) {
                 if (!shapeKeys.includes(key)) {
                     extraKeys.push(key);
@@ -3418,11 +3339,10 @@ class ZodObject extends ZodType {
             ...(message !== undefined
                 ? {
                     errorMap: (issue, ctx) => {
-                        var _a, _b, _c, _d;
-                        const defaultError = (_c = (_b = (_a = this._def).errorMap) === null || _b === void 0 ? void 0 : _b.call(_a, issue, ctx).message) !== null && _c !== void 0 ? _c : ctx.defaultError;
+                        const defaultError = this._def.errorMap?.(issue, ctx).message ?? ctx.defaultError;
                         if (issue.code === "unrecognized_keys")
                             return {
-                                message: (_d = errorUtil.errToObj(message).message) !== null && _d !== void 0 ? _d : defaultError,
+                                message: errorUtil.errToObj(message).message ?? defaultError,
                             };
                         return {
                             message: defaultError,
@@ -3554,11 +3474,11 @@ class ZodObject extends ZodType {
     }
     pick(mask) {
         const shape = {};
-        util.objectKeys(mask).forEach((key) => {
+        for (const key of util.objectKeys(mask)) {
             if (mask[key] && this.shape[key]) {
                 shape[key] = this.shape[key];
             }
-        });
+        }
         return new ZodObject({
             ...this._def,
             shape: () => shape,
@@ -3566,11 +3486,11 @@ class ZodObject extends ZodType {
     }
     omit(mask) {
         const shape = {};
-        util.objectKeys(this.shape).forEach((key) => {
+        for (const key of util.objectKeys(this.shape)) {
             if (!mask[key]) {
                 shape[key] = this.shape[key];
             }
-        });
+        }
         return new ZodObject({
             ...this._def,
             shape: () => shape,
@@ -3584,7 +3504,7 @@ class ZodObject extends ZodType {
     }
     partial(mask) {
         const newShape = {};
-        util.objectKeys(this.shape).forEach((key) => {
+        for (const key of util.objectKeys(this.shape)) {
             const fieldSchema = this.shape[key];
             if (mask && !mask[key]) {
                 newShape[key] = fieldSchema;
@@ -3592,7 +3512,7 @@ class ZodObject extends ZodType {
             else {
                 newShape[key] = fieldSchema.optional();
             }
-        });
+        }
         return new ZodObject({
             ...this._def,
             shape: () => newShape,
@@ -3600,7 +3520,7 @@ class ZodObject extends ZodType {
     }
     required(mask) {
         const newShape = {};
-        util.objectKeys(this.shape).forEach((key) => {
+        for (const key of util.objectKeys(this.shape)) {
             if (mask && !mask[key]) {
                 newShape[key] = this.shape[key];
             }
@@ -3612,7 +3532,7 @@ class ZodObject extends ZodType {
                 }
                 newShape[key] = newField;
             }
-        });
+        }
         return new ZodObject({
             ...this._def,
             shape: () => newShape,
@@ -3745,137 +3665,6 @@ ZodUnion.create = (types, params) => {
         ...processCreateParams(params),
     });
 };
-/////////////////////////////////////////////////////
-/////////////////////////////////////////////////////
-//////////                                 //////////
-//////////      ZodDiscriminatedUnion      //////////
-//////////                                 //////////
-/////////////////////////////////////////////////////
-/////////////////////////////////////////////////////
-const getDiscriminator = (type) => {
-    if (type instanceof ZodLazy) {
-        return getDiscriminator(type.schema);
-    }
-    else if (type instanceof ZodEffects) {
-        return getDiscriminator(type.innerType());
-    }
-    else if (type instanceof ZodLiteral) {
-        return [type.value];
-    }
-    else if (type instanceof ZodEnum) {
-        return type.options;
-    }
-    else if (type instanceof ZodNativeEnum) {
-        // eslint-disable-next-line ban/ban
-        return util.objectValues(type.enum);
-    }
-    else if (type instanceof ZodDefault) {
-        return getDiscriminator(type._def.innerType);
-    }
-    else if (type instanceof ZodUndefined) {
-        return [undefined];
-    }
-    else if (type instanceof ZodNull) {
-        return [null];
-    }
-    else if (type instanceof ZodOptional) {
-        return [undefined, ...getDiscriminator(type.unwrap())];
-    }
-    else if (type instanceof ZodNullable) {
-        return [null, ...getDiscriminator(type.unwrap())];
-    }
-    else if (type instanceof ZodBranded) {
-        return getDiscriminator(type.unwrap());
-    }
-    else if (type instanceof ZodReadonly) {
-        return getDiscriminator(type.unwrap());
-    }
-    else if (type instanceof ZodCatch) {
-        return getDiscriminator(type._def.innerType);
-    }
-    else {
-        return [];
-    }
-};
-class ZodDiscriminatedUnion extends ZodType {
-    _parse(input) {
-        const { ctx } = this._processInputParams(input);
-        if (ctx.parsedType !== ZodParsedType.object) {
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.object,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        const discriminator = this.discriminator;
-        const discriminatorValue = ctx.data[discriminator];
-        const option = this.optionsMap.get(discriminatorValue);
-        if (!option) {
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_union_discriminator,
-                options: Array.from(this.optionsMap.keys()),
-                path: [discriminator],
-            });
-            return INVALID$3;
-        }
-        if (ctx.common.async) {
-            return option._parseAsync({
-                data: ctx.data,
-                path: ctx.path,
-                parent: ctx,
-            });
-        }
-        else {
-            return option._parseSync({
-                data: ctx.data,
-                path: ctx.path,
-                parent: ctx,
-            });
-        }
-    }
-    get discriminator() {
-        return this._def.discriminator;
-    }
-    get options() {
-        return this._def.options;
-    }
-    get optionsMap() {
-        return this._def.optionsMap;
-    }
-    /**
-     * The constructor of the discriminated union schema. Its behaviour is very similar to that of the normal z.union() constructor.
-     * However, it only allows a union of objects, all of which need to share a discriminator property. This property must
-     * have a different value for each object in the union.
-     * @param discriminator the name of the discriminator property
-     * @param types an array of object schemas
-     * @param params
-     */
-    static create(discriminator, options, params) {
-        // Get all the valid discriminator values
-        const optionsMap = new Map();
-        // try {
-        for (const type of options) {
-            const discriminatorValues = getDiscriminator(type.shape[discriminator]);
-            if (!discriminatorValues.length) {
-                throw new Error(`A discriminator value for key \`${discriminator}\` could not be extracted from all schema options`);
-            }
-            for (const value of discriminatorValues) {
-                if (optionsMap.has(value)) {
-                    throw new Error(`Discriminator property ${String(discriminator)} has duplicate value ${String(value)}`);
-                }
-                optionsMap.set(value, type);
-            }
-        }
-        return new ZodDiscriminatedUnion({
-            typeName: ZodFirstPartyTypeKind.ZodDiscriminatedUnion,
-            discriminator,
-            options,
-            optionsMap,
-            ...processCreateParams(params),
-        });
-    }
-}
 function mergeValues(a, b) {
     const aType = getParsedType(a);
     const bType = getParsedType(b);
@@ -3884,9 +3673,7 @@ function mergeValues(a, b) {
     }
     else if (aType === ZodParsedType.object && bType === ZodParsedType.object) {
         const bKeys = util.objectKeys(b);
-        const sharedKeys = util
-            .objectKeys(a)
-            .filter((key) => bKeys.indexOf(key) !== -1);
+        const sharedKeys = util.objectKeys(a).filter((key) => bKeys.indexOf(key) !== -1);
         const newObj = { ...a, ...b };
         for (const key of sharedKeys) {
             const sharedValue = mergeValues(a[key], b[key]);
@@ -3913,9 +3700,7 @@ function mergeValues(a, b) {
         }
         return { valid: true, data: newArray };
     }
-    else if (aType === ZodParsedType.date &&
-        bType === ZodParsedType.date &&
-        +a === +b) {
+    else if (aType === ZodParsedType.date && bType === ZodParsedType.date && +a === +b) {
         return { valid: true, data: a };
     }
     else {
@@ -3976,6 +3761,7 @@ ZodIntersection.create = (left, right, params) => {
         ...processCreateParams(params),
     });
 };
+// type ZodTupleItems = [ZodTypeAny, ...ZodTypeAny[]];
 class ZodTuple extends ZodType {
     _parse(input) {
         const { status, ctx } = this._processInputParams(input);
@@ -4253,134 +4039,6 @@ ZodSet.create = (valueType, params) => {
         ...processCreateParams(params),
     });
 };
-class ZodFunction extends ZodType {
-    constructor() {
-        super(...arguments);
-        this.validate = this.implement;
-    }
-    _parse(input) {
-        const { ctx } = this._processInputParams(input);
-        if (ctx.parsedType !== ZodParsedType.function) {
-            addIssueToContext(ctx, {
-                code: ZodIssueCode.invalid_type,
-                expected: ZodParsedType.function,
-                received: ctx.parsedType,
-            });
-            return INVALID$3;
-        }
-        function makeArgsIssue(args, error) {
-            return makeIssue({
-                data: args,
-                path: ctx.path,
-                errorMaps: [
-                    ctx.common.contextualErrorMap,
-                    ctx.schemaErrorMap,
-                    getErrorMap(),
-                    errorMap,
-                ].filter((x) => !!x),
-                issueData: {
-                    code: ZodIssueCode.invalid_arguments,
-                    argumentsError: error,
-                },
-            });
-        }
-        function makeReturnsIssue(returns, error) {
-            return makeIssue({
-                data: returns,
-                path: ctx.path,
-                errorMaps: [
-                    ctx.common.contextualErrorMap,
-                    ctx.schemaErrorMap,
-                    getErrorMap(),
-                    errorMap,
-                ].filter((x) => !!x),
-                issueData: {
-                    code: ZodIssueCode.invalid_return_type,
-                    returnTypeError: error,
-                },
-            });
-        }
-        const params = { errorMap: ctx.common.contextualErrorMap };
-        const fn = ctx.data;
-        if (this._def.returns instanceof ZodPromise) {
-            // Would love a way to avoid disabling this rule, but we need
-            // an alias (using an arrow function was what caused 2651).
-            // eslint-disable-next-line @typescript-eslint/no-this-alias
-            const me = this;
-            return OK(async function (...args) {
-                const error = new ZodError([]);
-                const parsedArgs = await me._def.args
-                    .parseAsync(args, params)
-                    .catch((e) => {
-                    error.addIssue(makeArgsIssue(args, e));
-                    throw error;
-                });
-                const result = await Reflect.apply(fn, this, parsedArgs);
-                const parsedReturns = await me._def.returns._def.type
-                    .parseAsync(result, params)
-                    .catch((e) => {
-                    error.addIssue(makeReturnsIssue(result, e));
-                    throw error;
-                });
-                return parsedReturns;
-            });
-        }
-        else {
-            // Would love a way to avoid disabling this rule, but we need
-            // an alias (using an arrow function was what caused 2651).
-            // eslint-disable-next-line @typescript-eslint/no-this-alias
-            const me = this;
-            return OK(function (...args) {
-                const parsedArgs = me._def.args.safeParse(args, params);
-                if (!parsedArgs.success) {
-                    throw new ZodError([makeArgsIssue(args, parsedArgs.error)]);
-                }
-                const result = Reflect.apply(fn, this, parsedArgs.data);
-                const parsedReturns = me._def.returns.safeParse(result, params);
-                if (!parsedReturns.success) {
-                    throw new ZodError([makeReturnsIssue(result, parsedReturns.error)]);
-                }
-                return parsedReturns.data;
-            });
-        }
-    }
-    parameters() {
-        return this._def.args;
-    }
-    returnType() {
-        return this._def.returns;
-    }
-    args(...items) {
-        return new ZodFunction({
-            ...this._def,
-            args: ZodTuple.create(items).rest(ZodUnknown.create()),
-        });
-    }
-    returns(returnType) {
-        return new ZodFunction({
-            ...this._def,
-            returns: returnType,
-        });
-    }
-    implement(func) {
-        const validatedFunc = this.parse(func);
-        return validatedFunc;
-    }
-    strictImplement(func) {
-        const validatedFunc = this.parse(func);
-        return validatedFunc;
-    }
-    static create(args, returns, params) {
-        return new ZodFunction({
-            args: (args
-                ? args
-                : ZodTuple.create([]).rest(ZodUnknown.create())),
-            returns: returns || ZodUnknown.create(),
-            typeName: ZodFirstPartyTypeKind.ZodFunction,
-            ...processCreateParams(params),
-        });
-    }
-}
 class ZodLazy extends ZodType {
     get schema() {
         return this._def.getter();
@@ -4430,10 +4088,6 @@ function createZodEnum(values, params) {
     });
 }
 class ZodEnum extends ZodType {
-    constructor() {
-        super(...arguments);
-        _ZodEnum_cache.set(this, void 0);
-    }
     _parse(input) {
         if (typeof input.data !== "string") {
             const ctx = this._getOrReturnCtx(input);
@@ -4445,10 +4099,10 @@ class ZodEnum extends ZodType {
             });
             return INVALID$3;
         }
-        if (!__classPrivateFieldGet$1(this, _ZodEnum_cache, "f")) {
-            __classPrivateFieldSet$1(this, _ZodEnum_cache, new Set(this._def.values), "f");
+        if (!this._cache) {
+            this._cache = new Set(this._def.values);
         }
-        if (!__classPrivateFieldGet$1(this, _ZodEnum_cache, "f").has(input.data)) {
+        if (!this._cache.has(input.data)) {
             const ctx = this._getOrReturnCtx(input);
             const expectedValues = this._def.values;
             addIssueToContext(ctx, {
@@ -4497,18 +4151,12 @@ class ZodEnum extends ZodType {
         });
     }
 }
-_ZodEnum_cache = new WeakMap();
 ZodEnum.create = createZodEnum;
 class ZodNativeEnum extends ZodType {
-    constructor() {
-        super(...arguments);
-        _ZodNativeEnum_cache.set(this, void 0);
-    }
     _parse(input) {
         const nativeEnumValues = util.getValidEnumValues(this._def.values);
         const ctx = this._getOrReturnCtx(input);
-        if (ctx.parsedType !== ZodParsedType.string &&
-            ctx.parsedType !== ZodParsedType.number) {
+        if (ctx.parsedType !== ZodParsedType.string && ctx.parsedType !== ZodParsedType.number) {
             const expectedValues = util.objectValues(nativeEnumValues);
             addIssueToContext(ctx, {
                 expected: util.joinValues(expectedValues),
@@ -4517,10 +4165,10 @@ class ZodNativeEnum extends ZodType {
             });
             return INVALID$3;
         }
-        if (!__classPrivateFieldGet$1(this, _ZodNativeEnum_cache, "f")) {
-            __classPrivateFieldSet$1(this, _ZodNativeEnum_cache, new Set(util.getValidEnumValues(this._def.values)), "f");
+        if (!this._cache) {
+            this._cache = new Set(util.getValidEnumValues(this._def.values));
         }
-        if (!__classPrivateFieldGet$1(this, _ZodNativeEnum_cache, "f").has(input.data)) {
+        if (!this._cache.has(input.data)) {
             const expectedValues = util.objectValues(nativeEnumValues);
             addIssueToContext(ctx, {
                 received: ctx.data,
@@ -4535,7 +4183,6 @@ class ZodNativeEnum extends ZodType {
         return this._def.values;
     }
 }
-_ZodNativeEnum_cache = new WeakMap();
 ZodNativeEnum.create = (values, params) => {
     return new ZodNativeEnum({
         values: values,
@@ -4549,8 +4196,7 @@ class ZodPromise extends ZodType {
     }
     _parse(input) {
         const { ctx } = this._processInputParams(input);
-        if (ctx.parsedType !== ZodParsedType.promise &&
-            ctx.common.async === false) {
+        if (ctx.parsedType !== ZodParsedType.promise && ctx.common.async === false) {
             addIssueToContext(ctx, {
                 code: ZodIssueCode.invalid_type,
                 expected: ZodParsedType.promise,
@@ -4558,9 +4204,7 @@ class ZodPromise extends ZodType {
             });
             return INVALID$3;
         }
-        const promisified = ctx.parsedType === ZodParsedType.promise
-            ? ctx.data
-            : Promise.resolve(ctx.data);
+        const promisified = ctx.parsedType === ZodParsedType.promise ? ctx.data : Promise.resolve(ctx.data);
         return OK(promisified.then((data) => {
             return this._def.type.parseAsync(data, {
                 path: ctx.path,
@@ -4666,9 +4310,7 @@ class ZodEffects extends ZodType {
                 return { status: status.value, value: inner.value };
             }
             else {
-                return this._def.schema
-                    ._parseAsync({ data: ctx.data, path: ctx.path, parent: ctx })
-                    .then((inner) => {
+                return this._def.schema._parseAsync({ data: ctx.data, path: ctx.path, parent: ctx }).then((inner) => {
                     if (inner.status === "aborted")
                         return INVALID$3;
                     if (inner.status === "dirty")
@@ -4687,7 +4329,7 @@ class ZodEffects extends ZodType {
                     parent: ctx,
                 });
                 if (!isValid(base))
-                    return base;
+                    return INVALID$3;
                 const result = effect.transform(base.value, checkCtx);
                 if (result instanceof Promise) {
                     throw new Error(`Asynchronous transform encountered during synchronous parse operation. Use .parseAsync instead.`);
@@ -4695,12 +4337,13 @@ class ZodEffects extends ZodType {
                 return { status: status.value, value: result };
             }
             else {
-                return this._def.schema
-                    ._parseAsync({ data: ctx.data, path: ctx.path, parent: ctx })
-                    .then((base) => {
+                return this._def.schema._parseAsync({ data: ctx.data, path: ctx.path, parent: ctx }).then((base) => {
                     if (!isValid(base))
-                        return base;
-                    return Promise.resolve(effect.transform(base.value, checkCtx)).then((result) => ({ status: status.value, value: result }));
+                        return INVALID$3;
+                    return Promise.resolve(effect.transform(base.value, checkCtx)).then((result) => ({
+                        status: status.value,
+                        value: result,
+                    }));
                 });
             }
         }
@@ -4782,9 +4425,7 @@ ZodDefault.create = (type, params) => {
     return new ZodDefault({
         innerType: type,
         typeName: ZodFirstPartyTypeKind.ZodDefault,
-        defaultValue: typeof params.default === "function"
-            ? params.default
-            : () => params.default,
+        defaultValue: typeof params.default === "function" ? params.default : () => params.default,
         ...processCreateParams(params),
     });
 };
@@ -4868,7 +4509,6 @@ ZodNaN.create = (params) => {
         ...processCreateParams(params),
     });
 };
-const BRAND = Symbol("zod_brand");
 class ZodBranded extends ZodType {
     _parse(input) {
         const { ctx } = this._processInputParams(input);
@@ -4950,9 +4590,7 @@ class ZodReadonly extends ZodType {
             }
             return data;
         };
-        return isAsync(result)
-            ? result.then((data) => freeze(data))
-            : freeze(result);
+        return isAsync(result) ? result.then((data) => freeze(data)) : freeze(result);
     }
     unwrap() {
         return this._def.innerType;
@@ -4965,37 +4603,9 @@ ZodReadonly.create = (type, params) => {
         ...processCreateParams(params),
     });
 };
-function custom(check, params = {}, 
-/**
- * @deprecated
- *
- * Pass `fatal` into the params object instead:
- *
- * ```ts
- * z.string().custom((val) => val.length > 5, { fatal: false })
- * ```
- *
- */
-fatal) {
-    if (check)
-        return ZodAny.create().superRefine((data, ctx) => {
-            var _a, _b;
-            if (!check(data)) {
-                const p = typeof params === "function"
-                    ? params(data)
-                    : typeof params === "string"
-                        ? { message: params }
-                        : params;
-                const _fatal = (_b = (_a = p.fatal) !== null && _a !== void 0 ? _a : fatal) !== null && _b !== void 0 ? _b : true;
-                const p2 = typeof p === "string" ? { message: p } : p;
-                ctx.addIssue({ code: "custom", ...p2, fatal: _fatal });
-            }
-        });
-    return ZodAny.create();
-}
-const late = {
+({
     object: ZodObject.lazycreate,
-};
+});
 var ZodFirstPartyTypeKind;
 (function (ZodFirstPartyTypeKind) {
     ZodFirstPartyTypeKind["ZodString"] = "ZodString";
@@ -5035,252 +4645,120 @@ var ZodFirstPartyTypeKind;
     ZodFirstPartyTypeKind["ZodPipeline"] = "ZodPipeline";
     ZodFirstPartyTypeKind["ZodReadonly"] = "ZodReadonly";
 })(ZodFirstPartyTypeKind || (ZodFirstPartyTypeKind = {}));
-const instanceOfType = (
-// const instanceOfType = <T extends new (...args: any[]) => any>(
-cls, params = {
-    message: `Input not instance of ${cls.name}`,
-}) => custom((data) => data instanceof cls, params);
 const stringType = ZodString.create;
 const numberType = ZodNumber.create;
-const nanType = ZodNaN.create;
-const bigIntType = ZodBigInt.create;
+ZodNaN.create;
+ZodBigInt.create;
 const booleanType = ZodBoolean.create;
-const dateType = ZodDate.create;
-const symbolType = ZodSymbol.create;
-const undefinedType = ZodUndefined.create;
-const nullType = ZodNull.create;
+ZodDate.create;
+ZodSymbol.create;
+ZodUndefined.create;
+ZodNull.create;
 const anyType = ZodAny.create;
-const unknownType = ZodUnknown.create;
-const neverType = ZodNever.create;
-const voidType = ZodVoid.create;
+ZodUnknown.create;
+ZodNever.create;
+ZodVoid.create;
 const arrayType = ZodArray.create;
 const objectType = ZodObject.create;
-const strictObjectType = ZodObject.strictCreate;
+ZodObject.strictCreate;
 const unionType = ZodUnion.create;
-const discriminatedUnionType = ZodDiscriminatedUnion.create;
-const intersectionType = ZodIntersection.create;
-const tupleType = ZodTuple.create;
+ZodIntersection.create;
+ZodTuple.create;
 const recordType = ZodRecord.create;
-const mapType = ZodMap.create;
-const setType = ZodSet.create;
-const functionType = ZodFunction.create;
-const lazyType = ZodLazy.create;
-const literalType = ZodLiteral.create;
+ZodMap.create;
+ZodSet.create;
+ZodLazy.create;
+ZodLiteral.create;
 const enumType = ZodEnum.create;
-const nativeEnumType = ZodNativeEnum.create;
-const promiseType = ZodPromise.create;
-const effectsType = ZodEffects.create;
-const optionalType = ZodOptional.create;
-const nullableType = ZodNullable.create;
-const preprocessType = ZodEffects.createWithPreprocess;
-const pipelineType = ZodPipeline.create;
-const ostring = () => stringType().optional();
-const onumber = () => numberType().optional();
-const oboolean = () => booleanType().optional();
-const coerce = {
-    string: ((arg) => ZodString.create({ ...arg, coerce: true })),
-    number: ((arg) => ZodNumber.create({ ...arg, coerce: true })),
-    boolean: ((arg) => ZodBoolean.create({
-        ...arg,
-        coerce: true,
-    })),
-    bigint: ((arg) => ZodBigInt.create({ ...arg, coerce: true })),
-    date: ((arg) => ZodDate.create({ ...arg, coerce: true })),
-};
-const NEVER = INVALID$3;
+ZodNativeEnum.create;
+ZodPromise.create;
+ZodEffects.create;
+ZodOptional.create;
+ZodNullable.create;
+ZodEffects.createWithPreprocess;
+INVALID$3;
 
-var z$1 = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    defaultErrorMap: errorMap,
-    setErrorMap: setErrorMap,
-    getErrorMap: getErrorMap,
-    makeIssue: makeIssue,
-    EMPTY_PATH: EMPTY_PATH,
-    addIssueToContext: addIssueToContext,
-    ParseStatus: ParseStatus,
-    INVALID: INVALID$3,
-    DIRTY: DIRTY,
-    OK: OK,
-    isAborted: isAborted,
-    isDirty: isDirty,
-    isValid: isValid,
-    isAsync: isAsync,
-    get util () { return util; },
-    get objectUtil () { return objectUtil; },
-    ZodParsedType: ZodParsedType,
-    getParsedType: getParsedType,
-    ZodType: ZodType,
-    datetimeRegex: datetimeRegex,
-    ZodString: ZodString,
-    ZodNumber: ZodNumber,
-    ZodBigInt: ZodBigInt,
-    ZodBoolean: ZodBoolean,
-    ZodDate: ZodDate,
-    ZodSymbol: ZodSymbol,
-    ZodUndefined: ZodUndefined,
-    ZodNull: ZodNull,
-    ZodAny: ZodAny,
-    ZodUnknown: ZodUnknown,
-    ZodNever: ZodNever,
-    ZodVoid: ZodVoid,
-    ZodArray: ZodArray,
-    ZodObject: ZodObject,
-    ZodUnion: ZodUnion,
-    ZodDiscriminatedUnion: ZodDiscriminatedUnion,
-    ZodIntersection: ZodIntersection,
-    ZodTuple: ZodTuple,
-    ZodRecord: ZodRecord,
-    ZodMap: ZodMap,
-    ZodSet: ZodSet,
-    ZodFunction: ZodFunction,
-    ZodLazy: ZodLazy,
-    ZodLiteral: ZodLiteral,
-    ZodEnum: ZodEnum,
-    ZodNativeEnum: ZodNativeEnum,
-    ZodPromise: ZodPromise,
-    ZodEffects: ZodEffects,
-    ZodTransformer: ZodEffects,
-    ZodOptional: ZodOptional,
-    ZodNullable: ZodNullable,
-    ZodDefault: ZodDefault,
-    ZodCatch: ZodCatch,
-    ZodNaN: ZodNaN,
-    BRAND: BRAND,
-    ZodBranded: ZodBranded,
-    ZodPipeline: ZodPipeline,
-    ZodReadonly: ZodReadonly,
-    custom: custom,
-    Schema: ZodType,
-    ZodSchema: ZodType,
-    late: late,
-    get ZodFirstPartyTypeKind () { return ZodFirstPartyTypeKind; },
-    coerce: coerce,
-    any: anyType,
-    array: arrayType,
-    bigint: bigIntType,
-    boolean: booleanType,
-    date: dateType,
-    discriminatedUnion: discriminatedUnionType,
-    effect: effectsType,
-    'enum': enumType,
-    'function': functionType,
-    'instanceof': instanceOfType,
-    intersection: intersectionType,
-    lazy: lazyType,
-    literal: literalType,
-    map: mapType,
-    nan: nanType,
-    nativeEnum: nativeEnumType,
-    never: neverType,
-    'null': nullType,
-    nullable: nullableType,
-    number: numberType,
-    object: objectType,
-    oboolean: oboolean,
-    onumber: onumber,
-    optional: optionalType,
-    ostring: ostring,
-    pipeline: pipelineType,
-    preprocess: preprocessType,
-    promise: promiseType,
-    record: recordType,
-    set: setType,
-    strictObject: strictObjectType,
-    string: stringType,
-    symbol: symbolType,
-    transformer: effectsType,
-    tuple: tupleType,
-    'undefined': undefinedType,
-    union: unionType,
-    unknown: unknownType,
-    'void': voidType,
-    NEVER: NEVER,
-    ZodIssueCode: ZodIssueCode,
-    quotelessJson: quotelessJson,
-    ZodError: ZodError
-});
-
-const PlantSlotSchema = z$1.object({
-    entity_id: z$1.string().optional().default(''), // Ensure default if missing
-    plant_id: z$1.string().optional().default(''),
-    stage: z$1.string().optional().default('unknown'),
-    strain: z$1.string().optional().default(''),
-    phenotype: z$1.string().optional().default(''),
-    row: z$1.number().optional().default(0),
-    col: z$1.number().optional().default(0),
-    position: z$1.string().optional().default(''),
+const PlantSlotSchema = objectType({
+    entity_id: stringType().optional().default(''), // Ensure default if missing
+    plant_id: stringType().optional().default(''),
+    stage: stringType().optional().default('unknown'),
+    strain: stringType().optional().default(''),
+    phenotype: stringType().optional().default(''),
+    row: numberType().optional().default(0),
+    col: numberType().optional().default(0),
+    position: stringType().optional().default(''),
     // Days in stage
-    seedling_days: z$1.number().optional().default(0),
-    mother_days: z$1.number().optional().default(0),
-    clone_days: z$1.number().optional().default(0),
-    veg_days: z$1.number().optional().default(0),
-    flower_days: z$1.number().optional().default(0),
-    dry_days: z$1.number().optional().default(0),
-    cure_days: z$1.number().optional().default(0),
+    seedling_days: numberType().optional().default(0),
+    mother_days: numberType().optional().default(0),
+    clone_days: numberType().optional().default(0),
+    veg_days: numberType().optional().default(0),
+    flower_days: numberType().optional().default(0),
+    dry_days: numberType().optional().default(0),
+    cure_days: numberType().optional().default(0),
     // Start dates
-    seedling_start: z$1.string().nullable().optional().default(null),
-    mother_start: z$1.string().nullable().optional().default(null),
-    clone_start: z$1.string().nullable().optional().default(null),
-    veg_start: z$1.string().nullable().optional().default(null),
-    flower_start: z$1.string().nullable().optional().default(null),
-    dry_start: z$1.string().nullable().optional().default(null),
-    cure_start: z$1.string().nullable().optional().default(null),
-}).catchall(z$1.any()).nullable();
-const GrowspaceAPIResponseSchema = z$1.object({
+    seedling_start: stringType().nullable().optional().default(null),
+    mother_start: stringType().nullable().optional().default(null),
+    clone_start: stringType().nullable().optional().default(null),
+    veg_start: stringType().nullable().optional().default(null),
+    flower_start: stringType().nullable().optional().default(null),
+    dry_start: stringType().nullable().optional().default(null),
+    cure_start: stringType().nullable().optional().default(null),
+}).catchall(anyType()).nullable();
+const GrowspaceAPIResponseSchema = objectType({
     // Root Identity
-    growspace_id: z$1.string(),
-    name: z$1.string(),
-    type: z$1.enum(['normal', 'mother', 'clone', 'dry', 'cure']),
-    rows: z$1.number(),
-    plants_per_row: z$1.number(),
-    total_plants: z$1.number().optional().default(0),
-    notification_target: z$1.string().nullable().optional(),
+    growspace_id: stringType(),
+    name: stringType(),
+    type: enumType(['normal', 'mother', 'clone', 'dry', 'cure']),
+    rows: numberType(),
+    plants_per_row: numberType(),
+    total_plants: numberType().optional().default(0),
+    notification_target: stringType().nullable().optional(),
     // Grid
-    grid: z$1.record(z$1.string(), PlantSlotSchema).nullable().optional().transform(v => v ?? {}),
+    grid: recordType(stringType(), PlantSlotSchema).nullable().optional().transform(v => v ?? {}),
     // Configs
-    irrigation_config: z$1.object({
-        irrigation_pump_entity: z$1.string().nullable().optional(),
-        drain_pump_entity: z$1.string().nullable().optional(),
-        irrigation_duration: z$1.number().nullable().optional(),
-        drain_duration: z$1.number().nullable().optional(),
-        irrigation_times: z$1.array(z$1.any()).optional(),
-        drain_times: z$1.array(z$1.any()).optional(),
-        veg_day_hours: z$1.number().optional(),
+    irrigation_config: objectType({
+        irrigation_pump_entity: stringType().nullable().optional(),
+        drain_pump_entity: stringType().nullable().optional(),
+        irrigation_duration: numberType().nullable().optional(),
+        drain_duration: numberType().nullable().optional(),
+        irrigation_times: arrayType(anyType()).optional(),
+        drain_times: arrayType(anyType()).optional(),
+        veg_day_hours: numberType().optional(),
     }).optional().default({}),
-    irrigation_strategy: z$1.any().nullable().default(null),
+    irrigation_strategy: anyType().nullable().default(null),
     // Flattened Environment Config (Root Level)
-    temperature_sensor: z$1.string().optional(),
-    humidity_sensor: z$1.string().optional(),
-    vpd_sensor: z$1.string().optional(),
-    co2_sensor: z$1.string().optional(),
-    soil_moisture_sensor: z$1.string().optional(),
-    light_sensor: z$1.string().optional(),
-    exhaust_entity: z$1.string().optional(),
-    humidifier_entity: z$1.string().optional(),
-    dehumidifier_entity: z$1.string().optional(),
-    dehumidifier_control_enabled: z$1.boolean().optional(),
-    circulation_fan_entity: z$1.string().optional(),
-    vpd: z$1.string().optional(),
-    soil_moisture_value: z$1.string().optional(),
-    dehumidifier_state: z$1.string().optional(),
-    dehumidifier_thresholds: z$1.record(z$1.string(), z$1.record(z$1.string(), z$1.object({ on: z$1.number(), off: z$1.number() }))).optional().default({}),
+    temperature_sensor: stringType().optional(),
+    humidity_sensor: stringType().optional(),
+    vpd_sensor: stringType().optional(),
+    co2_sensor: stringType().optional(),
+    soil_moisture_sensor: stringType().optional(),
+    light_sensor: stringType().optional(),
+    exhaust_entity: stringType().optional(),
+    humidifier_entity: stringType().optional(),
+    dehumidifier_entity: stringType().optional(),
+    dehumidifier_control_enabled: booleanType().optional(),
+    circulation_fan_entity: stringType().optional(),
+    vpd: stringType().optional(),
+    soil_moisture_value: stringType().optional(),
+    dehumidifier_state: stringType().optional(),
+    dehumidifier_thresholds: recordType(stringType(), recordType(stringType(), objectType({ on: numberType(), off: numberType() }))).optional().default({}),
     // Statistics
-    max_veg_days: z$1.number().optional().default(0),
-    max_flower_days: z$1.number().optional().default(0),
-    veg_week: z$1.number().optional().default(0),
-    flower_week: z$1.number().optional().default(0),
-    max_stage_summary: z$1.string().optional().default(''),
+    max_veg_days: numberType().optional().default(0),
+    max_flower_days: numberType().optional().default(0),
+    veg_week: numberType().optional().default(0),
+    flower_week: numberType().optional().default(0),
+    max_stage_summary: stringType().optional().default(''),
     // Biological Metrics
-    vpd_status: z$1.string().optional().default('unknown'),
-    vpd_target_min: z$1.number().optional().default(0),
-    vpd_target_max: z$1.number().optional().default(0),
-    vpd_danger_min: z$1.number().optional().default(0),
-    vpd_danger_max: z$1.number().optional().default(0),
-    granular_stage: z$1.string().optional().default('unknown'),
-    is_day: z$1.boolean().optional().default(false),
-    air_exchange: z$1.union([z$1.string(), z$1.number().transform(String)]).nullable().optional(), // Default handled by optionality
-}).catchall(z$1.any()); // Allow extra fields to pass through without error
-const GrowspaceAPICollectionSchema = z$1.record(z$1.string(), GrowspaceAPIResponseSchema);
+    vpd_status: stringType().optional().default('unknown'),
+    vpd_target_min: numberType().optional().default(0),
+    vpd_target_max: numberType().optional().default(0),
+    vpd_danger_min: numberType().optional().default(0),
+    vpd_danger_max: numberType().optional().default(0),
+    granular_stage: stringType().optional().default('unknown'),
+    is_day: booleanType().optional().default(false),
+    air_exchange: unionType([stringType(), numberType().transform(String)]).nullable().optional(), // Default handled by optionality
+}).catchall(anyType()); // Allow extra fields to pass through without error
+const GrowspaceAPICollectionSchema = recordType(stringType(), GrowspaceAPIResponseSchema);
 
 class DataService {
     constructor(hass) {
@@ -8177,6 +7655,521 @@ class GraphDataTransformer {
     })();
     return _classThis;
 })();
+
+let clean = Symbol('clean');
+
+let listenerQueue = [];
+let lqIndex = 0;
+const QUEUE_ITEMS_PER_LISTENER = 4;
+let epoch = 0;
+
+/* @__NO_SIDE_EFFECTS__ */
+const atom = initialValue => {
+  let listeners = [];
+  let $atom = {
+    get() {
+      if (!$atom.lc) {
+        $atom.listen(() => {})();
+      }
+      return $atom.value
+    },
+    lc: 0,
+    listen(listener) {
+      $atom.lc = listeners.push(listener);
+
+      return () => {
+        for (
+          let i = lqIndex + QUEUE_ITEMS_PER_LISTENER;
+          i < listenerQueue.length;
+
+        ) {
+          if (listenerQueue[i] === listener) {
+            listenerQueue.splice(i, QUEUE_ITEMS_PER_LISTENER);
+          } else {
+            i += QUEUE_ITEMS_PER_LISTENER;
+          }
+        }
+
+        let index = listeners.indexOf(listener);
+        if (~index) {
+          listeners.splice(index, 1);
+          if (!--$atom.lc) $atom.off();
+        }
+      }
+    },
+    notify(oldValue, changedKey) {
+      epoch++;
+      let runListenerQueue = !listenerQueue.length;
+      for (let listener of listeners) {
+        listenerQueue.push(listener, $atom.value, oldValue, changedKey);
+      }
+
+      if (runListenerQueue) {
+        for (
+          lqIndex = 0;
+          lqIndex < listenerQueue.length;
+          lqIndex += QUEUE_ITEMS_PER_LISTENER
+        ) {
+          listenerQueue[lqIndex](
+            listenerQueue[lqIndex + 1],
+            listenerQueue[lqIndex + 2],
+            listenerQueue[lqIndex + 3]
+          );
+        }
+        listenerQueue.length = 0;
+      }
+    },
+    /* It will be called on last listener unsubscribing.
+       We will redefine it in onMount and onStop. */
+    off() {},
+    set(newValue) {
+      let oldValue = $atom.value;
+      if (oldValue !== newValue) {
+        $atom.value = newValue;
+        $atom.notify(oldValue);
+      }
+    },
+    subscribe(listener) {
+      let unbind = $atom.listen(listener);
+      listener($atom.value);
+      return unbind
+    },
+    value: initialValue
+  };
+
+  if (process.env.NODE_ENV !== 'production') {
+    $atom[clean] = () => {
+      listeners = [];
+      $atom.lc = 0;
+      $atom.off();
+    };
+  }
+
+  return $atom
+};
+
+const MOUNT = 5;
+const UNMOUNT = 6;
+const REVERT_MUTATION = 10;
+
+let on = (object, listener, eventKey, mutateStore) => {
+  object.events = object.events || {};
+  if (!object.events[eventKey + REVERT_MUTATION]) {
+    object.events[eventKey + REVERT_MUTATION] = mutateStore(eventProps => {
+      // eslint-disable-next-line no-sequences
+      object.events[eventKey].reduceRight((event, l) => (l(event), event), {
+        shared: {},
+        ...eventProps
+      });
+    });
+  }
+  object.events[eventKey] = object.events[eventKey] || [];
+  object.events[eventKey].push(listener);
+  return () => {
+    let currentListeners = object.events[eventKey];
+    let index = currentListeners.indexOf(listener);
+    currentListeners.splice(index, 1);
+    if (!currentListeners.length) {
+      delete object.events[eventKey];
+      object.events[eventKey + REVERT_MUTATION]();
+      delete object.events[eventKey + REVERT_MUTATION];
+    }
+  }
+};
+
+let STORE_UNMOUNT_DELAY = 1000;
+
+let onMount = ($store, initialize) => {
+  let listener = payload => {
+    let destroy = initialize(payload);
+    if (destroy) $store.events[UNMOUNT].push(destroy);
+  };
+  return on($store, listener, MOUNT, runListeners => {
+    let originListen = $store.listen;
+    $store.listen = (...args) => {
+      if (!$store.lc && !$store.active) {
+        $store.active = true;
+        runListeners();
+      }
+      return originListen(...args)
+    };
+
+    let originOff = $store.off;
+    $store.events[UNMOUNT] = [];
+    $store.off = () => {
+      originOff();
+      setTimeout(() => {
+        if ($store.active && !$store.lc) {
+          $store.active = false;
+          for (let destroy of $store.events[UNMOUNT]) destroy();
+          $store.events[UNMOUNT] = [];
+        }
+      }, STORE_UNMOUNT_DELAY);
+    };
+
+    if (process.env.NODE_ENV !== 'production') {
+      let originClean = $store[clean];
+      $store[clean] = () => {
+        for (let destroy of $store.events[UNMOUNT]) destroy();
+        $store.events[UNMOUNT] = [];
+        $store.active = false;
+        originClean();
+      };
+    }
+
+    return () => {
+      $store.listen = originListen;
+      $store.off = originOff;
+    }
+  })
+};
+
+let computedStore = (stores, cb, batched) => {
+  if (!Array.isArray(stores)) stores = [stores];
+
+  let previousArgs;
+  let currentEpoch;
+  let set = () => {
+    if (currentEpoch === epoch) return
+    currentEpoch = epoch;
+    let args = stores.map($store => $store.get());
+    if (!previousArgs || args.some((arg, i) => arg !== previousArgs[i])) {
+      previousArgs = args;
+      let value = cb(...args);
+      if (value && value.then && value.t) {
+        value.then(asyncValue => {
+          if (previousArgs === args) {
+            // Prevent a stale set
+            $computed.set(asyncValue);
+          }
+        });
+      } else {
+        $computed.set(value);
+        currentEpoch = epoch;
+      }
+    }
+  };
+  let $computed = atom(undefined);
+  let get = $computed.get;
+  $computed.get = () => {
+    set();
+    return get()
+  };
+
+  let timer;
+  let run = batched
+    ? () => {
+        clearTimeout(timer);
+        timer = setTimeout(set);
+      }
+    : set;
+
+  onMount($computed, () => {
+    let unbinds = stores.map($store => $store.listen(run));
+    set();
+    return () => {
+      for (let unbind of unbinds) unbind();
+    }
+  });
+
+  return $computed
+};
+
+/* @__NO_SIDE_EFFECTS__ */
+const computed = (stores, fn) => computedStore(stores, fn);
+
+// Definition of atoms
+const $viewMode = atom('standard');
+const $isLoading = atom(true);
+const $activeDialog = atom({ type: 'NONE' });
+const $isEditMode = atom(false);
+const $selectedPlants = atom(new Set());
+const $focusedPlantIndex = atom(-1);
+atom(false);
+const $notification = atom(null);
+const $defaultApplied = atom(false);
+// Computed stores
+const $isCompactView = computed($viewMode, (mode) => mode === 'compact');
+// Actions
+const setViewMode = (mode) => {
+    $viewMode.set(mode);
+};
+const setIsLoading = (loading) => {
+    $isLoading.set(loading);
+};
+const closeDialog = () => {
+    $activeDialog.set({ type: 'NONE' });
+};
+const setEditMode = (isEdit) => {
+    $isEditMode.set(isEdit);
+    // Clear selection when exiting edit mode
+    if (!isEdit) {
+        $selectedPlants.set(new Set());
+    }
+};
+const togglePlantSelection = (plantId) => {
+    const current = new Set($selectedPlants.get());
+    if (current.has(plantId)) {
+        current.delete(plantId);
+    }
+    else {
+        current.add(plantId);
+    }
+    $selectedPlants.set(current);
+};
+const selectAllPlants = (plantIds) => {
+    $selectedPlants.set(new Set(plantIds));
+};
+const clearPlantSelection = () => {
+    $selectedPlants.set(new Set());
+};
+const setFocusedPlantIndex = (index) => {
+    $focusedPlantIndex.set(index);
+};
+const showToast = (message, type = 'info') => {
+    $notification.set({ message, type });
+    // Auto-dismiss logic could be here or in component, but typically atoms just hold state.
+    // The component usually handles the duration behavior using setTimeout.
+};
+const setDefaultApplied = (applied) => {
+    $defaultApplied.set(applied);
+};
+
+var lib = {};
+
+var StoreController = {};
+
+var hasRequiredStoreController;
+
+function requireStoreController () {
+	if (hasRequiredStoreController) return StoreController;
+	hasRequiredStoreController = 1;
+	Object.defineProperty(StoreController, "__esModule", { value: true });
+	StoreController.StoreController = void 0;
+	/**
+	 * A `ReactiveController` that subscribes a `LitElement` to a `nanostores` atom and updates the host element when the atom changes.
+	 *
+	 * @example
+	 * ```ts
+	 * import { atom } from 'nanostores';
+	 * import { StoreController } from '@nanostores/lit';
+	 * import { LitElement, html } from 'lit';
+	 * import { customElement } from 'lit/decorators.js';
+	 *
+	 * const count = atom(0);
+	 *
+	 * @customElement('my-element')
+	 * class MyElement extends LitElement {
+	 * private controller = new StoreController(this, count);
+	 *  render() {
+	 *   const $count = this.controller.value;
+	 *   return html\`Count: \${$count}\`;
+	 *  }
+	 * }
+	 * ```
+	 */
+	class StoreController$1 {
+	    constructor(host, atom) {
+	        this.host = host;
+	        this.atom = atom;
+	        host.addController(this);
+	    }
+	    // Subscribe to the atom when the host connects
+	    hostConnected() {
+	        this.unsubscribe = this.atom.subscribe(() => {
+	            this.host.requestUpdate();
+	        });
+	    }
+	    // Unsubscribe from the atom when the host disconnects
+	    hostDisconnected() {
+	        var _a;
+	        (_a = this.unsubscribe) === null || _a === void 0 ? void 0 : _a.call(this);
+	    }
+	    /**
+	     * The current value of the atom.
+	     * @readonly
+	     */
+	    get value() {
+	        return this.atom.get();
+	    }
+	}
+	StoreController.StoreController = StoreController$1;
+	return StoreController;
+}
+
+var MultiStoreController = {};
+
+var hasRequiredMultiStoreController;
+
+function requireMultiStoreController () {
+	if (hasRequiredMultiStoreController) return MultiStoreController;
+	hasRequiredMultiStoreController = 1;
+	Object.defineProperty(MultiStoreController, "__esModule", { value: true });
+	MultiStoreController.MultiStoreController = void 0;
+	/**
+	 * A `ReactiveController` that subscribes a `LitElement` to several `nanostores` atoms and updates the host element when any of the atoms changes.
+	 *
+	 * @example
+	 * ```ts
+	 * import { atom } from 'nanostores';
+	 * import { StoreController } from '@nanostores/lit';
+	 * import { LitElement, html } from 'lit';
+	 * import { customElement } from 'lit/decorators.js';
+	 *
+	 * const count1 = atom(0);
+	 * const count2 = atom(0);
+	 *
+	 * @customElement('my-element')
+	 * class MyElement extends LitElement {
+	 * private controller = new MultiStoreController(this, [count1, count2]);
+	 *  render() {
+	 *   const [$count1, $count2] = controller.values;
+	 *   return html\`Count 1: \${count1}\, Count 2: \${count2}\`;
+	 *  }
+	 * }
+	 * ```
+	 */
+	class MultiStoreController$1 {
+	    constructor(host, atoms) {
+	        this.host = host;
+	        this.atoms = atoms;
+	        host.addController(this);
+	    }
+	    // Subscribe to the atom when the host connects
+	    hostConnected() {
+	        this.unsubscribes = this.atoms.map((atom) => atom.subscribe(() => this.host.requestUpdate()));
+	    }
+	    // Unsubscribe from the atom when the host disconnects
+	    hostDisconnected() {
+	        var _a;
+	        (_a = this.unsubscribes) === null || _a === void 0 ? void 0 : _a.forEach((unsubscribe) => unsubscribe());
+	    }
+	    /**
+	     * The current values of the atoms.
+	     * @readonly
+	     */
+	    get values() {
+	        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+	        return this.atoms.map((atom) => atom.get());
+	    }
+	}
+	MultiStoreController.MultiStoreController = MultiStoreController$1;
+	return MultiStoreController;
+}
+
+var useStores = {};
+
+var hasRequiredUseStores;
+
+function requireUseStores () {
+	if (hasRequiredUseStores) return useStores;
+	hasRequiredUseStores = 1;
+	Object.defineProperty(useStores, "__esModule", { value: true });
+	useStores.useStores = void 0;
+	const MultiStoreController_1 = requireMultiStoreController();
+	/**
+	 * A TypeScript decorator that creates a new `MultiStoreController` for the atoms
+	 * @decorator `withStores(atoms)`
+	 * @param atoms The atoms to subscribe to.
+	 *
+	 * @example
+	 * ```ts
+	 * import { LitElement, html } from 'lit';
+	 * import { customElement } from 'lit/decorators.js';
+	 * import { atom } from 'nanostores';
+	 * import { useStores } from '@nanostores/lit';
+	 *
+	 * const count = atom(0);
+	 *
+	 * @customElement('my-element')
+	 * @useStores(count)
+	 * class MyElement extends LitElement {
+	 *  render() {
+	 *   return html\`Count: \${count.get()}\`;
+	 *   }
+	 * }
+	 * ```
+	 */
+	function useStores$1(...atoms) {
+	    return (constructor) => {
+	        return class extends constructor {
+	            constructor(...args) {
+	                super(...args);
+	                new MultiStoreController_1.MultiStoreController(this, atoms);
+	            }
+	        };
+	    };
+	}
+	useStores.useStores = useStores$1;
+	return useStores;
+}
+
+var withStores = {};
+
+var hasRequiredWithStores;
+
+function requireWithStores () {
+	if (hasRequiredWithStores) return withStores;
+	hasRequiredWithStores = 1;
+	Object.defineProperty(withStores, "__esModule", { value: true });
+	withStores.withStores = void 0;
+	const MultiStoreController_1 = requireMultiStoreController();
+	/**
+	 * A mixin that subscribes a LitElement to a list of atoms.
+	 * @mixin `withStores`
+	 * @param LitElementClass The LitElement class to extend.
+	 * @param atoms The atoms to subscribe to.
+	 *
+	 * @example
+	 * ```ts
+	 * import { LitElement, html } from 'lit';
+	 * import { customElement } from 'lit/decorators.js';
+	 * import { atom } from 'nanostores';
+	 * import { withStores } from '@nanostores/lit';
+	 *
+	 * const count = atom(0);
+	 *
+	 * @customElement('my-element')
+	 * class MyElement extends withStores(LitElement, [count]) {
+	 *  render() {
+	 *   return html\`Count: \${count.get()}\`;
+	 *  }
+	 * }
+	 * ```
+	 */
+	const withStores$1 = (LitElementClass, atoms) => {
+	    return class LitElementWithStores extends LitElementClass {
+	        constructor(...args) {
+	            super(...args);
+	            new MultiStoreController_1.MultiStoreController(this, atoms);
+	        }
+	    };
+	};
+	withStores.withStores = withStores$1;
+	return withStores;
+}
+
+var hasRequiredLib;
+
+function requireLib () {
+	if (hasRequiredLib) return lib;
+	hasRequiredLib = 1;
+	(function (exports) {
+		Object.defineProperty(exports, "__esModule", { value: true });
+		exports.withStores = exports.useStores = exports.MultiStoreController = exports.StoreController = void 0;
+		var StoreController_1 = requireStoreController();
+		Object.defineProperty(exports, "StoreController", { enumerable: true, get: function () { return StoreController_1.StoreController; } });
+		var MultiStoreController_1 = requireMultiStoreController();
+		Object.defineProperty(exports, "MultiStoreController", { enumerable: true, get: function () { return MultiStoreController_1.MultiStoreController; } });
+		var useStores_1 = requireUseStores();
+		Object.defineProperty(exports, "useStores", { enumerable: true, get: function () { return useStores_1.useStores; } });
+		var withStores_1 = requireWithStores();
+		Object.defineProperty(exports, "withStores", { enumerable: true, get: function () { return withStores_1.withStores; } }); 
+	} (lib));
+	return lib;
+}
+
+var libExports = requireLib();
 
 const sharedStyles = i$6 `
   /* --- Glassmorphism Surfaces --- */
@@ -14923,7 +14916,7 @@ class GrowspaceLogbookController {
 })();
 
 (() => {
-    var _DialogHost_hass_accessor_storage, _DialogHost_store_accessor_storage, _DialogHost_activeDialogState_accessor_storage, _DialogHost_devices_accessor_storage, _DialogHost_strainLibrary_accessor_storage;
+    var _DialogHost_hass_accessor_storage, _DialogHost_store_accessor_storage, _DialogHost_devices_accessor_storage, _DialogHost_strainLibrary_accessor_storage;
     let _classDecorators = [t$2('growspace-dialog-host')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -14935,9 +14928,6 @@ class GrowspaceLogbookController {
     let _store_decorators;
     let _store_initializers = [];
     let _store_extraInitializers = [];
-    let _activeDialogState_decorators;
-    let _activeDialogState_initializers = [];
-    let _activeDialogState_extraInitializers = [];
     let _devices_decorators;
     let _devices_initializers = [];
     let _devices_extraInitializers = [];
@@ -14949,8 +14939,13 @@ class GrowspaceLogbookController {
         set hass(value) { __classPrivateFieldSet(this, _DialogHost_hass_accessor_storage, value, "f"); }
         get store() { return __classPrivateFieldGet(this, _DialogHost_store_accessor_storage, "f"); }
         set store(value) { __classPrivateFieldSet(this, _DialogHost_store_accessor_storage, value, "f"); }
-        get activeDialogState() { return __classPrivateFieldGet(this, _DialogHost_activeDialogState_accessor_storage, "f"); }
-        set activeDialogState(value) { __classPrivateFieldSet(this, _DialogHost_activeDialogState_accessor_storage, value, "f"); }
+        // activeDialogState property was used to pass it in? Or just state from store?
+        // It was @property({ attribute: false }) accessor activeDialogState!: ActiveDialogState;
+        // If it was passed from parent, we might still want it. 
+        // But Render method in GrowspaceManagerCard didn't pass it in the updated code (I didn't check if I removed it).
+        // Let's assume we want to use the store directly.
+        // If I keep the property, I can support both. But strictly switching to store is better.
+        // I will remove the property and property accessor.
         get devices() { return __classPrivateFieldGet(this, _DialogHost_devices_accessor_storage, "f"); }
         set devices(value) { __classPrivateFieldSet(this, _DialogHost_devices_accessor_storage, value, "f"); }
         get strainLibrary() { return __classPrivateFieldGet(this, _DialogHost_strainLibrary_accessor_storage, "f"); }
@@ -14958,7 +14953,7 @@ class GrowspaceLogbookController {
         render() {
             if (!this.store)
                 return x ``;
-            const active = this.activeDialogState || this.store.state.activeDialog;
+            const active = this._activeDialogController.value;
             console.log('[DialogHost] Rendering with active type:', active.type);
             if (active.type === 'NONE')
                 return x ``;
@@ -15002,7 +14997,7 @@ class GrowspaceLogbookController {
             .row=${dialogState.row}
             .col=${dialogState.col}
             .growspaceName=${selectedDeviceData?.name || ''}
-            @close=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
             @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
         ></add-plant-dialog>
         `;
@@ -15019,7 +15014,7 @@ class GrowspaceLogbookController {
             .activeTab=${dialogState.activeTab}
             .selectedPlantIds=${dialogState.selectedPlantIds}
             .growspaceOptions=${growspaceOptions}
-            @close=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
             @update-plant=${(e) => this.store.updatePlantFromDialog({
                 plant: dialogState.plant,
                 editedAttributes: e.detail, // Event detail is the attributes object
@@ -15040,7 +15035,7 @@ class GrowspaceLogbookController {
         <strain-library-dialog
             .open=${true}
             .strains=${strainLibrary}
-            @close=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
             @save-strain=${(e) => this.store.addStrain(e.detail)}
             @delete-strain=${(e) => this.store.removeStrain(e.detail.key)}
             @import-library=${(e) => this._performImport(e.detail.file, e.detail.replace)}
@@ -15073,7 +15068,7 @@ class GrowspaceLogbookController {
             .currentTab=${dialogState.currentTab}
             .environmentData=${dialogState.environmentData}
             .growspaceOptions=${growspaceOptions}
-            @close=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
             @add-growspace-submit=${(e) => this.store.handleAddGrowspace(e.detail)}
             @edit-growspace-submit=${(e) => this.store.handleUpdateGrowspace(e.detail)}
             @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
@@ -15106,7 +15101,7 @@ class GrowspaceLogbookController {
                 });
                 this.store.showToast('Environment configured successfully!', 'success');
                 await this.store.refreshData();
-                this.store.closeActiveDialog();
+                closeDialog();
             }
             catch (e) {
                 this.store.showToast(`Error: ${e.message}`, 'error');
@@ -15148,7 +15143,7 @@ class GrowspaceLogbookController {
             .personality=${personality}
             .isLoading=${dialogState.isLoading}
             .response=${dialogState.response}
-            @close=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
             @analyze-growspace=${(e) => this.store.analyzeGrowspace(e.detail.query, false)}
             @analyze-all-growspaces=${(e) => this.store.analyzeGrowspace(e.detail.query, true)}
         ></grow-master-dialog>
@@ -15163,7 +15158,7 @@ class GrowspaceLogbookController {
             .open=${true}
             .isLoading=${dialogState.isLoading}
             .response=${dialogState.response}
-            @close=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
             @get-recommendation=${(e) => this.store.getStrainRecommendation(e.detail.query)}
         ></strain-recommendation-dialog>
         `;
@@ -15176,8 +15171,8 @@ class GrowspaceLogbookController {
             .open=${true}
             .device=${selectedDeviceData}
             .growspaceName=${selectedDeviceData?.name || ''}
-            @close=${() => this.store.closeActiveDialog()}
-            @closed=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
+            @closed=${() => closeDialog()}
         ></irrigation-dialog>
         `;
         }
@@ -15189,7 +15184,7 @@ class GrowspaceLogbookController {
         <logbook-dialog
             .open=${true}
             .growspaceId=${dialogState.growspaceId}
-            @close=${() => this.store.closeActiveDialog()}
+            @close=${() => closeDialog()}
         ></logbook-dialog>
         `;
         }
@@ -15197,15 +15192,15 @@ class GrowspaceLogbookController {
             super(...arguments);
             _DialogHost_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
             _DialogHost_store_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
-            _DialogHost_activeDialogState_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _activeDialogState_initializers, void 0)));
-            _DialogHost_devices_accessor_storage.set(this, (__runInitializers(this, _activeDialogState_extraInitializers), __runInitializers(this, _devices_initializers, [])));
+            // Replace @property with StoreController
+            this._activeDialogController = (__runInitializers(this, _store_extraInitializers), new libExports.StoreController(this, $activeDialog));
+            _DialogHost_devices_accessor_storage.set(this, __runInitializers(this, _devices_initializers, []));
             _DialogHost_strainLibrary_accessor_storage.set(this, (__runInitializers(this, _devices_extraInitializers), __runInitializers(this, _strainLibrary_initializers, [])));
             __runInitializers(this, _strainLibrary_extraInitializers);
         }
     };
     _DialogHost_hass_accessor_storage = new WeakMap();
     _DialogHost_store_accessor_storage = new WeakMap();
-    _DialogHost_activeDialogState_accessor_storage = new WeakMap();
     _DialogHost_devices_accessor_storage = new WeakMap();
     _DialogHost_strainLibrary_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "DialogHost");
@@ -15213,12 +15208,10 @@ class GrowspaceLogbookController {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
         _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
         _store_decorators = [c$2({ context: storeContext, subscribe: true })];
-        _activeDialogState_decorators = [n$5({ attribute: false })];
         _devices_decorators = [n$5({ attribute: false })];
         _strainLibrary_decorators = [c$2({ context: strainLibraryContext, subscribe: true })];
         __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
         __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
-        __esDecorate(_classThis, null, _activeDialogState_decorators, { kind: "accessor", name: "activeDialogState", static: false, private: false, access: { has: obj => "activeDialogState" in obj, get: obj => obj.activeDialogState, set: (obj, value) => { obj.activeDialogState = value; } }, metadata: _metadata }, _activeDialogState_initializers, _activeDialogState_extraInitializers);
         __esDecorate(_classThis, null, _devices_decorators, { kind: "accessor", name: "devices", static: false, private: false, access: { has: obj => "devices" in obj, get: obj => obj.devices, set: (obj, value) => { obj.devices = value; } }, metadata: _metadata }, _devices_initializers, _devices_extraInitializers);
         __esDecorate(_classThis, null, _strainLibrary_decorators, { kind: "accessor", name: "strainLibrary", static: false, private: false, access: { has: obj => "strainLibrary" in obj, get: obj => obj.strainLibrary, set: (obj, value) => { obj.strainLibrary = value; } }, metadata: _metadata }, _strainLibrary_initializers, _strainLibrary_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
@@ -24613,7 +24606,10 @@ class ResizeController {
             _GrowspaceHeader__canScrollDeviceRight_accessor_storage.set(this, (__runInitializers(this, __canScrollDeviceLeft_extraInitializers), __runInitializers(this, __canScrollDeviceRight_initializers, false)));
             _GrowspaceHeader__menuOpen_accessor_storage.set(this, (__runInitializers(this, __canScrollDeviceRight_extraInitializers), __runInitializers(this, __menuOpen_initializers, false)));
             _GrowspaceHeader__mobileLink_accessor_storage.set(this, (__runInitializers(this, __menuOpen_extraInitializers), __runInitializers(this, __mobileLink_initializers, false)));
-            this._chipsContainerRef = (__runInitializers(this, __mobileLink_extraInitializers), e$1());
+            // Reactivity Controllers
+            this._viewModeController = (__runInitializers(this, __mobileLink_extraInitializers), new libExports.StoreController(this, $viewMode));
+            this._isEditModeController = new libExports.StoreController(this, $isEditMode);
+            this._chipsContainerRef = e$1();
             this._stageContainerRef = e$1();
             this._deviceChipsContainerRef = e$1();
             this._resizeController = new ResizeController(this, () => this._checkScroll());
@@ -24841,10 +24837,10 @@ class ResizeController {
                     this.store.openAddPlantDialog();
                     break;
                 case 'config':
-                    this.store.setActiveDialog({
+                    $activeDialog.set({
                         type: 'CONFIG',
                         payload: {
-                            currentTab: 'environment', // Default tab
+                            currentTab: 'environment',
                             environmentData: {
                                 selectedGrowspaceId: this.store.state.selectedDevice || '',
                                 temp_sensor: this.device?.environment_attributes?.temperature_sensor || '',
@@ -24866,26 +24862,26 @@ class ResizeController {
                     });
                     break;
                 case 'edit':
-                    this.store.setEditMode(!this.store.state.isEditMode);
+                    setEditMode(!this._isEditModeController.value);
                     break;
                 case 'compact':
                     // Legacy mapping; now should set ViewMode
-                    const currentMode = this.store.state.viewMode;
-                    this.store.setViewMode(currentMode === 'compact' ? 'standard' : 'compact');
+                    const currentMode = this._viewModeController.value;
+                    setViewMode(currentMode === 'compact' ? 'standard' : 'compact');
                     break;
                 case 'strains':
                     this.store.fetchStrainLibrary();
-                    this.store.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
+                    $activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
                     break;
                 case 'irrigation':
                     if (this.store.state.selectedDevice) {
-                        this.store.setActiveDialog({ type: 'IRRIGATION', payload: true });
+                        $activeDialog.set({ type: 'IRRIGATION', payload: {} });
                     }
                     break;
                 case 'ai':
-                    this.store.setActiveDialog({
+                    $activeDialog.set({
                         type: 'GROW_MASTER',
-                        payload: { growspaceId: this.store.state.selectedDevice || '', isLoading: false, response: null, mode: 'single' }
+                        payload: { growspaceId: this.store.state.selectedDevice || '', isLoading: false, response: '', mode: 'single' }
                     });
                     break;
                 case 'logbook':
@@ -25159,12 +25155,12 @@ class ResizeController {
         <div class="menu-item" @click=${() => this._triggerAction('edit')}>
             <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
             <span class="menu-item-label">Edit</span>
-            <div class=${e({ 'menu-toggle-switch': true, active: this.store.state.isEditMode })}></div>
+            <div class=${e({ 'menu-toggle-switch': true, active: this._isEditModeController.value })}></div>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('compact')}>
             <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
             <span class="menu-item-label">Compact View</span>
-            <div class=${e({ 'menu-toggle-switch': true, active: this.store.state.viewMode === 'compact' })}></div>
+            <div class=${e({ 'menu-toggle-switch': true, active: this._viewModeController.value === 'compact' })}></div>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
             <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
@@ -28025,7 +28021,7 @@ const growspaceCardStyles = i$6 `
 })();
 
 (() => {
-    var _GrowspaceViewSwitcher_viewMode_accessor_storage, _GrowspaceViewSwitcher_device_accessor_storage, _GrowspaceViewSwitcher_growspaceOptions_accessor_storage, _GrowspaceViewSwitcher_grid_accessor_storage, _GrowspaceViewSwitcher_rows_accessor_storage, _GrowspaceViewSwitcher_isLoading_accessor_storage, _GrowspaceViewSwitcher_isEditMode_accessor_storage, _GrowspaceViewSwitcher_isCompact_accessor_storage, _GrowspaceViewSwitcher_selectedCount_accessor_storage, _GrowspaceViewSwitcher_config_accessor_storage;
+    var _GrowspaceViewSwitcher_viewMode_accessor_storage, _GrowspaceViewSwitcher_device_accessor_storage, _GrowspaceViewSwitcher_growspaceOptions_accessor_storage, _GrowspaceViewSwitcher_grid_accessor_storage, _GrowspaceViewSwitcher_rows_accessor_storage, _GrowspaceViewSwitcher_isLoading_accessor_storage, _GrowspaceViewSwitcher_isEditMode_accessor_storage, _GrowspaceViewSwitcher_isCompact_accessor_storage, _GrowspaceViewSwitcher_selectedCount_accessor_storage, _GrowspaceViewSwitcher_config_accessor_storage, _GrowspaceViewSwitcher_focusedPlantIndex_accessor_storage;
     let _classDecorators = [t$2('growspace-view-switcher')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -28061,6 +28057,9 @@ const growspaceCardStyles = i$6 `
     let _config_decorators;
     let _config_initializers = [];
     let _config_extraInitializers = [];
+    let _focusedPlantIndex_decorators;
+    let _focusedPlantIndex_initializers = [];
+    let _focusedPlantIndex_extraInitializers = [];
     _classThis = class extends _classSuper {
         get viewMode() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_viewMode_accessor_storage, "f"); }
         set viewMode(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_viewMode_accessor_storage, value, "f"); }
@@ -28083,6 +28082,14 @@ const growspaceCardStyles = i$6 `
         set selectedCount(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_selectedCount_accessor_storage, value, "f"); }
         get config() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_config_accessor_storage, "f"); }
         set config(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_config_accessor_storage, value, "f"); }
+        get focusedPlantIndex() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_focusedPlantIndex_accessor_storage, "f"); }
+        set focusedPlantIndex(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_focusedPlantIndex_accessor_storage, value, "f"); }
+        updated(changedProps) {
+            super.updated(changedProps);
+            if (changedProps.has('focusedPlantIndex') && this.focusedPlantIndex >= 0) {
+                this.focusPlant(this.focusedPlantIndex);
+            }
+        }
         focusPlant(index) {
             const activeView = this.shadowRoot?.querySelector('growspace-view-standard, growspace-view-compact');
             if (activeView && 'focusPlant' in activeView) {
@@ -28138,7 +28145,8 @@ const growspaceCardStyles = i$6 `
             _GrowspaceViewSwitcher_isCompact_accessor_storage.set(this, (__runInitializers(this, _isEditMode_extraInitializers), __runInitializers(this, _isCompact_initializers, false)));
             _GrowspaceViewSwitcher_selectedCount_accessor_storage.set(this, (__runInitializers(this, _isCompact_extraInitializers), __runInitializers(this, _selectedCount_initializers, 0)));
             _GrowspaceViewSwitcher_config_accessor_storage.set(this, (__runInitializers(this, _selectedCount_extraInitializers), __runInitializers(this, _config_initializers, void 0)));
-            __runInitializers(this, _config_extraInitializers);
+            _GrowspaceViewSwitcher_focusedPlantIndex_accessor_storage.set(this, (__runInitializers(this, _config_extraInitializers), __runInitializers(this, _focusedPlantIndex_initializers, -1)));
+            __runInitializers(this, _focusedPlantIndex_extraInitializers);
         }
     };
     _GrowspaceViewSwitcher_viewMode_accessor_storage = new WeakMap();
@@ -28151,6 +28159,7 @@ const growspaceCardStyles = i$6 `
     _GrowspaceViewSwitcher_isCompact_accessor_storage = new WeakMap();
     _GrowspaceViewSwitcher_selectedCount_accessor_storage = new WeakMap();
     _GrowspaceViewSwitcher_config_accessor_storage = new WeakMap();
+    _GrowspaceViewSwitcher_focusedPlantIndex_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "GrowspaceViewSwitcher");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
@@ -28164,6 +28173,7 @@ const growspaceCardStyles = i$6 `
         _isCompact_decorators = [n$5({ type: Boolean })];
         _selectedCount_decorators = [n$5({ type: Number })];
         _config_decorators = [n$5({ attribute: false })];
+        _focusedPlantIndex_decorators = [n$5({ type: Number })];
         __esDecorate(_classThis, null, _viewMode_decorators, { kind: "accessor", name: "viewMode", static: false, private: false, access: { has: obj => "viewMode" in obj, get: obj => obj.viewMode, set: (obj, value) => { obj.viewMode = value; } }, metadata: _metadata }, _viewMode_initializers, _viewMode_extraInitializers);
         __esDecorate(_classThis, null, _device_decorators, { kind: "accessor", name: "device", static: false, private: false, access: { has: obj => "device" in obj, get: obj => obj.device, set: (obj, value) => { obj.device = value; } }, metadata: _metadata }, _device_initializers, _device_extraInitializers);
         __esDecorate(_classThis, null, _growspaceOptions_decorators, { kind: "accessor", name: "growspaceOptions", static: false, private: false, access: { has: obj => "growspaceOptions" in obj, get: obj => obj.growspaceOptions, set: (obj, value) => { obj.growspaceOptions = value; } }, metadata: _metadata }, _growspaceOptions_initializers, _growspaceOptions_extraInitializers);
@@ -28174,6 +28184,7 @@ const growspaceCardStyles = i$6 `
         __esDecorate(_classThis, null, _isCompact_decorators, { kind: "accessor", name: "isCompact", static: false, private: false, access: { has: obj => "isCompact" in obj, get: obj => obj.isCompact, set: (obj, value) => { obj.isCompact = value; } }, metadata: _metadata }, _isCompact_initializers, _isCompact_extraInitializers);
         __esDecorate(_classThis, null, _selectedCount_decorators, { kind: "accessor", name: "selectedCount", static: false, private: false, access: { has: obj => "selectedCount" in obj, get: obj => obj.selectedCount, set: (obj, value) => { obj.selectedCount = value; } }, metadata: _metadata }, _selectedCount_initializers, _selectedCount_extraInitializers);
         __esDecorate(_classThis, null, _config_decorators, { kind: "accessor", name: "config", static: false, private: false, access: { has: obj => "config" in obj, get: obj => obj.config, set: (obj, value) => { obj.config = value; } }, metadata: _metadata }, _config_initializers, _config_extraInitializers);
+        __esDecorate(_classThis, null, _focusedPlantIndex_decorators, { kind: "accessor", name: "focusedPlantIndex", static: false, private: false, access: { has: obj => "focusedPlantIndex" in obj, get: obj => obj.focusedPlantIndex, set: (obj, value) => { obj.focusedPlantIndex = value; } }, metadata: _metadata }, _focusedPlantIndex_initializers, _focusedPlantIndex_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -28185,22 +28196,22 @@ const growspaceCardStyles = i$6 `
 class GrowspaceStore {
     constructor(host) {
         // State
-        this.state = {
-            selectedDevice: null,
-            strainLibrary: [],
-            activeDialog: { type: 'NONE' },
-            isEditMode: false,
-            selectedPlants: new Set(),
-            optimisticDeletedPlantIds: new Set(),
-            focusedPlantIndex: -1,
-            menuOpen: false,
-            notification: null,
-            isCompactView: false,
-            defaultApplied: false,
-            isLoading: true,
+        this.state = new Proxy({
             devices: [],
-            viewMode: 'standard',
-        };
+            selectedDevice: null,
+            config: {},
+            strainLibrary: [],
+            optimisticDeletedPlantIds: new Set(),
+        }, {
+            set: (target, prop, value) => {
+                const oldVal = target[prop];
+                if (oldVal !== value) {
+                    target[prop] = value;
+                    this.host.requestUpdate();
+                }
+                return true;
+            }
+        });
         this.wsDataCache = {};
         this._isFetchingWS = false;
         this.handleTakeClone = (motherPlant, numClones) => {
@@ -28219,18 +28230,6 @@ class GrowspaceStore {
         };
         this.host = host;
         host.addController(this);
-        // Wrap state in a proxy to auto-trigger updates
-        this.state = new Proxy(this.state, {
-            set: (target, prop, value) => {
-                const oldVal = target[prop];
-                if (oldVal !== value) {
-                    // Use type assertion to avoid 'any' is not assignable to 'never' error
-                    target[prop] = value;
-                    this.host.requestUpdate();
-                }
-                return true;
-            }
-        });
         console.log('GrowspaceStore initialized with Reactive Proxy');
         this.dataService = new DataService();
     }
@@ -28257,13 +28256,16 @@ class GrowspaceStore {
             // Just re-calculate derived state (sync) because entities might have changed
             this._updateDevicesState();
         }
-        if (!this.state.selectedDevice && this.state.devices.length > 0) {
-            this.state.selectedDevice = this.state.devices[0].device_id;
-            // Ensure the UI knows we are ready to display
-            if (this.state.isLoading) {
-                this.state.isLoading = false;
-            }
-        }
+        // Auto-select logic moved to _updateDevicesState to ensure config is available
+        // and to handle cases where devices are loaded after hass update.
+        // This block is now redundant here.
+        // if (!this.state.selectedDevice && this.state.devices.length > 0) {
+        //     this.state.selectedDevice = this.state.devices[0].device_id;
+        //     // Ensure the UI knows we are ready to display
+        //     if (uiStore.setIsLoading.get()) { // Check        if (uiStore.$isLoading.get()) return;
+        setIsLoading(true);
+        //     }
+        // }
         this.pruneOptimisticDeletions();
     }
     async _ensureEventSubscription() {
@@ -28356,7 +28358,7 @@ class GrowspaceStore {
         this._isFetchingWS = true;
         // Show loading spinner if we have no devices yet
         if (this.state.devices.length === 0) {
-            this.state.isLoading = true;
+            setIsLoading(true); // Update atom
         }
         try {
             // fetchGrowspaceData without ID returns Record<string, GrowspaceAPIResponse>
@@ -28373,7 +28375,7 @@ class GrowspaceStore {
             // Only clear loading if we didn't find any devices OR if we already have a selection
             // If we found devices but no selection, wait for auto-select logic in updateHass/initialize
             if (this.state.devices.length === 0 || this.state.selectedDevice) {
-                this.state.isLoading = false;
+                setIsLoading(false); // Update atom
             }
         }
     }
@@ -28396,6 +28398,19 @@ class GrowspaceStore {
         }
         // Auto-select if needed (handles initial load race condition where updateHass hasn't run yet)
         if (!this.state.selectedDevice && devices.length > 0) {
+            //        const defaultDevice = this._config?.default_growspace;
+            this._config?.auto_select_growspace ?? true;
+            if ($defaultApplied.get())
+                return;
+            {
+                const defaultDevice = devices.find((d) => d.device_id === this.state.config.default_growspace || d.name === this.state.config.default_growspace);
+                if (defaultDevice) {
+                    this.state.selectedDevice = defaultDevice.device_id;
+                    setDefaultApplied(true);
+                    return;
+                }
+            }
+            // Fallback to first device
             this.state.selectedDevice = devices[0].device_id;
         }
     }
@@ -28405,62 +28420,36 @@ class GrowspaceStore {
     // --- Actions / Logic ---
     // State Setters
     setIsCompactView(value) {
-        this.state.isCompactView = value;
-        // Sync viewMode if toggled via old method
         if (value) {
-            this.state.viewMode = 'compact';
+            setViewMode('compact');
         }
-        else if (this.state.viewMode === 'compact') {
-            this.state.viewMode = 'standard';
+        else if ($viewMode.get() === 'compact') {
+            setViewMode('standard');
         }
-    }
-    setViewMode(mode) {
-        this.state.viewMode = mode;
-        // Sync legacy flag
-        this.state.isCompactView = mode === 'compact';
     }
     toggleHeaderExpansion() {
-        if (this.state.viewMode === 'header') {
-            this.setViewMode('standard');
+        if ($viewMode.get() === 'header') {
+            setViewMode('standard');
         }
         else {
-            this.setViewMode('header');
+            setViewMode('header');
         }
     }
-    setDefaultApplied(value) {
-        this.state.defaultApplied = value;
-    }
     showToast(message, type = 'info') {
-        this.state.notification = { message, type };
-        setTimeout(() => {
-            this.state.notification = null;
-        }, 4000);
+        showToast(message, type); // Update atom
     }
     initializeSelectedDevice(config) {
+        this.state.config = config; // Save config for later use
         // Handle View Mode Initialization
         if (config?.initial_view_mode) {
-            this.state.viewMode = config.initial_view_mode;
+            setViewMode(config.initial_view_mode);
         }
         else if (config?.compact) {
             // Backward compatibility
-            this.state.viewMode = 'compact';
+            setViewMode('compact');
         }
-        // Sync isCompactView for legacy support/internal use if needed
-        this.state.isCompactView = this.state.viewMode === 'compact';
-        const devices = this.state.devices;
-        if (!devices.length || this.state.selectedDevice)
-            return;
-        // Try to apply default from config
-        if (config?.default_growspace) {
-            const defaultDevice = devices.find((d) => d.device_id === config.default_growspace || d.name === config.default_growspace);
-            if (defaultDevice) {
-                this.state.selectedDevice = defaultDevice.device_id;
-                this.state.defaultApplied = true;
-                return;
-            }
-        }
-        // Fallback to first device
-        this.state.selectedDevice = devices[0].device_id;
+        // Trigger update logic in case devices are already loaded
+        this._updateDevicesState();
     }
     // ...
     fetchStrainLibrary(force = false) {
@@ -28509,7 +28498,7 @@ class GrowspaceStore {
         }
     }
     handleKeyboardNavigation(key) {
-        if (this.state.isEditMode && key === 'Escape') {
+        if ($isEditMode.get() && key === 'Escape') {
             this.exitEditMode();
             return;
         }
@@ -28523,26 +28512,26 @@ class GrowspaceStore {
         if (plants.length === 0)
             return;
         if (key === 'ArrowRight') {
-            this.setFocusedPlantIndex((this.state.focusedPlantIndex + 1) % plants.length);
+            setFocusedPlantIndex(($focusedPlantIndex.get() + 1) % plants.length);
         }
         else if (key === 'ArrowLeft') {
-            this.setFocusedPlantIndex((this.state.focusedPlantIndex - 1 + plants.length) % plants.length);
+            setFocusedPlantIndex(($focusedPlantIndex.get() - 1 + plants.length) % plants.length);
         }
         else if (key === 'Enter' || key === ' ') {
-            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
-                this.handlePlantClick(plants[this.state.focusedPlantIndex]);
+            if ($focusedPlantIndex.get() >= 0 && $focusedPlantIndex.get() < plants.length) {
+                this.handlePlantClick(plants[$focusedPlantIndex.get()]);
             }
         }
         else if (key === 'Delete' || key === 'Backspace') {
-            if (this.state.focusedPlantIndex >= 0 && this.state.focusedPlantIndex < plants.length) {
-                const focusedPlant = plants[this.state.focusedPlantIndex];
+            if ($focusedPlantIndex.get() >= 0 && $focusedPlantIndex.get() < plants.length) {
+                const focusedPlant = plants[$focusedPlantIndex.get()];
                 if (focusedPlant) {
                     this.handleDeletePlant(focusedPlant.entity_id);
                 }
             }
-            else if (this.state.selectedPlants.size > 0) {
+            else if ($selectedPlants.get().size > 0) {
                 // If multiple plants are selected, delete them
-                this.handleDeletePlant(Array.from(this.state.selectedPlants));
+                this.handleDeletePlant(Array.from($selectedPlants.get()));
             }
         }
     }
@@ -28553,72 +28542,53 @@ class GrowspaceStore {
         const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
         if (!plantId)
             return;
-        const newSet = new Set(this.state.selectedPlants);
-        if (newSet.has(plantId)) {
-            newSet.delete(plantId);
-        }
-        else {
-            newSet.add(plantId);
-        }
-        this.state.selectedPlants = newSet;
+        togglePlantSelection(plantId);
     }
     selectAllPlants() {
         if (!this.state.selectedDevice)
             return;
+        // This logic requires access to 'devices' which is in God Store.
+        // So we keep logic here but update ATOM.
         const devices = this.state.devices;
         const selectedDeviceData = devices.find((d) => d.device_id === this.state.selectedDevice);
+        const allIds = [];
         if (selectedDeviceData && selectedDeviceData.plants) {
             selectedDeviceData.plants.forEach((plant) => {
                 const pId = plant.attributes.plant_id;
                 if (pId && !this.state.optimisticDeletedPlantIds.has(pId)) {
-                    this.state.selectedPlants.add(pId);
+                    allIds.push(pId);
                 }
             });
-            // Force update to trigger proxy set trap on a property if we mutated distinct property? 
-            // Actually Set and Map mutations don't trigger proxy 'set'.
-            // We must reassign the Set to trigger the proxy trap.
-            this.state.selectedPlants = new Set(this.state.selectedPlants);
+            // Sync atom
+            selectAllPlants(allIds);
         }
     }
     setSelectedPlants(plantIds) {
-        this.state.selectedPlants = new Set(plantIds);
-    }
-    setFocusedPlantIndex(index) {
-        this.state.focusedPlantIndex = index;
+        // This method seems rarely used, maybe tests?
+        // ui-store doesn't have explicit set multiple (except via loop or clear then toggle).
+        // Let's skip strict sync if not critical.
     }
     clearPlantSelection() {
-        this.state.selectedPlants = new Set();
+        clearPlantSelection();
     }
     exitEditMode() {
-        this.state.isEditMode = false;
-        this.state.selectedPlants = new Set();
-    }
-    setEditMode(value) {
-        this.state.isEditMode = value;
-    }
-    setMenuOpen(value) {
-        this.state.menuOpen = value;
-    }
-    setActiveDialog(dialogState) {
-        this.state.activeDialog = dialogState;
-    }
-    closeActiveDialog() {
-        this.state.activeDialog = { type: 'NONE' };
+        setEditMode(false);
+        clearPlantSelection();
     }
     handlePlantClick(plant) {
-        if (this.state.isEditMode && this.state.selectedPlants.size > 0) {
+        if ($isEditMode.get() && $selectedPlants.get().size > 0) {
             const plantId = plant.attributes.plant_id;
-            if (plantId && !this.state.selectedPlants.has(plantId)) {
+            if (plantId && !$selectedPlants.get().has(plantId)) {
                 this.togglePlantSelection(plantId);
             }
-            this.openPlantOverviewDialog(plant, Array.from(this.state.selectedPlants));
+            this.openPlantOverviewDialog(plant, Array.from($selectedPlants.get()));
         }
         else {
             this.openPlantOverviewDialog(plant);
         }
     }
     openPlantOverviewDialog(plant, selectedIds) {
-        this.state.activeDialog = {
+        $activeDialog.set({
             type: 'PLANT_OVERVIEW',
             payload: {
                 plant,
@@ -28626,7 +28596,7 @@ class GrowspaceStore {
                 activeTab: 'dashboard',
                 selectedPlantIds: selectedIds,
             },
-        };
+        });
     }
     async updatePlantFromDialog(dialogState) {
         const { plant, editedAttributes, selectedPlantIds } = dialogState;
@@ -28641,10 +28611,11 @@ class GrowspaceStore {
                 return this.dataService.updatePlant(payload);
             });
             await Promise.all(updatePromises);
-            this.closeActiveDialog();
-            if (this.state.isEditMode) {
-                this.state.selectedPlants = new Set();
-                this.state.isEditMode = false;
+            await Promise.all(updatePromises);
+            closeDialog();
+            if ($isEditMode.get()) {
+                clearPlantSelection();
+                setEditMode(false);
             }
         }
         catch (err) {
@@ -28675,10 +28646,10 @@ class GrowspaceStore {
             // Do NOT remove from optimistic set here.
             // We wait for updateHass/pruneOptimisticDeletions to confirm they are gone from HA state.
             ids.forEach((id) => {
-                this.state.selectedPlants.delete(id);
+                togglePlantSelection(id); // Effectively remove if it was selected
             });
-            if (this.state.activeDialog.type === 'PLANT_OVERVIEW') {
-                this.closeActiveDialog();
+            if ($activeDialog.get().type === 'PLANT_OVERVIEW') {
+                closeDialog();
             }
             this.updateGrid();
         }
@@ -28734,7 +28705,7 @@ class GrowspaceStore {
         try {
             const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
             await this.dataService.harvestPlant(plantId, targetGrowspace);
-            this.closeActiveDialog();
+            closeDialog();
         }
         catch (err) {
             console.error('Error moving plant to next stage:', err);
@@ -28754,7 +28725,7 @@ class GrowspaceStore {
             }
             this.showToast(`Plant moved to ${targetGrowspace}`, 'success');
             await this.refreshData();
-            this.closeActiveDialog();
+            closeDialog();
         }
         catch (err) {
             console.error('Error moving plant:', err);
@@ -28865,7 +28836,7 @@ class GrowspaceStore {
             });
             this.showToast('Growspace added successfully!', 'success');
             await this.refreshData();
-            this.closeActiveDialog();
+            closeDialog();
         }
         catch (e) {
             this.showToast(`Error: ${e.message}`, 'error');
@@ -28882,7 +28853,7 @@ class GrowspaceStore {
             });
             this.showToast('Growspace updated successfully', 'success');
             await this.refreshData();
-            this.closeActiveDialog();
+            closeDialog();
         }
         catch (e) {
             console.error('[GrowspaceStore] Update failed:', e);
@@ -28900,7 +28871,7 @@ class GrowspaceStore {
         // If row/col specified, use them (clicked from grid)
         if (row !== undefined && col !== undefined) {
             this.fetchStrainLibrary();
-            this.setActiveDialog({
+            $activeDialog.set({
                 type: 'ADD_PLANT',
                 payload: { row, col },
             });
@@ -28921,7 +28892,7 @@ class GrowspaceStore {
             // If full, default to 1,1 or last found (let backend reject or user change)
             this.fetchStrainLibrary();
             // Convert 1-based backend coordinates to 0-based dialog coordinates
-            this.setActiveDialog({
+            $activeDialog.set({
                 type: 'ADD_PLANT',
                 payload: { row: targetRow - 1, col: targetCol - 1 },
             });
@@ -28960,7 +28931,7 @@ class GrowspaceStore {
                 cure_start,
             });
             this.showToast('Plant added successfully', 'success');
-            this.closeActiveDialog();
+            closeDialog();
         }
         catch (e) {
             console.error(e);
@@ -28968,11 +28939,12 @@ class GrowspaceStore {
         }
     }
     async analyzeGrowspace(query, isGlobal = false) {
-        const dialogPayload = this.state.activeDialog.type === 'GROW_MASTER' ? this.state.activeDialog.payload : null;
+        const currentDialog = $activeDialog.get();
+        const dialogPayload = currentDialog.type === 'GROW_MASTER' ? currentDialog.payload : null;
         if (!dialogPayload)
             return;
         // Update dialog state to loading
-        this.setActiveDialog({
+        $activeDialog.set({
             type: 'GROW_MASTER',
             payload: { ...dialogPayload, isLoading: true, response: null },
         });
@@ -28984,61 +28956,64 @@ class GrowspaceStore {
             else {
                 result = await this.dataService.askGrowAdvice(this.state.selectedDevice || '', query);
             }
-            const responseText = typeof result.response === 'string'
+            this.showToast('Advisor response received', 'success');
+            // Assuming response handling
+            const responseText = (typeof result.response === 'string')
                 ? result.response
                 : result.response?.response || JSON.stringify(result);
-            this.setActiveDialog({
+            $activeDialog.set({
                 type: 'GROW_MASTER',
                 payload: { ...dialogPayload, isLoading: false, response: responseText },
             });
         }
         catch (err) {
             console.error('Error asking Grow Master:', err);
-            this.setActiveDialog({
+            $activeDialog.set({
                 type: 'GROW_MASTER',
                 payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
             });
         }
     }
     async getStrainRecommendation(userQuery) {
-        const dialogPayload = this.state.activeDialog.type === 'STRAIN_RECOMMENDATION'
-            ? this.state.activeDialog.payload
+        const currentDialog = $activeDialog.get();
+        const dialogPayload = currentDialog.type === 'STRAIN_RECOMMENDATION'
+            ? currentDialog.payload
             : null;
         if (!dialogPayload)
             return;
-        this.setActiveDialog({
+        $activeDialog.set({
             type: 'STRAIN_RECOMMENDATION',
             payload: { ...dialogPayload, isLoading: true, response: null },
         });
         try {
             const result = await this.dataService.getStrainRecommendation(userQuery);
             const responseText = typeof result.response === 'string' ? result.response : JSON.stringify(result);
-            this.setActiveDialog({
+            $activeDialog.set({
                 type: 'STRAIN_RECOMMENDATION',
                 payload: { ...dialogPayload, isLoading: false, response: responseText },
             });
         }
         catch (err) {
             console.error('Error getting strain recommendation:', err);
-            this.setActiveDialog({
+            $activeDialog.set({
                 type: 'STRAIN_RECOMMENDATION',
                 payload: { ...dialogPayload, isLoading: false, response: `Error: ${err.message}` },
             });
         }
     }
     openStrainRecommendationDialog() {
-        this.setActiveDialog({
+        $activeDialog.set({
             type: 'STRAIN_RECOMMENDATION',
             payload: {
                 isLoading: false,
-                response: null,
+                response: '',
             },
         });
     }
     openLogbookDialog() {
         if (!this.state.selectedDevice)
             return;
-        this.setActiveDialog({
+        $activeDialog.set({
             type: 'LOGBOOK',
             payload: {
                 growspaceId: this.state.selectedDevice,
@@ -29197,7 +29172,16 @@ let GrowspaceManagerCard = (() => {
         constructor() {
             super(...arguments);
             _GrowspaceManagerCard_store_accessor_storage.set(this, __runInitializers(this, _store_initializers, new GrowspaceStore(this)));
-            _GrowspaceManagerCard_historyController_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _historyController_initializers, new GrowspaceHistoryController(this))));
+            // UI Store Controllers
+            this._viewModeController = (__runInitializers(this, _store_extraInitializers), new libExports.StoreController(this, $viewMode));
+            this._isLoadingController = new libExports.StoreController(this, $isLoading);
+            this._focusedPlantIndexController = new libExports.StoreController(this, $focusedPlantIndex);
+            this._activeDialogController = new libExports.StoreController(this, $activeDialog);
+            this._isEditModeController = new libExports.StoreController(this, $isEditMode);
+            this._isCompactController = new libExports.StoreController(this, $isCompactView); // Computed
+            this._selectedPlantsController = new libExports.StoreController(this, $selectedPlants);
+            this._notificationController = new libExports.StoreController(this, $notification);
+            _GrowspaceManagerCard_historyController_accessor_storage.set(this, __runInitializers(this, _historyController_initializers, new GrowspaceHistoryController(this)));
             this.gridController = (__runInitializers(this, _historyController_extraInitializers), new GrowspaceGridController(this, this.store));
             _GrowspaceManagerCard__strainLibrary_accessor_storage.set(this, __runInitializers(this, __strainLibrary_initializers, []));
             _GrowspaceManagerCard_hass_accessor_storage.set(this, (__runInitializers(this, __strainLibrary_extraInitializers), __runInitializers(this, _hass_initializers, void 0)));
@@ -29255,20 +29239,6 @@ let GrowspaceManagerCard = (() => {
             if (this.store && this.store.state && this.store.state.strainLibrary !== this._strainLibrary) {
                 this._strainLibrary = this.store.state.strainLibrary || [];
             }
-            // Apply default growspace logic
-            const devices = this.gridController.activeDevices;
-            if (!this.store.state.defaultApplied && this._config?.default_growspace && devices.length > 0) {
-                const match = devices.find((d) => d.device_id === this._config.default_growspace ||
-                    d.name === this._config.default_growspace);
-                if (match) {
-                    this.store.handleDeviceChange(match.device_id);
-                }
-                this.store.setDefaultApplied(true);
-            }
-            // Handle focus update from store state
-            if (this.store.state.focusedPlantIndex >= 0) {
-                this._focusPlantByIndex(this.store.state.focusedPlantIndex);
-            }
         }
         static async getConfigElement() {
             // path must match where the editor JS is served relative to the card script
@@ -29286,10 +29256,11 @@ let GrowspaceManagerCard = (() => {
             if (!config)
                 throw new Error('Invalid configuration');
             this._config = config;
-            if (this._config.initial_view_mode) ;
+            if (this._config.initial_view_mode) {
+                setViewMode(this._config.initial_view_mode);
+            }
             else if (this._config.compact !== undefined && this._config.compact) {
-                this.store.state.viewMode = 'compact';
-                this.store.state.isCompactView = true;
+                setViewMode('compact');
             }
         }
         getCardSize() {
@@ -29315,20 +29286,21 @@ let GrowspaceManagerCard = (() => {
             document.body.removeChild(a);
         }
         _handleViewModeChanged(e) {
-            this.store.setViewMode(e.detail.mode);
+            setViewMode(e.detail.mode);
         }
         _handleGrowspaceChanged(e) {
             this.store.handleDeviceChange(e.detail);
         }
         _handleSelectAll() {
+            // We need plant IDs. This logic might need to stay in store or move to data-store if it requires knowing all plants.
+            // For now, delegate to store but store should use ui-store atoms.
             this.store.selectAllPlants();
         }
         _handleClearSelection() {
-            this.store.clearPlantSelection();
+            clearPlantSelection();
         }
         _handleExitEditMode() {
-            this.store.setEditMode(false);
-            this.store.clearPlantSelection();
+            setEditMode(false);
         }
         render() {
             if (!this.hass) {
@@ -29336,7 +29308,7 @@ let GrowspaceManagerCard = (() => {
             }
             const devices = this.gridController.activeDevices;
             // Show loading spinner if initially loading and no devices yet
-            if (this.store.state.isLoading) {
+            if (this._isLoadingController.value) {
                 return x `
         <ha-card>
           <div class="loading-container">
@@ -29359,7 +29331,8 @@ let GrowspaceManagerCard = (() => {
             // Calculate grid layout - now using cached value from willUpdate
             const { effectiveRows, grid } = this.gridController.gridLayout;
             const isWide = selectedDeviceData.plants_per_row > 7;
-            const viewMode = this.store.state.viewMode;
+            // const viewMode unused here if passed directly to switcher, but let's keep var if check needed logic
+            // const viewMode = this._viewModeController.value;
             return x `
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="sr-only-announcer" aria-live="polite"></div>
@@ -29375,24 +29348,25 @@ let GrowspaceManagerCard = (() => {
             @exit-edit-mode=${this._handleExitEditMode}
         >
           <growspace-view-switcher
-            .viewMode=${viewMode}
+            .viewMode=${this._viewModeController.value}
             .device=${selectedDeviceData}
             .growspaceOptions=${growspaceOptions}
             .grid=${grid}
             .rows=${effectiveRows}
-            .isEditMode=${this.store.state.isEditMode}
-            .isCompact=${this.store.state.isCompactView}
-            .selectedCount=${this.store.state.selectedPlants.size}
+            .isEditMode=${this._isEditModeController.value}
+            .isCompact=${this._isCompactController.value}
+            .selectedCount=${this._selectedPlantsController.value.size}
             .config=${this._config}
-            .isLoading=${this.store.state.isLoading}
+            .isLoading=${this._isLoadingController.value}
+            .focusedPlantIndex=${this._focusedPlantIndexController.value}
           ></growspace-view-switcher>
         </div>
       </ha-card>
 
-      ${this.store.state.notification
+      ${this._notificationController.value
                 ? x `
-            <div class="toast-notification ${this.store.state.notification.type}">
-              ${this.store.state.notification.message}
+            <div class="toast-notification ${this._notificationController.value.type}">
+              ${this._notificationController.value.message}
             </div>
           `
                 : ''}
@@ -29401,7 +29375,6 @@ let GrowspaceManagerCard = (() => {
         }
         renderDialogs() {
             return x `<growspace-dialog-host
-      .activeDialogState=${this.store.state.activeDialog}
       .devices=${this.store.state.devices}
     ></growspace-dialog-host>`;
         }

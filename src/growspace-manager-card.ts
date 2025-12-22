@@ -34,10 +34,23 @@ import { variables } from './styles/variables';
 import { GrowspaceStore } from './store/growspace-store';
 import { GrowspaceGridController } from './controllers/grid-controller';
 
+import { StoreController } from '@nanostores/lit';
+import { $viewMode, $isLoading, $activeDialog, $focusedPlantIndex, $menuOpen, setViewMode, selectAllPlants, clearPlantSelection, setEditMode, setFocusedPlantIndex, $isEditMode, $isCompactView, $selectedPlants, $notification } from './store/ui-store';
+
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard, GrowspaceCardHost {
   @provide({ context: storeContext })
   accessor store = new GrowspaceStore(this);
+
+  // UI Store Controllers
+  protected _viewModeController = new StoreController(this, $viewMode);
+  protected _isLoadingController = new StoreController(this, $isLoading);
+  protected _focusedPlantIndexController = new StoreController(this, $focusedPlantIndex);
+  protected _activeDialogController = new StoreController(this, $activeDialog);
+  protected _isEditModeController = new StoreController(this, $isEditMode);
+  protected _isCompactController = new StoreController(this, $isCompactView); // Computed
+  protected _selectedPlantsController = new StoreController(this, $selectedPlants);
+  protected _notificationController = new StoreController(this, $notification);
 
   // Controllers
   @provide({ context: historyContext })
@@ -109,25 +122,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     if (this.store && this.store.state && this.store.state.strainLibrary !== this._strainLibrary) {
       this._strainLibrary = this.store.state.strainLibrary || [];
     }
-
-    // Apply default growspace logic
-    const devices = this.gridController.activeDevices;
-    if (!this.store.state.defaultApplied && this._config?.default_growspace && devices.length > 0) {
-      const match = devices.find(
-        (d) =>
-          d.device_id === this._config.default_growspace ||
-          d.name === this._config.default_growspace
-      );
-      if (match) {
-        this.store.handleDeviceChange(match.device_id);
-      }
-      this.store.setDefaultApplied(true);
-    }
-
-    // Handle focus update from store state
-    if (this.store.state.focusedPlantIndex >= 0) {
-      this._focusPlantByIndex(this.store.state.focusedPlantIndex);
-    }
   }
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
@@ -150,10 +144,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     if (!config) throw new Error('Invalid configuration');
     this._config = config;
     if (this._config.initial_view_mode) {
-      // already valid if matched type
+      setViewMode(this._config.initial_view_mode);
     } else if (this._config.compact !== undefined && this._config.compact) {
-      this.store.state.viewMode = 'compact';
-      this.store.state.isCompactView = true;
+      setViewMode('compact');
     }
   }
 
@@ -184,7 +177,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   }
 
   private _handleViewModeChanged(e: CustomEvent) {
-    this.store.setViewMode(e.detail.mode);
+    setViewMode(e.detail.mode);
   }
 
   private _handleGrowspaceChanged(e: CustomEvent) {
@@ -192,16 +185,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   }
 
   private _handleSelectAll() {
+    // We need plant IDs. This logic might need to stay in store or move to data-store if it requires knowing all plants.
+    // For now, delegate to store but store should use ui-store atoms.
     this.store.selectAllPlants();
   }
 
   private _handleClearSelection() {
-    this.store.clearPlantSelection();
+    clearPlantSelection();
   }
 
   private _handleExitEditMode() {
-    this.store.setEditMode(false);
-    this.store.clearPlantSelection();
+    setEditMode(false);
   }
 
   protected render(): TemplateResult {
@@ -212,7 +206,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     const devices = this.gridController.activeDevices;
 
     // Show loading spinner if initially loading and no devices yet
-    if (this.store.state.isLoading) {
+    if (this._isLoadingController.value) {
       return html`
         <ha-card>
           <div class="loading-container">
@@ -239,7 +233,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     // Calculate grid layout - now using cached value from willUpdate
     const { effectiveRows, grid } = this.gridController.gridLayout;
     const isWide = selectedDeviceData.plants_per_row > 7;
-    const viewMode = this.store.state.viewMode;
+    // const viewMode unused here if passed directly to switcher, but let's keep var if check needed logic
+    // const viewMode = this._viewModeController.value;
 
     return html`
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
@@ -256,24 +251,25 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
             @exit-edit-mode=${this._handleExitEditMode}
         >
           <growspace-view-switcher
-            .viewMode=${viewMode}
+            .viewMode=${this._viewModeController.value}
             .device=${selectedDeviceData}
             .growspaceOptions=${growspaceOptions}
             .grid=${grid}
             .rows=${effectiveRows}
-            .isEditMode=${this.store.state.isEditMode}
-            .isCompact=${this.store.state.isCompactView}
-            .selectedCount=${this.store.state.selectedPlants.size}
+            .isEditMode=${this._isEditModeController.value}
+            .isCompact=${this._isCompactController.value}
+            .selectedCount=${this._selectedPlantsController.value.size}
             .config=${this._config}
-            .isLoading=${this.store.state.isLoading}
+            .isLoading=${this._isLoadingController.value}
+            .focusedPlantIndex=${this._focusedPlantIndexController.value}
           ></growspace-view-switcher>
         </div>
       </ha-card>
 
-      ${this.store.state.notification
+      ${this._notificationController.value
         ? html`
-            <div class="toast-notification ${this.store.state.notification.type}">
-              ${this.store.state.notification.message}
+            <div class="toast-notification ${this._notificationController.value.type}">
+              ${this._notificationController.value.message}
             </div>
           `
         : ''}
@@ -283,7 +279,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
   private renderDialogs(): TemplateResult {
     return html`<growspace-dialog-host
-      .activeDialogState=${this.store.state.activeDialog}
       .devices=${this.store.state.devices}
     ></growspace-dialog-host>`;
   }

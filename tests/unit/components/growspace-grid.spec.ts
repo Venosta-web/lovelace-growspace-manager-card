@@ -2,6 +2,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GrowspaceGrid } from '../../../src/components/growspace-grid';
 import { GrowspaceStore } from '../../../src/store/growspace-store';
+import * as uiStore from '../../../src/store/ui-store';
+
+// Mock ui-store
+vi.mock('../../../src/store/ui-store', () => ({
+    $activeDialog: { get: vi.fn(() => ({ type: 'NONE' })), set: vi.fn(), subscribe: vi.fn() },
+    $focusedPlantIndex: { get: vi.fn(() => -1), set: vi.fn(), subscribe: vi.fn() },
+    $selectedPlants: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn() },
+    $isEditMode: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    $viewMode: { get: vi.fn(() => 'standard'), set: vi.fn(), subscribe: vi.fn() },
+    $isCompactView: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    $isLoading: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    $defaultApplied: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    setEditMode: vi.fn(),
+    setViewMode: vi.fn(),
+    setIsLoading: vi.fn(),
+    closeDialog: vi.fn(),
+    setDefaultApplied: vi.fn(),
+    setFocusedPlantIndex: vi.fn(),
+    togglePlantSelection: vi.fn(),
+    selectAllPlants: vi.fn(),
+    clearPlantSelection: vi.fn(),
+    setMenuOpen: vi.fn(),
+    showToast: vi.fn(),
+    $notification: { set: vi.fn() }
+}));
 
 // Mock dependencies
 vi.mock('../../../src/styles/shared.styles', () => ({
@@ -48,7 +73,7 @@ describe('GrowspaceGrid', () => {
 
     describe('Rendering', () => {
         it('should render skeleton when isLoading is true', async () => {
-            element.isLoading = true;
+            (uiStore.$isLoading.get as any).mockReturnValue(true);
             document.body.appendChild(element);
             await element.updateComplete;
 
@@ -59,7 +84,7 @@ describe('GrowspaceGrid', () => {
         });
 
         it('should render empty slots', async () => {
-            element.isLoading = false;
+            (uiStore.$isLoading.get as any).mockReturnValue(false);
             // Populate grid with nulls to simulate empty slots
             element.plants = Array(3).fill(null).map(() => Array(3).fill(null));
 
@@ -232,7 +257,7 @@ describe('GrowspaceGrid', () => {
         });
 
         it('should render compact class', async () => {
-            element.compact = true;
+            (uiStore.$isCompactView.get as any).mockReturnValue(true);
             document.body.appendChild(element);
             await element.updateComplete;
             const grid = element.shadowRoot?.querySelector('.grid');

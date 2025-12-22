@@ -31,8 +31,6 @@ export class GrowspaceViewCompact extends LitElement {
           .plants=${this.grid}
           .rows=${this.rows}
           .cols=${this.cols}
-          .compact=${true}
-          .isLoading=${this.isLoading}
         ></growspace-grid>
 
         <button

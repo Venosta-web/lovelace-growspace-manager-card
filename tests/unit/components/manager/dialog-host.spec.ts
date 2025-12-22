@@ -3,6 +3,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DialogHost } from '../../../../src/components/manager/dialog-host';
 // We don't need to import actual dialogs if we just check for their tag presence
 // in the shadow DOM, assuming JSDOM treats them as generic elements.
+import { $activeDialog, closeDialog } from '../../../../src/store/ui-store';
+
+// Mock ui-store
+vi.mock('../../../../src/store/ui-store', async () => {
+    const actual: any = await vi.importActual('../../../../src/store/ui-store');
+    return {
+        ...actual,
+        closeDialog: vi.fn(),
+        // We use the real atoms so rendering works, but we mock the actions
+    };
+});
 
 // Mock styles
 vi.mock('../../../../src/styles/shared.styles', () => ({
@@ -18,6 +29,7 @@ describe('DialogHost', () => {
     let mockHass: any;
 
     beforeEach(() => {
+        vi.clearAllMocks();
         mockStore = {
             state: {
                 activeDialog: { type: 'NONE' },
@@ -57,6 +69,9 @@ describe('DialogHost', () => {
             customElements.define('growspace-dialog-host', DialogHost);
         }
 
+        // Reset atom state
+        $activeDialog.set({ type: 'NONE' });
+
         element = document.createElement('growspace-dialog-host') as DialogHost;
         (element as any).store = mockStore;
         element.hass = mockHass;
@@ -67,7 +82,7 @@ describe('DialogHost', () => {
     });
 
     it('should render nothing when dialog type is NONE', async () => {
-        element.activeDialogState = { type: 'NONE' } as any;
+        $activeDialog.set({ type: 'NONE' });
         document.body.appendChild(element);
         await element.updateComplete;
 
@@ -80,10 +95,10 @@ describe('DialogHost', () => {
     });
 
     it('should render ADD_PLANT dialog', async () => {
-        element.activeDialogState = {
+        $activeDialog.set({
             type: 'ADD_PLANT',
             payload: { row: 1, col: 2 }
-        } as any;
+        });
 
         document.body.appendChild(element);
         await element.updateComplete;
@@ -96,7 +111,7 @@ describe('DialogHost', () => {
     });
 
     it('should handle ADD_PLANT event', async () => {
-        element.activeDialogState = { type: 'ADD_PLANT', payload: {} } as any;
+        $activeDialog.set({ type: 'ADD_PLANT', payload: { row: 1, col: 1 } });
         document.body.appendChild(element);
         await element.updateComplete;
 
@@ -109,16 +124,17 @@ describe('DialogHost', () => {
     });
 
     it('should render PLANT_OVERVIEW dialog', async () => {
-        element.activeDialogState = {
+        $activeDialog.set({
             type: 'PLANT_OVERVIEW',
             payload: {
                 plant: {
-                    id: 'p1',
                     entity_id: 'sensor.p1',
                     attributes: { plant_id: 'p1', strain: 'Blueberry', stage: 'veg' }
-                }
+                } as any,
+                editedAttributes: { plant_id: 'p1', strain: 'Blueberry', stage: 'veg' } as any,
+                activeTab: 'dashboard'
             }
-        } as any;
+        });
 
         document.body.appendChild(element);
         await element.updateComplete;
@@ -128,16 +144,15 @@ describe('DialogHost', () => {
     });
 
     it('should handle PLANT_OVERVIEW events', async () => {
-        element.activeDialogState = {
+        $activeDialog.set({
             type: 'PLANT_OVERVIEW',
             payload: {
                 plant: {
-                    id: 'p1',
                     entity_id: 'sensor.p1',
-                    attributes: { plant_id: 'p1', strain: 'Blueberry', stage: 'veg' }
+                    attributes: { plant_id: 'p1', strain: 'Blueberry', stage: 'veg' } as any
                 }
             }
-        } as any;
+        });
         document.body.appendChild(element);
         await element.updateComplete;
 
@@ -151,7 +166,28 @@ describe('DialogHost', () => {
     });
 
     it('should handle environment config submission', async () => {
-        element.activeDialogState = { type: 'CONFIG', payload: {} } as any;
+        $activeDialog.set({
+            type: 'CONFIG',
+            payload: {
+                currentTab: 'environment', // Fixed enum value
+                environmentData: {
+                    selectedGrowspaceId: 'g1',
+                    temp_sensor: 'sensor.temp',
+                    humidity_sensor: 'sensor.humidity',
+                    vpd_sensor: 'sensor.vpd',
+                    co2_sensor: 'sensor.co2',
+                    circulation_fan: 'switch.fan',
+                    stress_threshold: 1,
+                    mold_threshold: 1,
+                    exhaust_fan: 'switch.exhaust',
+                    control_exhaust: false,
+                    humidifier: 'switch.humidifier',
+                    control_humidifier: false,
+                    dehumidifier: 'switch.dehumidifier',
+                    control_dehumidifier: false
+                } as any // Cast to any to avoid partial checks if type is stricter
+            }
+        });
         document.body.appendChild(element);
         await element.updateComplete;
 
@@ -173,12 +209,33 @@ describe('DialogHost', () => {
     });
 
     it('should validate environment config', async () => {
-        element.activeDialogState = { type: 'CONFIG', payload: {} } as any;
+        $activeDialog.set({
+            type: 'CONFIG',
+            payload: {
+                currentTab: 'environment', // Fixed enum value
+                environmentData: {
+                    selectedGrowspaceId: 'g1',
+                    temp_sensor: 'sensor.temp',
+                    humidity_sensor: 'sensor.humidity',
+                    vpd_sensor: 'sensor.vpd',
+                    co2_sensor: 'sensor.co2',
+                    circulation_fan: 'switch.fan',
+                    stress_threshold: 1,
+                    mold_threshold: 1,
+                    exhaust_fan: 'switch.exhaust',
+                    control_exhaust: false,
+                    humidifier: 'switch.humidifier',
+                    control_humidifier: false,
+                    dehumidifier: 'switch.dehumidifier',
+                    control_dehumidifier: false
+                } as any
+            }
+        });
         document.body.appendChild(element);
         await element.updateComplete;
 
         const dialog = element.shadowRoot?.querySelector('config-dialog') as HTMLElement;
-        const detail = { selectedGrowspaceId: null }; // Invalid
+        const detail = { selectedGrowspaceId: null } as any; // Invalid
 
         dialog.dispatchEvent(new CustomEvent('configure-environment-submit', { detail }));
 
@@ -191,7 +248,7 @@ describe('DialogHost', () => {
     });
 
     it('should render STRAIN_LIBRARY dialog', async () => {
-        element.activeDialogState = { type: 'STRAIN_LIBRARY', payload: {} } as any;
+        $activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
         document.body.appendChild(element);
         await element.updateComplete;
         expect(element.shadowRoot?.querySelector('strain-library-dialog')).not.toBeNull();
@@ -199,10 +256,10 @@ describe('DialogHost', () => {
     });
 
     it('should render GROW_MASTER dialog', async () => {
-        element.activeDialogState = {
+        $activeDialog.set({
             type: 'GROW_MASTER',
-            payload: { isLoading: false, response: '' }
-        } as any;
+            payload: { isLoading: false, response: '', mode: 'all', growspaceId: 'g1' }
+        });
         document.body.appendChild(element);
         await element.updateComplete;
         expect(element.shadowRoot?.querySelector('grow-master-dialog')).not.toBeNull();
@@ -210,10 +267,10 @@ describe('DialogHost', () => {
     });
 
     it('should render LOGBOOK dialog', async () => {
-        element.activeDialogState = {
+        $activeDialog.set({
             type: 'LOGBOOK',
             payload: { growspaceId: 'g1' }
-        } as any;
+        });
         document.body.appendChild(element);
         await element.updateComplete;
         expect(element.shadowRoot?.querySelector('logbook-dialog')).not.toBeNull();
@@ -221,7 +278,7 @@ describe('DialogHost', () => {
     });
 
     it('should render IRRIGATION dialog', async () => {
-        element.activeDialogState = { type: 'IRRIGATION', payload: {} } as any;
+        $activeDialog.set({ type: 'IRRIGATION', payload: {} });
         document.body.appendChild(element);
         await element.updateComplete;
         expect(element.shadowRoot?.querySelector('irrigation-dialog')).not.toBeNull();
@@ -230,7 +287,8 @@ describe('DialogHost', () => {
 
     describe('Enhanced Coverage Tests', () => {
         it('should handle import library success', async () => {
-            element.activeDialogState = { type: 'STRAIN_LIBRARY', payload: {} } as any;
+            mockStore.dataService.importStrainLibrary.mockResolvedValue({ imported_count: 5 });
+            $activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
             document.body.appendChild(element);
             await element.updateComplete;
 
@@ -253,7 +311,7 @@ describe('DialogHost', () => {
         it('should handle import library failure', async () => {
             mockStore.dataService.importStrainLibrary.mockRejectedValue(new Error('Fail'));
 
-            element.activeDialogState = { type: 'STRAIN_LIBRARY', payload: {} } as any;
+            $activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
             document.body.appendChild(element);
             await element.updateComplete;
 
@@ -277,7 +335,7 @@ describe('DialogHost', () => {
             // Ensure store has access to hass for this logic
             mockStore.hass = mockHass;
 
-            element.activeDialogState = { type: 'GROW_MASTER', payload: { isLoading: false } } as any;
+            $activeDialog.set({ type: 'GROW_MASTER', payload: { isLoading: false, response: '', mode: 'all', growspaceId: 'g1' } });
             document.body.appendChild(element);
             await element.updateComplete;
 
@@ -292,10 +350,10 @@ describe('DialogHost', () => {
             const mockPlant = {
                 id: 'p1',
                 entity_id: 'sensor.p1',
-                attributes: { plant_id: 'p1', strain: 'Kush' }
-            };
+                attributes: { plant_id: 'p1', strain: 'Kush' } as any
+            } as any;
 
-            element.activeDialogState = { type: 'PLANT_OVERVIEW', payload: { plant: mockPlant } } as any;
+            $activeDialog.set({ type: 'PLANT_OVERVIEW', payload: { plant: mockPlant, editedAttributes: {}, activeTab: 'dashboard' } });
             document.body.appendChild(element);
             await element.updateComplete;
 
@@ -327,7 +385,7 @@ describe('DialogHost', () => {
         });
 
         it('should handle Strain Recommendation events', async () => {
-            element.activeDialogState = { type: 'STRAIN_RECOMMENDATION', payload: { isLoading: false } } as any;
+            $activeDialog.set({ type: 'STRAIN_RECOMMENDATION', payload: { isLoading: false, response: '' } });
             document.body.appendChild(element);
             await element.updateComplete;
 
@@ -339,7 +397,7 @@ describe('DialogHost', () => {
         });
 
         it('should guard against null file in import', async () => {
-            element.activeDialogState = { type: 'STRAIN_LIBRARY', payload: {} } as any;
+            $activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
             document.body.appendChild(element);
             await element.updateComplete;
 
@@ -355,34 +413,34 @@ describe('DialogHost', () => {
 
     describe('Closure Coverage Tests', () => {
         it('should close irrigation dialog events', async () => {
-            element.activeDialogState = { type: 'IRRIGATION', payload: {} } as any;
+            $activeDialog.set({ type: 'IRRIGATION', payload: {} });
             document.body.appendChild(element);
             await element.updateComplete;
 
             const dialog = element.shadowRoot?.querySelector('irrigation-dialog') as HTMLElement;
             dialog.dispatchEvent(new CustomEvent('close'));
-            expect(mockStore.closeActiveDialog).toHaveBeenCalledTimes(1);
+            expect(closeDialog).toHaveBeenCalledTimes(1);
 
             dialog.dispatchEvent(new CustomEvent('closed')); // Also triggers close
-            expect(mockStore.closeActiveDialog).toHaveBeenCalledTimes(2);
+            expect(closeDialog).toHaveBeenCalledTimes(2);
 
             document.body.removeChild(element);
         });
 
         it('should close logbook dialog', async () => {
-            element.activeDialogState = { type: 'LOGBOOK', payload: { growspaceId: 'g1' } } as any;
+            $activeDialog.set({ type: 'LOGBOOK', payload: { growspaceId: 'g1' } });
             document.body.appendChild(element);
             await element.updateComplete;
 
             const dialog = element.shadowRoot?.querySelector('logbook-dialog') as HTMLElement;
             dialog.dispatchEvent(new CustomEvent('close'));
-            expect(mockStore.closeActiveDialog).toHaveBeenCalled();
+            expect(closeDialog).toHaveBeenCalled();
 
             document.body.removeChild(element);
         });
 
         it('should close add-plant dialog', async () => {
-            element.activeDialogState = { type: 'ADD_PLANT', payload: {} } as any;
+            $activeDialog.set({ type: 'ADD_PLANT', payload: { row: 1, col: 1 } });
             document.body.appendChild(element);
             await element.updateComplete;
 
@@ -390,7 +448,7 @@ describe('DialogHost', () => {
             // Ensure dialog is rendered first
             expect(dialog).not.toBeNull();
             dialog!.dispatchEvent(new CustomEvent('close'));
-            expect(mockStore.closeActiveDialog).toHaveBeenCalled();
+            expect(closeDialog).toHaveBeenCalled();
 
             document.body.removeChild(element);
         });
