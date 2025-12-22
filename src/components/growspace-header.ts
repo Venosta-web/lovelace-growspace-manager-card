@@ -37,6 +37,7 @@ export class GrowspaceHeader extends LitElement {
   public accessor store!: GrowspaceStore;
 
   @consume({ context: historyContext, subscribe: true })
+  @state()
   public accessor historyController!: GrowspaceHistoryController;
 
   @consume({ context: configContext, subscribe: true })
@@ -138,27 +139,36 @@ export class GrowspaceHeader extends LitElement {
     }
   }
 
-  protected willUpdate(changedProperties: Map<string, any>) {
-    if (
-      changedProperties.has('device') ||
-      changedProperties.has('hass') ||
-      changedProperties.has('activeEnvGraphs') ||
-      changedProperties.has('linkedGraphGroups')
-    ) {
-      const { mainChips, deviceChips, dominant, envAttrs } = this._computeMetrics();
-      this._mainChips = mainChips;
-      this._deviceChips = deviceChips;
-      this._dominant = dominant;
-      this._envAttrs = envAttrs;
+  /*
+   * Computes derived metrics for rendering.
+   * Called by willUpdate (for reactive props) and _handleControllerUpdate (for controller events).
+   */
+  private _updateMetrics() {
+    if (!this.device || !this.hass) {
+      this._mainChips = [];
+      this._deviceChips = [];
+      this._dominant = undefined;
+      this._envAttrs = {};
+      return;
     }
+
+    const { mainChips, deviceChips, dominant, envAttrs } = MetricsUtils.computeHeaderMetrics(
+      this.hass,
+      this.device,
+      this.activeEnvGraphs,
+      this.historyController?.linkedGraphGroups || []
+    );
+
+    this._mainChips = mainChips;
+    this._deviceChips = deviceChips;
+    this._dominant = dominant;
+    this._envAttrs = envAttrs;
   }
 
+
+
   updated(changedProps: Map<string, any>) {
-    if (
-      changedProps.has('activeEnvGraphs') ||
-      changedProps.has('linkedGraphGroups') ||
-      changedProps.has('device')
-    ) {
+    if (changedProps.has('device')) {
       // Content might change size
       setTimeout(() => this._checkScroll(), 0);
     }
@@ -706,21 +716,56 @@ export class GrowspaceHeader extends LitElement {
 
 
 
+  private _subscribedController: GrowspaceHistoryController | undefined;
+
   connectedCallback() {
     super.connectedCallback();
-    if (this.historyController) {
-      this.historyController.addListener(this._handleControllerUpdate);
-    }
+    // Try to subscribe if available immediately
+    this._updateSubscription();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    if (this.historyController) {
-      this.historyController.removeListener(this._handleControllerUpdate);
+    if (this._subscribedController) {
+      this._subscribedController.removeListener(this._handleControllerUpdate);
+      this._subscribedController = undefined;
+    }
+  }
+
+  protected willUpdate(changedProperties: Map<string, any>) {
+    // Manage subscription if controller reference changes
+    if (changedProperties.has('historyController') || !this._subscribedController) {
+      this._updateSubscription();
+    }
+
+    // Update metrics if key dependencies changed
+    if (
+      changedProperties.has('device') ||
+      changedProperties.has('hass')
+    ) {
+      this._updateMetrics();
+    }
+  }
+
+  private _updateSubscription() {
+    // Unsubscribe from old
+    if (this._subscribedController && this._subscribedController !== this.historyController) {
+      this._subscribedController.removeListener(this._handleControllerUpdate);
+      this._subscribedController = undefined;
+    }
+
+    // Subscribe to new
+    if (this.historyController && this._subscribedController !== this.historyController) {
+      this.historyController.addListener(this._handleControllerUpdate);
+      this._subscribedController = this.historyController;
+      // Initial metric update
+      this._updateMetrics();
     }
   }
 
   private _handleControllerUpdate = () => {
+    // Explicitly recompute metrics when controller state (like active env graphs) changes
+    this._updateMetrics();
     this.requestUpdate();
   }
 

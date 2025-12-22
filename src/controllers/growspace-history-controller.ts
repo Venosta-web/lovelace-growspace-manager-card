@@ -208,11 +208,9 @@ export class GrowspaceHistoryController implements ReactiveController {
    */
   async loadHistoryOnDemand(): Promise<void> {
     if (this.isHistoryLoaded || this.isHistoryLoading) {
-      console.log('[HistoryController] History already loaded or loading, skipping');
       return;
     }
 
-    console.log('[HistoryController] Loading history on-demand');
     this.isHistoryLoading = true;
     this.host.requestUpdate();
 
@@ -309,10 +307,9 @@ export class GrowspaceHistoryController implements ReactiveController {
       };
 
       localStorage.setItem(key, JSON.stringify(data));
-      // console.log('[HistoryController] Saved history to storage');
+
     } catch (e) {
       console.error('[HistoryController] Failed to save to storage', e);
-      // Clean up old keys if quota exceeded?
     }
   }
 
@@ -832,8 +829,6 @@ export class GrowspaceHistoryController implements ReactiveController {
         startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
     }
-    const durationMs = now.getTime() - startTime.getTime();
-    console.log(`[HistoryController.calculateTimeRange] range=${range}, start=${startTime.toISOString()}, end=${now.toISOString()}, duration=${durationMs / 1000}s (${durationMs / 3600000}h)`);
     return { start: startTime, end: now };
   }
 }

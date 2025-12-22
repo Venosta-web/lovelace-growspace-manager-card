@@ -5512,8 +5512,6 @@ class DataService {
     async getHistoryStats(entityIds, startTime, endTime, intervalMinutes = 15, significantChangesOnly = true) {
         if (!this.hass || entityIds.length === 0)
             return {};
-        const duration = endTime ? (endTime.getTime() - startTime.getTime()) / 1000 : 'undefined';
-        console.log(`[DataService.getHistoryStats] entities=${entityIds.length}, start=${startTime.toISOString()}, end=${endTime?.toISOString() || 'undefined'}, duration=${duration}s, interval=${intervalMinutes}min`);
         try {
             const result = await this.hass.callWS({
                 type: WS_TYPE_GET_HISTORY_STATS,
@@ -6305,10 +6303,8 @@ class GrowspaceHistoryController {
      */
     async loadHistoryOnDemand() {
         if (this.isHistoryLoaded || this.isHistoryLoading) {
-            console.log('[HistoryController] History already loaded or loading, skipping');
             return;
         }
-        console.log('[HistoryController] Loading history on-demand');
         this.isHistoryLoading = true;
         this.host.requestUpdate();
         try {
@@ -6394,11 +6390,9 @@ class GrowspaceHistoryController {
                 timestamps: this._lastTimestamps
             };
             localStorage.setItem(key, JSON.stringify(data));
-            // console.log('[HistoryController] Saved history to storage');
         }
         catch (e) {
             console.error('[HistoryController] Failed to save to storage', e);
-            // Clean up old keys if quota exceeded?
         }
     }
     getRange() {
@@ -6832,8 +6826,6 @@ class GrowspaceHistoryController {
                 startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
                 break;
         }
-        const durationMs = now.getTime() - startTime.getTime();
-        console.log(`[HistoryController.calculateTimeRange] range=${range}, start=${startTime.toISOString()}, end=${now.toISOString()}, duration=${durationMs / 1000}s (${durationMs / 3600000}h)`);
         return { start: startTime, end: now };
     }
 }
@@ -24517,6 +24509,8 @@ class ResizeController {
             this._deviceChips = [];
             this._draggedMetric = null;
             this._handleControllerUpdate = () => {
+                // Explicitly recompute metrics when controller state (like active env graphs) changes
+                this._updateMetrics();
                 this.requestUpdate();
             };
         }
@@ -24603,22 +24597,26 @@ class ResizeController {
                     deviceContainer.scrollLeft < deviceContainer.scrollWidth - deviceContainer.clientWidth - 1;
             }
         }
-        willUpdate(changedProperties) {
-            if (changedProperties.has('device') ||
-                changedProperties.has('hass') ||
-                changedProperties.has('activeEnvGraphs') ||
-                changedProperties.has('linkedGraphGroups')) {
-                const { mainChips, deviceChips, dominant, envAttrs } = this._computeMetrics();
-                this._mainChips = mainChips;
-                this._deviceChips = deviceChips;
-                this._dominant = dominant;
-                this._envAttrs = envAttrs;
+        /*
+         * Computes derived metrics for rendering.
+         * Called by willUpdate (for reactive props) and _handleControllerUpdate (for controller events).
+         */
+        _updateMetrics() {
+            if (!this.device || !this.hass) {
+                this._mainChips = [];
+                this._deviceChips = [];
+                this._dominant = undefined;
+                this._envAttrs = {};
+                return;
             }
+            const { mainChips, deviceChips, dominant, envAttrs } = MetricsUtils.computeHeaderMetrics(this.hass, this.device, this.activeEnvGraphs, this.historyController?.linkedGraphGroups || []);
+            this._mainChips = mainChips;
+            this._deviceChips = deviceChips;
+            this._dominant = dominant;
+            this._envAttrs = envAttrs;
         }
         updated(changedProps) {
-            if (changedProps.has('activeEnvGraphs') ||
-                changedProps.has('linkedGraphGroups') ||
-                changedProps.has('device')) {
+            if (changedProps.has('device')) {
                 // Content might change size
                 setTimeout(() => this._checkScroll(), 0);
             }
@@ -24681,14 +24679,39 @@ class ResizeController {
         }
         connectedCallback() {
             super.connectedCallback();
-            if (this.historyController) {
-                this.historyController.addListener(this._handleControllerUpdate);
-            }
+            // Try to subscribe if available immediately
+            this._updateSubscription();
         }
         disconnectedCallback() {
             super.disconnectedCallback();
-            if (this.historyController) {
-                this.historyController.removeListener(this._handleControllerUpdate);
+            if (this._subscribedController) {
+                this._subscribedController.removeListener(this._handleControllerUpdate);
+                this._subscribedController = undefined;
+            }
+        }
+        willUpdate(changedProperties) {
+            // Manage subscription if controller reference changes
+            if (changedProperties.has('historyController') || !this._subscribedController) {
+                this._updateSubscription();
+            }
+            // Update metrics if key dependencies changed
+            if (changedProperties.has('device') ||
+                changedProperties.has('hass')) {
+                this._updateMetrics();
+            }
+        }
+        _updateSubscription() {
+            // Unsubscribe from old
+            if (this._subscribedController && this._subscribedController !== this.historyController) {
+                this._subscribedController.removeListener(this._handleControllerUpdate);
+                this._subscribedController = undefined;
+            }
+            // Subscribe to new
+            if (this.historyController && this._subscribedController !== this.historyController) {
+                this.historyController.addListener(this._handleControllerUpdate);
+                this._subscribedController = this.historyController;
+                // Initial metric update
+                this._updateMetrics();
             }
         }
         get _chipDraggable() {
@@ -25069,7 +25092,7 @@ class ResizeController {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
         _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
         _store_decorators = [c$2({ context: storeContext, subscribe: true })];
-        _historyController_decorators = [c$2({ context: historyContext, subscribe: true })];
+        _historyController_decorators = [c$2({ context: historyContext, subscribe: true }), r$2()];
         _config_decorators = [c$2({ context: configContext, subscribe: true }), n$5({ attribute: false })];
         _device_decorators = [n$5({ attribute: false })];
         _compact_decorators = [n$5({ type: Boolean })];

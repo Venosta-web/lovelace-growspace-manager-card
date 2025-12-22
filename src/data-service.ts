@@ -278,9 +278,6 @@ export class DataService {
   ): Promise<Record<string, any[]>> {
     if (!this.hass || entityIds.length === 0) return {};
 
-    const duration = endTime ? (endTime.getTime() - startTime.getTime()) / 1000 : 'undefined';
-    console.log(`[DataService.getHistoryStats] entities=${entityIds.length}, start=${startTime.toISOString()}, end=${endTime?.toISOString() || 'undefined'}, duration=${duration}s, interval=${intervalMinutes}min`);
-
     try {
       const result = await this.hass.callWS<Record<string, any[]>>({
         type: WS_TYPE_GET_HISTORY_STATS,
