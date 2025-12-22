@@ -35,6 +35,9 @@ export class GrowspaceAnalytics extends LitElement {
         flex-direction: column;
         gap: 12px;
       }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
     `,
   ];
 
@@ -51,6 +54,14 @@ export class GrowspaceAnalytics extends LitElement {
     }
   }
 
+  firstUpdated() {
+    // OPTIMIZATION: Trigger lazy loading of history data when analytics component first renders
+    if (this.historyController && !this.historyController.isHistoryLoaded) {
+      console.log('[GrowspaceAnalytics] Triggering lazy load of history data');
+      this.historyController.loadHistoryOnDemand();
+    }
+  }
+
   disconnectedCallback() {
     super.disconnectedCallback();
     if (this.historyController) {
@@ -63,6 +74,12 @@ export class GrowspaceAnalytics extends LitElement {
   }
 
   protected willUpdate(changedProperties: PropertyValues) {
+    // Trigger lazy load if history is not loaded and not currently loading
+    if (this.historyController && !this.historyController.isHistoryLoaded && !this.historyController.isHistoryLoading) {
+      console.log('[GrowspaceAnalytics] Triggering lazy load in willUpdate');
+      this.historyController.loadHistoryOnDemand();
+    }
+
     // Recompute items whenever update is requested (controller notifies)
     this._computeItemsToRender();
   }
@@ -117,6 +134,19 @@ export class GrowspaceAnalytics extends LitElement {
   protected render(): TemplateResult {
     if (!this.historyController || this.historyController.activeEnvGraphs.size === 0) return html``;
     if (!this.device) return html``;
+
+    // Show loading state while history is being fetched
+    if (this.historyController.isHistoryLoading) {
+      return html`
+        <div class="graphs-container">
+          ${this.renderTimeRangeSelector(this.historyController.getRange())}
+          <div style="display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--secondary-text-color, #666);">
+            <div class="loading-spinner" style="width: 24px; height: 24px; border: 2px solid var(--primary-color, #03a9f4); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <span style="margin-left: 12px;">Loading history data...</span>
+          </div>
+        </div>
+      `;
+    }
 
     const sensorHistory = this.historyController.combinedHistory;
     const range = this.historyController.getRange();

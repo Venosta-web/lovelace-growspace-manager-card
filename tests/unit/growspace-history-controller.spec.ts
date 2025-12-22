@@ -178,21 +178,22 @@ describe('GrowspaceHistoryController', () => {
             vi.useRealTimers();
         });
 
-        it('should handle host updates triggering fetch', async () => {
-            const spy = vi.spyOn(controller as any, '_fetchHistory').mockImplementation(() => Promise.resolve());
-            const spyRefresh = vi.spyOn(controller as any, 'refreshSecondaryHistories').mockImplementation(() => { });
+        it('should handle host updates resetting state for new device', async () => {
+            const spy = vi.spyOn(controller as any, '_notifyUpdate');
 
             // Initial update - previous selection was null/undefined
             await controller.hostUpdate();
-            // Should verify that if selection changes from null -> d1 it triggers
 
             // First call - assumes previous was null (default init)
             mockHost.selectedDevice = 'd1';
             await controller.hostUpdate();
-            expect(spy).toHaveBeenCalledWith('24h');
-            expect(spyRefresh).toHaveBeenCalledWith('24h');
 
-            // Idempotent
+            // Should reset loading flags and notify (but not auto-fetch due to lazy loading)
+            expect(controller.isHistoryLoaded).toBe(false);
+            expect(controller.isHistoryLoading).toBe(false);
+            expect(spy).toHaveBeenCalled();
+
+            // Idempotent - no change if device stays the same
             spy.mockClear();
             await controller.hostUpdate();
             expect(spy).not.toHaveBeenCalled();

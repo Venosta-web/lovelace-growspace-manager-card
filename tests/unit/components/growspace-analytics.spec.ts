@@ -39,6 +39,9 @@ describe('GrowspaceAnalytics', () => {
             toggleEnvGraph: vi.fn(),
             unlinkGraphGroup: vi.fn(),
             unlinkGraphMetric: vi.fn(),
+            loadHistoryOnDemand: vi.fn().mockResolvedValue(undefined),
+            isHistoryLoaded: false,
+            isHistoryLoading: false,
         };
 
         hassMock = {

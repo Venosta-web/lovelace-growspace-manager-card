@@ -47,12 +47,12 @@ export class GrowspaceEnvChart extends LitElement {
   @state() private accessor _hoverTime: number | null = null;
   @state() private accessor _canScrollLeft = false;
   @state() private accessor _canScrollRight = false;
-  @state() private accessor _renderSeries: GraphSeries[] = []; 
+  @state() private accessor _renderSeries: GraphSeries[] = [];
 
   private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
   private _chartContainerRef: Ref<HTMLDivElement> = createRef();
   private _scrollCheckTimeout: number | undefined;
-  
+
   // Optimization: Cache bounding rect for tooltip
   private _cachedChartRect: DOMRect | null = null;
   private _tooltipRafId: number | null = null;
@@ -86,17 +86,17 @@ export class GrowspaceEnvChart extends LitElement {
       this._resizeObserver.observe(container);
       this._scrollCheckTimeout = window.setTimeout(() => this._checkScroll(), 100);
     }
-    
+
     // Observer for chart container to update cached rect
     const chartContainer = this._chartContainerRef.value;
     if (chartContainer) {
-        const chartObserver = new ResizeObserver(() => {
-            this._invalidateRectCache();
-        });
-        chartObserver.observe(chartContainer);
-        // Also invalidate on window scroll/resize globally
-        window.addEventListener('scroll', this._invalidateRectCacheBound, { passive: true });
-        window.addEventListener('resize', this._invalidateRectCacheBound, { passive: true });
+      const chartObserver = new ResizeObserver(() => {
+        this._invalidateRectCache();
+      });
+      chartObserver.observe(chartContainer);
+      // Also invalidate on window scroll/resize globally
+      window.addEventListener('scroll', this._invalidateRectCacheBound, { passive: true });
+      window.addEventListener('resize', this._invalidateRectCacheBound, { passive: true });
     }
   }
 
@@ -105,13 +105,13 @@ export class GrowspaceEnvChart extends LitElement {
     if (this._resizeObserver) this._resizeObserver.disconnect();
     if (this._scrollCheckTimeout) clearTimeout(this._scrollCheckTimeout);
     if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
-    
+
     window.removeEventListener('scroll', this._invalidateRectCacheBound);
     window.removeEventListener('resize', this._invalidateRectCacheBound);
   }
 
   private _invalidateRectCacheBound = () => this._invalidateRectCache();
-  
+
   private _invalidateRectCache() {
     this._cachedChartRect = null;
   }
@@ -202,37 +202,37 @@ export class GrowspaceEnvChart extends LitElement {
 
       const dataPoints: GraphDataPoint[] = [];
       let initialState = historySource[0];
-      
+
       for (const h of historySource) {
-          if (new Date(h.last_changed).getTime() > startTimeMs) break;
-          initialState = h;
+        if (new Date(h.last_changed).getTime() > startTimeMs) break;
+        initialState = h;
       }
 
       if (initialState) {
-          const val = key === 'optimal' || initialState.state === 'on' ? (initialState.state === 'on' ? 1 : 0) : GraphDataTransformer.normalizeSensorValue(initialState, key);
-          if (val !== undefined) dataPoints.push({ time: startTimeMs, value: val });
+        const val = key === 'optimal' || initialState.state === 'on' ? (initialState.state === 'on' ? 1 : 0) : GraphDataTransformer.normalizeSensorValue(initialState, key);
+        if (val !== undefined) dataPoints.push({ time: startTimeMs, value: val });
       }
 
       const len = historySource.length;
-      for(let i=0; i<len; i++) {
-          const h = historySource[i];
-          const t = new Date(h.last_changed).getTime();
-          if (t <= startTimeMs) continue;
-          
-          let val: number | undefined;
-          if (key === 'optimal') {
-             val = h.state === 'on' ? 1 : 0;
-             if (h.attributes?.reasons) dataPoints.push({ time: t, value: val, meta: { reasons: h.attributes.reasons } });
-             else dataPoints.push({ time: t, value: val });
-          } else {
-             val = GraphDataTransformer.normalizeSensorValue(h, key);
-             if (val !== undefined) dataPoints.push({ time: t, value: val });
-          }
+      for (let i = 0; i < len; i++) {
+        const h = historySource[i];
+        const t = new Date(h.last_changed).getTime();
+        if (t <= startTimeMs) continue;
+
+        let val: number | undefined;
+        if (key === 'optimal') {
+          val = h.state === 'on' ? 1 : 0;
+          if (h.attributes?.reasons) dataPoints.push({ time: t, value: val, meta: { reasons: h.attributes.reasons } });
+          else dataPoints.push({ time: t, value: val });
+        } else {
+          val = GraphDataTransformer.normalizeSensorValue(h, key);
+          if (val !== undefined) dataPoints.push({ time: t, value: val });
+        }
       }
 
       if (dataPoints.length > 0) {
-          const last = dataPoints[dataPoints.length - 1];
-          dataPoints.push({ time: nowMs, value: last.value, meta: last.meta });
+        const last = dataPoints[dataPoints.length - 1];
+        dataPoints.push({ time: nowMs, value: last.value, meta: last.meta });
       }
 
       if (dataPoints.length > 0) {
@@ -242,12 +242,12 @@ export class GrowspaceEnvChart extends LitElement {
         const avg = sum / dataPoints.length;
 
         const isStep = (config as any).type === 'step' || key === 'optimal' || key === 'dehumidifier';
-        if (key === 'exhaust' || key === 'humidifier' || key === 'circulation_fan') { min = 0; max = 10; } 
+        if (key === 'exhaust' || key === 'humidifier' || key === 'circulation_fan') { min = 0; max = 10; }
         else if (key === 'dehumidifier') { min = 0; max = 1; }
         else if (isStep) { min = 0; max = 1; }
 
         if (!this.isCombined && max === min && !isStep) { max += 1; min -= 1; }
-        
+
         const paddedRange = max - min || 1;
 
         const pathStr = ChartUtils.generatePathFromValues(
@@ -255,7 +255,7 @@ export class GrowspaceEnvChart extends LitElement {
           width,
           height,
           {
-            min, max, 
+            min, max,
             startTime: startTimeMs,
             endTime: startTimeMs + durationMillis,
             type: isStep ? 'step' : 'line',
@@ -274,9 +274,9 @@ export class GrowspaceEnvChart extends LitElement {
             value: p.value
           }));
           vpdSegments = this._generateVpdSegments(vpdPoints, thresholds);
-          
+
           if (dataPoints.length > 0) {
-             seriesColor = this._getVpdStatusColor(this._getVpdStatusForValue(dataPoints[dataPoints.length - 1].value, thresholds));
+            seriesColor = this._getVpdStatusColor(this._getVpdStatusForValue(dataPoints[dataPoints.length - 1].value, thresholds));
           }
         }
 
@@ -307,21 +307,21 @@ export class GrowspaceEnvChart extends LitElement {
       changedProperties.has('isCombined')
     ) {
       let needsUpdate = true;
-      
+
       if (changedProperties.has('sensorHistory') && changedProperties.size === 1) {
-          const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
-          const oldHist = changedProperties.get('sensorHistory') as SensorHistories | undefined;
-          
-          if (oldHist) {
-              let allSame = true;
-              for(const k of metricKeys) {
-                  if (this.sensorHistory[k] !== oldHist[k]) {
-                      allSame = false;
-                      break;
-                  }
-              }
-              if (allSame) needsUpdate = false;
+        const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
+        const oldHist = changedProperties.get('sensorHistory') as SensorHistories | undefined;
+
+        if (oldHist) {
+          let allSame = true;
+          for (const k of metricKeys) {
+            if (this.sensorHistory[k] !== oldHist[k]) {
+              allSame = false;
+              break;
+            }
           }
+          if (allSame) needsUpdate = false;
+        }
       }
 
       if (needsUpdate) {
@@ -335,11 +335,11 @@ export class GrowspaceEnvChart extends LitElement {
 
   render() {
     if (!this.device) return html``;
-    
+
     const width = 800;
     const height = 200;
     const durationMillis = this._getDurationMillis(this.range);
-    const now = new Date(); 
+    const now = new Date();
     const startTime = new Date(now.getTime() - durationMillis);
     const series = this._renderSeries;
 
@@ -375,50 +375,57 @@ export class GrowspaceEnvChart extends LitElement {
           <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
             ${this._renderGrid(width, height)}
             ${series.map((s) => {
-              if (s.vpdSegments?.length) {
-                return svg`${s.vpdSegments.map(seg => svg`<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
-              } 
-              return svg`
+      // Handle VPD segments separately (they have their own path validation)
+      if (s.vpdSegments?.length) {
+        return svg`${s.vpdSegments.map(seg => svg`<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
+      }
+
+      // Skip rendering regular paths if no valid path data
+      if (!s.path || s.points.length === 0) {
+        return svg``;
+      }
+
+      return svg`
                  ${s.fillType === 'gradient' ? svg`<defs>${this._renderGradient(s.id, s.color)}</defs>` : ''}
-                 ${s.fillType === 'gradient' 
-                    ? svg`<path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />` 
-                    : svg`<path d="${s.path} V ${height} H ${s.points.length > 0 ? ((s.points[0].time - startTime.getTime()) / durationMillis) * width : 0} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`
-                 }
+                 ${s.fillType === 'gradient'
+          ? svg`<path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />`
+          : svg`<path d="${s.path} V ${height} H ${((s.points[0].time - startTime.getTime()) / durationMillis) * width} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`
+        }
                  <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" vector-effect="non-scaling-stroke" />
               `;
-            })}
+    })}
           </svg>
         </div>
       </div>
     `;
   }
-  
+
   private _onMouseMove(e: MouseEvent, seriesList: GraphSeries[], startTime: Date, durationMillis: number) {
-      if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
-      
-      this._tooltipRafId = requestAnimationFrame(() => {
-          this._handleGraphHover(e, seriesList, startTime, durationMillis);
-          this._tooltipRafId = null;
-      });
+    if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
+
+    this._tooltipRafId = requestAnimationFrame(() => {
+      this._handleGraphHover(e, seriesList, startTime, durationMillis);
+      this._tooltipRafId = null;
+    });
   }
-  
+
   private _onMouseLeave = () => {
-      if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
-      this._activeTooltip = null;
-      this._hoverTime = null;
+    if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
+    this._activeTooltip = null;
+    this._hoverTime = null;
   }
 
   private _handleGraphHover(e: MouseEvent, seriesList: GraphSeries[], startTime: Date, durationMillis: number) {
     if (!this._cachedChartRect) {
-        const container = this._chartContainerRef.value;
-        if (!container) return;
-        this._cachedChartRect = container.getBoundingClientRect();
+      const container = this._chartContainerRef.value;
+      if (!container) return;
+      this._cachedChartRect = container.getBoundingClientRect();
     }
-    
+
     const rect = this._cachedChartRect!;
-    const contentWidth = rect.width - 90; 
+    const contentWidth = rect.width - 90;
     const mouseX = e.clientX - rect.left;
-    
+
     const relX = Math.max(0, Math.min(1, (mouseX - 50) / contentWidth));
     const hoverTime = startTime.getTime() + relX * durationMillis;
 
@@ -435,9 +442,9 @@ export class GrowspaceEnvChart extends LitElement {
           else hi = mid;
         }
         for (let i = Math.max(0, lo - 1); i <= Math.min(s.points.length - 1, lo + 1); i++) {
-           const p = s.points[i];
-           const diff = Math.abs(p.time - hoverTime);
-           if (diff < minDiff) { minDiff = diff; closest = p; }
+          const p = s.points[i];
+          const diff = Math.abs(p.time - hoverTime);
+          if (diff < minDiff) { minDiff = diff; closest = p; }
         }
       }
 
@@ -471,14 +478,14 @@ export class GrowspaceEnvChart extends LitElement {
       const last = series.points[series.points.length - 1];
       const defaults = SENSOR_CHART_DEFAULTS[series.id];
       const isBinary = defaults?.binary || series.id === 'optimal' || series.id === 'dehumidifier';
-      
+
       if (isBinary) {
-         if (series.id === 'optimal') valStr = last.value === 1 ? 'Optimal' : (last.meta?.reasons || 'Not Optimal');
-         else valStr = last.value === 1 ? 'ON' : 'OFF';
+        if (series.id === 'optimal') valStr = last.value === 1 ? 'Optimal' : (last.meta?.reasons || 'Not Optimal');
+        else valStr = last.value === 1 ? 'ON' : 'OFF';
       } else if ((series.id === 'exhaust' || series.id === 'humidifier') && last.meta?.state) {
-         valStr = last.meta.state;
+        valStr = last.meta.state;
       } else {
-         valStr = `${last.value.toFixed(1)} ${series.unit}`;
+        valStr = `${last.value.toFixed(1)} ${series.unit}`;
       }
     }
 
@@ -501,12 +508,12 @@ export class GrowspaceEnvChart extends LitElement {
     return html`
       <div class="gs-env-graph-header">
         <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
-          ${this._canScrollLeft ? html`<div class="scroll-nav left" @click=${(e:Event)=>{e.stopPropagation();this._scrollChips('left')}}><svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg></div>` : ''}
+          ${this._canScrollLeft ? html`<div class="scroll-nav left" @click=${(e: Event) => { e.stopPropagation(); this._scrollChips('left') }}><svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg></div>` : ''}
           
-          <div class="chips-scroll-container" ${ref(this._chipsContainerRef)} @click=${(e:Event)=>e.stopPropagation()}>
+          <div class="chips-scroll-container" ${ref(this._chipsContainerRef)} @click=${(e: Event) => e.stopPropagation()}>
             ${seriesList.map(s => html`
-                <div class=${classMap({'gs-legend-item':true, 'mask-left':this._canScrollLeft, 'mask-right':this._canScrollRight})}
-                  @click=${(e:Event)=>{e.stopPropagation(); this.dispatchEvent(new CustomEvent('unlink-graph', { detail: s.id, bubbles: true, composed: true })); }}>
+                <div class=${classMap({ 'gs-legend-item': true, 'mask-left': this._canScrollLeft, 'mask-right': this._canScrollRight })}
+                  @click=${(e: Event) => { e.stopPropagation(); this.dispatchEvent(new CustomEvent('unlink-graph', { detail: s.id, bubbles: true, composed: true })); }}>
                   <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${s.color}; margin-right:6px; flex-shrink:0;"></span>
                   ${s.icon ? html`<div style="width:16px; height:16px; color:${s.color}; margin-right:4px; display:inline-flex;"><svg viewBox="0 0 24 24" style="width:100%; height:100%; fill:currentColor;"><path d="${s.icon}"></path></svg></div>` : ''}
                   <span style="color:${s.color}; font-weight:500;">${s.title}</span>
@@ -514,7 +521,7 @@ export class GrowspaceEnvChart extends LitElement {
             `)}
           </div>
 
-          ${this._canScrollRight ? html`<div class="scroll-nav right" @click=${(e:Event)=>{e.stopPropagation();this._scrollChips('right')}}><svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg></div>` : ''}
+          ${this._canScrollRight ? html`<div class="scroll-nav right" @click=${(e: Event) => { e.stopPropagation(); this._scrollChips('right') }}><svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg></div>` : ''}
         </div>
         <div style="display:flex; gap: 8px; margin-left: 8px; flex-shrink: 0;">
            <ha-icon-button .path=${mdiLink} @click=${() => this.dispatchEvent(new CustomEvent('unlink-graphs', { detail: -1, bubbles: true, composed: true }))} title="Unlink Graphs"></ha-icon-button>
@@ -544,7 +551,7 @@ export class GrowspaceEnvChart extends LitElement {
     return svg`
         <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="var(--divider-color, #333)" stroke-width="1" />
         <line x1="0" y1="0" x2="0" y2="${height}" stroke="var(--divider-color, #333)" stroke-width="1" />
-        <line x1="0" y1="${height/2}" x2="${width}" y2="${height/2}" stroke="var(--divider-color, #333)" stroke-width="0.5" stroke-dasharray="4 4" />
+        <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="var(--divider-color, #333)" stroke-width="0.5" stroke-dasharray="4 4" />
     `;
   }
 
@@ -580,7 +587,7 @@ export class GrowspaceEnvChart extends LitElement {
     if (range === '7d') return 604800000;
     return 86400000;
   }
-  
+
   private _toggleEnvGraph() { this.dispatchEvent(new CustomEvent('toggle-graph', { detail: this.metricKey, bubbles: true, composed: true })); }
 
   static styles = css`

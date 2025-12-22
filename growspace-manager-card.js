@@ -6238,6 +6238,11 @@ class GrowspaceHistoryController {
          */
         this._lastTimestamps = {};
         this._cachedCombinedHistory = null;
+        /**
+         * Lazy loading flags
+         */
+        this.isHistoryLoaded = false;
+        this.isHistoryLoading = false;
         this.activeEnvGraphs = new Set();
         this.linkedGraphGroups = [];
         this.graphRanges = {};
@@ -6257,6 +6262,8 @@ class GrowspaceHistoryController {
         this._listeners.forEach(cb => cb());
     }
     hostConnected() {
+        // OPTIMIZATION: Don't auto-fetch history on connect
+        // History will be loaded on-demand when analytics component renders
         this.startAutoRefresh();
     }
     hostDisconnected() {
@@ -6279,15 +6286,42 @@ class GrowspaceHistoryController {
     hostUpdated() {
         // Rely on hostUpdate or manual calls
     }
-    initFetch() {
-        this._fetchHistory(this.getRange());
+    /**
+     * Load history data on-demand.
+     * Called by components when they need history data (e.g., analytics component on first render)
+     */
+    async loadHistoryOnDemand() {
+        if (this.isHistoryLoaded || this.isHistoryLoading) {
+            console.log('[HistoryController] History already loaded or loading, skipping');
+            return;
+        }
+        console.log('[HistoryController] Loading history on-demand');
+        this.isHistoryLoading = true;
+        this.host.requestUpdate();
+        try {
+            await this._fetchHistory(this.getRange());
+            this.isHistoryLoaded = true;
+            console.log('[HistoryController] History loaded successfully');
+        }
+        catch (error) {
+            console.error('[HistoryController] Failed to load history', error);
+        }
+        finally {
+            this.isHistoryLoading = false;
+            this.host.requestUpdate();
+        }
     }
     async hostUpdate() {
         if (this.host.selectedDevice !== this._prevSelectedDevice) {
             this._prevSelectedDevice = this.host.selectedDevice;
-            const range = this.getRange();
-            await this._fetchHistory(range);
-            this.refreshSecondaryHistories(range);
+            // Reset loading flags for new device
+            this.isHistoryLoaded = false;
+            this.isHistoryLoading = false;
+            // Clear cached data for new device
+            this.historyCache = {};
+            this._cachedCombinedHistory = null;
+            // Notify listeners that device changed (analytics will trigger lazy load if visible)
+            this._notifyUpdate();
         }
     }
     getRange() {
@@ -7684,14 +7718,19 @@ class GraphDataTransformer {
           <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
             ${this._renderGrid(width, height)}
             ${series.map((s) => {
+                // Handle VPD segments separately (they have their own path validation)
                 if (s.vpdSegments?.length) {
                     return b `${s.vpdSegments.map(seg => b `<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
+                }
+                // Skip rendering regular paths if no valid path data
+                if (!s.path || s.points.length === 0) {
+                    return b ``;
                 }
                 return b `
                  ${s.fillType === 'gradient' ? b `<defs>${this._renderGradient(s.id, s.color)}</defs>` : ''}
                  ${s.fillType === 'gradient'
                     ? b `<path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />`
-                    : b `<path d="${s.path} V ${height} H ${s.points.length > 0 ? ((s.points[0].time - startTime.getTime()) / durationMillis) * width : 0} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`}
+                    : b `<path d="${s.path} V ${height} H ${((s.points[0].time - startTime.getTime()) / durationMillis) * width} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`}
                  <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" vector-effect="non-scaling-stroke" />
               `;
             })}
@@ -27398,6 +27437,13 @@ const growspaceCardStyles = i$6 `
                 this.historyController.addListener(this._handleControllerUpdate);
             }
         }
+        firstUpdated() {
+            // OPTIMIZATION: Trigger lazy loading of history data when analytics component first renders
+            if (this.historyController && !this.historyController.isHistoryLoaded) {
+                console.log('[GrowspaceAnalytics] Triggering lazy load of history data');
+                this.historyController.loadHistoryOnDemand();
+            }
+        }
         disconnectedCallback() {
             super.disconnectedCallback();
             if (this.historyController) {
@@ -27405,6 +27451,11 @@ const growspaceCardStyles = i$6 `
             }
         }
         willUpdate(changedProperties) {
+            // Trigger lazy load if history is not loaded and not currently loading
+            if (this.historyController && !this.historyController.isHistoryLoaded && !this.historyController.isHistoryLoading) {
+                console.log('[GrowspaceAnalytics] Triggering lazy load in willUpdate');
+                this.historyController.loadHistoryOnDemand();
+            }
             // Recompute items whenever update is requested (controller notifies)
             this._computeItemsToRender();
         }
@@ -27450,6 +27501,18 @@ const growspaceCardStyles = i$6 `
                 return x ``;
             if (!this.device)
                 return x ``;
+            // Show loading state while history is being fetched
+            if (this.historyController.isHistoryLoading) {
+                return x `
+        <div class="graphs-container">
+          ${this.renderTimeRangeSelector(this.historyController.getRange())}
+          <div style="display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--secondary-text-color, #666);">
+            <div class="loading-spinner" style="width: 24px; height: 24px; border: 2px solid var(--primary-color, #03a9f4); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <span style="margin-left: 12px;">Loading history data...</span>
+          </div>
+        </div>
+      `;
+            }
             const sensorHistory = this.historyController.combinedHistory;
             const range = this.historyController.getRange();
             const graphs = c(this._itemsToRender, 
@@ -27573,6 +27636,9 @@ const growspaceCardStyles = i$6 `
         display: flex;
         flex-direction: column;
         gap: 12px;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
       }
     `,
     ];

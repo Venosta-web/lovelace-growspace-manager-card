@@ -30,6 +30,12 @@ export class GrowspaceHistoryController implements ReactiveController {
 
   private _cachedCombinedHistory: import('../types').SensorHistories | null = null;
 
+  /**
+   * Lazy loading flags
+   */
+  public isHistoryLoaded = false;
+  public isHistoryLoading = false;
+
   /** @deprecated Use historyCache['main'] instead */
   public get historyData(): HistorySensorState[] | null {
     return this.historyCache.main || null;
@@ -158,6 +164,8 @@ export class GrowspaceHistoryController implements ReactiveController {
   private _refreshInterval: number | null = null;
 
   hostConnected() {
+    // OPTIMIZATION: Don't auto-fetch history on connect
+    // History will be loaded on-demand when analytics component renders
     this.startAutoRefresh();
   }
 
@@ -184,8 +192,30 @@ export class GrowspaceHistoryController implements ReactiveController {
     // Rely on hostUpdate or manual calls
   }
 
-  initFetch() {
-    this._fetchHistory(this.getRange());
+  /**
+   * Load history data on-demand.
+   * Called by components when they need history data (e.g., analytics component on first render)
+   */
+  async loadHistoryOnDemand(): Promise<void> {
+    if (this.isHistoryLoaded || this.isHistoryLoading) {
+      console.log('[HistoryController] History already loaded or loading, skipping');
+      return;
+    }
+
+    console.log('[HistoryController] Loading history on-demand');
+    this.isHistoryLoading = true;
+    this.host.requestUpdate();
+
+    try {
+      await this._fetchHistory(this.getRange());
+      this.isHistoryLoaded = true;
+      console.log('[HistoryController] History loaded successfully');
+    } catch (error) {
+      console.error('[HistoryController] Failed to load history', error);
+    } finally {
+      this.isHistoryLoading = false;
+      this.host.requestUpdate();
+    }
   }
 
   private _prevSelectedDevice: string | null = null;
@@ -193,9 +223,14 @@ export class GrowspaceHistoryController implements ReactiveController {
   async hostUpdate() {
     if (this.host.selectedDevice !== this._prevSelectedDevice) {
       this._prevSelectedDevice = this.host.selectedDevice;
-      const range = this.getRange();
-      await this._fetchHistory(range);
-      this.refreshSecondaryHistories(range);
+      // Reset loading flags for new device
+      this.isHistoryLoaded = false;
+      this.isHistoryLoading = false;
+      // Clear cached data for new device
+      this.historyCache = {};
+      this._cachedCombinedHistory = null;
+      // Notify listeners that device changed (analytics will trigger lazy load if visible)
+      this._notifyUpdate();
     }
   }
 
@@ -205,6 +240,7 @@ export class GrowspaceHistoryController implements ReactiveController {
 
   setGraphRange(range: '1h' | '6h' | '24h' | '7d') {
     if (!this.host.selectedDevice) return;
+
     this.graphRanges = {
       ...this.graphRanges,
       [this.host.selectedDevice]: range,
