@@ -124,6 +124,18 @@ describe('PlantUtils', () => {
             const result = PlantUtils.findFirstAvailableSlot(plants, 4, 4);
             expect(result).toEqual({ row: 1, col: 3 });
         });
+
+        it('should return default (1,1) if grid is full', () => {
+            const plants = [
+                { attributes: { row: 1, col: 1 } },
+                { attributes: { row: 1, col: 2 } },
+                { attributes: { row: 2, col: 1 } },
+                { attributes: { row: 2, col: 2 } }
+            ] as unknown as PlantEntity[];
+
+            const result = PlantUtils.findFirstAvailableSlot(plants, 2, 2);
+            expect(result).toEqual({ row: 1, col: 1 });
+        });
     });
 
     describe('calculatePlantAge', () => {
@@ -324,6 +336,24 @@ describe('PlantUtils', () => {
             // Dimensions check effectively happens inside mocked logic? 
             // We can check if getContext was called or drawImage.
             // We'd need reference to mockContext.
+        });
+
+        it('should resize tall images correctly (height > width)', async () => {
+            // Override Image mock for this test to be tall
+            vi.stubGlobal('Image', class {
+                _width = 1000;
+                _height = 2000;
+                set src(v: string) {
+                    if (this.onload) this.onload();
+                }
+                get width() { return this._width; }
+                get height() { return this._height; }
+                onload: any;
+            });
+
+            const file = new File([''], 'tall.png', { type: 'image/png' });
+            // compressImage(file, maxWidth, maxHeight)
+            await PlantUtils.compressImage(file, 800, 800);
         });
     });
 
@@ -618,7 +648,7 @@ describe('compressImage Error Handling', () => {
         vi.stubGlobal('Image', class {
             width = 100;
             height = 100;
-            set src(v) { setTimeout(() => this.onload(), 0); }
+            set src(v: string) { setTimeout(() => this.onload(), 0); }
             onload: any;
         });
 

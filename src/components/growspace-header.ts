@@ -2,6 +2,7 @@ import { LitElement, html, css, svg, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { StoreController } from '@nanostores/lit';
 import { $viewMode, $isEditMode, $activeDialog, setViewMode, setEditMode } from '../store/ui-store';
+import { $devices, $selectedDevice } from '../store/data-store';
 import { HomeAssistant } from 'custom-card-helpers';
 
 import {
@@ -65,6 +66,10 @@ export class GrowspaceHeader extends LitElement {
   // Reactivity Controllers
   private _viewModeController = new StoreController(this, $viewMode);
   private _isEditModeController = new StoreController(this, $isEditMode);
+
+  // Data Store Controllers
+  private _devicesController = new StoreController(this, $devices);
+  private _selectedDeviceController = new StoreController(this, $selectedDevice);
 
   private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
   private _stageContainerRef: Ref<HTMLDivElement> = createRef();
@@ -795,7 +800,7 @@ export class GrowspaceHeader extends LitElement {
           payload: {
             currentTab: 'environment',
             environmentData: {
-              selectedGrowspaceId: this.store.state.selectedDevice || '',
+              selectedGrowspaceId: this._selectedDeviceController.value || '',
               temp_sensor: this.device?.environment_attributes?.temperature_sensor || '',
               humidity_sensor: this.device?.environment_attributes?.humidity_sensor || '',
               vpd_sensor: this.device?.environment_attributes?.vpd_sensor || '',
@@ -827,14 +832,14 @@ export class GrowspaceHeader extends LitElement {
         $activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
         break;
       case 'irrigation':
-        if (this.store.state.selectedDevice) {
+        if (this._selectedDeviceController.value) {
           $activeDialog.set({ type: 'IRRIGATION', payload: {} });
         }
         break;
       case 'ai':
         $activeDialog.set({
           type: 'GROW_MASTER',
-          payload: { growspaceId: this.store.state.selectedDevice || '', isLoading: false, response: '', mode: 'single' }
+          payload: { growspaceId: this._selectedDeviceController.value || '', isLoading: false, response: '', mode: 'single' }
         });
         break;
       case 'logbook':
@@ -847,6 +852,7 @@ export class GrowspaceHeader extends LitElement {
     if (!this.device || !this.hass) return html``;
 
     const dominant = this._dominant;
+    const devices = this._devicesController.value;
 
     // Split Chips
     const heroKeys = ['temperature', 'humidity', 'vpd', 'co2'];
@@ -865,13 +871,13 @@ export class GrowspaceHeader extends LitElement {
             ${!this.config?.default_growspace
         ? html`
             <div class="select-wrapper">
-                <span class="select-sizer">${this.store.state.devices.find(d => d.device_id === this.device.device_id)?.name || this.device.name}</span>
+                <span class="select-sizer">${devices.find(d => d.device_id === this.device.device_id)?.name || this.device.name}</span>
                 <select
                     class="growspace-select-header"
                     .value=${this.device.device_id}
                     @change=${this._handleDeviceChange}
                 >
-                    ${this.store.state.devices.map(
+                    ${devices.map(
           (d) => html`<option value=${d.device_id}>${d.name}</option>`
         )}
                 </select>

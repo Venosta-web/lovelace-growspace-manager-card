@@ -36,6 +36,7 @@ import { GrowspaceGridController } from './controllers/grid-controller';
 
 import { StoreController } from '@nanostores/lit';
 import { $viewMode, $isLoading, $activeDialog, $focusedPlantIndex, $menuOpen, setViewMode, selectAllPlants, clearPlantSelection, setEditMode, setFocusedPlantIndex, $isEditMode, $isCompactView, $selectedPlants, $notification } from './store/ui-store';
+import { $devices, $selectedDevice, $strainLibrary } from './store/data-store';
 
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard, GrowspaceCardHost {
@@ -52,6 +53,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   protected _selectedPlantsController = new StoreController(this, $selectedPlants);
   protected _notificationController = new StoreController(this, $notification);
 
+  // Data Store Controllers (for reactivity)
+  protected _devicesController = new StoreController(this, $devices);
+  protected _selectedDeviceController = new StoreController(this, $selectedDevice);
+  protected _strainLibraryController = new StoreController(this, $strainLibrary);
+
   // Controllers
   @provide({ context: historyContext })
   accessor historyController = new GrowspaceHistoryController(this);
@@ -59,7 +65,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
   /* Getter for convenience/compatibility if needed, or update call sites */
   get selectedDevice() {
-    return this.store.state.selectedDevice;
+    return this._selectedDeviceController.value;
   }
 
   @provide({ context: strainLibraryContext })
@@ -73,7 +79,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
   // Getter to provide pre-loaded devices to the history controller
   get devices() {
-    return this.store.state.devices;
+    return this._devicesController.value as GrowspaceDevice[];
   }
 
   @provide({ context: hassContext })
@@ -119,8 +125,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     }
 
     // Sync strain library to context provider
-    if (this.store && this.store.state && this.store.state.strainLibrary !== this._strainLibrary) {
-      this._strainLibrary = this.store.state.strainLibrary || [];
+    if (this._strainLibraryController.value !== this._strainLibrary) {
+      this._strainLibrary = (this._strainLibraryController.value || []) as StrainEntry[];
     }
   }
 
@@ -275,7 +281,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
   private renderDialogs(): TemplateResult {
     return html`<growspace-dialog-host
-      .devices=${this.store.state.devices}
+      .devices=${this._devicesController.value}
     ></growspace-dialog-host>`;
   }
 }

@@ -3,11 +3,16 @@ import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 import css from 'rollup-plugin-css-only';
+import replace from '@rollup/plugin-replace';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const isCoverage = process.env.COVERAGE === 'true';
 
 const plugins = [
+  replace({
+    'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development'),
+    preventAssignment: true,
+  }),
   resolve(),
   commonjs(),
   typescript({

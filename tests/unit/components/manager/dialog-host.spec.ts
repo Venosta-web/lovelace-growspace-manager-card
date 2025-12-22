@@ -4,6 +4,7 @@ import { DialogHost } from '../../../../src/components/manager/dialog-host';
 // We don't need to import actual dialogs if we just check for their tag presence
 // in the shadow DOM, assuming JSDOM treats them as generic elements.
 import { $activeDialog, closeDialog } from '../../../../src/store/ui-store';
+import { $devices, $selectedDevice } from '../../../../src/store/data-store';
 
 // Mock ui-store
 vi.mock('../../../../src/store/ui-store', async () => {
@@ -42,7 +43,7 @@ describe('DialogHost', () => {
             handleDeletePlant: vi.fn(),
             harvestPlant: vi.fn(),
             finishDryingPlant: vi.fn(),
-            clonePlant: vi.fn(),
+            handleTakeClone: vi.fn(),
             movePlantToGrowspace: vi.fn(),
             addStrain: vi.fn(),
             removeStrain: vi.fn(),
@@ -57,7 +58,8 @@ describe('DialogHost', () => {
             },
             analyzeGrowspace: vi.fn(),
             getStrainRecommendation: vi.fn(),
-            refreshData: vi.fn()
+            refreshData: vi.fn(),
+            performImport: vi.fn()
         };
 
         mockHass = {
@@ -71,6 +73,8 @@ describe('DialogHost', () => {
 
         // Reset atom state
         $activeDialog.set({ type: 'NONE' });
+        $devices.set([]);
+        $selectedDevice.set(null);
 
         element = document.createElement('growspace-dialog-host') as DialogHost;
         (element as any).store = mockStore;
@@ -149,8 +153,14 @@ describe('DialogHost', () => {
             payload: {
                 plant: {
                     entity_id: 'sensor.p1',
+                    state: 'veg',
+                    last_changed: '2024-01-01T00:00:00.000Z',
+                    last_updated: '2024-01-01T00:00:00.000Z',
+                    context: { id: 'ctx1', user_id: null, parent_id: null },
                     attributes: { plant_id: 'p1', strain: 'Blueberry', stage: 'veg' } as any
-                }
+                },
+                editedAttributes: { plant_id: 'p1', strain: 'Blueberry', stage: 'veg' } as any,
+                activeTab: 'dashboard'
             }
         });
         document.body.appendChild(element);
@@ -301,15 +311,13 @@ describe('DialogHost', () => {
 
             await new Promise(r => setTimeout(r, 0));
 
-            expect(mockStore.dataService.importStrainLibrary).toHaveBeenCalledWith(file, true);
-            expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('successful'), 'success');
-            expect(mockStore.fetchStrainLibrary).toHaveBeenCalled();
+            expect(mockStore.performImport).toHaveBeenCalledWith(file, true);
 
             document.body.removeChild(element);
         });
 
         it('should handle import library failure', async () => {
-            mockStore.dataService.importStrainLibrary.mockRejectedValue(new Error('Fail'));
+            mockStore.performImport.mockRejectedValue(new Error('Fail'));
 
             $activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
             document.body.appendChild(element);
@@ -326,7 +334,7 @@ describe('DialogHost', () => {
 
         it('should calculate stress state for Grow Master', async () => {
             // Mock selected device
-            mockStore.state.selectedDevice = 'd1';
+            $selectedDevice.set('d1');
             // Mock hass states
             mockHass.states = {
                 'binary_sensor.d1_stress': { state: 'on' },
@@ -369,7 +377,7 @@ describe('DialogHost', () => {
 
             // Take Clone
             dialog.dispatchEvent(new CustomEvent('take-clone', { detail: { plant: 'p1', numClones: 2 } }));
-            expect(mockStore.clonePlant).toHaveBeenCalledWith('p1', 2);
+            expect(mockStore.handleTakeClone).toHaveBeenCalledWith('p1', 2);
 
             // Move Clone
             dialog.dispatchEvent(new CustomEvent('move-clone', { detail: { plant: 'p1', targetGrowspace: 'g2' } }));

@@ -4,6 +4,7 @@ import { consume } from '@lit/context';
 import { hassContext, storeContext, strainLibraryContext } from '../../context';
 import { GrowspaceStore } from '../../store/growspace-store';
 import { $activeDialog, closeDialog } from '../../store/ui-store';
+import { $devices, $selectedDevice } from '../../store/data-store';
 import { StoreController } from '@nanostores/lit';
 import { ActiveDialogState } from '../../ui-state';
 import { GrowspaceDevice, PlantEntity, StrainEntry } from '../../types';
@@ -27,19 +28,10 @@ export class DialogHost extends LitElement {
     @consume({ context: storeContext, subscribe: true })
     accessor store!: GrowspaceStore;
 
-    // Replace @property with StoreController
+    // Controllers
     private _activeDialogController = new StoreController(this, $activeDialog);
-
-    // activeDialogState property was used to pass it in? Or just state from store?
-    // It was @property({ attribute: false }) accessor activeDialogState!: ActiveDialogState;
-    // If it was passed from parent, we might still want it. 
-    // But Render method in GrowspaceManagerCard didn't pass it in the updated code (I didn't check if I removed it).
-    // Let's assume we want to use the store directly.
-    // If I keep the property, I can support both. But strictly switching to store is better.
-    // I will remove the property and property accessor.
-
-    @property({ attribute: false })
-    accessor devices: GrowspaceDevice[] = [];
+    private _devicesController = new StoreController(this, $devices);
+    private _selectedDeviceController = new StoreController(this, $selectedDevice);
 
     @consume({ context: strainLibraryContext, subscribe: true })
     accessor strainLibrary: StrainEntry[] = [];
@@ -48,12 +40,14 @@ export class DialogHost extends LitElement {
         if (!this.store) return html``;
 
         const active = this._activeDialogController.value;
+        const devices = this._devicesController.value;
+        const selectedDeviceId = this._selectedDeviceController.value;
+
         console.log('[DialogHost] Rendering with active type:', active.type);
         if (active.type === 'NONE') return html``;
 
         const strainLibrary = this.strainLibrary || [];
-        const devices = this.devices || this.store.state.devices;
-        const selectedDeviceData = devices.find((d) => d.device_id === this.store.state.selectedDevice);
+        const selectedDeviceData = devices.find((d) => d.device_id === selectedDeviceId);
 
         // Prepare options for select dropdowns if needed
         const growspaceOptions: Record<string, string> = {};
@@ -94,8 +88,8 @@ export class DialogHost extends LitElement {
         <add-plant-dialog
             .open=${true}
             .strainLibrary=${strainLibrary}
-            .row=${dialogState.row}
-            .col=${dialogState.col}
+            .row=${dialogState?.row}
+            .col=${dialogState?.col}
             .growspaceName=${selectedDeviceData?.name || ''}
             @close=${() => closeDialog()}
             @add-plant-submit=${(e: CustomEvent) => this.store.confirmAddPlant(e.detail)}
@@ -129,7 +123,7 @@ export class DialogHost extends LitElement {
             @harvest-plant=${(e: CustomEvent) => this.store.harvestPlant(e.detail.plant)}
             @finish-drying=${(e: CustomEvent) => this.store.finishDryingPlant(e.detail.plant)}
             @take-clone=${(e: CustomEvent) =>
-                this.store.clonePlant(e.detail.plant, e.detail.numClones)}
+                this.store.handleTakeClone(e.detail.plant, e.detail.numClones)}
             @move-clone=${(e: CustomEvent) =>
                 this.store.movePlantToGrowspace(e.detail.plant, e.detail.targetGrowspace)}
         ></plant-overview-dialog>
@@ -158,9 +152,7 @@ export class DialogHost extends LitElement {
     private async _performImport(file: File, replace: boolean) {
         if (!file) return;
         try {
-            const result = await this.store.dataService.importStrainLibrary(file, replace);
-            this.store.showToast(`Import successful! ${result.imported_count || ''} strains imported.`, 'success');
-            await this.store.fetchStrainLibrary();
+            await this.store.performImport(file, replace);
         } catch (err: any) {
             console.error('Import failed:', err);
             this.store.showToast(`Import failed: ${err.message}`, 'error');
@@ -177,7 +169,7 @@ export class DialogHost extends LitElement {
         <config-dialog
             .open=${true}
             .hass=${this.hass}
-            .devices=${this.store.state.devices}
+            .devices=${this._devicesController.value}
             .currentTab=${dialogState.currentTab}
             .environmentData=${dialogState.environmentData}
             .growspaceOptions=${growspaceOptions}
@@ -243,16 +235,12 @@ export class DialogHost extends LitElement {
         if (active.type !== 'GROW_MASTER') return html``;
         const dialogState = active.payload;
 
-        // Determine stress state (logic moved from card or duplicated/simplified?)
-        // Ideally store should calculate this derived state or pass it in payload.
-        // For now, I'll access hass via store? No, store has hass but it's not reactive property of DialogHost
-        // But store.hass IS available.
-
         let isStressed = false;
         let personality;
+        const selectedDevice = this._selectedDeviceController.value;
 
-        if (this.store.state.selectedDevice && this.store.hass) {
-            const id = this.store.state.selectedDevice;
+        if (selectedDevice && this.hass) {
+            const id = selectedDevice;
             const stressEntityIds = [
                 `binary_sensor.${id}_plants_under_stress`,
                 `binary_sensor.${id}_stress`,
@@ -260,14 +248,14 @@ export class DialogHost extends LitElement {
             ];
 
             for (const eid of stressEntityIds) {
-                const ent = this.store.hass.states[eid];
+                const ent = this.hass.states[eid];
                 if (ent && ent.state === 'on') {
                     isStressed = true;
                     break;
                 }
             }
 
-            const manager = this.store.hass.states['sensor.growspace_manager'];
+            const manager = this.hass.states['sensor.growspace_manager'];
             if (manager && manager.attributes && manager.attributes.ai_settings) {
                 personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
             }

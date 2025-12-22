@@ -16,6 +16,7 @@ describe('DataService', () => {
                 sendMessagePromise: vi.fn().mockResolvedValue({}), // For websocket calls
             },
             callApi: vi.fn().mockResolvedValue({}), // For API calls like getHistory
+            callWS: vi.fn().mockResolvedValue({}), // For WS calls like getHistoryStats
             fetchWithAuth: vi.fn().mockResolvedValue({}), // For importStrainLibrary
             // Add other required properties as needed by Typescript, usually mocked as any for unit tests
         } as any;
@@ -736,6 +737,150 @@ describe('DataService', () => {
         it('should handle error in getStrainRecommendation', async () => {
             await expect(service.getStrainRecommendation('q'))
                 .rejects.toThrow('WS Fail');
+        });
+    });
+    describe('History Stats (WS)', () => {
+        it('should fetch history stats via WS success', async () => {
+            (mockHass.callWS as any).mockResolvedValue({
+                'sensor.temp': [{ s: '20', lu: 1000 }]
+            });
+
+            const result = await service.getHistoryStats(['sensor.temp'], new Date(), new Date());
+            expect(mockHass.callWS).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'growspace_manager/get_history_stats',
+                entity_ids: ['sensor.temp']
+            }));
+            expect(result['sensor.temp']).toBeDefined();
+            expect(result['sensor.temp'][0].state).toBe('20');
+        });
+
+        it('should fallback to REST batch on WS failure', async () => {
+            (mockHass.callWS as any).mockRejectedValue(new Error('WS Fail'));
+            const batchSpy = vi.spyOn(service, 'getBatchHistory').mockResolvedValue({ 's1': [] });
+
+            await service.getHistoryStats(['s1'], new Date());
+            expect(batchSpy).toHaveBeenCalled();
+        });
+
+        it('should return empty if no entities', async () => {
+            const res = await service.getHistoryStats([], new Date());
+            expect(res).toEqual({});
+        });
+    });
+
+    describe('Update Growspace Partials', () => {
+        it('should only send provided fields', async () => {
+            // Test 1: Only Name
+            await service.updateGrowspace({ growspace_id: 'g1', name: 'N' });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'update_growspace', {
+                growspace_id: 'g1',
+                name: 'N'
+            });
+
+            // Test 2: Only Rows
+            callServiceMock.mockClear();
+            await service.updateGrowspace({ growspace_id: 'g1', rows: 5 });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'update_growspace', {
+                growspace_id: 'g1',
+                rows: 5
+            });
+
+            // Test 3: Only PPR
+            callServiceMock.mockClear();
+            await service.updateGrowspace({ growspace_id: 'g1', plants_per_row: 5 });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'update_growspace', {
+                growspace_id: 'g1',
+                plants_per_row: 5
+            });
+
+            // Test 4: Notification Service
+            callServiceMock.mockClear();
+            await service.updateGrowspace({ growspace_id: 'g1', notification_service: 'mobile_app_x' });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'update_growspace', {
+                growspace_id: 'g1',
+                notification_target: 'mobile_app_x'
+            });
+        });
+    });
+
+    describe('Strain Library Sorting & Edge Cases', () => {
+        it('should sort strains by name then phenotype', () => {
+            // Re-mock structure correctly for dual phenotype on A? object logic doesn't allow dupe keys.
+            // Correct mock:
+            service.hass = {
+                states: {
+                    'sensor.strains': {
+                        attributes: {
+                            strains: {
+                                'B': { phenotypes: { '1': {} } },
+                                'A': { phenotypes: { '2': {}, '1': {} } }
+                            }
+                        }
+                    }
+                }
+            } as any;
+
+            const strains = service.getStrainLibrary();
+            expect(strains[0].strain).toBe('A');
+            expect(strains[0].phenotype).toBe('1');
+            expect(strains[1].strain).toBe('A');
+            expect(strains[1].phenotype).toBe('2');
+            expect(strains[2].strain).toBe('B');
+        });
+
+        it('should handle undefined phenotype in sort', () => {
+            service.hass = {
+                states: {
+                    'sensor.strains': {
+                        attributes: {
+                            strains: {
+                                'A': { phenotypes: { '': {}, 'p2': {} } }
+                            }
+                        }
+                    }
+                }
+            } as any;
+            const strains = service.getStrainLibrary();
+            // Empty string should come first
+            expect(strains[0].phenotype).toBe('');
+            expect(strains[1].phenotype).toBe('p2');
+        });
+
+        it('getGrowspaceId fallback', () => {
+            // Access private method via any
+            expect((service as any).getGrowspaceId({})).toBe('unknown');
+            expect((service as any).getGrowspaceId({ attributes: {} })).toBe('unknown');
+        });
+    });
+
+    describe('Branch Booster', () => {
+        it('getHistory should handle empty/null response from API', async () => {
+            (mockHass.callApi as any).mockResolvedValue(null);
+            expect(await service.getHistory('s1', new Date())).toEqual([]);
+
+            (mockHass.callApi as any).mockResolvedValue([]);
+            expect(await service.getHistory('s1', new Date())).toEqual([]);
+        });
+
+        it('getBatchHistory should handle null response form API', async () => {
+            (mockHass.callApi as any).mockResolvedValue(null);
+            expect(await service.getBatchHistory(['s1'], new Date())).toEqual({});
+        });
+
+        it('getBatchHistory should ignore empty entity histories', async () => {
+            // Arrays of arrays
+            (mockHass.callApi as any).mockResolvedValue([
+                [], // Empty history for first entity
+                [{ entity_id: 's2', state: 'on' }]
+            ]);
+            const res = await service.getBatchHistory(['s1', 's2'], new Date());
+            expect(Object.keys(res)).toHaveLength(1);
+            expect(res['s2']).toBeDefined();
+        });
+
+        it('addStrain should handle no image', async () => {
+            await service.addStrain({ strain: 'NoImg' });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_strain', { strain: 'NoImg' });
         });
     });
 });

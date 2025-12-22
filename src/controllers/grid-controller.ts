@@ -1,11 +1,18 @@
 import { ReactiveController, ReactiveControllerHost } from 'lit';
+import { StoreController } from '@nanostores/lit';
 import { GrowspaceStore } from '../store/growspace-store';
 import { GrowspaceDevice, PlantEntity } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
+import { $devices, $selectedDevice, $optimisticDeletedPlantIds } from '../store/data-store';
 
 export class GrowspaceGridController implements ReactiveController {
     host: ReactiveControllerHost;
     store: GrowspaceStore;
+
+    // Atoms controllers
+    private _devices: StoreController<readonly GrowspaceDevice[]>;
+    private _selectedDevice: StoreController<string | null>;
+    private _optimisticDeletedIds: StoreController<Set<string>>;
 
     // Cached state
     public activeDevices: GrowspaceDevice[] = [];
@@ -16,13 +23,18 @@ export class GrowspaceGridController implements ReactiveController {
     public growspaceOptions: Record<string, string> = {};
 
     // Memoization references
-    private _lastDevicesRef: GrowspaceDevice[] | null = null;
+    private _lastDevicesRef: readonly GrowspaceDevice[] | null = null;
     private _lastSelectedDeviceRef: string | null = null;
     private _lastDeletedIdsRef: Set<string> | null = null;
 
     constructor(host: ReactiveControllerHost, store: GrowspaceStore) {
         this.host = host;
         this.store = store;
+
+        this._devices = new StoreController(this.host, $devices);
+        this._selectedDevice = new StoreController(this.host, $selectedDevice);
+        this._optimisticDeletedIds = new StoreController(this.host, $optimisticDeletedPlantIds);
+
         host.addController(this);
     }
 
@@ -32,48 +44,51 @@ export class GrowspaceGridController implements ReactiveController {
     }
 
     hostUpdate() {
-        const state = this.store.state;
-        if (!state) return;
+        // Access values from controllers/atoms
+        const currentDevices = this._devices.value;
+        const currentSelectedId = this._selectedDevice.value;
+        const currentDeletedIds = this._optimisticDeletedIds.value;
 
         // Check if relevant state has changed
         if (
-            this._lastDevicesRef === state.devices &&
-            this._lastSelectedDeviceRef === state.selectedDevice &&
-            this._lastDeletedIdsRef === state.optimisticDeletedPlantIds
+            this._lastDevicesRef === currentDevices &&
+            this._lastSelectedDeviceRef === currentSelectedId &&
+            this._lastDeletedIdsRef === currentDeletedIds
         ) {
             return;
         }
 
         // Update references
-        this._lastDevicesRef = state.devices;
-        this._lastSelectedDeviceRef = state.selectedDevice;
-        this._lastDeletedIdsRef = state.optimisticDeletedPlantIds;
+        this._lastDevicesRef = currentDevices;
+        this._lastSelectedDeviceRef = currentSelectedId;
+        this._lastDeletedIdsRef = currentDeletedIds;
 
         this.calculateGrid();
     }
 
     private calculateGrid() {
-        if (!this.store || !this.store.state) return;
+        const devices = this._devices.value || [];
+        const deletedIds = this._optimisticDeletedIds.value;
+        const selectedDeviceId = this._selectedDevice.value;
 
         // 1. Recalculate Active Devices
-        // Filter out optimistically deleted plants
-        const devices = this.store.state.devices || [];
         this.activeDevices = devices.map((d) => ({
             ...d,
             plants: d.plants.filter((p) => {
                 const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
-                return !this.store.state.optimisticDeletedPlantIds.has(pId);
+                return !deletedIds.has(pId);
             }),
         }));
 
-        // 2. Compute growspace options (memoized, no longer in render)
+        // 2. Compute growspace options
         this.growspaceOptions = {};
         this.activeDevices.forEach((d) => {
             this.growspaceOptions[d.device_id] = d.name;
         });
 
         // 3. Recalculate Grid Layout
-        const selectedDeviceId = this.store.state.selectedDevice;
+        // Find in ACTIVE devices (filtered) or original? 
+        // Logic usually wants filtered plants for the grid.
         const selectedDeviceData = this.activeDevices.find(
             (d) => d.device_id === selectedDeviceId
         );
@@ -91,5 +106,3 @@ export class GrowspaceGridController implements ReactiveController {
         }
     }
 }
-
-

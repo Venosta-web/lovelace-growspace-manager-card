@@ -1,7 +1,8 @@
-
 import { describe, it, expect, vi } from 'vitest';
 import { MetricsUtils } from '../../src/utils/metrics-utils';
+import { PlantUtils } from '../../src/utils/plant-utils';
 import { PlantStage } from '../../src/types';
+import { DateTime } from 'luxon';
 
 describe('MetricsUtils', () => {
     const mockHass = {
@@ -448,4 +449,109 @@ describe('MetricsUtils', () => {
         expect(temp).toBeDefined();
         expect(temp.value).toBe('18°C');
     });
+    describe('Extended Coverage', () => {
+        it('should handle undefined linkedGraphGroups', () => {
+            const result = MetricsUtils.computeHeaderMetrics(
+                mockHass,
+                mockDevice,
+                new Set(),
+                undefined as any
+            );
+            // It should proceed without error and metrics should not be linked
+            const temp = result.mainChips.find(c => c.key === 'temperature');
+            expect(temp.linked).toBe(false);
+        });
+
+        it('should format dominant stage labels correctly (single day vs plural)', () => {
+            // Mock PlantUtils.getDominantStage to return specific values
+            // We can spy on it or just mock data if logic is internal...
+            // Logic calls PlantUtils.getDominantStage(device.plants).
+            // Let's create plants that yield specific results.
+            const today = DateTime.now().toISODate();
+            const yesterday = DateTime.now().minus({ days: 1 }).toISODate();
+
+            const oneDayPlant = { attributes: { plant_id: '1', stage: 'veg', veg_start: yesterday } };
+            // Note: PlantUtils logic might need valid dates.
+            // But better: spy on PlantUtils.getDominantStage if possible, OR trust the logic if we provide data.
+            // Let's use spy to force the output we want to test formatting of.
+
+            const spy = vi.spyOn(PlantUtils, 'getDominantStage');
+
+            // Case 1: 1 Day
+            spy.mockReturnValue({ stage: 'veg', days: 1, plants: [] } as any);
+            let res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+            expect(res.dominant.daysLabel).toBe('1 Day Veg');
+            expect(res.dominant.weeksLabel).toBe('1 Week Veg'); // 1 day is in 1st week
+
+            // Case 2: 5 Days
+            spy.mockReturnValue({ stage: 'flower', days: 5, plants: [] } as any);
+            res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+            expect(res.dominant.daysLabel).toBe('5 Days Flower');
+            expect(res.dominant.weeksLabel).toBe('1 Week Flower');
+
+            // Case 3: 15 Days (2 Weeks + 1 Day) -> 3 Weeks? Logic: Math.floor((15-1)/7)+1 = floor(2)+1 = 3 via logic
+            // Wait: Math.floor((days - 1) / 7) + 1
+            // 15 days -> (14)/7 + 1 = 3 weeks.
+            // 8 days -> (7)/7 + 1 = 2 weeks.
+            // 7 days -> (6)/7 + 1 = 1 week.
+            spy.mockReturnValue({ stage: 'cure', days: 8, plants: [] } as any);
+            res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+            expect(res.dominant.daysLabel).toBe('8 Days Cure');
+            expect(res.dominant.weeksLabel).toBe('2 Weeks Cure');
+
+            spy.mockRestore();
+        });
+
+        it('should handle humidifier sensor fallback', () => {
+            const fallbackHass = {
+                states: {
+                    'binary_sensor.test_room_optimal_conditions': { state: 'on', attributes: {} },
+                    'sensor.humidifier_state': { state: 'idle' }
+                }
+            } as any;
+
+            const fallbackDev = {
+                name: 'Test',
+                overview_entity_id: 'sensor.test_room',
+                environment_attributes: {
+                    humidifier_sensor: 'sensor.humidifier_state'
+                    // No humidifier_entity
+                }
+            } as any;
+
+            const res = MetricsUtils.computeHeaderMetrics(fallbackHass, fallbackDev, new Set(), []);
+            const chip = res.deviceChips.find(c => c.key === 'humidifier');
+            expect(chip).toBeDefined();
+            expect(chip.value).toBe('idle');
+        });
+
+        it('should fallback to sensor value for VPD if string is valid number', () => {
+            const hassVpdStr = {
+                states: {
+                    'binary_sensor.test_optimal_conditions': { state: 'on', attributes: {} },
+                    'sensor.vpd_sensor': { state: '1.2' }
+                }
+            } as any;
+            const dev = { name: 'Test', environment_attributes: { vpd_sensor: 'sensor.vpd_sensor' } } as any;
+
+            const res = MetricsUtils.computeHeaderMetrics(hassVpdStr, dev, new Set(), []);
+            const vpd = res.mainChips.find(c => c.key === 'vpd');
+            expect(vpd.value).toBe('1.2 kPa'); // Should parse 1.2
+        });
+
+        it('should NOT fallback to sensor value for VPD if string is invalid', () => {
+            const hassVpdStr = {
+                states: {
+                    'binary_sensor.test_optimal_conditions': { state: 'on', attributes: {} },
+                    'sensor.vpd_sensor': { state: 'invalid' }
+                }
+            } as any;
+            const dev = { name: 'Test', environment_attributes: { vpd_sensor: 'sensor.vpd_sensor' } } as any;
+
+            const res = MetricsUtils.computeHeaderMetrics(hassVpdStr, dev, new Set(), []);
+            const vpd = res.mainChips.find(c => c.key === 'vpd');
+            expect(vpd).toBeUndefined();
+        });
+    });
 });
+

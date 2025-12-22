@@ -326,4 +326,66 @@ describe('DragDropController', () => {
             );
         });
     });
+    describe('Event Bindings Coverage', () => {
+        it('should execute bound handlers when listeners are invoked', () => {
+            // Re-connect to ensure listeners are added and spies are fresh
+            vi.clearAllMocks();
+            controller.hostConnected();
+
+            const eventMap: Record<string, Function> = {};
+            // Capture the listeners passed to addEventListener
+            const addListenerMock = mockHost.addEventListener as any;
+            addListenerMock.mock.calls.forEach((call: any[]) => {
+                eventMap[call[0]] = call[1];
+            });
+
+            // 1. Touch Start
+            const touchStartSpy = vi.spyOn(controller, 'handleTouchStart');
+            const touchStartEvent = new TouchEvent('touchstart', {
+                touches: [{ clientX: 0, clientY: 0 }] as any
+            });
+            eventMap['touchstart'](touchStartEvent);
+            expect(touchStartSpy).toHaveBeenCalledWith(touchStartEvent);
+
+            // 2. Touch Move
+            const touchMoveSpy = vi.spyOn(controller, 'handleTouchMove');
+            const touchMoveEvent = new TouchEvent('touchmove', {
+                touches: [{ clientX: 0, clientY: 0 }] as any
+            });
+            eventMap['touchmove'](touchMoveEvent);
+            expect(touchMoveSpy).toHaveBeenCalledWith(touchMoveEvent);
+
+            // 3. Touch End
+            const touchEndSpy = vi.spyOn(controller, 'handleTouchEnd');
+            const touchEndEvent = new TouchEvent('touchend', {
+                changedTouches: [{ clientX: 0, clientY: 0 }] as any
+            });
+            eventMap['touchend'](touchEndEvent);
+            expect(touchEndSpy).toHaveBeenCalledWith(touchEndEvent);
+
+            // 4. Drag Start
+            const dragStartSpy = vi.spyOn(controller, 'handleDragStart');
+            const dragStartEvent = new DragEvent('dragstart');
+            eventMap['dragstart'](dragStartEvent);
+            expect(dragStartSpy).toHaveBeenCalledWith(dragStartEvent);
+
+            // 5. Drag End
+            const dragEndSpy = vi.spyOn(controller, 'handleDragEnd');
+            const dragEndEvent = new DragEvent('dragend');
+            eventMap['dragend'](dragEndEvent);
+            expect(dragEndSpy).toHaveBeenCalledWith(dragEndEvent);
+
+            // 6. Drag Over
+            const dragOverSpy = vi.spyOn(controller, 'handleDragOver');
+            const dragOverEvent = new DragEvent('dragover');
+            eventMap['dragover'](dragOverEvent);
+            expect(dragOverSpy).toHaveBeenCalledWith(dragOverEvent);
+
+            // 7. Drop
+            const dropSpy = vi.spyOn(controller, 'handleDrop');
+            const dropEvent = new DragEvent('drop');
+            eventMap['drop'](dropEvent);
+            expect(dropSpy).toHaveBeenCalledWith(dropEvent);
+        });
+    });
 });
