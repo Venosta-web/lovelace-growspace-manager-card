@@ -1011,23 +1011,36 @@ export class GrowspaceHeader extends LitElement {
 
     if (isVpd && this.historyController && this.device) {
       const historyData = this.historyController.historyCache['vpd'];
+      const lightHistory = this.historyController.historyCache['light'] || [];
       // Get VPD thresholds from device overview entity
       const overviewEntity = this.device.overview_entity_id
         ? this.hass?.states[this.device.overview_entity_id]
         : null;
 
-      const thresholds = {
-        targetMin: overviewEntity?.attributes?.vpd_target_min ?? 0.8,
-        targetMax: overviewEntity?.attributes?.vpd_target_max ?? 1.2,
-        dangerMin: overviewEntity?.attributes?.vpd_danger_min ?? 0.4,
-        dangerMax: overviewEntity?.attributes?.vpd_danger_max ?? 1.6,
+      const defaultThresholds = { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.4, dangerMax: 1.6 };
+
+      const attrs = overviewEntity?.attributes || {};
+
+      const day = {
+        targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? 0.8,
+        targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? 1.2,
+        dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? 0.4,
+        dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? 1.6,
+      };
+
+      const night = {
+        targetMin: attrs.night_vpd_target_min ?? day.targetMin,
+        targetMax: attrs.night_vpd_target_max ?? day.targetMax,
+        dangerMin: attrs.night_vpd_danger_min ?? day.dangerMin,
+        dangerMax: attrs.night_vpd_danger_max ?? day.dangerMax,
       };
 
       vpdSegments = ChartUtils.generateVpdSparklineSegments(
         historyData,
         sparklineWidth,
         sparklineHeight,
-        thresholds,
+        { day, night },
+        lightHistory,
         timeRange
       );
     }

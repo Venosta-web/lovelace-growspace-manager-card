@@ -175,36 +175,14 @@ export class GrowspaceEnvChart extends LitElement {
     let currentSegment: typeof points = [];
 
     // Helper to determine day/night at a specific time
-    const getIsDay = (time: number) => {
-      if (!lightHistory || lightHistory.length === 0) return true; // Default to day if no light history
+    // using ChartUtils.getIsDay to ensure consistent logic with sparklines
 
-      // Find the light state at 'time'
-      // 1. Check if time is before the entire history
-      if (time < lightHistory[0].time) {
-        // If we are looking before the first history point, and that point indicates a state change,
-        // the previous state was likely the opposite (if binary). If continuous, hard to say, but logical for binary.
-        // If first point is OFF (0), it was likely ON (Day) before.
-        // If first point is ON (>0), it was likely OFF (Night) before.
-        // Default to Day if ambiguous, but inverse logic is better for binary toggles.
-        return lightHistory[0].value === 0;
-      }
-
-      let state = 0;
-      for (let i = lightHistory.length - 1; i >= 0; i--) {
-        if (lightHistory[i].time <= time) {
-          state = lightHistory[i].value;
-          break;
-        }
-      }
-      return state > 0; // >0 is Day (ON/Dimmed), 0 is Night (OFF)
-    };
-
-    let isDay = getIsDay(points[0].time);
+    let isDay = ChartUtils.getIsDay(points[0].time, lightHistory);
     let currentStatus = this._getVpdStatusForValue(points[0].value, thresholds, isDay);
 
     for (let i = 0; i < points.length; i++) {
       const p = points[i];
-      const pIsDay = getIsDay(p.time);
+      const pIsDay = ChartUtils.getIsDay(p.time, lightHistory);
       const status = this._getVpdStatusForValue(p.value, thresholds, pIsDay);
 
       if (status === currentStatus) {
@@ -240,22 +218,13 @@ export class GrowspaceEnvChart extends LitElement {
 
     // Prepare Light History for VPD calculation if needed
     let lightHistoryPoints: GraphDataPoint[] = [];
-    if (metricKeys.includes('vpd')) {
-      const lightSource = this.sensorHistory['light'] || [];
-      lightHistoryPoints = ChartUtils.normalizeHistory(lightSource, 'light', startTimeMs, nowMs); // Reusing normalization logic if possible, or manual
-      // Since we don't have ChartUtils.normalize exposed fully/generically for this in one line, let's just do a quick parse like below loop
-      // Actually, reusing the loop logic below is cleaner, but we need light points BEFORE determining VPD segments
-      // So let's do a quick extraction pass for light if it exists
-      if (this.sensorHistory['light']) {
-        const points: GraphDataPoint[] = [];
-        for (const h of this.sensorHistory['light']) {
-          const t = new Date(h.last_changed).getTime();
-          const val = h.state === 'on' ? 1 : (h.state === 'off' ? 0 : parseFloat(h.state));
-          if (!isNaN(val)) points.push({ time: t, value: val });
-        }
-        points.sort((a, b) => a.time - b.time);
-        lightHistoryPoints = points;
-      }
+    if (metricKeys.includes('vpd') && this.sensorHistory['light']) {
+      lightHistoryPoints = ChartUtils.normalizeHistory(
+        this.sensorHistory['light'],
+        'light',
+        startTimeMs, // Although normalizeHistory signature might ignore these args currently, passing them is good practice
+        nowMs
+      );
     }
 
     metricKeys.forEach((key) => {

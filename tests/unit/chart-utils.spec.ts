@@ -85,11 +85,15 @@ describe('ChartUtils', () => {
     });
 
     describe('generateVpdSparklineSegments', () => {
-        const thresholds = {
+        const simpleThresholds = {
             targetMin: 0.8,
             targetMax: 1.2,
             dangerMin: 0.5,
             dangerMax: 1.5
+        };
+        const thresholds = {
+            day: simpleThresholds,
+            night: simpleThresholds
         };
 
         it('should generate segments based on status', () => {
@@ -99,12 +103,43 @@ describe('ChartUtils', () => {
                 { state: '0.4', last_changed: '2023-01-01T12:00:00Z' }  // Danger
             ];
 
-            const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds);
+            const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds, []);
             expect(segments.length).toBeGreaterThanOrEqual(1);
         });
 
         it('should return empty for empty data', () => {
-            expect(ChartUtils.generateVpdSparklineSegments([], 100, 50, thresholds)).toEqual([]);
+            expect(ChartUtils.generateVpdSparklineSegments([], 100, 50, thresholds, [])).toEqual([]);
+        });
+
+        it('should respect day/night thresholds from light history', () => {
+            // Day: Optimal 0.8-1.2. Night: Optimal 0.4-0.6.
+            const dnThresholds = {
+                day: { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.5, dangerMax: 1.5 },
+                night: { targetMin: 0.4, targetMax: 0.6, dangerMin: 0.2, dangerMax: 0.8 }
+            };
+
+            // Value 0.5. 
+            // Day (0.8-1.2) -> Warning (0.5-0.8) or Danger (<0.5). 0.5 is DangerMin, so usually Warning/Danger boundary. 
+            // Let's use 0.55 -> Day Warning. Night Optimal (0.4-0.6).
+
+            const data = [
+                { state: '0.55', last_changed: '2023-01-01T10:00:00Z' },
+                { state: '0.55', last_changed: '2023-01-01T11:00:00Z' }
+            ];
+
+            // Case 1: All Day (Light ON) -> Expect Warning (Orange)
+            const segmentsDay = ChartUtils.generateVpdSparklineSegments(
+                data, 100, 50, dnThresholds,
+                [{ state: 'on', last_changed: '2023-01-01T09:00:00Z' }] // Always ON
+            );
+            expect(segmentsDay[0].color).toBe('#ff9800'); // Warning
+
+            // Case 2: All Night (Light OFF) -> Expect Optimal (Green)
+            const segmentsNight = ChartUtils.generateVpdSparklineSegments(
+                data, 100, 50, dnThresholds,
+                [{ state: 'off', last_changed: '2023-01-01T09:00:00Z' }] // Always OFF
+            );
+            expect(segmentsNight[0].color).toBe('#4caf50'); // Optimal
         });
     });
 
@@ -171,7 +206,8 @@ describe('ChartUtils', () => {
     });
 
     describe('generateVpdSparklineSegments Edge Cases', () => {
-        const thresholds = { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.5, dangerMax: 1.5 };
+        const simpleThresholds = { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.5, dangerMax: 1.5 };
+        const thresholds = { day: simpleThresholds, night: simpleThresholds };
 
         it('should handle time-based filtering correctly', () => {
             const baseTime = new Date('2023-01-01T10:00:00Z').getTime();
@@ -182,7 +218,7 @@ describe('ChartUtils', () => {
 
             // 24h -> Every 30 mins (was 15).
             // 0, 30, 60. 3 points.
-            const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds, '24h');
+            const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds, [], '24h');
             expect(segments.length).toBe(1);
             // Verify internal path points? We can't easily access them without parsing path.
             // But we can check if it returns valid segment.
@@ -194,7 +230,7 @@ describe('ChartUtils', () => {
                 { state: '1.0', last_changed: '2023-01-01T10:00:00Z' },
                 { state: '1.0', last_changed: '2023-01-01T11:00:00Z' }
             ];
-            const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds);
+            const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds, []);
             expect(segments.length).toBe(1);
             expect(segments[0].color).toBe('#4caf50');
         });
@@ -248,19 +284,20 @@ describe('ChartUtils', () => {
             });
 
             describe('generateVpdSparklineSegments Time Ranges', () => {
-                const thresholds = { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.5, dangerMax: 1.5 };
+                const simpleThr = { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.5, dangerMax: 1.5 };
+                const thresholds = { day: simpleThr, night: simpleThr };
                 const data = generateData(361);
 
                 it('should handle "1h" range for VPD', () => {
                     const subset = data.slice(0, 60);
-                    const segments = ChartUtils.generateVpdSparklineSegments(subset, 100, 50, thresholds, '1h');
+                    const segments = ChartUtils.generateVpdSparklineSegments(subset, 100, 50, thresholds, [], '1h');
                     // With skipDownsampling, we keep all 60 points
                     expect(segments.length).toBe(1);
                     expect(segments[0].path.split(' L ').length).toBe(60);
                 });
 
                 it('should handle "6h" range for VPD (every 5 mins)', () => {
-                    const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds, '6h');
+                    const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds, [], '6h');
                     // 6h -> Every 15 mins. 25 points.
                     expect(segments.length).toBe(1);
                     expect(segments[0].path.split(' L ').length).toBe(25);
@@ -269,7 +306,7 @@ describe('ChartUtils', () => {
                 it('should handle "7d" range for VPD (every 60 mins)', () => {
                     // Use 24h data to ensure we catch 4-hour points regardless of timezone
                     const dayData = generateData(1441); // 24 hours
-                    const segments = ChartUtils.generateVpdSparklineSegments(dayData, 100, 50, thresholds, '7d');
+                    const segments = ChartUtils.generateVpdSparklineSegments(dayData, 100, 50, thresholds, [], '7d');
 
                     // 24h / 4h = 6 intervals. + Last point = 7 points.
                     // Depending on timezone, might be 6 or 7.
@@ -279,7 +316,7 @@ describe('ChartUtils', () => {
                 });
 
                 it('should fallback to default for unknown range in VPD', () => {
-                    const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds, 'INVALID' as any);
+                    const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds, [], 'INVALID' as any);
                     // Default -> Every 30 mins. 13 points.
                     expect(segments[0].path.split(' L ').length).toBe(13);
                 });
@@ -321,7 +358,8 @@ describe('ChartUtils', () => {
             });
 
             describe('VPD Transitions and Gaps', () => {
-                const thresholds = { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.5, dangerMax: 1.5 };
+                const simpleThr = { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.5, dangerMax: 1.5 };
+                const thresholds = { day: simpleThr, night: simpleThr };
 
                 it('should handle rapid status changes correctly', () => {
                     // Danger -> Warning -> Optimal -> Warning -> Danger
@@ -333,7 +371,7 @@ describe('ChartUtils', () => {
                         { state: '0.4', last_changed: '2023-01-01T11:00:00Z' }  // Danger
                     ];
 
-                    const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds, '1h');
+                    const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds, [], '1h');
                     // Expecting multiple segments. 
                     // D -> W -> O -> W -> D
                     // 1. Danger (0->1)

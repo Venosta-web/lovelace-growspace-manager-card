@@ -6984,6 +6984,28 @@ class ChartUtils {
         return config?.color || 'rgba(255, 255, 255, 0.3)';
     }
     /**
+     * Determines if it is "Day" (Light ON) at a specific time based on history.
+     */
+    static getIsDay(time, lightHistory) {
+        if (!lightHistory || lightHistory.length === 0)
+            return true; // Default to Day
+        // 1. Check if time is before the entire history
+        if (time < lightHistory[0].time) {
+            // First point: if 0 (OFF), assume previous was ON (Day).
+            // if >0 (ON), assume previous was OFF (Night).
+            return lightHistory[0].value === 0;
+        }
+        // Find most recent state
+        let state = 0;
+        for (let i = lightHistory.length - 1; i >= 0; i--) {
+            if (lightHistory[i].time <= time) {
+                state = lightHistory[i].value;
+                break;
+            }
+        }
+        return state > 0;
+    }
+    /**
      * Gets VPD status based on value and thresholds.
      */
     static getVpdStatusForValue(value, thresholds) {
@@ -6996,15 +7018,22 @@ class ChartUtils {
         return 'optimal';
     }
     /**
-     * Generates colored VPD sparkline segments based on VPD value at each point.
+     * Generates colored VPD sparkline segments based on VPD value at each point, respecting Day/Night cycles.
      */
-    static generateVpdSparklineSegments(historyData, width, height, thresholds, timeRange = '24h') {
+    static generateVpdSparklineSegments(historyData, width, height, thresholds, lightHistory, timeRange = '24h') {
         if (!historyData || historyData.length < 2)
             return [];
         const sortedData = [...historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+        // Normalize light history once if needed, but assuming caller passes normalized points is safer/faster?
+        // Actually, GrowspaceEnvChart passes normalized points. GrowspaceHeader probably passes raw history.
+        // Let's assume normalized points for 'lightHistory' to match 'getIsDay' expectation (array of {time, value}).
+        // If passed raw HA history, we need to normalize it first.
+        let normalizedLight = lightHistory;
+        if (lightHistory.length > 0 && (lightHistory[0].last_changed)) {
+            normalizedLight = this.normalizeHistory(lightHistory, 'light', 0, Date.now());
+        }
         const validData = [];
         const len = sortedData.length;
-        // AUTO-OPTIMIZATION: skip downsampling if data is already sparse
         const skipDownsampling = len < (width * 1.5);
         for (let i = 0; i < len; i++) {
             const h = sortedData[i];
@@ -7024,19 +7053,15 @@ class ChartUtils {
             }
             else {
                 switch (timeRange) {
-                    // 7d: Every 4 hours (was 1h) - Reduced to 42 points
                     case '7d':
                         keep = minutes === 0 && date.getHours() % 4 === 0;
                         break;
-                    // 24h: Every 30 mins (was 15m) - Reduced to 48 points
                     case '24h':
                         keep = minutes % 30 === 0;
                         break;
-                    // 6h: Every 15 mins (was 5m) - Reduced to 24 points
                     case '6h':
                         keep = minutes % 15 === 0;
                         break;
-                    // 1h: Every 5 mins (was all) - Reduced to ~12 points
                     case '1h':
                         keep = minutes % 5 === 0;
                         break;
@@ -7048,7 +7073,6 @@ class ChartUtils {
         }
         if (validData.length < 2)
             return [];
-        // Calculate Min/Max for scaling
         let minVal = Number.MAX_VALUE;
         let maxVal = Number.MIN_VALUE;
         let minTime = Number.MAX_VALUE;
@@ -7077,10 +7101,11 @@ class ChartUtils {
             const t = new Date(d.last_changed).getTime();
             const x = (t - minTime) * xFactor;
             const y = padding + (usableHeight - (val - minVal) * yFactor);
-            const status = this.getVpdStatusForValue(val, thresholds);
+            const isDay = this.getIsDay(t, normalizedLight);
+            const activeThresholds = isDay ? thresholds.day : thresholds.night;
+            const status = this.getVpdStatusForValue(val, activeThresholds);
             return { x, y, status };
         });
-        // Generate segments
         const segments = [];
         if (points.length === 0)
             return segments;
@@ -7111,7 +7136,6 @@ class ChartUtils {
                 currentStatus = p.status;
             }
         }
-        // Finish last segment
         if (currentSegmentX.length >= 2) {
             const pathCommands = [`M ${currentSegmentX[0]},${currentSegmentY[0]}`];
             for (let j = 1; j < currentSegmentX.length; j++) {
@@ -7633,33 +7657,12 @@ class GraphDataTransformer {
             const segments = [];
             let currentSegment = [];
             // Helper to determine day/night at a specific time
-            const getIsDay = (time) => {
-                if (!lightHistory || lightHistory.length === 0)
-                    return true; // Default to day if no light history
-                // Find the light state at 'time'
-                // 1. Check if time is before the entire history
-                if (time < lightHistory[0].time) {
-                    // If we are looking before the first history point, and that point indicates a state change,
-                    // the previous state was likely the opposite (if binary). If continuous, hard to say, but logical for binary.
-                    // If first point is OFF (0), it was likely ON (Day) before.
-                    // If first point is ON (>0), it was likely OFF (Night) before.
-                    // Default to Day if ambiguous, but inverse logic is better for binary toggles.
-                    return lightHistory[0].value === 0;
-                }
-                let state = 0;
-                for (let i = lightHistory.length - 1; i >= 0; i--) {
-                    if (lightHistory[i].time <= time) {
-                        state = lightHistory[i].value;
-                        break;
-                    }
-                }
-                return state > 0; // >0 is Day (ON/Dimmed), 0 is Night (OFF)
-            };
-            let isDay = getIsDay(points[0].time);
+            // using ChartUtils.getIsDay to ensure consistent logic with sparklines
+            let isDay = ChartUtils.getIsDay(points[0].time, lightHistory);
             let currentStatus = this._getVpdStatusForValue(points[0].value, thresholds, isDay);
             for (let i = 0; i < points.length; i++) {
                 const p = points[i];
-                const pIsDay = getIsDay(p.time);
+                const pIsDay = ChartUtils.getIsDay(p.time, lightHistory);
                 const status = this._getVpdStatusForValue(p.value, thresholds, pIsDay);
                 if (status === currentStatus) {
                     currentSegment.push(p);
@@ -7687,23 +7690,9 @@ class GraphDataTransformer {
             const nowMs = now.getTime();
             // Prepare Light History for VPD calculation if needed
             let lightHistoryPoints = [];
-            if (metricKeys.includes('vpd')) {
-                const lightSource = this.sensorHistory['light'] || [];
-                lightHistoryPoints = ChartUtils.normalizeHistory(lightSource, 'light', startTimeMs, nowMs); // Reusing normalization logic if possible, or manual
-                // Since we don't have ChartUtils.normalize exposed fully/generically for this in one line, let's just do a quick parse like below loop
-                // Actually, reusing the loop logic below is cleaner, but we need light points BEFORE determining VPD segments
-                // So let's do a quick extraction pass for light if it exists
-                if (this.sensorHistory['light']) {
-                    const points = [];
-                    for (const h of this.sensorHistory['light']) {
-                        const t = new Date(h.last_changed).getTime();
-                        const val = h.state === 'on' ? 1 : (h.state === 'off' ? 0 : parseFloat(h.state));
-                        if (!isNaN(val))
-                            points.push({ time: t, value: val });
-                    }
-                    points.sort((a, b) => a.time - b.time);
-                    lightHistoryPoints = points;
-                }
+            if (metricKeys.includes('vpd') && this.sensorHistory['light']) {
+                lightHistoryPoints = ChartUtils.normalizeHistory(this.sensorHistory['light'], 'light', startTimeMs, // Although normalizeHistory signature might ignore these args currently, passing them is good practice
+                nowMs);
             }
             metricKeys.forEach((key) => {
                 const config = this.metricConfig[key] || {
@@ -25067,17 +25056,25 @@ class ResizeController {
             let vpdSegments = [];
             if (isVpd && this.historyController && this.device) {
                 const historyData = this.historyController.historyCache['vpd'];
+                const lightHistory = this.historyController.historyCache['light'] || [];
                 // Get VPD thresholds from device overview entity
                 const overviewEntity = this.device.overview_entity_id
                     ? this.hass?.states[this.device.overview_entity_id]
                     : null;
-                const thresholds = {
-                    targetMin: overviewEntity?.attributes?.vpd_target_min ?? 0.8,
-                    targetMax: overviewEntity?.attributes?.vpd_target_max ?? 1.2,
-                    dangerMin: overviewEntity?.attributes?.vpd_danger_min ?? 0.4,
-                    dangerMax: overviewEntity?.attributes?.vpd_danger_max ?? 1.6,
+                const attrs = overviewEntity?.attributes || {};
+                const day = {
+                    targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? 0.8,
+                    targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? 1.2,
+                    dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? 0.4,
+                    dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? 1.6,
                 };
-                vpdSegments = ChartUtils.generateVpdSparklineSegments(historyData, sparklineWidth, sparklineHeight, thresholds, timeRange);
+                const night = {
+                    targetMin: attrs.night_vpd_target_min ?? day.targetMin,
+                    targetMax: attrs.night_vpd_target_max ?? day.targetMax,
+                    dangerMin: attrs.night_vpd_danger_min ?? day.dangerMin,
+                    dangerMax: attrs.night_vpd_danger_max ?? day.dangerMax,
+                };
+                vpdSegments = ChartUtils.generateVpdSparklineSegments(historyData, sparklineWidth, sparklineHeight, { day, night }, lightHistory, timeRange);
             }
             const useVpdSegments = isVpd && vpdSegments.length > 0;
             let sparklinePath = '';
