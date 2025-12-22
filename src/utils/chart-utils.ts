@@ -405,4 +405,56 @@ export class ChartUtils {
             timeRange
         });
     }
+
+    /**
+     * Normalizes raw HA history data into GraphDataPoints.
+     * Handles binary conversions (on=1/off=0), numeric parsing, and time filtering.
+     */
+    public static normalizeHistory(
+        historyData: any[],
+        metricKey: string,
+        startTimeMs: number,
+        endTimeMs: number
+    ): Array<{ time: number; value: number; meta?: any }> {
+        if (!historyData || historyData.length === 0) return [];
+
+        const points: Array<{ time: number; value: number; meta?: any }> = [];
+
+        // Sort first
+        const sorted = [...historyData].sort((a, b) =>
+            new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()
+        );
+
+        for (const h of sorted) {
+            const rawTime = new Date(h.last_changed).getTime();
+
+            // Allow points slightly before startTime to establish initial state if needed,
+            // but primarily we filter by window here or let caller handle it.
+            // For now, let's include everything and let charts filter/clip.
+
+            let val = 0;
+            let isValid = false;
+
+            if (metricKey === 'light' || metricKey === 'irrigation' || metricKey === 'drain' || h.state === 'on' || h.state === 'off') {
+                if (h.state === 'on') { val = 1; isValid = true; }
+                else if (h.state === 'off') { val = 0; isValid = true; }
+                else {
+                    // Try parsing float for safety
+                    const f = parseFloat(h.state);
+                    if (!isNaN(f)) { val = f; isValid = true; }
+                }
+            } else {
+                const f = parseFloat(h.state);
+                if (!isNaN(f)) { val = f; isValid = true; }
+            }
+
+            if (isValid && h.state !== 'unavailable' && h.state !== 'unknown') {
+                const point: any = { time: rawTime, value: val };
+                if (h.attributes) point.meta = h.attributes;
+                points.push(point);
+            }
+        }
+
+        return points;
+    }
 }

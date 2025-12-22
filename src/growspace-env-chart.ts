@@ -117,21 +117,41 @@ export class GrowspaceEnvChart extends LitElement {
   }
 
   private _getVpdThresholds() {
+    const defaultThresholds = {
+      targetMin: 0.8, targetMax: 1.2, dangerMin: 0.4, dangerMax: 1.6
+    };
+
     const overviewEntity = this.device?.overview_entity_id
       ? this.hass?.states[this.device.overview_entity_id]
       : null;
 
-    return {
-      targetMin: overviewEntity?.attributes?.vpd_target_min ?? 0.8,
-      targetMax: overviewEntity?.attributes?.vpd_target_max ?? 1.2,
-      dangerMin: overviewEntity?.attributes?.vpd_danger_min ?? 0.4,
-      dangerMax: overviewEntity?.attributes?.vpd_danger_max ?? 1.6,
+    if (!overviewEntity?.attributes) return { day: defaultThresholds, night: defaultThresholds };
+
+    const attrs = overviewEntity.attributes;
+
+    // Day targets
+    const day = {
+      targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? 0.8,
+      targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? 1.2,
+      dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? 0.4,
+      dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? 1.6,
     };
+
+    // Night targets - fallback to day if not present (backward compat)
+    const night = {
+      targetMin: attrs.night_vpd_target_min ?? day.targetMin,
+      targetMax: attrs.night_vpd_target_max ?? day.targetMax,
+      dangerMin: attrs.night_vpd_danger_min ?? day.dangerMin,
+      dangerMax: attrs.night_vpd_danger_max ?? day.dangerMax,
+    };
+
+    return { day, night };
   }
 
-  private _getVpdStatusForValue(value: number, thresholds: ReturnType<typeof this._getVpdThresholds>): string {
-    if (value < thresholds.dangerMin || value > thresholds.dangerMax) return 'danger';
-    if (value < thresholds.targetMin || value > thresholds.targetMax) return 'warning';
+  private _getVpdStatusForValue(value: number, thresholds: ReturnType<typeof this._getVpdThresholds>, isDay: boolean): string {
+    const t = isDay ? thresholds.day : thresholds.night;
+    if (value < t.dangerMin || value > t.dangerMax) return 'danger';
+    if (value < t.targetMin || value > t.targetMax) return 'warning';
     return 'optimal';
   }
 
@@ -145,18 +165,39 @@ export class GrowspaceEnvChart extends LitElement {
   }
 
   private _generateVpdSegments(
-    points: Array<{ x: number; y: number; value: number }>,
-    thresholds: ReturnType<typeof this._getVpdThresholds>
+    points: Array<{ x: number; y: number; value: number; time: number }>,
+    thresholds: ReturnType<typeof this._getVpdThresholds>,
+    lightHistory: GraphDataPoint[]
   ): Array<{ path: string; color: string }> {
     if (points.length < 2) return [];
 
     const segments: Array<{ path: string; color: string }> = [];
     let currentSegment: typeof points = [];
-    let currentStatus = this._getVpdStatusForValue(points[0].value, thresholds);
+
+    // Helper to determine day/night at a specific time
+    const getIsDay = (time: number) => {
+      if (!lightHistory || lightHistory.length === 0) return true; // Default to day if no light history
+      // Find the light state at 'time'
+      // Since both arrays are time-sorted, we could optimize, but binary search or simple find is safe for now
+      // Simple "most recent state" strategy:
+      // Find last point where point.time <= time
+      let state = 0;
+      for (let i = lightHistory.length - 1; i >= 0; i--) {
+        if (lightHistory[i].time <= time) {
+          state = lightHistory[i].value;
+          break;
+        }
+      }
+      return state === 1; // 1=ON, 0=OFF
+    };
+
+    let isDay = getIsDay(points[0].time);
+    let currentStatus = this._getVpdStatusForValue(points[0].value, thresholds, isDay);
 
     for (let i = 0; i < points.length; i++) {
       const p = points[i];
-      const status = this._getVpdStatusForValue(p.value, thresholds);
+      const pIsDay = getIsDay(p.time);
+      const status = this._getVpdStatusForValue(p.value, thresholds, pIsDay);
 
       if (status === currentStatus) {
         currentSegment.push(p);
@@ -188,6 +229,26 @@ export class GrowspaceEnvChart extends LitElement {
     const seriesList: GraphSeries[] = [];
     const startTimeMs = startTime.getTime();
     const nowMs = now.getTime();
+
+    // Prepare Light History for VPD calculation if needed
+    let lightHistoryPoints: GraphDataPoint[] = [];
+    if (metricKeys.includes('vpd')) {
+      const lightSource = this.sensorHistory['light'] || [];
+      lightHistoryPoints = ChartUtils.normalizeHistory(lightSource, 'light', startTimeMs, nowMs); // Reusing normalization logic if possible, or manual
+      // Since we don't have ChartUtils.normalize exposed fully/generically for this in one line, let's just do a quick parse like below loop
+      // Actually, reusing the loop logic below is cleaner, but we need light points BEFORE determining VPD segments
+      // So let's do a quick extraction pass for light if it exists
+      if (this.sensorHistory['light']) {
+        const points: GraphDataPoint[] = [];
+        for (const h of this.sensorHistory['light']) {
+          const t = new Date(h.last_changed).getTime();
+          const val = h.state === 'on' ? 1 : (h.state === 'off' ? 0 : parseFloat(h.state));
+          if (!isNaN(val)) points.push({ time: t, value: val });
+        }
+        points.sort((a, b) => a.time - b.time);
+        lightHistoryPoints = points;
+      }
+    }
 
     metricKeys.forEach((key) => {
       const config = this.metricConfig[key] || {
@@ -271,12 +332,24 @@ export class GrowspaceEnvChart extends LitElement {
           const vpdPoints = dataPoints.map((p) => ({
             x: ((p.time - startTimeMs) / durationMillis) * width,
             y: height - ((p.value - min) / paddedRange) * height,
-            value: p.value
+            value: p.value,
+            time: p.time
           }));
-          vpdSegments = this._generateVpdSegments(vpdPoints, thresholds);
+          vpdSegments = this._generateVpdSegments(vpdPoints, thresholds, lightHistoryPoints);
 
           if (dataPoints.length > 0) {
-            seriesColor = this._getVpdStatusColor(this._getVpdStatusForValue(dataPoints[dataPoints.length - 1].value, thresholds));
+            // Determine current status (last point)
+            const lastPoint = dataPoints[dataPoints.length - 1];
+            // Get current light state for last point color
+            // Or just rely on current environment active state? 
+            // Better to match the graph logic:
+            let isDay = true;
+            if (lightHistoryPoints.length > 0) {
+              const lastLight = lightHistoryPoints[lightHistoryPoints.length - 1];
+              // If last light point is recent enough... usually it covers 'now'
+              isDay = lastLight.value === 1;
+            }
+            seriesColor = this._getVpdStatusColor(this._getVpdStatusForValue(lastPoint.value, thresholds, isDay));
           }
         }
 

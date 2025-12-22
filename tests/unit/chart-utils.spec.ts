@@ -365,4 +365,62 @@ describe('ChartUtils', () => {
             });
         });
     });
+    describe('normalizeHistory', () => {
+        it('should return empty array for empty input', () => {
+            expect(ChartUtils.normalizeHistory([], 'light', 0, 100)).toEqual([]);
+        });
+
+        it('should normalize binary states (on/off) to 1/0', () => {
+            const data = [
+                { state: 'on', last_changed: '2023-01-01T10:00:00Z', attributes: {} },
+                { state: 'off', last_changed: '2023-01-01T11:00:00Z', attributes: {} }
+            ];
+            const normalized = ChartUtils.normalizeHistory(data, 'light', 0, 0);
+            expect(normalized).toHaveLength(2);
+            expect(normalized[0].value).toBe(1);
+            expect(normalized[1].value).toBe(0);
+        });
+
+        it('should normalize numeric strings', () => {
+            const data = [
+                { state: '25.5', last_changed: '2023-01-01T10:00:00Z', attributes: {} },
+                { state: '26.0', last_changed: '2023-01-01T11:00:00Z', attributes: {} }
+            ];
+            const normalized = ChartUtils.normalizeHistory(data, 'temperature', 0, 0);
+            expect(normalized).toHaveLength(2);
+            expect(normalized[0].value).toBe(25.5);
+            expect(normalized[1].value).toBe(26.0);
+        });
+
+        it('should filter out invalid states', () => {
+            const data = [
+                { state: 'on', last_changed: '2023-01-01T10:00:00Z' },
+                { state: 'unavailable', last_changed: '2023-01-01T10:30:00Z' },
+                { state: 'unknown', last_changed: '2023-01-01T11:00:00Z' },
+                { state: 'invalid', last_changed: '2023-01-01T11:30:00Z' } // Invalid float
+            ];
+            const normalized = ChartUtils.normalizeHistory(data, 'light', 0, 0);
+            expect(normalized).toHaveLength(1);
+            expect(normalized[0].value).toBe(1);
+        });
+
+        it('should sort data by time', () => {
+            const data = [
+                { state: '1', last_changed: '2023-01-01T11:00:00Z' },
+                { state: '0', last_changed: '2023-01-01T10:00:00Z' }
+            ];
+            const normalized = ChartUtils.normalizeHistory(data, 'light', 0, 0);
+            expect(normalized[0].time).toBeLessThan(normalized[1].time);
+            expect(normalized[0].value).toBe(0);
+            expect(normalized[1].value).toBe(1);
+        });
+
+        it('should include meta attributes if present', () => {
+            const data = [
+                { state: 'on', last_changed: '2023-01-01T10:00:00Z', attributes: { brightness: 100 } }
+            ];
+            const normalized = ChartUtils.normalizeHistory(data, 'light', 0, 0);
+            expect(normalized[0].meta).toEqual({ brightness: 100 });
+        });
+    });
 });
