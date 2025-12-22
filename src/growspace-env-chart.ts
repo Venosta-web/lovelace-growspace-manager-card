@@ -241,7 +241,7 @@ export class GrowspaceEnvChart extends LitElement {
         const sum = dataPoints.reduce((acc, curr) => acc + curr.value, 0);
         const avg = sum / dataPoints.length;
 
-        const isStep = (config as any).type === 'step' || key === 'optimal' || key === 'dehumidifier';
+        const isStep = (config as any).type === 'step' || key === 'optimal' || key === 'dehumidifier' || key === 'light' || key === 'irrigation' || key === 'drain';
         if (key === 'exhaust' || key === 'humidifier' || key === 'circulation_fan') { min = 0; max = 10; }
         else if (key === 'dehumidifier') { min = 0; max = 1; }
         else if (isStep) { min = 0; max = 1; }
@@ -477,7 +477,7 @@ export class GrowspaceEnvChart extends LitElement {
     if (series.points.length > 0) {
       const last = series.points[series.points.length - 1];
       const defaults = SENSOR_CHART_DEFAULTS[series.id];
-      const isBinary = defaults?.binary || series.id === 'optimal' || series.id === 'dehumidifier';
+      const isBinary = defaults?.binary || series.id === 'optimal' || series.id === 'dehumidifier' || series.id === 'light' || series.id === 'irrigation' || series.id === 'drain';
 
       if (isBinary) {
         if (series.id === 'optimal') valStr = last.value === 1 ? 'Optimal' : (last.meta?.reasons || 'Not Optimal');

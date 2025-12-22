@@ -1,5 +1,5 @@
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrowspaceHistoryController } from '../../src/controllers/growspace-history-controller';
 
 describe('GrowspaceHistoryController', () => {
@@ -349,6 +349,221 @@ describe('GrowspaceHistoryController', () => {
             mockHost.selectedDevice = null;
             expect((controller as any).getRelatedEntityId('foo').entityId).toBeNull();
         });
-    });
+        describe('Storage & Caching', () => {
+            beforeEach(() => {
+                vi.useFakeTimers();
+                // Mock localStorage
+                const storageMock = (() => {
+                    let store: Record<string, string> = {};
+                    return {
+                        getItem: vi.fn((key: string) => store[key] || null),
+                        setItem: vi.fn((key: string, value: string) => { store[key] = value.toString(); }),
+                        removeItem: vi.fn((key: string) => { delete store[key]; }),
+                        clear: vi.fn(() => { store = {}; })
+                    };
+                })();
+                Object.defineProperty(window, 'localStorage', { value: storageMock });
+            });
 
+            afterEach(() => {
+                vi.useRealTimers();
+            });
+
+            it('should save history to localStorage', () => {
+                mockHost.selectedDevice = 'd1';
+                controller.historyCache = { temperature: [{ state: '20' }] as any };
+                (controller as any)._lastTimestamps = { temperature: '2023-01-01' };
+
+                (controller as any)._saveToStorage();
+
+                expect(localStorage.setItem).toHaveBeenCalledWith(
+                    'growspace_history_d1',
+                    expect.stringContaining('"temperature":[{"state":"20"}]')
+                );
+            });
+
+            it('should not load expired data', () => {
+                const now = Date.now();
+                const expiredData = {
+                    version: 1,
+                    timestamp: now - (24 * 60 * 60 * 1000) - 1000, // 24h + 1s ago
+                    history: { temperature: [] },
+                    timestamps: {}
+                };
+                (localStorage.getItem as any).mockReturnValue(JSON.stringify(expiredData));
+
+                const result = (controller as any)._loadFromStorage('d1');
+
+                expect(result).toBe(false);
+                expect(localStorage.removeItem).toHaveBeenCalledWith('growspace_history_d1');
+            });
+
+            it('should load valid data', () => {
+                const validData = {
+                    version: 1,
+                    timestamp: Date.now(),
+                    history: { temperature: [{ state: '20' }] },
+                    timestamps: { temperature: '2023-01-01' }
+                };
+                (localStorage.getItem as any).mockReturnValue(JSON.stringify(validData));
+
+                const result = (controller as any)._loadFromStorage('d1');
+
+                expect(result).toBe(true);
+                expect(controller.historyCache.temperature).toHaveLength(1);
+                expect(controller.isHistoryLoaded).toBe(true);
+            });
+
+            it('should fail gracefully on storage errors', () => {
+                mockHost.selectedDevice = 'd1';
+                (localStorage.setItem as any).mockImplementation(() => { throw new Error('Quota'); });
+
+                // Should not throw
+                expect(() => (controller as any)._saveToStorage()).not.toThrow();
+            });
+        });
+
+        describe('Delta Fetching & Updates', () => {
+            it('should fallback to full fetch if no timestamps exist', async () => {
+                (controller as any)._lastTimestamps = {};
+                const fullFetchSpy = vi.spyOn(controller as any, '_fetchHistory').mockImplementation(() => Promise.resolve());
+
+                await (controller as any)._fetchHistoryDelta();
+
+                expect(fullFetchSpy).toHaveBeenCalled();
+            });
+
+            it('should fetch delta if timestamps exist', async () => {
+                mockHost.selectedDevice = 'd1';
+                (controller as any)._lastTimestamps = { temperature: '2023-01-01T12:00:00Z' };
+
+                mockDataService.getHistoryStats.mockResolvedValue({
+                    'sensor.temp': [{ state: '21', last_updated: '2023-01-01T12:05:00Z' }]
+                }); // New data
+
+                // Mock resolving entity ID
+                vi.spyOn(controller, 'getEntityIdForMetric').mockReturnValue('sensor.temp');
+
+                await (controller as any)._fetchHistoryDelta();
+
+                // Check if getHistoryStats was called with start time > last timestamp
+                expect(mockDataService.getHistoryStats).toHaveBeenCalledWith(
+                    expect.any(Array),
+                    expect.any(Date),
+                    expect.any(Date), // end is now
+                    expect.any(Number),
+                    true
+                );
+            });
+
+            it('should merge delta data correctly', () => {
+                const existing = [{ state: '20', last_updated: '2023-01-01T12:00:00Z' }];
+                const newData = [{ state: '21', last_updated: '2023-01-01T12:05:00Z' }]; // Newer
+
+                controller.historyCache = { temperature: existing as any };
+                (controller as any)._lastTimestamps = { temperature: '2023-01-01T12:00:00Z' };
+
+                (controller as any)._mergeDeltaData('temperature', newData as any);
+
+                expect(controller.historyCache.temperature).toHaveLength(2);
+                expect((controller.historyCache.temperature as any)[1].state).toBe('21');
+            });
+
+            it('should ignore older delta data (deduplication)', () => {
+                const existing = [{ state: '20', last_updated: '2023-01-01T12:00:00Z' }];
+                const oldData = [{ state: '19', last_updated: '2023-01-01T11:00:00Z' }]; // Older
+
+                controller.historyCache = { temperature: existing as any };
+                (controller as any)._lastTimestamps = { temperature: '2023-01-01T12:00:00Z' };
+
+                (controller as any)._mergeDeltaData('temperature', oldData as any);
+
+                expect(controller.historyCache.temperature).toHaveLength(1);
+            });
+        });
+
+        describe('Secondary History Batching', () => {
+            it('should batch fetch secondary metrics', async () => {
+                controller.activeEnvGraphs.add('vpd');
+                controller.activeEnvGraphs.add('co2'); // Two metrics
+
+                vi.spyOn(controller, 'getEntityIdForMetric').mockImplementation((_, metric) =>
+                    metric === 'vpd' ? 'sensor.vpd' : 'sensor.co2'
+                );
+
+                mockDataService.getHistoryStats.mockResolvedValue({
+                    'sensor.vpd': [],
+                    'sensor.co2': []
+                });
+
+                await (controller as any).refreshSecondaryHistories('24h');
+
+                expect(mockDataService.getHistoryStats).toHaveBeenCalledTimes(1);
+                const callArgs = mockDataService.getHistoryStats.mock.calls[0];
+                expect(callArgs[0]).toHaveLength(2); // Two entity IDs
+                expect(callArgs[0]).toContain('sensor.vpd');
+                expect(callArgs[0]).toContain('sensor.co2');
+            });
+        });
+
+        describe('Error Handling', () => {
+            it('should handle loadHistoryOnDemand errors', async () => {
+                const spy = vi.spyOn(controller, 'getRange');
+                vi.spyOn(controller as any, '_fetchHistory').mockRejectedValue(new Error('Fetch error'));
+                const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+                await controller.loadHistoryOnDemand();
+
+                expect(consoleSpy).toHaveBeenCalledWith(
+                    '[HistoryController] Failed to load history',
+                    expect.any(Error)
+                );
+                expect(controller.isHistoryLoading).toBe(false);
+            });
+        });
+
+        describe('Time Range Intervals', () => {
+            it('should handle all time range intervals (indirectly via setGraphRange or private access)', () => {
+                mockHost.selectedDevice = 'd1';
+                const fetchSpy = vi.spyOn(controller as any, '_fetchHistory').mockResolvedValue(undefined);
+                const batchSpy = vi.spyOn(controller as any, 'refreshSecondaryHistories').mockResolvedValue(undefined);
+
+                controller.setGraphRange('1h');
+                expect(fetchSpy).toHaveBeenLastCalledWith('1h');
+
+                controller.setGraphRange('6h');
+                expect(fetchSpy).toHaveBeenLastCalledWith('6h');
+
+                controller.setGraphRange('7d');
+                expect(fetchSpy).toHaveBeenLastCalledWith('7d');
+            });
+
+            it('should use correct intervals for ranges', async () => {
+                mockHost.selectedDevice = 'd1';
+                mockHost.devices[0].overview_entity_id = 'sensor.ov';
+
+                const fetch = (controller as any)._fetchHistory.bind(controller); // access private directly or use setGraphRange
+
+                mockDataService.getHistoryStats.mockResolvedValue({});
+
+                // 1h -> 5 min
+                await fetch('1h');
+                expect(mockDataService.getHistoryStats).toHaveBeenLastCalledWith(
+                    expect.any(Array), expect.any(Date), expect.any(Date), 5, true
+                );
+
+                // 6h -> 15 min
+                await fetch('6h');
+                expect(mockDataService.getHistoryStats).toHaveBeenLastCalledWith(
+                    expect.any(Array), expect.any(Date), expect.any(Date), 15, true
+                );
+
+                // 7d -> 240 min
+                await fetch('7d');
+                expect(mockDataService.getHistoryStats).toHaveBeenLastCalledWith(
+                    expect.any(Array), expect.any(Date), expect.any(Date), 240, true
+                );
+            });
+        });
+    });
 });
