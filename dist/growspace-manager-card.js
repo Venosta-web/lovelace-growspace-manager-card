@@ -7637,9 +7637,15 @@ class GraphDataTransformer {
                 if (!lightHistory || lightHistory.length === 0)
                     return true; // Default to day if no light history
                 // Find the light state at 'time'
-                // Since both arrays are time-sorted, we could optimize, but binary search or simple find is safe for now
-                // Simple "most recent state" strategy:
-                // Find last point where point.time <= time
+                // 1. Check if time is before the entire history
+                if (time < lightHistory[0].time) {
+                    // If we are looking before the first history point, and that point indicates a state change,
+                    // the previous state was likely the opposite (if binary). If continuous, hard to say, but logical for binary.
+                    // If first point is OFF (0), it was likely ON (Day) before.
+                    // If first point is ON (>0), it was likely OFF (Night) before.
+                    // Default to Day if ambiguous, but inverse logic is better for binary toggles.
+                    return lightHistory[0].value === 0;
+                }
                 let state = 0;
                 for (let i = lightHistory.length - 1; i >= 0; i--) {
                     if (lightHistory[i].time <= time) {
@@ -7647,7 +7653,7 @@ class GraphDataTransformer {
                         break;
                     }
                 }
-                return state === 1; // 1=ON, 0=OFF
+                return state > 0; // >0 is Day (ON/Dimmed), 0 is Night (OFF)
             };
             let isDay = getIsDay(points[0].time);
             let currentStatus = this._getVpdStatusForValue(points[0].value, thresholds, isDay);
