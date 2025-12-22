@@ -245,6 +245,7 @@ export class DataService {
 
     const duration = endTime ? (endTime.getTime() - startTime.getTime()) / 1000 : 'undefined';
     console.log(`[DataService.getBatchHistory] entities=${entityIds.length}, start=${startStr}, end=${endTime?.toISOString() || 'undefined'}, duration=${duration}s, url=${url}`);
+    console.log(`[DataService.getBatchHistory] About to call API with URL: ${url}`);
 
     try {
       // HA returns an array of arrays (one array per entity)

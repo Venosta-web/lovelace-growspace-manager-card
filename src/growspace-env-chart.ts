@@ -381,7 +381,7 @@ export class GrowspaceEnvChart extends LitElement {
       }
 
       // Skip rendering regular paths if no valid path data
-      if (!s.path || s.points.length === 0) {
+      if (!s.path || s.path.trim() === '' || s.points.length === 0) {
         return svg``;
       }
 

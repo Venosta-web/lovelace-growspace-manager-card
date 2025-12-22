@@ -5488,6 +5488,7 @@ class DataService {
         }
         const duration = endTime ? (endTime.getTime() - startTime.getTime()) / 1000 : 'undefined';
         console.log(`[DataService.getBatchHistory] entities=${entityIds.length}, start=${startStr}, end=${endTime?.toISOString() || 'undefined'}, duration=${duration}s, url=${url}`);
+        console.log(`[DataService.getBatchHistory] About to call API with URL: ${url}`);
         try {
             // HA returns an array of arrays (one array per entity)
             const res = await this.hass.callApi('GET', url);
@@ -7064,34 +7065,8 @@ class ChartUtils {
     static generatePathFromValues(data, width, height, options = {}) {
         if (!data || data.length < 2)
             return '';
-        // 1. Filter Data (Downsampling)
-        let processedData = data;
-        if (options.timeRange && options.timeRange !== '1h') {
-            processedData = [];
-            const len = data.length;
-            for (let i = 0; i < len; i++) {
-                // Always keep last point to prevent cutoff
-                if (i === len - 1) {
-                    processedData.push(data[i]);
-                    break;
-                }
-                const d = data[i];
-                const date = new Date(d.time);
-                const minutes = date.getMinutes();
-                let keep = false;
-                // Inline checks for speed
-                if (options.timeRange === '7d')
-                    keep = minutes === 0;
-                else if (options.timeRange === '6h')
-                    keep = minutes % 5 === 0;
-                else
-                    keep = minutes % 15 === 0; // 24h default
-                if (keep)
-                    processedData.push(d);
-            }
-        }
-        if (processedData.length < 2)
-            return '';
+        // Backend already downsamples data, so use it directly
+        const processedData = data;
         // 2. Determine Scale
         const minVal = options.min !== undefined ? options.min : Math.min(...processedData.map(d => d.value));
         const maxVal = options.max !== undefined ? options.max : Math.max(...processedData.map(d => d.value));
@@ -7732,7 +7707,7 @@ class GraphDataTransformer {
                     return b `${s.vpdSegments.map(seg => b `<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
                 }
                 // Skip rendering regular paths if no valid path data
-                if (!s.path || s.points.length === 0) {
+                if (!s.path || s.path.trim() === '' || s.points.length === 0) {
                     return b ``;
                 }
                 return b `
