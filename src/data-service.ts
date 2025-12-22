@@ -243,6 +243,9 @@ export class DataService {
       url += `&end_time=${endTime.toISOString()}`;
     }
 
+    const duration = endTime ? (endTime.getTime() - startTime.getTime()) / 1000 : 'undefined';
+    console.log(`[DataService.getBatchHistory] entities=${entityIds.length}, start=${startStr}, end=${endTime?.toISOString() || 'undefined'}, duration=${duration}s, url=${url}`);
+
     try {
       // HA returns an array of arrays (one array per entity)
       const res = await this.hass.callApi<any[][]>('GET', url);
@@ -274,6 +277,9 @@ export class DataService {
   ): Promise<Record<string, any[]>> {
     if (!this.hass || entityIds.length === 0) return {};
 
+    const duration = endTime ? (endTime.getTime() - startTime.getTime()) / 1000 : 'undefined';
+    console.log(`[DataService.getHistoryStats] entities=${entityIds.length}, start=${startTime.toISOString()}, end=${endTime?.toISOString() || 'undefined'}, duration=${duration}s, interval=${intervalMinutes}min`);
+
     try {
       const result = await this.hass.callWS<Record<string, any[]>>({
         type: WS_TYPE_GET_HISTORY_STATS,
@@ -297,7 +303,8 @@ export class DataService {
       return mappedResult;
 
     } catch (err) {
-      console.warn('[DataService] getHistoryStats WS failed (maybe old backend?), falling back to REST batch', err);
+      console.warn('[DataService] getHistoryStats WS failed, falling back to REST batch. Error:', err);
+      console.log(`[DataService] Fallback params: start=${startTime.toISOString()}, end=${endTime?.toISOString() || 'undefined'}`);
       return this.getBatchHistory(entityIds, startTime, endTime);
     }
   }

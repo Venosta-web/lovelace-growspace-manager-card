@@ -5486,6 +5486,8 @@ class DataService {
         if (endTime) {
             url += `&end_time=${endTime.toISOString()}`;
         }
+        const duration = endTime ? (endTime.getTime() - startTime.getTime()) / 1000 : 'undefined';
+        console.log(`[DataService.getBatchHistory] entities=${entityIds.length}, start=${startStr}, end=${endTime?.toISOString() || 'undefined'}, duration=${duration}s, url=${url}`);
         try {
             // HA returns an array of arrays (one array per entity)
             const res = await this.hass.callApi('GET', url);
@@ -5509,6 +5511,8 @@ class DataService {
     async getHistoryStats(entityIds, startTime, endTime, intervalMinutes = 15, significantChangesOnly = true) {
         if (!this.hass || entityIds.length === 0)
             return {};
+        const duration = endTime ? (endTime.getTime() - startTime.getTime()) / 1000 : 'undefined';
+        console.log(`[DataService.getHistoryStats] entities=${entityIds.length}, start=${startTime.toISOString()}, end=${endTime?.toISOString() || 'undefined'}, duration=${duration}s, interval=${intervalMinutes}min`);
         try {
             const result = await this.hass.callWS({
                 type: WS_TYPE_GET_HISTORY_STATS,
@@ -5531,7 +5535,8 @@ class DataService {
             return mappedResult;
         }
         catch (err) {
-            console.warn('[DataService] getHistoryStats WS failed (maybe old backend?), falling back to REST batch', err);
+            console.warn('[DataService] getHistoryStats WS failed, falling back to REST batch. Error:', err);
+            console.log(`[DataService] Fallback params: start=${startTime.toISOString()}, end=${endTime?.toISOString() || 'undefined'}`);
             return this.getBatchHistory(entityIds, startTime, endTime);
         }
     }
@@ -6551,6 +6556,7 @@ class GrowspaceHistoryController {
         if (!device)
             return;
         const { start, end } = this.calculateTimeRange(range);
+        console.log(`[HistoryController._fetchHistory] range=${range}, start=${start.toISOString()}, end=${end.toISOString()}, duration=${(end.getTime() - start.getTime()) / 1000}s`);
         const metricsToFetch = [
             'optimal',
             'temperature',
@@ -6626,6 +6632,7 @@ class GrowspaceHistoryController {
             return;
         }
         const { start, end } = this.calculateTimeRange(range);
+        console.log(`[HistoryController._fetchMetricHistory] metric=${metricKey}, range=${range}, start=${start.toISOString()}, end=${end.toISOString()}, duration=${(end.getTime() - start.getTime()) / 1000}s, entityId=${entityId}`);
         try {
             // OPTIMIZATION: Use batched getHistoryStats instead of individual getHistory
             const batchResults = await this.host.dataService.getHistoryStats([entityId], start, end, this._getIntervalForRange(range), true);
@@ -6749,6 +6756,8 @@ class GrowspaceHistoryController {
                 startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
                 break;
         }
+        const durationMs = now.getTime() - startTime.getTime();
+        console.log(`[HistoryController.calculateTimeRange] range=${range}, start=${startTime.toISOString()}, end=${now.toISOString()}, duration=${durationMs / 1000}s (${durationMs / 3600000}h)`);
         return { start: startTime, end: now };
     }
 }

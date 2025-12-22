@@ -507,6 +507,7 @@ export class GrowspaceHistoryController implements ReactiveController {
     if (!device) return;
 
     const { start, end } = this.calculateTimeRange(range);
+    console.log(`[HistoryController._fetchHistory] range=${range}, start=${start.toISOString()}, end=${end.toISOString()}, duration=${(end.getTime() - start.getTime()) / 1000}s`);
 
     const metricsToFetch = [
       'optimal',
@@ -599,6 +600,7 @@ export class GrowspaceHistoryController implements ReactiveController {
     }
 
     const { start, end } = this.calculateTimeRange(range);
+    console.log(`[HistoryController._fetchMetricHistory] metric=${metricKey}, range=${range}, start=${start.toISOString()}, end=${end.toISOString()}, duration=${(end.getTime() - start.getTime()) / 1000}s, entityId=${entityId}`);
     try {
       // OPTIMIZATION: Use batched getHistoryStats instead of individual getHistory
       const batchResults = await this.host.dataService.getHistoryStats(
@@ -744,6 +746,8 @@ export class GrowspaceHistoryController implements ReactiveController {
         startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
     }
+    const durationMs = now.getTime() - startTime.getTime();
+    console.log(`[HistoryController.calculateTimeRange] range=${range}, start=${startTime.toISOString()}, end=${now.toISOString()}, duration=${durationMs / 1000}s (${durationMs / 3600000}h)`);
     return { start: startTime, end: now };
   }
 }
