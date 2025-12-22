@@ -6253,6 +6253,9 @@ class GrowspaceHistoryController {
         this.linkedGraphGroups = [];
         this.graphRanges = {};
         this._listeners = [];
+        // Storage constants
+        this.STORAGE_KEY_PREFIX = 'growspace_history_';
+        this.CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
         this._refreshInterval = null;
         this._prevSelectedDevice = null;
         (this.host = host).addController(this);
@@ -6270,6 +6273,10 @@ class GrowspaceHistoryController {
     hostConnected() {
         // OPTIMIZATION: Don't auto-fetch history on connect
         // History will be loaded on-demand when analytics component renders
+        // Try to load from storage immediately to show cached data
+        if (this.host.selectedDevice) {
+            this._loadFromStorage(this.host.selectedDevice);
+        }
         this.startAutoRefresh();
     }
     hostDisconnected() {
@@ -6326,8 +6333,72 @@ class GrowspaceHistoryController {
             // Clear cached data for new device
             this.historyCache = {};
             this._cachedCombinedHistory = null;
+            // Try to load cached data for the new device
+            if (this.host.selectedDevice) {
+                this._loadFromStorage(this.host.selectedDevice);
+            }
             // Notify listeners that device changed (analytics will trigger lazy load if visible)
             this._notifyUpdate();
+        }
+    }
+    /**
+     * Loads history data from localStorage.
+     * Returns true if valid data was found and loaded.
+     */
+    _loadFromStorage(deviceId) {
+        try {
+            const key = this.STORAGE_KEY_PREFIX + deviceId;
+            const raw = localStorage.getItem(key);
+            if (!raw)
+                return false;
+            const data = JSON.parse(raw);
+            // Validation
+            if (!data || !data.version || !data.timestamp || !data.history) {
+                return false;
+            }
+            // Check expiry
+            const age = Date.now() - data.timestamp;
+            if (age > this.CACHE_VALIDITY_MS) {
+                console.log('[HistoryController] Storage cache expired');
+                localStorage.removeItem(key);
+                return false;
+            }
+            this.historyCache = data.history;
+            this._lastTimestamps = data.timestamps || {};
+            this._cachedCombinedHistory = null;
+            // Consider history "loaded" if we have data, but still might want to fetch fresh data
+            if (Object.keys(this.historyCache).length > 0) {
+                this.isHistoryLoaded = true;
+            }
+            console.log(`[HistoryController] Loaded ${Object.keys(this.historyCache).length} metrics from storage`);
+            this._notifyUpdate();
+            return true;
+        }
+        catch (e) {
+            console.error('[HistoryController] Failed to load from storage', e);
+            return false;
+        }
+    }
+    /**
+     * Saves current history cache to localStorage.
+     */
+    _saveToStorage() {
+        if (!this.host.selectedDevice)
+            return;
+        try {
+            const key = this.STORAGE_KEY_PREFIX + this.host.selectedDevice;
+            const data = {
+                version: 1,
+                timestamp: Date.now(),
+                history: this.historyCache,
+                timestamps: this._lastTimestamps
+            };
+            localStorage.setItem(key, JSON.stringify(data));
+            // console.log('[HistoryController] Saved history to storage');
+        }
+        catch (e) {
+            console.error('[HistoryController] Failed to save to storage', e);
+            // Clean up old keys if quota exceeded?
         }
     }
     getRange() {
@@ -6440,6 +6511,7 @@ class GrowspaceHistoryController {
                 }
             }
             this._cachedCombinedHistory = null;
+            this._saveToStorage();
             this.host.requestUpdate();
         }
         catch (e) {
@@ -6510,6 +6582,7 @@ class GrowspaceHistoryController {
                 }
             }
             this._cachedCombinedHistory = null;
+            this._saveToStorage();
             this.host.requestUpdate();
         }
         catch (e) {
@@ -6613,6 +6686,7 @@ class GrowspaceHistoryController {
                 }
             }
             this._cachedCombinedHistory = null;
+            this._saveToStorage();
             this.host.requestUpdate();
         }
         catch (e) {
@@ -6641,6 +6715,7 @@ class GrowspaceHistoryController {
             console.log(`[HistoryController] ${metricKey} history fetched from ${entityId}, length: ${history.length}`);
             this.historyCache[metricKey] = history;
             this._cachedCombinedHistory = null;
+            this._saveToStorage();
         }
         catch (e) {
             console.error(`Failed to fetch ${metricKey} history`, e);

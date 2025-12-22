@@ -144,6 +144,10 @@ export class GrowspaceHistoryController implements ReactiveController {
 
   private _listeners: (() => void)[] = [];
 
+  // Storage constants
+  private readonly STORAGE_KEY_PREFIX = 'growspace_history_';
+  private readonly CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
   constructor(host: GrowspaceCardHost) {
     (this.host = host).addController(this);
   }
@@ -166,6 +170,12 @@ export class GrowspaceHistoryController implements ReactiveController {
   hostConnected() {
     // OPTIMIZATION: Don't auto-fetch history on connect
     // History will be loaded on-demand when analytics component renders
+
+    // Try to load from storage immediately to show cached data
+    if (this.host.selectedDevice) {
+      this._loadFromStorage(this.host.selectedDevice);
+    }
+
     this.startAutoRefresh();
   }
 
@@ -229,8 +239,80 @@ export class GrowspaceHistoryController implements ReactiveController {
       // Clear cached data for new device
       this.historyCache = {};
       this._cachedCombinedHistory = null;
+
+      // Try to load cached data for the new device
+      if (this.host.selectedDevice) {
+        this._loadFromStorage(this.host.selectedDevice);
+      }
+
       // Notify listeners that device changed (analytics will trigger lazy load if visible)
       this._notifyUpdate();
+    }
+  }
+
+  /**
+   * Loads history data from localStorage.
+   * Returns true if valid data was found and loaded.
+   */
+  private _loadFromStorage(deviceId: string): boolean {
+    try {
+      const key = this.STORAGE_KEY_PREFIX + deviceId;
+      const raw = localStorage.getItem(key);
+      if (!raw) return false;
+
+      const data = JSON.parse(raw);
+
+      // Validation
+      if (!data || !data.version || !data.timestamp || !data.history) {
+        return false;
+      }
+
+      // Check expiry
+      const age = Date.now() - data.timestamp;
+      if (age > this.CACHE_VALIDITY_MS) {
+        console.log('[HistoryController] Storage cache expired');
+        localStorage.removeItem(key);
+        return false;
+      }
+
+      this.historyCache = data.history;
+      this._lastTimestamps = data.timestamps || {};
+      this._cachedCombinedHistory = null;
+
+      // Consider history "loaded" if we have data, but still might want to fetch fresh data
+      if (Object.keys(this.historyCache).length > 0) {
+        this.isHistoryLoaded = true;
+      }
+
+      console.log(`[HistoryController] Loaded ${Object.keys(this.historyCache).length} metrics from storage`);
+      this._notifyUpdate();
+      return true;
+    } catch (e) {
+      console.error('[HistoryController] Failed to load from storage', e);
+      return false;
+    }
+  }
+
+  /**
+   * Saves current history cache to localStorage.
+   */
+  private _saveToStorage() {
+    if (!this.host.selectedDevice) return;
+
+    try {
+      const key = this.STORAGE_KEY_PREFIX + this.host.selectedDevice;
+      const data = {
+        version: 1,
+        timestamp: Date.now(),
+        history: this.historyCache,
+        timestamps: this._lastTimestamps
+      };
+
+      localStorage.setItem(key, JSON.stringify(data));
+      // console.log('[HistoryController] Saved history to storage');
+    } catch (e) {
+      console.error('[HistoryController] Failed to save to storage', e);
+      // Clean up old keys if quota exceeded?
     }
   }
 
@@ -371,6 +453,7 @@ export class GrowspaceHistoryController implements ReactiveController {
       }
 
       this._cachedCombinedHistory = null;
+      this._saveToStorage();
       this.host.requestUpdate();
     } catch (e) {
       console.error('[HistoryController] Failed to batch fetch secondary histories', e);
@@ -456,6 +539,7 @@ export class GrowspaceHistoryController implements ReactiveController {
       }
 
       this._cachedCombinedHistory = null;
+      this._saveToStorage();
       this.host.requestUpdate();
     } catch (e) {
       console.error('[HistoryController] Failed to fetch delta history', e);
@@ -578,6 +662,7 @@ export class GrowspaceHistoryController implements ReactiveController {
       }
 
       this._cachedCombinedHistory = null;
+      this._saveToStorage();
       this.host.requestUpdate();
 
     } catch (e) {
@@ -617,6 +702,7 @@ export class GrowspaceHistoryController implements ReactiveController {
       );
       this.historyCache[metricKey] = history;
       this._cachedCombinedHistory = null;
+      this._saveToStorage();
     } catch (e) {
       console.error(`Failed to fetch ${metricKey} history`, e);
     }
