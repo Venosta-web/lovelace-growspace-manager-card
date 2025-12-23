@@ -93,3 +93,26 @@ export type GrowspaceAPIResponse = z.infer<typeof GrowspaceAPIResponseSchema>;
 
 export const GrowspaceAPICollectionSchema = z.record(z.string(), GrowspaceAPIResponseSchema);
 export type GrowspaceAPICollection = z.infer<typeof GrowspaceAPICollectionSchema>;
+
+export const StrainPhenotypeSchema = z.object({
+    description: z.string().optional(),
+    image_path: z.string().optional(),
+    image_crop_meta: z.object({ x: z.number(), y: z.number(), scale: z.number() }).optional(),
+    flower_days_min: z.number().optional(),
+    flower_days_max: z.number().optional()
+}).catchall(z.any());
+
+export const StrainDataSchema = z.object({
+    meta: z.object({
+        breeder: z.string().optional(),
+        type: z.string().optional(),
+        lineage: z.string().optional(),
+        sex: z.string().optional(),
+        sativa_percentage: z.number().optional(),
+        indica_percentage: z.number().optional()
+    }).optional().default({}),
+    phenotypes: z.record(z.string(), StrainPhenotypeSchema).optional().default({})
+});
+
+export const StrainLibrarySchema = z.record(z.string(), StrainDataSchema);
+export type StrainLibraryResponse = z.infer<typeof StrainLibrarySchema>;

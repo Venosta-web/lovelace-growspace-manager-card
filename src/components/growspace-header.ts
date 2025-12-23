@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { StoreController } from '@nanostores/lit';
 import { $viewMode, $isEditMode, $activeDialog, setViewMode, setEditMode } from '../store/ui-store';
 import { $devices, $selectedDevice } from '../store/data-store';
+import { $historyCache, $historyLoading, $activeEnvGraphs, $linkedGraphGroups } from '../store/history-store';
 import { HomeAssistant } from 'custom-card-helpers';
 
 import {
@@ -70,6 +71,12 @@ export class GrowspaceHeader extends LitElement {
   // Data Store Controllers
   private _devicesController = new StoreController(this, $devices);
   private _selectedDeviceController = new StoreController(this, $selectedDevice);
+
+  // History Store Controllers (replaces manual listener pattern)
+  private _historyCacheController = new StoreController(this, $historyCache);
+  private _historyLoadingController = new StoreController(this, $historyLoading);
+  private _activeEnvGraphsController = new StoreController(this, $activeEnvGraphs);
+  private _linkedGraphGroupsController = new StoreController(this, $linkedGraphGroups);
 
   private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
   private _stageContainerRef: Ref<HTMLDivElement> = createRef();
@@ -727,57 +734,20 @@ export class GrowspaceHeader extends LitElement {
 
 
 
-  private _subscribedController: GrowspaceHistoryController | undefined;
-
   connectedCallback() {
     super.connectedCallback();
-    // Try to subscribe if available immediately
-    this._updateSubscription();
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    if (this._subscribedController) {
-      this._subscribedController.removeListener(this._handleControllerUpdate);
-      this._subscribedController = undefined;
-    }
+    this._updateMetrics();
   }
 
   protected willUpdate(changedProperties: Map<string, any>) {
-    // Manage subscription if controller reference changes
-    if (changedProperties.has('historyController') || !this._subscribedController) {
-      this._updateSubscription();
-    }
-
-    // Update metrics if key dependencies changed
+    // Update metrics if key dependencies changed or if active graphs changed (StoreController handles the reactivity)
     if (
       changedProperties.has('device') ||
-      changedProperties.has('hass')
+      changedProperties.has('hass') ||
+      this._activeEnvGraphsController.value
     ) {
       this._updateMetrics();
     }
-  }
-
-  private _updateSubscription() {
-    // Unsubscribe from old
-    if (this._subscribedController && this._subscribedController !== this.historyController) {
-      this._subscribedController.removeListener(this._handleControllerUpdate);
-      this._subscribedController = undefined;
-    }
-
-    // Subscribe to new
-    if (this.historyController && this._subscribedController !== this.historyController) {
-      this.historyController.addListener(this._handleControllerUpdate);
-      this._subscribedController = this.historyController;
-      // Initial metric update
-      this._updateMetrics();
-    }
-  }
-
-  private _handleControllerUpdate = () => {
-    // Explicitly recompute metrics when controller state (like active env graphs) changes
-    this._updateMetrics();
-    this.requestUpdate();
   }
 
   private get _chipDraggable(): string {

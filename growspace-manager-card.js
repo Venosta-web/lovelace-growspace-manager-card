@@ -4802,6 +4802,25 @@ const GrowspaceAPIResponseSchema = objectType({
     air_exchange: unionType([stringType(), numberType().transform(String)]).nullable().optional(), // Default handled by optionality
 }).catchall(anyType()); // Allow extra fields to pass through without error
 const GrowspaceAPICollectionSchema = recordType(stringType(), GrowspaceAPIResponseSchema);
+const StrainPhenotypeSchema = objectType({
+    description: stringType().optional(),
+    image_path: stringType().optional(),
+    image_crop_meta: objectType({ x: numberType(), y: numberType(), scale: numberType() }).optional(),
+    flower_days_min: numberType().optional(),
+    flower_days_max: numberType().optional()
+}).catchall(anyType());
+const StrainDataSchema = objectType({
+    meta: objectType({
+        breeder: stringType().optional(),
+        type: stringType().optional(),
+        lineage: stringType().optional(),
+        sex: stringType().optional(),
+        sativa_percentage: numberType().optional(),
+        indica_percentage: numberType().optional()
+    }).optional().default({}),
+    phenotypes: recordType(stringType(), StrainPhenotypeSchema).optional().default({})
+});
+const StrainLibrarySchema = recordType(stringType(), StrainDataSchema);
 
 class DataService {
     constructor(hass) {
@@ -4930,7 +4949,19 @@ class DataService {
                 return_response: true,
             });
             // Handle common response wrapping patterns in HA services
-            const rawStrains = serviceResponse?.response ?? serviceResponse ?? {};
+            let rawResponse = serviceResponse?.response ?? serviceResponse ?? {};
+            // Sanitize: some HA custom components might include a 'response' metadata key inside the payload
+            // which allows our Zod Record schema to fail if it's not a strain object.
+            if (rawResponse && typeof rawResponse === 'object') {
+                rawResponse = { ...rawResponse };
+                delete rawResponse['response'];
+            }
+            const parsed = StrainLibrarySchema.safeParse(rawResponse);
+            if (!parsed.success) {
+                console.warn('[DataService:fetchStrainLibrary] API Verification warning:', parsed.error.format());
+                return [];
+            }
+            const rawStrains = parsed.data;
             const currentStrains = [];
             console.log('[DataService:fetchStrainLibrary] Raw response:', rawStrains);
             Object.entries(rawStrains).forEach(([strainName, data]) => {
@@ -5030,6 +5061,7 @@ class DataService {
             const mappedResult = {};
             for (const [entityId, points] of Object.entries(result)) {
                 mappedResult[entityId] = points.map((p) => ({
+                    entity_id: entityId,
                     state: p.s,
                     last_changed: p.lu,
                     last_updated: p.lu,
@@ -5054,21 +5086,20 @@ class DataService {
             if (params.growspace_id === 'clone' || params.growspace_id === 'clone_overview') {
                 params.clone_start = new Date().toISOString().split('T')[0];
             }
-            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_PLANT, params);
-            console.log('[DataService:addPlant] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.ADD_PLANT, params);
+            console.log('[DataService:addPlant] Service Called');
         }
         catch (err) {
             console.error('[DataService:addPlant] Error:', err);
-            throw new Error(err.message || 'Failed to add plant');
+            const msg = err instanceof Error ? err.message : 'Failed to add plant';
+            throw new Error(msg);
         }
     }
     async updatePlant(params) {
         console.log('[DataService:updatePlant] Sending payload:', params);
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
-            console.log('[DataService:updatePlant] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
+            console.log('[DataService:updatePlant] Service Called');
         }
         catch (err) {
             console.error('[DataService:updatePlant] Error:', err);
@@ -5078,9 +5109,8 @@ class DataService {
     async removePlant(plantId) {
         console.log('[DataService:removePlant] Removing plant_id:', plantId);
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_PLANT, { plant_id: plantId });
-            console.log('[DataService:removePlant] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.REMOVE_PLANT, { plant_id: plantId });
+            console.log('[DataService:removePlant] Service Called');
         }
         catch (err) {
             console.error('[DataService:removePlant] Error:', err);
@@ -5094,9 +5124,8 @@ class DataService {
                 plant_id: plantId,
                 target_growspace_id: target
             };
-            const res = await this.hass.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
-            console.log('[DataService:harvestPlant] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
+            console.log('[DataService:harvestPlant] Service Called');
         }
         catch (err) {
             console.error('[DataService:harvestPlant] Error:', err);
@@ -5110,9 +5139,8 @@ class DataService {
             const payload = { ...params };
             if (!payload.target_growspace_id)
                 delete payload.target_growspace_id;
-            const res = await this.hass.callService(DOMAIN, SERVICES.TAKE_CLONE, payload);
-            console.log('[DataService:takeClone] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.TAKE_CLONE, payload);
+            console.log('[DataService:takeClone] Service Called');
         }
         catch (err) {
             console.error('[DataService:takeClone] Error:', err);
@@ -5129,9 +5157,8 @@ class DataService {
             if (transitionDate) {
                 payload.transition_date = transitionDate;
             }
-            const res = await this.hass.callService(DOMAIN, SERVICES.MOVE_CLONE, payload);
-            console.log('[DataService:moveClone] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.MOVE_CLONE, payload);
+            console.log('[DataService:moveClone] Service Called');
         }
         catch (err) {
             console.error('[DataService:moveClone] Error:', err);
@@ -5141,12 +5168,11 @@ class DataService {
     async swapPlants(plant1Id, plant2Id) {
         console.log(`[DataService:swapPlants] Swapping plants: ${plant1Id} and ${plant2Id}`);
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.SWITCH_PLANTS, {
+            await this.hass.callService(DOMAIN, SERVICES.SWITCH_PLANTS, {
                 plant1_id: plant1Id,
                 plant2_id: plant2Id,
             });
-            console.log('[DataService:swapPlants] Response:', res);
-            return res;
+            console.log('[DataService:swapPlants] Service Called');
         }
         catch (err) {
             console.error('[DataService:swapPlants] Error:', err);
@@ -5156,12 +5182,11 @@ class DataService {
     async setDehumidifierControl(growspaceId, enabled) {
         console.log(`[DataService:setDehumidifierControl] Setting dehumidifier control for ${growspaceId} to ${enabled}`);
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.SET_DEHUMIDIFIER_CONTROL, {
+            await this.hass.callService(DOMAIN, SERVICES.SET_DEHUMIDIFIER_CONTROL, {
                 growspace_id: growspaceId,
                 enabled,
             });
-            console.log('[DataService:setDehumidifierControl] Response:', res);
-            return res;
+            console.log('[DataService:setDehumidifierControl] Service Called');
         }
         catch (err) {
             console.error('[DataService:setDehumidifierControl] Error:', err);
@@ -5171,9 +5196,8 @@ class DataService {
     async setIrrigationSettings(params) {
         console.log('[DataService:setIrrigationSettings] Setting irrigation settings:', params);
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, params);
-            console.log('[DataService:setIrrigationSettings] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, params);
+            console.log('[DataService:setIrrigationSettings] Service Called');
         }
         catch (err) {
             console.error('[DataService:setIrrigationSettings] Error:', err);
@@ -5183,9 +5207,8 @@ class DataService {
     async addIrrigationTime(params) {
         console.log('[DataService:addIrrigationTime] Adding irrigation time:', params);
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, params);
-            console.log('[DataService:addIrrigationTime] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, params);
+            console.log('[DataService:addIrrigationTime] Service Called');
         }
         catch (err) {
             console.error('[DataService:addIrrigationTime] Error:', err);
@@ -5195,9 +5218,8 @@ class DataService {
     async removeIrrigationTime(params) {
         console.log('[DataService:removeIrrigationTime] Removing irrigation time:', params);
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, params);
-            console.log('[DataService:removeIrrigationTime] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, params);
+            console.log('[DataService:removeIrrigationTime] Service Called');
         }
         catch (err) {
             console.error('[DataService:removeIrrigationTime] Error:', err);
@@ -5207,12 +5229,11 @@ class DataService {
     async setIrrigationStrategy(growspaceId, strategy) {
         console.log('[DataService:setIrrigationStrategy] Setting strategy:', strategy);
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, {
+            await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, {
                 growspace_id: growspaceId,
                 ...strategy,
             });
-            console.log('[DataService:setIrrigationStrategy] Response:', res);
-            return res;
+            console.log('[DataService:setIrrigationStrategy] Service Called');
         }
         catch (err) {
             console.error('[DataService:setIrrigationStrategy] Error:', err);
@@ -5222,9 +5243,8 @@ class DataService {
     async addDrainTime(params) {
         console.log('[DataService:addDrainTime] Adding drain time:', params);
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, params);
-            console.log('[DataService:addDrainTime] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, params);
+            console.log('[DataService:addDrainTime] Service Called');
         }
         catch (err) {
             console.error('[DataService:addDrainTime] Error:', err);
@@ -5234,9 +5254,8 @@ class DataService {
     async removeDrainTime(params) {
         console.log('[DataService:removeDrainTime] Removing drain time:', params);
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, params);
-            console.log('[DataService:removeDrainTime] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, params);
+            console.log('[DataService:removeDrainTime] Service Called');
         }
         catch (err) {
             console.error('[DataService:removeDrainTime] Error:', err);
@@ -5246,9 +5265,8 @@ class DataService {
     async exportStrainLibrary() {
         console.log('[DataService:exportStrainLibrary] Exporting strain library');
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.EXPORT_STRAIN_LIBRARY);
-            console.log('[DataService:exportStrainLibrary] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.EXPORT_STRAIN_LIBRARY);
+            console.log('[DataService:exportStrainLibrary] Service Called');
         }
         catch (err) {
             console.error('[DataService:exportStrainLibrary] Error:', err);
@@ -5272,18 +5290,12 @@ class DataService {
                     delete payload.image; // Backend expects image_base64
                 }
                 else {
-                    // It's a path (existing image) - Backend schema doesn't explicitly list image_path,
-                    // but we'll try to send it if the backend supports it dynamically,
-                    // or we might need to omit it if it's just for local display.
-                    // Checking services.yaml, only image_base64 is listed.
-                    // We will assume image_path is not supported for add_strain and omit it to avoid schema errors.
-                    // payload.image_path = data.image;
+                    // It's a path (existing image)
                     delete payload.image;
                 }
             }
-            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_STRAIN, payload);
-            console.log('[DataService:addStrain] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.ADD_STRAIN, payload);
+            console.log('[DataService:addStrain] Service Called');
         }
         catch (err) {
             console.error('[DataService:addStrain] Error:', err);
@@ -5293,12 +5305,11 @@ class DataService {
     async removeStrain(strain, phenotype) {
         console.log('[DataService:removeStrain] Removing strain:', strain, phenotype);
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_STRAIN, {
+            await this.hass.callService(DOMAIN, SERVICES.REMOVE_STRAIN, {
                 strain,
                 phenotype,
             });
-            console.log('[DataService:removeStrain] Response:', res);
-            return res;
+            console.log('[DataService:removeStrain] Service Called');
         }
         catch (err) {
             console.error('[DataService:removeStrain] Error:', err);
@@ -5330,15 +5341,15 @@ class DataService {
         }
         catch (err) {
             console.error('[DataService:importStrainLibrary] Error:', err);
-            throw new Error(err.message || 'Failed to import strain library');
+            const msg = err instanceof Error ? err.message : 'Failed to import strain library';
+            throw new Error(msg);
         }
     }
     async clearStrainLibrary() {
         console.log('[DataService:clearStrainLibrary] Clearing library');
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.CLEAR_STRAIN_LIBRARY);
-            console.log('[DataService:clearStrainLibrary] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.CLEAR_STRAIN_LIBRARY);
+            console.log('[DataService:clearStrainLibrary] Service Called');
         }
         catch (err) {
             console.error('[DataService:clearStrainLibrary] Error:', err);
@@ -5355,10 +5366,9 @@ class DataService {
                 plants_per_row: data.plants_per_row,
                 notification_target: data.notification_service, // Map to backend field
             };
-            const res = await this.hass.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
+            await this.hass.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
             // this._cachedGrowspaceSensorIds = null; // Cache removed
-            console.log('[DataService:addGrowspace] Response:', res);
-            return res;
+            console.log('[DataService:addGrowspace] Service Called');
         }
         catch (err) {
             console.error('[DataService:addGrowspace] Error:', err);
@@ -5379,9 +5389,8 @@ class DataService {
                 payload.plants_per_row = data.plants_per_row;
             if (data.notification_service)
                 payload.notification_target = data.notification_service;
-            const res = await this.hass.callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
-            console.log('[DataService:updateGrowspace] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
+            console.log('[DataService:updateGrowspace] Service Called');
         }
         catch (err) {
             console.error('[DataService:updateGrowspace] Error:', err);
@@ -5391,12 +5400,11 @@ class DataService {
     async removeGrowspace(growspaceId) {
         console.log('[DataService:removeGrowspace] Removing growspace:', growspaceId);
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
+            await this.hass.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
                 growspace_id: growspaceId,
             });
             // this._cachedGrowspaceSensorIds = null; // Cache removed
-            console.log('[DataService:removeGrowspace] Response:', res);
-            return res;
+            console.log('[DataService:removeGrowspace] Service Called');
         }
         catch (err) {
             console.error('[DataService:removeGrowspace] Error:', err);
@@ -5406,9 +5414,8 @@ class DataService {
     async configureEnvironment(data) {
         console.log('[DataService:configureEnvironment] Configuring sensors:', data);
         try {
-            const res = await this.hass.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, data);
-            console.log('[DataService:configureEnvironment] Response:', res);
-            return res;
+            await this.hass.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, data);
+            console.log('[DataService:configureEnvironment] Service Called');
         }
         catch (err) {
             console.error('[DataService:configureEnvironment] Error:', err);
@@ -5638,22 +5645,448 @@ const strainLibraryContext = n$4('strain-library');
 const storeContext = n$4('store');
 const historyContext = n$4('growspace-history-controller');
 
+let clean = Symbol('clean');
+
+let listenerQueue = [];
+let lqIndex = 0;
+const QUEUE_ITEMS_PER_LISTENER = 4;
+let epoch = 0;
+
+/* @__NO_SIDE_EFFECTS__ */
+const atom = initialValue => {
+  let listeners = [];
+  let $atom = {
+    get() {
+      if (!$atom.lc) {
+        $atom.listen(() => {})();
+      }
+      return $atom.value
+    },
+    lc: 0,
+    listen(listener) {
+      $atom.lc = listeners.push(listener);
+
+      return () => {
+        for (
+          let i = lqIndex + QUEUE_ITEMS_PER_LISTENER;
+          i < listenerQueue.length;
+
+        ) {
+          if (listenerQueue[i] === listener) {
+            listenerQueue.splice(i, QUEUE_ITEMS_PER_LISTENER);
+          } else {
+            i += QUEUE_ITEMS_PER_LISTENER;
+          }
+        }
+
+        let index = listeners.indexOf(listener);
+        if (~index) {
+          listeners.splice(index, 1);
+          if (!--$atom.lc) $atom.off();
+        }
+      }
+    },
+    notify(oldValue, changedKey) {
+      epoch++;
+      let runListenerQueue = !listenerQueue.length;
+      for (let listener of listeners) {
+        listenerQueue.push(listener, $atom.value, oldValue, changedKey);
+      }
+
+      if (runListenerQueue) {
+        for (
+          lqIndex = 0;
+          lqIndex < listenerQueue.length;
+          lqIndex += QUEUE_ITEMS_PER_LISTENER
+        ) {
+          listenerQueue[lqIndex](
+            listenerQueue[lqIndex + 1],
+            listenerQueue[lqIndex + 2],
+            listenerQueue[lqIndex + 3]
+          );
+        }
+        listenerQueue.length = 0;
+      }
+    },
+    /* It will be called on last listener unsubscribing.
+       We will redefine it in onMount and onStop. */
+    off() {},
+    set(newValue) {
+      let oldValue = $atom.value;
+      if (oldValue !== newValue) {
+        $atom.value = newValue;
+        $atom.notify(oldValue);
+      }
+    },
+    subscribe(listener) {
+      let unbind = $atom.listen(listener);
+      listener($atom.value);
+      return unbind
+    },
+    value: initialValue
+  };
+
+  {
+    $atom[clean] = () => {
+      listeners = [];
+      $atom.lc = 0;
+      $atom.off();
+    };
+  }
+
+  return $atom
+};
+
+const MOUNT = 5;
+const UNMOUNT = 6;
+const REVERT_MUTATION = 10;
+
+let on = (object, listener, eventKey, mutateStore) => {
+  object.events = object.events || {};
+  if (!object.events[eventKey + REVERT_MUTATION]) {
+    object.events[eventKey + REVERT_MUTATION] = mutateStore(eventProps => {
+      // eslint-disable-next-line no-sequences
+      object.events[eventKey].reduceRight((event, l) => (l(event), event), {
+        shared: {},
+        ...eventProps
+      });
+    });
+  }
+  object.events[eventKey] = object.events[eventKey] || [];
+  object.events[eventKey].push(listener);
+  return () => {
+    let currentListeners = object.events[eventKey];
+    let index = currentListeners.indexOf(listener);
+    currentListeners.splice(index, 1);
+    if (!currentListeners.length) {
+      delete object.events[eventKey];
+      object.events[eventKey + REVERT_MUTATION]();
+      delete object.events[eventKey + REVERT_MUTATION];
+    }
+  }
+};
+
+let STORE_UNMOUNT_DELAY = 1000;
+
+let onMount = ($store, initialize) => {
+  let listener = payload => {
+    let destroy = initialize(payload);
+    if (destroy) $store.events[UNMOUNT].push(destroy);
+  };
+  return on($store, listener, MOUNT, runListeners => {
+    let originListen = $store.listen;
+    $store.listen = (...args) => {
+      if (!$store.lc && !$store.active) {
+        $store.active = true;
+        runListeners();
+      }
+      return originListen(...args)
+    };
+
+    let originOff = $store.off;
+    $store.events[UNMOUNT] = [];
+    $store.off = () => {
+      originOff();
+      setTimeout(() => {
+        if ($store.active && !$store.lc) {
+          $store.active = false;
+          for (let destroy of $store.events[UNMOUNT]) destroy();
+          $store.events[UNMOUNT] = [];
+        }
+      }, STORE_UNMOUNT_DELAY);
+    };
+
+    {
+      let originClean = $store[clean];
+      $store[clean] = () => {
+        for (let destroy of $store.events[UNMOUNT]) destroy();
+        $store.events[UNMOUNT] = [];
+        $store.active = false;
+        originClean();
+      };
+    }
+
+    return () => {
+      $store.listen = originListen;
+      $store.off = originOff;
+    }
+  })
+};
+
+let computedStore = (stores, cb, batched) => {
+  if (!Array.isArray(stores)) stores = [stores];
+
+  let previousArgs;
+  let currentEpoch;
+  let set = () => {
+    if (currentEpoch === epoch) return
+    currentEpoch = epoch;
+    let args = stores.map($store => $store.get());
+    if (!previousArgs || args.some((arg, i) => arg !== previousArgs[i])) {
+      previousArgs = args;
+      let value = cb(...args);
+      if (value && value.then && value.t) {
+        value.then(asyncValue => {
+          if (previousArgs === args) {
+            // Prevent a stale set
+            $computed.set(asyncValue);
+          }
+        });
+      } else {
+        $computed.set(value);
+        currentEpoch = epoch;
+      }
+    }
+  };
+  let $computed = atom(undefined);
+  let get = $computed.get;
+  $computed.get = () => {
+    set();
+    return get()
+  };
+
+  let timer;
+  let run = batched
+    ? () => {
+        clearTimeout(timer);
+        timer = setTimeout(set);
+      }
+    : set;
+
+  onMount($computed, () => {
+    let unbinds = stores.map($store => $store.listen(run));
+    set();
+    return () => {
+      for (let unbind of unbinds) unbind();
+    }
+  });
+
+  return $computed
+};
+
+/* @__NO_SIDE_EFFECTS__ */
+const computed = (stores, fn) => computedStore(stores, fn);
+
+/* @__NO_SIDE_EFFECTS__ */
+const map = (initial = {}) => {
+  let $map = atom(initial);
+
+  $map.setKey = function (key, value) {
+    let oldMap = $map.value;
+    if (typeof value === 'undefined' && key in $map.value) {
+      $map.value = { ...$map.value };
+      delete $map.value[key];
+      $map.notify(oldMap, key);
+    } else if ($map.value[key] !== value) {
+      $map.value = {
+        ...$map.value,
+        [key]: value
+      };
+      $map.notify(oldMap, key);
+    }
+  };
+
+  return $map
+};
+
+/**
+ * History Store - Nano Store atoms for sensor history data.
+ *
+ * This module replaces the internal state management in GrowspaceHistoryController.
+ * Components can now subscribe directly to history atoms using StoreController,
+ * eliminating the need for manual listener management.
+ */
+// --- Core History Cache ---
+/**
+ * Main history cache keyed by metric name.
+ * Keys: 'temperature', 'humidity', 'vpd', 'co2', 'light', 'optimal', 'main',
+ *       'soil_moisture', 'exhaust', 'humidifier', 'dehumidifier',
+ *       'circulation_fan', 'irrigation', 'drain'
+ */
+const $historyCache = map({});
+/**
+ * Last known timestamps for each metric (for delta loading).
+ */
+const $lastTimestamps = map({});
+// --- Loading/Error State ---
+/** Whether history is currently loading */
+const $historyLoading = atom(false);
+/** Whether history has been loaded at least once */
+const $historyLoaded = atom(false);
+/** Error message if history fetch failed */
+const $historyError = atom(null);
+/** Time ranges per device (keyed by device_id) */
+const $graphRanges = map({});
+// --- Graph Configuration ---
+/** Currently active environment graphs (set of metric keys) */
+const $activeEnvGraphs = atom(new Set());
+/** Linked graph groups (metrics displayed together) */
+const $linkedGraphGroups = atom([]);
+// --- Computed Stores ---
+/**
+ * Combined history object for analytics component.
+ * Computed from $historyCache to ensure consistency.
+ */
+const $combinedHistory = computed($historyCache, (cache) => ({
+    temperature: cache.temperature || [],
+    humidity: cache.humidity || [],
+    vpd: cache.vpd || [],
+    co2: cache.co2 || [],
+    dehumidifier: cache.dehumidifier || [],
+    exhaust: cache.exhaust || [],
+    humidifier: cache.humidifier || [],
+    circulation_fan: cache.circulation_fan || [],
+    soil_moisture: cache.soil_moisture || [],
+    light: cache.light || [],
+    irrigation: cache.irrigation || [],
+    drain: cache.drain || [],
+    optimal: cache.optimal || [],
+}));
+// --- Actions ---
+/**
+ * Set history data for a specific metric.
+ */
+function setHistoryData(metric, data) {
+    const current = $historyCache.get();
+    $historyCache.set({ ...current, [metric]: data });
+}
+/**
+ * Set history data for multiple metrics at once.
+ */
+function setHistoryBatch(updates) {
+    const current = $historyCache.get();
+    $historyCache.set({ ...current, ...updates });
+}
+/**
+ * Update the last timestamp for a metric.
+ */
+function updateLastTimestamp(metric, data) {
+    if (data.length === 0)
+        return;
+    const lastPoint = data[data.length - 1];
+    const timestamp = lastPoint.last_updated || lastPoint.last_changed;
+    if (timestamp) {
+        $lastTimestamps.setKey(metric, timestamp);
+    }
+}
+/**
+ * Clear the history cache (e.g., when switching devices).
+ */
+function clearHistoryCache() {
+    $historyCache.set({});
+    $lastTimestamps.set({});
+    $historyLoaded.set(false);
+    $historyError.set(null);
+}
+/**
+ * Set loading state.
+ */
+function setHistoryLoading(loading) {
+    $historyLoading.set(loading);
+}
+/**
+ * Mark history as loaded.
+ */
+function setHistoryLoaded(loaded) {
+    $historyLoaded.set(loaded);
+}
+/**
+ * Set the time range for a specific device.
+ */
+function setGraphRange(deviceId, range) {
+    $graphRanges.setKey(deviceId, range);
+}
+/**
+ * Toggle a metric in the active environment graphs.
+ */
+function toggleEnvGraph(metric) {
+    const current = $activeEnvGraphs.get();
+    const newSet = new Set(current);
+    if (newSet.has(metric)) {
+        newSet.delete(metric);
+        $activeEnvGraphs.set(newSet);
+        return false; // Metric is now inactive
+    }
+    else {
+        newSet.add(metric);
+        $activeEnvGraphs.set(newSet);
+        return true; // Metric is now active
+    }
+}
+/**
+ * Link two metric graphs together.
+ */
+function linkGraphs(metric1, metric2) {
+    const groups = $linkedGraphGroups.get();
+    const existingGroupIndex = groups.findIndex(group => group.includes(metric1) || group.includes(metric2));
+    const newGroups = [...groups];
+    if (existingGroupIndex >= 0) {
+        const group = new Set(newGroups[existingGroupIndex]);
+        group.add(metric1);
+        group.add(metric2);
+        newGroups[existingGroupIndex] = Array.from(group);
+    }
+    else {
+        newGroups.push([metric1, metric2]);
+    }
+    $linkedGraphGroups.set(newGroups);
+    // Auto-activate both metrics
+    const newActive = new Set($activeEnvGraphs.get());
+    newActive.add(metric1);
+    newActive.add(metric2);
+    $activeEnvGraphs.set(newActive);
+}
+/**
+ * Unlink a specific graph group.
+ */
+function unlinkGraphGroup(index) {
+    const groups = $linkedGraphGroups.get();
+    if (index >= 0 && index < groups.length) {
+        const newGroups = [...groups];
+        newGroups.splice(index, 1);
+        $linkedGraphGroups.set(newGroups);
+    }
+}
+/**
+ * Remove a metric from all linked groups.
+ */
+function unlinkGraphMetric(metric) {
+    const groups = $linkedGraphGroups.get();
+    const newGroups = groups
+        .map(group => group.filter(m => m !== metric))
+        .filter(group => group.length > 1);
+    $linkedGraphGroups.set(newGroups);
+}
+/**
+ * Clear all linked graph groups.
+ */
+function clearAllLinks() {
+    $linkedGraphGroups.set([]);
+}
+
 class GrowspaceHistoryController {
-    /** @deprecated Use historyCache['main'] instead */
-    get historyData() {
-        return this.historyCache.main || null;
+    /**
+     * History cache is now managed by historyStore.
+     * This getter provides backward-compatible access.
+     */
+    get historyCache() {
+        return $historyCache.get();
     }
-    set historyData(value) {
-        this.historyCache.main = value || [];
-        this._cachedCombinedHistory = null;
+    /**
+     * Timestamps are now managed by historyStore.
+     * This getter provides backward-compatible access.
+     */
+    get _lastTimestamps() {
+        return $lastTimestamps.get();
     }
-    /** @deprecated Use historyCache['optimal'] instead */
-    get optimalHistory() {
-        return this.historyCache.optimal || null;
+    /**
+     * Lazy loading flags
+     */
+    get isHistoryLoaded() {
+        return $historyLoaded.get();
     }
-    set optimalHistory(value) {
-        this.historyCache.optimal = value || [];
-        this._cachedCombinedHistory = null;
+    get isHistoryLoading() {
+        return $historyLoading.get();
     }
     // Backward compatibility getters for existing code that reads these properties
     get temperatureHistory() {
@@ -5705,24 +6138,16 @@ class GrowspaceHistoryController {
     }
     /** Returns all sensor histories as a combined object for analytics component */
     get combinedHistory() {
-        if (!this._cachedCombinedHistory) {
-            this._cachedCombinedHistory = {
-                temperature: this.historyCache.temperature || [],
-                humidity: this.historyCache.humidity || [],
-                vpd: this.historyCache.vpd || [],
-                co2: this.historyCache.co2 || [],
-                dehumidifier: this.historyCache.dehumidifier || [],
-                exhaust: this.historyCache.exhaust || [],
-                humidifier: this.historyCache.humidifier || [],
-                circulation_fan: this.historyCache.circulation_fan || [],
-                soil_moisture: this.historyCache.soil_moisture || [],
-                light: this.historyCache.light || [],
-                irrigation: this.historyCache.irrigation || [],
-                drain: this.historyCache.drain || [],
-                optimal: this.historyCache.optimal || [],
-            };
-        }
-        return this._cachedCombinedHistory;
+        return $combinedHistory.get();
+    }
+    get activeEnvGraphs() {
+        return $activeEnvGraphs.get();
+    }
+    get linkedGraphGroups() {
+        return $linkedGraphGroups.get();
+    }
+    get graphRanges() {
+        return $graphRanges.get();
     }
     constructor(host) {
         Object.defineProperty(this, "host", {
@@ -5730,72 +6155,6 @@ class GrowspaceHistoryController {
             configurable: true,
             writable: true,
             value: void 0
-        });
-        /**
-         * Unified history cache keyed by metric name.
-         * Replaces individual properties like temperatureHistory, humidityHistory, etc.
-         * Access via: this.historyCache['temperature'], this.historyCache['vpd'], etc.
-         */
-        Object.defineProperty(this, "historyCache", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {}
-        });
-        /**
-         * Tracks the last timestamp for each metric to enable delta loading.
-         * Key: metric name, Value: ISO timestamp of the last data point
-         */
-        Object.defineProperty(this, "_lastTimestamps", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {}
-        });
-        Object.defineProperty(this, "_cachedCombinedHistory", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: null
-        });
-        /**
-         * Lazy loading flags
-         */
-        Object.defineProperty(this, "isHistoryLoaded", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "isHistoryLoading", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "activeEnvGraphs", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        Object.defineProperty(this, "linkedGraphGroups", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: []
-        });
-        Object.defineProperty(this, "graphRanges", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {}
-        });
-        Object.defineProperty(this, "_listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: []
         });
         // Storage constants
         Object.defineProperty(this, "STORAGE_KEY_PREFIX", {
@@ -5823,16 +6182,6 @@ class GrowspaceHistoryController {
             value: null
         });
         (this.host = host).addController(this);
-    }
-    addListener(callback) {
-        this._listeners.push(callback);
-    }
-    removeListener(callback) {
-        this._listeners = this._listeners.filter(l => l !== callback);
-    }
-    _notifyUpdate() {
-        this.host.requestUpdate();
-        this._listeners.forEach(cb => cb());
     }
     hostConnected() {
         // OPTIMIZATION: Don't auto-fetch history on connect
@@ -5871,36 +6220,31 @@ class GrowspaceHistoryController {
         if (this.isHistoryLoaded || this.isHistoryLoading) {
             return;
         }
-        this.isHistoryLoading = true;
+        setHistoryLoading(true);
         this.host.requestUpdate();
         try {
             await this._fetchHistory(this.getRange());
-            this.isHistoryLoaded = true;
+            setHistoryLoaded(true);
             console.log('[HistoryController] History loaded successfully');
         }
         catch (error) {
             console.error('[HistoryController] Failed to load history', error);
         }
         finally {
-            this.isHistoryLoading = false;
+            setHistoryLoading(false);
             this.host.requestUpdate();
         }
     }
     async hostUpdate() {
         if (this.host.selectedDevice !== this._prevSelectedDevice) {
             this._prevSelectedDevice = this.host.selectedDevice;
-            // Reset loading flags for new device
-            this.isHistoryLoaded = false;
-            this.isHistoryLoading = false;
-            // Clear cached data for new device
-            this.historyCache = {};
-            this._cachedCombinedHistory = null;
+            // Reset loading flags and clear cached data for new device
+            clearHistoryCache();
             // Try to load cached data for the new device
             if (this.host.selectedDevice) {
                 this._loadFromStorage(this.host.selectedDevice);
             }
             // Notify listeners that device changed (analytics will trigger lazy load if visible)
-            this._notifyUpdate();
         }
     }
     /**
@@ -5925,15 +6269,17 @@ class GrowspaceHistoryController {
                 localStorage.removeItem(key);
                 return false;
             }
-            this.historyCache = data.history;
-            this._lastTimestamps = data.timestamps || {};
-            this._cachedCombinedHistory = null;
+            setHistoryBatch(data.history);
+            // Update timestamps via the store
+            const timestamps = data.timestamps || {};
+            Object.keys(timestamps).forEach(metric => {
+                $lastTimestamps.setKey(metric, timestamps[metric]);
+            });
             // Consider history "loaded" if we have data, but still might want to fetch fresh data
-            if (Object.keys(this.historyCache).length > 0) {
-                this.isHistoryLoaded = true;
+            if (Object.keys(data.history).length > 0) {
+                setHistoryLoaded(true);
             }
             console.log(`[HistoryController] Loaded ${Object.keys(this.historyCache).length} metrics from storage`);
-            this._notifyUpdate();
             return true;
         }
         catch (e) {
@@ -5967,73 +6313,34 @@ class GrowspaceHistoryController {
     setGraphRange(range) {
         if (!this.host.selectedDevice)
             return;
-        this.graphRanges = {
-            ...this.graphRanges,
-            [this.host.selectedDevice]: range,
-        };
-        this._notifyUpdate();
+        setGraphRange(this.host.selectedDevice, range);
         this._fetchHistory(range);
         this.refreshSecondaryHistories(range);
     }
     toggleEnvGraph(details) {
         const { metric } = details;
-        const newSet = new Set(this.activeEnvGraphs);
-        if (newSet.has(metric)) {
-            newSet.delete(metric);
-        }
-        else {
-            newSet.add(metric);
+        const isNowActive = toggleEnvGraph(metric);
+        if (isNowActive) {
             // Fetch history for this metric using generic method
             const range = this.getRange();
             this._fetchMetricHistory(metric, range);
         }
-        this.activeEnvGraphs = newSet;
-        this._notifyUpdate();
     }
     linkGraphs(metric1, metric2) {
-        // Check if already linked
-        const existingGroupIndex = this.linkedGraphGroups.findIndex((group) => group.includes(metric1) || group.includes(metric2));
-        const newGroups = [...this.linkedGraphGroups];
-        if (existingGroupIndex >= 0) {
-            // Add unique
-            const group = new Set(newGroups[existingGroupIndex]);
-            group.add(metric1);
-            group.add(metric2);
-            newGroups[existingGroupIndex] = Array.from(group);
-        }
-        else {
-            // Create new group
-            newGroups.push([metric1, metric2]);
-        }
-        this.linkedGraphGroups = newGroups;
-        // Auto-activate both metrics so the linked graph displays immediately
-        const newActive = new Set(this.activeEnvGraphs);
-        newActive.add(metric1);
-        newActive.add(metric2);
-        this.activeEnvGraphs = newActive;
+        linkGraphs(metric1, metric2);
         // Fetch data for the linked metrics immediately
         const range = this.getRange();
         this._fetchMetricHistory(metric1, range);
         this._fetchMetricHistory(metric2, range);
-        this._notifyUpdate();
     }
     unlinkGraphGroup(index) {
-        if (index >= 0 && index < this.linkedGraphGroups.length) {
-            const newGroups = [...this.linkedGraphGroups];
-            newGroups.splice(index, 1);
-            this.linkedGraphGroups = newGroups;
-            this._notifyUpdate();
-        }
+        unlinkGraphGroup(index);
     }
     clearAllLinks() {
-        this.linkedGraphGroups = [];
-        this._notifyUpdate();
+        clearAllLinks();
     }
     unlinkGraphMetric(metric) {
-        this.linkedGraphGroups = this.linkedGraphGroups
-            .map((group) => group.filter((m) => m !== metric))
-            .filter((group) => group.length > 1);
-        this._notifyUpdate();
+        unlinkGraphMetric(metric);
     }
     /**
      * Refreshes history data for all currently active environment graphs.
@@ -6045,7 +6352,7 @@ class GrowspaceHistoryController {
             return;
         const metricsToFetch = [];
         const entityMap = {};
-        for (const metricKey of this.activeEnvGraphs) {
+        for (const metricKey of Array.from(this.activeEnvGraphs)) {
             // Skip 'main' and 'optimal' as those are fetched by _fetchHistory
             if (metricKey === 'main' || metricKey === 'optimal')
                 continue;
@@ -6066,11 +6373,10 @@ class GrowspaceHistoryController {
             for (const metricKey of metricsToFetch) {
                 const entityId = entityMap[metricKey];
                 if (entityId && batchResults[entityId]) {
-                    this.historyCache[metricKey] = batchResults[entityId];
+                    setHistoryData(metricKey, batchResults[entityId]);
                     console.log(`[HistoryController] ${metricKey} history fetched via batch, length: ${batchResults[entityId].length}`);
                 }
             }
-            this._cachedCombinedHistory = null;
             this._saveToStorage();
             this.host.requestUpdate();
         }
@@ -6141,7 +6447,6 @@ class GrowspaceHistoryController {
                     this._mergeDeltaData(metric, deltaData);
                 }
             }
-            this._cachedCombinedHistory = null;
             this._saveToStorage();
             this.host.requestUpdate();
         }
@@ -6156,8 +6461,8 @@ class GrowspaceHistoryController {
     _mergeDeltaData(metric, deltaData) {
         const existing = this.historyCache[metric] || [];
         if (existing.length === 0) {
-            this.historyCache[metric] = deltaData;
-            this._updateLastTimestamp(metric, deltaData);
+            setHistoryData(metric, deltaData);
+            updateLastTimestamp(metric, deltaData);
             return;
         }
         // Find the last timestamp in existing data
@@ -6169,8 +6474,8 @@ class GrowspaceHistoryController {
             return pointTime > lastTimestamp;
         });
         if (newData.length > 0) {
-            this.historyCache[metric] = [...existing, ...newData];
-            this._updateLastTimestamp(metric, newData);
+            setHistoryData(metric, [...existing, ...newData]);
+            updateLastTimestamp(metric, newData);
             console.log(`[HistoryController] Merged ${newData.length} new points for ${metric}`);
         }
     }
@@ -6178,10 +6483,7 @@ class GrowspaceHistoryController {
      * Updates the last known timestamp for a metric.
      */
     _updateLastTimestamp(metric, data) {
-        if (data.length === 0)
-            return;
-        const lastPoint = data[data.length - 1];
-        this._lastTimestamps[metric] = lastPoint.last_updated || lastPoint.last_changed;
+        updateLastTimestamp(metric, data);
     }
     async _fetchHistory(range = '24h') {
         if (!this.host.hass || !this.host.selectedDevice)
@@ -6230,7 +6532,7 @@ class GrowspaceHistoryController {
             // Main
             if (device.overview_entity_id && batchResults[device.overview_entity_id]) {
                 const data = batchResults[device.overview_entity_id];
-                this.historyCache.main = data;
+                setHistoryData('main', data);
                 this._updateLastTimestamp('main', data);
             }
             // Metrics
@@ -6238,14 +6540,13 @@ class GrowspaceHistoryController {
                 const entityId = entityMap[metric];
                 if (entityId) {
                     const result = batchResults[entityId] || [];
-                    this.historyCache[metric] = result;
+                    setHistoryData(metric, result);
                     this._updateLastTimestamp(metric, result);
                     if (result.length > 0) {
                         console.log(`[HistoryController] ${metric} history fetched via batch, length: ${result.length}`);
                     }
                 }
             }
-            this._cachedCombinedHistory = null;
             this._saveToStorage();
             this.host.requestUpdate();
         }
@@ -6273,8 +6574,7 @@ class GrowspaceHistoryController {
             const batchResults = await this.host.dataService.getHistoryStats([entityId], start, end, this._getIntervalForRange(range), true);
             const history = batchResults[entityId] || [];
             console.log(`[HistoryController] ${metricKey} history fetched from ${entityId}, length: ${history.length}`);
-            this.historyCache[metricKey] = history;
-            this._cachedCombinedHistory = null;
+            setHistoryData(metricKey, history);
             this._saveToStorage();
         }
         catch (e) {
@@ -6336,30 +6636,6 @@ class GrowspaceHistoryController {
             }
         }
         return entityId || null;
-    }
-    // Legacy method kept for compatibility - prefer getEntityIdForMetric instead
-    getRelatedEntityId(attribute) {
-        if (!this.host.hass || !this.host.selectedDevice)
-            return { device: null, entityId: null };
-        const devices = this.host.devices;
-        const device = devices.find((d) => d.device_id === this.host.selectedDevice);
-        if (!device)
-            return { device: null, entityId: null };
-        let entityId = device.environment_attributes?.[attribute];
-        if (entityId)
-            return { device, entityId };
-        // Fallback logic
-        if (attribute.endsWith('_entity')) {
-            const sensorAttr = attribute.replace('_entity', '_sensor');
-            entityId =
-                device.environment_attributes?.[sensorAttr];
-        }
-        else if (attribute.endsWith('_sensor')) {
-            const entityAttr = attribute.replace('_sensor', '_entity');
-            entityId =
-                device.environment_attributes?.[entityAttr];
-        }
-        return { device, entityId };
     }
     /**
      * Helper to calculate interval minutes based on time range for downsampling.
@@ -7794,228 +8070,6 @@ class GraphDataTransformer {
     })();
     return _classThis;
 })();
-
-let clean = Symbol('clean');
-
-let listenerQueue = [];
-let lqIndex = 0;
-const QUEUE_ITEMS_PER_LISTENER = 4;
-let epoch = 0;
-
-/* @__NO_SIDE_EFFECTS__ */
-const atom = initialValue => {
-  let listeners = [];
-  let $atom = {
-    get() {
-      if (!$atom.lc) {
-        $atom.listen(() => {})();
-      }
-      return $atom.value
-    },
-    lc: 0,
-    listen(listener) {
-      $atom.lc = listeners.push(listener);
-
-      return () => {
-        for (
-          let i = lqIndex + QUEUE_ITEMS_PER_LISTENER;
-          i < listenerQueue.length;
-
-        ) {
-          if (listenerQueue[i] === listener) {
-            listenerQueue.splice(i, QUEUE_ITEMS_PER_LISTENER);
-          } else {
-            i += QUEUE_ITEMS_PER_LISTENER;
-          }
-        }
-
-        let index = listeners.indexOf(listener);
-        if (~index) {
-          listeners.splice(index, 1);
-          if (!--$atom.lc) $atom.off();
-        }
-      }
-    },
-    notify(oldValue, changedKey) {
-      epoch++;
-      let runListenerQueue = !listenerQueue.length;
-      for (let listener of listeners) {
-        listenerQueue.push(listener, $atom.value, oldValue, changedKey);
-      }
-
-      if (runListenerQueue) {
-        for (
-          lqIndex = 0;
-          lqIndex < listenerQueue.length;
-          lqIndex += QUEUE_ITEMS_PER_LISTENER
-        ) {
-          listenerQueue[lqIndex](
-            listenerQueue[lqIndex + 1],
-            listenerQueue[lqIndex + 2],
-            listenerQueue[lqIndex + 3]
-          );
-        }
-        listenerQueue.length = 0;
-      }
-    },
-    /* It will be called on last listener unsubscribing.
-       We will redefine it in onMount and onStop. */
-    off() {},
-    set(newValue) {
-      let oldValue = $atom.value;
-      if (oldValue !== newValue) {
-        $atom.value = newValue;
-        $atom.notify(oldValue);
-      }
-    },
-    subscribe(listener) {
-      let unbind = $atom.listen(listener);
-      listener($atom.value);
-      return unbind
-    },
-    value: initialValue
-  };
-
-  {
-    $atom[clean] = () => {
-      listeners = [];
-      $atom.lc = 0;
-      $atom.off();
-    };
-  }
-
-  return $atom
-};
-
-const MOUNT = 5;
-const UNMOUNT = 6;
-const REVERT_MUTATION = 10;
-
-let on = (object, listener, eventKey, mutateStore) => {
-  object.events = object.events || {};
-  if (!object.events[eventKey + REVERT_MUTATION]) {
-    object.events[eventKey + REVERT_MUTATION] = mutateStore(eventProps => {
-      // eslint-disable-next-line no-sequences
-      object.events[eventKey].reduceRight((event, l) => (l(event), event), {
-        shared: {},
-        ...eventProps
-      });
-    });
-  }
-  object.events[eventKey] = object.events[eventKey] || [];
-  object.events[eventKey].push(listener);
-  return () => {
-    let currentListeners = object.events[eventKey];
-    let index = currentListeners.indexOf(listener);
-    currentListeners.splice(index, 1);
-    if (!currentListeners.length) {
-      delete object.events[eventKey];
-      object.events[eventKey + REVERT_MUTATION]();
-      delete object.events[eventKey + REVERT_MUTATION];
-    }
-  }
-};
-
-let STORE_UNMOUNT_DELAY = 1000;
-
-let onMount = ($store, initialize) => {
-  let listener = payload => {
-    let destroy = initialize(payload);
-    if (destroy) $store.events[UNMOUNT].push(destroy);
-  };
-  return on($store, listener, MOUNT, runListeners => {
-    let originListen = $store.listen;
-    $store.listen = (...args) => {
-      if (!$store.lc && !$store.active) {
-        $store.active = true;
-        runListeners();
-      }
-      return originListen(...args)
-    };
-
-    let originOff = $store.off;
-    $store.events[UNMOUNT] = [];
-    $store.off = () => {
-      originOff();
-      setTimeout(() => {
-        if ($store.active && !$store.lc) {
-          $store.active = false;
-          for (let destroy of $store.events[UNMOUNT]) destroy();
-          $store.events[UNMOUNT] = [];
-        }
-      }, STORE_UNMOUNT_DELAY);
-    };
-
-    {
-      let originClean = $store[clean];
-      $store[clean] = () => {
-        for (let destroy of $store.events[UNMOUNT]) destroy();
-        $store.events[UNMOUNT] = [];
-        $store.active = false;
-        originClean();
-      };
-    }
-
-    return () => {
-      $store.listen = originListen;
-      $store.off = originOff;
-    }
-  })
-};
-
-let computedStore = (stores, cb, batched) => {
-  if (!Array.isArray(stores)) stores = [stores];
-
-  let previousArgs;
-  let currentEpoch;
-  let set = () => {
-    if (currentEpoch === epoch) return
-    currentEpoch = epoch;
-    let args = stores.map($store => $store.get());
-    if (!previousArgs || args.some((arg, i) => arg !== previousArgs[i])) {
-      previousArgs = args;
-      let value = cb(...args);
-      if (value && value.then && value.t) {
-        value.then(asyncValue => {
-          if (previousArgs === args) {
-            // Prevent a stale set
-            $computed.set(asyncValue);
-          }
-        });
-      } else {
-        $computed.set(value);
-        currentEpoch = epoch;
-      }
-    }
-  };
-  let $computed = atom(undefined);
-  let get = $computed.get;
-  $computed.get = () => {
-    set();
-    return get()
-  };
-
-  let timer;
-  let run = batched
-    ? () => {
-        clearTimeout(timer);
-        timer = setTimeout(set);
-      }
-    : set;
-
-  onMount($computed, () => {
-    let unbinds = stores.map($store => $store.listen(run));
-    set();
-    return () => {
-      for (let unbind of unbinds) unbind();
-    }
-  });
-
-  return $computed
-};
-
-/* @__NO_SIDE_EFFECTS__ */
-const computed = (stores, fn) => computedStore(stores, fn);
 
 // Definition of atoms
 const $viewMode = atom('standard');
@@ -25032,6 +25086,31 @@ class ResizeController {
                 writable: true,
                 value: new libExports.StoreController(this, $selectedDevice)
             });
+            // History Store Controllers (replaces manual listener pattern)
+            Object.defineProperty(this, "_historyCacheController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $historyCache)
+            });
+            Object.defineProperty(this, "_historyLoadingController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $historyLoading)
+            });
+            Object.defineProperty(this, "_activeEnvGraphsController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $activeEnvGraphs)
+            });
+            Object.defineProperty(this, "_linkedGraphGroupsController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $linkedGraphGroups)
+            });
             Object.defineProperty(this, "_chipsContainerRef", {
                 enumerable: true,
                 configurable: true,
@@ -25086,22 +25165,6 @@ class ResizeController {
                 configurable: true,
                 writable: true,
                 value: null
-            });
-            Object.defineProperty(this, "_subscribedController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_handleControllerUpdate", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: () => {
-                    // Explicitly recompute metrics when controller state (like active env graphs) changes
-                    this._updateMetrics();
-                    this.requestUpdate();
-                }
             });
         }
         get hass() { return __classPrivateFieldGet(this, _GrowspaceHeader_hass_accessor_storage, "f"); }
@@ -25269,38 +25332,13 @@ class ResizeController {
         }
         connectedCallback() {
             super.connectedCallback();
-            // Try to subscribe if available immediately
-            this._updateSubscription();
-        }
-        disconnectedCallback() {
-            super.disconnectedCallback();
-            if (this._subscribedController) {
-                this._subscribedController.removeListener(this._handleControllerUpdate);
-                this._subscribedController = undefined;
-            }
+            this._updateMetrics();
         }
         willUpdate(changedProperties) {
-            // Manage subscription if controller reference changes
-            if (changedProperties.has('historyController') || !this._subscribedController) {
-                this._updateSubscription();
-            }
-            // Update metrics if key dependencies changed
+            // Update metrics if key dependencies changed or if active graphs changed (StoreController handles the reactivity)
             if (changedProperties.has('device') ||
-                changedProperties.has('hass')) {
-                this._updateMetrics();
-            }
-        }
-        _updateSubscription() {
-            // Unsubscribe from old
-            if (this._subscribedController && this._subscribedController !== this.historyController) {
-                this._subscribedController.removeListener(this._handleControllerUpdate);
-                this._subscribedController = undefined;
-            }
-            // Subscribe to new
-            if (this.historyController && this._subscribedController !== this.historyController) {
-                this.historyController.addListener(this._handleControllerUpdate);
-                this._subscribedController = this.historyController;
-                // Initial metric update
+                changedProperties.has('hass') ||
+                this._activeEnvGraphsController.value) {
                 this._updateMetrics();
             }
         }
@@ -28113,13 +28151,36 @@ const growspaceCardStyles = i$6 `
             _GrowspaceAnalytics_historyController_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _historyController_initializers, void 0)));
             _GrowspaceAnalytics_device_accessor_storage.set(this, (__runInitializers(this, _historyController_extraInitializers), __runInitializers(this, _device_initializers, void 0)));
             _GrowspaceAnalytics__itemsToRender_accessor_storage.set(this, (__runInitializers(this, _device_extraInitializers), __runInitializers(this, __itemsToRender_initializers, [])));
-            Object.defineProperty(this, "_handleControllerUpdate", {
+            // StoreController subscriptions for automatic reactivity
+            Object.defineProperty(this, "_historyCacheController", {
                 enumerable: true,
                 configurable: true,
                 writable: true,
-                value: (__runInitializers(this, __itemsToRender_extraInitializers), () => {
-                    this.requestUpdate();
-                })
+                value: (__runInitializers(this, __itemsToRender_extraInitializers), new libExports.StoreController(this, $historyCache))
+            });
+            Object.defineProperty(this, "_historyLoadingController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $historyLoading)
+            });
+            Object.defineProperty(this, "_historyLoadedController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $historyLoaded)
+            });
+            Object.defineProperty(this, "_activeEnvGraphsController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $activeEnvGraphs)
+            });
+            Object.defineProperty(this, "_linkedGraphGroupsController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $linkedGraphGroups)
             });
         }
         get hass() { return __classPrivateFieldGet(this, _GrowspaceAnalytics_hass_accessor_storage, "f"); }
@@ -28132,9 +28193,6 @@ const growspaceCardStyles = i$6 `
         set _itemsToRender(value) { __classPrivateFieldSet(this, _GrowspaceAnalytics__itemsToRender_accessor_storage, value, "f"); }
         connectedCallback() {
             super.connectedCallback();
-            if (this.historyController) {
-                this.historyController.addListener(this._handleControllerUpdate);
-            }
         }
         firstUpdated() {
             // OPTIMIZATION: Trigger lazy loading of history data when analytics component first renders
@@ -28145,9 +28203,6 @@ const growspaceCardStyles = i$6 `
         }
         disconnectedCallback() {
             super.disconnectedCallback();
-            if (this.historyController) {
-                this.historyController.removeListener(this._handleControllerUpdate);
-            }
         }
         willUpdate(changedProperties) {
             // Trigger lazy load if history is not loaded and not currently loading
@@ -28701,7 +28756,389 @@ const growspaceCardStyles = i$6 `
     return _classThis;
 })();
 
+/**
+ * Plant Actions - Pure functions for plant business logic.
+ * These functions encapsulate plant manipulation operations without
+ * coupling to the store lifecycle or UI state management.
+ */
+/**
+ * Update a single plant with new attributes.
+ */
+async function updatePlant(ctx, plantId, updates) {
+    try {
+        await ctx.dataService.updatePlant({ plant_id: plantId, ...updates });
+        ctx.showToast('Plant updated', 'success');
+    }
+    catch (e) {
+        console.error('Failed to update plant:', e);
+        ctx.showToast(`Failed to update plant: ${e.message}`, 'error');
+    }
+}
+/**
+ * Delete one or more plants with optimistic UI support.
+ */
+async function deletePlants(ctx, plantIds, addOptimisticId, removeOptimisticId) {
+    plantIds.forEach(id => addOptimisticId(id));
+    try {
+        await Promise.all(plantIds.map((id) => ctx.dataService.removePlant(id)));
+        ctx.showToast('Plant(s) deleted', 'success');
+        return true;
+    }
+    catch (e) {
+        console.error('Failed to delete plant:', e);
+        ctx.showToast(`Failed to delete: ${e.message}`, 'error');
+        plantIds.forEach(id => removeOptimisticId(id));
+        return false;
+    }
+}
+/**
+ * Move plant to next stage (flower→dry, dry→cure, mother→clone).
+ */
+async function movePlantToNextStage(ctx, plant) {
+    const stage = plant.attributes?.stage;
+    let targetGrowspace = '';
+    const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
+    if (!stage || !movableStages.has(stage)) {
+        ctx.showToast('Plant must be in mother or flower or dry or cure stage to move. stage is ' + stage, 'error');
+        return false;
+    }
+    if (stage === 'flower') {
+        targetGrowspace = 'dry';
+    }
+    else if (stage === 'dry') {
+        targetGrowspace = 'cure';
+    }
+    else if (stage === 'mother') {
+        targetGrowspace = 'clone';
+    }
+    else {
+        console.error('Unknown stage, cannot move plant', targetGrowspace);
+        return false;
+    }
+    try {
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        await ctx.dataService.harvestPlant(plantId, targetGrowspace);
+        ctx.closeDialog();
+        return true;
+    }
+    catch (err) {
+        console.error('Error moving plant to next stage:', err);
+        return false;
+    }
+}
+/**
+ * Move plant to a specific growspace.
+ */
+async function movePlantToGrowspace(ctx, plant, targetGrowspace) {
+    const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+    const currentStage = plant.attributes?.stage || 'unknown';
+    try {
+        if (currentStage === 'clone') {
+            await ctx.dataService.moveClone(plantId, targetGrowspace);
+        }
+        else {
+            await ctx.dataService.harvestPlant(plantId, targetGrowspace);
+        }
+        ctx.showToast(`Plant moved to ${targetGrowspace}`, 'success');
+        await ctx.refreshData();
+        ctx.closeDialog();
+        return true;
+    }
+    catch (err) {
+        console.error('Error moving plant:', err);
+        ctx.showToast(`Failed to move plant: ${err.message}`, 'error');
+        return false;
+    }
+}
+/**
+ * Take clones from a mother plant.
+ */
+async function takeClone(ctx, motherPlant, numClones) {
+    const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
+    try {
+        await ctx.dataService.takeClone({
+            mother_plant_id: plantId,
+            num_clones: numClones,
+        });
+        console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
+        return true;
+    }
+    catch (error) {
+        console.error(`Failed to take clone: ${error.message}`);
+        return false;
+    }
+}
+/**
+ * Move plant to new grid position.
+ */
+async function movePlantPosition(ctx, plant, newRow, newCol) {
+    try {
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        await ctx.dataService.updatePlant({
+            plant_id: plantId,
+            row: newRow,
+            col: newCol,
+        });
+        return true;
+    }
+    catch (err) {
+        console.error('Error moving plant:', err);
+        return false;
+    }
+}
+/**
+ * Handle drag and drop between grid cells.
+ */
+async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant) {
+    if (!sourcePlant)
+        return false;
+    try {
+        if (targetPlant) {
+            const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
+            const targetId = targetPlant.attributes.plant_id || targetPlant.entity_id.replace('sensor.', '');
+            if (sourceId === targetId)
+                return false;
+            await ctx.dataService.swapPlants(sourceId, targetId);
+        }
+        else {
+            await movePlantPosition(ctx, sourcePlant, targetRow, targetCol);
+        }
+        return true;
+    }
+    catch (err) {
+        console.error('Error during drag-and-drop:', err);
+        return false;
+    }
+}
+/**
+ * Add a new plant to a growspace.
+ */
+async function addPlant(ctx, growspaceId, row, col, strain, phenotype) {
+    try {
+        await ctx.dataService.addPlant({
+            growspace_id: growspaceId,
+            row,
+            col,
+            strain,
+            phenotype: phenotype || undefined,
+        });
+        ctx.closeDialog();
+        ctx.showToast('Plant added successfully', 'success');
+        return true;
+    }
+    catch (e) {
+        console.error('Failed to add plant:', e);
+        ctx.showToast(`Failed to add plant: ${e.message}`, 'error');
+        return false;
+    }
+}
+
+/**
+ * Strain & Growspace Actions - Pure functions for strain library and growspace management.
+ */
+/**
+ * Add a new strain to the library.
+ */
+async function addStrain(ctx, strainData) {
+    if (!strainData.strain)
+        return false;
+    const payload = {
+        strain: strainData.strain,
+        phenotype: strainData.phenotype,
+        breeder: strainData.breeder,
+        type: strainData.type,
+        flowering_days_min: strainData.flowering_days_min
+            ? Number(strainData.flowering_days_min)
+            : undefined,
+        flowering_days_max: strainData.flowering_days_max
+            ? Number(strainData.flowering_days_max)
+            : undefined,
+        lineage: strainData.lineage,
+        sex: strainData.sex,
+        description: strainData.description,
+        image: strainData.image,
+        image_crop_meta: strainData.image_crop_meta,
+        sativa_percentage: strainData.sativa_percentage,
+        indica_percentage: strainData.indica_percentage,
+    };
+    try {
+        await ctx.dataService.addStrain(payload);
+        ctx.showToast('Strain saved successfully!', 'success');
+        await ctx.refreshStrainLibrary(true);
+        return true;
+    }
+    catch (err) {
+        console.error('Error adding strain:', err);
+        return false;
+    }
+}
+/**
+ * Remove a strain from the library.
+ */
+async function removeStrain(ctx, strainKey) {
+    try {
+        const parts = strainKey.split('|');
+        const strain = parts[0];
+        const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
+        await ctx.dataService.removeStrain(strain, phenotype);
+        const current = ctx.getStrainLibrary();
+        ctx.setStrainLibrary(current.filter((s) => s.key !== strainKey));
+        await ctx.refreshStrainLibrary(true);
+        return true;
+    }
+    catch (err) {
+        console.error('Error removing strain:', err);
+        return false;
+    }
+}
+/**
+ * Add a new growspace.
+ */
+async function addGrowspace(ctx, name, rows = 4, plantsPerRow = 4, notificationService = 'mobile_app_notify') {
+    if (!name) {
+        ctx.showToast('Name is required', 'error');
+        return false;
+    }
+    try {
+        await ctx.dataService.addGrowspace({
+            name,
+            rows,
+            plants_per_row: plantsPerRow,
+            notification_service: notificationService,
+        });
+        ctx.showToast('Growspace added successfully!', 'success');
+        await ctx.refreshData();
+        ctx.closeDialog();
+        return true;
+    }
+    catch (e) {
+        ctx.showToast(`Error: ${e.message}`, 'error');
+        return false;
+    }
+}
+/**
+ * Update an existing growspace.
+ */
+async function updateGrowspace(ctx, growspaceId, name, rows, plantsPerRow) {
+    try {
+        await ctx.dataService.updateGrowspace({
+            growspace_id: growspaceId,
+            name,
+            rows,
+            plants_per_row: plantsPerRow,
+        });
+        ctx.showToast('Growspace updated successfully', 'success');
+        await ctx.refreshData();
+        ctx.closeDialog();
+        return true;
+    }
+    catch (e) {
+        console.error('[StrainActions] Update failed:', e);
+        ctx.showToast(`Failed to update growspace: ${e.message}`, 'error');
+        return false;
+    }
+}
+
+/**
+ * Keyboard Actions - Pure functions for keyboard navigation.
+ * Encapsulates keyboard shortcuts and navigation logic without coupling to store lifecycle.
+ */
+/**
+ * Get the currently visible plants for the selected device.
+ * Excludes plants that are marked for optimistic deletion.
+ */
+function getVisiblePlants() {
+    const selectedDevice = $selectedDevice.get();
+    if (!selectedDevice)
+        return [];
+    const devices = $devices.get();
+    const device = devices.find((d) => d.device_id === selectedDevice);
+    if (!device)
+        return [];
+    return device.plants.filter((p) => !$optimisticDeletedPlantIds.get().has(p.attributes.plant_id || ''));
+}
+/**
+ * Handle keyboard navigation for the growspace grid.
+ * Supports arrow key navigation, enter/space for selection, and delete/backspace for removal.
+ */
+function handleKeyboardNavigation(ctx, key) {
+    // Escape exits edit mode
+    if ($isEditMode.get() && key === 'Escape') {
+        ctx.exitEditMode();
+        return;
+    }
+    const plants = getVisiblePlants();
+    if (plants.length === 0)
+        return;
+    const currentIndex = $focusedPlantIndex.get();
+    switch (key) {
+        case 'ArrowRight':
+            setFocusedPlantIndex((currentIndex + 1) % plants.length);
+            break;
+        case 'ArrowLeft':
+            setFocusedPlantIndex((currentIndex - 1 + plants.length) % plants.length);
+            break;
+        case 'Enter':
+        case ' ':
+            if (currentIndex >= 0 && currentIndex < plants.length) {
+                ctx.handlePlantClick(plants[currentIndex]);
+            }
+            break;
+        case 'Delete':
+        case 'Backspace':
+            if (currentIndex >= 0 && currentIndex < plants.length) {
+                const focusedPlant = plants[currentIndex];
+                if (focusedPlant) {
+                    ctx.handleDeletePlant(focusedPlant.entity_id);
+                }
+            }
+            else if ($selectedPlants.get().size > 0) {
+                // If multiple plants are selected, delete them
+                ctx.handleDeletePlant(Array.from($selectedPlants.get()));
+            }
+            break;
+    }
+}
+
 class GrowspaceStore {
+    /** Context object for plant action functions */
+    get _plantActionContext() {
+        return {
+            dataService: this.dataService,
+            showToast: (msg, type) => this.showToast(msg, type),
+            closeDialog: () => closeDialog(),
+            refreshData: () => this.refreshData(),
+        };
+    }
+    /** Context object for strain action functions */
+    get _strainActionContext() {
+        return {
+            dataService: this.dataService,
+            showToast: (msg, type) => this.showToast(msg, type),
+            closeDialog: () => closeDialog(),
+            refreshData: () => this.refreshData(),
+            refreshStrainLibrary: (force) => this.fetchStrainLibrary(force),
+            setStrainLibrary: (lib) => $strainLibrary.set(lib),
+            getStrainLibrary: () => $strainLibrary.get(),
+        };
+    }
+    /** Context object for growspace action functions */
+    get _growspaceActionContext() {
+        return {
+            dataService: this.dataService,
+            showToast: (msg, type) => this.showToast(msg, type),
+            closeDialog: () => closeDialog(),
+            refreshData: () => this.refreshData(),
+        };
+    }
+    /** Context object for keyboard action functions */
+    get _keyboardActionContext() {
+        return {
+            exitEditMode: () => this.exitEditMode(),
+            handlePlantClick: (plant) => this.handlePlantClick(plant),
+            handleDeletePlant: (plantId) => this.handleDeletePlant(plantId),
+        };
+    }
     constructor(host) {
         Object.defineProperty(this, "host", {
             enumerable: true,
@@ -28745,18 +29182,7 @@ class GrowspaceStore {
             configurable: true,
             writable: true,
             value: (motherPlant, numClones) => {
-                const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
-                return this.dataService
-                    .takeClone({
-                    mother_plant_id: plantId,
-                    num_clones: numClones,
-                })
-                    .then(() => {
-                    console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
-                })
-                    .catch((error) => {
-                    console.error(`Failed to take clone: ${error.message}`);
-                });
+                return takeClone(this._plantActionContext, motherPlant, numClones);
             }
         });
         this.host = host;
@@ -28997,43 +29423,7 @@ class GrowspaceStore {
         }
     }
     handleKeyboardNavigation(key) {
-        if ($isEditMode.get() && key === 'Escape') {
-            this.exitEditMode();
-            return;
-        }
-        const selectedDevice = $selectedDevice.get();
-        if (!selectedDevice)
-            return;
-        const devices = $devices.get();
-        const device = devices.find((d) => d.device_id === selectedDevice);
-        if (!device)
-            return;
-        const plants = device.plants.filter((p) => !$optimisticDeletedPlantIds.get().has(p.attributes.plant_id || ''));
-        if (plants.length === 0)
-            return;
-        if (key === 'ArrowRight') {
-            setFocusedPlantIndex(($focusedPlantIndex.get() + 1) % plants.length);
-        }
-        else if (key === 'ArrowLeft') {
-            setFocusedPlantIndex(($focusedPlantIndex.get() - 1 + plants.length) % plants.length);
-        }
-        else if (key === 'Enter' || key === ' ') {
-            if ($focusedPlantIndex.get() >= 0 && $focusedPlantIndex.get() < plants.length) {
-                this.handlePlantClick(plants[$focusedPlantIndex.get()]);
-            }
-        }
-        else if (key === 'Delete' || key === 'Backspace') {
-            if ($focusedPlantIndex.get() >= 0 && $focusedPlantIndex.get() < plants.length) {
-                const focusedPlant = plants[$focusedPlantIndex.get()];
-                if (focusedPlant) {
-                    this.handleDeletePlant(focusedPlant.entity_id);
-                }
-            }
-            else if ($selectedPlants.get().size > 0) {
-                // If multiple plants are selected, delete them
-                this.handleDeletePlant(Array.from($selectedPlants.get()));
-            }
-        }
+        handleKeyboardNavigation(this._keyboardActionContext, key);
     }
     handleDeviceChange(deviceId) {
         setSelectedDevice(deviceId);
@@ -29119,33 +29509,17 @@ class GrowspaceStore {
         }
     }
     async updatePlant(plantId, updates) {
-        try {
-            await this.dataService.updatePlant({ plant_id: plantId, ...updates });
-            this.showToast('Plant updated', 'success');
-        }
-        catch (e) {
-            console.error('Failed to update plant:', e);
-            this.showToast(`Failed to update plant: ${e.message}`, 'error');
-        }
+        await updatePlant(this._plantActionContext, plantId, updates);
     }
     async handleDeletePlant(plantId) {
         const ids = Array.isArray(plantId) ? plantId : [plantId];
-        ids.forEach(id => addOptimisticDeletedPlantId(id));
-        try {
-            await Promise.all(ids.map((id) => this.dataService.removePlant(id)));
-            this.showToast('Plant(s) deleted', 'success');
-            ids.forEach((id) => {
-                togglePlantSelection(id);
-            });
+        const success = await deletePlants(this._plantActionContext, ids, (id) => addOptimisticDeletedPlantId(id), (id) => removeOptimisticDeletedPlantId(id));
+        if (success) {
+            ids.forEach((id) => togglePlantSelection(id));
             if ($activeDialog.get().type === 'PLANT_OVERVIEW') {
                 closeDialog();
             }
             this.updateGrid();
-        }
-        catch (e) {
-            console.error('Failed to delete plant:', e);
-            this.showToast(`Failed to delete: ${e.message}`, 'error');
-            ids.forEach(id => removeOptimisticDeletedPlantId(id));
         }
     }
     pruneOptimisticDeletions() {
@@ -29166,98 +29540,16 @@ class GrowspaceStore {
         }
     }
     async handleMovePlantToNextStage(plant) {
-        const stage = plant.attributes?.stage;
-        let targetGrowspace = '';
-        const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
-        if (!stage || !movableStages.has(stage)) {
-            this.showToast('Plant must be in mother or flower or dry or cure stage to move. stage is ' + stage, 'error');
-            return;
-        }
-        if (stage === 'flower') {
-            targetGrowspace = 'dry';
-        }
-        else if (stage === 'dry') {
-            targetGrowspace = 'cure';
-        }
-        else if (stage === 'mother') {
-            targetGrowspace = 'clone';
-        }
-        else {
-            console.error('Unknown stage, cannot move plant', targetGrowspace);
-            targetGrowspace = 'error';
-        }
-        try {
-            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-            await this.dataService.harvestPlant(plantId, targetGrowspace);
-            closeDialog();
-        }
-        catch (err) {
-            console.error('Error moving plant to next stage:', err);
-        }
+        await movePlantToNextStage(this._plantActionContext, plant);
     }
     async movePlantToGrowspace(plant, targetGrowspace) {
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        const currentStage = plant.attributes?.stage || 'unknown';
-        try {
-            if (currentStage === 'clone') {
-                await this.dataService.moveClone(plantId, targetGrowspace);
-            }
-            else {
-                await this.dataService.harvestPlant(plantId, targetGrowspace);
-            }
-            this.showToast(`Plant moved to ${targetGrowspace}`, 'success');
-            await this.refreshData();
-            closeDialog();
-        }
-        catch (err) {
-            console.error('Error moving plant:', err);
-            this.showToast(`Failed to move plant: ${err.message}`, 'error');
-        }
+        await movePlantToGrowspace(this._plantActionContext, plant, targetGrowspace);
     }
     async addStrain(strainData) {
-        if (!strainData.strain)
-            return;
-        const payload = {
-            strain: strainData.strain,
-            phenotype: strainData.phenotype,
-            breeder: strainData.breeder,
-            type: strainData.type,
-            flowering_days_min: strainData.flowering_days_min
-                ? Number(strainData.flowering_days_min)
-                : undefined,
-            flowering_days_max: strainData.flowering_days_max
-                ? Number(strainData.flowering_days_max)
-                : undefined,
-            lineage: strainData.lineage,
-            sex: strainData.sex,
-            description: strainData.description,
-            image: strainData.image,
-            image_crop_meta: strainData.image_crop_meta,
-            sativa_percentage: strainData.sativa_percentage,
-            indica_percentage: strainData.indica_percentage,
-        };
-        try {
-            await this.dataService.addStrain(payload);
-            this.showToast('Strain saved successfully!', 'success');
-            await this.fetchStrainLibrary(true);
-        }
-        catch (err) {
-            console.error('Error adding strain:', err);
-        }
+        await addStrain(this._strainActionContext, strainData);
     }
     async removeStrain(strainKey) {
-        try {
-            const parts = strainKey.split('|');
-            const strain = parts[0];
-            const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
-            await this.dataService.removeStrain(strain, phenotype);
-            const current = $strainLibrary.get();
-            setStrainLibrary(current.filter((s) => s.key !== strainKey));
-            await this.fetchStrainLibrary(true);
-        }
-        catch (err) {
-            console.error('Error removing strain:', err);
-        }
+        await removeStrain(this._strainActionContext, strainKey);
     }
     async confirmAddPlant(detail) {
         const selectedDevice = $selectedDevice.get();
@@ -29265,21 +29557,7 @@ class GrowspaceStore {
             this.showToast('No growspace selected', 'error');
             return;
         }
-        try {
-            await this.dataService.addPlant({
-                growspace_id: selectedDevice,
-                row: detail.row,
-                col: detail.col,
-                strain: detail.strain,
-                phenotype: detail.phenotype || undefined,
-            });
-            closeDialog();
-            this.showToast('Plant added successfully', 'success');
-        }
-        catch (e) {
-            console.error('Failed to add plant:', e);
-            this.showToast(`Failed to add plant: ${e.message}`, 'error');
-        }
+        await addPlant(this._plantActionContext, selectedDevice, detail.row, detail.col, detail.strain, detail.phenotype);
     }
     async analyzeGrowspace(query, all) {
         const currentDialog = $activeDialog.get();
@@ -29332,74 +29610,22 @@ class GrowspaceStore {
         const selectedDevice = $selectedDevice.get();
         if (!sourcePlant || !selectedDevice)
             return;
-        try {
-            if (targetPlant) {
-                const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
-                const targetId = targetPlant.attributes.plant_id || targetPlant.entity_id.replace('sensor.', '');
-                if (sourceId === targetId)
-                    return;
-                await this.dataService.swapPlants(sourceId, targetId);
-                this.updateGrid();
-            }
-            else {
-                await this.movePlant(sourcePlant, targetRow, targetCol);
-            }
-        }
-        catch (err) {
-            console.error('Error during drag-and-drop:', err);
+        const success = await handlePlantDrop(this._plantActionContext, targetRow, targetCol, targetPlant, sourcePlant);
+        if (success) {
+            this.updateGrid();
         }
     }
     async movePlant(plant, newRow, newCol) {
-        try {
-            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-            await this.dataService.updatePlant({
-                plant_id: plantId,
-                row: newRow,
-                col: newCol,
-            });
+        const success = await movePlantPosition(this._plantActionContext, plant, newRow, newCol);
+        if (success) {
             this.updateGrid();
-        }
-        catch (err) {
-            console.error('Error moving plant:', err);
         }
     }
     async handleAddGrowspace(detail) {
-        const { name, rows, plants_per_row, notification_service } = detail;
-        if (!name) {
-            this.showToast('Name is required', 'error');
-            return;
-        }
-        try {
-            await this.dataService.addGrowspace({
-                name,
-                rows: rows || 4,
-                plants_per_row: plants_per_row || 4,
-                notification_service: notification_service || 'mobile_app_notify',
-            });
-            this.showToast('Growspace added successfully!', 'success');
-            await this.refreshData();
-            closeDialog();
-        }
-        catch (e) {
-            this.showToast(`Error: ${e.message}`, 'error');
-        }
+        await addGrowspace(this._growspaceActionContext, detail.name, detail.rows, detail.plants_per_row, detail.notification_service);
     }
     async handleUpdateGrowspace(detail) {
-        try {
-            await this.dataService.updateGrowspace({
-                growspace_id: detail.growspace_id,
-                name: detail.name,
-                rows: detail.rows,
-                plants_per_row: detail.plants_per_row,
-            });
-            this.showToast('Growspace updated successfully', 'success');
-            await this.refreshData();
-            closeDialog();
-        }
-        catch (e) {
-            console.error('[GrowspaceStore] Update failed:', e);
-            this.showToast(`Failed to update growspace: ${e.message}`, 'error');
-        }
+        await updateGrowspace(this._growspaceActionContext, detail.growspace_id, detail.name, detail.rows, detail.plants_per_row);
     }
     async harvestPlant(plant) {
         await this.handleMovePlantToNextStage(plant);

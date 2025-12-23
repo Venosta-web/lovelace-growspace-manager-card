@@ -3,6 +3,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { DataService } from '../data-service';
 import { GrowspaceDevice, HistorySensorState } from '../types';
 import { METRIC_ENTITY_KEYS } from '../constants';
+import * as historyStore from '../store/history-store';
 
 // Interface for the host to ensure it has the required properties
 export interface GrowspaceCardHost extends ReactiveControllerHost {
@@ -16,44 +17,30 @@ export class GrowspaceHistoryController implements ReactiveController {
   host: GrowspaceCardHost;
 
   /**
-   * Unified history cache keyed by metric name.
-   * Replaces individual properties like temperatureHistory, humidityHistory, etc.
-   * Access via: this.historyCache['temperature'], this.historyCache['vpd'], etc.
+   * History cache is now managed by historyStore.
+   * This getter provides backward-compatible access.
    */
-  public historyCache: Record<string, HistorySensorState[]> = {};
+  public get historyCache(): Record<string, HistorySensorState[]> {
+    return historyStore.$historyCache.get();
+  }
 
   /**
-   * Tracks the last timestamp for each metric to enable delta loading.
-   * Key: metric name, Value: ISO timestamp of the last data point
+   * Timestamps are now managed by historyStore.
+   * This getter provides backward-compatible access.
    */
-  private _lastTimestamps: Record<string, string> = {};
-
-  private _cachedCombinedHistory: import('../types').SensorHistories | null = null;
+  private get _lastTimestamps(): Record<string, string> {
+    return historyStore.$lastTimestamps.get();
+  }
 
   /**
    * Lazy loading flags
    */
-  public isHistoryLoaded = false;
-  public isHistoryLoading = false;
-
-  /** @deprecated Use historyCache['main'] instead */
-  public get historyData(): HistorySensorState[] | null {
-    return this.historyCache.main || null;
+  public get isHistoryLoaded(): boolean {
+    return historyStore.$historyLoaded.get();
   }
 
-  public set historyData(value: HistorySensorState[] | null) {
-    this.historyCache.main = value || [];
-    this._cachedCombinedHistory = null;
-  }
-
-  /** @deprecated Use historyCache['optimal'] instead */
-  public get optimalHistory(): HistorySensorState[] | null {
-    return this.historyCache.optimal || null;
-  }
-
-  public set optimalHistory(value: HistorySensorState[] | null) {
-    this.historyCache.optimal = value || [];
-    this._cachedCombinedHistory = null;
+  public get isHistoryLoading(): boolean {
+    return historyStore.$historyLoading.get();
   }
 
   // Backward compatibility getters for existing code that reads these properties
@@ -118,31 +105,22 @@ export class GrowspaceHistoryController implements ReactiveController {
 
   /** Returns all sensor histories as a combined object for analytics component */
   public get combinedHistory(): import('../types').SensorHistories {
-    if (!this._cachedCombinedHistory) {
-      this._cachedCombinedHistory = {
-        temperature: this.historyCache.temperature || [],
-        humidity: this.historyCache.humidity || [],
-        vpd: this.historyCache.vpd || [],
-        co2: this.historyCache.co2 || [],
-        dehumidifier: this.historyCache.dehumidifier || [],
-        exhaust: this.historyCache.exhaust || [],
-        humidifier: this.historyCache.humidifier || [],
-        circulation_fan: this.historyCache.circulation_fan || [],
-        soil_moisture: this.historyCache.soil_moisture || [],
-        light: this.historyCache.light || [],
-        irrigation: this.historyCache.irrigation || [],
-        drain: this.historyCache.drain || [],
-        optimal: this.historyCache.optimal || [],
-      };
-    }
-    return this._cachedCombinedHistory;
+    return historyStore.$combinedHistory.get();
   }
 
-  public activeEnvGraphs: Set<string> = new Set();
-  public linkedGraphGroups: string[][] = [];
-  public graphRanges: Record<string, '1h' | '6h' | '24h' | '7d'> = {};
+  public get activeEnvGraphs(): Set<string> {
+    return historyStore.$activeEnvGraphs.get();
+  }
 
-  private _listeners: (() => void)[] = [];
+  public get linkedGraphGroups(): string[][] {
+    return historyStore.$linkedGraphGroups.get();
+  }
+
+  public get graphRanges(): Record<string, '1h' | '6h' | '24h' | '7d'> {
+    return historyStore.$graphRanges.get();
+  }
+
+
 
   // Storage constants
   private readonly STORAGE_KEY_PREFIX = 'growspace_history_';
@@ -152,18 +130,7 @@ export class GrowspaceHistoryController implements ReactiveController {
     (this.host = host).addController(this);
   }
 
-  public addListener(callback: () => void) {
-    this._listeners.push(callback);
-  }
 
-  public removeListener(callback: () => void) {
-    this._listeners = this._listeners.filter(l => l !== callback);
-  }
-
-  private _notifyUpdate() {
-    this.host.requestUpdate();
-    this._listeners.forEach(cb => cb());
-  }
 
   private _refreshInterval: number | null = null;
 
@@ -211,17 +178,17 @@ export class GrowspaceHistoryController implements ReactiveController {
       return;
     }
 
-    this.isHistoryLoading = true;
+    historyStore.setHistoryLoading(true);
     this.host.requestUpdate();
 
     try {
       await this._fetchHistory(this.getRange());
-      this.isHistoryLoaded = true;
+      historyStore.setHistoryLoaded(true);
       console.log('[HistoryController] History loaded successfully');
     } catch (error) {
       console.error('[HistoryController] Failed to load history', error);
     } finally {
-      this.isHistoryLoading = false;
+      historyStore.setHistoryLoading(false);
       this.host.requestUpdate();
     }
   }
@@ -231,12 +198,8 @@ export class GrowspaceHistoryController implements ReactiveController {
   async hostUpdate() {
     if (this.host.selectedDevice !== this._prevSelectedDevice) {
       this._prevSelectedDevice = this.host.selectedDevice;
-      // Reset loading flags for new device
-      this.isHistoryLoaded = false;
-      this.isHistoryLoading = false;
-      // Clear cached data for new device
-      this.historyCache = {};
-      this._cachedCombinedHistory = null;
+      // Reset loading flags and clear cached data for new device
+      historyStore.clearHistoryCache();
 
       // Try to load cached data for the new device
       if (this.host.selectedDevice) {
@@ -244,7 +207,7 @@ export class GrowspaceHistoryController implements ReactiveController {
       }
 
       // Notify listeners that device changed (analytics will trigger lazy load if visible)
-      this._notifyUpdate();
+
     }
   }
 
@@ -273,17 +236,20 @@ export class GrowspaceHistoryController implements ReactiveController {
         return false;
       }
 
-      this.historyCache = data.history;
-      this._lastTimestamps = data.timestamps || {};
-      this._cachedCombinedHistory = null;
+      historyStore.setHistoryBatch(data.history);
+      // Update timestamps via the store
+      const timestamps = data.timestamps || {};
+      Object.keys(timestamps).forEach(metric => {
+        historyStore.$lastTimestamps.setKey(metric, timestamps[metric]);
+      });
 
       // Consider history "loaded" if we have data, but still might want to fetch fresh data
-      if (Object.keys(this.historyCache).length > 0) {
-        this.isHistoryLoaded = true;
+      if (Object.keys(data.history).length > 0) {
+        historyStore.setHistoryLoaded(true);
       }
 
       console.log(`[HistoryController] Loaded ${Object.keys(this.historyCache).length} metrics from storage`);
-      this._notifyUpdate();
+
       return true;
     } catch (e) {
       console.error('[HistoryController] Failed to load from storage', e);
@@ -320,11 +286,8 @@ export class GrowspaceHistoryController implements ReactiveController {
   setGraphRange(range: '1h' | '6h' | '24h' | '7d') {
     if (!this.host.selectedDevice) return;
 
-    this.graphRanges = {
-      ...this.graphRanges,
-      [this.host.selectedDevice]: range,
-    };
-    this._notifyUpdate();
+    historyStore.setGraphRange(this.host.selectedDevice, range);
+
 
     this._fetchHistory(range);
     this.refreshSecondaryHistories(range);
@@ -332,73 +295,39 @@ export class GrowspaceHistoryController implements ReactiveController {
 
   toggleEnvGraph(details: { metric: string; visible: boolean }) {
     const { metric } = details;
-    const newSet = new Set(this.activeEnvGraphs);
-    if (newSet.has(metric)) {
-      newSet.delete(metric);
-    } else {
-      newSet.add(metric);
+    const isNowActive = historyStore.toggleEnvGraph(metric);
+    if (isNowActive) {
       // Fetch history for this metric using generic method
       const range = this.getRange();
       this._fetchMetricHistory(metric, range);
     }
-    this.activeEnvGraphs = newSet;
-    this._notifyUpdate();
+
   }
 
   linkGraphs(metric1: string, metric2: string) {
-    // Check if already linked
-    const existingGroupIndex = this.linkedGraphGroups.findIndex(
-      (group) => group.includes(metric1) || group.includes(metric2)
-    );
-
-    const newGroups = [...this.linkedGraphGroups];
-
-    if (existingGroupIndex >= 0) {
-      // Add unique
-      const group = new Set(newGroups[existingGroupIndex]);
-      group.add(metric1);
-      group.add(metric2);
-      newGroups[existingGroupIndex] = Array.from(group);
-    } else {
-      // Create new group
-      newGroups.push([metric1, metric2]);
-    }
-
-    this.linkedGraphGroups = newGroups;
-
-    // Auto-activate both metrics so the linked graph displays immediately
-    const newActive = new Set(this.activeEnvGraphs);
-    newActive.add(metric1);
-    newActive.add(metric2);
-    this.activeEnvGraphs = newActive;
+    historyStore.linkGraphs(metric1, metric2);
 
     // Fetch data for the linked metrics immediately
     const range = this.getRange();
     this._fetchMetricHistory(metric1, range);
     this._fetchMetricHistory(metric2, range);
 
-    this._notifyUpdate();
+
   }
 
   unlinkGraphGroup(index: number) {
-    if (index >= 0 && index < this.linkedGraphGroups.length) {
-      const newGroups = [...this.linkedGraphGroups];
-      newGroups.splice(index, 1);
-      this.linkedGraphGroups = newGroups;
-      this._notifyUpdate();
-    }
+    historyStore.unlinkGraphGroup(index);
+
   }
 
   clearAllLinks() {
-    this.linkedGraphGroups = [];
-    this._notifyUpdate();
+    historyStore.clearAllLinks();
+
   }
 
   unlinkGraphMetric(metric: string) {
-    this.linkedGraphGroups = this.linkedGraphGroups
-      .map((group) => group.filter((m) => m !== metric))
-      .filter((group) => group.length > 1);
-    this._notifyUpdate();
+    historyStore.unlinkGraphMetric(metric);
+
   }
 
   /**
@@ -412,7 +341,7 @@ export class GrowspaceHistoryController implements ReactiveController {
     const metricsToFetch: string[] = [];
     const entityMap: Record<string, string> = {};
 
-    for (const metricKey of this.activeEnvGraphs) {
+    for (const metricKey of Array.from(this.activeEnvGraphs)) {
       // Skip 'main' and 'optimal' as those are fetched by _fetchHistory
       if (metricKey === 'main' || metricKey === 'optimal') continue;
 
@@ -442,14 +371,13 @@ export class GrowspaceHistoryController implements ReactiveController {
       for (const metricKey of metricsToFetch) {
         const entityId = entityMap[metricKey];
         if (entityId && batchResults[entityId]) {
-          this.historyCache[metricKey] = batchResults[entityId];
+          historyStore.setHistoryData(metricKey, batchResults[entityId]);
           console.log(
             `[HistoryController] ${metricKey} history fetched via batch, length: ${batchResults[entityId].length}`
           );
         }
       }
 
-      this._cachedCombinedHistory = null;
       this._saveToStorage();
       this.host.requestUpdate();
     } catch (e) {
@@ -535,7 +463,6 @@ export class GrowspaceHistoryController implements ReactiveController {
         }
       }
 
-      this._cachedCombinedHistory = null;
       this._saveToStorage();
       this.host.requestUpdate();
     } catch (e) {
@@ -550,8 +477,8 @@ export class GrowspaceHistoryController implements ReactiveController {
   private _mergeDeltaData(metric: string, deltaData: HistorySensorState[]) {
     const existing = this.historyCache[metric] || [];
     if (existing.length === 0) {
-      this.historyCache[metric] = deltaData;
-      this._updateLastTimestamp(metric, deltaData);
+      historyStore.setHistoryData(metric, deltaData);
+      historyStore.updateLastTimestamp(metric, deltaData);
       return;
     }
 
@@ -566,8 +493,8 @@ export class GrowspaceHistoryController implements ReactiveController {
     });
 
     if (newData.length > 0) {
-      this.historyCache[metric] = [...existing, ...newData];
-      this._updateLastTimestamp(metric, newData);
+      historyStore.setHistoryData(metric, [...existing, ...newData]);
+      historyStore.updateLastTimestamp(metric, newData);
       console.log(`[HistoryController] Merged ${newData.length} new points for ${metric}`);
     }
   }
@@ -576,9 +503,7 @@ export class GrowspaceHistoryController implements ReactiveController {
    * Updates the last known timestamp for a metric.
    */
   private _updateLastTimestamp(metric: string, data: HistorySensorState[]) {
-    if (data.length === 0) return;
-    const lastPoint = data[data.length - 1];
-    this._lastTimestamps[metric] = (lastPoint as any).last_updated || (lastPoint as any).last_changed;
+    historyStore.updateLastTimestamp(metric, data);
   }
 
   private async _fetchHistory(range: '1h' | '6h' | '24h' | '7d' = '24h') {
@@ -639,7 +564,7 @@ export class GrowspaceHistoryController implements ReactiveController {
       // Main
       if (device.overview_entity_id && batchResults[device.overview_entity_id]) {
         const data = batchResults[device.overview_entity_id];
-        this.historyCache.main = data;
+        historyStore.setHistoryData('main', data);
         this._updateLastTimestamp('main', data);
       }
 
@@ -648,7 +573,7 @@ export class GrowspaceHistoryController implements ReactiveController {
         const entityId = entityMap[metric];
         if (entityId) {
           const result = batchResults[entityId] || [];
-          this.historyCache[metric] = result;
+          historyStore.setHistoryData(metric, result);
           this._updateLastTimestamp(metric, result);
           if (result.length > 0) {
             console.log(
@@ -658,7 +583,6 @@ export class GrowspaceHistoryController implements ReactiveController {
         }
       }
 
-      this._cachedCombinedHistory = null;
       this._saveToStorage();
       this.host.requestUpdate();
 
@@ -697,8 +621,7 @@ export class GrowspaceHistoryController implements ReactiveController {
       console.log(
         `[HistoryController] ${metricKey} history fetched from ${entityId}, length: ${history.length}`
       );
-      this.historyCache[metricKey] = history;
-      this._cachedCombinedHistory = null;
+      historyStore.setHistoryData(metricKey, history);
       this._saveToStorage();
     } catch (e) {
       console.error(`Failed to fetch ${metricKey} history`, e);
@@ -771,31 +694,6 @@ export class GrowspaceHistoryController implements ReactiveController {
     return entityId || null;
   }
 
-  // Legacy method kept for compatibility - prefer getEntityIdForMetric instead
-  private getRelatedEntityId(attribute: string) {
-    if (!this.host.hass || !this.host.selectedDevice) return { device: null, entityId: null };
-    const devices = this.host.devices;
-    const device = devices.find((d) => d.device_id === this.host.selectedDevice);
-    if (!device) return { device: null, entityId: null };
-
-    let entityId =
-      device.environment_attributes?.[attribute as keyof typeof device.environment_attributes];
-    if (entityId) return { device, entityId };
-
-    // Fallback logic
-    if (attribute.endsWith('_entity')) {
-      const sensorAttr = attribute.replace('_entity', '_sensor');
-      entityId =
-        device.environment_attributes?.[sensorAttr as keyof typeof device.environment_attributes];
-    } else if (attribute.endsWith('_sensor')) {
-      const entityAttr = attribute.replace('_sensor', '_entity');
-      entityId =
-        device.environment_attributes?.[entityAttr as keyof typeof device.environment_attributes];
-    }
-
-    return { device, entityId };
-  }
-
   /**
    * Helper to calculate interval minutes based on time range for downsampling.
    */
@@ -832,3 +730,4 @@ export class GrowspaceHistoryController implements ReactiveController {
     return { start: startTime, end: now };
   }
 }
+

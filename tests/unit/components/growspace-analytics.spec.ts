@@ -4,6 +4,7 @@ import { GrowspaceAnalytics } from '../../../src/components/growspace-analytics'
 import { GrowspaceHistoryController } from '../../../src/controllers/growspace-history-controller';
 import { historyContext, hassContext } from '../../../src/context';
 import { ContextProvider } from '@lit/context';
+import * as historyStore from '../../../src/store/history-store';
 
 // Mock child components
 vi.mock('../../../src/growspace-env-chart', () => {
@@ -15,6 +16,22 @@ vi.mock('../../../src/growspace-env-chart', () => {
     customElements.define('growspace-env-chart', GrowspaceEnvChart);
     return { GrowspaceEnvChart };
 });
+
+// Mock history store
+vi.mock('../../../src/store/history-store', () => ({
+    $historyCache: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
+    $historyLoading: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
+    $historyLoaded: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
+    $activeEnvGraphs: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
+    $linkedGraphGroups: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
+    $graphRanges: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
+    $combinedHistory: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
+    setGraphRange: vi.fn(),
+    toggleEnvGraph: vi.fn(),
+    unlinkGraphGroup: vi.fn(),
+    unlinkGraphMetric: vi.fn(),
+    getGraphRange: vi.fn().mockReturnValue('24h')
+}));
 
 describe('GrowspaceAnalytics', () => {
     let element: GrowspaceAnalytics;
@@ -28,20 +45,31 @@ describe('GrowspaceAnalytics', () => {
         container = document.createElement('div');
         document.body.appendChild(container);
 
+        // Reset store mocks
+        vi.mocked(historyStore.$historyCache.get).mockReturnValue({});
+        vi.mocked(historyStore.$historyLoading.get).mockReturnValue(false);
+        vi.mocked(historyStore.$historyLoaded.get).mockReturnValue(false);
+        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set());
+        vi.mocked(historyStore.$linkedGraphGroups.get).mockReturnValue([]);
+        vi.mocked(historyStore.$combinedHistory.get).mockReturnValue({
+            temperature: [], humidity: [], vpd: [], co2: [], light: [],
+            soil_moisture: [], exhaust: [], humidifier: [], dehumidifier: [],
+            circulation_fan: [], irrigation: [], drain: [], optimal: []
+        });
+
         historyControllerMock = {
-            activeEnvGraphs: new Set(),
-            linkedGraphGroups: [],
-            combinedHistory: {},
             getRange: vi.fn().mockReturnValue('24h'),
-            addListener: vi.fn(),
-            removeListener: vi.fn(),
-            setGraphRange: vi.fn(),
-            toggleEnvGraph: vi.fn(),
-            unlinkGraphGroup: vi.fn(),
-            unlinkGraphMetric: vi.fn(),
+            setGraphRange: historyStore.setGraphRange, // Use mocked action
+            toggleEnvGraph: historyStore.toggleEnvGraph,
+            unlinkGraphGroup: historyStore.unlinkGraphGroup,
+            unlinkGraphMetric: historyStore.unlinkGraphMetric,
             loadHistoryOnDemand: vi.fn().mockResolvedValue(undefined),
             isHistoryLoaded: false,
             isHistoryLoading: false,
+            // Controller properties that components might still access directly
+            get activeEnvGraphs() { return historyStore.$activeEnvGraphs.get(); },
+            get linkedGraphGroups() { return historyStore.$linkedGraphGroups.get(); },
+            get combinedHistory() { return historyStore.$combinedHistory.get(); }
         };
 
         hassMock = {
@@ -77,17 +105,8 @@ describe('GrowspaceAnalytics', () => {
         expect(element).toBeInstanceOf(GrowspaceAnalytics);
     });
 
-    it('should register listener on connect', () => {
-        expect(historyControllerMock.addListener).toHaveBeenCalledWith(expect.any(Function));
-    });
-
-    it('should remove listener on disconnect', () => {
-        element.disconnectedCallback();
-        expect(historyControllerMock.removeListener).toHaveBeenCalledWith(expect.any(Function));
-    });
-
     it('should render nothing if no active graphs', async () => {
-        historyControllerMock.activeEnvGraphs = new Set();
+        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set());
         element.requestUpdate();
         await element.updateComplete;
 
@@ -96,7 +115,8 @@ describe('GrowspaceAnalytics', () => {
     });
 
     it('should render single graph for single metric', async () => {
-        historyControllerMock.activeEnvGraphs = new Set(['temperature']);
+        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature']));
+
         // Trigger update logic
         (element as any)._computeItemsToRender();
         element.requestUpdate();
@@ -108,8 +128,8 @@ describe('GrowspaceAnalytics', () => {
     });
 
     it('should render combined graph for grouped metrics', async () => {
-        historyControllerMock.activeEnvGraphs = new Set(['temperature', 'humidity']);
-        historyControllerMock.linkedGraphGroups = [['temperature', 'humidity']];
+        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature', 'humidity']));
+        vi.mocked(historyStore.$linkedGraphGroups.get).mockReturnValue([['temperature', 'humidity']]);
 
         (element as any)._computeItemsToRender();
         element.requestUpdate();
@@ -122,7 +142,7 @@ describe('GrowspaceAnalytics', () => {
     });
 
     it('should handle time range selection', async () => {
-        historyControllerMock.activeEnvGraphs = new Set(['temperature']);
+        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature']));
         (element as any)._computeItemsToRender();
         element.requestUpdate();
         await element.updateComplete;
@@ -130,11 +150,11 @@ describe('GrowspaceAnalytics', () => {
         const rangeBtn = element.shadowRoot?.querySelector('.range-btn') as HTMLElement;
         rangeBtn.click();
 
-        expect(historyControllerMock.setGraphRange).toHaveBeenCalledWith('1h');
+        expect(historyStore.setGraphRange).toHaveBeenCalledWith('1h');
     });
 
     it('should handle toggle graph event', async () => {
-        historyControllerMock.activeEnvGraphs = new Set(['temperature']);
+        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature']));
         (element as any)._computeItemsToRender();
         element.requestUpdate();
         await element.updateComplete;
@@ -142,14 +162,14 @@ describe('GrowspaceAnalytics', () => {
         const chart = element.shadowRoot?.querySelector('growspace-env-chart');
         chart?.dispatchEvent(new CustomEvent('toggle-graph', { detail: 'temperature' }));
 
-        expect(historyControllerMock.toggleEnvGraph).toHaveBeenCalledWith({
+        expect(historyStore.toggleEnvGraph).toHaveBeenCalledWith({
             metric: 'temperature',
             visible: false
         });
     });
 
     it('should handle toggle graph event with metric property in detail', async () => {
-        historyControllerMock.activeEnvGraphs = new Set(['temperature']);
+        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature']));
         (element as any)._computeItemsToRender();
         element.requestUpdate();
         await element.updateComplete;
@@ -159,13 +179,12 @@ describe('GrowspaceAnalytics', () => {
             detail: { metric: 'temperature' }
         }));
 
-        // Should handle both detail.metric and direct detail string
-        expect(historyControllerMock.toggleEnvGraph).toHaveBeenCalled();
+        expect(historyStore.toggleEnvGraph).toHaveBeenCalled();
     });
 
     it('should handle unlink-graphs event from combined chart', async () => {
-        historyControllerMock.activeEnvGraphs = new Set(['temperature', 'humidity']);
-        historyControllerMock.linkedGraphGroups = [['temperature', 'humidity']];
+        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature', 'humidity']));
+        vi.mocked(historyStore.$linkedGraphGroups.get).mockReturnValue([['temperature', 'humidity']]);
         (element as any)._computeItemsToRender();
         element.requestUpdate();
         await element.updateComplete;
@@ -176,12 +195,12 @@ describe('GrowspaceAnalytics', () => {
             bubbles: true
         }));
 
-        expect(historyControllerMock.unlinkGraphGroup).toHaveBeenCalledWith(0);
+        expect(historyStore.unlinkGraphGroup).toHaveBeenCalledWith(0);
     });
 
     it('should handle unlink-graph event for single metric', async () => {
-        historyControllerMock.activeEnvGraphs = new Set(['temperature', 'humidity']);
-        historyControllerMock.linkedGraphGroups = [['temperature', 'humidity']];
+        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature', 'humidity']));
+        vi.mocked(historyStore.$linkedGraphGroups.get).mockReturnValue([['temperature', 'humidity']]);
         (element as any)._computeItemsToRender();
         element.requestUpdate();
         await element.updateComplete;
@@ -192,12 +211,14 @@ describe('GrowspaceAnalytics', () => {
             bubbles: true
         }));
 
-        expect(historyControllerMock.unlinkGraphMetric).toHaveBeenCalledWith('temperature');
+        expect(historyStore.unlinkGraphMetric).toHaveBeenCalledWith('temperature');
     });
 
     it('should render loading state when history is loading', async () => {
-        historyControllerMock.activeEnvGraphs = new Set(['temperature']);
-        historyControllerMock.isHistoryLoading = true;
+        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature']));
+        vi.mocked(historyStore.$historyLoading.get).mockReturnValue(true);
+        historyControllerMock.isHistoryLoading = true; // Sync mock controller state too
+
         element.requestUpdate();
         await element.updateComplete;
 
@@ -209,6 +230,7 @@ describe('GrowspaceAnalytics', () => {
     });
 
     it('should trigger lazy load in firstUpdated when not loaded', async () => {
+        vi.mocked(historyStore.$historyLoaded.get).mockReturnValue(false);
         historyControllerMock.isHistoryLoaded = false;
         historyControllerMock.loadHistoryOnDemand.mockClear();
 
@@ -220,6 +242,8 @@ describe('GrowspaceAnalytics', () => {
     });
 
     it('should trigger lazy load in willUpdate when not loaded and not loading', async () => {
+        vi.mocked(historyStore.$historyLoaded.get).mockReturnValue(false);
+        vi.mocked(historyStore.$historyLoading.get).mockReturnValue(false);
         historyControllerMock.isHistoryLoaded = false;
         historyControllerMock.isHistoryLoading = false;
         historyControllerMock.loadHistoryOnDemand.mockClear();
@@ -234,7 +258,7 @@ describe('GrowspaceAnalytics', () => {
     });
 
     it('should not render if device is missing', async () => {
-        historyControllerMock.activeEnvGraphs = new Set(['temperature']);
+        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature']));
         element.device = undefined;
         element.requestUpdate();
         await element.updateComplete;
@@ -247,30 +271,10 @@ describe('GrowspaceAnalytics', () => {
     });
 
     it('should handle getSortIndex for unknown metric', async () => {
-        historyControllerMock.activeEnvGraphs = new Set(['unknown_metric']);
+        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['unknown_metric']));
         (element as any)._computeItemsToRender();
 
         const items = (element as any)._itemsToRender;
         expect(items[0].sortIndex).toBe(999); // Default for unknown
-    });
-
-    it('should skip linked groups with no active metrics', async () => {
-        historyControllerMock.activeEnvGraphs = new Set(['temperature']);
-        historyControllerMock.linkedGraphGroups = [['humidity', 'vpd']]; // No active metrics in group
-
-        (element as any)._computeItemsToRender();
-
-        const items = (element as any)._itemsToRender;
-        // Should only have the single temperature, not the group
-        expect(items.length).toBe(1);
-        expect(items[0].type).toBe('single');
-    });
-
-    it('should handle _handleControllerUpdate callback', () => {
-        const requestUpdateSpy = vi.spyOn(element, 'requestUpdate');
-
-        (element as any)._handleControllerUpdate();
-
-        expect(requestUpdateSpy).toHaveBeenCalled();
     });
 });

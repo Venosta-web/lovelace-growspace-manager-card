@@ -12,6 +12,8 @@ import { sharedStyles } from '../styles/shared.styles';
 import { consume } from '@lit/context';
 import { hassContext, historyContext } from '../context';
 import type { GrowspaceHistoryController } from '../controllers/growspace-history-controller';
+import { StoreController } from '@nanostores/lit';
+import { $historyCache, $historyLoading, $historyLoaded, $activeEnvGraphs, $linkedGraphGroups } from '../store/history-store';
 
 @customElement('growspace-analytics')
 export class GrowspaceAnalytics extends LitElement {
@@ -47,11 +49,15 @@ export class GrowspaceAnalytics extends LitElement {
     sortIndex: number;
   }[] = [];
 
+  // StoreController subscriptions for automatic reactivity
+  private _historyCacheController = new StoreController(this, $historyCache);
+  private _historyLoadingController = new StoreController(this, $historyLoading);
+  private _historyLoadedController = new StoreController(this, $historyLoaded);
+  private _activeEnvGraphsController = new StoreController(this, $activeEnvGraphs);
+  private _linkedGraphGroupsController = new StoreController(this, $linkedGraphGroups);
+
   connectedCallback() {
     super.connectedCallback();
-    if (this.historyController) {
-      this.historyController.addListener(this._handleControllerUpdate);
-    }
   }
 
   firstUpdated() {
@@ -64,13 +70,6 @@ export class GrowspaceAnalytics extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    if (this.historyController) {
-      this.historyController.removeListener(this._handleControllerUpdate);
-    }
-  }
-
-  private _handleControllerUpdate = () => {
-    this.requestUpdate();
   }
 
   protected willUpdate(changedProperties: PropertyValues) {

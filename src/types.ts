@@ -438,3 +438,7 @@ export interface PlantDisplayData {
   imageCropMeta?: any;
   stages: StageDisplay[];
 }
+
+export interface GrowAdviceResponse {
+  response: string | { response: string };
+}

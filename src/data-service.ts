@@ -1,9 +1,10 @@
 import { HomeAssistant } from 'custom-card-helpers';
-import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy, GrowspaceAPIResponse } from './types';
+import { HassEntity } from 'home-assistant-js-websocket';
+import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy, GrowspaceAPIResponse, HistorySensorState, GrowAdviceResponse } from './types';
 import { GrowspaceAdapter } from './adapters/growspace-adapter';
 import { noChange } from 'lit';
 import { DOMAIN, SERVICES, WS_TYPE_GET_DATA, WS_TYPE_GET_HISTORY_STATS } from './constants';
-import { GrowspaceAPIResponseSchema, GrowspaceAPICollectionSchema, GrowspaceAPICollection } from './schemas/api-schema';
+import { GrowspaceAPIResponseSchema, GrowspaceAPICollectionSchema, GrowspaceAPICollection, StrainLibrarySchema } from './schemas/api-schema';
 
 /** Shape of raw phenotype data from strain sensor */
 interface RawPhenotypeData {
@@ -91,7 +92,7 @@ export class DataService {
       .filter((d): d is GrowspaceDevice => d !== null);
   }
 
-  private getGrowspaceId(entity: any): string {
+  private getGrowspaceId(entity: HassEntity): string {
     return entity.attributes?.growspace_id || 'unknown';
   }
 
@@ -99,7 +100,7 @@ export class DataService {
     const allStates = Object.values(this.hass.states);
     const strainSensor = allStates.find(
       (s: any) => s.attributes?.strains !== undefined && s.attributes?.strains !== null
-    );
+    ) as HassEntity | undefined;
 
     const rawStrains = strainSensor?.attributes?.strains;
 
@@ -168,7 +169,21 @@ export class DataService {
       });
 
       // Handle common response wrapping patterns in HA services
-      const rawStrains = serviceResponse?.response ?? serviceResponse ?? {};
+      let rawResponse = (serviceResponse as any)?.response ?? serviceResponse ?? {};
+      // Sanitize: some HA custom components might include a 'response' metadata key inside the payload
+      // which allows our Zod Record schema to fail if it's not a strain object.
+      if (rawResponse && typeof rawResponse === 'object') {
+        rawResponse = { ...rawResponse };
+        delete rawResponse['response'];
+      }
+
+      const parsed = StrainLibrarySchema.safeParse(rawResponse);
+      if (!parsed.success) {
+        console.warn('[DataService:fetchStrainLibrary] API Verification warning:', parsed.error.format());
+        return [];
+      }
+      const rawStrains = parsed.data;
+
       const currentStrains: StrainEntry[] = [];
 
       console.log('[DataService:fetchStrainLibrary] Raw response:', rawStrains);
@@ -205,7 +220,7 @@ export class DataService {
     }
   }
 
-  async getHistory(entityId: string, startTime: Date, endTime?: Date): Promise<any[]> {
+  async getHistory(entityId: string, startTime: Date, endTime?: Date): Promise<HistorySensorState[]> {
     if (!this.hass) return [];
 
     const startStr = startTime.toISOString();
@@ -215,7 +230,7 @@ export class DataService {
     }
 
     try {
-      const res = await this.hass.callApi<any[][]>('GET', url);
+      const res = await this.hass.callApi<HistorySensorState[][]>('GET', url);
       return res && res.length > 0 ? res[0] : [];
     } catch (err) {
       console.error('Error fetching history:', err);
@@ -223,7 +238,7 @@ export class DataService {
     }
   }
 
-  async getBatchHistory(entityIds: string[], startTime: Date, endTime?: Date): Promise<Record<string, any[]>> {
+  async getBatchHistory(entityIds: string[], startTime: Date, endTime?: Date): Promise<Record<string, HistorySensorState[]>> {
     if (!this.hass || entityIds.length === 0) return {};
 
     const startStr = startTime.toISOString();
@@ -242,9 +257,9 @@ export class DataService {
 
     try {
       // HA returns an array of arrays (one array per entity)
-      const res = await this.hass.callApi<any[][]>('GET', url);
+      const res = await this.hass.callApi<HistorySensorState[][]>('GET', url);
 
-      const resultMap: Record<string, any[]> = {};
+      const resultMap: Record<string, HistorySensorState[]> = {};
 
       if (res) {
         res.forEach((entityHistory) => {
@@ -268,7 +283,7 @@ export class DataService {
     endTime?: Date,
     intervalMinutes: number = 15,
     significantChangesOnly: boolean = true
-  ): Promise<Record<string, any[]>> {
+  ): Promise<Record<string, HistorySensorState[]>> {
     if (!this.hass || entityIds.length === 0) return {};
 
     try {
@@ -282,9 +297,10 @@ export class DataService {
       });
 
       // Map compact format back to standard formats for ChartUtils compatibility
-      const mappedResult: Record<string, any[]> = {};
+      const mappedResult: Record<string, HistorySensorState[]> = {};
       for (const [entityId, points] of Object.entries(result)) {
         mappedResult[entityId] = points.map((p: any) => ({
+          entity_id: entityId,
           state: p.s,
           last_changed: p.lu,
           last_updated: p.lu,
@@ -314,7 +330,7 @@ export class DataService {
     seedling_start?: string;
     dry_start?: string;
     cure_start?: string;
-  }) {
+  }): Promise<void> {
     console.log('[DataService:addPlant] Sending payload:', params);
     try {
       if (params.growspace_id === 'mother' || params.growspace_id === 'mother_overview') {
@@ -323,40 +339,38 @@ export class DataService {
       if (params.growspace_id === 'clone' || params.growspace_id === 'clone_overview') {
         params.clone_start = new Date().toISOString().split('T')[0];
       }
-      const res = await this.hass.callService(DOMAIN, SERVICES.ADD_PLANT, params);
-      console.log('[DataService:addPlant] Response:', res);
-      return res;
-    } catch (err: any) {
+      await this.hass.callService(DOMAIN, SERVICES.ADD_PLANT, params);
+      console.log('[DataService:addPlant] Service Called');
+    } catch (err: unknown) {
       console.error('[DataService:addPlant] Error:', err);
-      throw new Error(err.message || 'Failed to add plant');
+      const msg = err instanceof Error ? err.message : 'Failed to add plant';
+      throw new Error(msg);
     }
   }
 
-  async updatePlant(params: { plant_id: string;[key: string]: any }) {
+  async updatePlant(params: { plant_id: string;[key: string]: any }): Promise<void> {
     console.log('[DataService:updatePlant] Sending payload:', params);
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
-      console.log('[DataService:updatePlant] Response:', res);
-      return res;
+      await this.hass.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
+      console.log('[DataService:updatePlant] Service Called');
     } catch (err) {
       console.error('[DataService:updatePlant] Error:', err);
       throw err;
     }
   }
 
-  async removePlant(plantId: string) {
+  async removePlant(plantId: string): Promise<void> {
     console.log('[DataService:removePlant] Removing plant_id:', plantId);
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_PLANT, { plant_id: plantId });
-      console.log('[DataService:removePlant] Response:', res);
-      return res;
+      await this.hass.callService(DOMAIN, SERVICES.REMOVE_PLANT, { plant_id: plantId });
+      console.log('[DataService:removePlant] Service Called');
     } catch (err) {
       console.error('[DataService:removePlant] Error:', err);
       throw err;
     }
   }
 
-  async harvestPlant(plantId: string, target: string = 'dry') {
+  async harvestPlant(plantId: string, target: string = 'dry'): Promise<void> {
     console.log('[DataService:harvestPlant] Harvesting plant:', plantId, '→ target:', target);
     try {
       const payload = {
@@ -364,9 +378,8 @@ export class DataService {
         target_growspace_id: target
       };
 
-      const res = await this.hass.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
-      console.log('[DataService:harvestPlant] Response:', res);
-      return res;
+      await this.hass.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
+      console.log('[DataService:harvestPlant] Service Called');
     } catch (err) {
       console.error('[DataService:harvestPlant] Error:', err);
       throw err;
@@ -377,26 +390,25 @@ export class DataService {
     mother_plant_id: string;
     num_clones?: number;
     target_growspace_id?: string;
-  }) {
+  }): Promise<void> {
     console.log('[DataService:takeClone] Cloning plant:', params);
     try {
       // Ensure target_growspace_id is set if not provided (though backend handles 'clone' default)
-      const payload = { ...params };
+      const payload: Record<string, any> = { ...params };
       if (!payload.target_growspace_id) delete payload.target_growspace_id;
 
-      const res = await this.hass.callService(DOMAIN, SERVICES.TAKE_CLONE, payload);
-      console.log('[DataService:takeClone] Response:', res);
-      return res;
+      await this.hass.callService(DOMAIN, SERVICES.TAKE_CLONE, payload);
+      console.log('[DataService:takeClone] Service Called');
     } catch (err) {
       console.error('[DataService:takeClone] Error:', err);
       throw err;
     }
   }
 
-  async moveClone(plantId: string, targetGrowspaceId: string, transitionDate?: string) {
+  async moveClone(plantId: string, targetGrowspaceId: string, transitionDate?: string): Promise<void> {
     console.log('[DataService:moveClone] Moving clone:', plantId, 'to', targetGrowspaceId);
     try {
-      const payload: any = {
+      const payload: Record<string, string> = {
         plant_id: plantId,
         target_growspace_id: targetGrowspaceId,
       };
@@ -404,24 +416,22 @@ export class DataService {
         payload.transition_date = transitionDate;
       }
 
-      const res = await this.hass.callService(DOMAIN, SERVICES.MOVE_CLONE, payload);
-      console.log('[DataService:moveClone] Response:', res);
-      return res;
+      await this.hass.callService(DOMAIN, SERVICES.MOVE_CLONE, payload);
+      console.log('[DataService:moveClone] Service Called');
     } catch (err) {
       console.error('[DataService:moveClone] Error:', err);
       throw err;
     }
   }
 
-  async swapPlants(plant1Id: string, plant2Id: string) {
+  async swapPlants(plant1Id: string, plant2Id: string): Promise<void> {
     console.log(`[DataService:swapPlants] Swapping plants: ${plant1Id} and ${plant2Id}`);
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.SWITCH_PLANTS, {
+      await this.hass.callService(DOMAIN, SERVICES.SWITCH_PLANTS, {
         plant1_id: plant1Id,
         plant2_id: plant2Id,
       });
-      console.log('[DataService:swapPlants] Response:', res);
-      return res;
+      console.log('[DataService:swapPlants] Service Called');
     } catch (err) {
       console.error('[DataService:swapPlants] Error:', err);
       throw err;
@@ -430,17 +440,16 @@ export class DataService {
 
 
 
-  async setDehumidifierControl(growspaceId: string, enabled: boolean) {
+  async setDehumidifierControl(growspaceId: string, enabled: boolean): Promise<void> {
     console.log(
       `[DataService:setDehumidifierControl] Setting dehumidifier control for ${growspaceId} to ${enabled}`
     );
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.SET_DEHUMIDIFIER_CONTROL, {
+      await this.hass.callService(DOMAIN, SERVICES.SET_DEHUMIDIFIER_CONTROL, {
         growspace_id: growspaceId,
         enabled,
       });
-      console.log('[DataService:setDehumidifierControl] Response:', res);
-      return res;
+      console.log('[DataService:setDehumidifierControl] Service Called');
     } catch (err) {
       console.error('[DataService:setDehumidifierControl] Error:', err);
       throw err;
@@ -453,87 +462,80 @@ export class DataService {
     drain_pump_entity: string;
     irrigation_duration: number;
     drain_duration: number;
-  }) {
+  }): Promise<void> {
     console.log('[DataService:setIrrigationSettings] Setting irrigation settings:', params);
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, params);
-      console.log('[DataService:setIrrigationSettings] Response:', res);
-      return res;
+      await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, params);
+      console.log('[DataService:setIrrigationSettings] Service Called');
     } catch (err) {
       console.error('[DataService:setIrrigationSettings] Error:', err);
       throw err;
     }
   }
 
-  async addIrrigationTime(params: { growspace_id: string; time: string; duration?: number }) {
+  async addIrrigationTime(params: { growspace_id: string; time: string; duration?: number }): Promise<void> {
     console.log('[DataService:addIrrigationTime] Adding irrigation time:', params);
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, params);
-      console.log('[DataService:addIrrigationTime] Response:', res);
-      return res;
+      await this.hass.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, params);
+      console.log('[DataService:addIrrigationTime] Service Called');
     } catch (err) {
       console.error('[DataService:addIrrigationTime] Error:', err);
       throw err;
     }
   }
 
-  async removeIrrigationTime(params: { growspace_id: string; time: string }) {
+  async removeIrrigationTime(params: { growspace_id: string; time: string }): Promise<void> {
     console.log('[DataService:removeIrrigationTime] Removing irrigation time:', params);
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, params);
-      console.log('[DataService:removeIrrigationTime] Response:', res);
-      return res;
+      await this.hass.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, params);
+      console.log('[DataService:removeIrrigationTime] Service Called');
     } catch (err) {
       console.error('[DataService:removeIrrigationTime] Error:', err);
       throw err;
     }
   }
 
-  async setIrrigationStrategy(growspaceId: string, strategy: Partial<IrrigationStrategy>) {
+  async setIrrigationStrategy(growspaceId: string, strategy: Partial<IrrigationStrategy>): Promise<void> {
     console.log('[DataService:setIrrigationStrategy] Setting strategy:', strategy);
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, {
+      await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, {
         growspace_id: growspaceId,
         ...strategy,
       });
-      console.log('[DataService:setIrrigationStrategy] Response:', res);
-      return res;
+      console.log('[DataService:setIrrigationStrategy] Service Called');
     } catch (err) {
       console.error('[DataService:setIrrigationStrategy] Error:', err);
       throw err;
     }
   }
 
-  async addDrainTime(params: { growspace_id: string; time: string; duration?: number }) {
+  async addDrainTime(params: { growspace_id: string; time: string; duration?: number }): Promise<void> {
     console.log('[DataService:addDrainTime] Adding drain time:', params);
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, params);
-      console.log('[DataService:addDrainTime] Response:', res);
-      return res;
+      await this.hass.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, params);
+      console.log('[DataService:addDrainTime] Service Called');
     } catch (err) {
       console.error('[DataService:addDrainTime] Error:', err);
       throw err;
     }
   }
 
-  async removeDrainTime(params: { growspace_id: string; time: string }) {
+  async removeDrainTime(params: { growspace_id: string; time: string }): Promise<void> {
     console.log('[DataService:removeDrainTime] Removing drain time:', params);
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, params);
-      console.log('[DataService:removeDrainTime] Response:', res);
-      return res;
+      await this.hass.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, params);
+      console.log('[DataService:removeDrainTime] Service Called');
     } catch (err) {
       console.error('[DataService:removeDrainTime] Error:', err);
       throw err;
     }
   }
 
-  async exportStrainLibrary() {
+  async exportStrainLibrary(): Promise<void> {
     console.log('[DataService:exportStrainLibrary] Exporting strain library');
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.EXPORT_STRAIN_LIBRARY);
-      console.log('[DataService:exportStrainLibrary] Response:', res);
-      return res;
+      await this.hass.callService(DOMAIN, SERVICES.EXPORT_STRAIN_LIBRARY);
+      console.log('[DataService:exportStrainLibrary] Service Called');
     } catch (err) {
       console.error('[DataService:exportStrainLibrary] Error:', err);
       throw err;
@@ -554,10 +556,10 @@ export class DataService {
     image_crop_meta?: CropMeta;
     sativa_percentage?: number;
     indica_percentage?: number;
-  }) {
+  }): Promise<void> {
     console.log('[DataService:addStrain] Adding strain:', data);
     try {
-      const payload: any = { ...data };
+      const payload: Record<string, any> = { ...data };
 
       // Clean undefined keys
       Object.keys(payload).forEach((key) => {
@@ -572,41 +574,34 @@ export class DataService {
           payload.image_base64 = data.image;
           delete payload.image; // Backend expects image_base64
         } else {
-          // It's a path (existing image) - Backend schema doesn't explicitly list image_path,
-          // but we'll try to send it if the backend supports it dynamically,
-          // or we might need to omit it if it's just for local display.
-          // Checking services.yaml, only image_base64 is listed.
-          // We will assume image_path is not supported for add_strain and omit it to avoid schema errors.
-          // payload.image_path = data.image;
+          // It's a path (existing image)
           delete payload.image;
         }
       }
 
-      const res = await this.hass.callService(DOMAIN, SERVICES.ADD_STRAIN, payload);
-      console.log('[DataService:addStrain] Response:', res);
-      return res;
+      await this.hass.callService(DOMAIN, SERVICES.ADD_STRAIN, payload);
+      console.log('[DataService:addStrain] Service Called');
     } catch (err) {
       console.error('[DataService:addStrain] Error:', err);
       throw err;
     }
   }
 
-  async removeStrain(strain: string, phenotype?: string) {
+  async removeStrain(strain: string, phenotype?: string): Promise<void> {
     console.log('[DataService:removeStrain] Removing strain:', strain, phenotype);
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_STRAIN, {
+      await this.hass.callService(DOMAIN, SERVICES.REMOVE_STRAIN, {
         strain,
         phenotype,
       });
-      console.log('[DataService:removeStrain] Response:', res);
-      return res;
+      console.log('[DataService:removeStrain] Service Called');
     } catch (err) {
       console.error('[DataService:removeStrain] Error:', err);
       throw err;
     }
   }
 
-  async importStrainLibrary(file: File, replace: boolean) {
+  async importStrainLibrary(file: File, replace: boolean): Promise<{ success: boolean; error?: string }> {
     console.log(
       '[DataService:importStrainLibrary] Importing strain library ZIP via HTTP. Replace:',
       replace
@@ -631,22 +626,22 @@ export class DataService {
       console.log('[DataService:importStrainLibrary] Response:', result);
 
       if (result.success) {
-        return result;
+        return result as { success: boolean; error?: string };
       } else {
         throw new Error(result.error || 'Unknown import error');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[DataService:importStrainLibrary] Error:', err);
-      throw new Error(err.message || 'Failed to import strain library');
+      const msg = err instanceof Error ? err.message : 'Failed to import strain library';
+      throw new Error(msg);
     }
   }
 
-  async clearStrainLibrary() {
+  async clearStrainLibrary(): Promise<void> {
     console.log('[DataService:clearStrainLibrary] Clearing library');
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.CLEAR_STRAIN_LIBRARY);
-      console.log('[DataService:clearStrainLibrary] Response:', res);
-      return res;
+      await this.hass.callService(DOMAIN, SERVICES.CLEAR_STRAIN_LIBRARY);
+      console.log('[DataService:clearStrainLibrary] Service Called');
     } catch (err) {
       console.error('[DataService:clearStrainLibrary] Error:', err);
       throw err;
@@ -659,7 +654,7 @@ export class DataService {
     rows: number;
     plants_per_row: number;
     notification_service?: string;
-  }) {
+  }): Promise<void> {
     console.log('[DataService:addGrowspace] Adding growspace:', data);
     try {
       const payload = {
@@ -668,10 +663,9 @@ export class DataService {
         plants_per_row: data.plants_per_row,
         notification_target: data.notification_service, // Map to backend field
       };
-      const res = await this.hass.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
+      await this.hass.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
       // this._cachedGrowspaceSensorIds = null; // Cache removed
-      console.log('[DataService:addGrowspace] Response:', res);
-      return res;
+      console.log('[DataService:addGrowspace] Service Called');
     } catch (err) {
       console.error('[DataService:addGrowspace] Error:', err);
       throw err;
@@ -684,7 +678,7 @@ export class DataService {
     rows?: number;
     plants_per_row?: number;
     notification_service?: string;
-  }) {
+  }): Promise<void> {
     console.log('[DataService:updateGrowspace] Updating growspace:', data);
     try {
       const payload: any = {
@@ -695,24 +689,22 @@ export class DataService {
       if (data.plants_per_row) payload.plants_per_row = data.plants_per_row;
       if (data.notification_service) payload.notification_target = data.notification_service;
 
-      const res = await this.hass.callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
-      console.log('[DataService:updateGrowspace] Response:', res);
-      return res;
+      await this.hass.callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
+      console.log('[DataService:updateGrowspace] Service Called');
     } catch (err) {
       console.error('[DataService:updateGrowspace] Error:', err);
       throw err;
     }
   }
 
-  async removeGrowspace(growspaceId: string) {
+  async removeGrowspace(growspaceId: string): Promise<void> {
     console.log('[DataService:removeGrowspace] Removing growspace:', growspaceId);
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
+      await this.hass.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
         growspace_id: growspaceId,
       });
       // this._cachedGrowspaceSensorIds = null; // Cache removed
-      console.log('[DataService:removeGrowspace] Response:', res);
-      return res;
+      console.log('[DataService:removeGrowspace] Service Called');
     } catch (err) {
       console.error('[DataService:removeGrowspace] Error:', err);
       throw err;
@@ -740,12 +732,11 @@ export class DataService {
     flower_mid_day_hours?: number;
     flower_late_day_hours?: number;
     minimum_source_air_temperature?: number;
-  }) {
+  }): Promise<void> {
     console.log('[DataService:configureEnvironment] Configuring sensors:', data);
     try {
-      const res = await this.hass.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, data);
-      console.log('[DataService:configureEnvironment] Response:', res);
-      return res;
+      await this.hass.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, data);
+      console.log('[DataService:configureEnvironment] Service Called');
     } catch (err) {
       console.error('[DataService:configureEnvironment] Error:', err);
       throw err;
@@ -755,7 +746,7 @@ export class DataService {
   async askGrowAdvice(
     growspaceId: string,
     userQuery: string
-  ): Promise<{ response: string | { response: string } }> {
+  ): Promise<GrowAdviceResponse> {
     console.log('[DataService:askGrowAdvice] Asking advice for:', growspaceId, userQuery);
     try {
       // UPDATED: Use sendMessagePromise to send return_response=true
@@ -775,7 +766,7 @@ export class DataService {
     }
   }
 
-  async analyzeAllGrowspaces(): Promise<{ response: string | { response: string } }> {
+  async analyzeAllGrowspaces(): Promise<GrowAdviceResponse> {
     console.log('[DataService:analyzeAllGrowspaces] Analyzing all growspaces');
     try {
       return await this.hass.connection.sendMessagePromise({
@@ -791,7 +782,7 @@ export class DataService {
     }
   }
 
-  async getStrainRecommendation(userQuery: string): Promise<{ response: string }> {
+  async getStrainRecommendation(userQuery: string): Promise<GrowAdviceResponse> {
     console.log(
       '[DataService:getStrainRecommendation] Getting strain recommendation for:',
       userQuery

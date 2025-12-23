@@ -6,6 +6,9 @@ import { PlantUtils } from '../utils/plant-utils';
 import { LibraryExportReadyEvent } from '../events';
 import * as uiStore from './ui-store';
 import * as dataStore from './data-store';
+import * as plantActions from './plant-actions';
+import * as strainActions from './strain-actions';
+import * as keyboardActions from './keyboard-actions';
 
 export class GrowspaceStore implements ReactiveController {
     host: ReactiveControllerHost;
@@ -16,6 +19,48 @@ export class GrowspaceStore implements ReactiveController {
     private wsDataCache: Record<string, GrowspaceAPIResponse> = {};
     private _unsubEvents: (() => void) | undefined;
     private _isFetchingWS = false;
+
+    /** Context object for plant action functions */
+    private get _plantActionContext(): plantActions.PlantActionContext {
+        return {
+            dataService: this.dataService,
+            showToast: (msg, type) => this.showToast(msg, type),
+            closeDialog: () => uiStore.closeDialog(),
+            refreshData: () => this.refreshData(),
+        };
+    }
+
+    /** Context object for strain action functions */
+    private get _strainActionContext(): strainActions.StrainActionContext {
+        return {
+            dataService: this.dataService,
+            showToast: (msg, type) => this.showToast(msg, type),
+            closeDialog: () => uiStore.closeDialog(),
+            refreshData: () => this.refreshData(),
+            refreshStrainLibrary: (force) => this.fetchStrainLibrary(force),
+            setStrainLibrary: (lib) => dataStore.$strainLibrary.set(lib),
+            getStrainLibrary: () => dataStore.$strainLibrary.get(),
+        };
+    }
+
+    /** Context object for growspace action functions */
+    private get _growspaceActionContext(): strainActions.GrowspaceActionContext {
+        return {
+            dataService: this.dataService,
+            showToast: (msg, type) => this.showToast(msg, type),
+            closeDialog: () => uiStore.closeDialog(),
+            refreshData: () => this.refreshData(),
+        };
+    }
+
+    /** Context object for keyboard action functions */
+    private get _keyboardActionContext(): keyboardActions.KeyboardActionContext {
+        return {
+            exitEditMode: () => this.exitEditMode(),
+            handlePlantClick: (plant) => this.handlePlantClick(plant),
+            handleDeletePlant: (plantId) => this.handleDeletePlant(plantId),
+        };
+    }
 
     constructor(host: ReactiveControllerHost) {
         this.host = host;
@@ -290,42 +335,7 @@ export class GrowspaceStore implements ReactiveController {
     }
 
     handleKeyboardNavigation(key: string) {
-        if (uiStore.$isEditMode.get() && key === 'Escape') {
-            this.exitEditMode();
-            return;
-        }
-
-        const selectedDevice = dataStore.$selectedDevice.get();
-        if (!selectedDevice) return;
-
-        const devices = dataStore.$devices.get();
-        const device = devices.find((d) => d.device_id === selectedDevice);
-        if (!device) return;
-
-        const plants = device.plants.filter(
-            (p) => !dataStore.$optimisticDeletedPlantIds.get().has(p.attributes.plant_id || '')
-        );
-        if (plants.length === 0) return;
-
-        if (key === 'ArrowRight') {
-            uiStore.setFocusedPlantIndex((uiStore.$focusedPlantIndex.get() + 1) % plants.length);
-        } else if (key === 'ArrowLeft') {
-            uiStore.setFocusedPlantIndex((uiStore.$focusedPlantIndex.get() - 1 + plants.length) % plants.length);
-        } else if (key === 'Enter' || key === ' ') {
-            if (uiStore.$focusedPlantIndex.get() >= 0 && uiStore.$focusedPlantIndex.get() < plants.length) {
-                this.handlePlantClick(plants[uiStore.$focusedPlantIndex.get()]);
-            }
-        } else if (key === 'Delete' || key === 'Backspace') {
-            if (uiStore.$focusedPlantIndex.get() >= 0 && uiStore.$focusedPlantIndex.get() < plants.length) {
-                const focusedPlant = plants[uiStore.$focusedPlantIndex.get()];
-                if (focusedPlant) {
-                    this.handleDeletePlant(focusedPlant.entity_id);
-                }
-            } else if (uiStore.$selectedPlants.get().size > 0) {
-                // If multiple plants are selected, delete them
-                this.handleDeletePlant(Array.from(uiStore.$selectedPlants.get()));
-            }
-        }
+        keyboardActions.handleKeyboardNavigation(this._keyboardActionContext, key);
     }
 
     handleDeviceChange(deviceId: string) {
@@ -429,38 +439,25 @@ export class GrowspaceStore implements ReactiveController {
     }
 
     async updatePlant(plantId: string, updates: Partial<PlantEntity['attributes']>) {
-        try {
-            await this.dataService.updatePlant({ plant_id: plantId, ...updates });
-            this.showToast('Plant updated', 'success');
-        } catch (e: any) {
-            console.error('Failed to update plant:', e);
-            this.showToast(`Failed to update plant: ${e.message}`, 'error');
-        }
+        await plantActions.updatePlant(this._plantActionContext, plantId, updates);
     }
 
     async handleDeletePlant(plantId: string | string[]) {
         const ids = Array.isArray(plantId) ? plantId : [plantId];
 
-        ids.forEach(id => dataStore.addOptimisticDeletedPlantId(id));
+        const success = await plantActions.deletePlants(
+            this._plantActionContext,
+            ids,
+            (id) => dataStore.addOptimisticDeletedPlantId(id),
+            (id) => dataStore.removeOptimisticDeletedPlantId(id)
+        );
 
-        try {
-            await Promise.all(ids.map((id) => this.dataService.removePlant(id)));
-
-            this.showToast('Plant(s) deleted', 'success');
-
-            ids.forEach((id) => {
-                uiStore.togglePlantSelection(id);
-            });
-
+        if (success) {
+            ids.forEach((id) => uiStore.togglePlantSelection(id));
             if (uiStore.$activeDialog.get().type === 'PLANT_OVERVIEW') {
                 uiStore.closeDialog();
             }
             this.updateGrid();
-        } catch (e: any) {
-            console.error('Failed to delete plant:', e);
-            this.showToast(`Failed to delete: ${e.message}`, 'error');
-
-            ids.forEach(id => dataStore.removeOptimisticDeletedPlantId(id));
         }
     }
 
@@ -489,122 +486,23 @@ export class GrowspaceStore implements ReactiveController {
     }
 
     async handleMovePlantToNextStage(plant: PlantEntity) {
-        const stage = plant.attributes?.stage;
-        let targetGrowspace = '';
-
-        const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
-        if (!stage || !movableStages.has(stage)) {
-            this.showToast(
-                'Plant must be in mother or flower or dry or cure stage to move. stage is ' + stage,
-                'error'
-            );
-            return;
-        }
-
-        if (stage === 'flower') {
-            targetGrowspace = 'dry';
-        } else if (stage === 'dry') {
-            targetGrowspace = 'cure';
-        } else if (stage === 'mother') {
-            targetGrowspace = 'clone';
-        } else {
-            console.error('Unknown stage, cannot move plant', targetGrowspace);
-            targetGrowspace = 'error';
-        }
-
-        try {
-            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-            await this.dataService.harvestPlant(plantId, targetGrowspace);
-            uiStore.closeDialog();
-        } catch (err) {
-            console.error('Error moving plant to next stage:', err);
-        }
+        await plantActions.movePlantToNextStage(this._plantActionContext, plant);
     }
 
     handleTakeClone = (motherPlant: PlantEntity, numClones?: number) => {
-        const plantId =
-            motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
-
-        return this.dataService
-            .takeClone({
-                mother_plant_id: plantId,
-                num_clones: numClones,
-            })
-            .then(() => {
-                console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
-            })
-            .catch((error: any) => {
-                console.error(`Failed to take clone: ${error.message}`);
-            });
+        return plantActions.takeClone(this._plantActionContext, motherPlant, numClones);
     };
 
     async movePlantToGrowspace(plant: PlantEntity, targetGrowspace: string) {
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        const currentStage = plant.attributes?.stage || 'unknown';
-
-        try {
-            if (currentStage === 'clone') {
-                await this.dataService.moveClone(plantId, targetGrowspace);
-            } else {
-                await this.dataService.harvestPlant(plantId, targetGrowspace);
-            }
-
-            this.showToast(`Plant moved to ${targetGrowspace}`, 'success');
-            await this.refreshData();
-            uiStore.closeDialog();
-        } catch (err: any) {
-            console.error('Error moving plant:', err);
-            this.showToast(`Failed to move plant: ${err.message}`, 'error');
-        }
+        await plantActions.movePlantToGrowspace(this._plantActionContext, plant, targetGrowspace);
     }
 
     async addStrain(strainData: Partial<StrainEntry>) {
-        if (!strainData.strain) return;
-
-        const payload = {
-            strain: strainData.strain,
-            phenotype: strainData.phenotype,
-            breeder: strainData.breeder,
-            type: strainData.type,
-            flowering_days_min: strainData.flowering_days_min
-                ? Number(strainData.flowering_days_min)
-                : undefined,
-            flowering_days_max: strainData.flowering_days_max
-                ? Number(strainData.flowering_days_max)
-                : undefined,
-            lineage: strainData.lineage,
-            sex: strainData.sex,
-            description: strainData.description,
-            image: strainData.image,
-            image_crop_meta: strainData.image_crop_meta,
-            sativa_percentage: strainData.sativa_percentage,
-            indica_percentage: strainData.indica_percentage,
-        };
-
-        try {
-            await this.dataService.addStrain(payload);
-            this.showToast('Strain saved successfully!', 'success');
-            await this.fetchStrainLibrary(true);
-        } catch (err) {
-            console.error('Error adding strain:', err);
-        }
+        await strainActions.addStrain(this._strainActionContext, strainData);
     }
 
     async removeStrain(strainKey: string) {
-        try {
-            const parts = strainKey.split('|');
-            const strain = parts[0];
-            const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
-
-            await this.dataService.removeStrain(strain, phenotype);
-
-            const current = dataStore.$strainLibrary.get();
-            dataStore.setStrainLibrary(current.filter((s) => s.key !== strainKey));
-
-            await this.fetchStrainLibrary(true);
-        } catch (err) {
-            console.error('Error removing strain:', err);
-        }
+        await strainActions.removeStrain(this._strainActionContext, strainKey);
     }
 
     async confirmAddPlant(detail: { row: number; col: number; strain: string; phenotype: string }) {
@@ -614,20 +512,14 @@ export class GrowspaceStore implements ReactiveController {
             return;
         }
 
-        try {
-            await this.dataService.addPlant({
-                growspace_id: selectedDevice,
-                row: detail.row,
-                col: detail.col,
-                strain: detail.strain,
-                phenotype: detail.phenotype || undefined,
-            });
-            uiStore.closeDialog();
-            this.showToast('Plant added successfully', 'success');
-        } catch (e: any) {
-            console.error('Failed to add plant:', e);
-            this.showToast(`Failed to add plant: ${e.message}`, 'error');
-        }
+        await plantActions.addPlant(
+            this._plantActionContext,
+            selectedDevice,
+            detail.row,
+            detail.col,
+            detail.strain,
+            detail.phenotype
+        );
     }
 
     async analyzeGrowspace(query: string, all: boolean) {
@@ -689,76 +581,43 @@ export class GrowspaceStore implements ReactiveController {
         const selectedDevice = dataStore.$selectedDevice.get();
         if (!sourcePlant || !selectedDevice) return;
 
-        try {
-            if (targetPlant) {
-                const sourceId =
-                    sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
-                const targetId =
-                    targetPlant.attributes.plant_id || targetPlant.entity_id.replace('sensor.', '');
-
-                if (sourceId === targetId) return;
-
-                await this.dataService.swapPlants(sourceId, targetId);
-                this.updateGrid();
-            } else {
-                await this.movePlant(sourcePlant, targetRow, targetCol);
-            }
-        } catch (err) {
-            console.error('Error during drag-and-drop:', err);
+        const success = await plantActions.handlePlantDrop(
+            this._plantActionContext,
+            targetRow,
+            targetCol,
+            targetPlant,
+            sourcePlant
+        );
+        if (success) {
+            this.updateGrid();
         }
     }
 
     async movePlant(plant: PlantEntity, newRow: number, newCol: number) {
-        try {
-            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-            await this.dataService.updatePlant({
-                plant_id: plantId,
-                row: newRow,
-                col: newCol,
-            });
+        const success = await plantActions.movePlantPosition(this._plantActionContext, plant, newRow, newCol);
+        if (success) {
             this.updateGrid();
-        } catch (err) {
-            console.error('Error moving plant:', err);
         }
     }
 
     async handleAddGrowspace(detail: { name: string; rows?: number; plants_per_row?: number; notification_service?: string }) {
-        const { name, rows, plants_per_row, notification_service } = detail;
-        if (!name) {
-            this.showToast('Name is required', 'error');
-            return;
-        }
-
-        try {
-            await this.dataService.addGrowspace({
-                name,
-                rows: rows || 4,
-                plants_per_row: plants_per_row || 4,
-                notification_service: notification_service || 'mobile_app_notify',
-            });
-            this.showToast('Growspace added successfully!', 'success');
-            await this.refreshData();
-            uiStore.closeDialog();
-        } catch (e: any) {
-            this.showToast(`Error: ${e.message}`, 'error');
-        }
+        await strainActions.addGrowspace(
+            this._growspaceActionContext,
+            detail.name,
+            detail.rows,
+            detail.plants_per_row,
+            detail.notification_service
+        );
     }
 
     async handleUpdateGrowspace(detail: { growspace_id: string; name: string; rows: number; plants_per_row: number }) {
-        try {
-            await this.dataService.updateGrowspace({
-                growspace_id: detail.growspace_id,
-                name: detail.name,
-                rows: detail.rows,
-                plants_per_row: detail.plants_per_row,
-            });
-            this.showToast('Growspace updated successfully', 'success');
-            await this.refreshData();
-            uiStore.closeDialog();
-        } catch (e: any) {
-            console.error('[GrowspaceStore] Update failed:', e);
-            this.showToast(`Failed to update growspace: ${e.message}`, 'error');
-        }
+        await strainActions.updateGrowspace(
+            this._growspaceActionContext,
+            detail.growspace_id,
+            detail.name,
+            detail.rows,
+            detail.plants_per_row
+        );
     }
 
     async harvestPlant(plant: PlantEntity) {
