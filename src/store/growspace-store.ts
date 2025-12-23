@@ -86,22 +86,10 @@ export class GrowspaceStore implements ReactiveController {
         // 2. Add to new location
         const gsId = plantData.growspace_id || plantData.attributes?.growspace_id;
         if (gsId && this.wsDataCache[gsId]) {
-            // Invalidate cache by shallow copying the growspace data object
-            // This ensures DataService sees a new reference and re-transforms the data
-            this.wsDataCache[gsId] = { ...this.wsDataCache[gsId] };
-
-            // Note: We also need to shallow copy the grid if we want perfect immutability,
-            // but for DataService.getGrowspaceDevices, changing the top-level object ref is enough.
-            // However, to be safe and cleaner properly:
-            const grid = { ...this.wsDataCache[gsId].grid };
-            this.wsDataCache[gsId].grid = grid;
-
             const correctKey = `position_${plantData.row}_${plantData.col}`;
-
-            // Note: plantData is the SERIALIZED plant from backend.
-            // Use it directly.
-            grid[correctKey] = plantData;
-
+            this._updateGridImmutably(gsId, (grid) => {
+                grid[correctKey] = plantData;
+            });
             this._updateDevicesState();
         }
     }
@@ -121,21 +109,31 @@ export class GrowspaceStore implements ReactiveController {
         });
     }
 
-    private _removePlantFromCache(gsId: string, plantId: string) {
-        if (!this.wsDataCache[gsId] || !this.wsDataCache[gsId].grid) return;
-
-        // Invalidate cache
+    /**
+     * Immutably updates the grid for a growspace.
+     * Creates shallow copies at growspace and grid levels before applying the mutator.
+     */
+    private _updateGridImmutably(
+        gsId: string,
+        mutator: (grid: Record<string, any>) => void
+    ): void {
+        if (!this.wsDataCache[gsId]) return;
         this.wsDataCache[gsId] = { ...this.wsDataCache[gsId] };
         const grid = { ...this.wsDataCache[gsId].grid };
         this.wsDataCache[gsId].grid = grid;
+        mutator(grid);
+    }
 
-        // Find key with this plant ID
-        // Since grid is keyed by position, we have to scan values
-        Object.keys(grid).forEach(key => {
-            const plant = grid[key];
-            if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
-                grid[key] = null;
-            }
+    private _removePlantFromCache(gsId: string, plantId: string) {
+        if (!this.wsDataCache[gsId] || !this.wsDataCache[gsId].grid) return;
+
+        this._updateGridImmutably(gsId, (grid) => {
+            Object.keys(grid).forEach(key => {
+                const plant = grid[key];
+                if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
+                    grid[key] = null;
+                }
+            });
         });
     }
 

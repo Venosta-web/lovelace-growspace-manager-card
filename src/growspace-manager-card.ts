@@ -32,7 +32,7 @@ import { uiStyles } from './styles/ui.styles';
 import { growspaceCardStyles } from './styles/growspace-card.styles';
 import { variables } from './styles/variables';
 import { GrowspaceStore } from './store/growspace-store';
-import { GrowspaceGridController } from './controllers/grid-controller';
+import { $activeDevices, $gridLayout, $growspaceOptions } from './store/grid-store';
 
 import { StoreController } from '@nanostores/lit';
 import { $viewMode, $isLoading, $activeDialog, $focusedPlantIndex, $menuOpen, setViewMode, selectAllPlants, clearPlantSelection, setEditMode, setFocusedPlantIndex, $isEditMode, $isCompactView, $selectedPlants, $notification } from './store/ui-store';
@@ -58,10 +58,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   protected _selectedDeviceController = new StoreController(this, $selectedDevice);
   protected _strainLibraryController = new StoreController(this, $strainLibrary);
 
+  // Grid derived atoms
+  protected _activeDevicesController = new StoreController(this, $activeDevices);
+  protected _gridLayoutController = new StoreController(this, $gridLayout);
+  protected _growspaceOptionsController = new StoreController(this, $growspaceOptions);
+
   // Controllers
   @provide({ context: historyContext })
   accessor historyController = new GrowspaceHistoryController(this);
-  public gridController = new GrowspaceGridController(this, this.store);
 
   /* Getter for convenience/compatibility if needed, or update call sites */
   get selectedDevice() {
@@ -165,12 +169,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     this.store.handleKeyboardNavigation(e.key);
   }
 
-  private _focusPlantByIndex(index: number) {
-    const switcher = this.shadowRoot?.querySelector('growspace-view-switcher') as any;
-    if (switcher && typeof switcher.focusPlant === 'function') {
-      switcher.focusPlant(index);
-    }
-  }
+
 
   private _downloadFile(url: string) {
     const a = document.createElement('a');
@@ -209,7 +208,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
     }
 
-    const devices = this.gridController.activeDevices;
+    const devices = this._activeDevicesController.value;
 
     // Show loading spinner if initially loading and no devices yet
     if (this._isLoadingController.value) {
@@ -231,9 +230,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
       return html`<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
     }
 
-    // Use memoized values from grid controller
-    const growspaceOptions = this.gridController.growspaceOptions;
-    const { effectiveRows, grid } = this.gridController.gridLayout;
+    // Use memoized values from grid store atoms
+    const growspaceOptions = this._growspaceOptionsController.value;
+    const { effectiveRows, grid } = this._gridLayoutController.value;
     const isWide = selectedDeviceData.plants_per_row > 7;
     // const viewMode unused here if passed directly to switcher, but let's keep var if check needed logic
     // const viewMode = this._viewModeController.value;

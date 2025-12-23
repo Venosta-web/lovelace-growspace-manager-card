@@ -15,16 +15,6 @@ vi.mock('../../src/controllers/growspace-history-controller', () => ({
         constructor(host: any) { this.host = host; }
     }
 }));
-vi.mock('../../src/controllers/grid-controller', () => ({
-    GrowspaceGridController: class {
-        host: any;
-        store: any;
-        constructor(host: any, store: any) { this.host = host; this.store = store; }
-        get activeDevices() { return []; }
-        get gridLayout() { return { effectiveRows: 1, grid: {} }; }
-        get growspaceOptions() { return []; }
-    }
-}));
 
 // Mock dynamic import
 // This mock might not work for dynamic imports inside the source unless we intercept it.
@@ -58,8 +48,17 @@ vi.mock('../../src/store/data-store', () => ({
     $devices: { subscribe: vi.fn((cb) => { cb([]); return () => { }; }), get: () => [], set: vi.fn() },
     $selectedDevice: { subscribe: vi.fn((cb) => { cb('gs1'); return () => { }; }), get: () => 'gs1', set: vi.fn() },
     $strainLibrary: { subscribe: vi.fn((cb) => { cb([]); return () => { }; }), get: () => [], set: vi.fn() },
+    $optimisticDeletedPlantIds: { subscribe: vi.fn((cb) => { cb(new Set()); return () => { }; }), get: () => new Set(), set: vi.fn() },
 }));
 import * as DataStoreMock from '../../src/store/data-store';
+
+// Mock grid-store
+vi.mock('../../src/store/grid-store', () => ({
+    $activeDevices: { subscribe: vi.fn((cb) => { cb([]); return () => { }; }), get: () => [], set: vi.fn() },
+    $gridLayout: { subscribe: vi.fn((cb) => { cb({ effectiveRows: 1, grid: [] }); return () => { }; }), get: () => ({ effectiveRows: 1, grid: [] }), set: vi.fn() },
+    $growspaceOptions: { subscribe: vi.fn((cb) => { cb({}); return () => { }; }), get: () => ({}), set: vi.fn() },
+}));
+import * as GridStoreMock from '../../src/store/grid-store';
 
 vi.mock('../../src/store/growspace-store', () => ({
     GrowspaceStore: class {
@@ -214,7 +213,7 @@ describe('GrowspaceManagerCard', () => {
 
         it('should render no data message if no devices', async () => {
             Object.defineProperty(element, '_isLoadingController', { value: { value: false } });
-            vi.spyOn(element.gridController, 'activeDevices', 'get').mockReturnValue([]);
+            Object.defineProperty(element, '_activeDevicesController', { value: { value: [] } });
 
             document.body.appendChild(element);
             await element.updateComplete;
@@ -226,7 +225,7 @@ describe('GrowspaceManagerCard', () => {
 
         it('should render error if selected device is invalid', async () => {
             Object.defineProperty(element, '_isLoadingController', { value: { value: false } });
-            vi.spyOn(element.gridController, 'activeDevices', 'get').mockReturnValue([{ device_id: 'gs2' }] as any);
+            Object.defineProperty(element, '_activeDevicesController', { value: { value: [{ device_id: 'gs2' }] } });
             Object.defineProperty(element, '_selectedDeviceController', { value: { value: 'gs1' } });
 
             document.body.appendChild(element);
@@ -240,7 +239,9 @@ describe('GrowspaceManagerCard', () => {
         it('should render main card with notification', async () => {
             Object.defineProperty(element, '_isLoadingController', { value: { value: false } });
             const mockDevice = { device_id: 'gs1', name: 'Tent', plants_per_row: 4 };
-            vi.spyOn(element.gridController, 'activeDevices', 'get').mockReturnValue([mockDevice] as any);
+            Object.defineProperty(element, '_activeDevicesController', { value: { value: [mockDevice] } });
+            Object.defineProperty(element, '_gridLayoutController', { value: { value: { effectiveRows: 1, grid: [] } } });
+            Object.defineProperty(element, '_growspaceOptionsController', { value: { value: { gs1: 'Tent' } } });
             Object.defineProperty(element, '_selectedDeviceController', { value: { value: 'gs1' } });
             Object.defineProperty(element, '_notificationController', { value: { value: { type: 'success', message: 'Test Notif' } } });
 
@@ -263,7 +264,9 @@ describe('GrowspaceManagerCard', () => {
         it('should render wide card class', async () => {
             Object.defineProperty(element, '_isLoadingController', { value: { value: false } });
             const mockDevice = { device_id: 'gs1', name: 'Tent', plants_per_row: 8 };
-            vi.spyOn(element.gridController, 'activeDevices', 'get').mockReturnValue([mockDevice] as any);
+            Object.defineProperty(element, '_activeDevicesController', { value: { value: [mockDevice] } });
+            Object.defineProperty(element, '_gridLayoutController', { value: { value: { effectiveRows: 1, grid: [] } } });
+            Object.defineProperty(element, '_growspaceOptionsController', { value: { value: { gs1: 'Tent' } } });
             Object.defineProperty(element, '_selectedDeviceController', { value: { value: 'gs1' } });
 
             // Defaults
@@ -334,16 +337,7 @@ describe('GrowspaceManagerCard', () => {
             expect(a.href).toContain('http://test.com/file.zip');
         });
 
-        it('should focus plant by index (delegation)', () => {
-            const mockSwitcher = { focusPlant: vi.fn() };
-            vi.spyOn(element.shadowRoot as any || element, 'querySelector').mockReturnValue(mockSwitcher as any);
 
-            // Define getter for shadowRoot to support querySelector if element.shadowRoot is null in test (JSDOM lit elements sometimes tricky)
-            Object.defineProperty(element, 'shadowRoot', { value: { querySelector: vi.fn(() => mockSwitcher) }, configurable: true });
-
-            (element as any)._focusPlantByIndex(5);
-            expect(mockSwitcher.focusPlant).toHaveBeenCalledWith(5);
-        });
 
         it('should toggle header expansion', () => {
             const spy = vi.spyOn(element.store, 'toggleHeaderExpansion');

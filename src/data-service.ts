@@ -5,6 +5,29 @@ import { noChange } from 'lit';
 import { DOMAIN, SERVICES, WS_TYPE_GET_DATA, WS_TYPE_GET_HISTORY_STATS } from './constants';
 import { GrowspaceAPIResponseSchema, GrowspaceAPICollectionSchema, GrowspaceAPICollection } from './schemas/api-schema';
 
+/** Shape of raw phenotype data from strain sensor */
+interface RawPhenotypeData {
+  description?: string;
+  image_path?: string;
+  image_crop_meta?: CropMeta;
+  flower_days_min?: number;
+  flower_days_max?: number;
+}
+
+/** Shape of raw strain data from strain sensor */
+interface RawStrainData {
+  meta?: {
+    breeder?: string;
+    type?: string;
+    lineage?: string;
+    sex?: string;
+    sativa_percentage?: number;
+    indica_percentage?: number;
+  };
+  phenotypes?: Record<string, RawPhenotypeData>;
+}
+
+
 export class DataService {
   public hass!: HomeAssistant;
 
@@ -98,11 +121,11 @@ export class DataService {
     if (typeof rawStrains === 'object') {
       const results: StrainEntry[] = [];
 
-      for (const [strainName, strainData] of Object.entries(rawStrains)) {
-        const meta = (strainData as any).meta || {};
-        const phenotypes = (strainData as any).phenotypes || {};
+      for (const [strainName, strainData] of Object.entries(rawStrains) as [string, RawStrainData][]) {
+        const meta = strainData.meta ?? {};
+        const phenotypes = strainData.phenotypes ?? {};
 
-        Object.entries(phenotypes).forEach(([phenoName, phenoData]: [string, any]) => {
+        Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
           results.push({
             strain: strainName,
             phenotype: phenoName,

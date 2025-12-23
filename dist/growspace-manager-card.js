@@ -4888,8 +4888,8 @@ class DataService {
         if (typeof rawStrains === 'object') {
             const results = [];
             for (const [strainName, strainData] of Object.entries(rawStrains)) {
-                const meta = strainData.meta || {};
-                const phenotypes = strainData.phenotypes || {};
+                const meta = strainData.meta ?? {};
+                const phenotypes = strainData.phenotypes ?? {};
                 Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
                     results.push({
                         strain: strainName,
@@ -28746,7 +28746,7 @@ class GrowspaceStore {
             writable: true,
             value: (motherPlant, numClones) => {
                 const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
-                this.dataService
+                return this.dataService
                     .takeClone({
                     mother_plant_id: plantId,
                     num_clones: numClones,
@@ -28815,18 +28815,10 @@ class GrowspaceStore {
         // 2. Add to new location
         const gsId = plantData.growspace_id || plantData.attributes?.growspace_id;
         if (gsId && this.wsDataCache[gsId]) {
-            // Invalidate cache by shallow copying the growspace data object
-            // This ensures DataService sees a new reference and re-transforms the data
-            this.wsDataCache[gsId] = { ...this.wsDataCache[gsId] };
-            // Note: We also need to shallow copy the grid if we want perfect immutability,
-            // but for DataService.getGrowspaceDevices, changing the top-level object ref is enough.
-            // However, to be safe and cleaner properly:
-            const grid = { ...this.wsDataCache[gsId].grid };
-            this.wsDataCache[gsId].grid = grid;
             const correctKey = `position_${plantData.row}_${plantData.col}`;
-            // Note: plantData is the SERIALIZED plant from backend.
-            // Use it directly.
-            grid[correctKey] = plantData;
+            this._updateGridImmutably(gsId, (grid) => {
+                grid[correctKey] = plantData;
+            });
             this._updateDevicesState();
         }
     }
@@ -28844,20 +28836,28 @@ class GrowspaceStore {
             this._removePlantFromCache(gsId, plantId);
         });
     }
-    _removePlantFromCache(gsId, plantId) {
-        if (!this.wsDataCache[gsId] || !this.wsDataCache[gsId].grid)
+    /**
+     * Immutably updates the grid for a growspace.
+     * Creates shallow copies at growspace and grid levels before applying the mutator.
+     */
+    _updateGridImmutably(gsId, mutator) {
+        if (!this.wsDataCache[gsId])
             return;
-        // Invalidate cache
         this.wsDataCache[gsId] = { ...this.wsDataCache[gsId] };
         const grid = { ...this.wsDataCache[gsId].grid };
         this.wsDataCache[gsId].grid = grid;
-        // Find key with this plant ID
-        // Since grid is keyed by position, we have to scan values
-        Object.keys(grid).forEach(key => {
-            const plant = grid[key];
-            if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
-                grid[key] = null;
-            }
+        mutator(grid);
+    }
+    _removePlantFromCache(gsId, plantId) {
+        if (!this.wsDataCache[gsId] || !this.wsDataCache[gsId].grid)
+            return;
+        this._updateGridImmutably(gsId, (grid) => {
+            Object.keys(grid).forEach(key => {
+                const plant = grid[key];
+                if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
+                    grid[key] = null;
+                }
+            });
         });
     }
     async refreshData() {
@@ -29550,139 +29550,43 @@ class GrowspaceStore {
     }
 }
 
-class GrowspaceGridController {
-    constructor(host, store) {
-        Object.defineProperty(this, "host", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "store", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        // Atoms controllers
-        Object.defineProperty(this, "_devices", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_selectedDevice", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_optimisticDeletedIds", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        // Cached state
-        Object.defineProperty(this, "activeDevices", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: []
-        });
-        Object.defineProperty(this, "gridLayout", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {
-                effectiveRows: 0,
-                grid: [],
-            }
-        });
-        Object.defineProperty(this, "growspaceOptions", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {}
-        });
-        // Memoization references
-        Object.defineProperty(this, "_lastDevicesRef", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: null
-        });
-        Object.defineProperty(this, "_lastSelectedDeviceRef", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: null
-        });
-        Object.defineProperty(this, "_lastDeletedIdsRef", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: null
-        });
-        this.host = host;
-        this.store = store;
-        this._devices = new libExports.StoreController(this.host, $devices);
-        this._selectedDevice = new libExports.StoreController(this.host, $selectedDevice);
-        this._optimisticDeletedIds = new libExports.StoreController(this.host, $optimisticDeletedPlantIds);
-        host.addController(this);
+/**
+ * Derived list of devices whose plants exclude any optimistically deleted IDs.
+ */
+const $activeDevices = computed([$devices, $optimisticDeletedPlantIds], (devices, deletedIds) => {
+    return devices.map((d) => ({
+        ...d,
+        plants: d.plants.filter((p) => {
+            const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+            return !deletedIds.has(pId);
+        }),
+    }));
+});
+/**
+ * Map of growspace device_id → device name for dropdown options, etc.
+ */
+const $growspaceOptions = computed($activeDevices, (devices) => {
+    const options = {};
+    for (const d of devices) {
+        options[d.device_id] = d.name;
     }
-    hostConnected() {
-        // Force calculation on connect
-        this.calculateGrid();
+    return options;
+});
+/**
+ * Computed grid layout for the currently selected device.
+ */
+const $gridLayout = computed([$activeDevices, $selectedDevice], (devices, selectedId) => {
+    if (!selectedId) {
+        return { effectiveRows: 0, grid: [] };
     }
-    hostUpdate() {
-        // Access values from controllers/atoms
-        const currentDevices = this._devices.value;
-        const currentSelectedId = this._selectedDevice.value;
-        const currentDeletedIds = this._optimisticDeletedIds.value;
-        // Check if relevant state has changed
-        if (this._lastDevicesRef === currentDevices &&
-            this._lastSelectedDeviceRef === currentSelectedId &&
-            this._lastDeletedIdsRef === currentDeletedIds) {
-            return;
-        }
-        // Update references
-        this._lastDevicesRef = currentDevices;
-        this._lastSelectedDeviceRef = currentSelectedId;
-        this._lastDeletedIdsRef = currentDeletedIds;
-        this.calculateGrid();
+    const device = devices.find((d) => d.device_id === selectedId);
+    if (!device) {
+        return { effectiveRows: 0, grid: [] };
     }
-    calculateGrid() {
-        const devices = this._devices.value || [];
-        const deletedIds = this._optimisticDeletedIds.value;
-        const selectedDeviceId = this._selectedDevice.value;
-        // 1. Recalculate Active Devices
-        this.activeDevices = devices.map((d) => ({
-            ...d,
-            plants: d.plants.filter((p) => {
-                const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
-                return !deletedIds.has(pId);
-            }),
-        }));
-        // 2. Compute growspace options
-        this.growspaceOptions = {};
-        this.activeDevices.forEach((d) => {
-            this.growspaceOptions[d.device_id] = d.name;
-        });
-        // 3. Recalculate Grid Layout
-        // Find in ACTIVE devices (filtered) or original? 
-        // Logic usually wants filtered plants for the grid.
-        const selectedDeviceData = this.activeDevices.find((d) => d.device_id === selectedDeviceId);
-        if (selectedDeviceData) {
-            const effectiveRows = PlantUtils.calculateEffectiveRows(selectedDeviceData);
-            const { grid } = PlantUtils.createGridLayout(selectedDeviceData.plants, effectiveRows, selectedDeviceData.plants_per_row);
-            this.gridLayout = { effectiveRows, grid };
-        }
-        else {
-            this.gridLayout = { effectiveRows: 0, grid: [] };
-        }
-    }
-}
+    const effectiveRows = PlantUtils.calculateEffectiveRows(device);
+    const { grid } = PlantUtils.createGridLayout(device.plants, effectiveRows, device.plants_per_row);
+    return { effectiveRows, grid };
+});
 
 let GrowspaceManagerCard = (() => {
     var _GrowspaceManagerCard_store_accessor_storage, _GrowspaceManagerCard_historyController_accessor_storage, _GrowspaceManagerCard__strainLibrary_accessor_storage, _GrowspaceManagerCard_hass_accessor_storage, _GrowspaceManagerCard__config_accessor_storage;
@@ -29778,14 +29682,27 @@ let GrowspaceManagerCard = (() => {
                 writable: true,
                 value: new libExports.StoreController(this, $strainLibrary)
             });
-            _GrowspaceManagerCard_historyController_accessor_storage.set(this, __runInitializers(this, _historyController_initializers, new GrowspaceHistoryController(this)));
-            Object.defineProperty(this, "gridController", {
+            // Grid derived atoms
+            Object.defineProperty(this, "_activeDevicesController", {
                 enumerable: true,
                 configurable: true,
                 writable: true,
-                value: (__runInitializers(this, _historyController_extraInitializers), new GrowspaceGridController(this, this.store))
+                value: new libExports.StoreController(this, $activeDevices)
             });
-            _GrowspaceManagerCard__strainLibrary_accessor_storage.set(this, __runInitializers(this, __strainLibrary_initializers, []));
+            Object.defineProperty(this, "_gridLayoutController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $gridLayout)
+            });
+            Object.defineProperty(this, "_growspaceOptionsController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new libExports.StoreController(this, $growspaceOptions)
+            });
+            _GrowspaceManagerCard_historyController_accessor_storage.set(this, __runInitializers(this, _historyController_initializers, new GrowspaceHistoryController(this)));
+            _GrowspaceManagerCard__strainLibrary_accessor_storage.set(this, (__runInitializers(this, _historyController_extraInitializers), __runInitializers(this, __strainLibrary_initializers, [])));
             _GrowspaceManagerCard_hass_accessor_storage.set(this, (__runInitializers(this, __strainLibrary_extraInitializers), __runInitializers(this, _hass_initializers, void 0)));
             _GrowspaceManagerCard__config_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, __config_initializers, void 0)));
             Object.defineProperty(this, "_handleLibraryExportReady", {
@@ -29877,12 +29794,6 @@ let GrowspaceManagerCard = (() => {
         _handleKeyboardNav(e) {
             this.store.handleKeyboardNavigation(e.key);
         }
-        _focusPlantByIndex(index) {
-            const switcher = this.shadowRoot?.querySelector('growspace-view-switcher');
-            if (switcher && typeof switcher.focusPlant === 'function') {
-                switcher.focusPlant(index);
-            }
-        }
         _downloadFile(url) {
             const a = document.createElement('a');
             a.style.display = 'none';
@@ -29913,7 +29824,7 @@ let GrowspaceManagerCard = (() => {
             if (!this.hass) {
                 return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
             }
-            const devices = this.gridController.activeDevices;
+            const devices = this._activeDevicesController.value;
             // Show loading spinner if initially loading and no devices yet
             if (this._isLoadingController.value) {
                 return x `
@@ -29931,9 +29842,9 @@ let GrowspaceManagerCard = (() => {
             if (!selectedDeviceData) {
                 return x `<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
             }
-            // Use memoized values from grid controller
-            const growspaceOptions = this.gridController.growspaceOptions;
-            const { effectiveRows, grid } = this.gridController.gridLayout;
+            // Use memoized values from grid store atoms
+            const growspaceOptions = this._growspaceOptionsController.value;
+            const { effectiveRows, grid } = this._gridLayoutController.value;
             const isWide = selectedDeviceData.plants_per_row > 7;
             // const viewMode unused here if passed directly to switcher, but let's keep var if check needed logic
             // const viewMode = this._viewModeController.value;
