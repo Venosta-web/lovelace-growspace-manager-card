@@ -10,6 +10,13 @@ describe('GrowspaceEnvChart VPD Logic', () => {
     let hassMock: any;
 
     beforeEach(async () => {
+        // Mock ResizeObserver which is not available in JSDOM
+        (globalThis as any).ResizeObserver = class {
+            observe = () => { };
+            disconnect = () => { };
+            unobserve = () => { };
+        };
+
         container = document.createElement('div');
         document.body.appendChild(container);
 

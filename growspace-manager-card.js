@@ -6672,6 +6672,178 @@ class GrowspaceHistoryController {
     }
 }
 
+// Domain Data Atoms
+const $devices = atom([]);
+const $strainLibrary = atom([]);
+const $config = atom({});
+const $optimisticDeletedPlantIds = atom(new Set());
+const $wsDataCache = atom({});
+// Computed or derived state helpers can go here if needed
+const $selectedDevice = atom(null);
+// Actions (State setters)
+const setDevices = (devices) => {
+    $devices.set(devices);
+};
+const setSelectedDevice = (deviceId) => {
+    $selectedDevice.set(deviceId);
+};
+const setConfig = (config) => {
+    $config.set(config);
+};
+const setStrainLibrary = (library) => {
+    $strainLibrary.set(library);
+};
+const addOptimisticDeletedPlantId = (id) => {
+    const current = new Set($optimisticDeletedPlantIds.get());
+    current.add(id);
+    $optimisticDeletedPlantIds.set(current);
+};
+const removeOptimisticDeletedPlantId = (id) => {
+    const current = new Set($optimisticDeletedPlantIds.get());
+    if (current.has(id)) {
+        current.delete(id);
+        $optimisticDeletedPlantIds.set(current);
+    }
+};
+const setWsDataCache = (cache) => {
+    $wsDataCache.set(cache);
+};
+const updateWsDataCacheGrid = (gsId, mutator) => {
+    const currentCache = $wsDataCache.get();
+    if (!currentCache[gsId])
+        return;
+    const newCache = { ...currentCache };
+    newCache[gsId] = { ...newCache[gsId] };
+    const newGrid = { ...newCache[gsId].grid };
+    newCache[gsId].grid = newGrid;
+    mutator(newGrid);
+    $wsDataCache.set(newCache);
+};
+const removePlantFromWsCache = (plantId, growspaceId) => {
+    const currentCache = $wsDataCache.get();
+    const newCache = { ...currentCache };
+    let changed = false;
+    const removeFn = (gsId) => {
+        if (!newCache[gsId] || !newCache[gsId].grid)
+            return;
+        let gridChanged = false;
+        const newGrid = { ...newCache[gsId].grid };
+        Object.keys(newGrid).forEach(key => {
+            const plant = newGrid[key];
+            if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
+                newGrid[key] = null;
+                gridChanged = true;
+            }
+        });
+        if (gridChanged) {
+            newCache[gsId] = { ...newCache[gsId], grid: newGrid };
+            changed = true;
+        }
+    };
+    if (growspaceId) {
+        removeFn(growspaceId);
+    }
+    else {
+        Object.keys(newCache).forEach(gsId => removeFn(gsId));
+    }
+    if (changed) {
+        $wsDataCache.set(newCache);
+    }
+};
+
+class SubscriptionController {
+    constructor(host, onUpdate) {
+        Object.defineProperty(this, "host", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_unsubEvents", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_hass", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_onUpdate", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        this.host = host;
+        this._onUpdate = onUpdate;
+        host.addController(this);
+    }
+    hostConnected() {
+        if (this._hass) {
+            this.subscribe(this._hass);
+        }
+    }
+    hostDisconnected() {
+        this.unsubscribe();
+    }
+    updateHass(hass) {
+        if (this._hass !== hass) {
+            this._hass = hass;
+            // Subscribe if not already subscribed
+            if (!this._unsubEvents) {
+                this.subscribe(hass);
+            }
+        }
+    }
+    async subscribe(hass) {
+        if (this._unsubEvents || !hass)
+            return;
+        this._hass = hass;
+        try {
+            this._unsubEvents = await hass.connection.subscribeEvents((event) => this._handleEvent(event), 'growspace_manager_updated');
+        }
+        catch (err) {
+            console.error('Failed to subscribe to growspace events', err);
+        }
+    }
+    unsubscribe() {
+        if (this._unsubEvents) {
+            this._unsubEvents();
+            this._unsubEvents = undefined;
+        }
+    }
+    _handleEvent(event) {
+        const { event_type, data } = event.data;
+        if (event_type === 'plant_added' || event_type === 'plant_updated') {
+            this._handlePlantUpdate(data.plant);
+        }
+        else if (event_type === 'plant_removed') {
+            this._handlePlantRemoval(data.plant_id, data.growspace_id);
+        }
+        if (this._onUpdate)
+            this._onUpdate();
+    }
+    // Logic moved from GrowspaceStore, adapted to use dataStore actions
+    _handlePlantUpdate(plantData) {
+        // 1. Remove old instance (handle moves) - simplified cache update
+        removePlantFromWsCache(plantData.plant_id);
+        // 2. Add to new location
+        const gsId = plantData.growspace_id || plantData.attributes?.growspace_id;
+        if (gsId) {
+            const correctKey = `position_${plantData.row}_${plantData.col}`;
+            updateWsDataCacheGrid(gsId, (grid) => {
+                grid[correctKey] = plantData;
+            });
+        }
+    }
+    _handlePlantRemoval(plantId, growspaceId) {
+        removePlantFromWsCache(plantId, growspaceId);
+    }
+}
+
 /**
  * @license
  * Copyright 2020 Google LLC
@@ -8126,39 +8298,6 @@ const showToast = (message, type = 'info') => {
 };
 const setDefaultApplied = (applied) => {
     $defaultApplied.set(applied);
-};
-
-// Domain Data Atoms
-const $devices = atom([]);
-const $strainLibrary = atom([]);
-const $config = atom({});
-const $optimisticDeletedPlantIds = atom(new Set());
-// Computed or derived state helpers can go here if needed
-const $selectedDevice = atom(null);
-// Actions (State setters)
-const setDevices = (devices) => {
-    $devices.set(devices);
-};
-const setSelectedDevice = (deviceId) => {
-    $selectedDevice.set(deviceId);
-};
-const setConfig = (config) => {
-    $config.set(config);
-};
-const setStrainLibrary = (library) => {
-    $strainLibrary.set(library);
-};
-const addOptimisticDeletedPlantId = (id) => {
-    const current = new Set($optimisticDeletedPlantIds.get());
-    current.add(id);
-    $optimisticDeletedPlantIds.set(current);
-};
-const removeOptimisticDeletedPlantId = (id) => {
-    const current = new Set($optimisticDeletedPlantIds.get());
-    if (current.has(id)) {
-        current.delete(id);
-        $optimisticDeletedPlantIds.set(current);
-    }
 };
 
 var lib = {};
@@ -29140,12 +29279,9 @@ class GrowspaceStore {
         };
     }
     constructor(host) {
-        Object.defineProperty(this, "host", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
+        // host argument deprecated/unused but kept for compatibility during refactor if needed
+        // host.addController(this); // Removed
+        // host: ReactiveControllerHost; // Removed
         Object.defineProperty(this, "dataService", {
             enumerable: true,
             configurable: true,
@@ -29158,19 +29294,8 @@ class GrowspaceStore {
             writable: true,
             value: void 0
         });
-        // Cache for raw WebSocket data
-        Object.defineProperty(this, "wsDataCache", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {}
-        });
-        Object.defineProperty(this, "_unsubEvents", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
+        // Cache moved to data-store.$wsDataCache
+        // private wsDataCache: Record<string, GrowspaceAPIResponse> = {}; 
         Object.defineProperty(this, "_isFetchingWS", {
             enumerable: true,
             configurable: true,
@@ -29185,28 +29310,19 @@ class GrowspaceStore {
                 return takeClone(this._plantActionContext, motherPlant, numClones);
             }
         });
-        this.host = host;
-        host.addController(this);
-        console.log('GrowspaceStore initialized (Nano Stores)');
+        console.log('GrowspaceStore initialized (Service Mode)');
         this.dataService = new DataService();
     }
-    hostConnected() {
-        // Lifecycle hook
-        // We can't subscribe here because hass might not be set yet.
-        // Logic handled in updateHass/subscribe
-    }
-    hostDisconnected() {
-        if (this._unsubEvents) {
-            this._unsubEvents();
-            this._unsubEvents = undefined;
-        }
-    }
+    // Lifecycle hooks removed (managed by SubscriptionController)
+    // hostConnected() {}
+    // hostDisconnected() {}
     updateHass(hass) {
         this.hass = hass;
         this.dataService.updateHass(hass);
-        this._ensureEventSubscription();
+        // Subscription logic moved to SubscriptionController
         // If cache empty, fetch initial
-        if (Object.keys(this.wsDataCache).length === 0 && !this._isFetchingWS) {
+        const currentCache = $wsDataCache.get();
+        if (Object.keys(currentCache).length === 0 && !this._isFetchingWS) {
             this._refreshGrowspaceData();
         }
         else {
@@ -29215,77 +29331,9 @@ class GrowspaceStore {
         }
         this.pruneOptimisticDeletions();
     }
-    async _ensureEventSubscription() {
-        if (this._unsubEvents || !this.hass)
-            return;
-        try {
-            this._unsubEvents = await this.hass.connection.subscribeEvents((event) => this.handleOptimisticEvent(event), 'growspace_manager_updated');
-        }
-        catch (err) {
-            console.error('Failed to subscribe to growspace events', err);
-        }
-    }
-    handleOptimisticEvent(event) {
-        const { event_type, data } = event.data;
-        // Map backend event types to actions
-        if (event_type === 'plant_added' || event_type === 'plant_updated') {
-            this._handlePlantUpdate(data.plant);
-        }
-        else if (event_type === 'plant_removed') {
-            this._handlePlantRemoval(data.plant_id, data.growspace_id);
-        }
-    }
-    _handlePlantUpdate(plantData) {
-        // 1. Find and remove old instance if exists (to handle moves)
-        this._removePlantFromCacheInAllGrowspaces(plantData.plant_id);
-        // 2. Add to new location
-        const gsId = plantData.growspace_id || plantData.attributes?.growspace_id;
-        if (gsId && this.wsDataCache[gsId]) {
-            const correctKey = `position_${plantData.row}_${plantData.col}`;
-            this._updateGridImmutably(gsId, (grid) => {
-                grid[correctKey] = plantData;
-            });
-            this._updateDevicesState();
-        }
-    }
-    _handlePlantRemoval(plantId, growspaceId) {
-        if (growspaceId) {
-            this._removePlantFromCache(growspaceId, plantId);
-        }
-        else {
-            this._removePlantFromCacheInAllGrowspaces(plantId);
-        }
-        this._updateDevicesState();
-    }
-    _removePlantFromCacheInAllGrowspaces(plantId) {
-        Object.keys(this.wsDataCache).forEach(gsId => {
-            this._removePlantFromCache(gsId, plantId);
-        });
-    }
-    /**
-     * Immutably updates the grid for a growspace.
-     * Creates shallow copies at growspace and grid levels before applying the mutator.
-     */
-    _updateGridImmutably(gsId, mutator) {
-        if (!this.wsDataCache[gsId])
-            return;
-        this.wsDataCache[gsId] = { ...this.wsDataCache[gsId] };
-        const grid = { ...this.wsDataCache[gsId].grid };
-        this.wsDataCache[gsId].grid = grid;
-        mutator(grid);
-    }
-    _removePlantFromCache(gsId, plantId) {
-        if (!this.wsDataCache[gsId] || !this.wsDataCache[gsId].grid)
-            return;
-        this._updateGridImmutably(gsId, (grid) => {
-            Object.keys(grid).forEach(key => {
-                const plant = grid[key];
-                if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
-                    grid[key] = null;
-                }
-            });
-        });
-    }
+    // _ensureEventSubscription, handleOptimisticEvent, _handlePlantUpdate, 
+    // _handlePlantRemoval, _removePlantFromCacheInAllGrowspaces, _updateGridImmutably
+    // REMOVED - Logic moved to SubscriptionController and data-store actions.
     async refreshData() {
         await this._refreshGrowspaceData();
     }
@@ -29299,7 +29347,7 @@ class GrowspaceStore {
         }
         try {
             const data = await this.dataService.fetchGrowspaceData();
-            this.wsDataCache = data || {};
+            setWsDataCache(data || {});
             this._updateDevicesState();
         }
         catch (e) {
@@ -29325,7 +29373,7 @@ class GrowspaceStore {
         return true;
     }
     _updateDevicesState() {
-        const devices = this.dataService.getGrowspaceDevices(this.wsDataCache);
+        const devices = this.dataService.getGrowspaceDevices($wsDataCache.get());
         const currentDevices = $devices.get();
         if (!this._areDeviceArraysEqual(currentDevices, devices)) {
             setDevices(devices);
@@ -29839,13 +29887,19 @@ let GrowspaceManagerCard = (() => {
     _classThis = class extends _classSuper {
         constructor() {
             super(...arguments);
-            _GrowspaceManagerCard_store_accessor_storage.set(this, __runInitializers(this, _store_initializers, new GrowspaceStore(this)));
+            _GrowspaceManagerCard_store_accessor_storage.set(this, __runInitializers(this, _store_initializers, new GrowspaceStore()));
+            Object.defineProperty(this, "_subscriptionController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, _store_extraInitializers), new SubscriptionController(this, () => this.store.updateHass(this.hass)))
+            });
             // UI Store Controllers
             Object.defineProperty(this, "_viewModeController", {
                 enumerable: true,
                 configurable: true,
                 writable: true,
-                value: (__runInitializers(this, _store_extraInitializers), new libExports.StoreController(this, $viewMode))
+                value: new libExports.StoreController(this, $viewMode)
             });
             Object.defineProperty(this, "_isLoadingController", {
                 enumerable: true,
@@ -29984,6 +30038,7 @@ let GrowspaceManagerCard = (() => {
             super.updated(changedProps);
             if (changedProps.has('hass')) {
                 this.store.updateHass(this.hass);
+                this._subscriptionController.updateHass(this.hass);
             }
             // Sync strain library to context provider
             if (this._strainLibraryController.value !== this._strainLibrary) {
@@ -30128,7 +30183,7 @@ let GrowspaceManagerCard = (() => {
     __setFunctionName(_classThis, "GrowspaceManagerCard");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _store_decorators = [e$3({ context: storeContext })];
+        _store_decorators = [e$3({ context: storeContext }), e$3({ context: storeContext })];
         _historyController_decorators = [e$3({ context: historyContext })];
         __strainLibrary_decorators = [e$3({ context: strainLibraryContext }), r$2()];
         _hass_decorators = [e$3({ context: hassContext }), n$5({ attribute: false })];

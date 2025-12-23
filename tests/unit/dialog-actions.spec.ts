@@ -136,6 +136,60 @@ describe('dialog-actions', () => {
 
             expect(result).toEqual({ row: 0, col: 0 });
         });
+
+        it('should skip deleted plants when finding slot', () => {
+            vi.mocked(dataStore.$selectedDevice.get).mockReturnValue('test-device');
+            vi.mocked(dataStore.$devices.get).mockReturnValue([{
+                device_id: 'test-device',
+                rows: 2,
+                plants_per_row: 2,
+                plants: [
+                    { attributes: { plant_id: 'p1', row: 1, col: 1 } }
+                ]
+            } as any]);
+            vi.mocked(dataStore.$optimisticDeletedPlantIds.get).mockReturnValue(new Set(['p1']));
+
+            const result = openAddPlantDialog();
+
+            // p1 is at 0,0 (1-1, 1-1) but is deleted. So 0,0 should be free.
+            expect(result).toEqual({ row: 0, col: 0 });
+        });
+
+        it('should skip occupied slots', () => {
+            vi.mocked(dataStore.$devices.get).mockReturnValue([{
+                device_id: 'test-device',
+                rows: 2,
+                plants_per_row: 2,
+                plants: [
+                    { attributes: { plant_id: 'p1', row: 1, col: 1 } }, // Occupies 0,0
+                    { attributes: { plant_id: 'p2', row: 1, col: 2 } }  // Occupies 0,1
+                ]
+            } as any]);
+            vi.mocked(dataStore.$optimisticDeletedPlantIds.get).mockReturnValue(new Set());
+
+            const result = openAddPlantDialog();
+
+            // 0,0 and 0,1 occupied. Next is 1,0.
+            expect(result).toEqual({ row: 1, col: 0 });
+        });
+
+        it('should handle plant with missing grid attributes (default to 0,0)', () => {
+            vi.mocked(dataStore.$selectedDevice.get).mockReturnValue('test-device');
+            vi.mocked(dataStore.$devices.get).mockReturnValue([{
+                device_id: 'test-device',
+                rows: 2,
+                plants_per_row: 2,
+                plants: [
+                    { attributes: { plant_id: 'p1' } } // Missing row/col -> defaults to 1,1 -> 0,0
+                ]
+            } as any]);
+            vi.mocked(dataStore.$optimisticDeletedPlantIds.get).mockReturnValue(new Set());
+
+            const result = openAddPlantDialog();
+
+            // 0,0 occupied by defaulter. Next is 0,1.
+            expect(result).toEqual({ row: 0, col: 1 });
+        });
     });
 
     describe('openStrainRecommendationDialog', () => {

@@ -11,6 +11,7 @@ export const $selectedPlants = atom<Set<string>>(new Set());
 export const $focusedPlantIndex = atom<number>(-1);
 export const $menuOpen = atom<boolean>(false);
 export const $notification = atom<{ message: string; type: 'info' | 'error' | 'success' } | null>(null);
+export const $error = atom<string | null>(null);
 export const $defaultApplied = atom<boolean>(false);
 
 // Computed stores
@@ -79,4 +80,8 @@ export const clearToast = () => {
 
 export const setDefaultApplied = (applied: boolean) => {
     $defaultApplied.set(applied);
+};
+
+export const setError = (error: string | null) => {
+    $error.set(error);
 };

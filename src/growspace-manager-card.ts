@@ -20,11 +20,13 @@ import {
   GrowspaceHistoryController,
   GrowspaceCardHost,
 } from './controllers/growspace-history-controller';
+import { SubscriptionController } from './controllers/subscription-controller';
 import './growspace-env-chart';
 import './components/manager/dialog-host';
 import './components/manager/edit-mode-banner';
 import './components/plant-card';
 import './components/growspace-header';
+import './components/growspace-toast';
 import { LibraryExportReadyEvent } from './events';
 import './components/growspace-view-switcher';
 import { sharedStyles } from './styles/shared.styles';
@@ -41,7 +43,10 @@ import { $devices, $selectedDevice, $strainLibrary } from './store/data-store';
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard, GrowspaceCardHost {
   @provide({ context: storeContext })
-  accessor store = new GrowspaceStore(this);
+  @provide({ context: storeContext })
+  accessor store = new GrowspaceStore();
+
+  protected _subscriptionController = new SubscriptionController(this, () => this.store.updateHass(this.hass));
 
   // UI Store Controllers
   protected _viewModeController = new StoreController(this, $viewMode);
@@ -126,6 +131,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
 
     if (changedProps.has('hass')) {
       this.store.updateHass(this.hass);
+      this._subscriptionController.updateHass(this.hass);
     }
 
     // Sync strain library to context provider
@@ -267,13 +273,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
         </div>
       </ha-card>
 
-      ${this._notificationController.value
-        ? html`
-            <div class="toast-notification ${this._notificationController.value.type}">
-              ${this._notificationController.value.message}
-            </div>
-          `
-        : ''}
+      <growspace-toast></growspace-toast>
       ${this.renderDialogs()}
     `;
   }

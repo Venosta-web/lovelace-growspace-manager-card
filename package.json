@@ -21,6 +21,7 @@
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+    "@open-wc/testing-helpers": "^3.0.1",
     "@playwright/test": "^1.56.1",
     "@rollup/plugin-commonjs": "^28.0.9",
     "@rollup/plugin-node-resolve": "^16.0.3",

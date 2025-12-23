@@ -76,8 +76,23 @@ export class GrowspaceEnvChart extends LitElement {
   private _resizeObserver: ResizeObserver | undefined;
 
   firstUpdated() {
+    // Chips container is always present in combined view, or we need to handle it safely
+    // Actually chips container is ONLY in combined view. logic in firstUpdated for it is also potentially flawed if we start single and switch to combined.
+    this._setupObservers();
+  }
+
+  updated(changedProperties: PropertyValues) {
+    super.updated(changedProperties);
+    // Re-check observers if structure changed
+    if (changedProperties.has('isCombined') || changedProperties.has('_renderSeries')) {
+      this._setupObservers();
+    }
+  }
+
+  private _setupObservers() {
+    // Chips Container
     const container = this._chipsContainerRef.value;
-    if (container) {
+    if (container && !this._resizeObserver) {
       container.addEventListener('scroll', () => this._checkScroll());
       this._resizeObserver = new ResizeObserver(() => {
         this._checkScroll();
@@ -85,24 +100,36 @@ export class GrowspaceEnvChart extends LitElement {
       });
       this._resizeObserver.observe(container);
       this._scrollCheckTimeout = window.setTimeout(() => this._checkScroll(), 100);
+    } else if (!container && this._resizeObserver) {
+      // Disconnect if element gone
+      this._resizeObserver.disconnect();
+      this._resizeObserver = undefined;
     }
 
-    // Observer for chart container to update cached rect
+    // Chart Container
     const chartContainer = this._chartContainerRef.value;
-    if (chartContainer) {
+    // We store the chart observer on the instance to track it
+    if (chartContainer && !(this as any)._chartObserver) {
       const chartObserver = new ResizeObserver(() => {
         this._invalidateRectCache();
       });
       chartObserver.observe(chartContainer);
-      // Also invalidate on window scroll/resize globally
+      (this as any)._chartObserver = chartObserver;
+
       window.addEventListener('scroll', this._invalidateRectCacheBound, { passive: true });
       window.addEventListener('resize', this._invalidateRectCacheBound, { passive: true });
+    } else if (!chartContainer && (this as any)._chartObserver) {
+      (this as any)._chartObserver.disconnect();
+      (this as any)._chartObserver = undefined;
+      window.removeEventListener('scroll', this._invalidateRectCacheBound);
+      window.removeEventListener('resize', this._invalidateRectCacheBound);
     }
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     if (this._resizeObserver) this._resizeObserver.disconnect();
+    if ((this as any)._chartObserver) (this as any)._chartObserver.disconnect();
     if (this._scrollCheckTimeout) clearTimeout(this._scrollCheckTimeout);
     if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
 

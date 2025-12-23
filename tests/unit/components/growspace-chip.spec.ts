@@ -1,20 +1,17 @@
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceChip } from '../../../src/components/growspace-chip';
 
 describe('GrowspaceChip', () => {
     let element: GrowspaceChip;
-    let container: HTMLElement;
 
     beforeEach(async () => {
-        container = document.createElement('div');
-        document.body.appendChild(container);
-        element = new GrowspaceChip();
-        container.appendChild(element);
-        await element.updateComplete;
+        element = await fixture(html`<growspace-chip></growspace-chip>`);
     });
 
     afterEach(() => {
-        document.body.removeChild(container);
+        vi.clearAllMocks();
     });
 
     it('should be defined', () => {
@@ -22,9 +19,7 @@ describe('GrowspaceChip', () => {
     });
 
     it('should render label and value', async () => {
-        element.label = 'Temp';
-        element.value = '25°C';
-        await element.updateComplete;
+        element = await fixture(html`<growspace-chip .label=${'Temp'} .value=${'25°C'}></growspace-chip>`);
 
         const chip = element.shadowRoot?.querySelector('.stat-chip');
         expect(chip?.textContent).toContain('Temp: 25°C');

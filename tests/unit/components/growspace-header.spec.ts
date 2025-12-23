@@ -1,4 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
+
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceHeader } from '../../../src/components/growspace-header';
 import * as uiStore from '../../../src/store/ui-store';
 import { MetricsUtils } from '../../../src/utils/metrics-utils';
@@ -36,7 +38,7 @@ vi.mock('../../../src/controllers/resize-controller', () => {
 
 vi.mock('../../../src/components/growspace-chip', () => {
     return {
-        GrowspaceChip: class { }
+        GrowspaceChip: class extends HTMLElement { }
     };
 });
 
@@ -92,8 +94,10 @@ describe('GrowspaceHeader', () => {
     let mockStore: any;
     let mockHistory: any;
     let mockHass: any;
+    let deviceMock: GrowspaceDevice;
+    let configMock: any;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.clearAllMocks(); // Clear mocks for fresh start
 
         // Mock matchMedia
@@ -160,16 +164,7 @@ describe('GrowspaceHeader', () => {
 
         mockHass = { states: {} };
 
-        // Define Element
-        if (!customElements.get('growspace-header')) {
-            customElements.define('growspace-header', GrowspaceHeader);
-        }
-
-        element = document.createElement('growspace-header') as GrowspaceHeader;
-        element.store = mockStore;
-        element.historyController = mockHistory;
-        element.hass = mockHass;
-        element.device = {
+        deviceMock = {
             device_id: 'd1',
             name: 'Growspace 1',
             overview_entity_id: 'sensor.ov',
@@ -196,7 +191,7 @@ describe('GrowspaceHeader', () => {
                 drain_times: []
             }
         } as unknown as GrowspaceDevice;
-        element.config = { default_growspace: 'd1' } as any;
+        configMock = { default_growspace: 'd1' } as any;
 
         // Default Metrics Mock
         (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
@@ -214,93 +209,80 @@ describe('GrowspaceHeader', () => {
             dominant: { icon: 'path', daysLabel: 'Day 30', weeksLabel: 'Week 5' },
             envAttrs: { dehumidifier_control_enabled: true }
         });
+
+        element = await fixture(html`
+            <growspace-header
+                .store=${mockStore}
+                .historyController=${mockHistory}
+                .hass=${mockHass}
+                .device=${deviceMock}
+                .config=${configMock}
+            ></growspace-header>
+        `);
+    });
+
+    afterEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('should be defined', () => {
+        expect(element).toBeInstanceOf(GrowspaceHeader);
     });
 
     describe('Rendering', () => {
         it('should render title if default_growspace is set', async () => {
-            // Already set in beforeEach
-            document.body.appendChild(element);
-            await element.updateComplete;
-
             const title = element.shadowRoot?.querySelector('.gs-title');
             expect(title).not.toBeNull();
             expect(title?.textContent).toBe('Growspace 1');
             expect(element.shadowRoot?.querySelector('select')).toBeNull();
-
-            document.body.removeChild(element);
         });
 
         it('should render select dropdown if default_growspace is not set', async () => {
-            element.config = {} as any; // No default
-            document.body.appendChild(element);
+            // Re-render with new config
+            element.config = {} as any;
             await element.updateComplete;
 
             const select = element.shadowRoot?.querySelector('select');
             expect(select).not.toBeNull();
-            // Dropdown depends on devices and selectedDevice atom
             expect(select?.value).toBe('d1');
-
-            document.body.removeChild(element);
         });
 
         it('should render hero stats', async () => {
-            document.body.appendChild(element);
-            await element.updateComplete;
-
             const heroCards = element.shadowRoot?.querySelectorAll('.hero-card');
             expect(heroCards?.length).toBe(4); // Temp, Hum, VPD, CO2
 
             const tempValue = heroCards?.[0].querySelector('.hero-value')?.textContent;
             expect(tempValue).toBe('25');
-
-            document.body.removeChild(element);
         });
 
         it('should render secondary chips', async () => {
-            document.body.appendChild(element);
-            await element.updateComplete;
-
             const chips = element.shadowRoot?.querySelectorAll('growspace-chip');
-            // 1 device chip + 1 secondary chip (ppfd)
             expect(chips?.length).toBeGreaterThanOrEqual(2);
-
-            document.body.removeChild(element);
         });
     });
 
     describe('Interactions', () => {
         it('should handle device change', async () => {
             element.config = {} as any;
-            document.body.appendChild(element);
             await element.updateComplete;
 
             const select = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
-            // Ensure d2 is in the list (it is in mockStore.devices and set to $devices in beforeEach)
             select.value = 'd2';
             select.dispatchEvent(new Event('change'));
 
             expect(mockStore.handleDeviceChange).toHaveBeenCalledWith('d2');
-            document.body.removeChild(element);
         });
 
         it('should toggle graph on hero card click', async () => {
-            document.body.appendChild(element);
-            await element.updateComplete;
-
             const card = element.shadowRoot?.querySelector('.hero-card') as HTMLElement;
             card.click();
 
             expect(mockHistory.toggleEnvGraph).toHaveBeenCalledWith(
                 expect.objectContaining({ metric: 'temperature', visible: true })
             );
-
-            document.body.removeChild(element);
         });
 
         it('should handle menu actions', async () => {
-            document.body.appendChild(element);
-            await element.updateComplete;
-
             // Open menu
             (element as any)._menuOpen = true;
             element.requestUpdate();
@@ -310,7 +292,7 @@ describe('GrowspaceHeader', () => {
             expect(menu).not.toBeNull();
 
             // Config
-            const configItem = menu?.querySelectorAll('.menu-item')[0] as HTMLElement; // Config is usually first
+            const configItem = menu?.querySelectorAll('.menu-item')[0] as HTMLElement;
             configItem.click();
             expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'CONFIG' })
@@ -323,15 +305,11 @@ describe('GrowspaceHeader', () => {
             expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'STRAIN_LIBRARY' })
             );
-
-            document.body.removeChild(element);
         });
     });
 
     describe('Responsiveness', () => {
         it('should show mobile link button on mobile', async () => {
-            document.body.appendChild(element);
-
             // We need to preserve observe method
             (element as any)._resizeController = {
                 isMobile: true,
@@ -345,16 +323,11 @@ describe('GrowspaceHeader', () => {
             const linkBtn = element.shadowRoot?.querySelector('.mobile-link');
             expect(linkBtn).not.toBeNull();
             expect(linkBtn?.classList.contains('mobile-link')).toBe(true);
-
-            document.body.removeChild(element);
         });
     });
 
     describe('Drag & Drop', () => {
         it('should handle drop to link graphs', async () => {
-            document.body.appendChild(element);
-            await element.updateComplete;
-
             // Mock drag start
             (element as any)._draggedMetric = 'temperature';
 
@@ -363,24 +336,15 @@ describe('GrowspaceHeader', () => {
 
             expect(mockHistory.linkGraphs).toHaveBeenCalledWith('temperature', 'humidity');
             expect((element as any)._draggedMetric).toBeNull(); // Reset
-
-            document.body.removeChild(element);
         });
     });
 
     describe('Menu Actions Coverage', () => {
         beforeEach(async () => {
-            vi.clearAllMocks(); // Clear mocks again for this inner suite
-            document.body.appendChild(element);
-            await element.updateComplete;
-            // Open menu
+            // Already connected via top-level beforeEach
             (element as any)._menuOpen = true;
             element.requestUpdate();
             await element.updateComplete;
-        });
-
-        afterEach(() => {
-            document.body.removeChild(element);
         });
 
         it('should handle add_plant action', () => {
@@ -455,15 +419,6 @@ describe('GrowspaceHeader', () => {
     });
 
     describe('Render Methods Coverage', () => {
-        beforeEach(async () => {
-            document.body.appendChild(element);
-            await element.updateComplete;
-        });
-
-        afterEach(() => {
-            document.body.removeChild(element);
-        });
-
         it('should render menu when open', async () => {
             (element as any)._menuOpen = true;
             element.requestUpdate();
@@ -518,13 +473,8 @@ describe('GrowspaceHeader', () => {
 
     describe('Unlink Graphs', () => {
         it('should unlink graph group', async () => {
-            document.body.appendChild(element);
-            await element.updateComplete;
-
             (element as any)._unlinkGraphs(1);
             expect(mockHistory.unlinkGraphGroup).toHaveBeenCalledWith(1);
-
-            document.body.removeChild(element);
         });
     });
 
@@ -549,20 +499,9 @@ describe('GrowspaceHeader', () => {
     });
 
     describe('Scroll Logic', () => {
-        // Basic tests can remain as is, they don't depend on store
         describe('Scroll Logic Details', () => {
-            beforeEach(async () => {
-                document.body.appendChild(element);
-                await element.updateComplete;
-            });
-
-            afterEach(() => {
-                document.body.removeChild(element);
-            });
-
             it('should update scroll state when determining scrollability', () => {
                 const container = document.createElement('div');
-                // Mock properties to simulate scrollable content
                 Object.defineProperty(container, 'scrollLeft', { value: 10, writable: true });
                 Object.defineProperty(container, 'scrollWidth', { value: 500, writable: true });
                 Object.defineProperty(container, 'clientWidth', { value: 200, writable: true });
@@ -606,15 +545,6 @@ describe('GrowspaceHeader', () => {
         });
 
         describe('Advanced Interactions', () => {
-            beforeEach(async () => {
-                document.body.appendChild(element);
-                await element.updateComplete;
-            });
-
-            afterEach(() => {
-                document.body.removeChild(element);
-            });
-
             it('should prevent default on dragover if dragging metric', () => {
                 (element as any)._draggedMetric = 'temp';
                 const evt = new Event('dragover');
@@ -662,14 +592,9 @@ describe('GrowspaceHeader', () => {
 
         describe('Menu DOM Interactions', () => {
             beforeEach(async () => {
-                document.body.appendChild(element);
                 (element as any)._menuOpen = true;
                 element.requestUpdate();
                 await element.updateComplete;
-            });
-
-            afterEach(() => {
-                document.body.removeChild(element);
             });
 
             it('should handle all menu item clicks in DOM', () => {
@@ -742,15 +667,6 @@ describe('GrowspaceHeader', () => {
         });
     });
     describe('Template Bindings Coverage', () => {
-        beforeEach(async () => {
-            document.body.appendChild(element);
-            await element.updateComplete;
-        });
-
-        afterEach(() => {
-            document.body.removeChild(element);
-        });
-
         it('should trigger drag handlers from hero card DOM', () => {
             const hero = element.shadowRoot?.querySelector('.hero-card');
             expect(hero).toBeTruthy();
@@ -790,6 +706,38 @@ describe('GrowspaceHeader', () => {
             (element as any)._canScrollLeft = true;
             element.requestUpdate();
         });
+
+        it('should trigger drag handlers from device chips DOM', () => {
+            // Verify device chips are rendered
+            const deviceChipsContainer = element.shadowRoot?.querySelector('.gs-device-chips-header');
+            expect(deviceChipsContainer).toBeTruthy();
+            const deviceChips = deviceChipsContainer?.querySelectorAll('growspace-chip');
+            expect(deviceChips?.length).toBeGreaterThan(0);
+        });
+
+        it('should trigger unlink from secondary strip chips', () => {
+            // Verify secondary strip chips are rendered
+            const secondaryStrip = element.shadowRoot?.querySelector('.secondary-strip');
+            expect(secondaryStrip).toBeTruthy();
+            const chips = secondaryStrip?.querySelectorAll('growspace-chip');
+            // Secondary strip should have chips
+            expect(chips).toBeTruthy();
+        });
+
+        it('should call _handleDragOver directly', () => {
+            const mockEvent = { preventDefault: vi.fn() } as any;
+            (element as any)._draggedMetric = 'temperature';
+            (element as any)._handleDragOver(mockEvent);
+            expect(mockEvent.preventDefault).toHaveBeenCalled();
+        });
+
+        it('should call _toggleEnvGraph directly', () => {
+            // Mock controller
+            (element as any).historyController = {
+                toggleEnvGraph: vi.fn()
+            };
+            (element as any)._toggleEnvGraph('humidity');
+            expect((element as any).historyController.toggleEnvGraph).toHaveBeenCalledWith({ metric: 'humidity', visible: true });
+        });
     });
 });
-

@@ -1,5 +1,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { fixture, html } from '@open-wc/testing-helpers';
+import { LitElement } from 'lit';
 import { GrowspacePlantCard } from '../../../src/components/plant-card';
 import { PlantEntity, PlantStage } from '../../../src/types';
 import * as uiStore from '../../../src/store/ui-store';
@@ -56,25 +58,18 @@ if (!globalThis.DragEvent) {
 
 describe('PlantCard', () => {
     let element: GrowspacePlantCard;
-    let container: HTMLElement;
 
     beforeEach(async () => {
         // Reset mocks to default values
         (uiStore.$isEditMode.get as any).mockReturnValue(false);
         (uiStore.$selectedPlants.get as any).mockReturnValue(new Set());
 
-        container = document.createElement('div');
-        document.body.appendChild(container);
-        element = new GrowspacePlantCard();
-        container.appendChild(element);
-        await element.updateComplete;
+        element = await fixture(html`<growspace-plant-card></growspace-plant-card>`);
     });
 
     afterEach(() => {
-        if (container && container.parentNode) {
-            document.body.removeChild(container);
-        }
         vi.clearAllMocks();
+        // fixture handles DOM cleanup automatically
     });
 
     it('should result in defined element', () => {
@@ -83,50 +78,68 @@ describe('PlantCard', () => {
 
     describe('Rendering & Display Logic', () => {
         it('should resolve correct image from strain library (exact pheno match)', async () => {
-            element.plant = {
+            const plant = {
                 attributes: { strain: 'OG Kush', phenotype: '1', plant_id: 'p1' },
                 state: 'veg'
             } as any;
-            element.strainLibrary = [
+            const strainLibrary = [
                 { strain: 'OG Kush', phenotype: '1', key: 'og_1', image: 'og_1.jpg' },
                 { strain: 'OG Kush', phenotype: 'default', key: 'og_def', image: 'og_def.jpg' }
             ] as any;
 
-            await element.updateComplete;
+            element = await fixture(html`
+                <growspace-plant-card 
+                    .plant=${plant} 
+                    .strainLibrary=${strainLibrary}
+                ></growspace-plant-card>
+            `);
+
             const img = element.shadowRoot?.querySelector('img');
             expect(img?.src).toContain('og_1.jpg');
         });
 
         it('should fallback to default pheno image', async () => {
-            element.plant = {
+            const plant = {
                 attributes: { strain: 'OG Kush', phenotype: '2', plant_id: 'p1' },
                 state: 'veg'
             } as any;
-            element.strainLibrary = [
+            const strainLibrary = [
                 { strain: 'OG Kush', phenotype: 'default', key: 'og_def', image: 'og_def.jpg' }
             ] as any;
 
-            await element.updateComplete;
+            element = await fixture(html`
+                <growspace-plant-card 
+                    .plant=${plant} 
+                    .strainLibrary=${strainLibrary}
+                ></growspace-plant-card>
+            `);
+
             const img = element.shadowRoot?.querySelector('img');
             expect(img?.src).toContain('og_def.jpg');
         });
 
         it('should fallback to any strain image if no default', async () => {
-            element.plant = {
+            const plant = {
                 attributes: { strain: 'Amnesia', plant_id: 'p1' },
                 state: 'veg'
             } as any;
-            element.strainLibrary = [
+            const strainLibrary = [
                 { strain: 'Amnesia', phenotype: 'X', key: 'am_x', image: 'am_x.jpg' }
             ] as any;
 
-            await element.updateComplete;
+            element = await fixture(html`
+                <growspace-plant-card 
+                    .plant=${plant} 
+                    .strainLibrary=${strainLibrary}
+                    ></growspace-plant-card>
+            `);
+
             const img = element.shadowRoot?.querySelector('img');
             expect(img?.src).toContain('am_x.jpg');
         });
 
         it('should filter stages for Dry/Cure views', async () => {
-            element.plant = {
+            const plant = {
                 attributes: {
                     plant_id: 'p1',
                     stage: 'dry',
@@ -136,13 +149,12 @@ describe('PlantCard', () => {
                 state: 'dry'
             } as any;
 
-            await element.updateComplete;
+            element = await fixture(html`
+                <growspace-plant-card .plant=${plant}></growspace-plant-card>
+            `);
 
             // Should only show Dry stage
             const stats = element.shadowRoot?.querySelector('growspace-plant-stats');
-            // Wait for stats component to update if needed, though usually updateComplete of parent handles children? 
-            // Lit's updateComplete waits for children if they return a promise, but standard properties update might be async.
-            // Let's assert stats exists and query its shadowRoot.
             expect(stats).toBeTruthy();
             await (stats as any).updateComplete;
 
@@ -155,8 +167,9 @@ describe('PlantCard', () => {
 
     describe('Edit Mode & Selection', () => {
         beforeEach(async () => {
-            element.plant = { attributes: { plant_id: 'p1' } } as any;
-            await element.updateComplete;
+            element = await fixture(html`
+                <growspace-plant-card .plant=${{ attributes: { plant_id: 'p1' } } as any}></growspace-plant-card>
+            `);
         });
 
         it('should show checkbox in edit mode', async () => {
@@ -199,9 +212,12 @@ describe('PlantCard', () => {
     });
 
     describe('Drag & Drop (Desktop)', () => {
+        const plant = { attributes: { plant_id: 'p1' }, entity_id: 'sensor.p1' } as any;
+
         beforeEach(async () => {
-            element.plant = { attributes: { plant_id: 'p1' }, entity_id: 'sensor.p1' } as any;
-            await element.updateComplete;
+            element = await fixture(html`
+                <growspace-plant-card .plant=${plant}></growspace-plant-card>
+            `);
         });
 
         it('should handle drag start', async () => {
@@ -248,10 +264,13 @@ describe('PlantCard', () => {
     });
 
     describe('Mobile Gestures (Touch)', () => {
+        const plant = { attributes: { plant_id: 'p1' }, entity_id: 'sensor.p1' } as any;
+
         beforeEach(async () => {
-            element.plant = { attributes: { plant_id: 'p1' }, entity_id: 'sensor.p1' } as any;
             vi.useFakeTimers();
-            await element.updateComplete;
+            element = await fixture(html`
+                <growspace-plant-card .plant=${plant}></growspace-plant-card>
+            `);
         });
 
         afterEach(() => {
@@ -313,6 +332,144 @@ describe('PlantCard', () => {
                 x: 100, y: 100, plant: element.plant
             }));
             expect(card.classList.contains('dragging-mobile')).toBe(false);
+        });
+    });
+
+    describe('Additional Coverage Tests', () => {
+        it('should focus on the card element', async () => {
+            const plant = { attributes: { plant_id: 'p1' }, state: 'veg' } as any;
+            element = await fixture(html`
+                <growspace-plant-card .plant=${plant}></growspace-plant-card>
+            `);
+
+            const card = element.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
+            const focusSpy = vi.spyOn(card, 'focus');
+
+            element.focus();
+
+            expect(focusSpy).toHaveBeenCalled();
+        });
+
+        it('should fallback to super.focus if no card element', async () => {
+            element = await fixture(html`<growspace-plant-card></growspace-plant-card>`);
+            // No plant, so no card rendered
+            const superFocusSpy = vi.spyOn(LitElement.prototype, 'focus');
+
+            element.focus();
+
+            expect(superFocusSpy).toHaveBeenCalled();
+        });
+
+        it('should emit plant-click event on card click', async () => {
+            const plant = { attributes: { plant_id: 'p1' }, state: 'veg' } as any;
+            element = await fixture(html`
+                <growspace-plant-card .plant=${plant}></growspace-plant-card>
+            `);
+
+            const listener = vi.fn();
+            element.addEventListener('plant-click', listener);
+
+            const card = element.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
+            card.click();
+
+            expect(listener).toHaveBeenCalled();
+            expect(listener.mock.calls[0][0].detail.plant).toBe(plant);
+        });
+
+        it('should generate srcset for WebP images', async () => {
+            const plant = {
+                attributes: { strain: 'WebP Test', plant_id: 'p1' },
+                state: 'veg'
+            } as any;
+            const strainLibrary = [
+                { strain: 'WebP Test', phenotype: 'default', key: 'webp_test', image: '/images/test.webp' }
+            ] as any;
+
+            element = await fixture(html`
+                <growspace-plant-card 
+                    .plant=${plant} 
+                    .strainLibrary=${strainLibrary}
+                ></growspace-plant-card>
+            `);
+
+            const img = element.shadowRoot?.querySelector('img');
+            expect(img?.srcset).toContain('_small.webp');
+            expect(img?.srcset).toContain('320w');
+            expect(img?.srcset).toContain('1024w');
+        });
+
+        it('should not generate srcset for non-WebP images', async () => {
+            const plant = {
+                attributes: { strain: 'JPG Test', plant_id: 'p1' },
+                state: 'veg'
+            } as any;
+            const strainLibrary = [
+                { strain: 'JPG Test', phenotype: 'default', key: 'jpg_test', image: '/images/test.jpg' }
+            ] as any;
+
+            element = await fixture(html`
+                <growspace-plant-card 
+                    .plant=${plant} 
+                    .strainLibrary=${strainLibrary}
+                ></growspace-plant-card>
+            `);
+
+            const img = element.shadowRoot?.querySelector('img');
+            expect(img?.srcset).toBe('');
+        });
+
+        it('should render pheno when present', async () => {
+            const plant = {
+                attributes: { strain: 'Pheno Test', phenotype: 'Purple', plant_id: 'p1' },
+                state: 'veg'
+            } as any;
+            const strainLibrary = [
+                { strain: 'Pheno Test', phenotype: 'Purple', key: 'pt_p', image: 'pt.jpg' }
+            ] as any;
+
+            element = await fixture(html`
+                <growspace-plant-card 
+                    .plant=${plant} 
+                    .strainLibrary=${strainLibrary}
+                ></growspace-plant-card>
+            `);
+
+            const phenoElement = element.shadowRoot?.querySelector('.pc-pheno');
+            expect(phenoElement?.textContent).toBe('Purple');
+        });
+
+        it('should show selected checkbox in edit mode when selected', async () => {
+            const plant = { attributes: { plant_id: 'selected_plant' }, state: 'veg' } as any;
+            (uiStore.$isEditMode.get as any).mockReturnValue(true);
+            (uiStore.$selectedPlants.get as any).mockReturnValue(new Set(['selected_plant']));
+
+            element = await fixture(html`
+                <growspace-plant-card .plant=${plant}></growspace-plant-card>
+            `);
+
+            await element.requestUpdate();
+            await element.updateComplete;
+
+            const checkbox = element.shadowRoot?.querySelector('.plant-card-checkbox.selected');
+            expect(checkbox).toBeTruthy();
+        });
+
+        it('should return null displayData when plant is missing', async () => {
+            element = await fixture(html`<growspace-plant-card></growspace-plant-card>`);
+            expect(element.displayData).toBeNull();
+        });
+
+        it('should render unknown state when plant.state is missing', async () => {
+            const plant = {
+                attributes: { strain: 'Unknown', plant_id: 'p1' }
+            } as any; // No state
+
+            element = await fixture(html`
+                <growspace-plant-card .plant=${plant}></growspace-plant-card>
+            `);
+
+            const stageEl = element.shadowRoot?.querySelector('.pc-stage');
+            expect(stageEl?.textContent).toBe('Unknown');
         });
     });
 });

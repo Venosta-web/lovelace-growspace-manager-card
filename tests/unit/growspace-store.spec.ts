@@ -36,12 +36,16 @@ vi.mock('../../src/store/data-store', () => ({
     $strainLibrary: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
     $config: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
     $optimisticDeletedPlantIds: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn() },
+    $wsDataCache: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
     setDevices: vi.fn(),
     setSelectedDevice: vi.fn(),
     setStrainLibrary: vi.fn(),
     setConfig: vi.fn(),
     addOptimisticDeletedPlantId: vi.fn(),
     removeOptimisticDeletedPlantId: vi.fn(),
+    setWsDataCache: vi.fn(),
+    updateWsDataCacheGrid: vi.fn(),
+    removePlantFromWsCache: vi.fn(),
 }));
 
 // Mock DataService
@@ -123,7 +127,7 @@ describe('GrowspaceStore', () => {
     describe('Initialization', () => {
         it('should initialize selected device from config', () => {
             const devices = [{ device_id: 'd1', name: 'Grow 1' }] as any;
-            (store as any).wsDataCache = { 'd1': {} };
+            (dataStore.$wsDataCache.get as any).mockReturnValue({ 'd1': {} });
             mockDataServiceInstance.getGrowspaceDevices.mockReturnValue(devices);
             (dataStore.$devices.get as any).mockReturnValue(devices);
 
@@ -139,7 +143,7 @@ describe('GrowspaceStore', () => {
 
         it('should fallback to first device if config default invalid', () => {
             const devices = [{ device_id: 'd1', name: 'Grow 1' }] as any;
-            (store as any).wsDataCache = { 'd1': {} };
+            (dataStore.$wsDataCache.get as any).mockReturnValue({ 'd1': {} });
             mockDataServiceInstance.getGrowspaceDevices.mockReturnValue(devices);
             (dataStore.$devices.get as any).mockReturnValue(devices);
 
@@ -281,43 +285,7 @@ describe('GrowspaceStore', () => {
     });
 
     describe('Event Handling & Cache', () => {
-        it('should update cache on plant_updated', () => {
-            (store as any).wsDataCache = {
-                'gs1': { grid: { 'position_1_1': { plant_id: 'p1', growspace_id: 'gs1' } } }
-            };
 
-            const event = {
-                data: {
-                    event_type: 'plant_updated',
-                    data: {
-                        plant: { plant_id: 'p1', growspace_id: 'gs1', row: 2, col: 2, attributes: {} }
-                    }
-                }
-            };
-
-            (store as any).handleOptimisticEvent(event);
-
-            const grid = (store as any).wsDataCache['gs1'].grid;
-            expect(grid['position_1_1']).toBeFalsy();
-            expect(grid['position_2_2']).toBeDefined();
-            expect(grid['position_2_2'].plant_id).toBe('p1');
-        });
-
-        it('should remove plant on plant_removed', () => {
-            (store as any).wsDataCache = {
-                'gs1': { grid: { 'position_1_1': { plant_id: 'p1' } } }
-            };
-
-            const event = {
-                data: {
-                    event_type: 'plant_removed',
-                    data: { plant_id: 'p1', growspace_id: 'gs1' }
-                }
-            };
-
-            (store as any).handleOptimisticEvent(event);
-            expect((store as any).wsDataCache['gs1'].grid['position_1_1']).toBeNull();
-        });
 
         it('should prune optimistic deletions if present and cleared', () => {
             (dataStore.$optimisticDeletedPlantIds.get as any).mockReturnValue(new Set(['p1', 'p2']));
@@ -724,7 +692,7 @@ describe('GrowspaceStore', () => {
         it('should not update devices if arrays are equal', () => {
             const devices = [{ device_id: 'd1', plants: [] }];
             (dataStore.$devices.get as any).mockReturnValue(devices);
-            (store as any).wsDataCache = { d1: { device_id: 'd1', plants: [] } };
+            (dataStore.$wsDataCache.get as any).mockReturnValue({ d1: { device_id: 'd1', plants: [] } });
             mockDataServiceInstance.getGrowspaceDevices.mockReturnValue(devices);
 
             const spy = vi.spyOn(dataStore, 'setDevices');
@@ -825,10 +793,114 @@ describe('GrowspaceStore', () => {
             const p1 = { attributes: { plant_id: 'p1' } } as any;
 
             store.handlePlantClick(p1);
-            // specific logic: if size > 0, toggle. If size === 0, open dialog directly?
-            // code: if (editMode && selected.size > 0) { ... } else { openDialog ... }
+
             expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({ type: 'PLANT_OVERVIEW' }));
         });
+
+        it('should handle _keyboardActionContext methods', () => {
+            const ctx = (store as any)._keyboardActionContext;
+            const spy = vi.spyOn(store, 'exitEditMode');
+            ctx.exitEditMode();
+            expect(spy).toHaveBeenCalled();
+
+            const spy2 = vi.spyOn(store, 'handlePlantClick');
+            ctx.handlePlantClick({} as any);
+            expect(spy2).toHaveBeenCalled();
+
+            const spy3 = vi.spyOn(store, 'handleDeletePlant');
+            ctx.handleDeletePlant('p1');
+            expect(spy3).toHaveBeenCalled();
+        });
+
+        it('should handle _strainActionContext methods', () => {
+            const ctx = (store as any)._strainActionContext;
+
+            expect(ctx.getStrainLibrary()).toEqual([]);
+            ctx.setStrainLibrary([{ strain: 'S1' }]);
+            expect(uiStore.closeDialog).toHaveBeenCalledTimes(0); // Before call
+
+            ctx.closeDialog();
+            expect(uiStore.closeDialog).toHaveBeenCalled();
+
+            const spy = vi.spyOn(store, 'fetchStrainLibrary');
+            ctx.refreshStrainLibrary(true);
+            expect(spy).toHaveBeenCalledWith(true);
+
+            const refreshDataSpy = vi.spyOn(store, 'refreshData');
+            ctx.refreshData();
+            expect(refreshDataSpy).toHaveBeenCalled();
+        });
+
+        it('should handle initializeSelectedDevice with initial_view_mode', () => {
+            store.initializeSelectedDevice({ default_growspace: 'd1', initial_view_mode: 'header' } as any);
+            expect(uiStore.setViewMode).toHaveBeenCalledWith('header');
+        });
+
+        it('should handle _areDeviceArraysEqual false on content mismatch', () => {
+            const a = [{ device_id: 'd1' }] as any;
+            const b = [{ device_id: 'd2' }] as any; // Same length, diff content
+            expect((store as any)._areDeviceArraysEqual(a, b)).toBe(false);
+        });
+
+        it('should fetch strain library using cache if valid', async () => {
+            const validCache = JSON.stringify({
+                version: 2,
+                timestamp: Date.now(),
+                data: [{ strain: 'Cached' }]
+            });
+            vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(validCache);
+
+            await store.fetchStrainLibrary(false);
+
+            expect(dataStore.setStrainLibrary).toHaveBeenCalledWith([{ strain: 'Cached' }]);
+            expect(store.dataService.fetchStrainLibrary).not.toHaveBeenCalled();
+        });
+
+        it('should fetch strain library if cache invalid json', async () => {
+            vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('{ invalid json');
+            const spy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+
+            await store.fetchStrainLibrary(false);
+
+            expect(spy).toHaveBeenCalledWith('Failed to parse cached strain library', expect.any(Error));
+            expect(store.dataService.fetchStrainLibrary).toHaveBeenCalled();
+        });
+
+        it('should fetch strain library backend error log', async () => {
+            vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
+            mockDataServiceInstance.fetchStrainLibrary.mockRejectedValue(new Error('Backend Fail'));
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+            await store.fetchStrainLibrary(false);
+
+            expect(spy).toHaveBeenCalledWith('Failed to fetch strain library:', expect.any(Error));
+        });
+
+        it('should updatePlantFromDialog log error', async () => {
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            mockDataServiceInstance.updatePlant.mockRejectedValue(new Error('Update Fail'));
+
+            await store.updatePlantFromDialog({
+                plant: { attributes: { plant_id: 'p1' } } as any,
+                editedAttributes: {},
+                selectedPlantIds: ['p1']
+            });
+
+            expect(spy).toHaveBeenCalledWith('Error updating plant(s):', expect.any(Error));
+        });
+
+        it('should close PLANT_OVERVIEW dialog on delete if open', async () => {
+            (uiStore.$activeDialog.get as any).mockReturnValue({ type: 'PLANT_OVERVIEW' });
+            await store.handleDeletePlant('p1');
+            expect(uiStore.closeDialog).toHaveBeenCalled();
+        });
+
+        it('should update grid on movePlant success', async () => {
+            const spy = vi.spyOn(store, 'updateGrid');
+            await store.movePlant({ attributes: { plant_id: 'p1' } } as any, 1, 1);
+            expect(spy).toHaveBeenCalled();
+        });
+
 
         it('should handle getStrainRecommendation race condition (dialog closed)', async () => {
             // 1. Initial State: Dialog Open
@@ -872,23 +944,7 @@ describe('GrowspaceStore', () => {
             expect(store.dataService.fetchGrowspaceData).not.toHaveBeenCalled();
         });
 
-        it('should handle plant removal global (no growspace id)', () => {
-            (store as any).wsDataCache = {
-                gs1: { grid: { 'p1_pos': { plant_id: 'p1' } } },
-                gs2: { grid: { 'p1_pos': { plant_id: 'p1' } } } // Same plant id ?? unlikely but possible in cache
-            };
 
-            (store as any)._handlePlantRemoval('p1', undefined);
-
-            expect((store as any).wsDataCache.gs1.grid['p1_pos']).toBeNull();
-            expect((store as any).wsDataCache.gs2.grid['p1_pos']).toBeNull();
-        });
-
-        it('should handle plant update where growspace not in cache (ignored)', () => {
-            (store as any).wsDataCache = {};
-            // Should not throw or explode
-            (store as any)._handlePlantUpdate({ plant_id: 'p1', growspace_id: 'unknown' });
-        });
 
         it('should early return in togglePlantSelection if no ID', () => {
             const spy = vi.spyOn(uiStore, 'togglePlantSelection');
@@ -1043,18 +1099,6 @@ describe('GrowspaceStore', () => {
             }));
         });
 
-        it('should handle host lifecycle', () => {
-            const unsubSpy = vi.fn();
-            (store as any)._unsubEvents = unsubSpy;
 
-            store.hostConnected(); // No-op currently but cover it
-            store.hostDisconnected();
-
-            expect(unsubSpy).toHaveBeenCalled();
-            expect((store as any)._unsubEvents).toBeUndefined();
-
-            // Call again (safe)
-            store.hostDisconnected();
-        });
     });
 });

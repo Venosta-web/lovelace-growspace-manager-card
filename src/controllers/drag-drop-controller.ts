@@ -84,14 +84,17 @@ export class DragDropController implements ReactiveController {
             // Logic for active mobile dragging
             e.preventDefault();
             const touch = e.touches[0];
-            const card = this._getCardElement();
 
-            const deltaX = touch.clientX - this._startX;
-            const deltaY = touch.clientY - this._startY;
+            // Use requestAnimationFrame to avoid thrashing
+            requestAnimationFrame(() => {
+                const card = this._getCardElement();
+                const deltaX = touch.clientX - this._startX;
+                const deltaY = touch.clientY - this._startY;
 
-            if (card) {
-                card.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.05)`;
-            }
+                if (card) {
+                    card.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.05)`;
+                }
+            });
         } else {
             // Check if moved too much to cancel long press
             const touch = e.touches[0];

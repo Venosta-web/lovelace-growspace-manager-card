@@ -202,6 +202,14 @@ describe('plant-actions', () => {
             // cure is in movableStages but has no mapping, so it hits the else branch
             expect(result).toBe(false);
         });
+        it('should handle harvestPlant failure', async () => {
+            mockDataService.harvestPlant.mockRejectedValue(new Error('Harvest failed'));
+            const flowerPlant = { ...mockPlant, attributes: { ...mockPlant.attributes, stage: 'flower' } };
+
+            const result = await movePlantToNextStage(ctx, flowerPlant);
+
+            expect(result).toBe(false);
+        });
     });
 
     describe('movePlantToGrowspace', () => {

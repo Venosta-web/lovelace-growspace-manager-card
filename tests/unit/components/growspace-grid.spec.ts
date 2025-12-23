@@ -1,7 +1,7 @@
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceGrid } from '../../../src/components/growspace-grid';
-import { GrowspaceStore } from '../../../src/store/growspace-store';
 import * as uiStore from '../../../src/store/ui-store';
 
 // Mock ui-store
@@ -40,7 +40,7 @@ describe('GrowspaceGrid', () => {
     let element: GrowspaceGrid;
     let mockStore: any;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         mockStore = {
             handleDrop: vi.fn(),
             handlePlantClick: vi.fn(),
@@ -48,16 +48,15 @@ describe('GrowspaceGrid', () => {
             openAddPlantDialog: vi.fn()
         };
 
-        // Manually define the custom element if not already defined (Vitest environment might reset?)
-        // In JSDOM with vitest, imports usually execute once. 
-        // We assume 'src/components/growspace-grid.ts' is imported by the test file.
-        // But we need to ensure the class is the one we are testing.
-
-        element = document.createElement('growspace-grid') as GrowspaceGrid;
+        element = await fixture(html`<growspace-grid></growspace-grid>`);
 
         // Inject store mock manually (bypassing Context for unit test simplicity)
-        // We cast to any to access private property
         (element as any).store = mockStore;
+    });
+
+    afterEach(() => {
+        vi.clearAllMocks();
+        // fixture handles cleanup
     });
 
     it('should be defined', () => {
@@ -74,144 +73,132 @@ describe('GrowspaceGrid', () => {
     describe('Rendering', () => {
         it('should render skeleton when isLoading is true', async () => {
             (uiStore.$isLoading.get as any).mockReturnValue(true);
-            document.body.appendChild(element);
+
+            // Re-render or trigger update
+            element.requestUpdate();
             await element.updateComplete;
 
             const skeletons = element.shadowRoot?.querySelectorAll('.skeleton-card');
             expect(skeletons?.length).toBe(9); // 3x3 default
-
-            document.body.removeChild(element);
         });
 
         it('should render empty slots', async () => {
             (uiStore.$isLoading.get as any).mockReturnValue(false);
-            // Populate grid with nulls to simulate empty slots
-            element.plants = Array(3).fill(null).map(() => Array(3).fill(null));
 
-            document.body.appendChild(element);
-            await element.updateComplete;
+            element = await fixture(html`<growspace-grid .plants=${Array(3).fill(null).map(() => Array(3).fill(null))}></growspace-grid>`);
 
             const emptySlots = element.shadowRoot?.querySelectorAll('.plant-card-empty');
             expect(emptySlots?.length).toBe(9);
-
-            document.body.removeChild(element);
         });
 
         it('should render plant cards', async () => {
-            element.plants = [[
+            const plants = [[
                 { entity_id: 'p1', state: 'ok', attributes: { plant_id: 'p1' } } as any,
                 null,
                 null
             ]];
-            document.body.appendChild(element);
-            await element.updateComplete;
+
+            element = await fixture(html`<growspace-grid .plants=${plants}></growspace-grid>`);
 
             const plantCards = element.shadowRoot?.querySelectorAll('growspace-plant-card');
             expect(plantCards?.length).toBe(1);
-
-            document.body.removeChild(element);
         });
     });
 
     describe('Interactions', () => {
         it('should open add plant dialog on empty slot click', async () => {
-            element.plants = Array(3).fill(null).map(() => Array(3).fill(null));
-            document.body.appendChild(element);
-            await element.updateComplete;
+            element = await fixture(html`
+                <growspace-grid .plants=${Array(3).fill(null).map(() => Array(3).fill(null))}></growspace-grid>
+            `);
+            (element as any).store = mockStore;
 
             const slot = element.shadowRoot?.querySelector('.plant-card-empty') as HTMLElement;
             slot.click();
 
             // row 1, col 1 -> index 0-based: 0, 0
             expect(mockStore.openAddPlantDialog).toHaveBeenCalledWith(0, 0);
-
-            document.body.removeChild(element);
         });
 
         it('should handle plant click', async () => {
             const plant: any = { entity_id: 'p1', state: 'ok', attributes: { plant_id: 'p1' } };
-            element.plants = [[plant]];
-            document.body.appendChild(element);
-            await element.updateComplete;
+            element = await fixture(html`<growspace-grid .plants=${[[plant]]}></growspace-grid>`);
+            (element as any).store = mockStore;
 
             const card = element.shadowRoot?.querySelector('growspace-plant-card');
             card?.dispatchEvent(new CustomEvent('plant-click'));
 
             expect(mockStore.handlePlantClick).toHaveBeenCalledWith(plant);
-
-            document.body.removeChild(element);
         });
 
         it('should handle mobile drop', () => {
             const plant = { entity_id: 'p1', state: 'ok' };
-            // Setup grid with placeholders so targetPlant lookup works
             element.plants = Array(3).fill(null).map(() => Array(3).fill(null));
 
-            // Mock getBoundingClientRect
-            vi.spyOn(element as any, '_gridRef', 'get').mockReturnValue({
-                value: {
-                    getBoundingClientRect: () => ({ left: 0, top: 0, width: 300, height: 300 })
-                }
+            // Mock elementFromPoint return value
+            const mockTarget = {
+                tagName: 'DIV',
+                classList: { contains: (cls: string) => cls === 'plant-card-empty' },
+                getAttribute: (attr: string) => (attr === 'data-row' ? '2' : attr === 'data-col' ? '2' : null),
+                parentElement: null
+            };
+
+            const mockShadowRoot = {
+                elementFromPoint: vi.fn().mockReturnValue(mockTarget)
+            };
+
+            // Mock shadowRoot property on the element
+            Object.defineProperty(element, 'shadowRoot', {
+                get: () => mockShadowRoot,
+                configurable: true
             });
 
             // Simulate custom event
-            // Grid is 3x3, 100x100 cells
-            // x=150 (col 2), y=150 (row 2) -> targetRow 2, targetCol 2
             (element as any)._handleMobileDrop({
                 detail: { x: 150, y: 150, plant }
             } as any);
 
-            // _handleDrop calls store.handleDrop
-            // targetRow 2, targetCol 2, targetPlant null (empty)
+            expect(mockShadowRoot.elementFromPoint).toHaveBeenCalledWith(150, 150);
             expect(mockStore.handleDrop).toHaveBeenCalledWith(2, 2, null, plant);
         });
-    });
 
-    describe('Advanced Interactions', () => {
-        it('should handle mobile drop in List View (cols > 5)', () => {
-            // Mock List View: 6 cols -> force list view
-            element.cols = 6;
-            element.rows = 2; // Total 12 items
-            element.plants = Array(2).fill(null).map(() => Array(6).fill(null));
+        it('should handle mobile drop on populated card', () => {
+            // New test case for populated card
+            const plant = { entity_id: 'p1', state: 'ok' };
+            const targetPlant = { entity_id: 'p2' };
 
-            // Mock Rect: 600px height, 300px width (Mobile List)
-            vi.spyOn(element as any, '_gridRef', 'get').mockReturnValue({
-                value: {
-                    getBoundingClientRect: () => ({ left: 0, top: 0, width: 300, height: 600 })
-                }
+            const mockCard = {
+                tagName: 'GROWSPACE-PLANT-CARD',
+                row: 1,
+                col: 1,
+                plant: targetPlant,
+                parentElement: null,
+                classList: { contains: () => false }
+            };
+
+            const mockShadowRoot = {
+                elementFromPoint: vi.fn().mockReturnValue(mockCard)
+            };
+
+            Object.defineProperty(element, 'shadowRoot', {
+                get: () => mockShadowRoot,
+                configurable: true
             });
-
-            const plant = { entity_id: 'p1' };
-
-            // In List View, items are stacked vertically.
-            // itemHeight = 600 / 12 = 50px.
-            // Click at y=75 -> Index 1 (2nd item).
-            // Index 1 -> Row 1, Col 2 (0-based: row 0, col 1 in logic math?)
-            // Code: targetRow = Math.floor(1 / 6) + 1 = 1
-            //       targetCol = (1 % 6) + 1 = 2
 
             (element as any)._handleMobileDrop({
-                detail: { x: 50, y: 75, plant }
+                detail: { x: 100, y: 100, plant }
             } as any);
 
-            expect(mockStore.handleDrop).toHaveBeenCalledWith(1, 2, null, plant);
+            expect(mockStore.handleDrop).toHaveBeenCalledWith(1, 1, targetPlant, plant);
         });
 
-        it('should ignore mobile drop out of bounds', () => {
-            element.plants = [[]];
-            vi.spyOn(element as any, '_gridRef', 'get').mockReturnValue({
-                value: {
-                    getBoundingClientRect: () => ({ left: 0, top: 0, width: 100, height: 100 })
-                }
-            });
+        it('should ignore mobile drop when no target found', () => {
+            // Mock elementFromPoint to return null
+            if (element.shadowRoot) {
+                element.shadowRoot.elementFromPoint = vi.fn().mockReturnValue(null);
+            }
 
-            // Y < 0
-            (element as any)._handleMobileDrop({ detail: { x: 50, y: -10, plant: {} } } as any);
-            expect(mockStore.handleDrop).not.toHaveBeenCalled();
-
-            // Y > height (List View check mostly, but also generic bounds)
-            element.cols = 6; // Force list view logic path
-            (element as any)._handleMobileDrop({ detail: { x: 50, y: 200, plant: {} } } as any);
+            // Random coords
+            (element as any)._handleMobileDrop({ detail: { x: 50, y: 50, plant: {} } } as any);
             expect(mockStore.handleDrop).not.toHaveBeenCalled();
         });
 
@@ -258,20 +245,16 @@ describe('GrowspaceGrid', () => {
 
         it('should render compact class', async () => {
             (uiStore.$isCompactView.get as any).mockReturnValue(true);
-            document.body.appendChild(element);
-            await element.updateComplete;
+            element = await fixture(html`<growspace-grid></growspace-grid>`);
+
             const grid = element.shadowRoot?.querySelector('.grid');
             expect(grid?.classList.contains('compact')).toBe(true);
-            document.body.removeChild(element);
         });
 
         it('should render list view class when cols > 5', async () => {
-            element.cols = 6;
-            document.body.appendChild(element);
-            await element.updateComplete;
+            element = await fixture(html`<growspace-grid .cols=${6}></growspace-grid>`);
             const grid = element.shadowRoot?.querySelector('.grid');
             expect(grid?.classList.contains('force-list-view')).toBe(true);
-            document.body.removeChild(element);
         });
     });
 });

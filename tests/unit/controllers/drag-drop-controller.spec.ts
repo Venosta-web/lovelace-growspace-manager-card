@@ -283,7 +283,13 @@ describe('DragDropController', () => {
             vi.useRealTimers();
         });
 
-        it('should transform card during active mobile drag', () => {
+        it('should transform card during active mobile drag', async () => {
+            // Mock requestAnimationFrame to execute immediately
+            vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+                cb(0);
+                return 0;
+            });
+
             // Set dragging state
             (controller as any)._isDraggingMobile = true;
             (controller as any)._startX = 100;
@@ -299,6 +305,8 @@ describe('DragDropController', () => {
             expect(preventSpy).toHaveBeenCalled();
             expect(mockCard.style.transform).toContain('translate(50px, 20px)');
             expect(mockCard.style.transform).toContain('scale(1.05)');
+
+            vi.restoreAllMocks();
         });
 
         it('should end mobile drag on touchend', () => {

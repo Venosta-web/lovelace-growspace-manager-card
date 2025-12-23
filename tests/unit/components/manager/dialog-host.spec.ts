@@ -460,5 +460,162 @@ describe('DialogHost', () => {
 
             document.body.removeChild(element);
         });
+
+        it('should close strain recommendation dialog', async () => {
+            $activeDialog.set({ type: 'STRAIN_RECOMMENDATION', payload: { isLoading: false, response: '' } });
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('strain-recommendation-dialog') as HTMLElement;
+            expect(dialog).not.toBeNull();
+            dialog!.dispatchEvent(new CustomEvent('close'));
+            expect(closeDialog).toHaveBeenCalled();
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle analyze-growspace event in GROW_MASTER', async () => {
+            $activeDialog.set({
+                type: 'GROW_MASTER',
+                payload: { isLoading: false, response: '', mode: 'all', growspaceId: 'g1' }
+            });
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('grow-master-dialog') as HTMLElement;
+            dialog.dispatchEvent(new CustomEvent('analyze-growspace', { detail: { query: 'Test' } }));
+
+            expect(mockStore.analyzeGrowspace).toHaveBeenCalledWith('Test', false);
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle analyze-all-growspaces event in GROW_MASTER', async () => {
+            $activeDialog.set({
+                type: 'GROW_MASTER',
+                payload: { isLoading: false, response: '', mode: 'all', growspaceId: 'g1' }
+            });
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('grow-master-dialog') as HTMLElement;
+            dialog.dispatchEvent(new CustomEvent('analyze-all-growspaces', { detail: { query: 'AllTest' } }));
+
+            expect(mockStore.analyzeGrowspace).toHaveBeenCalledWith('AllTest', true);
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle GROW_MASTER close event', async () => {
+            $activeDialog.set({
+                type: 'GROW_MASTER',
+                payload: { isLoading: false, response: '', mode: 'all', growspaceId: 'g1' }
+            });
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('grow-master-dialog') as HTMLElement;
+            dialog.dispatchEvent(new CustomEvent('close'));
+            expect(closeDialog).toHaveBeenCalled();
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle save-strain event in STRAIN_LIBRARY', async () => {
+            $activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('strain-library-dialog') as HTMLElement;
+            dialog.dispatchEvent(new CustomEvent('save-strain', { detail: { name: 'TestStrain' } }));
+
+            expect(mockStore.addStrain).toHaveBeenCalledWith({ name: 'TestStrain' });
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle delete-strain event in STRAIN_LIBRARY', async () => {
+            $activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('strain-library-dialog') as HTMLElement;
+            dialog.dispatchEvent(new CustomEvent('delete-strain', { detail: { key: 'strain1' } }));
+
+            expect(mockStore.removeStrain).toHaveBeenCalledWith('strain1');
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle export-library event in STRAIN_LIBRARY', async () => {
+            $activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('strain-library-dialog') as HTMLElement;
+            dialog.dispatchEvent(new CustomEvent('export-library'));
+
+            expect(mockStore.handleExportLibrary).toHaveBeenCalled();
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle add-growspace-submit in CONFIG', async () => {
+            $activeDialog.set({
+                type: 'CONFIG',
+                payload: { currentTab: 'add_growspace', environmentData: {} as any }
+            });
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('config-dialog') as HTMLElement;
+            dialog.dispatchEvent(new CustomEvent('add-growspace-submit', { detail: { name: 'New GS' } }));
+
+            expect(mockStore.handleAddGrowspace).toHaveBeenCalledWith({ name: 'New GS' });
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle edit-growspace-submit in CONFIG', async () => {
+            $activeDialog.set({
+                type: 'CONFIG',
+                payload: { currentTab: 'add_growspace', environmentData: {} as any }
+            });
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('config-dialog') as HTMLElement;
+            dialog.dispatchEvent(new CustomEvent('edit-growspace-submit', { detail: { id: 'g1', name: 'Updated' } }));
+
+            expect(mockStore.handleUpdateGrowspace).toHaveBeenCalledWith({ id: 'g1', name: 'Updated' });
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle environment config error', async () => {
+            mockStore.dataService.configureEnvironment.mockRejectedValueOnce(new Error('Config Error'));
+
+            $activeDialog.set({
+                type: 'CONFIG',
+                payload: { currentTab: 'environment', environmentData: {} as any }
+            });
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('config-dialog') as HTMLElement;
+            dialog.dispatchEvent(new CustomEvent('configure-environment-submit', {
+                detail: {
+                    selectedGrowspaceId: 'g1',
+                    temp_sensor: 'sensor.temp',
+                    humidity_sensor: 'sensor.humidity'
+                }
+            }));
+
+            await new Promise(r => setTimeout(r, 10));
+
+            expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Config Error'), 'error');
+
+            document.body.removeChild(element);
+        });
     });
 });

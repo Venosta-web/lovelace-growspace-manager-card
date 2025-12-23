@@ -348,65 +348,65 @@ export class GrowspaceGrid extends LitElement {
 
   private _handleMobileDrop(e: CustomEvent) {
     const { x, y, plant } = e.detail;
-    const gridEl = this._gridRef.value;
 
-    if (!gridEl) return;
+    // Hide the dragged element temporarily so we can see what's underneath
+    // Note: The dragged element (avatar) usually follows pointer, but here 'plant' is the source data.
+    // The "ghost" or original card might be under the finger if we are not careful.
+    // However, usually pointer-events: none is set on the drag avatar.
+    // If we are dragging the actual card element via transform, it IS under the finger.
+    // WE MUST HIDE IT or use pointer-events.
 
-    // O(1) Math-based logic
-    // We assume the grid structure corresponds to rows/cols
-    // This logic principally works well for desktop grids.
-    // However, mobile layouts often stack elements vertically (flex-direction: column).
-    // If it's stacked, math based on cell width/height might be tricky if we assume a matrix.
-    // BUT: The instruction requested O(1) math logic.
-    // To handle both grid and list view robustly with O(1) is complex without knowing exact layout method.
-    // If it is indeed a CSS Grid:
+    // The DragDropController scales the card and moves it.
+    // We can't easily access the specific card DOM element here to hide it without traversing.
+    // But `document.elementsFromPoint` returns ALL elements.
 
-    const rect = gridEl.getBoundingClientRect();
-    const cellW = rect.width / this.cols;
-    const cellH = rect.height / this.rows;
+    // const elements = document.elementsFromPoint(x, y); // Removed unused call causing JSDOM error
 
-    // If list view (desktop or mobile), the logic changes implicitly because
-    // cols might be effectively 1.
-    // Let's rely on the grid layout properties.
-    // If elements are stacked vertically, cellW is full width, cellH is total height / (rows*cols).
-    // Let's refine based on media query check or compact prop? No, getComputedStyle is slow-ish but better than loop.
-    // Actually, "Smart" logic instructions were specific:
+    // Look for a drop target
+    // We are looking for <growspace-plant-card> or <div class="plant-card-empty">
+    // But these are inside shadow roots potentially?
+    // "document.elementsFromPoint" does NOT penetrate shadow roots automatically in all browsers/modes,
+    // but usually "composed path" is needed.
+    // Actually, GrowspaceGrid is in Shadow DOM of GrowspaceManagerCard? No, it's a lit element.
+    // The plants are inside GrowspaceGrid's shadow root.
+    // elementsFromPoint on document might stop at GrowspaceGrid host.
 
-    const isListView = this.cols > 5 || window.innerWidth <= 600; // Match render logic
+    // Better strategy: Use the ShadowRoot of this grid if possible, or recursive probing.
+    // But `this.shadowRoot.elementFromPoint(x, y)` exists!
 
-    let targetRow, targetCol;
+    const shadowRoot = this.shadowRoot;
+    if (!shadowRoot) return;
 
-    if (isListView) {
-      // List view: items are stacked 1 column, N rows (effectively)
-      // Check if list view logic applies
-      const hitY = y - rect.top;
-      if (hitY < 0 || hitY > rect.height) return;
+    const targetEl = shadowRoot.elementFromPoint(x, y);
 
-      // In list view, each item height?
-      const itemCount = this.rows * this.cols;
-      const itemHeight = rect.height / itemCount;
-      const index = Math.floor(hitY / itemHeight);
+    if (!targetEl) return;
 
-      // Convert linear index back to row/col
-      targetRow = Math.floor(index / this.cols) + 1;
-      targetCol = (index % this.cols) + 1;
-    } else {
-      // Grid View
-      const colIndex = Math.ceil((x - rect.left) / cellW);
-      const rowIndex = Math.ceil((y - rect.top) / cellH);
-      targetRow = rowIndex;
-      targetCol = colIndex;
+    // Traverse up from targetEl to find a slot or card
+    let current: Element | null = targetEl;
+    let targetRow: number | undefined;
+    let targetCol: number | undefined;
+    let targetPlant: PlantEntity | null = null;
+
+    while (current && current !== this) {
+      // Check for empty slot
+      if (current.classList?.contains('plant-card-empty')) {
+        targetRow = parseInt(current.getAttribute('data-row') || '0');
+        targetCol = parseInt(current.getAttribute('data-col') || '0');
+        break;
+      }
+
+      // Check for populated card
+      if (current.tagName.toLowerCase() === 'growspace-plant-card') {
+        targetRow = (current as any).row; // We set .row prop on it
+        targetCol = (current as any).col;
+        targetPlant = (current as any).plant;
+        break;
+      }
+
+      current = current.parentElement;
     }
 
-    if (
-      targetCol > 0 && targetCol <= this.cols &&
-      targetRow > 0 && targetRow <= this.rows
-    ) {
-      // Identify target plant from array
-      // plants is (PlantEntity | null)[][]
-      // 0-based index access
-      const targetPlant = this.plants[targetRow - 1][targetCol - 1]; // Can be null or PlantEntity
-
+    if (targetRow !== undefined && targetCol !== undefined) {
       this.store.handleDrop(targetRow, targetCol, targetPlant, plant);
     }
   }
