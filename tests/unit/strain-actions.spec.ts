@@ -302,6 +302,30 @@ describe('strain-actions', () => {
                     response: 'Error: API error',
                 });
             });
+
+            it('should handle direct string response (no response property)', async () => {
+                mockDataService.getStrainRecommendation.mockResolvedValue('Direct string recommendation');
+                const setPayload = vi.fn();
+
+                await getStrainRecommendation(ctx, 'query', setPayload);
+
+                expect(setPayload).toHaveBeenCalledWith({
+                    isLoading: false,
+                    response: 'Direct string recommendation',
+                });
+            });
+
+            it('should JSON.stringify non-string response data', async () => {
+                mockDataService.getStrainRecommendation.mockResolvedValue({ data: { strains: ['OG Kush'] } });
+                const setPayload = vi.fn();
+
+                await getStrainRecommendation(ctx, 'query', setPayload);
+
+                expect(setPayload).toHaveBeenCalledWith({
+                    isLoading: false,
+                    response: expect.stringContaining('strains'),
+                });
+            });
         });
     });
 });

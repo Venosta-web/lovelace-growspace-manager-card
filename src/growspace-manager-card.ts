@@ -9,17 +9,13 @@ import {
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 
-import { hassContext, configContext, strainLibraryContext, storeContext, historyContext } from './context';
+import { hassContext, configContext, strainLibraryContext, storeContext } from './context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 import { mdiCheckboxMarked, mdiFullscreenExit, mdiChevronDown, mdiChevronUp } from '@mdi/js';
 
 
 import { GrowspaceManagerCardConfig, PlantEntity, GrowspaceDevice, StrainEntry } from './types';
 
-import {
-  GrowspaceHistoryController,
-  GrowspaceCardHost,
-} from './controllers/growspace-history-controller';
 import { SubscriptionController } from './controllers/subscription-controller';
 import './growspace-env-chart';
 import './components/manager/dialog-host';
@@ -34,43 +30,40 @@ import { uiStyles } from './styles/ui.styles';
 import { growspaceCardStyles } from './styles/growspace-card.styles';
 import { variables } from './styles/variables';
 import { GrowspaceStore } from './store/growspace-store';
-import { $activeDevices, $gridLayout, $growspaceOptions } from './store/grid-store';
-
 import { StoreController } from '@nanostores/lit';
-import { $viewMode, $isLoading, $activeDialog, $focusedPlantIndex, $menuOpen, setViewMode, selectAllPlants, clearPlantSelection, setEditMode, setFocusedPlantIndex, $isEditMode, $isCompactView, $selectedPlants, $notification } from './store/ui-store';
-import { $devices, $selectedDevice, $strainLibrary } from './store/data-store';
+
+
 
 @customElement('growspace-manager-card')
-export class GrowspaceManagerCard extends LitElement implements LovelaceCard, GrowspaceCardHost {
+export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @provide({ context: storeContext })
   @provide({ context: storeContext })
   accessor store = new GrowspaceStore();
 
-  protected _subscriptionController = new SubscriptionController(this, () => this.store.updateHass(this.hass));
+  protected _subscriptionController = new SubscriptionController(this, this.store.data, () => this.store.updateHass(this.hass));
 
   // UI Store Controllers
-  protected _viewModeController = new StoreController(this, $viewMode);
-  protected _isLoadingController = new StoreController(this, $isLoading);
-  protected _focusedPlantIndexController = new StoreController(this, $focusedPlantIndex);
-  protected _activeDialogController = new StoreController(this, $activeDialog);
-  protected _isEditModeController = new StoreController(this, $isEditMode);
-  protected _isCompactController = new StoreController(this, $isCompactView); // Computed
-  protected _selectedPlantsController = new StoreController(this, $selectedPlants);
-  protected _notificationController = new StoreController(this, $notification);
+  protected _viewModeController = new StoreController(this, this.store.ui.$viewMode);
+  protected _isLoadingController = new StoreController(this, this.store.ui.$isLoading);
+  protected _focusedPlantIndexController = new StoreController(this, this.store.ui.$focusedPlantIndex);
+  protected _activeDialogController = new StoreController(this, this.store.ui.$activeDialog);
+  protected _isEditModeController = new StoreController(this, this.store.ui.$isEditMode);
+  protected _isCompactController = new StoreController(this, this.store.ui.$isCompactView); // Computed
+  protected _selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
+  protected _notificationController = new StoreController(this, this.store.ui.$notification);
 
   // Data Store Controllers (for reactivity)
-  protected _devicesController = new StoreController(this, $devices);
-  protected _selectedDeviceController = new StoreController(this, $selectedDevice);
-  protected _strainLibraryController = new StoreController(this, $strainLibrary);
+  protected _devicesController = new StoreController(this, this.store.data.$devices);
+  protected _selectedDeviceController = new StoreController(this, this.store.data.$selectedDevice);
+  protected _strainLibraryController = new StoreController(this, this.store.data.$strainLibrary);
 
   // Grid derived atoms
-  protected _activeDevicesController = new StoreController(this, $activeDevices);
-  protected _gridLayoutController = new StoreController(this, $gridLayout);
-  protected _growspaceOptionsController = new StoreController(this, $growspaceOptions);
+  protected _activeDevicesController = new StoreController(this, this.store.grid.$activeDevices);
+  protected _gridLayoutController = new StoreController(this, this.store.grid.$gridLayout);
+  protected _growspaceOptionsController = new StoreController(this, this.store.grid.$growspaceOptions);
 
   // Controllers
-  @provide({ context: historyContext })
-  accessor historyController = new GrowspaceHistoryController(this);
+  // historyController removed (migrated to store)
 
   /* Getter for convenience/compatibility if needed, or update call sites */
   get selectedDevice() {
@@ -160,10 +153,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
     if (!config) throw new Error('Invalid configuration');
     this._config = config;
     if (this._config.initial_view_mode) {
-      setViewMode(this._config.initial_view_mode);
+      this.store.ui.setViewMode(this._config.initial_view_mode);
     } else if (this._config.compact !== undefined && this._config.compact) {
-      setViewMode('compact');
+      this.store.ui.setViewMode('compact');
     }
+
+    // Initialize store config immediately to prevent race conditions with updateHass
+    this.store.initializeSelectedDevice(this._config);
   }
 
   public getCardSize(): number {
@@ -188,7 +184,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   }
 
   private _handleViewModeChanged(e: CustomEvent) {
-    setViewMode(e.detail.mode);
+    this.store.ui.setViewMode(e.detail.mode);
   }
 
   private _handleGrowspaceChanged(e: CustomEvent) {
@@ -196,17 +192,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard, Gr
   }
 
   private _handleSelectAll() {
-    // We need plant IDs. This logic might need to stay in store or move to data-store if it requires knowing all plants.
-    // For now, delegate to store but store should use ui-store atoms.
     this.store.selectAllPlants();
   }
 
   private _handleClearSelection() {
-    clearPlantSelection();
+    this.store.clearPlantSelection();
   }
 
   private _handleExitEditMode() {
-    setEditMode(false);
+    this.store.ui.setEditMode(false);
   }
 
   protected render(): TemplateResult {

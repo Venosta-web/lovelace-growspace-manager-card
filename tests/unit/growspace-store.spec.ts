@@ -5,48 +5,77 @@ import { PlantEntity } from '../../src/types';
 import * as uiStore from '../../src/store/ui-store';
 import * as dataStore from '../../src/store/data-store';
 
+
 // Mock ui-store
-vi.mock('../../src/store/ui-store', () => ({
-    $activeDialog: { get: vi.fn(() => ({ type: 'NONE' })), set: vi.fn(), subscribe: vi.fn() },
-    $focusedPlantIndex: { get: vi.fn(() => -1), set: vi.fn(), subscribe: vi.fn() },
-    $selectedPlants: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn() },
-    $isEditMode: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
-    $viewMode: { get: vi.fn(() => 'standard'), set: vi.fn(), subscribe: vi.fn() },
-    $defaultApplied: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
-    $isLoading: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
-    $notification: { set: vi.fn() },
-    setEditMode: vi.fn(),
-    setViewMode: vi.fn(),
-    setIsLoading: vi.fn(),
-    closeDialog: vi.fn(),
-    setDefaultApplied: vi.fn(),
-    setFocusedPlantIndex: vi.fn(),
-    togglePlantSelection: vi.fn(),
-    selectAllPlants: vi.fn(),
-    clearPlantSelection: vi.fn(),
-    setMenuOpen: vi.fn(),
-    showToast: vi.fn(),
-    clearToast: vi.fn(),
-}));
+vi.mock('../../src/store/ui-store', () => {
+    const atoms = {
+        $activeDialog: { get: vi.fn(() => ({ type: 'NONE' })), set: vi.fn(), subscribe: vi.fn() },
+        $focusedPlantIndex: { get: vi.fn(() => -1), set: vi.fn(), subscribe: vi.fn() },
+        $selectedPlants: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn() },
+        $isEditMode: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+        $viewMode: { get: vi.fn(() => 'standard'), set: vi.fn(), subscribe: vi.fn() },
+        $defaultApplied: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+        $isLoading: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+        $notification: { set: vi.fn() },
+        $menuOpen: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+    };
+    const actions = {
+        setEditMode: vi.fn((v) => atoms.$isEditMode.set(v)),
+        setViewMode: vi.fn((v) => atoms.$viewMode.set(v)),
+        setIsLoading: vi.fn((v) => atoms.$isLoading.set(v)),
+        setActiveDialog: vi.fn((v) => atoms.$activeDialog.set(v)),
+        closeDialog: vi.fn(() => atoms.$activeDialog.set({ type: 'NONE' })),
+        setDefaultApplied: vi.fn((v) => atoms.$defaultApplied.set(v)),
+        setFocusedPlantIndex: vi.fn((v) => atoms.$focusedPlantIndex.set(v)),
+        togglePlantSelection: vi.fn(),
+        selectAllPlants: vi.fn(),
+        clearPlantSelection: vi.fn(),
+        setMenuOpen: vi.fn((v) => atoms.$menuOpen.set(v)),
+        showToast: vi.fn(),
+        clearToast: vi.fn(),
+    };
+    const mocks = { ...atoms, ...actions };
+    return {
+        ...mocks,
+        GrowspaceUIStore: class {
+            constructor() {
+                Object.assign(this, mocks);
+            }
+        }
+    };
+});
 
 // Mock data-store
-vi.mock('../../src/store/data-store', () => ({
-    $devices: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
-    $selectedDevice: { get: vi.fn(() => null), set: vi.fn(), subscribe: vi.fn() },
-    $strainLibrary: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
-    $config: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
-    $optimisticDeletedPlantIds: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn() },
-    $wsDataCache: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
-    setDevices: vi.fn(),
-    setSelectedDevice: vi.fn(),
-    setStrainLibrary: vi.fn(),
-    setConfig: vi.fn(),
-    addOptimisticDeletedPlantId: vi.fn(),
-    removeOptimisticDeletedPlantId: vi.fn(),
-    setWsDataCache: vi.fn(),
-    updateWsDataCacheGrid: vi.fn(),
-    removePlantFromWsCache: vi.fn(),
-}));
+vi.mock('../../src/store/data-store', () => {
+    const atoms = {
+        $devices: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+        $selectedDevice: { get: vi.fn(() => null), set: vi.fn(), subscribe: vi.fn() },
+        $strainLibrary: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+        $config: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
+        $optimisticDeletedPlantIds: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn() },
+        $wsDataCache: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
+    };
+    const actions = {
+        setDevices: vi.fn((v) => atoms.$devices.set(v)),
+        setSelectedDevice: vi.fn((v) => atoms.$selectedDevice.set(v)),
+        setStrainLibrary: vi.fn((v) => atoms.$strainLibrary.set(v)),
+        setConfig: vi.fn((v) => atoms.$config.set(v)),
+        addOptimisticDeletedPlantId: vi.fn(),
+        removeOptimisticDeletedPlantId: vi.fn(),
+        setWsDataCache: vi.fn((v) => atoms.$wsDataCache.set(v)),
+        updateWsDataCacheGrid: vi.fn(),
+        removePlantFromWsCache: vi.fn(),
+    };
+    const mocks = { ...atoms, ...actions };
+    return {
+        ...mocks,
+        GrowspaceDataStore: class {
+            constructor() {
+                Object.assign(this, mocks);
+            }
+        }
+    };
+});
 
 // Mock DataService
 const mockDataServiceInstance = {
@@ -1100,5 +1129,104 @@ describe('GrowspaceStore', () => {
         });
 
 
+    });
+
+    describe('updateHass Coverage', () => {
+        it('should trigger refreshGrowspaceData when cache is empty', async () => {
+            (dataStore.$wsDataCache.get as any).mockReturnValue({});
+            const fetchSpy = vi.spyOn(mockDataServiceInstance, 'fetchGrowspaceData').mockResolvedValue({ gs1: {} });
+
+            store.updateHass({ connection: { subscribeEvents: vi.fn() } } as any);
+
+            // Wait for async refresh
+            await new Promise(r => setTimeout(r, 10));
+            expect(fetchSpy).toHaveBeenCalled();
+        });
+
+        it('should update devices state when cache is not empty', () => {
+            (dataStore.$wsDataCache.get as any).mockReturnValue({ gs1: { growspace_id: 'gs1' } });
+            const devices = [{ device_id: 'gs1', plants: [] }];
+            mockDataServiceInstance.getGrowspaceDevices.mockReturnValue(devices);
+
+            store.updateHass({ connection: { subscribeEvents: vi.fn() } } as any);
+
+            expect(mockDataServiceInstance.getGrowspaceDevices).toHaveBeenCalled();
+        });
+
+        it('should skip refresh when already fetching', async () => {
+            (dataStore.$wsDataCache.get as any).mockReturnValue({});
+
+            // Start first refresh
+            const slowFetch = new Promise(res => setTimeout(() => res({}), 100));
+            mockDataServiceInstance.fetchGrowspaceData.mockReturnValue(slowFetch);
+            store.updateHass({ connection: { subscribeEvents: vi.fn() } } as any);
+
+            // Call again immediately
+            vi.clearAllMocks();
+            store.updateHass({ connection: { subscribeEvents: vi.fn() } } as any);
+
+            // Should not fetch again
+            expect(mockDataServiceInstance.fetchGrowspaceData).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('_areDeviceArraysEqual', () => {
+        it('should return true for same reference', () => {
+            const devices: any[] = [{ device_id: 'd1' }];
+            expect((store as any)._areDeviceArraysEqual(devices, devices)).toBe(true);
+        });
+
+        it('should return false for different lengths', () => {
+            const a: any[] = [{ device_id: 'd1' }];
+            const b: any[] = [{ device_id: 'd1' }, { device_id: 'd2' }];
+            expect((store as any)._areDeviceArraysEqual(a, b)).toBe(false);
+        });
+
+        it('should return false for different elements', () => {
+            const a: any[] = [{ device_id: 'd1' }];
+            const b: any[] = [{ device_id: 'd2' }];
+            expect((store as any)._areDeviceArraysEqual(a, b)).toBe(false);
+        });
+
+        it('should return true for identical arrays', () => {
+            const d1 = { device_id: 'd1' };
+            const d2 = { device_id: 'd1' };
+            // Same objects in both arrays
+            const a: any[] = [d1];
+            const b: any[] = [d1];
+            expect((store as any)._areDeviceArraysEqual(a, b)).toBe(true);
+        });
+    });
+
+    describe('View Mode and Header Toggle', () => {
+        it('should toggle header expansion on', () => {
+            (uiStore.$viewMode.get as any).mockReturnValue('standard');
+            store.toggleHeaderExpansion();
+            expect(uiStore.setViewMode).toHaveBeenCalledWith('header');
+        });
+
+        it('should toggle header expansion off', () => {
+            (uiStore.$viewMode.get as any).mockReturnValue('header');
+            store.toggleHeaderExpansion();
+            expect(uiStore.setViewMode).toHaveBeenCalledWith('standard');
+        });
+
+        it('should set compact view mode', () => {
+            store.setIsCompactView(true);
+            expect(uiStore.setViewMode).toHaveBeenCalledWith('compact');
+        });
+
+        it('should unset compact view mode', () => {
+            (uiStore.$viewMode.get as any).mockReturnValue('compact');
+            store.setIsCompactView(false);
+            expect(uiStore.setViewMode).toHaveBeenCalledWith('standard');
+        });
+
+        it('should not change mode if not currently compact', () => {
+            (uiStore.$viewMode.get as any).mockReturnValue('standard');
+            vi.clearAllMocks();
+            store.setIsCompactView(false);
+            expect(uiStore.setViewMode).not.toHaveBeenCalled();
+        });
     });
 });

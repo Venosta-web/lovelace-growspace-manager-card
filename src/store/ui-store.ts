@@ -1,87 +1,102 @@
-import { atom, computed } from 'nanostores';
+import { atom, computed, WritableAtom, ReadableAtom } from 'nanostores';
 import { GrowspaceViewMode } from '../types';
 import { ActiveDialogState } from '../ui-state';
 
-// Definition of atoms
-export const $viewMode = atom<GrowspaceViewMode>('standard');
-export const $isLoading = atom<boolean>(true);
-export const $activeDialog = atom<ActiveDialogState>({ type: 'NONE' });
-export const $isEditMode = atom<boolean>(false);
-export const $selectedPlants = atom<Set<string>>(new Set());
-export const $focusedPlantIndex = atom<number>(-1);
-export const $menuOpen = atom<boolean>(false);
-export const $notification = atom<{ message: string; type: 'info' | 'error' | 'success' } | null>(null);
-export const $error = atom<string | null>(null);
-export const $defaultApplied = atom<boolean>(false);
+export class GrowspaceUIStore {
+    // Definition of atoms
+    public readonly $viewMode: WritableAtom<GrowspaceViewMode>;
+    public readonly $isLoading: WritableAtom<boolean>;
+    public readonly $activeDialog: WritableAtom<ActiveDialogState>;
+    public readonly $isEditMode: WritableAtom<boolean>;
+    public readonly $selectedPlants: WritableAtom<Set<string>>;
+    public readonly $focusedPlantIndex: WritableAtom<number>;
+    public readonly $menuOpen: WritableAtom<boolean>;
+    public readonly $notification: WritableAtom<{ message: string; type: 'info' | 'error' | 'success' } | null>;
+    public readonly $error: WritableAtom<string | null>;
+    public readonly $defaultApplied: WritableAtom<boolean>;
 
-// Computed stores
-export const $isCompactView = computed($viewMode, (mode) => mode === 'compact');
+    // Computed stores
+    public readonly $isCompactView: ReadableAtom<boolean>;
 
-// Actions
-export const setViewMode = (mode: GrowspaceViewMode) => {
-    $viewMode.set(mode);
-};
+    constructor() {
+        this.$viewMode = atom<GrowspaceViewMode>('standard');
+        this.$isLoading = atom<boolean>(true);
+        this.$activeDialog = atom<ActiveDialogState>({ type: 'NONE' });
+        this.$isEditMode = atom<boolean>(false);
+        this.$selectedPlants = atom<Set<string>>(new Set());
+        this.$focusedPlantIndex = atom<number>(-1);
+        this.$menuOpen = atom<boolean>(false);
+        this.$notification = atom<{ message: string; type: 'info' | 'error' | 'success' } | null>(null);
+        this.$error = atom<string | null>(null);
+        this.$defaultApplied = atom<boolean>(false);
 
-export const setIsLoading = (loading: boolean) => {
-    $isLoading.set(loading);
-};
-
-export const setActiveDialog = (dialog: ActiveDialogState) => {
-    $activeDialog.set(dialog);
-};
-
-export const closeDialog = () => {
-    $activeDialog.set({ type: 'NONE' });
-};
-
-export const setEditMode = (isEdit: boolean) => {
-    $isEditMode.set(isEdit);
-    // Clear selection when exiting edit mode
-    if (!isEdit) {
-        $selectedPlants.set(new Set());
+        this.$isCompactView = computed(this.$viewMode, (mode) => mode === 'compact');
     }
-};
 
-export const togglePlantSelection = (plantId: string) => {
-    const current = new Set($selectedPlants.get());
-    if (current.has(plantId)) {
-        current.delete(plantId);
-    } else {
-        current.add(plantId);
+    // Actions
+    public setViewMode(mode: GrowspaceViewMode) {
+        this.$viewMode.set(mode);
     }
-    $selectedPlants.set(current);
-};
 
-export const selectAllPlants = (plantIds: string[]) => {
-    $selectedPlants.set(new Set(plantIds));
-};
+    public setIsLoading(loading: boolean) {
+        this.$isLoading.set(loading);
+    }
 
-export const clearPlantSelection = () => {
-    $selectedPlants.set(new Set());
-};
+    public setActiveDialog(dialog: ActiveDialogState) {
+        this.$activeDialog.set(dialog);
+    }
 
-export const setFocusedPlantIndex = (index: number) => {
-    $focusedPlantIndex.set(index);
-};
+    public closeDialog() {
+        this.$activeDialog.set({ type: 'NONE' });
+    }
 
-export const setMenuOpen = (isOpen: boolean) => {
-    $menuOpen.set(isOpen);
-};
+    public setEditMode(isEdit: boolean) {
+        this.$isEditMode.set(isEdit);
+        // Clear selection when exiting edit mode
+        if (!isEdit) {
+            this.$selectedPlants.set(new Set());
+        }
+    }
 
-export const showToast = (message: string, type: 'info' | 'error' | 'success' = 'info') => {
-    $notification.set({ message, type });
-    // Auto-dismiss logic could be here or in component, but typically atoms just hold state.
-    // The component usually handles the duration behavior using setTimeout.
-};
+    public togglePlantSelection(plantId: string) {
+        const current = new Set(this.$selectedPlants.get());
+        if (current.has(plantId)) {
+            current.delete(plantId);
+        } else {
+            current.add(plantId);
+        }
+        this.$selectedPlants.set(current);
+    }
 
-export const clearToast = () => {
-    $notification.set(null);
-};
+    public selectAllPlants(plantIds: string[]) {
+        this.$selectedPlants.set(new Set(plantIds));
+    }
 
-export const setDefaultApplied = (applied: boolean) => {
-    $defaultApplied.set(applied);
-};
+    public clearPlantSelection() {
+        this.$selectedPlants.set(new Set());
+    }
 
-export const setError = (error: string | null) => {
-    $error.set(error);
-};
+    public setFocusedPlantIndex(index: number) {
+        this.$focusedPlantIndex.set(index);
+    }
+
+    public setMenuOpen(isOpen: boolean) {
+        this.$menuOpen.set(isOpen);
+    }
+
+    public showToast(message: string, type: 'info' | 'error' | 'success' = 'info') {
+        this.$notification.set({ message, type });
+    }
+
+    public clearToast() {
+        this.$notification.set(null);
+    }
+
+    public setDefaultApplied(applied: boolean) {
+        this.$defaultApplied.set(applied);
+    }
+
+    public setError(error: string | null) {
+        this.$error.set(error);
+    }
+}

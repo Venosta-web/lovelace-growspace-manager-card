@@ -4,7 +4,7 @@ import { consume } from '@lit/context';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { StoreController } from '@nanostores/lit';
-import { strainLibraryContext } from '../context';
+import { strainLibraryContext, storeContext } from '../context';
 import {
   mdiCheckboxMarked,
   mdiCheckboxBlankOutline,
@@ -12,7 +12,8 @@ import {
 import { PlantEntity, StrainEntry, PlantDisplayData, StageDisplay } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { DragDropController, DragDropHost } from '../controllers/drag-drop-controller';
-import { $isEditMode, $selectedPlants } from '../store/ui-store';
+// Global imports removed
+import type { GrowspaceStore } from '../store/growspace-store';
 import './plant/plant-stats';
 import { plantCardStyles } from '../styles/plant-card.styles';
 import { sharedStyles } from '../styles/shared.styles';
@@ -26,18 +27,29 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
   @consume({ context: strainLibraryContext, subscribe: true })
   accessor strainLibrary: StrainEntry[] = [];
 
+  @consume({ context: storeContext })
+  private accessor store!: GrowspaceStore;
+
   // UI state via StoreController - direct subscription to atoms
-  private _isEditModeController = new StoreController(this, $isEditMode);
-  private _selectedPlantsController = new StoreController(this, $selectedPlants);
+  private _isEditModeController!: StoreController<boolean>;
+  private _selectedPlantsController!: StoreController<Set<string>>;
+
+  connectedCallback() {
+    super.connectedCallback();
+    if (this.store) {
+      this._isEditModeController = new StoreController(this, this.store.ui.$isEditMode);
+      this._selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
+    }
+  }
 
   // Getters to satisfy DragDropHost interface
   get isEditMode(): boolean {
-    return this._isEditModeController.value;
+    return this._isEditModeController?.value ?? false;
   }
 
   get selected(): boolean {
     const plantId = this.plant?.attributes?.plant_id;
-    return plantId ? this._selectedPlantsController.value.has(plantId) : false;
+    return (plantId && this._selectedPlantsController?.value?.has(plantId)) || false;
   }
 
   // Instantiate controller

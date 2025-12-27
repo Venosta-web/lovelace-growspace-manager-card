@@ -4,8 +4,8 @@
  */
 
 import { PlantEntity } from '../types';
-import * as uiStore from './ui-store';
-import * as dataStore from './data-store';
+import { GrowspaceUIStore } from './ui-store';
+import { GrowspaceDataStore } from './data-store';
 
 export interface KeyboardActionContext {
     exitEditMode: () => void;
@@ -17,7 +17,7 @@ export interface KeyboardActionContext {
  * Get the currently visible plants for the selected device.
  * Excludes plants that are marked for optimistic deletion.
  */
-function getVisiblePlants(): PlantEntity[] {
+function getVisiblePlants(dataStore: GrowspaceDataStore): PlantEntity[] {
     const selectedDevice = dataStore.$selectedDevice.get();
     if (!selectedDevice) return [];
 
@@ -36,7 +36,9 @@ function getVisiblePlants(): PlantEntity[] {
  */
 export function handleKeyboardNavigation(
     ctx: KeyboardActionContext,
-    key: string
+    key: string,
+    uiStore: GrowspaceUIStore,
+    dataStore: GrowspaceDataStore
 ): void {
     // Escape exits edit mode
     if (uiStore.$isEditMode.get() && key === 'Escape') {
@@ -44,7 +46,7 @@ export function handleKeyboardNavigation(
         return;
     }
 
-    const plants = getVisiblePlants();
+    const plants = getVisiblePlants(dataStore);
     if (plants.length === 0) return;
 
     const currentIndex = uiStore.$focusedPlantIndex.get();

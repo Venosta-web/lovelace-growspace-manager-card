@@ -1,8 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SubscriptionController } from '../../src/controllers/subscription-controller';
 import { ReactiveControllerHost } from 'lit';
-import * as dataStore from '../../src/store/data-store';
+import { GrowspaceDataStore } from '../../src/store/data-store';
 import { HomeAssistant } from 'custom-card-helpers';
+
+// Mock data-store class
+vi.mock('../../src/store/data-store', () => {
+    return {
+        GrowspaceDataStore: class {
+            $selectedDevice = { get: vi.fn(), set: vi.fn(), subscribe: vi.fn() };
+            $devices = { get: vi.fn(), set: vi.fn(), subscribe: vi.fn() };
+            $wsDataCache = { get: vi.fn(), set: vi.fn(), subscribe: vi.fn() };
+            removePlantFromWsCache = vi.fn();
+            updateWsDataCacheGrid = vi.fn();
+            constructor() {
+                this.$wsDataCache.set({});
+            }
+        }
+    };
+});
 
 describe('SubscriptionController', () => {
     let mockHost: ReactiveControllerHost;
@@ -10,6 +26,7 @@ describe('SubscriptionController', () => {
     let mockHass: any;
     let mockUnsub: any;
     let mockOnUpdate: any;
+    let mockDataStore: GrowspaceDataStore;
 
     beforeEach(() => {
         mockHost = {
@@ -25,11 +42,10 @@ describe('SubscriptionController', () => {
         };
         mockOnUpdate = vi.fn();
 
-        dataStore.$wsDataCache.set({});
-        vi.spyOn(dataStore, 'updateWsDataCacheGrid');
-        vi.spyOn(dataStore, 'removePlantFromWsCache');
+        // Instantiate the mocked store
+        mockDataStore = new GrowspaceDataStore();
 
-        controller = new SubscriptionController(mockHost, mockOnUpdate);
+        controller = new SubscriptionController(mockHost, mockDataStore, mockOnUpdate);
     });
 
     afterEach(() => {
@@ -43,7 +59,7 @@ describe('SubscriptionController', () => {
     describe('Lifecycle', () => {
         it('should subscribe on hostConnected if hass available', async () => {
             // Create fresh instance for this test
-            controller = new SubscriptionController(mockHost);
+            controller = new SubscriptionController(mockHost, mockDataStore);
             (controller as any)._hass = mockHass;
 
             await controller.hostConnected();
@@ -53,7 +69,7 @@ describe('SubscriptionController', () => {
 
         it('should NOT subscribe on hostConnected if hass NOT available', async () => {
             // Create fresh instance
-            controller = new SubscriptionController(mockHost);
+            controller = new SubscriptionController(mockHost, mockDataStore);
             // _hass is undefined
 
             await controller.hostConnected();
@@ -63,7 +79,7 @@ describe('SubscriptionController', () => {
 
         it('should subscribe when updateHass is called', () => {
             // Fresh instance
-            controller = new SubscriptionController(mockHost);
+            controller = new SubscriptionController(mockHost, mockDataStore);
 
             controller.updateHass(mockHass);
 
@@ -71,7 +87,7 @@ describe('SubscriptionController', () => {
         });
 
         it('should unsubscribe on hostDisconnected', async () => {
-            controller = new SubscriptionController(mockHost);
+            controller = new SubscriptionController(mockHost, mockDataStore);
             controller.updateHass(mockHass);
 
             // Wait for subscription promise handling? 
@@ -113,8 +129,8 @@ describe('SubscriptionController', () => {
 
             eventHandler(event);
 
-            expect(dataStore.removePlantFromWsCache).toHaveBeenCalledWith('plant123');
-            expect(dataStore.updateWsDataCacheGrid).toHaveBeenCalledWith('gs1', expect.any(Function));
+            expect(mockDataStore.removePlantFromWsCache).toHaveBeenCalledWith('plant123');
+            expect(mockDataStore.updateWsDataCacheGrid).toHaveBeenCalledWith('gs1', expect.any(Function));
             expect(mockOnUpdate).toHaveBeenCalled();
         });
 
@@ -128,8 +144,132 @@ describe('SubscriptionController', () => {
 
             eventHandler(event);
 
-            expect(dataStore.removePlantFromWsCache).toHaveBeenCalledWith('plant123', 'gs1');
+            expect(mockDataStore.removePlantFromWsCache).toHaveBeenCalledWith('plant123', 'gs1');
             expect(mockOnUpdate).toHaveBeenCalled();
+        });
+
+        it('should handle plant update with growspace_id in attributes', () => {
+            const plantData = {
+                plant_id: 'plant456',
+                row: 0,
+                col: 0,
+                attributes: { growspace_id: 'gs2' }
+            };
+            const event = {
+                data: {
+                    event_type: 'plant_added',
+                    data: { plant: plantData }
+                }
+            };
+
+            eventHandler(event);
+
+            expect(mockDataStore.updateWsDataCacheGrid).toHaveBeenCalledWith('gs2', expect.any(Function));
+        });
+
+        it('should not update grid when growspace_id is missing', () => {
+            const plantData = {
+                plant_id: 'plant789',
+                row: 0,
+                col: 0,
+                attributes: {}
+            };
+            const event = {
+                data: {
+                    event_type: 'plant_updated',
+                    data: { plant: plantData }
+                }
+            };
+
+            vi.clearAllMocks();
+            eventHandler(event);
+
+            expect(mockDataStore.removePlantFromWsCache).toHaveBeenCalledWith('plant789');
+            expect(mockDataStore.updateWsDataCacheGrid).not.toHaveBeenCalled();
+        });
+
+        it('should handle unknown event types gracefully', () => {
+            const event = {
+                data: {
+                    event_type: 'unknown_event',
+                    data: {}
+                }
+            };
+
+            expect(() => eventHandler(event)).not.toThrow();
+        });
+    });
+
+    describe('Subscription Edge Cases', () => {
+        it('should not subscribe if already subscribed', async () => {
+            controller = new SubscriptionController(mockHost, mockDataStore);
+            (controller as any)._unsubEvents = vi.fn();
+
+            await controller.subscribe(mockHass);
+
+            expect(mockHass.connection.subscribeEvents).not.toHaveBeenCalled();
+        });
+
+        it('should not subscribe if hass is null', async () => {
+            controller = new SubscriptionController(mockHost, mockDataStore);
+
+            await controller.subscribe(null as any);
+
+            expect(mockHass.connection.subscribeEvents).not.toHaveBeenCalled();
+        });
+
+        it('should handle subscription error', async () => {
+            const errorHass = {
+                connection: {
+                    subscribeEvents: vi.fn().mockRejectedValue(new Error('Connection failed'))
+                }
+            };
+
+            controller = new SubscriptionController(mockHost, mockDataStore);
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+            await controller.subscribe(errorHass as any);
+
+            expect(consoleSpy).toHaveBeenCalledWith('Failed to subscribe to growspace events', expect.any(Error));
+            consoleSpy.mockRestore();
+        });
+
+        it('should not call unsub in hostDisconnected if not subscribed', () => {
+            controller = new SubscriptionController(mockHost, mockDataStore);
+            // _unsubEvents is undefined
+
+            expect(() => controller.hostDisconnected()).not.toThrow();
+        });
+
+        it('should not subscribe again when updateHass called with same hass', () => {
+            controller = new SubscriptionController(mockHost, mockDataStore);
+            (controller as any)._hass = mockHass;
+            (controller as any)._unsubEvents = vi.fn(); // Already subscribed
+
+            vi.clearAllMocks();
+            controller.updateHass(mockHass);
+
+            expect(mockHass.connection.subscribeEvents).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Without onUpdate callback', () => {
+        it('should not throw when onUpdate is not provided', async () => {
+            const controllerWithoutCallback = new SubscriptionController(mockHost, mockDataStore);
+            controllerWithoutCallback.updateHass(mockHass);
+
+            // Get handler
+            const call = (mockHass.connection.subscribeEvents as any).mock.calls[0];
+            const handler = call[0];
+
+            const event = {
+                data: {
+                    event_type: 'plant_updated',
+                    data: { plant: { plant_id: 'x', growspace_id: 'g', row: 0, col: 0 } }
+                }
+            };
+
+            expect(() => handler(event)).not.toThrow();
         });
     });
 });

@@ -241,8 +241,8 @@ describe('AddPlantDialog', () => {
                 strain: 'OG Kush',
                 phenotype: '#5',
                 veg_start: '2023-01-01',
-                row: 0,
-                col: 0
+                row: 1,
+                col: 1
             })
         }));
     });

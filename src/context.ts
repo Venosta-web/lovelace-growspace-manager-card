@@ -7,4 +7,3 @@ export const hassContext = createContext<HomeAssistant>('hass');
 export const configContext = createContext<GrowspaceManagerCardConfig>('config');
 export const strainLibraryContext = createContext<import('./types').StrainEntry[]>('strain-library');
 export const storeContext = createContext<GrowspaceStore>('store');
-export const historyContext = createContext<import('./controllers/growspace-history-controller').GrowspaceHistoryController>('growspace-history-controller');

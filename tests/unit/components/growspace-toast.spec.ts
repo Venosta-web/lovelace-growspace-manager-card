@@ -1,20 +1,41 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { GrowspaceToast } from '../../../src/components/growspace-toast';
-import { $notification, showToast } from '../../../src/store/ui-store';
-import { fixture, html } from '@open-wc/testing-helpers';
+import { atom } from 'nanostores';
 
 describe('GrowspaceToast', () => {
     let el: GrowspaceToast;
+    let mockStore: any;
+
+    // Local atom
+    const $notification = atom<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
     beforeEach(async () => {
+        vi.clearAllMocks();
         $notification.set(null);
-        el = await fixture(html`<growspace-toast></growspace-toast>`);
+
+        mockStore = {
+            ui: {
+                $notification,
+                clearToast: vi.fn()
+            }
+        };
+
+        if (!customElements.get('growspace-toast')) {
+            customElements.define('growspace-toast', GrowspaceToast);
+        }
+
+        // Create element manually to inject store before connection
+        el = document.createElement('growspace-toast') as GrowspaceToast;
+        (el as any).store = mockStore;
+        document.body.appendChild(el);
+        await el.updateComplete;
     });
 
     afterEach(() => {
-        vi.restoreAllMocks();
-        $notification.set(null);
+        if (el.isConnected) {
+            document.body.removeChild(el);
+        }
     });
 
     it('should be defined', () => {
@@ -28,9 +49,9 @@ describe('GrowspaceToast', () => {
     });
 
     it('should show message when store updates', async () => {
-        showToast('Test Message', 'success');
+        $notification.set({ message: 'Test Message', type: 'success' });
 
-        await new Promise(r => setTimeout(r, 0));
+
         await el.updateComplete;
 
         const div = el.shadowRoot!.querySelector('.toast-notification');
@@ -41,27 +62,19 @@ describe('GrowspaceToast', () => {
 
     it('should clear after timeout', async () => {
         vi.useFakeTimers();
-        showToast('Auto Dismiss', 'info');
+        $notification.set({ message: 'Auto Dismiss', type: 'info' });
 
-        // Use Promise.resolve for store update microtask
-        await Promise.resolve();
-
-        expect($notification.get()).not.toBeNull();
-
-        // Fast-forward time
-        vi.advanceTimersByTime(3000);
-
-        // Timer callback updates store synchronously in test env usually?
-        // Wait for microtasks from that callback
-        await Promise.resolve();
-
-        expect($notification.get()).toBeNull();
-
-        vi.useRealTimers();
 
         await el.updateComplete;
 
         const div = el.shadowRoot!.querySelector('.toast-notification');
-        expect(div?.classList.contains('visible')).toBe(false);
+        expect(div?.classList.contains('visible')).toBe(true);
+
+        // Fast-forward time
+        vi.advanceTimersByTime(3000);
+
+        expect(mockStore.ui.clearToast).toHaveBeenCalled();
+
+        vi.useRealTimers();
     });
 });

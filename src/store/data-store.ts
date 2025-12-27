@@ -1,102 +1,111 @@
-import { atom } from 'nanostores';
+import { atom, WritableAtom } from 'nanostores';
 import { GrowspaceDevice, StrainEntry, GrowspaceManagerCardConfig, GrowspaceAPIResponse } from '../types';
 
-// Domain Data Atoms
-export const $devices = atom<GrowspaceDevice[]>([]);
-export const $strainLibrary = atom<StrainEntry[]>([]);
-export const $config = atom<GrowspaceManagerCardConfig>({} as GrowspaceManagerCardConfig);
-export const $optimisticDeletedPlantIds = atom<Set<string>>(new Set());
-export const $wsDataCache = atom<Record<string, GrowspaceAPIResponse>>({});
+export class GrowspaceDataStore {
+    // Domain Data Atoms
+    public readonly $devices: WritableAtom<GrowspaceDevice[]>;
+    public readonly $strainLibrary: WritableAtom<StrainEntry[]>;
+    public readonly $config: WritableAtom<GrowspaceManagerCardConfig>;
+    public readonly $optimisticDeletedPlantIds: WritableAtom<Set<string>>;
+    public readonly $wsDataCache: WritableAtom<Record<string, GrowspaceAPIResponse>>;
+    public readonly $selectedDevice: WritableAtom<string | null>;
 
-// Computed or derived state helpers can go here if needed
-export const $selectedDevice = atom<string | null>(null);
-
-// Actions (State setters)
-
-export const setDevices = (devices: GrowspaceDevice[]) => {
-    $devices.set(devices);
-};
-
-export const setSelectedDevice = (deviceId: string | null) => {
-    $selectedDevice.set(deviceId);
-};
-
-export const setConfig = (config: GrowspaceManagerCardConfig) => {
-    $config.set(config);
-};
-
-export const setStrainLibrary = (library: StrainEntry[]) => {
-    $strainLibrary.set(library);
-};
-
-export const setOptimisticDeletedPlantIds = (ids: Set<string>) => {
-    $optimisticDeletedPlantIds.set(ids);
-};
-
-export const addOptimisticDeletedPlantId = (id: string) => {
-    const current = new Set($optimisticDeletedPlantIds.get());
-    current.add(id);
-    $optimisticDeletedPlantIds.set(current);
-};
-
-export const removeOptimisticDeletedPlantId = (id: string) => {
-    const current = new Set($optimisticDeletedPlantIds.get());
-    if (current.has(id)) {
-        current.delete(id);
-        $optimisticDeletedPlantIds.set(current);
+    constructor() {
+        this.$devices = atom<GrowspaceDevice[]>([]);
+        this.$strainLibrary = atom<StrainEntry[]>([]);
+        this.$config = atom<GrowspaceManagerCardConfig>({} as GrowspaceManagerCardConfig);
+        this.$optimisticDeletedPlantIds = atom<Set<string>>(new Set());
+        this.$wsDataCache = atom<Record<string, GrowspaceAPIResponse>>({});
+        this.$selectedDevice = atom<string | null>(null);
     }
-};
 
-export const setWsDataCache = (cache: Record<string, GrowspaceAPIResponse>) => {
-    $wsDataCache.set(cache);
-};
+    // Actions (State setters)
 
-export const updateWsDataCacheGrid = (gsId: string, mutator: (grid: Record<string, any>) => void) => {
-    const currentCache = $wsDataCache.get();
-    if (!currentCache[gsId]) return;
+    public setDevices(devices: GrowspaceDevice[]) {
+        this.$devices.set(devices);
+    }
 
-    const newCache = { ...currentCache };
-    newCache[gsId] = { ...newCache[gsId] };
-    const newGrid = { ...newCache[gsId].grid };
-    newCache[gsId].grid = newGrid;
+    public setSelectedDevice(deviceId: string | null) {
+        this.$selectedDevice.set(deviceId);
+    }
 
-    mutator(newGrid);
+    public setConfig(config: GrowspaceManagerCardConfig) {
+        this.$config.set(config);
+    }
 
-    $wsDataCache.set(newCache);
-};
+    public setStrainLibrary(library: StrainEntry[]) {
+        this.$strainLibrary.set(library);
+    }
 
-export const removePlantFromWsCache = (plantId: string, growspaceId?: string) => {
-    const currentCache = $wsDataCache.get();
-    const newCache = { ...currentCache };
-    let changed = false;
+    public setOptimisticDeletedPlantIds(ids: Set<string>) {
+        this.$optimisticDeletedPlantIds.set(ids);
+    }
 
-    const removeFn = (gsId: string) => {
-        if (!newCache[gsId] || !newCache[gsId].grid) return;
+    public addOptimisticDeletedPlantId(id: string) {
+        const current = new Set(this.$optimisticDeletedPlantIds.get());
+        current.add(id);
+        this.$optimisticDeletedPlantIds.set(current);
+    }
 
-        let gridChanged = false;
-        const newGrid = { ...newCache[gsId].grid };
-
-        Object.keys(newGrid).forEach(key => {
-            const plant = newGrid[key];
-            if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
-                newGrid[key] = null;
-                gridChanged = true;
-            }
-        });
-
-        if (gridChanged) {
-            newCache[gsId] = { ...newCache[gsId], grid: newGrid };
-            changed = true;
+    public removeOptimisticDeletedPlantId(id: string) {
+        const current = new Set(this.$optimisticDeletedPlantIds.get());
+        if (current.has(id)) {
+            current.delete(id);
+            this.$optimisticDeletedPlantIds.set(current);
         }
-    };
-
-    if (growspaceId) {
-        removeFn(growspaceId);
-    } else {
-        Object.keys(newCache).forEach(gsId => removeFn(gsId));
     }
 
-    if (changed) {
-        $wsDataCache.set(newCache);
+    public setWsDataCache(cache: Record<string, GrowspaceAPIResponse>) {
+        this.$wsDataCache.set(cache);
     }
-};
+
+    public updateWsDataCacheGrid(gsId: string, mutator: (grid: Record<string, any>) => void) {
+        const currentCache = this.$wsDataCache.get();
+        if (!currentCache[gsId]) return;
+
+        const newCache = { ...currentCache };
+        newCache[gsId] = { ...newCache[gsId] };
+        const newGrid = { ...newCache[gsId].grid };
+        newCache[gsId].grid = newGrid;
+
+        mutator(newGrid);
+
+        this.$wsDataCache.set(newCache);
+    }
+
+    public removePlantFromWsCache(plantId: string, growspaceId?: string) {
+        const currentCache = this.$wsDataCache.get();
+        const newCache = { ...currentCache };
+        let changed = false;
+
+        const removeFn = (gsId: string) => {
+            if (!newCache[gsId] || !newCache[gsId].grid) return;
+
+            let gridChanged = false;
+            const newGrid = { ...newCache[gsId].grid };
+
+            Object.keys(newGrid).forEach(key => {
+                const plant = newGrid[key];
+                if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
+                    newGrid[key] = null;
+                    gridChanged = true;
+                }
+            });
+
+            if (gridChanged) {
+                newCache[gsId] = { ...newCache[gsId], grid: newGrid };
+                changed = true;
+            }
+        };
+
+        if (growspaceId) {
+            removeFn(growspaceId);
+        } else {
+            Object.keys(newCache).forEach(gsId => removeFn(gsId));
+        }
+
+        if (changed) {
+            this.$wsDataCache.set(newCache);
+        }
+    }
+}

@@ -1,15 +1,17 @@
 import { ReactiveController, ReactiveControllerHost } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
-import * as dataStore from '../store/data-store';
+import { GrowspaceDataStore } from '../store/data-store';
 
 export class SubscriptionController implements ReactiveController {
     private host: ReactiveControllerHost;
     private _unsubEvents?: () => void;
     private _hass?: HomeAssistant;
     private _onUpdate?: () => void;
+    private dataStore: GrowspaceDataStore;
 
-    constructor(host: ReactiveControllerHost, onUpdate?: () => void) {
+    constructor(host: ReactiveControllerHost, dataStore: GrowspaceDataStore, onUpdate?: () => void) {
         this.host = host;
+        this.dataStore = dataStore;
         this._onUpdate = onUpdate;
         host.addController(this);
     }
@@ -70,19 +72,19 @@ export class SubscriptionController implements ReactiveController {
     // Logic moved from GrowspaceStore, adapted to use dataStore actions
     private _handlePlantUpdate(plantData: any) {
         // 1. Remove old instance (handle moves) - simplified cache update
-        dataStore.removePlantFromWsCache(plantData.plant_id);
+        this.dataStore.removePlantFromWsCache(plantData.plant_id);
 
         // 2. Add to new location
         const gsId = plantData.growspace_id || plantData.attributes?.growspace_id;
         if (gsId) {
             const correctKey = `position_${plantData.row}_${plantData.col}`;
-            dataStore.updateWsDataCacheGrid(gsId, (grid) => {
+            this.dataStore.updateWsDataCacheGrid(gsId, (grid) => {
                 grid[correctKey] = plantData;
             });
         }
     }
 
     private _handlePlantRemoval(plantId: string, growspaceId?: string) {
-        dataStore.removePlantFromWsCache(plantId, growspaceId);
+        this.dataStore.removePlantFromWsCache(plantId, growspaceId);
     }
 }

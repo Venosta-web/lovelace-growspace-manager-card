@@ -40,6 +40,8 @@ export const STAGE_CONFIG: Record<PlantStage, { icon: string; title: string; col
   [PlantStage.CURE]: { icon: mdiCannabis, title: 'Cure', colorVar: '--state-cure-color' },
 };
 
+export type HistoryTimeRange = '1h' | '6h' | '24h' | '7d';
+
 // --- Backend Data Models ---
 
 export interface IrrigationScheduleItem {

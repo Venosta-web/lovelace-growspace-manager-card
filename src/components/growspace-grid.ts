@@ -8,7 +8,7 @@ import { StoreController } from '@nanostores/lit';
 import { PlantEntity, StrainEntry } from '../types';
 import { storeContext } from '../context';
 import type { GrowspaceStore } from '../store/growspace-store';
-import { $isEditMode, $selectedPlants, $isCompactView, $isLoading } from '../store/ui-store';
+// Global imports removed
 import { variables } from '../styles/variables';
 import { sharedStyles } from '../styles/shared.styles';
 import './plant-card';
@@ -23,10 +23,20 @@ export class GrowspaceGrid extends LitElement {
   @property({ type: Number }) accessor cols: number = 3;
 
   // UI state via StoreController - direct subscription to atoms
-  private _isEditModeController = new StoreController(this, $isEditMode);
-  private _selectedPlantsController = new StoreController(this, $selectedPlants);
-  private _isCompactController = new StoreController(this, $isCompactView);
-  private _isLoadingController = new StoreController(this, $isLoading);
+  private _isEditModeController!: StoreController<boolean>;
+  private _selectedPlantsController!: StoreController<Set<string>>;
+  private _isCompactController!: StoreController<boolean>;
+  private _isLoadingController!: StoreController<boolean>;
+
+  connectedCallback() {
+    super.connectedCallback();
+    if (this.store) {
+      this._isEditModeController = new StoreController(this, this.store.ui.$isEditMode);
+      this._selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
+      this._isCompactController = new StoreController(this, this.store.ui.$isCompactView);
+      this._isLoadingController = new StoreController(this, this.store.ui.$isLoading);
+    }
+  }
 
   private _draggedPlant: PlantEntity | null = null;
   private _gridRef = createRef<HTMLDivElement>();
@@ -421,14 +431,14 @@ export class GrowspaceGrid extends LitElement {
 
     return html`
       <div
-        class="grid ${this._isCompactController.value ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
+        class="grid ${this._isCompactController?.value ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
         style="${gridStyle}"
         @mobile-drop=${this._handleMobileDrop}
         @dragover=${this._handleDragOver}
         ${ref(this._gridRef)}
       >
-        ${this._isLoadingController.value ? this.renderSkeletonGrid() : ''}
-        ${!this._isLoadingController.value
+        ${this._isLoadingController?.value ? this.renderSkeletonGrid() : ''}
+        ${!this._isLoadingController?.value
         ? repeat(
           flatGrid,
           (plant, index) =>

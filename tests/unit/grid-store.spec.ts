@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { $activeDevices, $growspaceOptions, $gridLayout } from '../../src/store/grid-store';
-import { setDevices, setSelectedDevice, addOptimisticDeletedPlantId, setOptimisticDeletedPlantIds } from '../../src/store/data-store';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { GrowspaceGridStore } from '../../src/store/grid-store';
+import { GrowspaceDataStore } from '../../src/store/data-store';
 import { GrowspaceDevice, PlantEntity, createGrowspaceDevice } from '../../src/types';
 
-// Use actual nanostores atoms - no mocking needed for computed atoms
-// We just need to set up the source atoms with test data
-
 describe('grid-store', () => {
+    let dataStore: GrowspaceDataStore;
+    let gridStore: GrowspaceGridStore;
+
     const mockPlant1: PlantEntity = {
         entity_id: 'sensor.plant_abc',
         state: 'active',
@@ -122,25 +122,16 @@ describe('grid-store', () => {
     });
 
     beforeEach(() => {
-        // Reset atoms to clean state
-        setDevices([]);
-        setSelectedDevice(null);
-        setOptimisticDeletedPlantIds(new Set());
-    });
-
-    afterEach(() => {
-        // Clean up
-        setDevices([]);
-        setSelectedDevice(null);
-        setOptimisticDeletedPlantIds(new Set());
+        dataStore = new GrowspaceDataStore();
+        gridStore = new GrowspaceGridStore(dataStore);
     });
 
     describe('$activeDevices', () => {
         it('should return devices with plants filtered by optimistic deletion', () => {
-            setDevices([mockDevice1, mockDevice2]);
-            addOptimisticDeletedPlantId('abc');
+            dataStore.setDevices([mockDevice1, mockDevice2]);
+            dataStore.addOptimisticDeletedPlantId('abc');
 
-            const result = $activeDevices.get();
+            const result = gridStore.$activeDevices.get();
 
             expect(result).toHaveLength(2);
             expect(result[0].plants).toHaveLength(1);
@@ -149,9 +140,9 @@ describe('grid-store', () => {
         });
 
         it('should return all plants when no optimistic deletions', () => {
-            setDevices([mockDevice1]);
+            dataStore.setDevices([mockDevice1]);
 
-            const result = $activeDevices.get();
+            const result = gridStore.$activeDevices.get();
 
             expect(result).toHaveLength(1);
             expect(result[0].plants).toHaveLength(2);
@@ -164,19 +155,19 @@ describe('grid-store', () => {
             };
             const device: GrowspaceDevice = { ...mockDevice1, plants: [plantWithoutId] };
 
-            setDevices([device]);
+            dataStore.setDevices([device]);
             // entity_id is 'sensor.plant_abc', fallback extracts 'plant_abc'
-            addOptimisticDeletedPlantId('plant_abc');
+            dataStore.addOptimisticDeletedPlantId('plant_abc');
 
-            const result = $activeDevices.get();
+            const result = gridStore.$activeDevices.get();
 
             expect(result[0].plants).toHaveLength(0);
         });
 
         it('should return empty array when no devices', () => {
-            setDevices([]);
+            dataStore.setDevices([]);
 
-            const result = $activeDevices.get();
+            const result = gridStore.$activeDevices.get();
 
             expect(result).toEqual([]);
         });
@@ -184,9 +175,9 @@ describe('grid-store', () => {
 
     describe('$growspaceOptions', () => {
         it('should create options map from device_id to name', () => {
-            setDevices([mockDevice1, mockDevice2]);
+            dataStore.setDevices([mockDevice1, mockDevice2]);
 
-            const result = $growspaceOptions.get();
+            const result = gridStore.$growspaceOptions.get();
 
             expect(result).toEqual({
                 gs1: 'Growspace 1',
@@ -195,9 +186,9 @@ describe('grid-store', () => {
         });
 
         it('should return empty object when no devices', () => {
-            setDevices([]);
+            dataStore.setDevices([]);
 
-            const result = $growspaceOptions.get();
+            const result = gridStore.$growspaceOptions.get();
 
             expect(result).toEqual({});
         });
@@ -205,28 +196,28 @@ describe('grid-store', () => {
 
     describe('$gridLayout', () => {
         it('should return empty grid when no selected device', () => {
-            setDevices([mockDevice1]);
-            setSelectedDevice(null);
+            dataStore.setDevices([mockDevice1]);
+            dataStore.setSelectedDevice(null);
 
-            const result = $gridLayout.get();
+            const result = gridStore.$gridLayout.get();
 
             expect(result).toEqual({ effectiveRows: 0, grid: [] });
         });
 
         it('should return empty grid when selected device not found', () => {
-            setDevices([mockDevice1]);
-            setSelectedDevice('nonexistent');
+            dataStore.setDevices([mockDevice1]);
+            dataStore.setSelectedDevice('nonexistent');
 
-            const result = $gridLayout.get();
+            const result = gridStore.$gridLayout.get();
 
             expect(result).toEqual({ effectiveRows: 0, grid: [] });
         });
 
         it('should return grid layout for selected device', () => {
-            setDevices([mockDevice1, mockDevice2]);
-            setSelectedDevice('gs1');
+            dataStore.setDevices([mockDevice1, mockDevice2]);
+            dataStore.setSelectedDevice('gs1');
 
-            const result = $gridLayout.get();
+            const result = gridStore.$gridLayout.get();
 
             expect(result.effectiveRows).toBeGreaterThanOrEqual(1);
             expect(result.grid).toBeDefined();
@@ -234,11 +225,11 @@ describe('grid-store', () => {
         });
 
         it('should exclude optimistically deleted plants from grid', () => {
-            setDevices([mockDevice1]);
-            setSelectedDevice('gs1');
-            addOptimisticDeletedPlantId('abc');
+            dataStore.setDevices([mockDevice1]);
+            dataStore.setSelectedDevice('gs1');
+            dataStore.addOptimisticDeletedPlantId('abc');
 
-            const result = $gridLayout.get();
+            const result = gridStore.$gridLayout.get();
 
             // Grid should only contain the non-deleted plant
             const flatPlants = result.grid.flat().filter((p) => p !== null);

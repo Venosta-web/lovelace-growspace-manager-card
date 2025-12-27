@@ -115,6 +115,66 @@ describe('GraphDataTransformer', () => {
             const result = GraphDataTransformer.synthesizeLiveDataPoint('temp', {}, now);
             expect(result).toBeNull();
         });
+
+        it('should synthesize humidifier point (numeric)', () => {
+            const entity = { attributes: { humidifier_value: '75' } };
+            const result = GraphDataTransformer.synthesizeLiveDataPoint('humidifier', entity, now);
+            expect(result).toEqual({
+                time: now.getTime(),
+                value: 75,
+                meta: undefined
+            });
+        });
+
+        it('should synthesize humidifier point (active state)', () => {
+            const entity = { attributes: { humidifier_value: 'active' } };
+            const result = GraphDataTransformer.synthesizeLiveDataPoint('humidifier', entity, now);
+            expect(result).toEqual({
+                time: now.getTime(),
+                value: 1,
+                meta: { state: 'ON' }
+            });
+        });
+
+        it('should synthesize exhaust point (idle state)', () => {
+            const entity = { attributes: { exhaust_value: 'idle' } };
+            const result = GraphDataTransformer.synthesizeLiveDataPoint('exhaust', entity, now);
+            expect(result).toEqual({
+                time: now.getTime(),
+                value: 0,
+                meta: { state: 'OFF' }
+            });
+        });
+
+        it('should synthesize exhaust point (off state)', () => {
+            const entity = { attributes: { exhaust_value: 'off' } };
+            const result = GraphDataTransformer.synthesizeLiveDataPoint('exhaust', entity, now);
+            expect(result).toEqual({
+                time: now.getTime(),
+                value: 0,
+                meta: { state: 'OFF' }
+            });
+        });
+
+        it('should return null when value is undefined', () => {
+            const entity = { attributes: {} };
+            const result = GraphDataTransformer.synthesizeLiveDataPoint('exhaust', entity, now);
+            expect(result).toBeNull();
+        });
+
+        it('should return null when NaN value cannot be parsed', () => {
+            const entity = { attributes: { exhaust_value: 'invalid_value' } };
+            const result = GraphDataTransformer.synthesizeLiveDataPoint('exhaust', entity, now);
+            expect(result).toBeNull();
+        });
+
+        it('should return null for dehumidifier when entity or attribute missing', () => {
+            const result1 = GraphDataTransformer.synthesizeLiveDataPoint('dehumidifier', null, now);
+            expect(result1).toBeNull();
+
+            const result2 = GraphDataTransformer.synthesizeLiveDataPoint('dehumidifier', { attributes: {} }, now);
+            expect(result2).toBeNull();
+        });
     });
 
     describe('normalizeSensorValue', () => {
@@ -142,6 +202,15 @@ describe('GraphDataTransformer', () => {
         it('should fallback for generic on/off', () => {
             expect(GraphDataTransformer.normalizeSensorValue({ state: 'on' } as any, 'pump')).toBe(1);
             expect(GraphDataTransformer.normalizeSensorValue({ state: 'off' } as any, 'pump')).toBe(0);
+        });
+
+        it('should normalize light true/false string states', () => {
+            expect(GraphDataTransformer.normalizeSensorValue({ state: 'true' } as any, 'light')).toBe(1);
+            expect(GraphDataTransformer.normalizeSensorValue({ state: 'false' } as any, 'light')).toBe(0);
+        });
+
+        it('should return undefined for non-numeric invalid state', () => {
+            expect(GraphDataTransformer.normalizeSensorValue({ state: 'garbage' } as any, 'pump')).toBeUndefined();
         });
     });
 });

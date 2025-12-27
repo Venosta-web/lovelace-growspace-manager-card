@@ -10,18 +10,18 @@ import { growspaceCardStyles } from '../styles/growspace-card.styles';
 import { sharedStyles } from '../styles/shared.styles';
 
 import { consume } from '@lit/context';
-import { hassContext, historyContext } from '../context';
-import type { GrowspaceHistoryController } from '../controllers/growspace-history-controller';
+import { hassContext, storeContext } from '../context';
+import type { GrowspaceStore } from '../store/growspace-store';
 import { StoreController } from '@nanostores/lit';
-import { $historyCache, $historyLoading, $historyLoaded, $activeEnvGraphs, $linkedGraphGroups } from '../store/history-store';
+// Global imports removed
 
 @customElement('growspace-analytics')
 export class GrowspaceAnalytics extends LitElement {
   @consume({ context: hassContext, subscribe: true })
   accessor hass!: HomeAssistant;
 
-  @consume({ context: historyContext, subscribe: true })
-  public accessor historyController!: GrowspaceHistoryController;
+  @consume({ context: storeContext })
+  private accessor store!: GrowspaceStore;
 
   @property({ attribute: false }) accessor device: GrowspaceDevice | undefined;
 
@@ -50,33 +50,48 @@ export class GrowspaceAnalytics extends LitElement {
   }[] = [];
 
   // StoreController subscriptions for automatic reactivity
-  private _historyCacheController = new StoreController(this, $historyCache);
-  private _historyLoadingController = new StoreController(this, $historyLoading);
-  private _historyLoadedController = new StoreController(this, $historyLoaded);
-  private _activeEnvGraphsController = new StoreController(this, $activeEnvGraphs);
-  private _linkedGraphGroupsController = new StoreController(this, $linkedGraphGroups);
+  private _historyCacheController!: StoreController<Record<string, import('../types').HistorySensorState[]>>;
+  private _historyLoadingController!: StoreController<boolean>;
+  private _historyLoadedController!: StoreController<boolean>;
+  private _activeEnvGraphsController!: StoreController<Set<string>>;
+  private _linkedGraphGroupsController!: StoreController<string[][]>;
+  private _combinedHistoryController!: StoreController<import('../types').SensorHistories>;
+  private _graphRangesController!: StoreController<Record<string, import('../types').HistoryTimeRange>>;
 
   connectedCallback() {
     super.connectedCallback();
-  }
+    if (this.store) {
+      this._historyCacheController = new StoreController(this, this.store.history.$historyCache);
+      this._historyLoadingController = new StoreController(this, this.store.history.$historyLoading);
+      this._historyLoadedController = new StoreController(this, this.store.history.$historyLoaded);
+      this._activeEnvGraphsController = new StoreController(this, this.store.history.$activeEnvGraphs);
+      this._linkedGraphGroupsController = new StoreController(this, this.store.history.$linkedGraphGroups);
+      this._combinedHistoryController = new StoreController(this, this.store.history.$combinedHistory);
+      this._graphRangesController = new StoreController(this, this.store.history.$graphRanges);
 
-  firstUpdated() {
-    // OPTIMIZATION: Trigger lazy loading of history data when analytics component first renders
-    if (this.historyController && !this.historyController.isHistoryLoaded) {
-      console.log('[GrowspaceAnalytics] Triggering lazy load of history data');
-      this.historyController.loadHistoryOnDemand();
+      // OPTIMIZATION: Trigger lazy loading of history when component connects if needed
+      this.store.history.startAutoRefresh();
     }
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    if (this.store) {
+      this.store.history.stopAutoRefresh();
+    }
+  }
+
+  firstUpdated() {
+    // OPTIMIZATION: Trigger lazy loading of history data when analytics component first renders
+    if (this.store?.history && !this._historyLoadedController.value) {
+      this.store.history.loadHistoryOnDemand();
+    }
   }
 
   protected willUpdate(changedProperties: PropertyValues) {
     // Trigger lazy load if history is not loaded and not currently loading
-    if (this.historyController && !this.historyController.isHistoryLoaded && !this.historyController.isHistoryLoading) {
-      console.log('[GrowspaceAnalytics] Triggering lazy load in willUpdate');
-      this.historyController.loadHistoryOnDemand();
+    if (this.store?.history && !this._historyLoadedController.value && !this._historyLoadingController.value) {
+      this.store.history.loadHistoryOnDemand();
     }
 
     // Recompute items whenever update is requested (controller notifies)
@@ -84,7 +99,7 @@ export class GrowspaceAnalytics extends LitElement {
   }
 
   private _computeItemsToRender() {
-    if (!this.historyController) return;
+    if (!this.store?.history || !this._activeEnvGraphsController) return;
 
     const getSortIndex = (metric: string): number => {
       const index = METRIC_SORT_ORDER.indexOf(metric);
@@ -98,8 +113,8 @@ export class GrowspaceAnalytics extends LitElement {
     }[] = [];
 
     const processedMetrics = new Set<string>();
-    const activeEnvGraphs = this.historyController.activeEnvGraphs;
-    const linkedGraphGroups = this.historyController.linkedGraphGroups;
+    const activeEnvGraphs = this._activeEnvGraphsController.value;
+    const linkedGraphGroups = this._linkedGraphGroupsController.value;
 
     // Process Linked Groups
     linkedGraphGroups.forEach((group) => {
@@ -131,14 +146,14 @@ export class GrowspaceAnalytics extends LitElement {
   }
 
   protected render(): TemplateResult {
-    if (!this.historyController || this.historyController.activeEnvGraphs.size === 0) return html``;
+    if (!this.store?.history || !this._activeEnvGraphsController || this._activeEnvGraphsController.value.size === 0) return html``;
     if (!this.device) return html``;
 
     // Show loading state while history is being fetched
-    if (this.historyController.isHistoryLoading) {
+    if (this._historyLoadingController.value) {
       return html`
         <div class="graphs-container">
-          ${this.renderTimeRangeSelector(this.historyController.getRange())}
+          ${this.renderTimeRangeSelector(this.store.history.getRange())}
           <div style="display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--secondary-text-color, #666);">
             <div class="loading-spinner" style="width: 24px; height: 24px; border: 2px solid var(--primary-color, #03a9f4); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
             <span style="margin-left: 12px;">Loading history data...</span>
@@ -147,8 +162,8 @@ export class GrowspaceAnalytics extends LitElement {
       `;
     }
 
-    const sensorHistory = this.historyController.combinedHistory;
-    const range = this.historyController.getRange();
+    const sensorHistory = this._combinedHistoryController.value;
+    const range = this.store.history.getRange();
 
     const graphs = repeat(
       this._itemsToRender,
@@ -218,38 +233,30 @@ export class GrowspaceAnalytics extends LitElement {
   }
 
   private _setGraphRange(range: '1h' | '6h' | '24h' | '7d') {
-    // Call controller directly
-    this.historyController.setGraphRange(range);
-    // Deprecated event removed: this.dispatchEvent(new RangeChangeEvent(range));
+    if (this.device) {
+      this.store.history.setGraphRange(this.device.device_id, range);
+      this.store.history.loadHistoryOnDemand(); // Reload logic to match controller behavior
+    }
   }
 
   private _handleToggleGraph(e: CustomEvent) {
     e.stopPropagation();
-    const metric = e.detail.metric; // Assuming detail contains metric
-    if (metric) {
-      this.historyController.toggleEnvGraph({ metric, visible: false }); // Toggling off usually? Handled by controller logic
+    // Chart emits detail: metricKey (string)
+    const metric = e.detail;
+    if (metric && typeof metric === 'string') {
+      this.store.history.toggleEnvGraph(metric);
     }
-    // Actually, toggleEnvGraph event from chart usually means "close" or "toggle".
-    // The chart emits toggle-graph with detail: { metric }
-    this.historyController.toggleEnvGraph({ metric: e.detail, visible: false });
-    // Wait, e.detail from GrowspaceEnvChart might vary. 
-    // Let's assume e.detail is the metric string based on previous usage.
   }
 
   private _handleUnlinkGraphs(e: CustomEvent) {
     e.stopPropagation();
-    // detail is likely groupIndex?
-    // But looking at header implementation, unlink emits groupIndex.
-    // From chart, we need to know what it emits.
-    // Assuming it emits the group index or metrics?
-    // Let's assume it emits groupIndex for now, or check code.
-    // But based on usage in stored method `unlinkGraphGroup(index)`, it expects index.
-    this.historyController.unlinkGraphGroup(e.detail);
+    // detail is groupIndex
+    this.store.history.unlinkGraphGroup(e.detail);
   }
 
   private _handleUnlinkGraphMetric(e: CustomEvent) {
     e.stopPropagation();
     // detail is metric string
-    this.historyController.unlinkGraphMetric(e.detail);
+    this.store.history.unlinkGraphMetric(e.detail);
   }
 }

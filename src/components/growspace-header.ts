@@ -1,9 +1,7 @@
 import { LitElement, html, css, svg, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { StoreController } from '@nanostores/lit';
-import { $viewMode, $isEditMode, $activeDialog, setViewMode, setEditMode } from '../store/ui-store';
-import { $devices, $selectedDevice } from '../store/data-store';
-import { $historyCache, $historyLoading, $activeEnvGraphs, $linkedGraphGroups } from '../store/history-store';
+// Global store imports removed
 import { HomeAssistant } from 'custom-card-helpers';
 
 import {
@@ -24,13 +22,12 @@ import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
 import './growspace-chip';
 import { consume } from '@lit/context';
-import { hassContext, configContext, storeContext, historyContext } from '../context';
+import { hassContext, configContext, storeContext } from '../context';
 import { GrowspaceDevice, GrowspaceManagerCardConfig, IrrigationTime } from '../types';
 import { MetricsUtils } from '../utils/metrics-utils';
 import { ChartUtils } from '../utils/chart-utils';
 import { ResizeController } from '../controllers/resize-controller';
 import type { GrowspaceStore } from '../store/growspace-store';
-import type { GrowspaceHistoryController } from '../controllers/growspace-history-controller';
 
 @customElement('growspace-header')
 export class GrowspaceHeader extends LitElement {
@@ -39,10 +36,6 @@ export class GrowspaceHeader extends LitElement {
 
   @consume({ context: storeContext, subscribe: true })
   public accessor store!: GrowspaceStore;
-
-  @consume({ context: historyContext, subscribe: true })
-  @state()
-  public accessor historyController!: GrowspaceHistoryController;
 
   @consume({ context: configContext, subscribe: true })
   @property({ attribute: false })
@@ -65,18 +58,18 @@ export class GrowspaceHeader extends LitElement {
   @state() private accessor _mobileLink = false;
 
   // Reactivity Controllers
-  private _viewModeController = new StoreController(this, $viewMode);
-  private _isEditModeController = new StoreController(this, $isEditMode);
+  private _viewModeController!: StoreController<string>;
+  private _isEditModeController!: StoreController<boolean>;
 
   // Data Store Controllers
-  private _devicesController = new StoreController(this, $devices);
-  private _selectedDeviceController = new StoreController(this, $selectedDevice);
+  private _devicesController!: StoreController<GrowspaceDevice[]>;
+  private _selectedDeviceController!: StoreController<string | null>;
 
-  // History Store Controllers (replaces manual listener pattern)
-  private _historyCacheController = new StoreController(this, $historyCache);
-  private _historyLoadingController = new StoreController(this, $historyLoading);
-  private _activeEnvGraphsController = new StoreController(this, $activeEnvGraphs);
-  private _linkedGraphGroupsController = new StoreController(this, $linkedGraphGroups);
+  // History Store Controllers
+  private _historyCacheController!: StoreController<any>;
+  private _historyLoadingController!: StoreController<boolean>;
+  private _activeEnvGraphsController!: StoreController<Set<string>>;
+  private _linkedGraphGroupsController!: StoreController<string[][]>;
 
   private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
   private _stageContainerRef: Ref<HTMLDivElement> = createRef();
@@ -92,7 +85,7 @@ export class GrowspaceHeader extends LitElement {
 
   // Helper getters for clarity in render/compute
   get activeEnvGraphs() {
-    return this.historyController?.activeEnvGraphs || new Set();
+    return this._activeEnvGraphsController?.value || new Set();
   }
 
   private _computeMetrics(): {
@@ -108,7 +101,7 @@ export class GrowspaceHeader extends LitElement {
       this.hass,
       this.device,
       this.activeEnvGraphs,
-      this.historyController?.linkedGraphGroups || []
+      this._linkedGraphGroupsController?.value || []
     );
   }
 
@@ -174,7 +167,7 @@ export class GrowspaceHeader extends LitElement {
       this.hass,
       this.device,
       this.activeEnvGraphs,
-      this.historyController?.linkedGraphGroups || []
+      this._linkedGraphGroupsController?.value || []
     );
 
     this._mainChips = mainChips;
@@ -694,8 +687,8 @@ export class GrowspaceHeader extends LitElement {
   }
 
   private _toggleEnvGraph(metric: string) {
-    if (!this.historyController) return;
-    this.historyController.toggleEnvGraph({ metric, visible: true });
+    if (!this.store?.history) return;
+    this.store.history.toggleEnvGraph(metric);
   }
 
   private _handleChipDragStart(e: DragEvent, metric: string) {
@@ -713,8 +706,8 @@ export class GrowspaceHeader extends LitElement {
       return;
     }
 
-    if (this.historyController) {
-      this.historyController.linkGraphs(this._draggedMetric, targetMetric);
+    if (this.store?.history) {
+      this.store.history.linkGraphs(this._draggedMetric, targetMetric);
     }
 
     this._draggedMetric = null;
@@ -727,8 +720,8 @@ export class GrowspaceHeader extends LitElement {
   }
 
   private _unlinkGraphs(groupIndex: number) {
-    if (this.historyController) {
-      this.historyController.unlinkGraphGroup(groupIndex);
+    if (this.store?.history) {
+      this.store.history.unlinkGraphGroup(groupIndex);
     }
   }
 
@@ -736,6 +729,16 @@ export class GrowspaceHeader extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    if (this.store) {
+      this._viewModeController = new StoreController(this, this.store.ui.$viewMode);
+      this._isEditModeController = new StoreController(this, this.store.ui.$isEditMode);
+      this._devicesController = new StoreController(this, this.store.data.$devices);
+      this._selectedDeviceController = new StoreController(this, this.store.data.$selectedDevice);
+      this._historyCacheController = new StoreController(this, this.store.history.$historyCache);
+      this._historyLoadingController = new StoreController(this, this.store.history.$historyLoading);
+      this._activeEnvGraphsController = new StoreController(this, this.store.history.$activeEnvGraphs);
+      this._linkedGraphGroupsController = new StoreController(this, this.store.history.$linkedGraphGroups);
+    }
     this._updateMetrics();
   }
 
@@ -765,7 +768,7 @@ export class GrowspaceHeader extends LitElement {
         this.store.openAddPlantDialog();
         break;
       case 'config':
-        $activeDialog.set({
+        this.store.ui.$activeDialog.set({
           type: 'CONFIG',
           payload: {
             currentTab: 'environment',
@@ -790,24 +793,23 @@ export class GrowspaceHeader extends LitElement {
         });
         break;
       case 'edit':
-        setEditMode(!this._isEditModeController.value);
+        this.store.ui.setEditMode(!this._isEditModeController.value);
         break;
       case 'compact':
         // Legacy mapping; now should set ViewMode
         const currentMode = this._viewModeController.value;
-        setViewMode(currentMode === 'compact' ? 'standard' : 'compact');
+        this.store.ui.setViewMode(currentMode === 'compact' ? 'standard' : 'compact');
         break;
       case 'strains':
-        this.store.fetchStrainLibrary();
-        $activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
+        this.store.ui.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
         break;
       case 'irrigation':
         if (this._selectedDeviceController.value) {
-          $activeDialog.set({ type: 'IRRIGATION', payload: {} });
+          this.store.ui.$activeDialog.set({ type: 'IRRIGATION', payload: {} });
         }
         break;
       case 'ai':
-        $activeDialog.set({
+        this.store.ui.$activeDialog.set({
           type: 'GROW_MASTER',
           payload: { growspaceId: this._selectedDeviceController.value || '', isLoading: false, response: '', mode: 'single' }
         });
@@ -984,16 +986,16 @@ export class GrowspaceHeader extends LitElement {
     const sparklineHeight = 80;  // Approximate card height minus padding
 
     // Get current time range from controller
-    const timeRange = this.historyController?.getRange() || '24h';
+    const timeRange = (this.store?.history as any)?.getRange() || '24h';
 
     // For VPD, try multi-segment coloring first, fall back to standard if no segments
     const isVpd = chip.key === 'vpd';
 
     let vpdSegments: Array<{ path: string; color: string }> = [];
 
-    if (isVpd && this.historyController && this.device) {
-      const historyData = this.historyController.historyCache['vpd'];
-      const lightHistory = this.historyController.historyCache['light'] || [];
+    if (isVpd && this.store?.history && this.device) {
+      const historyData = this._historyCacheController?.value?.['vpd'];
+      const lightHistory = this._historyCacheController?.value?.['light'] || [];
       // Get VPD thresholds from device overview entity
       const overviewEntity = this.device.overview_entity_id
         ? this.hass?.states[this.device.overview_entity_id]
@@ -1030,9 +1032,9 @@ export class GrowspaceHeader extends LitElement {
     const useVpdSegments = isVpd && vpdSegments.length > 0;
 
     let sparklinePath = '';
-    if (!useVpdSegments && this.historyController) {
+    if (!useVpdSegments && this.store?.history) {
       sparklinePath = ChartUtils.generateSparklinePath(
-        this.historyController.historyCache[chip.key],
+        this._historyCacheController?.value?.[chip.key],
         sparklineWidth,
         sparklineHeight,
         timeRange

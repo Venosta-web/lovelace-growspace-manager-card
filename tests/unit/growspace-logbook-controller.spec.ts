@@ -46,6 +46,14 @@ describe('GrowspaceLogbookController', () => {
             expect(res).toEqual(events);
         });
 
+        it('should return empty array when response lacks requested growspaceId', async () => {
+            mockHass.callWS.mockResolvedValue({ 'other_id': [{ message: 'Event' }] });
+
+            const res = await controller.fetchEventLog('d1');
+
+            expect(res).toEqual([]);
+        });
+
         it('should handle errors gracefully', async () => {
             mockHass.callWS.mockRejectedValue(new Error('WS Error'));
 

@@ -1,23 +1,36 @@
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement } from 'lit/decorators.js';
+import { consume } from '@lit/context';
+import { storeContext } from '../context';
+import type { GrowspaceStore } from '../store/growspace-store';
 import { StoreController } from '@nanostores/lit';
-import { $notification, clearToast } from '../store/ui-store';
+// Global imports removed
 import { classMap } from 'lit/directives/class-map.js';
 
 @customElement('growspace-toast')
 export class GrowspaceToast extends LitElement {
-    private _notificationController = new StoreController(this, $notification);
+    @consume({ context: storeContext })
+    private accessor store!: GrowspaceStore;
+
+    private _notificationController!: StoreController<{ message: string; type: "success" | "error" | "info" } | null>;
     private _timeoutId: number | null = null;
+
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this._notificationController = new StoreController(this, this.store.ui.$notification);
+        }
+    }
 
     protected updated(changedProps: PropertyValues): void {
         super.updated(changedProps);
 
-        const notification = this._notificationController.value;
+        const notification = this._notificationController?.value;
 
         if (notification) {
             this._resetTimeout();
             this._timeoutId = window.setTimeout(() => {
-                clearToast();
+                this.store.ui.clearToast();
             }, 3000);
         }
     }

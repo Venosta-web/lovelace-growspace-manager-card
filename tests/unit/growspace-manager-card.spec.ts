@@ -5,65 +5,73 @@ import { GrowspaceManagerCardConfig } from '../../src/types';
 import { HomeAssistant } from 'custom-card-helpers';
 import { LibraryExportReadyEvent } from '../../src/events';
 
+import { atom, map } from 'nanostores';
+
 // Mock dependencies
 vi.mock('../../src/components/growspace-header', () => ({}));
 vi.mock('../../src/components/manager/dialog-host', () => ({}));
 vi.mock('../../src/components/growspace-view-switcher', () => ({}));
-vi.mock('../../src/controllers/growspace-history-controller', () => ({
-    GrowspaceHistoryController: class {
-        host: any;
-        constructor(host: any) { this.host = host; }
-    }
-}));
 
-// Mock dynamic import
-// This mock might not work for dynamic imports inside the source unless we intercept it.
-// However, JSDOM/Node might just fail to resolve relative .js file if it's not compiled.
-// We can just rely on ensuring the METHOD `getConfigElement` exists and does something.
-
-// Mock ui-store
-vi.mock('../../src/store/ui-store', () => {
-    return {
-        setViewMode: vi.fn(),
-        setEditMode: vi.fn(),
-        clearPlantSelection: vi.fn(),
-        setIsLoading: vi.fn(),
-        selectAllPlants: vi.fn(),
-        setFocusedPlantIndex: vi.fn(),
-        $viewMode: { subscribe: vi.fn((cb) => { cb('standard'); return () => { }; }), get: () => 'standard', set: vi.fn() },
-        $isLoading: { subscribe: vi.fn((cb) => { cb(false); return () => { }; }), get: () => false, set: vi.fn() },
-        $activeDialog: { subscribe: vi.fn((cb) => { cb({ type: 'NONE' }); return () => { }; }), get: () => ({ type: 'NONE' }), set: vi.fn() },
-        $isEditMode: { subscribe: vi.fn((cb) => { cb(false); return () => { }; }), get: () => false, set: vi.fn() },
-        $isCompactView: { subscribe: vi.fn((cb) => { cb(false); return () => { }; }), get: () => false },
-        $selectedPlants: { subscribe: vi.fn((cb) => { cb(new Set()); return () => { }; }), get: () => new Set() },
-        $focusedPlantIndex: { subscribe: vi.fn((cb) => { cb(-1); return () => { }; }), get: () => -1 },
-        $menuOpen: { subscribe: vi.fn((cb) => { cb(false); return () => { }; }), get: () => false },
-        $notification: { subscribe: vi.fn((cb) => { cb(null); return () => { }; }), get: () => null }
-    };
-});
-import * as UIStoreMock from '../../src/store/ui-store';
-
-// Mock data-store
-vi.mock('../../src/store/data-store', () => ({
-    $devices: { subscribe: vi.fn((cb) => { cb([]); return () => { }; }), get: () => [], set: vi.fn() },
-    $selectedDevice: { subscribe: vi.fn((cb) => { cb('gs1'); return () => { }; }), get: () => 'gs1', set: vi.fn() },
-    $strainLibrary: { subscribe: vi.fn((cb) => { cb([]); return () => { }; }), get: () => [], set: vi.fn() },
-    $optimisticDeletedPlantIds: { subscribe: vi.fn((cb) => { cb(new Set()); return () => { }; }), get: () => new Set(), set: vi.fn() },
-}));
-import * as DataStoreMock from '../../src/store/data-store';
-
-// Mock grid-store
-vi.mock('../../src/store/grid-store', () => ({
-    $activeDevices: { subscribe: vi.fn((cb) => { cb([]); return () => { }; }), get: () => [], set: vi.fn() },
-    $gridLayout: { subscribe: vi.fn((cb) => { cb({ effectiveRows: 1, grid: [] }); return () => { }; }), get: () => ({ effectiveRows: 1, grid: [] }), set: vi.fn() },
-    $growspaceOptions: { subscribe: vi.fn((cb) => { cb({}); return () => { }; }), get: () => ({}), set: vi.fn() },
-}));
-import * as GridStoreMock from '../../src/store/grid-store';
+// Local atoms
+const $devices = atom<any[]>([]);
+const $selectedDevice = atom<string | null>('gs1');
+const $strainLibrary = atom<any[]>([]);
+const $optimisticDeletedPlantIds = atom(new Set<string>());
+const $activeDevices = atom<any[]>([]);
+const $gridLayout = atom({ effectiveRows: 1, grid: [] });
+const $growspaceOptions = atom({});
+const $viewMode = atom('standard');
+const $isLoading = atom(false);
+const $activeDialog = atom<any>({ type: 'NONE' });
+const $isEditMode = atom(false);
+const $isCompactView = atom(false);
+const $selectedPlants = atom(new Set());
+const $focusedPlantIndex = atom(-1);
+const $menuOpen = atom(false);
+const $notification = atom(null);
 
 vi.mock('../../src/store/growspace-store', () => ({
     GrowspaceStore: class {
         host: any;
         dataService = {};
+        // Store properties directly on the instance for access
+        data = {
+            $devices,
+            $selectedDevice,
+            $strainLibrary,
+            $optimisticDeletedPlantIds,
+            // Add methods if needed
+            fetchStrainLibrary: vi.fn(),
+            initializeSelectedDevice: vi.fn(),
+            handleDeviceChange: vi.fn(),
+        };
+        ui = {
+            $viewMode,
+            $isLoading,
+            $activeDialog,
+            $isEditMode,
+            $isCompactView,
+            $selectedPlants,
+            $focusedPlantIndex,
+            $menuOpen,
+            $notification,
+            setViewMode: vi.fn(),
+            setEditMode: vi.fn(),
+            clearPlantSelection: vi.fn(),
+            setIsLoading: vi.fn(),
+            selectAllPlants: vi.fn(),
+            setFocusedPlantIndex: vi.fn(),
+            setActiveDialog: vi.fn(),
+        };
+        grid = {
+            $activeDevices,
+            $gridLayout,
+            $growspaceOptions,
+        };
+        history = {
+            $historyCache: map({}),
+        };
+
         constructor(host: any) { this.host = host; }
         updateHass() { }
         initializeSelectedDevice() { }
@@ -72,6 +80,7 @@ vi.mock('../../src/store/growspace-store', () => ({
         handleKeyboardNavigation() { }
         toggleHeaderExpansion() { }
         selectAllPlants() { }
+        clearPlantSelection() { this.ui.clearPlantSelection(); }
     }
 }));
 
@@ -90,11 +99,11 @@ describe('GrowspaceManagerCard', () => {
         vi.clearAllMocks();
 
         // Reset defaults
-        const emptyArray: any[] = [];
-        (DataStoreMock.$selectedDevice as any).get = () => 'gs1';
-        (DataStoreMock.$devices as any).get = () => emptyArray;
-        (DataStoreMock.$strainLibrary as any).get = () => emptyArray;
-        (UIStoreMock.$isLoading as any).get = () => false;
+        // Reset defaults
+        $selectedDevice.set('gs1');
+        $devices.set([]);
+        $strainLibrary.set([]);
+        $isLoading.set(false);
     });
 
     afterEach(() => {
@@ -138,7 +147,7 @@ describe('GrowspaceManagerCard', () => {
                 compact: true
             };
             element.setConfig(config);
-            expect(UIStoreMock.setViewMode).toHaveBeenCalledWith('compact');
+            expect(element.store.ui.setViewMode).toHaveBeenCalledWith('compact');
         });
 
         it('should set initial view mode from config', () => {
@@ -147,7 +156,7 @@ describe('GrowspaceManagerCard', () => {
                 initial_view_mode: 'header'
             };
             element.setConfig(config);
-            expect(UIStoreMock.setViewMode).toHaveBeenCalledWith('header');
+            expect(element.store.ui.setViewMode).toHaveBeenCalledWith('header');
         });
     });
 
@@ -292,7 +301,7 @@ describe('GrowspaceManagerCard', () => {
     describe('Event Handlers & Private Methods', () => {
         it('should handle view mode changed', () => {
             (element as any)._handleViewModeChanged({ detail: { mode: 'list' } });
-            expect(UIStoreMock.setViewMode).toHaveBeenCalledWith('list');
+            expect(element.store.ui.setViewMode).toHaveBeenCalledWith('list');
         });
 
         it('should handle growspace changed', () => {
@@ -309,12 +318,12 @@ describe('GrowspaceManagerCard', () => {
 
         it('should handle clear selection', () => {
             (element as any)._handleClearSelection();
-            expect(UIStoreMock.clearPlantSelection).toHaveBeenCalled();
+            expect(element.store.ui.clearPlantSelection).toHaveBeenCalled();
         });
 
         it('should handle exit edit mode', () => {
             (element as any)._handleExitEditMode();
-            expect(UIStoreMock.setEditMode).toHaveBeenCalledWith(false);
+            expect(element.store.ui.setEditMode).toHaveBeenCalledWith(false);
         });
 
         it('should handle keyboard nav', () => {

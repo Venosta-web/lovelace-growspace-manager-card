@@ -240,6 +240,14 @@ describe('plant-actions', () => {
             expect(result).toBe(false);
             expect(ctx.showToast).toHaveBeenCalledWith('Failed to move plant: Move failed', 'error');
         });
+
+        it('should use entity_id fallback when plant_id is missing', async () => {
+            const plantNoId = { ...mockPlant, attributes: { ...mockPlant.attributes, plant_id: '' } };
+
+            await movePlantToGrowspace(ctx, plantNoId, 'dry');
+
+            expect(mockDataService.harvestPlant).toHaveBeenCalledWith('plant_test123', 'dry');
+        });
     });
 
     describe('takeClone', () => {
@@ -271,6 +279,21 @@ describe('plant-actions', () => {
                 num_clones: undefined,
             });
         });
+
+        it('should log with strain name when available', async () => {
+            const consoleSpy = vi.spyOn(console, 'log');
+            await takeClone(ctx, mockPlant);
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Test Strain'));
+            consoleSpy.mockRestore();
+        });
+
+        it('should log with plant when strain is missing', async () => {
+            const consoleSpy = vi.spyOn(console, 'log');
+            const plantNoStrain = { ...mockPlant, attributes: { ...mockPlant.attributes, strain: undefined } };
+            await takeClone(ctx, plantNoStrain as any);
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('plant'));
+            consoleSpy.mockRestore();
+        });
     });
 
     describe('movePlantPosition', () => {
@@ -291,6 +314,18 @@ describe('plant-actions', () => {
             const result = await movePlantPosition(ctx, mockPlant, 1, 1);
 
             expect(result).toBe(false);
+        });
+
+        it('should use entity_id fallback when plant_id is missing', async () => {
+            const plantNoId = { ...mockPlant, attributes: { ...mockPlant.attributes, plant_id: '' } };
+
+            await movePlantPosition(ctx, plantNoId, 2, 2);
+
+            expect(mockDataService.updatePlant).toHaveBeenCalledWith({
+                plant_id: 'plant_test123',
+                row: 2,
+                col: 2,
+            });
         });
     });
 
@@ -338,6 +373,26 @@ describe('plant-actions', () => {
             const result = await handlePlantDrop(ctx, 1, 1, targetPlant, mockPlant);
 
             expect(result).toBe(false);
+        });
+
+        it('should use entity_id fallback when plant_id is missing on source', async () => {
+            const sourceNoId = { ...mockPlant, attributes: { ...mockPlant.attributes, plant_id: '' } };
+
+            await handlePlantDrop(ctx, 1, 1, targetPlant, sourceNoId);
+
+            expect(mockDataService.swapPlants).toHaveBeenCalledWith('plant_test123', 'target456');
+        });
+
+        it('should use entity_id fallback when plant_id is missing on target', async () => {
+            const targetNoId: PlantEntity = {
+                ...mockPlant,
+                entity_id: 'sensor.plant_target',
+                attributes: { ...mockPlant.attributes, plant_id: '' },
+            };
+
+            await handlePlantDrop(ctx, 1, 1, targetNoId, mockPlant);
+
+            expect(mockDataService.swapPlants).toHaveBeenCalledWith('test123', 'plant_target');
         });
     });
 

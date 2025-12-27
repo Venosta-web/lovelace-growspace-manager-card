@@ -80,8 +80,8 @@ export class AddPlantDialog extends LitElement {
 
   private _confirm() {
     const payload = {
-      row: this.row,
-      col: this.col,
+      row: this.row + 1,
+      col: this.col + 1,
       strain: this.strain,
       phenotype: this.phenotype,
       veg_start: this.veg_start,
