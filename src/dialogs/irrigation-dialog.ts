@@ -186,8 +186,8 @@ export class IrrigationDialog extends LitElement {
     return scheduleString.split(',').map((t) => {
       const parts = t.trim().split('|');
       return {
-        time: parts[0],
-        duration: parts[1] ? parseInt(parts[1]) : undefined,
+        time: parts[0].trim(),
+        duration: parts[1] ? parseInt(parts[1].trim()) : undefined,
       };
     });
   }

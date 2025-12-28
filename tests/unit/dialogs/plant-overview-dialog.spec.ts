@@ -703,4 +703,32 @@ describe('PlantOverviewDialog', () => {
             document.body.removeChild(element);
         });
     });
+
+    describe('Final Gap Fillers', () => {
+        it('should handle plant without plant_id in _confirmDelete', () => {
+            element.plant = { ...mockPlant, attributes: { ...mockPlant.attributes, plant_id: '' } };
+            const spy = vi.fn();
+            element.addEventListener(DeletePlantEvent.TYPE, spy);
+            (element as any)._confirmDelete();
+            expect(spy.mock.calls[0][0].detail.plantId).toBe('plant_1');
+        });
+
+        it('should handle willUpdate with null dialog editedAttributes', async () => {
+            element.dialog = { plant: mockPlant, editedAttributes: null as any, activeTab: 'timeline' };
+            (element as any).willUpdate(new Map([['dialog', {}]]));
+            expect(element.editedAttributes?.strain).toBe('Blue Dream');
+        });
+
+        it('should handle _getAttributesFromPlant with null plant', () => {
+            element.plant = null as any;
+            const attrs = (element as any)._getAttributesFromPlant();
+            expect(attrs).toEqual({});
+        });
+
+        it('should handle willUpdate with missing strain in editedAttributes', () => {
+            element.editedAttributes = { phenotype: 'New' } as any;
+            (element as any).willUpdate(new Map([['plant', mockPlant]]));
+            expect((element.editedAttributes as any).strain).toBe('Blue Dream');
+        });
+    });
 });

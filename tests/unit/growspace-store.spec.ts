@@ -557,6 +557,45 @@ describe('GrowspaceStore', () => {
                 payload: expect.objectContaining({ response: 'Error: Fail' })
             }));
         });
+
+        it('should handle different response formats for strain recommendation', async () => {
+            (uiStore.$activeDialog.get as any).mockReturnValue({ type: 'STRAIN_RECOMMENDATION', payload: {} });
+
+            // 1. String response
+            mockDataServiceInstance.getStrainRecommendation.mockResolvedValue('Direct string');
+            await store.getStrainRecommendation('q');
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: 'Direct string' })
+            }));
+
+            // 2. Object without response property
+            mockDataServiceInstance.getStrainRecommendation.mockResolvedValue({ other: 'data' });
+            await store.getStrainRecommendation('q');
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: '{"other":"data"}' })
+            }));
+
+            // 3. Object with string response property
+            mockDataServiceInstance.getStrainRecommendation.mockResolvedValue({ response: 'Nested string' });
+            await store.getStrainRecommendation('q');
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: 'Nested string' })
+            }));
+
+            // 4. Object with nested response object having its own response property
+            mockDataServiceInstance.getStrainRecommendation.mockResolvedValue({ response: { response: 'Deep string' } });
+            await store.getStrainRecommendation('q');
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: 'Deep string' })
+            }));
+
+            // 5. Object with nested response object and no further response property
+            mockDataServiceInstance.getStrainRecommendation.mockResolvedValue({ response: { some: 'obj' } });
+            await store.getStrainRecommendation('q');
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: '{"some":"obj"}' })
+            }));
+        });
     });
 
     describe('Import/Export Library', () => {
@@ -1703,4 +1742,125 @@ describe('GrowspaceStore', () => {
             expect(uiStore.setActiveDialog).not.toHaveBeenCalledWith(expect.objectContaining({ payload: { response: expect.stringContaining('Error') } }));
         });
     });
+
+    describe('Coverage Gap Filling 4', () => {
+        it('should handle updateGrid with no hass', () => {
+            store.hass = null as any;
+            store.updateGrid();
+            expect(mockDataServiceInstance.updateHass).not.toHaveBeenCalledWith(null);
+        });
+
+        it('should handle openAddPlantDialog with no selected device', () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue(null);
+            (store as any).openAddPlantDialog();
+            expect(uiStore.setActiveDialog).not.toHaveBeenCalled();
+        });
+
+
+        it('should handle handleDrop with no sourcePlant', async () => {
+            vi.spyOn(plantActions, 'handlePlantDrop');
+            await store.handleDrop(0, 0, {} as any, null);
+            expect(plantActions.handlePlantDrop).not.toHaveBeenCalled();
+        });
+
+        it('should handle handleDrop with no selectedDevice', async () => {
+            vi.spyOn(plantActions, 'handlePlantDrop');
+            (dataStore.$selectedDevice.get as any).mockReturnValue(null);
+            await store.handleDrop(0, 0, {} as any, {} as any);
+            expect(plantActions.handlePlantDrop).not.toHaveBeenCalled();
+        });
+
+        it('should handle openAddPlantDialog with unknown device ID', () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('unknown');
+            (dataStore.$devices.get as any).mockReturnValue([{ device_id: 'other', plants: [] }]);
+            (store as any).openAddPlantDialog();
+            expect(uiStore.setActiveDialog).toHaveBeenCalled();
+        });
+
+        it('should handle pruneOptimisticDeletions with plant fallback to entity_id', () => {
+            (dataStore.$optimisticDeletedPlantIds.get as any).mockReturnValue(new Set(['id1']));
+            (dataStore.$devices.get as any).mockReturnValue([{
+                plants: [{ entity_id: 'sensor.id1', attributes: { plant_id: '' } }]
+            }]);
+            (store as any).pruneOptimisticDeletions();
+            expect(dataStore.removeOptimisticDeletedPlantId).not.toHaveBeenCalled();
+        });
+
+        it('updateDevicesState should handle no default applied branch', () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue(null);
+            (uiStore.$defaultApplied.get as any).mockReturnValue(false);
+            (dataStore.$config.get as any).mockReturnValue({ auto_select_growspace: true });
+            mockDataServiceInstance.getGrowspaceDevices.mockReturnValue([{ device_id: 'd1' }]);
+            (store as any)._updateDevicesState();
+            expect(dataStore.setSelectedDevice).toHaveBeenCalledWith('d1');
+        });
+
+        it('should updatePlantFromDialog successfully and handle bulk edit', async () => {
+            const plant = { entity_id: 'p1', attributes: { plant_id: 'p1' } } as any;
+            const dialogState = {
+                plant,
+                editedAttributes: {},
+                selectedPlantIds: ['p1', 'p2']
+            };
+            mockDataServiceInstance.updatePlant.mockResolvedValue({});
+            await store.updatePlantFromDialog(dialogState);
+            expect(mockDataServiceInstance.updatePlant).toHaveBeenCalledTimes(2);
+            expect(uiStore.closeDialog).toHaveBeenCalled();
+        });
+
+
+        it('updatePlantFromDialog should fallback to entity_id if plant_id missing', async () => {
+            const plant = { entity_id: 'sensor.p1', attributes: { plant_id: '' } } as any;
+            const dialogState = { plant, editedAttributes: {} };
+            mockDataServiceInstance.updatePlant.mockResolvedValue({});
+            await store.updatePlantFromDialog(dialogState);
+            expect(mockDataServiceInstance.updatePlant).toHaveBeenCalledWith(expect.objectContaining({ plant_id: 'p1' }));
+        });
+
+        it('updatePlantFromDialog should clear selection in edit mode', async () => {
+            const plant = { entity_id: 'p1', attributes: { plant_id: 'p1' } } as any;
+            const dialogState = { plant, editedAttributes: {} };
+            (uiStore.$isEditMode.get as any).mockReturnValue(true);
+            mockDataServiceInstance.updatePlant.mockResolvedValue({});
+            await store.updatePlantFromDialog(dialogState);
+            expect(uiStore.clearPlantSelection).toHaveBeenCalled();
+            expect(uiStore.setEditMode).toHaveBeenCalledWith(false);
+        });
+
+        it('selectAllPlants should skip plants without plant_id', () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            (dataStore.$devices.get as any).mockReturnValue([{
+                device_id: 'd1',
+                plants: [{ attributes: { plant_id: '' } }]
+            }]);
+        });
+
+        it('togglePlantSelection should work with string ID', () => {
+            store.togglePlantSelection('p1');
+            expect(uiStore.togglePlantSelection).toHaveBeenCalledWith('p1');
+        });
+
+        it('selectAllPlants should do nothing if no device selected', () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue(null);
+            store.selectAllPlants();
+            expect(uiStore.selectAllPlants).not.toHaveBeenCalled();
+        });
+    });
+
+    it('togglePlantSelection should do nothing if plant_id missing', () => {
+        store.togglePlantSelection({ attributes: { plant_id: '' } } as any);
+        expect(uiStore.togglePlantSelection).not.toHaveBeenCalled();
+    });
+
+    it('selectAllPlants should skip plants in optimistic deletions', () => {
+        (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+        (dataStore.$devices.get as any).mockReturnValue([{
+            device_id: 'd1',
+            plants: [{ attributes: { plant_id: 'p1' } }]
+        }]);
+        (dataStore.$optimisticDeletedPlantIds.get as any).mockReturnValue(new Set(['p1']));
+        store.selectAllPlants();
+        expect(uiStore.selectAllPlants).toHaveBeenCalledWith([]);
+    });
 });
+

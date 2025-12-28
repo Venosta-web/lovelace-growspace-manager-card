@@ -43,10 +43,9 @@ export class GrowspaceAdapter {
 
     // 1. Loading State
     if (!wsData) {
-      if (!overview) return null; // Should not happen given check above
       return createGrowspaceDevice({
         device_id: growspace_id,
-        overview_entity_id: overview.entity_id,
+        overview_entity_id: overview!.entity_id,
         name,
         last_updated: 'Loading...',
       });

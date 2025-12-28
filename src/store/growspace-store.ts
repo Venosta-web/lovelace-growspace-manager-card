@@ -470,7 +470,7 @@ export class GrowspaceStore {
             if (d.type === 'GROW_MASTER') {
                 this.ui.setActiveDialog({
                     type: 'GROW_MASTER',
-                    payload: { ...d.payload, isLoading: false, response: typeof text === 'string' ? text : JSON.stringify(text) }
+                    payload: { ...d.payload, isLoading: false, response: text }
                 });
             }
         } catch (e: any) {

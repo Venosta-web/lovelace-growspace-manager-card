@@ -172,6 +172,17 @@ describe('GrowspaceAdapter', () => {
         expect(plant?.entity_id).toBeNull();
     });
 
+    it('should handle wsData with null grid', () => {
+        const ws: any = {
+            growspace_id: 'g1',
+            grid: null,
+            plants_per_row: 2,
+            rows: 2
+        };
+        const result = GrowspaceAdapter.transformGrowspace(null, ws);
+        expect(result?.plants).toHaveLength(0);
+    });
+
     it('should return null when both wsData and overview are null', () => {
         const result = GrowspaceAdapter.transformGrowspace(null, null);
         expect(result).toBeNull();

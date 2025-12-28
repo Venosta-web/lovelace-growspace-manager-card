@@ -669,4 +669,68 @@ describe('IrrigationDialog', () => {
             expect(mocks.removeDrainTime).not.toHaveBeenCalled();
         });
     });
+
+    describe('Drain Add Dialog', () => {
+        it('should handle canceling drain add dialog via backdrop', async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const addBtns = element.shadowRoot?.querySelectorAll('button.primary');
+            const addDrainBtn = Array.from(addBtns || []).filter(b => b.textContent?.includes('ADD TIME'))[1];
+            (addDrainBtn as HTMLElement).click();
+            await element.updateComplete;
+
+            const backdrop = element.shadowRoot?.querySelector('.overlay-backdrop') as HTMLElement;
+            backdrop.click();
+            await element.updateComplete;
+            expect(element.shadowRoot?.querySelector('.overlay-backdrop')).toBeFalsy();
+        });
+
+        it('should handle canceling drain add dialog via button', async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const addBtns = element.shadowRoot?.querySelectorAll('button.primary');
+            const addDrainBtn = Array.from(addBtns || []).filter(b => b.textContent?.includes('ADD TIME'))[1];
+            (addDrainBtn as HTMLElement).click();
+            await element.updateComplete;
+
+            const cancelBtn = Array.from(element.shadowRoot?.querySelectorAll('button.tonal') || [])
+                .find(b => b.textContent?.includes('Cancel'));
+            (cancelBtn as HTMLElement).click();
+            await element.updateComplete;
+            expect(element.shadowRoot?.querySelector('.overlay-backdrop')).toBeFalsy();
+        });
+
+        it('should update drain add dialog fields', async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const addBtns = element.shadowRoot?.querySelectorAll('button.primary');
+            const addDrainBtn = Array.from(addBtns || []).filter(b => b.textContent?.includes('ADD TIME'))[1];
+            (addDrainBtn as HTMLElement).click();
+            await element.updateComplete;
+
+            const overlay = element.shadowRoot?.querySelector('.overlay-backdrop');
+            const timeInput = overlay?.querySelector('md3-text-input') as any;
+            const durInput = overlay?.querySelector('md3-number-input') as any;
+
+            timeInput.value = '13:00'; timeInput.dispatchEvent(new CustomEvent('change', { detail: '13:00' }));
+            durInput.dispatchEvent(new CustomEvent('change', { detail: '15' }));
+            await element.updateComplete;
+
+            expect((element as any)._adding_drain_time.time).toBe('13:00');
+            expect((element as any)._adding_drain_time.duration).toBe(15);
+        });
+
+        it('should parse schedule string with duration and spaces', () => {
+            const result = (element as any)._parseScheduleString(' 08:00 | 120 , 12:00 | 90 ');
+            expect(result).toHaveLength(2);
+            expect(result[0].time).toBe('08:00');
+            expect(result[0].duration).toBe(120);
+        });
+    });
 });

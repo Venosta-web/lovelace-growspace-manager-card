@@ -62,7 +62,7 @@ export class PlantOverviewDialog extends LitElement {
     // Handle direct prop injection (DialogHost usage)
     // If editedAttributes is undefined/null (e.g. passed as null from parent), init it
     if (!this.editedAttributes || (changedProps.has('plant') && !this.editedAttributes.strain)) {
-      this.editedAttributes = this.editedAttributes || this._getAttributesFromPlant();
+      this.editedAttributes = this._getAttributesFromPlant();
     }
   }
 

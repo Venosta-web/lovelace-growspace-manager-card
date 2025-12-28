@@ -354,6 +354,45 @@ describe('GrowspaceHeader', () => {
             expect(tempValue).toBe('25');
         });
 
+        it('should apply linked class to hero card when metric is active in graphs', async () => {
+            // metric key 'temperature' is active
+            const activeSet = new Set(['temperature']);
+            $activeEnvGraphs.set(activeSet);
+
+            // Re-mock MetricsUtils to return linked: true for temperature
+            (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
+                mainChips: [
+                    { key: 'temperature', value: '25°C', label: 'Temp', icon: 'path', status: 'ok', linked: true },
+                    { key: 'humidity', value: '60%', label: 'Hum', icon: 'path', status: 'ok' }
+                ],
+                deviceChips: [],
+                dominant: { icon: 'path', daysLabel: 'Day 30', weeksLabel: 'Week 5' },
+                envAttrs: {}
+            });
+
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const tempCard = element.shadowRoot?.querySelector('.hero-card.linked');
+            expect(tempCard).not.toBeNull();
+            expect(tempCard?.textContent).toContain('25');
+        });
+
+        it('should show matching device name in sizer when ID exists in list', async () => {
+            // Re-render without default_growspace
+            element.config = {} as any;
+            const devicesList = [
+                { device_id: 'matching_id', name: 'Matched Name' },
+                { device_id: 'other', name: 'Other' }
+            ];
+            $devices.set(devicesList);
+            element.device = { ...deviceMock, device_id: 'matching_id' } as any;
+
+            await element.updateComplete;
+
+            const sizer = element.shadowRoot?.querySelector('.select-sizer');
+            expect(sizer?.textContent).toBe('Matched Name');
+        });
         it('should render secondary chips', async () => {
             const chips = element.shadowRoot?.querySelectorAll('growspace-chip');
             expect(chips?.length).toBeGreaterThanOrEqual(2);
@@ -652,6 +691,24 @@ describe('GrowspaceHeader', () => {
 
                 expect(checkScrollSpy).toHaveBeenCalled();
                 vi.useRealTimers();
+            });
+
+            it('should update canScroll states to false when no overflow', () => {
+                const container = document.createElement('div');
+                Object.defineProperty(container, 'scrollLeft', { value: 0, writable: true });
+                Object.defineProperty(container, 'scrollWidth', { value: 200, writable: true });
+                Object.defineProperty(container, 'clientWidth', { value: 200, writable: true });
+
+                (element as any)._chipsContainerRef = { value: container };
+                (element as any)._stageContainerRef = { value: container };
+                (element as any)._deviceChipsContainerRef = { value: container };
+
+                (element as any)._checkScroll();
+
+                expect((element as any)._canScrollLeft).toBe(false);
+                expect((element as any)._canScrollRight).toBe(false);
+                expect((element as any)._canScrollStageLeft).toBe(false);
+                expect((element as any)._canScrollDeviceLeft).toBe(false);
             });
         });
 
@@ -1268,46 +1325,144 @@ describe('GrowspaceHeader', () => {
 
     describe('Secondary Chip Template Handlers Coverage', () => {
         it('should trigger handlers on secondary chips via DOM events', async () => {
-            const secondaryChip = element.shadowRoot?.querySelector('.secondary-strip growspace-chip');
-            if (secondaryChip) {
-                // Trigger dragstart
-                const dragStartSpy = vi.spyOn(element as any, '_handleChipDragStart');
-                secondaryChip.dispatchEvent(new Event('dragstart'));
-                expect(dragStartSpy).toHaveBeenCalled();
+            element.requestUpdate();
+            await element.updateComplete;
 
-                // Trigger drop
-                const dropSpy = vi.spyOn(element as any, '_handleChipDrop');
-                secondaryChip.dispatchEvent(new Event('drop'));
-                expect(dropSpy).toHaveBeenCalled();
+            const secondaryStrip = element.shadowRoot?.querySelector('.secondary-strip');
+            const chip = secondaryStrip?.querySelector('growspace-chip');
+            expect(chip).toBeTruthy();
 
-                // Trigger click
-                const toggleSpy = vi.spyOn(element as any, '_toggleEnvGraph');
-                (secondaryChip as HTMLElement).click();
-                expect(toggleSpy).toHaveBeenCalled();
+            // Drag Start
+            const startSpy = vi.spyOn(element as any, '_handleChipDragStart');
+            chip?.dispatchEvent(new Event('dragstart'));
+            expect(startSpy).toHaveBeenCalled();
 
-                // Trigger unlink
-                const unlinkSpy = vi.spyOn(element as any, '_unlinkGraphs');
-                secondaryChip.dispatchEvent(new CustomEvent('unlink'));
-                expect(unlinkSpy).toHaveBeenCalled();
-            }
+            // Drop
+            const dropSpy = vi.spyOn(element as any, '_handleChipDrop');
+            chip?.dispatchEvent(new Event('drop'));
+            expect(dropSpy).toHaveBeenCalled();
+
+            // Toggle (Click)
+            const toggleSpy = vi.spyOn(element as any, '_toggleEnvGraph');
+            chip?.dispatchEvent(new Event('click'));
+            expect(toggleSpy).toHaveBeenCalled();
+
+            // Unlink
+            const unlinkSpy = vi.spyOn(element as any, '_unlinkGraphs');
+            chip?.dispatchEvent(new CustomEvent('unlink', { detail: { groupIndex: 1 } }));
+            expect(unlinkSpy).toHaveBeenCalled();
         });
     });
 
     describe('Hero Card Template Handlers Coverage', () => {
         it('should trigger all handlers on hero cards via DOM events', async () => {
-            const heroCard = element.shadowRoot?.querySelector('.hero-card') as HTMLElement;
-            expect(heroCard).toBeTruthy();
-            if (heroCard) {
-                // Trigger dragstart
-                const dragStartSpy = vi.spyOn(element as any, '_handleChipDragStart');
-                heroCard.dispatchEvent(new Event('dragstart'));
-                expect(dragStartSpy).toHaveBeenCalled();
+            element.requestUpdate();
+            await element.updateComplete;
 
-                // Trigger drop
-                const dropSpy = vi.spyOn(element as any, '_handleChipDrop');
-                heroCard.dispatchEvent(new Event('drop'));
-                expect(dropSpy).toHaveBeenCalled();
-            }
+            const hero = element.shadowRoot?.querySelector('.hero-card');
+            expect(hero).toBeTruthy();
+
+            // Click (Toggle)
+            const toggleSpy = vi.spyOn(element as any, '_toggleEnvGraph');
+            hero?.dispatchEvent(new Event('click'));
+            expect(toggleSpy).toHaveBeenCalled();
+
+            // Drag Over
+            const overSpy = vi.fn();
+            (element as any)._handleDragOver = overSpy;
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const heroAfterUpdate = element.shadowRoot?.querySelector('.hero-card');
+            heroAfterUpdate?.dispatchEvent(new Event('dragover'));
+            expect(overSpy).toHaveBeenCalled();
+
+            // Drag Start
+            const startSpy = vi.spyOn(element as any, '_handleChipDragStart');
+            heroAfterUpdate?.dispatchEvent(new Event('dragstart'));
+            expect(startSpy).toHaveBeenCalled();
+
+            // Drop
+            const dropSpy = vi.spyOn(element as any, '_handleChipDrop');
+            heroAfterUpdate?.dispatchEvent(new Event('drop'));
+            expect(dropSpy).toHaveBeenCalled();
+        });
+    });
+
+    describe('VPD Thresholds and Sparkline Coverage', () => {
+        it('should handle VPD with custom attributes and night fallbacks', async () => {
+            const mockHass = {
+                states: {
+                    'sensor.growspace_overview': {
+                        attributes: {
+                            day_vpd_target_min: 0.9,
+                            // day_vpd_target_max missing
+                            night_vpd_target_min: 0.7
+                        }
+                    }
+                }
+            };
+            element.hass = mockHass as any;
+            element.device = {
+                ...element.device,
+                overview_entity_id: 'sensor.growspace_overview'
+            };
+
+            // Mock computeHeaderMetrics to return a vpd chip
+            (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
+                mainChips: [{ key: 'vpd', value: '1.0 kPa', status: 'ok' }],
+                deviceChips: [],
+                dominant: null,
+                envAttrs: {}
+            });
+
+            // Mock history segments
+            const segmentSpy = vi.spyOn(ChartUtils, 'generateVpdSparklineSegments').mockReturnValue([
+                { path: 'M0,0 L10,10', color: 'green' }
+            ]);
+
+            element.requestUpdate();
+            await element.updateComplete;
+
+            expect(segmentSpy).toHaveBeenCalled();
+            const svg = element.shadowRoot?.querySelector('.hero-sparkline');
+            expect(svg).toBeTruthy();
+            expect(svg?.innerHTML).toContain('path');
+        });
+
+        it('should handle non-VPD sparkline with history', async () => {
+            (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
+                mainChips: [{ key: 'temperature', value: '75 F', status: 'ok' }],
+                deviceChips: [],
+                dominant: null,
+                envAttrs: {}
+            });
+
+            vi.spyOn(ChartUtils, 'generateSparklinePath').mockReturnValue('M0,0 L10,10');
+
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const svg = element.shadowRoot?.querySelector('.hero-sparkline');
+            expect(svg).toBeTruthy();
+            expect(svg?.innerHTML).toContain('linearGradient');
+        });
+
+        it('should handle missing history for sparkline', async () => {
+            (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
+                mainChips: [{ key: 'temperature', value: '75 F', status: 'ok' }],
+                deviceChips: [],
+                dominant: null,
+                envAttrs: {}
+            });
+
+            vi.spyOn(ChartUtils, 'generateSparklinePath').mockReturnValue('');
+
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const svg = element.shadowRoot?.querySelector('.hero-sparkline');
+            expect(svg).toBeFalsy();
         });
     });
 });

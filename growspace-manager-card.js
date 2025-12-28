@@ -644,8 +644,6 @@ class GrowspaceAdapter {
         const overview_entity_id = wsData?.overview_entity_id || overview?.entity_id || '';
         // 1. Loading State
         if (!wsData) {
-            if (!overview)
-                return null; // Should not happen given check above
             return createGrowspaceDevice({
                 device_id: growspace_id,
                 overview_entity_id: overview.entity_id,
@@ -8874,7 +8872,7 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
             // Handle direct prop injection (DialogHost usage)
             // If editedAttributes is undefined/null (e.g. passed as null from parent), init it
             if (!this.editedAttributes || (changedProps.has('plant') && !this.editedAttributes.strain)) {
-                this.editedAttributes = this.editedAttributes || this._getAttributesFromPlant();
+                this.editedAttributes = this._getAttributesFromPlant();
             }
         }
         _getAttributesFromPlant() {
@@ -13119,8 +13117,8 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
             return scheduleString.split(',').map((t) => {
                 const parts = t.trim().split('|');
                 return {
-                    time: parts[0],
-                    duration: parts[1] ? parseInt(parts[1]) : undefined,
+                    time: parts[0].trim(),
+                    duration: parts[1] ? parseInt(parts[1].trim()) : undefined,
                 };
             });
         }
@@ -29857,7 +29855,7 @@ class GrowspaceStore {
             if (d.type === 'GROW_MASTER') {
                 this.ui.setActiveDialog({
                     type: 'GROW_MASTER',
-                    payload: { ...d.payload, isLoading: false, response: typeof text === 'string' ? text : JSON.stringify(text) }
+                    payload: { ...d.payload, isLoading: false, response: text }
                 });
             }
         }
