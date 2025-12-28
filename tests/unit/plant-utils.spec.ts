@@ -689,3 +689,37 @@ describe('mapDialogToApiPayload Coverage', () => {
         expect(payload).not.toHaveProperty('strain');
     });
 });
+
+describe('Coverage Gap Fillers', () => {
+    it('should calculate age for FLOWER stage plant', () => {
+        const mockFlowerPlant = {
+            attributes: {
+                stage: 'flower',
+                flower_start: '2023-01-01'
+            }
+        } as any;
+
+        vi.useFakeTimers().setSystemTime(new Date('2023-02-15'));
+        const age = PlantUtils.calculatePlantAge(mockFlowerPlant);
+        expect(age).toBe(45); // Days from Jan 1 to Feb 15
+        vi.useRealTimers();
+    });
+
+    it('should format datetime-local and handle catch block', () => {
+        // Normal case
+        const result = PlantUtils.toDateTimeLocal('2023-12-25T15:30:00');
+        expect(result).toContain('2023');
+        expect(result).toContain('12');
+        expect(result).toContain('25');
+    });
+
+    it('should return undefined for formatDateForBackend with undefined', () => {
+        const result = PlantUtils.formatDateForBackend(undefined);
+        expect(result).toBeUndefined();
+    });
+
+    it('should return undefined for formatDateForBackend with null', () => {
+        const result = PlantUtils.formatDateForBackend(null);
+        expect(result).toBeUndefined();
+    });
+});

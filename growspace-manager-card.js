@@ -13867,6 +13867,10 @@ class GrowspaceLogbookController {
             try {
                 this._events = await this._controller.fetchEventLog(this.growspaceId);
             }
+            catch (e) {
+                console.error('Error fetching logbook events:', e);
+                this._events = [];
+            }
             finally {
                 this._isLoading = false;
             }
@@ -15252,7 +15256,7 @@ const plantCardStyles = i$6 `
         set store(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_store_accessor_storage, value, "f"); }
         connectedCallback() {
             super.connectedCallback();
-            if (this.store) {
+            if (!this._isEditModeController && this.store) {
                 this._isEditModeController = new libExports.StoreController(this, this.store.ui.$isEditMode);
                 this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
             }
@@ -15331,7 +15335,7 @@ const plantCardStyles = i$6 `
               />
               <div class="plant-card-overlay"></div>
             `
-                : ''}
+                : E}
         ${this.isEditMode
                 ? x `
               <div
@@ -15350,12 +15354,12 @@ const plantCardStyles = i$6 `
                 </svg>
               </div>
             `
-                : ''}
+                : E}
 
         <div class="plant-card-content">
           <div class="pc-info">
             <div class="pc-strain-name" title="${strainName}">${strainName}</div>
-            ${pheno ? x `<div class="pc-pheno">${pheno}</div>` : ''}
+            ${pheno ? x `<div class="pc-pheno">${pheno}</div>` : E}
             <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
           </div>
 
@@ -30161,8 +30165,6 @@ let GrowspaceManagerCard = (() => {
         }
         get store() { return __classPrivateFieldGet(this, _GrowspaceManagerCard_store_accessor_storage, "f"); }
         set store(value) { __classPrivateFieldSet(this, _GrowspaceManagerCard_store_accessor_storage, value, "f"); }
-        // Controllers
-        // historyController removed (migrated to store)
         /* Getter for convenience/compatibility if needed, or update call sites */
         get selectedDevice() {
             return this._selectedDeviceController.value;
@@ -30194,9 +30196,6 @@ let GrowspaceManagerCard = (() => {
         disconnectedCallback() {
             super.disconnectedCallback();
             this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
-        }
-        willUpdate(changedProps) {
-            // Logic moved to updated() to avoid side-effects during update cycle
         }
         updated(changedProps) {
             super.updated(changedProps);
@@ -30291,8 +30290,6 @@ let GrowspaceManagerCard = (() => {
             const growspaceOptions = this._growspaceOptionsController.value;
             const { effectiveRows, grid } = this._gridLayoutController.value;
             const isWide = selectedDeviceData.plants_per_row > 7;
-            // const viewMode unused here if passed directly to switcher, but let's keep var if check needed logic
-            // const viewMode = this._viewModeController.value;
             return x `
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="sr-only-announcer" aria-live="polite"></div>
@@ -30340,7 +30337,7 @@ let GrowspaceManagerCard = (() => {
     __setFunctionName(_classThis, "GrowspaceManagerCard");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _store_decorators = [e$3({ context: storeContext }), e$3({ context: storeContext })];
+        _store_decorators = [e$3({ context: storeContext })];
         __strainLibrary_decorators = [e$3({ context: strainLibraryContext }), r$2()];
         _hass_decorators = [e$3({ context: hassContext }), n$5({ attribute: false })];
         __config_decorators = [e$3({ context: configContext }), n$5({ attribute: false })];

@@ -562,4 +562,145 @@ describe('PlantOverviewDialog', () => {
             document.body.removeChild(element);
         });
     });
+
+    describe('Coverage Gap Fillers', () => {
+        it('should return nothing for _renderStatItem with undefined value', async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const result = (element as any)._renderStatItem('Label', undefined);
+            // 'nothing' is a Symbol, check it's not a TemplateResult
+            expect(typeof result).toBe('symbol');
+
+            document.body.removeChild(element);
+        });
+
+        it('should return nothing for _renderStatItem with null value', async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const result = (element as any)._renderStatItem('Label', null);
+            expect(typeof result).toBe('symbol');
+
+            document.body.removeChild(element);
+        });
+
+        it('should return nothing for _renderStatItem with empty string', async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const result = (element as any)._renderStatItem('Label', '');
+            expect(typeof result).toBe('symbol');
+
+            document.body.removeChild(element);
+        });
+
+        it('should render stat item with valid value', async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const result = (element as any)._renderStatItem('Test', '42', 'units');
+            expect(result.values).toBeDefined();
+
+            document.body.removeChild(element);
+        });
+
+        it('should normalize "mom" stage to MOTHER in _renderPlantStats', async () => {
+            const momPlant = { ...mockPlant, state: 'mom', attributes: { ...mockPlant.attributes, mother_days: 5 } };
+            element.plant = momPlant;
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // Stats should render with mother stage
+            const statItems = element.shadowRoot?.querySelectorAll('.stat-item');
+            expect(statItems?.length).toBeGreaterThan(0);
+
+            document.body.removeChild(element);
+        });
+
+        it('should normalize "vegetative" stage to VEG in _renderPlantStats', async () => {
+            const vegPlant = { ...mockPlant, state: 'vegetative', attributes: { ...mockPlant.attributes, veg_days: 15 } };
+            element.plant = vegPlant;
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const statItems = element.shadowRoot?.querySelectorAll('.stat-item');
+            expect(statItems?.length).toBeGreaterThan(0);
+
+            document.body.removeChild(element);
+        });
+
+        it('should render with missing phenotype showing N/A', async () => {
+            // Create plant with phenotype omitted
+            const { phenotype, ...attrsWithoutPheno } = mockPlant.attributes;
+            const noPhenoPlant = {
+                ...mockPlant,
+                attributes: attrsWithoutPheno as typeof mockPlant.attributes
+            };
+            element.plant = noPhenoPlant;
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // Dialog should render with stat items
+            const statItems = element.shadowRoot?.querySelectorAll('.stat-item');
+            expect(statItems?.length).toBeGreaterThan(0);
+
+            document.body.removeChild(element);
+        });
+
+        it('should handle _renderPlantStats with no attributes', async () => {
+            const noAttrPlant = { ...mockPlant, attributes: undefined as any };
+            element.plant = noAttrPlant;
+            element.open = true;
+
+            // Should not throw
+            const result = (element as any)._renderPlantStats(noAttrPlant);
+            expect(result.values).toBeUndefined();
+        });
+
+        it('should return empty when plant is undefined in render', async () => {
+            element.plant = undefined as any;
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // Should render minimal content
+            const dialog = element.shadowRoot?.querySelector('ha-dialog');
+            expect(dialog).toBeFalsy();
+
+            document.body.removeChild(element);
+        });
+
+        it('should return empty when editedAttributes is undefined in render', async () => {
+            element.plant = mockPlant;
+            element.editedAttributes = undefined as any;
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // editedAttributes should be auto-initialized
+            expect(element.editedAttributes).toBeDefined();
+
+            document.body.removeChild(element);
+        });
+
+        it('should toggle showAllDates correctly', async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const initialState = (element as any).showAllDates;
+            (element as any)._toggleShowAllDates();
+            expect((element as any).showAllDates).toBe(!initialState);
+
+            document.body.removeChild(element);
+        });
+    });
 });

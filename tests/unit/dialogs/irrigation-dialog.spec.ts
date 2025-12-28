@@ -626,4 +626,47 @@ describe('IrrigationDialog', () => {
             }));
         });
     });
+
+    describe('Coverage Gap Fillers', () => {
+        it('should not add irrigation time without device', async () => {
+            (element as any).device = undefined;
+            await (element as any)._addIrrigationTime('10:00');
+
+            expect(mocks.addIrrigationTime).not.toHaveBeenCalled();
+        });
+
+        it('should parse schedule string with duration', () => {
+            const result = (element as any)._parseScheduleString('08:00|120,12:00|90');
+            expect(result).toHaveLength(2);
+            expect(result[0].time).toBe('08:00');
+            expect(result[0].duration).toBe(120);
+            expect(result[1].time).toBe('12:00');
+            expect(result[1].duration).toBe(90);
+        });
+
+        it('should parse schedule string without duration', () => {
+            const result = (element as any)._parseScheduleString('08:00,12:00');
+            expect(result).toHaveLength(2);
+            expect(result[0].duration).toBeUndefined();
+        });
+
+        it('should return empty array for empty schedule string', () => {
+            const result = (element as any)._parseScheduleString('');
+            expect(result).toEqual([]);
+        });
+
+        it('should not add drain time without device', async () => {
+            (element as any).device = undefined;
+            await (element as any)._addDrainTime('10:00');
+
+            expect(mocks.addDrainTime).not.toHaveBeenCalled();
+        });
+
+        it('should not remove drain time without device', async () => {
+            (element as any).device = undefined;
+            await (element as any)._removeDrainTime('08:30');
+
+            expect(mocks.removeDrainTime).not.toHaveBeenCalled();
+        });
+    });
 });

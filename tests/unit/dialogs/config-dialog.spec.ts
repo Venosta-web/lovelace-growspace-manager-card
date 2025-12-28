@@ -850,4 +850,62 @@ describe('ConfigDialog', () => {
             expect(element.shadowRoot?.querySelector('.config-content .sub-tabs')).toBeTruthy();
         });
     });
+
+    describe('Coverage Gap Fillers', () => {
+        it('should switch to environment tab', async () => {
+            const tabs = element.shadowRoot?.querySelectorAll('.config-tab');
+            const envTab = Array.from(tabs || []).find(t => t.textContent?.includes('Environment'));
+            (envTab as HTMLElement)?.click();
+            await element.updateComplete;
+
+            expect((element as any).currentTab).toBe('environment');
+        });
+
+        it('should switch to dehumidifier tab', async () => {
+            const tabs = element.shadowRoot?.querySelectorAll('.config-tab');
+            const dehumTab = Array.from(tabs || []).find(t => t.textContent?.includes('Dehumidifier'));
+            (dehumTab as HTMLElement)?.click();
+            await element.updateComplete;
+
+            expect((element as any).currentTab).toBe('dehumidifier');
+        });
+
+        it('should return 0 for missing threshold value', async () => {
+            (element as any).env_dehumidifier_thresholds = undefined;
+            await element.updateComplete;
+
+            const result = (element as any)._getThresholdValue('veg', 'day', 'on');
+            expect(result).toBe(0);
+        });
+
+        it('should return correct threshold value when present', async () => {
+            (element as any).env_dehumidifier_thresholds = {
+                veg: { day: { on: 1.5, off: 1.2 } }
+            };
+            await element.updateComplete;
+
+            const result = (element as any)._getThresholdValue('veg', 'day', 'on');
+            expect(result).toBe(1.5);
+        });
+
+        it('should handle notification service change event', async () => {
+            element.currentTab = 'add_growspace';
+            await element.updateComplete;
+
+            // Find and trigger the hidden md3-text-input for notification service
+            const notifInput = element.shadowRoot?.querySelector('md3-text-input[label*="Notification"]');
+            notifInput?.dispatchEvent(new CustomEvent('change', { detail: 'new_service' }));
+            await element.updateComplete;
+
+            expect((element as any).add_notification_service).toBe('new_service');
+        });
+
+        it('should update threshold via _updateThreshold', async () => {
+            (element as any).env_dehumidifier_thresholds = {};
+            await element.updateComplete;
+
+            (element as any)._updateThreshold('veg', 'day', 'on', 1.8);
+            expect((element as any).env_dehumidifier_thresholds.veg?.day?.on).toBe(1.8);
+        });
+    });
 });

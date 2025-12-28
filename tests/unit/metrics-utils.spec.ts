@@ -552,6 +552,26 @@ describe('MetricsUtils', () => {
             const vpd = res.mainChips.find(c => c.key === 'vpd');
             expect(vpd).toBeUndefined();
         });
+
+        it('should use old legacy VPD ID format when primary is unavailable', () => {
+            const hassLegacy = {
+                states: {
+                    'binary_sensor.test_optimal_conditions': { state: 'on', attributes: {} },
+                    'sensor.vpd_sensor': { state: 'unavailable' },
+                    'sensor.test_device_calculated_vpd': { state: '1.5' }  // Old format
+                }
+            } as any;
+            const dev = {
+                device_id: 'test_device',
+                name: 'Test',
+                environment_attributes: { vpd_sensor: 'sensor.vpd_sensor' }
+            } as any;
+
+            const res = MetricsUtils.computeHeaderMetrics(hassLegacy, dev, new Set(), []);
+            const vpd = res.mainChips.find(c => c.key === 'vpd');
+            expect(vpd).toBeDefined();
+            expect(vpd.value).toBe('1.5 kPa');
+        });
     });
 });
 

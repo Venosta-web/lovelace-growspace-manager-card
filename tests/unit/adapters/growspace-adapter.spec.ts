@@ -282,4 +282,92 @@ describe('GrowspaceAdapter', () => {
         const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsWithStrategy);
         expect(result?.irrigation_strategy).toEqual({ enabled: true, target_ml: 500 });
     });
+
+    describe('Coverage Gap Fillers', () => {
+        it('should fallback to "unknown" when both wsData and overview lack growspace_id', () => {
+            const wsWithoutId: GrowspaceAPIResponse = {
+                growspace_id: '',
+                name: 'No ID Room',
+                type: 'normal',
+                rows: 1,
+                plants_per_row: 1,
+                total_plants: 0,
+                grid: {},
+                irrigation_config: { irrigation_times: [], drain_times: [] },
+                vpd_status: 'ok'
+            } as any;
+
+            const overviewWithoutId = {
+                entity_id: 'sensor.test',
+                attributes: {} // No growspace_id
+            };
+
+            const result = GrowspaceAdapter.transformGrowspace(overviewWithoutId as any, wsWithoutId);
+            expect(result?.device_id).toBe('unknown');
+        });
+
+        it('should fallback type to "normal" when wsData.type is undefined', () => {
+            const wsWithoutType: GrowspaceAPIResponse = {
+                growspace_id: 'test_gs',
+                name: 'No Type Room',
+                type: undefined as any,
+                rows: 1,
+                plants_per_row: 1,
+                total_plants: 0,
+                grid: {},
+                irrigation_config: { irrigation_times: [], drain_times: [] },
+                vpd_status: 'ok'
+            } as any;
+
+            const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsWithoutType);
+            expect(result?.type).toBe('normal');
+        });
+
+        it('should skip null slots in grid', () => {
+            const wsWithNullSlots: GrowspaceAPIResponse = {
+                growspace_id: 'test_gs',
+                name: 'Mixed Grid Room',
+                type: 'normal',
+                rows: 2,
+                plants_per_row: 2,
+                total_plants: 1,
+                grid: {
+                    'position_0_0': {
+                        plant_id: 'p1',
+                        entity_id: 'sensor.p1',
+                        strain: 'Valid',
+                        phenotype: '#1',
+                        stage: 'veg',
+                        row: 0,
+                        col: 0
+                    } as any,
+                    'position_0_1': null,
+                    'position_1_0': undefined
+                } as any,
+                irrigation_config: { irrigation_times: [], drain_times: [] },
+                vpd_status: 'ok'
+            } as any;
+
+            const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsWithNullSlots);
+            expect(result?.plants).toHaveLength(1);
+        });
+
+        it('should handle overview with wsData having empty overview_entity_id', () => {
+            const wsWithEmptyEntityId: GrowspaceAPIResponse = {
+                growspace_id: 'test_gs',
+                name: 'Test Room',
+                type: 'normal',
+                overview_entity_id: '',
+                rows: 1,
+                plants_per_row: 1,
+                total_plants: 0,
+                grid: {},
+                irrigation_config: { irrigation_times: [], drain_times: [] },
+                vpd_status: 'ok'
+            } as any;
+
+            const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsWithEmptyEntityId);
+            expect(result?.overview_entity_id).toBe('sensor.growspace_test_overview');
+        });
+    });
 });
