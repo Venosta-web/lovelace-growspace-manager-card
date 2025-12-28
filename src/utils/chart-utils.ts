@@ -337,13 +337,36 @@ export class ChartUtils {
         // Backend already downsamples data, so use it directly
         const processedData = data;
 
-        // 2. Determine Scale
-        const minVal = options.min !== undefined ? options.min : Math.min(...processedData.map(d => d.value));
-        const maxVal = options.max !== undefined ? options.max : Math.max(...processedData.map(d => d.value));
+        // ⚡ Performance: Single-pass min/max calculation
+        // Replaces 4 separate Math.min/max(...array.map()) calls that each create intermediate arrays
+        // Reduces from O(4n) with 4 array allocations to O(n) with 0 allocations
+        let computedMinVal = Number.MAX_VALUE;
+        let computedMaxVal = Number.MIN_VALUE;
+        let computedMinTime = Number.MAX_VALUE;
+        let computedMaxTime = Number.MIN_VALUE;
+
+        // Only calculate if options don't override (lazy computation)
+        const needMinVal = options.min === undefined;
+        const needMaxVal = options.max === undefined;
+        const needMinTime = options.startTime === undefined;
+        const needMaxTime = options.endTime === undefined;
+
+        if (needMinVal || needMaxVal || needMinTime || needMaxTime) {
+            for (let i = 0; i < processedData.length; i++) {
+                const d = processedData[i];
+                if (needMinVal && d.value < computedMinVal) computedMinVal = d.value;
+                if (needMaxVal && d.value > computedMaxVal) computedMaxVal = d.value;
+                if (needMinTime && d.time < computedMinTime) computedMinTime = d.time;
+                if (needMaxTime && d.time > computedMaxTime) computedMaxTime = d.time;
+            }
+        }
+
+        const minVal = options.min !== undefined ? options.min : computedMinVal;
+        const maxVal = options.max !== undefined ? options.max : computedMaxVal;
         const valueRange = maxVal - minVal || 1;
 
-        const minTime = options.startTime !== undefined ? options.startTime : Math.min(...processedData.map(d => d.time));
-        const maxTime = options.endTime !== undefined ? options.endTime : Math.max(...processedData.map(d => d.time));
+        const minTime = options.startTime !== undefined ? options.startTime : computedMinTime;
+        const maxTime = options.endTime !== undefined ? options.endTime : computedMaxTime;
         const timeRange = maxTime - minTime || 1;
 
         // Pre-calculate factors to avoid division in loop

@@ -239,10 +239,13 @@ export class GrowspaceLogbook extends LitElement {
       );
     }
 
-    // Sort by time descending (newest first)
-    const sortedEvents = [...filteredEvents].sort(
-      (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
-    );
+    // ⚡ Performance: Schwartzian transform for efficient sorting
+    // Parse dates once upfront O(n) instead of O(n log n) Date creations in comparator
+    // For 100 events, reduces from ~1400 Date creations to 100
+    const sortedEvents = filteredEvents
+      .map(e => ({ event: e, time: new Date(e.start_time).getTime() }))
+      .sort((a, b) => b.time - a.time)
+      .map(item => item.event);
 
     const filters = [
       { id: 'all', label: 'All' },

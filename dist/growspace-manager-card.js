@@ -6072,12 +6072,36 @@ class ChartUtils {
             return '';
         // Backend already downsamples data, so use it directly
         const processedData = data;
-        // 2. Determine Scale
-        const minVal = options.min !== undefined ? options.min : Math.min(...processedData.map(d => d.value));
-        const maxVal = options.max !== undefined ? options.max : Math.max(...processedData.map(d => d.value));
+        // ⚡ Performance: Single-pass min/max calculation
+        // Replaces 4 separate Math.min/max(...array.map()) calls that each create intermediate arrays
+        // Reduces from O(4n) with 4 array allocations to O(n) with 0 allocations
+        let computedMinVal = Number.MAX_VALUE;
+        let computedMaxVal = Number.MIN_VALUE;
+        let computedMinTime = Number.MAX_VALUE;
+        let computedMaxTime = Number.MIN_VALUE;
+        // Only calculate if options don't override (lazy computation)
+        const needMinVal = options.min === undefined;
+        const needMaxVal = options.max === undefined;
+        const needMinTime = options.startTime === undefined;
+        const needMaxTime = options.endTime === undefined;
+        if (needMinVal || needMaxVal || needMinTime || needMaxTime) {
+            for (let i = 0; i < processedData.length; i++) {
+                const d = processedData[i];
+                if (needMinVal && d.value < computedMinVal)
+                    computedMinVal = d.value;
+                if (needMaxVal && d.value > computedMaxVal)
+                    computedMaxVal = d.value;
+                if (needMinTime && d.time < computedMinTime)
+                    computedMinTime = d.time;
+                if (needMaxTime && d.time > computedMaxTime)
+                    computedMaxTime = d.time;
+            }
+        }
+        const minVal = options.min !== undefined ? options.min : computedMinVal;
+        const maxVal = options.max !== undefined ? options.max : computedMaxVal;
         const valueRange = maxVal - minVal || 1;
-        const minTime = options.startTime !== undefined ? options.startTime : Math.min(...processedData.map(d => d.time));
-        const maxTime = options.endTime !== undefined ? options.endTime : Math.max(...processedData.map(d => d.time));
+        const minTime = options.startTime !== undefined ? options.startTime : computedMinTime;
+        const maxTime = options.endTime !== undefined ? options.endTime : computedMaxTime;
         const timeRange = maxTime - minTime || 1;
         // Pre-calculate factors to avoid division in loop
         const xFactor = width / timeRange;
@@ -13889,8 +13913,13 @@ class GrowspaceLogbookController {
             else if (this._activeFilter === 'environment') {
                 filteredEvents = allEvents.filter((e) => ['temperature', 'humidity', 'vpd', 'co2'].includes(e.sensor_type));
             }
-            // Sort by time descending (newest first)
-            const sortedEvents = [...filteredEvents].sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+            // ⚡ Performance: Schwartzian transform for efficient sorting
+            // Parse dates once upfront O(n) instead of O(n log n) Date creations in comparator
+            // For 100 events, reduces from ~1400 Date creations to 100
+            const sortedEvents = filteredEvents
+                .map(e => ({ event: e, time: new Date(e.start_time).getTime() }))
+                .sort((a, b) => b.time - a.time)
+                .map(item => item.event);
             const filters = [
                 { id: 'all', label: 'All' },
                 { id: 'alerts', label: 'Alerts' },
@@ -24378,7 +24407,7 @@ class ResizeController {
             // Update metrics if key dependencies changed or if active graphs changed (StoreController handles the reactivity)
             if (changedProperties.has('device') ||
                 changedProperties.has('hass') ||
-                this._activeEnvGraphsController.value) {
+                this._activeEnvGraphsController?.value) {
                 this._updateMetrics();
             }
         }
@@ -24452,11 +24481,18 @@ class ResizeController {
                 return x ``;
             const dominant = this._dominant;
             const devices = this._devicesController.value;
-            // Split Chips
-            const heroKeys = ['temperature', 'humidity', 'vpd', 'co2'];
-            // Filter chips and force valid status/value if testing
-            const heroChips = this._mainChips.filter(c => heroKeys.includes(c.key));
-            const secondaryChips = this._mainChips.filter(c => !heroKeys.includes(c.key));
+            // ⚡ Performance: Single-pass partitioning with Set.has() O(1) instead of Array.includes() O(n)
+            // Reduces from 2 array iterations to 1, ~50% fewer iterations for chip splitting
+            const heroKeySet = new Set(['temperature', 'humidity', 'vpd', 'co2']);
+            const { heroChips, secondaryChips } = this._mainChips.reduce((acc, chip) => {
+                if (heroKeySet.has(chip.key)) {
+                    acc.heroChips.push(chip);
+                }
+                else {
+                    acc.secondaryChips.push(chip);
+                }
+                return acc;
+            }, { heroChips: [], secondaryChips: [] });
             return x `
       <div class="gs-stats-container">
         
@@ -24563,7 +24599,7 @@ class ResizeController {
                 class="secondary-strip ${this._mobileLink ? 'mobile-wrap' : ''}"
                 ${n$2(this._chipsContainerRef)}
             >
-                ${secondaryChips.map(chip => x `
+                ${secondaryChips.map((chip) => x `
                     <growspace-chip
                         .icon=${chip.icon}
                         .label=${chip.label}
@@ -24592,7 +24628,7 @@ class ResizeController {
 
         <!-- HERO GRID (Vital Stats) -->
         <div class="hero-grid">
-            ${heroChips.map(chip => this._renderHeroCard(chip))}
+            ${heroChips.map((chip) => this._renderHeroCard(chip))}
         </div>
       </div>
     `;
@@ -28547,6 +28583,12 @@ class GrowspaceHistoryStore {
             writable: true,
             value: null
         });
+        Object.defineProperty(this, "_visibilityHandler", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
         // --- Computed Stores ---
         Object.defineProperty(this, "$combinedHistory", {
             enumerable: true,
@@ -28710,11 +28752,22 @@ class GrowspaceHistoryStore {
         this._refreshInterval = window.setInterval(() => {
             this._fetchHistoryDelta();
         }, 5 * 60 * 1000); // 5 minutes
+        // Refresh when tab becomes visible again (browsers throttle setInterval when hidden)
+        this._visibilityHandler = () => {
+            if (!document.hidden) {
+                this._fetchHistoryDelta();
+            }
+        };
+        document.addEventListener('visibilitychange', this._visibilityHandler);
     }
     stopAutoRefresh() {
         if (this._refreshInterval) {
             window.clearInterval(this._refreshInterval);
             this._refreshInterval = null;
+        }
+        if (this._visibilityHandler) {
+            document.removeEventListener('visibilitychange', this._visibilityHandler);
+            this._visibilityHandler = null;
         }
     }
     getRange() {
@@ -28761,32 +28814,27 @@ class GrowspaceHistoryStore {
         }
         if (entitiesToFetch.size === 0)
             return;
-        try {
-            const batchResults = await this.dataService.getHistoryStats(Array.from(entitiesToFetch), start, end, this._getIntervalForRange(range), true);
-            // Overview/Main
-            if (device.overview_entity_id && batchResults[device.overview_entity_id]) {
-                const data = batchResults[device.overview_entity_id];
-                // 'main' was used in controller logic for basic stats or fallback? 
-                // In store types, we don't have 'main' in SensorHistories, but we have strict keys.
-                // However, $historyCache is Record<string, ...> so we can store 'main'.
-                // Ideally we map overview entity content to specific metrics if valuable.
-            }
-            // Metrics
-            const formattedUpdates = {};
-            for (const metric of metricsToFetch) {
-                const entityId = entityMap[metric];
-                if (entityId) {
-                    const result = batchResults[entityId] || [];
-                    formattedUpdates[metric] = result;
-                    this.updateLastTimestamp(metric, result);
-                }
-            }
-            this.setHistoryBatch(formattedUpdates);
-            this._saveToStorage();
+        const batchResults = await this.dataService.getHistoryStats(Array.from(entitiesToFetch), start, end, this._getIntervalForRange(range), true);
+        // Overview/Main
+        if (device.overview_entity_id && batchResults[device.overview_entity_id]) {
+            batchResults[device.overview_entity_id];
+            // 'main' was used in controller logic for basic stats or fallback? 
+            // In store types, we don't have 'main' in SensorHistories, but we have strict keys.
+            // However, $historyCache is Record<string, ...> so we can store 'main'.
+            // Ideally we map overview entity content to specific metrics if valuable.
         }
-        catch (e) {
-            console.error('[HistoryStore] Failed to fetch batch history', e);
+        // Metrics
+        const formattedUpdates = {};
+        for (const metric of metricsToFetch) {
+            const entityId = entityMap[metric];
+            if (entityId) {
+                const result = batchResults[entityId] || [];
+                formattedUpdates[metric] = result;
+                this.updateLastTimestamp(metric, result);
+            }
         }
+        this.setHistoryBatch(formattedUpdates);
+        this._saveToStorage();
     }
     async _fetchHistoryDelta() {
         const deviceId = this.dataStore.$selectedDevice.get();

@@ -236,4 +236,19 @@ describe('UI Store', () => {
             expect(store.$defaultApplied.get()).toBe(false);
         });
     });
+
+    describe('setError', () => {
+        it('should update $error with a string', () => {
+            store.setError('Something went wrong');
+            expect(store.$error.get()).toBe('Something went wrong');
+        });
+
+        it('should clear $error when set to null', () => {
+            store.setError('Error message');
+            expect(store.$error.get()).not.toBeNull();
+
+            store.setError(null);
+            expect(store.$error.get()).toBeNull();
+        });
+    });
 });

@@ -172,6 +172,14 @@ describe('PlantUtils', () => {
         });
     });
 
+    describe('getCurrentDateTime', () => {
+        it('should return current date/time in YYYY-MM-DDTHH:mm:00 format', () => {
+            // MOCK_DATE is '2023-10-15T12:00:00'
+            const result = PlantUtils.getCurrentDateTime();
+            expect(result).toBe('2023-10-15T12:00:00');
+        });
+    });
+
     describe('mapDialogToApiPayload', () => {
         it('should map single edit attributes correctly', () => {
             const attrs = {

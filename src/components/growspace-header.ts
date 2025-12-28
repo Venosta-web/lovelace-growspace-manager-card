@@ -826,11 +826,20 @@ export class GrowspaceHeader extends LitElement {
     const dominant = this._dominant;
     const devices = this._devicesController.value;
 
-    // Split Chips
-    const heroKeys = ['temperature', 'humidity', 'vpd', 'co2'];
-    // Filter chips and force valid status/value if testing
-    const heroChips = this._mainChips.filter(c => heroKeys.includes(c.key));
-    const secondaryChips = this._mainChips.filter(c => !heroKeys.includes(c.key));
+    // ⚡ Performance: Single-pass partitioning with Set.has() O(1) instead of Array.includes() O(n)
+    // Reduces from 2 array iterations to 1, ~50% fewer iterations for chip splitting
+    const heroKeySet = new Set(['temperature', 'humidity', 'vpd', 'co2']);
+    const { heroChips, secondaryChips } = this._mainChips.reduce(
+      (acc, chip) => {
+        if (heroKeySet.has(chip.key)) {
+          acc.heroChips.push(chip);
+        } else {
+          acc.secondaryChips.push(chip);
+        }
+        return acc;
+      },
+      { heroChips: [] as any[], secondaryChips: [] as any[] }
+    );
 
     return html`
       <div class="gs-stats-container">
@@ -941,7 +950,7 @@ export class GrowspaceHeader extends LitElement {
                 class="secondary-strip ${this._mobileLink ? 'mobile-wrap' : ''}"
                 ${ref(this._chipsContainerRef)}
             >
-                ${secondaryChips.map(chip => html`
+                ${secondaryChips.map((chip: any) => html`
                     <growspace-chip
                         .icon=${chip.icon}
                         .label=${chip.label}
@@ -970,7 +979,7 @@ export class GrowspaceHeader extends LitElement {
 
         <!-- HERO GRID (Vital Stats) -->
         <div class="hero-grid">
-            ${heroChips.map(chip => this._renderHeroCard(chip))}
+            ${heroChips.map((chip: any) => this._renderHeroCard(chip))}
         </div>
       </div>
     `;

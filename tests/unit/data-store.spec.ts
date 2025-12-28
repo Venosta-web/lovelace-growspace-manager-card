@@ -35,19 +35,9 @@ describe('DataStore', () => {
     });
 
     it('should manage optimistic deleted plant IDs', () => {
+        // Test the setOptimisticDeletedPlantIds action method
         const initial = new Set(['p1']);
-        // Direct set isn't available as action usually? checking implementation
-        // Check if setOptimisticDeletedPlantIds exists as action or if it was just testing the atom directly.
-        // The previous test called `dataStore.setOptimisticDeletedPlantIds`.
-        // Let's assume the atom is readonly or setter is exposed via an action? 
-        // Based on previous files, we saw `addOptimisticDeletedPlantId`.
-        // If there is no exact setter, we might need to check the class definition.
-        // Assuming there IS a setter or we can use .set() on the atom if it's public.
-        // Actually, let's use the actions if possible.
-
-        // Wait, the previous test access `store.$optimisticDeletedPlantIds.set`.
-        // If it's a WritableAtom, we can use .set().
-        store.$optimisticDeletedPlantIds.set(initial);
+        store.setOptimisticDeletedPlantIds(initial);
         expect(store.$optimisticDeletedPlantIds.get()).toEqual(initial);
 
         store.addOptimisticDeletedPlantId('p2');
