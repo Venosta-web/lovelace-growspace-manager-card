@@ -373,5 +373,61 @@ describe('PlantCard', () => {
             expect(emptyEl.displayData).toBeNull();
             document.body.removeChild(emptyEl);
         });
+
+        it('should fallback to host focus if card content is missing', async () => {
+            // Create element with no plant -> renders empty (no .plant-card-rich)
+            const emptyEl = document.createElement('growspace-plant-card') as GrowspacePlantCard;
+            (emptyEl as any).store = mockStore;
+            document.body.appendChild(emptyEl);
+            await emptyEl.updateComplete;
+
+            const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus');
+            emptyEl.focus();
+
+            // Should call super.focus() which is HTMLElement.prototype.focus
+            expect(focusSpy).toHaveBeenCalled();
+            document.body.removeChild(emptyEl);
+            focusSpy.mockRestore();
+        });
+    });
+
+    describe('Image Handling', () => {
+        it('should generate srcset for WebP images', async () => {
+            const plant = {
+                attributes: { strain: 'WebP Strain', plant_id: 'p1' },
+                state: 'veg'
+            } as any;
+            const strainLibrary = [
+                { strain: 'WebP Strain', image: 'test_image.webp' }
+            ] as any;
+
+            element.plant = plant;
+            element.strainLibrary = strainLibrary;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const img = element.shadowRoot?.querySelector('img');
+            expect(img).toBeTruthy();
+            expect(img?.src).toContain('test_image.webp');
+            expect(img?.getAttribute('srcset')).toContain('test_image_small.webp 320w');
+            expect(img?.getAttribute('srcset')).toContain('test_image.webp 1024w');
+        });
+
+        it('should not render image if no match found', async () => {
+            const plant = {
+                attributes: { strain: 'Unknown Strain', plant_id: 'p1' },
+                state: 'veg'
+            } as any;
+
+            element.plant = plant;
+            // No matching library entry
+            element.strainLibrary = [];
+
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const img = element.shadowRoot?.querySelector('img');
+            expect(img).toBeNull();
+        });
     });
 });

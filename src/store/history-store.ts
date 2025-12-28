@@ -87,7 +87,7 @@ export class GrowspaceHistoryStore {
     public updateLastTimestamp(metric: string, data: HistorySensorState[]): void {
         if (data.length === 0) return;
         const lastPoint = data[data.length - 1];
-        const timestamp = (lastPoint as any).last_updated || (lastPoint as any).last_changed;
+        const timestamp = lastPoint.last_updated || lastPoint.last_changed;
         if (timestamp) {
             this.$lastTimestamps.setKey(metric, timestamp);
         }
@@ -402,10 +402,10 @@ export class GrowspaceHistoryStore {
         }
 
         const lastExisting = existing[existing.length - 1];
-        const lastTimestamp = new Date((lastExisting as any).last_updated || (lastExisting as any).last_changed).getTime();
+        const lastTimestamp = new Date(lastExisting.last_updated || lastExisting.last_changed).getTime();
 
         const newData = deltaData.filter(point => {
-            const pointTime = new Date((point as any).last_updated || (point as any).last_changed).getTime();
+            const pointTime = new Date(point.last_updated || point.last_changed).getTime();
             return pointTime > lastTimestamp;
         });
 

@@ -114,6 +114,34 @@ describe('GrowspaceManagerCardEditor', () => {
         expect(eventDetail.config.initial_view_mode).toBe('compact');
     });
 
+    it('should fire config-changed event on default growspace change', async () => {
+        const mockHass = {
+            states: {
+                'sensor.growspaces_list': {
+                    attributes: { growspaces: ['Tent A', 'Tent B'] }
+                }
+            },
+            connection: { subscribeEvents: vi.fn().mockResolvedValue(() => { }) }
+        };
+
+        element.hass = mockHass;
+        element.setConfig({ type: 'custom:growspace-manager-card' });
+        await element.updateComplete;
+
+        const listener = vi.fn();
+        element.addEventListener('config-changed', listener);
+
+        const growspaceSelect = element.shadowRoot?.querySelectorAll('select')[1];
+        if (growspaceSelect) {
+            growspaceSelect.value = '1';
+            growspaceSelect.dispatchEvent(new Event('change'));
+        }
+
+        expect(listener).toHaveBeenCalled();
+        const eventDetail = listener.mock.calls[0][0].detail;
+        expect(eventDetail.config.default_growspace).toBe('1');
+    });
+
     it('should subscribe to sensor updates', async () => {
         const subscribeMock = vi.fn().mockResolvedValue(() => { });
         const mockHass = {
@@ -231,6 +259,41 @@ describe('GrowspaceManagerCardEditor', () => {
                 });
                 await element.updateComplete;
                 expect((element as any)._growspaceOptions).toEqual([]);
+            }
+        });
+
+        it('should ignore state_changed event for unrelated entities', async () => {
+            let subscriptionCallback: Function | undefined;
+            const subscribeMock = vi.fn((cb) => {
+                subscriptionCallback = cb;
+                return () => { };
+            });
+
+            const mockHass = {
+                states: {},
+                connection: { subscribeEvents: subscribeMock }
+            };
+
+            element.hass = mockHass;
+            element.setConfig({ type: 'test' });
+            await element.updateComplete;
+
+            // Pre-populate to verify it doesn't get cleared
+            (element as any)._growspaceOptions = [{ id: '0', name: 'Existing' }];
+
+            if (subscriptionCallback) {
+                // Fire event with different entity_id
+                subscriptionCallback({
+                    data: {
+                        new_state: {
+                            entity_id: 'sensor.something_else',
+                            attributes: { growspaces: ['New Stuff'] }
+                        }
+                    }
+                });
+                await element.updateComplete;
+                // Should remain unchanged
+                expect((element as any)._growspaceOptions).toEqual([{ id: '0', name: 'Existing' }]);
             }
         });
 

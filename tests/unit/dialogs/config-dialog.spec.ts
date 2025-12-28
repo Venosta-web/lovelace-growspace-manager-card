@@ -960,7 +960,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle null thresholds during _updateThreshold', () => {
-            element.env_dehumidifier_thresholds = null as any;
+            (element as any).env_dehumidifier_thresholds = null as any;
             (element as any)._updateThreshold('seedling', 'day', 'on', 1.0);
             expect((element as any).env_dehumidifier_thresholds.seedling.day.on).toBe(1.0);
         });
@@ -976,7 +976,7 @@ describe('ConfigDialog', () => {
             } as any;
             element.devices = [dev];
             (element as any)._populateEditFields('no_notify');
-            expect(element.edit_notification_service).toBe('');
+            expect((element as any).edit_notification_service).toBe('');
         });
 
         it('should render entity select fallback to entity_id if friendly_name missing', async () => {
@@ -1020,12 +1020,12 @@ describe('ConfigDialog', () => {
             } as any;
             element.devices = [dev];
             // set initial dirty state
-            element.env_temp_sensor = 'dirty';
+            (element as any).env_temp_sensor = 'dirty';
 
             (element as any)._handleEnvGrowspaceChange({ target: { value: 'no_env' } } as any);
 
             // Should fall to else block and reset
-            expect(element.env_temp_sensor).toBe('');
+            expect((element as any).env_temp_sensor).toBe('');
         });
 
         it('should render entity select options with fallback friendly name', async () => {

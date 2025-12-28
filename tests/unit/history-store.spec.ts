@@ -74,6 +74,15 @@ describe('history-store', () => {
 
             expect(store.$lastTimestamps.get().temperature).toBeUndefined();
         });
+
+        it('should use last_updated when last_changed is missing', () => {
+            const dataWithLastUpdated: HistorySensorState[] = [
+                { entity_id: 'sensor.temp', state: '25', attributes: {}, last_changed: '', last_updated: '2024-01-01T02:00:00Z' },
+            ];
+            store.updateLastTimestamp('temperature', dataWithLastUpdated);
+
+            expect(store.$lastTimestamps.get().temperature).toBe('2024-01-01T02:00:00Z');
+        });
     });
 
     describe('Loading State', () => {
@@ -191,6 +200,14 @@ describe('history-store', () => {
             // Group should still exist but without temperature
             // If only one metric left, group should be removed
             expect(store.$linkedGraphGroups.get()[0]).not.toContain('temperature');
+        });
+
+        it('should remove group when unlink leaves single metric', () => {
+            store.linkGraphs('temperature', 'humidity');
+            // Group has two: temperature, humidity
+            store.unlinkGraphMetric('temperature');
+            // Group now has just humidity (length 1), so should be removed
+            expect(store.$linkedGraphGroups.get()).toHaveLength(0);
         });
 
         it('should clear all links', () => {
@@ -489,6 +506,18 @@ describe('history-store', () => {
             await (store as any)._fetchHistoryDelta();
 
             expect(spy).toHaveBeenCalledWith(expect.stringContaining('Failed to fetch delta'), expect.any(Error));
+            spy.mockRestore();
+        });
+
+        it('should return early in _fetchHistoryDelta when device is not found', async () => {
+            // Select a device that doesn't exist in the devices list
+            dataStore.setDevices([]);
+            dataStore.setSelectedDevice('nonexistent_device');
+
+            const spy = vi.spyOn(mockDataService, 'getHistoryStats');
+            await (store as any)._fetchHistoryDelta();
+
+            expect(spy).not.toHaveBeenCalled();
             spy.mockRestore();
         });
 

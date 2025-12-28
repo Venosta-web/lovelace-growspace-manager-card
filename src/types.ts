@@ -389,6 +389,7 @@ export interface HistorySensorState {
   state: string;
   attributes: any;
   last_changed: string;
+  last_updated?: string;
 }
 
 export type SensorHistories = Record<string, HistorySensorState[]>;

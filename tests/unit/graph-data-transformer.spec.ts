@@ -209,6 +209,11 @@ describe('GraphDataTransformer', () => {
             expect(GraphDataTransformer.normalizeSensorValue({ state: 'false' } as any, 'light')).toBe(0);
         });
 
+        it('should return 0 for light with unrecognized non-numeric state', () => {
+            // Line 141: fallback return 0 for light when state is not recognized and not a number
+            expect(GraphDataTransformer.normalizeSensorValue({ state: 'garbage' } as any, 'light')).toBe(0);
+        });
+
         it('should return undefined for non-numeric invalid state', () => {
             expect(GraphDataTransformer.normalizeSensorValue({ state: 'garbage' } as any, 'pump')).toBeUndefined();
         });

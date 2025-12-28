@@ -731,4 +731,117 @@ describe('PlantOverviewDialog', () => {
             expect((element.editedAttributes as any).strain).toBe('Blue Dream');
         });
     });
+
+    it('should use fallback plant ID if attribute is missing', async () => {
+        document.body.appendChild(element);
+        const plantNoId = { ...mockPlant, attributes: { ...mockPlant.attributes, plant_id: undefined } };
+        element.plant = plantNoId as any;
+        element.open = true;
+        await element.updateComplete;
+
+        const deleteBtn = element.shadowRoot?.querySelector('button.danger') as HTMLButtonElement;
+        deleteBtn.click();
+        await element.updateComplete;
+
+        const confirmBtn = element.shadowRoot?.querySelectorAll('button.danger')[0] as HTMLButtonElement;
+
+        let deletedId = '';
+        element.addEventListener('delete-plant', (e: any) => {
+            deletedId = e.detail.plantId;
+        });
+
+        confirmBtn.click();
+        expect(deletedId).toBe('plant_1');
+
+        document.body.removeChild(element);
+    });
+
+    it('should display Unknown Strain if strain is missing', async () => {
+        document.body.appendChild(element);
+        const plantNoStrain = { ...mockPlant, attributes: { ...mockPlant.attributes, strain: null } };
+        element.plant = plantNoStrain as any;
+        element.open = true;
+        await element.updateComplete;
+
+        const title = element.shadowRoot?.querySelector('.dialog-title');
+        expect(title?.textContent).toContain('Unknown Strain');
+        document.body.removeChild(element);
+    });
+
+    it('should display No Phenotype if phenotype is missing', async () => {
+        document.body.appendChild(element);
+        const plantNoPheno = { ...mockPlant, attributes: { ...mockPlant.attributes, phenotype: null } };
+        element.plant = plantNoPheno as any;
+        element.open = true;
+        await element.updateComplete;
+
+        const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
+        expect(subtitle?.textContent).toContain('No Phenotype');
+        document.body.removeChild(element);
+    });
+
+    it('should render read-only view when isEditing is false', async () => {
+        document.body.appendChild(element);
+        element.open = true;
+        (element as any).isEditing = false;
+        await element.updateComplete;
+
+        const statLabels = element.shadowRoot?.querySelectorAll('.stat-label');
+        const labels = Array.from(statLabels || []).map(l => l.textContent);
+        expect(labels).toContain('Strain');
+        expect(labels).toContain('Phenotype');
+        document.body.removeChild(element);
+    });
+
+    it('should handle take clone with input value', async () => {
+        document.body.appendChild(element);
+        const motherPlant = { ...mockPlant, state: 'mother', context: { id: '', parent_id: '', user_id: '' } };
+        element.plant = motherPlant as any;
+        element.open = true;
+        await element.updateComplete;
+
+        let cloneEvent: any = null;
+        element.addEventListener('take-clone', (e: any) => {
+            cloneEvent = e.detail;
+        });
+
+        const container = element.shadowRoot?.querySelector('.take-clone-container');
+        expect(container).toBeTruthy();
+
+        const input = container?.querySelector('#clone-count-input') as any;
+        if (input) input.value = 5;
+
+        const btn = container?.querySelector('button.primary') as HTMLButtonElement;
+        btn.click();
+
+        expect(cloneEvent).toBeTruthy();
+        expect(cloneEvent.numClones).toBe(5);
+        document.body.removeChild(element);
+    });
+
+    it('should default to 1 clone if input missing', async () => {
+        document.body.appendChild(element);
+        const motherPlant = { ...mockPlant, state: 'mother', context: { id: '', parent_id: '', user_id: '' } };
+        element.plant = motherPlant as any;
+        element.open = true;
+        await element.updateComplete;
+
+        const container = element.shadowRoot?.querySelector('.take-clone-container');
+        const originalQuerySelector = container!.querySelector.bind(container);
+        vi.spyOn(container as any, 'querySelector').mockImplementation((selector: any) => {
+            if (selector.includes('input')) return null;
+            return originalQuerySelector(selector);
+        });
+
+        let cloneEvent: any = null;
+        element.addEventListener('take-clone', (e: any) => {
+            cloneEvent = e.detail;
+        });
+
+        const btn = container?.querySelector('button.primary') as HTMLButtonElement;
+        btn.click();
+
+        expect(cloneEvent.numClones).toBe(1);
+        document.body.removeChild(element);
+    });
 });

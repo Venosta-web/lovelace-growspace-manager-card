@@ -732,5 +732,248 @@ describe('IrrigationDialog', () => {
             expect(result[0].time).toBe('08:00');
             expect(result[0].duration).toBe(120);
         });
+
+        it('should add irrigation time with default duration fallback', async () => {
+            document.body.appendChild(element);
+            element.open = true;
+            await element.updateComplete;
+
+            // Directly call private method to skip UI interaction complexity for this specific branch
+            await (element as any)._addIrrigationTime('10:00', undefined);
+
+            expect(mocks.addIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({
+                duration: 60 // default
+            }));
+            document.body.removeChild(element);
+        });
+
+        it('should add drain time with default duration fallback', async () => {
+            document.body.appendChild(element);
+            element.open = true;
+            await element.updateComplete;
+
+            await (element as any)._addDrainTime('10:00', undefined);
+
+            expect(mocks.addDrainTime).toHaveBeenCalledWith(expect.objectContaining({
+                duration: 60 // default
+            }));
+            document.body.removeChild(element);
+        });
+
+        it('should update lights_on_time using event detail fallback', async () => {
+            document.body.appendChild(element);
+            element.open = true;
+            (element as any)._activeTab = 'steering';
+            await element.updateComplete;
+
+            const dateInput = element.shadowRoot?.querySelector('md3-text-input[label="Lights On Time"]');
+            expect(dateInput).toBeTruthy();
+
+            // Simulate event where target.value is empty but e.detail has value
+            const evt = new CustomEvent('change', { detail: '07:00' });
+            // We can't easily force target.value to be empty if it's bound, but we can dispatch against a fake target
+            // Or just mock the event target
+            Object.defineProperty(evt, 'target', { value: { value: '' }, writable: true });
+
+            dateInput?.dispatchEvent(evt);
+            await element.updateComplete;
+
+            expect((element as any)._strategy.lights_on_time).toBe('07:00');
+            document.body.removeChild(element);
+        });
+
+        it('should handle missing container when clicking add time button', async () => {
+            document.body.appendChild(element);
+            element.open = true;
+            await element.updateComplete;
+
+            const addBtn = element.shadowRoot?.querySelector('.detail-card button.primary');
+            expect(addBtn).toBeTruthy();
+
+            // Spy on closest to return null
+            const originalClosest = HTMLElement.prototype.closest;
+            HTMLElement.prototype.closest = vi.fn().mockReturnValue(null);
+
+            // This effectively covers the if (container) false branch
+            (addBtn as HTMLElement).click();
+
+            // Restore
+            HTMLElement.prototype.closest = originalClosest;
+            document.body.removeChild(element);
+        });
+
+        it('should handle drain time bar click', async () => {
+            document.body.appendChild(element);
+            element.open = true;
+            await element.updateComplete;
+
+            // Find drain time bar
+            const drainTimeBar = element.shadowRoot?.querySelector('.drain-time-bar');
+            expect(drainTimeBar).toBeTruthy();
+
+            // trigger click
+            (drainTimeBar as HTMLElement).click();
+
+            expect((element as any)._adding_drain_time).toBeDefined();
+            document.body.removeChild(element);
+        });
+
+        it('should remove time when confirmed', async () => {
+            document.body.appendChild(element);
+            element.open = true;
+            await element.updateComplete;
+
+            // Mock confirm
+            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+            // Find a chart marker
+            const marker = element.shadowRoot?.querySelector('.chart-marker');
+            (marker as HTMLElement).click();
+
+            expect(confirmSpy).toHaveBeenCalled();
+            expect(mocks.removeIrrigationTime).toHaveBeenCalled();
+
+            confirmSpy.mockRestore();
+            document.body.removeChild(element);
+        });
+
+        it('should not remove time when cancelled', async () => {
+            document.body.appendChild(element);
+            element.open = true;
+            await element.updateComplete;
+
+            mocks.removeIrrigationTime.mockClear();
+            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+            const marker = element.shadowRoot?.querySelector('.chart-marker');
+            (marker as HTMLElement).click();
+
+            expect(confirmSpy).toHaveBeenCalled();
+            expect(mocks.removeIrrigationTime).not.toHaveBeenCalled();
+
+            confirmSpy.mockRestore();
+            document.body.removeChild(element);
+        });
+
+        it('should remove drain time when confirmed', async () => {
+            document.body.appendChild(element);
+            element.open = true;
+            await element.updateComplete;
+
+            // Mock confirm
+            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+            // We need a marker in drain section. 
+            // Default mock has drain times 08:30
+            const markers = element.shadowRoot?.querySelectorAll('.chart-marker');
+            // markers are likely all of them. The first set is irrigation, second set is drain?
+            // _renderScheduleSection renders irrigation first.
+            // We can inspect the parent or just try to click one in the drain bar explicitly
+
+            const drainBar = element.shadowRoot?.querySelector('.drain-time-bar');
+            const marker = drainBar?.querySelector('.chart-marker');
+
+            (marker as HTMLElement).click();
+
+            expect(mocks.removeDrainTime).toHaveBeenCalled();
+
+            confirmSpy.mockRestore();
+            document.body.removeChild(element);
+        });
+
+        it('should handle adding time inputs with null/invalid values', async () => {
+            document.body.appendChild(element);
+            element.open = true;
+            await element.updateComplete;
+
+            // Activate adding mode
+            (element as any)._adding_irrigation_time = { time: '12:00', duration: 60 };
+            await element.updateComplete;
+
+            // Find inputs in overlay
+            const overlay = element.shadowRoot?.querySelector('.overlay-backdrop');
+            const textInput = overlay?.querySelector('md3-text-input');
+            const numInput = overlay?.querySelector('md3-number-input'); // duration
+
+            // Test text input change from detail fallback
+            const evt = new CustomEvent('change', { detail: '12:30' });
+            Object.defineProperty(evt, 'target', { value: { value: '' }, writable: true });
+            textInput?.dispatchEvent(evt);
+
+            expect((element as any)._adding_irrigation_time.time).toBe('12:30');
+
+            // Test number input with NaN
+            const nanEvt = new CustomEvent('change', { detail: 'invalid' });
+            numInput?.dispatchEvent(nanEvt);
+
+            // Valid change
+            const validEvt = new CustomEvent('change', { detail: '120' });
+            numInput?.dispatchEvent(validEvt);
+            expect((element as any)._adding_irrigation_time.duration).toBe(120);
+
+            document.body.removeChild(element);
+        });
+
+
+        describe('drain time', () => {
+            it('should handle adding time inputs with null/invalid values', async () => {
+                document.body.appendChild(element);
+                element.open = true;
+                await element.updateComplete;
+
+                // Activate adding mode
+                (element as any)._adding_drain_time = { time: '12:00', duration: 60 };
+                await element.updateComplete;
+
+                // Find inputs in overlay
+                const overlay = element.shadowRoot?.querySelector('.overlay-backdrop');
+                const textInput = overlay?.querySelector('md3-text-input');
+                const numInput = overlay?.querySelector('md3-number-input'); // duration
+
+                // Test text input change from detail fallback
+                const evt = new CustomEvent('change', { detail: '12:30' });
+                Object.defineProperty(evt, 'target', { value: { value: '' }, writable: true });
+                textInput?.dispatchEvent(evt);
+
+                expect((element as any)._adding_drain_time.time).toBe('12:30');
+
+                // Test number input with NaN
+                const nanEvt = new CustomEvent('change', { detail: 'invalid' });
+                numInput?.dispatchEvent(nanEvt);
+
+                // Valid change
+                const validEvt = new CustomEvent('change', { detail: '120' });
+                numInput?.dispatchEvent(validEvt);
+                expect((element as any)._adding_drain_time.duration).toBe(120);
+
+                document.body.removeChild(element);
+            });
+        });
+
+        it('should render time item using default duration when missing in object', async () => {
+            document.body.appendChild(element);
+            const deviceWithMissionDuration = {
+                ...mockDevice,
+                irrigation_config: {
+                    ...mockDevice.irrigation_config!,
+                    irrigation_times: [{ time: '09:00' }] // no duration
+                }
+            };
+            element.device = deviceWithMissionDuration as any;
+            element.open = true;
+            await element.updateComplete;
+
+            const markers = element.shadowRoot?.querySelectorAll('.chart-marker');
+            // We expect one marker for irrigation
+            // The default duration for irrigation is 60 in mockDevice
+            const marker = markers?.[0];
+
+            // Check title or tooltip text content
+            // Tooltip is inside .chart-tooltip
+            const tooltip = marker?.querySelector('.chart-tooltip');
+            expect(tooltip?.textContent).toContain('09:00 | 60s');
+
+            document.body.removeChild(element);
+        });
     });
 });

@@ -128,6 +128,23 @@ describe('plant-actions', () => {
 
             expect(result).toBe(false);
         });
+
+        it('should use entity_id fallback when plant_id is missing', async () => {
+            const plantNoId = { ...mockPlant, attributes: { ...mockPlant.attributes, plant_id: '' } };
+            const dialogState = {
+                plant: plantNoId,
+                editedAttributes: { strain: 'Fallback Update' },
+                selectedPlantIds: undefined,
+            };
+
+            const result = await updatePlantsFromDialog(ctx, dialogState);
+
+            expect(result).toBe(true);
+            expect(mockDataService.updatePlant).toHaveBeenCalledWith({
+                plant_id: 'plant_test123',
+                strain: 'Fallback Update',
+            });
+        });
     });
 
     describe('deletePlants', () => {
@@ -210,6 +227,15 @@ describe('plant-actions', () => {
 
             expect(result).toBe(false);
         });
+
+        it('should use entity_id fallback when plant_id is missing', async () => {
+            const plantNoId = { ...mockPlant, attributes: { ...mockPlant.attributes, plant_id: '', stage: 'flower' } };
+
+            const result = await movePlantToNextStage(ctx, plantNoId);
+
+            expect(result).toBe(true);
+            expect(mockDataService.harvestPlant).toHaveBeenCalledWith('plant_test123', 'dry');
+        });
     });
 
     describe('movePlantToGrowspace', () => {
@@ -247,6 +273,16 @@ describe('plant-actions', () => {
             await movePlantToGrowspace(ctx, plantNoId, 'dry');
 
             expect(mockDataService.harvestPlant).toHaveBeenCalledWith('plant_test123', 'dry');
+        });
+
+        it('should handle missing stage attribute defaulting to unknown', async () => {
+            const plantNoStage = { ...mockPlant, attributes: { ...mockPlant.attributes, stage: undefined } };
+
+            const result = await movePlantToGrowspace(ctx, plantNoStage as any, 'target_room');
+
+            expect(result).toBe(true);
+            // Should use harvestPlant since stage is 'unknown' (not 'clone')
+            expect(mockDataService.harvestPlant).toHaveBeenCalledWith('test123', 'target_room');
         });
     });
 

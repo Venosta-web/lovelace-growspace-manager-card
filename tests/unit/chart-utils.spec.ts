@@ -632,4 +632,62 @@ describe('ChartUtils', () => {
             expect(normalized2[0].value).toBe(12.3);
         });
     });
+    describe('Edge Case Coverage', () => {
+        it('should return empty string if filtering results in < 2 points in generateSparklinePath', () => {
+            const data = [
+                { state: '10', last_changed: '2023-01-01T10:00:00Z' },
+                { state: 'unavailable', last_changed: '2023-01-01T11:00:00Z' },
+                { state: 'unknown', last_changed: '2023-01-01T12:00:00Z' }
+            ];
+            // Only 1 valid point remains
+            expect(ChartUtils.generateSparklinePath(data, 100, 50)).toBe('');
+        });
+
+        it('should return empty array if filtering results in < 2 points in generateVpdSparklineSegments', () => {
+            const thresholds = { day: { targetMin: 0, targetMax: 10, dangerMin: 0, dangerMax: 10 }, night: { targetMin: 0, targetMax: 10, dangerMin: 0, dangerMax: 10 } };
+            const data = [
+                { state: '1.0', last_changed: '2023-01-01T10:00:00Z' },
+                { state: 'unavailable', last_changed: '2023-01-01T11:00:00Z' }
+            ];
+            expect(ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds, [])).toEqual([]);
+        });
+
+        it('should handle zero time range (same timestamps) in generatePathFromValues', () => {
+            const data = [
+                { time: 1000, value: 10 },
+                { time: 1000, value: 20 }
+            ];
+            // minTime == maxTime == 1000. range = 0 || 1.
+            // Avoids division by zero.
+            const path = ChartUtils.generatePathFromValues(data, 100, 100);
+            expect(path).toBeTruthy();
+            expect(path).toContain('M');
+        });
+
+        it('should handle non-metric parsing failure in normalizeHistory', () => {
+            const data = [
+                { state: 'invalid_float', last_changed: '2023-01-01T10:00:00Z' }
+            ];
+            // metricKey 'temp' means it falls to the generic float parser
+            const result = ChartUtils.normalizeHistory(data, 'temp', 0, 1000);
+            expect(result).toEqual([]);
+        });
+
+        it('should handle normalizeHistory with light metric but mixed invalid states', () => {
+            // metricKey='light' tries to parse 'foo' as float (fallback), fails -> returns empty
+            const data = [{ state: 'foo', last_changed: '2023-01-01T10:00:00Z' }];
+            const result = ChartUtils.normalizeHistory(data, 'light', 0, 1000);
+            expect(result).toEqual([]);
+        });
+
+        it('should handle zero time range (same timestamps) in generateVpdSparklineSegments', () => {
+            const thresholds = { day: { targetMin: 0, targetMax: 10, dangerMin: 0, dangerMax: 10 }, night: { targetMin: 0, targetMax: 10, dangerMin: 0, dangerMax: 10 } };
+            const data = [
+                { state: '1.0', last_changed: '2023-01-01T10:00:00Z' },
+                { state: '2.0', last_changed: '2023-01-01T10:00:00Z' }
+            ];
+            const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds, []);
+            expect(segments.length).toBeGreaterThan(0);
+        });
+    });
 });

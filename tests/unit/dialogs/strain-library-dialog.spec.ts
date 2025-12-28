@@ -1316,4 +1316,144 @@ describe('StrainLibraryDialog', () => {
             expect(msg?.textContent).toContain('No images found');
         });
     });
+
+
+    it('should clamp hybrid graph click percentage', async () => {
+        (element as any)._startEdit({
+            ...mockStrains[0],
+            type: 'Hybrid'
+        });
+        await element.updateComplete;
+
+        const track = element.shadowRoot?.querySelector('.hg-bar-track') as HTMLElement;
+        expect(track).toBeTruthy();
+
+        // Mock getBoundingClientRect
+        vi.spyOn(track, 'getBoundingClientRect').mockReturnValue({
+            left: 0, top: 0, width: 100, height: 20, right: 100, bottom: 20
+        } as any);
+
+        // Click way past 100% (e.g., 150px on 100px width)
+        track.dispatchEvent(new MouseEvent('click', { clientX: 150, bubbles: true }));
+        expect((element as any)._editorState.indica_percentage).toBe(100);
+
+        // Click way before 0% (e.g., -50px)
+        track.dispatchEvent(new MouseEvent('click', { clientX: -50, bubbles: true }));
+        expect((element as any)._editorState.indica_percentage).toBe(0);
+    });
+
+    it('should not render crop overlay if image is missing', async () => {
+        (element as any)._startEdit();
+        (element as any)._editorState.image = '';
+        (element as any)._isCropping = true;
+        await element.updateComplete;
+
+        const overlay = element.shadowRoot?.querySelector('.crop-overlay');
+        expect(overlay).toBeNull();
+    });
+
+    it('should use default crop meta if missing in renderCropOverlay', async () => {
+        (element as any)._startEdit();
+        // Provide image but no meta
+        (element as any)._editorState.image = 'test.jpg';
+        (element as any)._editorState.image_crop_meta = undefined;
+        (element as any)._isCropping = true;
+        await element.updateComplete;
+
+        const overlay = element.shadowRoot?.querySelector('.crop-overlay');
+        expect(overlay).toBeTruthy();
+
+        // Check if defaults (scale=1, x=50, y=50) are reflected in style or logic
+        // The crop-viewport style uses these values effectively?
+        // Actually, the implementation defines 'const meta' locally.
+        // We can verify by inspecting the rendered style of the image inside crop-viewport
+        const img = overlay?.querySelector('.crop-viewport img') as HTMLElement;
+        // Wait, the crop overlay implementation renders the image as background or img?
+        // Let's check renderCropOverlay implementation details via view_file if needed.
+        // Based on previous view_file, it uses helper methods?
+        // Let's just trust that if it renders without error and we can find elements, the branch is taken.
+        // But to be sure about the branch , we need to trigger an interaction that uses 'meta'.
+        // Like zooming.
+
+        const wheelEvent = new WheelEvent('wheel', { deltaY: -100 });
+        const viewport = overlay?.querySelector('.crop-viewport');
+        viewport?.dispatchEvent(wheelEvent);
+
+        // If it was undefined, it should have started at scale 1. Delta -100 (-0.1 with *0.001?) 
+        expect((element as any)._editorState.image_crop_meta.scale).toBeCloseTo(1.1);
+    });
+
+    it('should clamp indica input values and handle NaN', async () => {
+        (element as any)._startEdit({
+            ...mockStrains[0],
+            type: 'Hybrid'
+        });
+        await element.updateComplete;
+
+        const indicaInput = element.shadowRoot?.querySelector('.hg-input-label input') as HTMLInputElement;
+        expect(indicaInput).toBeTruthy();
+
+        // Test > 100
+        indicaInput.value = '150';
+        indicaInput.dispatchEvent(new Event('input'));
+        expect((element as any)._editorState.indica_percentage).toBe(100);
+        expect((element as any)._editorState.sativa_percentage).toBe(0);
+
+        // Test < 0
+        indicaInput.value = '-50';
+        indicaInput.dispatchEvent(new Event('input'));
+        expect((element as any)._editorState.indica_percentage).toBe(0);
+        expect((element as any)._editorState.sativa_percentage).toBe(100);
+
+        // Test NaN
+        indicaInput.value = 'abc';
+        indicaInput.dispatchEvent(new InputEvent('input'));
+        expect((element as any)._editorState.indica_percentage).toBe(0);
+    });
+
+    it('should clamp sativa input values and handle NaN', async () => {
+        (element as any)._startEdit({
+            ...mockStrains[0],
+            type: 'Hybrid'
+        });
+        await element.updateComplete;
+
+        // Find sativa input (2nd input in hg-container)
+        const inputs = element.shadowRoot?.querySelectorAll('.hg-input-label input');
+        const sativaInput = inputs?.[1] as HTMLInputElement;
+        expect(sativaInput).toBeTruthy();
+
+        // Test > 100
+        sativaInput.value = '150';
+        sativaInput.dispatchEvent(new Event('input'));
+        expect((element as any)._editorState.sativa_percentage).toBe(100);
+        expect((element as any)._editorState.indica_percentage).toBe(0);
+
+        // Test < 0
+        sativaInput.value = '-50';
+        sativaInput.dispatchEvent(new Event('input'));
+        expect((element as any)._editorState.sativa_percentage).toBe(0);
+        expect((element as any)._editorState.indica_percentage).toBe(100);
+    });
+
+    it('should handle missing file in drop and change events', async () => {
+        (element as any)._startEdit();
+        await element.updateComplete;
+
+        const dropArea = element.shadowRoot?.querySelector('.photo-upload-area');
+
+        // Drop with no files
+        const emptyDrop = new CustomEvent('drop', { bubbles: true, cancelable: true });
+        Object.defineProperty(emptyDrop, 'dataTransfer', { value: { files: [], dropEffect: 'copy' } });
+        Object.defineProperty(emptyDrop, 'preventDefault', { value: vi.fn() });
+        dropArea?.dispatchEvent(emptyDrop);
+
+        // Change with no files
+        const input = dropArea?.querySelector('input');
+        Object.defineProperty(input, 'files', { get: () => [] });
+        input?.dispatchEvent(new Event('change'));
+
+        // No errors should occur
+        await element.updateComplete;
+    });
 });

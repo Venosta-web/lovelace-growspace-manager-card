@@ -12,7 +12,11 @@ vi.mock('../../src/store/data-store', () => {
             $devices = { get: vi.fn(), set: vi.fn(), subscribe: vi.fn() };
             $wsDataCache = { get: vi.fn(), set: vi.fn(), subscribe: vi.fn() };
             removePlantFromWsCache = vi.fn();
-            updateWsDataCacheGrid = vi.fn();
+            updateWsDataCacheGrid = vi.fn((gsId: string, callback: (grid: any) => void) => {
+                // Invoke the callback to cover line 82
+                const mockGrid: Record<string, any> = {};
+                callback(mockGrid);
+            });
             constructor() {
                 this.$wsDataCache.set({});
             }
@@ -249,6 +253,19 @@ describe('SubscriptionController', () => {
             vi.clearAllMocks();
             controller.updateHass(mockHass);
 
+            expect(mockHass.connection.subscribeEvents).not.toHaveBeenCalled();
+        });
+
+        it('should not resubscribe when updateHass called with different hass but already subscribed', () => {
+            controller = new SubscriptionController(mockHost, mockDataStore);
+            (controller as any)._hass = { connection: {} }; // Different hass
+            (controller as any)._unsubEvents = vi.fn(); // Already subscribed
+
+            vi.clearAllMocks();
+            controller.updateHass(mockHass);
+
+            // Should update _hass but NOT call subscribe because _unsubEvents exists
+            expect((controller as any)._hass).toBe(mockHass);
             expect(mockHass.connection.subscribeEvents).not.toHaveBeenCalled();
         });
     });

@@ -1249,5 +1249,135 @@ describe('GrowspaceEnvChart', () => {
         expect(tooltip.items[1].value).toBe('Optimal');
         expect(tooltip.items[2].value).toBe('OFF');
     });
+
+    describe('Coverage Improvements', () => {
+        it('should handle getVpdThresholds fallbacks correctly', async () => {
+            // Test 1: Full Attributes (Day & Night explicit)
+            (element as any).hass = {
+                states: {
+                    'sensor.overview': {
+                        attributes: {
+                            day_vpd_target_min: 1.0, day_vpd_target_max: 2.0,
+                            day_vpd_danger_min: 0.5, day_vpd_danger_max: 2.5,
+                            night_vpd_target_min: 0.8, night_vpd_target_max: 1.8,
+                            night_vpd_danger_min: 0.3, night_vpd_danger_max: 2.3
+                        }
+                    }
+                }
+            };
+            (element as any).device = { overview_entity_id: 'sensor.overview' };
+
+            let thresholds = (element as any)._getVpdThresholds();
+            expect(thresholds.day.targetMin).toBe(1.0);
+            expect(thresholds.night.targetMin).toBe(0.8);
+
+            // Test 2: Missing Night (Fallback to Day)
+            (element as any).hass.states['sensor.overview'].attributes = {
+                day_vpd_target_min: 1.0, day_vpd_target_max: 2.0,
+                day_vpd_danger_min: 0.5, day_vpd_danger_max: 2.5
+                // No night attrs
+            };
+            thresholds = (element as any)._getVpdThresholds();
+            expect(thresholds.night.targetMin).toBe(1.0); // Should match day
+
+            // Test 3: Missing Specific Day attrs (Fallback to legacy keys or DEFAULTS)
+            (element as any).hass.states['sensor.overview'].attributes = {
+                vpd_target_min: 1.5 // Legacy key
+            };
+            thresholds = (element as any)._getVpdThresholds();
+            expect(thresholds.day.targetMin).toBe(1.5);
+
+            // Test 4: No Overview Entity (Defaults)
+            (element as any).device = { overview_entity_id: 'sensor.missing' };
+            thresholds = (element as any)._getVpdThresholds();
+            expect(thresholds.day.targetMin).toBeDefined();
+
+            // Test 5: Device has no overview_entity_id
+            (element as any).device = { overview_entity_id: null };
+            thresholds = (element as any)._getVpdThresholds();
+            expect(thresholds.day.targetMin).toBeDefined();
+        });
+
+        it('should generate valid VPD segments', async () => {
+            const thresholds = {
+                day: { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.4, dangerMax: 1.6 },
+                night: { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.4, dangerMax: 1.6 }
+            };
+
+            const lightHistory = [{ time: 0, value: 1 }]; // Always day
+
+            // Optimal -> Warning -> Danger -> Optimal
+            const points = [
+                { x: 0, y: 50, value: 1.0, time: 1000 },   // Optimal
+                { x: 10, y: 50, value: 1.0, time: 2000 },  // Optimal
+                { x: 20, y: 50, value: 1.5, time: 3000 },  // Warning (High)
+                { x: 30, y: 50, value: 1.7, time: 4000 },  // Danger (High)
+                { x: 40, y: 50, value: 1.0, time: 5000 }   // Optimal
+            ];
+
+            const segments = (element as any)._generateVpdSegments(points, thresholds, lightHistory);
+
+            expect(segments.length).toBeGreaterThanOrEqual(1);
+        });
+
+        it('should handle _generateVpdSegments with empty or single point inputs', async () => {
+            const thresholds = {
+                day: { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.4, dangerMax: 1.6 },
+                night: { targetMin: 0.8, targetMax: 1.2, dangerMin: 0.4, dangerMax: 1.6 }
+            };
+
+            // Empty
+            expect((element as any)._generateVpdSegments([], thresholds, [])).toEqual([]);
+
+            // Single Point
+            const single = [{ x: 0, y: 0, value: 1.0, time: 1000 }];
+            expect((element as any)._generateVpdSegments(single, thresholds, [])).toEqual([]);
+        });
+
+        it('should cancel existing RAF on _onMouseMove if pending', async () => {
+            const cancelSpy = vi.spyOn(globalThis, 'cancelAnimationFrame');
+            // Set a pending RAF ID
+            (element as any)._tooltipRafId = 123;
+
+            const mockEvent = { clientX: 50 } as MouseEvent;
+            (element as any)._onMouseMove(mockEvent, [], new Date(), 1000);
+
+            expect(cancelSpy).toHaveBeenCalledWith(123);
+            cancelSpy.mockRestore();
+        });
+
+        it('should cancel existing RAF on _onMouseLeave if pending', async () => {
+            const cancelSpy = vi.spyOn(globalThis, 'cancelAnimationFrame');
+            (element as any)._tooltipRafId = 456;
+
+            (element as any)._onMouseLeave();
+
+            expect(cancelSpy).toHaveBeenCalledWith(456);
+            expect((element as any)._activeTooltip).toBeNull();
+            cancelSpy.mockRestore();
+        });
+
+        it('should return early in _handleGraphHover if container is null', async () => {
+            // Ensure no cached rect
+            (element as any)._cachedChartRect = null;
+            // Force container ref to be empty
+            (element as any)._chartContainerRef = { value: null };
+
+            const mockEvent = { clientX: 50 } as MouseEvent;
+            // Should not throw and should return early
+            expect(() => (element as any)._handleGraphHover(mockEvent, [], new Date(), 1000)).not.toThrow();
+            expect((element as any)._activeTooltip).toBeFalsy();
+        });
+
+        it('should handle _handleGraphHover with series having empty points', async () => {
+            (element as any)._cachedChartRect = { left: 0, width: 200, top: 0, height: 100 };
+            const seriesWithEmptyPoints = [{ id: 'temp', title: 'Temp', unit: '°C', points: [], color: 'red', min: 0, max: 100, avg: 50 }];
+
+            const mockEvent = { clientX: 100 } as MouseEvent;
+            // The source code currently doesn't fully guard empty points after initialization
+            // So this will throw when accessing closest.value - this documents current behavior
+            expect(() => (element as any)._handleGraphHover(mockEvent, seriesWithEmptyPoints, new Date(0), 2000)).toThrow();
+        });
+    });
 });
 

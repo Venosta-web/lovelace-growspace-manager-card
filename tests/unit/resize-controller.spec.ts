@@ -142,13 +142,12 @@ describe('ResizeController', () => {
 
         controller.hostDisconnected();
         expect(disconnectMock).toHaveBeenCalled();
+    });
 
-        // Also check window listener removal
-        const removeListener = matchMediaMock().removeEventListener; // mocking impl returns new object each time?
-        // Wait, matchMediaMock returns an object with methods.
-        // In hostDisconnected, it calls window.removeEventListener('resize', ...)
-        // We mocked window.matchMedia, but window.removeEventListener is native or needs spy.
-        // We haven't spied on window.removeEventListener in beforeEach.
-        // Let's verify observer disconnect primarily as that's the controller logic.
+    it('should handle hostDisconnected safely when no observer is active', () => {
+        // Ensure no observer is set (default state)
+        // Verify it doesn't throw and doesn't call disconnect on undefined
+        expect(() => controller.hostDisconnected()).not.toThrow();
+        expect(disconnectMock).not.toHaveBeenCalled();
     });
 });

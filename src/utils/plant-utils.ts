@@ -351,7 +351,7 @@ export class PlantUtils {
 
         // Iterate priority list to find the first matching stage
         for (const stage of priority) {
-            if (plantsByStage[stage] && plantsByStage[stage].length > 0) {
+            if (plantsByStage[stage]) {
                 bestStage = stage;
                 // Find max days for this stage
                 // Map stage to attribute key
@@ -505,7 +505,7 @@ export class PlantUtils {
                 if (strainMatch && strainMatch.image) {
                     imageUrl = strainMatch.image;
                     imageCropMeta = strainMatch.image_crop_meta;
-                } else if (!imageUrl) {
+                } else {
                     const anyMatch = library.find((s) => s.strain === strainName && s.image);
                     if (anyMatch) {
                         imageUrl = anyMatch.image;

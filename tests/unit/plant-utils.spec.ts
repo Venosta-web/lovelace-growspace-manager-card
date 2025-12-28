@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PlantUtils } from '../../src/utils/plant-utils';
 import { PlantStage, PlantEntity } from '../../src/types';
+import { mdiSprout } from '@mdi/js';
 
 // Mock current date for stable time-based tests
 const MOCK_DATE = new Date('2023-10-15T12:00:00');
@@ -262,6 +263,34 @@ describe('PlantUtils', () => {
             expect(effective).toBe(4); // 3 + 1
         });
 
+        it('should not expand rows if last row is partially filled', () => {
+            const device = {
+                type: 'mother',
+                plants: [
+                    { attributes: { row: 3 } }
+                ],
+                plants_per_row: 2,
+                rows: 1
+            } as any;
+            const effective = PlantUtils.calculateEffectiveRows(device);
+            // Row 3 has 1 plant. Capacity 2. Not full. Should return maxRowUsed (3).
+            expect(effective).toBe(3);
+        });
+
+        it('should default to row 1 if attribute missing', () => {
+            const device = {
+                type: 'mother',
+                plants: [
+                    { attributes: {} } // No row attribute
+                ],
+                plants_per_row: 2,
+                rows: 1
+            } as any;
+            const effective = PlantUtils.calculateEffectiveRows(device);
+            // Defaults to row 1. 1 plant < 2 capacity. Returns 1.
+            expect(effective).toBe(1);
+        });
+
         it('should use configured rows for static types', () => {
             const device = {
                 type: 'tent', // static
@@ -363,6 +392,22 @@ describe('PlantUtils', () => {
             // compressImage(file, maxWidth, maxHeight)
             await PlantUtils.compressImage(file, 800, 800);
         });
+
+        it('should resize wide images correctly (width > height)', async () => {
+            vi.stubGlobal('Image', class {
+                _width = 2000;
+                _height = 1000;
+                set src(v: string) {
+                    if (this.onload) this.onload();
+                }
+                get width() { return this._width; }
+                get height() { return this._height; }
+                onload: any;
+            });
+            const file = new File([''], 'wide.png', { type: 'image/png' });
+            await PlantUtils.compressImage(file, 800, 800);
+            // Internal check coverage for width > maxWidth
+        });
     });
 
     describe('getDominantStage', () => {
@@ -384,6 +429,15 @@ describe('PlantUtils', () => {
 
         it('should return null for empty list', () => {
             expect(PlantUtils.getDominantStage([])).toBeNull();
+        });
+
+        it('should return null for unknown stage in getDominantStage', () => {
+            const plants: PlantEntity[] = [{
+                entity_id: 'plant.test',
+                state: 'zombie_apocalypse',
+                attributes: {}
+            } as any];
+            expect(PlantUtils.getDominantStage(plants)).toBeNull();
         });
     });
 
@@ -733,5 +787,102 @@ describe('Coverage Gap Fillers', () => {
 
     it('should return null for getDominantStage with null plant list', () => {
         expect(PlantUtils.getDominantStage(null as any)).toBeNull();
+    });
+
+    describe('Uncovered Utilities', () => {
+        it('should return correct icon for getPlantStageIcon', () => {
+            expect(PlantUtils.getPlantStageIcon(PlantStage.VEG)).toBe(mdiSprout);
+            // mdiSprout is imported from @mdi/js. It's an svg path string usually.
+            // verifying it returns *something* string-like is enough or check defined
+            expect(PlantUtils.getPlantStageIcon(PlantStage.FLOWER)).toBeDefined();
+            expect(PlantUtils.getPlantStageIcon(null)).toBeDefined(); // Fallback
+        });
+
+        it('should handle non-numeric days in getDominantStage', () => {
+            const plants: PlantEntity[] = [{
+                entity_id: 'plant.test',
+                state: PlantStage.VEG,
+                attributes: {
+                    veg_days: '10' as any, // String instead of number
+                    flower_days: null as any
+                }
+            } as any];
+
+            // Should return stage VEG but days 0 because '10' is not a number
+            expect(PlantUtils.getDominantStage(plants)).toEqual({
+                stage: PlantStage.VEG,
+                days: 0
+            });
+        });
+
+        it('should handle separate wide-small images', async () => {
+            const mockContext = {
+                drawImage: vi.fn(),
+            };
+            const mockCanvas = {
+                width: 0,
+                height: 0,
+                getContext: vi.fn().mockReturnValue(mockContext),
+                toDataURL: vi.fn().mockReturnValue('data:image/jpeg;base64,compressed')
+            };
+            const spy = vi.spyOn(document, 'createElement').mockImplementation((tag) => {
+                if (tag === 'canvas') return mockCanvas as any;
+                return document.createElement(tag);
+            });
+
+            vi.stubGlobal('Image', class {
+                _width = 500;
+                _height = 400;
+                set src(v: string) {
+                    if (this.onload) this.onload();
+                }
+                get width() { return this._width; }
+                get height() { return this._height; }
+                onload: any;
+            });
+            const file = new File([''], 'wide-small.png', { type: 'image/png' });
+            await PlantUtils.compressImage(file, 800, 800);
+            spy.mockRestore();
+        });
+
+        it('should ignore invalid dates in mapDialogToApiPayload', () => {
+            const attrs = {
+                seedling_start: 'invalid-date'
+            };
+            const payload = PlantUtils.mapDialogToApiPayload(attrs, false);
+            expect(payload).not.toHaveProperty('seedling_start');
+        });
+
+        it('should handle getPlantStageColor fallback', () => {
+            expect(PlantUtils.getPlantStageColor(undefined)).toBeDefined();
+        });
+    });
+
+    describe('Date Constructor Errors', () => {
+        it('should handle Date constructor throwing error', () => {
+            // Save original
+            const OriginalDate = global.Date;
+
+            // Mock causing error only when specific invalid string is passed
+            // so we don't break other internal Date calls if possible
+            const MockDate = new Proxy(OriginalDate, {
+                construct(target, args) {
+                    if (args[0] === 'FORCE_ERROR') {
+                        throw new Error('Forced Error');
+                    }
+                    return new (target as any)(...args);
+                }
+            });
+            global.Date = MockDate as any;
+
+            try {
+                expect(PlantUtils.parseDateTimeLocal('FORCE_ERROR')).toBeUndefined();
+                expect(PlantUtils.formatDateForBackend('FORCE_ERROR')).toBeUndefined();
+                // toDateTimeLocal returns '' on error
+                expect(PlantUtils.toDateTimeLocal('FORCE_ERROR')).toBe('');
+            } finally {
+                global.Date = OriginalDate;
+            }
+        });
     });
 });
