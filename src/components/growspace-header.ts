@@ -747,7 +747,7 @@ export class GrowspaceHeader extends LitElement {
     if (
       changedProperties.has('device') ||
       changedProperties.has('hass') ||
-      this._activeEnvGraphsController.value
+      this._activeEnvGraphsController?.value
     ) {
       this._updateMetrics();
     }

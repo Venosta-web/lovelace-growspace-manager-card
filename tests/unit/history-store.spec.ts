@@ -290,6 +290,47 @@ describe('history-store', () => {
             store.stopAutoRefresh();
         });
 
+        it('should refresh when tab becomes visible', async () => {
+            vi.mocked(mockDataService.getHistoryStats).mockResolvedValue({});
+            store.startAutoRefresh();
+            vi.mocked(mockDataService.getHistoryStats).mockClear();
+
+            // Simulate tab becoming visible
+            Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+            document.dispatchEvent(new Event('visibilitychange'));
+
+            // Wait for the async fetch to complete
+            await vi.advanceTimersByTimeAsync(100);
+            expect(mockDataService.getHistoryStats).toHaveBeenCalled();
+
+            store.stopAutoRefresh();
+        });
+
+        it('should not refresh when tab becomes hidden', async () => {
+            vi.mocked(mockDataService.getHistoryStats).mockResolvedValue({});
+            store.startAutoRefresh();
+            vi.mocked(mockDataService.getHistoryStats).mockClear();
+
+            // Simulate tab becoming hidden
+            Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+            document.dispatchEvent(new Event('visibilitychange'));
+
+            // Wait to see if any fetch was triggered
+            await vi.advanceTimersByTimeAsync(100);
+            expect(mockDataService.getHistoryStats).not.toHaveBeenCalled();
+
+            store.stopAutoRefresh();
+        });
+
+        it('should clean up visibility listener on stopAutoRefresh', () => {
+            const removeEventListenerSpy = vi.spyOn(document, 'removeEventListener');
+            store.startAutoRefresh();
+            store.stopAutoRefresh();
+
+            expect(removeEventListenerSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
+            removeEventListenerSpy.mockRestore();
+        });
+
         it('should fetch delta when timestamps exist', async () => {
             // Seed data so timestamps exist
             store.setHistoryData('temperature', mockHistoryData);

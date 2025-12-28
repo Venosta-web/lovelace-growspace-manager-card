@@ -30,6 +30,7 @@ export class GrowspaceHistoryStore {
     private readonly CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000;
     private _refreshInterval: number | null = null;
     private _selectedDeviceUnsub: (() => void) | null = null;
+    private _visibilityHandler: (() => void) | null = null;
 
     // --- Computed Stores ---
     public readonly $combinedHistory: ReadableAtom<SensorHistories>;
@@ -215,12 +216,24 @@ export class GrowspaceHistoryStore {
         this._refreshInterval = window.setInterval(() => {
             this._fetchHistoryDelta();
         }, 5 * 60 * 1000); // 5 minutes
+
+        // Refresh when tab becomes visible again (browsers throttle setInterval when hidden)
+        this._visibilityHandler = () => {
+            if (!document.hidden) {
+                this._fetchHistoryDelta();
+            }
+        };
+        document.addEventListener('visibilitychange', this._visibilityHandler);
     }
 
     public stopAutoRefresh() {
         if (this._refreshInterval) {
             window.clearInterval(this._refreshInterval);
             this._refreshInterval = null;
+        }
+        if (this._visibilityHandler) {
+            document.removeEventListener('visibilitychange', this._visibilityHandler);
+            this._visibilityHandler = null;
         }
     }
 

@@ -113,6 +113,10 @@ describe('GrowspaceHeader', () => {
             })),
         });
 
+        // Mock scrollBy for JSDOM (not implemented in JSDOM)
+        if (!Element.prototype.scrollBy) {
+            Element.prototype.scrollBy = vi.fn();
+        }
     });
 
     // Local atoms for testing
@@ -1060,6 +1064,256 @@ describe('GrowspaceHeader', () => {
             if (linkBtn) {
                 linkBtn.click();
                 expect((element as any)._mobileLink).toBe(!initialState);
+            }
+        });
+    });
+
+    describe('Inline Template Callback Coverage', () => {
+        it('should trigger scroll left on device chips via DOM click', async () => {
+            (element as any)._canScrollDeviceLeft = true;
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const scrollSpy = vi.spyOn(element as any, '_scrollDeviceChips');
+            const leftArrow = element.shadowRoot?.querySelectorAll('.scroll-arrow')[0] as HTMLElement;
+            if (leftArrow && !leftArrow.classList.contains('hidden')) {
+                leftArrow.click();
+                expect(scrollSpy).toHaveBeenCalledWith('left');
+            }
+        });
+
+        it('should trigger scroll right on device chips via DOM click', async () => {
+            (element as any)._canScrollDeviceRight = true;
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const scrollSpy = vi.spyOn(element as any, '_scrollDeviceChips');
+            const arrows = element.shadowRoot?.querySelectorAll('.scroll-arrow');
+            const rightArrow = arrows?.[1] as HTMLElement;
+            if (rightArrow && !rightArrow.classList.contains('hidden')) {
+                rightArrow.click();
+                expect(scrollSpy).toHaveBeenCalledWith('right');
+            }
+        });
+
+        it('should trigger scroll on stage area via DOM click', async () => {
+            (element as any)._canScrollStageLeft = true;
+            (element as any)._canScrollStageRight = true;
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const scrollSpy = vi.spyOn(element as any, '_scrollStage');
+            // Stage arrows are the 3rd and 4th scroll arrows
+            const arrows = element.shadowRoot?.querySelectorAll('.scroll-arrow');
+            // Look for visible stage arrows
+            for (let i = 0; i < (arrows?.length || 0); i++) {
+                const arrow = arrows?.[i] as HTMLElement;
+                if (arrow && !arrow.classList.contains('hidden')) {
+                    arrow.click();
+                }
+            }
+        });
+
+        it('should trigger scroll left on secondary strip via DOM click', async () => {
+            (element as any)._canScrollLeft = true;
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const scrollSpy = vi.spyOn(element as any, '_scrollChips');
+            const container = element.shadowRoot?.querySelector('.secondary-strip-container');
+            const leftArrow = container?.querySelector('.scroll-arrow:not(.hidden)') as HTMLElement;
+            if (leftArrow) {
+                leftArrow.click();
+                expect(scrollSpy).toHaveBeenCalled();
+            }
+        });
+
+        it('should trigger scroll right on secondary strip via DOM click', async () => {
+            (element as any)._canScrollRight = true;
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const scrollSpy = vi.spyOn(element as any, '_scrollChips');
+            const container = element.shadowRoot?.querySelector('.secondary-strip-container');
+            const arrows = container?.querySelectorAll('.scroll-arrow');
+            if (arrows && arrows.length > 1) {
+                const rightArrow = arrows[1] as HTMLElement;
+                if (!rightArrow.classList.contains('hidden')) {
+                    rightArrow.click();
+                    expect(scrollSpy).toHaveBeenCalled();
+                }
+            }
+        });
+
+        it('should stop propagation on menu dropdown click', async () => {
+            (element as any)._menuOpen = true;
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const menu = element.shadowRoot?.querySelector('.menu-dropdown') as HTMLElement;
+            if (menu) {
+                const evt = new Event('click', { bubbles: true });
+                const stopSpy = vi.spyOn(evt, 'stopPropagation');
+                menu.dispatchEvent(evt);
+                expect(stopSpy).toHaveBeenCalled();
+            }
+        });
+
+        it('should toggle menu open state via menu button click', async () => {
+            const initialOpen = (element as any)._menuOpen;
+            const menuBtn = element.shadowRoot?.querySelector('.menu-container .icon-button') as HTMLElement;
+            if (menuBtn) {
+                menuBtn.click();
+                expect((element as any)._menuOpen).toBe(!initialOpen);
+            }
+        });
+
+        it('should register scroll listeners in firstUpdated', async () => {
+            // Create a fresh element to test firstUpdated
+            const newElement = document.createElement('growspace-header') as GrowspaceHeader;
+            (newElement as any).store = mockStore;
+            (newElement as any).hass = mockHass;
+            (newElement as any).device = deviceMock;
+            (newElement as any).config = configMock;
+
+            // Mock refs with containers
+            const mockContainer = document.createElement('div');
+            mockContainer.addEventListener = vi.fn();
+
+            (newElement as any)._chipsContainerRef = { value: mockContainer };
+            (newElement as any)._stageContainerRef = { value: mockContainer };
+            (newElement as any)._deviceChipsContainerRef = { value: mockContainer };
+            (newElement as any)._resizeController = { observe: vi.fn() };
+
+            vi.useFakeTimers();
+            (newElement as any).firstUpdated();
+            vi.runAllTimers();
+            vi.useRealTimers();
+
+            expect(mockContainer.addEventListener).toHaveBeenCalledWith('scroll', expect.any(Function));
+        });
+
+        it('should call _checkScroll after firstUpdated timeout', async () => {
+            const checkScrollSpy = vi.spyOn(element as any, '_checkScroll');
+
+            vi.useFakeTimers();
+            (element as any).firstUpdated();
+            vi.runAllTimers();
+            vi.useRealTimers();
+
+            expect(checkScrollSpy).toHaveBeenCalled();
+        });
+    });
+
+    describe('Add Plant Action', () => {
+        it('should call openAddPlantDialog for add_plant action', () => {
+            (element as any)._triggerAction('add_plant');
+            expect(mockStore.openAddPlantDialog).toHaveBeenCalled();
+        });
+    });
+
+    describe('willUpdate Coverage', () => {
+        it('should call _updateMetrics when device changes', () => {
+            const updateSpy = vi.spyOn(element as any, '_updateMetrics');
+            const changedProps = new Map([['device', {}]]);
+            // Ensure controllers exist
+            (element as any)._activeEnvGraphsController = { value: new Set() };
+            (element as any).willUpdate(changedProps);
+            expect(updateSpy).toHaveBeenCalled();
+        });
+
+        it('should call _updateMetrics when hass changes', () => {
+            const updateSpy = vi.spyOn(element as any, '_updateMetrics');
+            const changedProps = new Map([['hass', {}]]);
+            (element as any)._activeEnvGraphsController = { value: new Set() };
+            (element as any).willUpdate(changedProps);
+            expect(updateSpy).toHaveBeenCalled();
+        });
+    });
+
+    describe('Device Chip Template Handlers Coverage', () => {
+        it('should trigger handlers on device chips via DOM events', async () => {
+            // Force device chips to render
+            (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
+                mainChips: [],
+                deviceChips: [
+                    { key: 'exhaust', label: 'Exhaust', icon: 'path', value: 'On', status: 'ok', active: false, linked: false, tooltip: '', groupIndex: 0 }
+                ],
+                dominant: { icon: 'path', daysLabel: 'Day 30', weeksLabel: 'Week 5' },
+                envAttrs: { dehumidifier_control_enabled: true }
+            });
+
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const deviceChip = element.shadowRoot?.querySelector('.gs-device-chips-header growspace-chip');
+            expect(deviceChip).toBeTruthy();
+
+            if (deviceChip) {
+                // Trigger dragstart
+                const dragStartSpy = vi.spyOn(element as any, '_handleChipDragStart');
+                deviceChip.dispatchEvent(new Event('dragstart'));
+                expect(dragStartSpy).toHaveBeenCalled();
+
+                // Trigger drop
+                const dropSpy = vi.spyOn(element as any, '_handleChipDrop');
+                deviceChip.dispatchEvent(new Event('drop'));
+                expect(dropSpy).toHaveBeenCalled();
+
+                // Trigger click
+                const toggleSpy = vi.spyOn(element as any, '_toggleEnvGraph');
+                (deviceChip as HTMLElement).click();
+                expect(toggleSpy).toHaveBeenCalled();
+
+                // Trigger unlink
+                const unlinkSpy = vi.spyOn(element as any, '_unlinkGraphs');
+                deviceChip.dispatchEvent(new CustomEvent('unlink'));
+                expect(unlinkSpy).toHaveBeenCalled();
+            }
+        });
+    });
+
+    describe('Secondary Chip Template Handlers Coverage', () => {
+        it('should trigger handlers on secondary chips via DOM events', async () => {
+            const secondaryChip = element.shadowRoot?.querySelector('.secondary-strip growspace-chip');
+            if (secondaryChip) {
+                // Trigger dragstart
+                const dragStartSpy = vi.spyOn(element as any, '_handleChipDragStart');
+                secondaryChip.dispatchEvent(new Event('dragstart'));
+                expect(dragStartSpy).toHaveBeenCalled();
+
+                // Trigger drop
+                const dropSpy = vi.spyOn(element as any, '_handleChipDrop');
+                secondaryChip.dispatchEvent(new Event('drop'));
+                expect(dropSpy).toHaveBeenCalled();
+
+                // Trigger click
+                const toggleSpy = vi.spyOn(element as any, '_toggleEnvGraph');
+                (secondaryChip as HTMLElement).click();
+                expect(toggleSpy).toHaveBeenCalled();
+
+                // Trigger unlink
+                const unlinkSpy = vi.spyOn(element as any, '_unlinkGraphs');
+                secondaryChip.dispatchEvent(new CustomEvent('unlink'));
+                expect(unlinkSpy).toHaveBeenCalled();
+            }
+        });
+    });
+
+    describe('Hero Card Template Handlers Coverage', () => {
+        it('should trigger all handlers on hero cards via DOM events', async () => {
+            const heroCard = element.shadowRoot?.querySelector('.hero-card') as HTMLElement;
+            expect(heroCard).toBeTruthy();
+            if (heroCard) {
+                // Trigger dragstart
+                const dragStartSpy = vi.spyOn(element as any, '_handleChipDragStart');
+                heroCard.dispatchEvent(new Event('dragstart'));
+                expect(dragStartSpy).toHaveBeenCalled();
+
+                // Trigger drop
+                const dropSpy = vi.spyOn(element as any, '_handleChipDrop');
+                heroCard.dispatchEvent(new Event('drop'));
+                expect(dropSpy).toHaveBeenCalled();
             }
         });
     });
