@@ -454,4 +454,155 @@ describe('history-store', () => {
             expect(localStorage.getItem(key)).toBeNull();
         });
     });
+    describe('Coverage Gap Filling', () => {
+        it('should handle overview entity correctly in _fetchHistory', async () => {
+            const overviewId = 'sensor.overview';
+            dataStore.setDevices([{
+                device_id: 'd1', name: 'D1', overview_entity_id: overviewId
+            } as any]);
+            dataStore.setSelectedDevice('d1');
+
+            vi.mocked(mockDataService.getHistoryStats).mockResolvedValue({
+                [overviewId]: mockHistoryData
+            });
+
+            await (store as any)._fetchHistory('24h');
+            // Mostly ensuring no crash and coverage of the if block
+            expect(mockDataService.getHistoryStats).toHaveBeenCalled();
+        });
+
+        it('should handle _fetchHistoryDelta errors', async () => {
+            // Setup device
+            dataStore.setDevices([{
+                device_id: 'd1',
+                name: 'D1',
+                environment_attributes: { temperature_sensor: 'sensor.temp' }
+            } as any]);
+            dataStore.setSelectedDevice('d1');
+
+            store.setHistoryData('temperature', mockHistoryData);
+            store.updateLastTimestamp('temperature', mockHistoryData);
+
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            vi.mocked(mockDataService.getHistoryStats).mockRejectedValue(new Error('Delta fail'));
+
+            await (store as any)._fetchHistoryDelta();
+
+            expect(spy).toHaveBeenCalledWith(expect.stringContaining('Failed to fetch delta'), expect.any(Error));
+            spy.mockRestore();
+        });
+
+        it('should handle _mergeDeltaData with empty existing cache', () => {
+            const delta = [mockHistoryData[0]];
+            (store as any)._mergeDeltaData('temperature', delta);
+
+            expect(store.$historyCache.get().temperature).toEqual(delta);
+            expect(store.$lastTimestamps.get().temperature).toBe((delta[0] as any).last_changed);
+        });
+
+        it('should handle storage save/load errors', () => {
+            const deviceId = 'd1';
+            dataStore.setSelectedDevice(deviceId);
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+            // Save error
+            const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('Quota'); });
+            (store as any)._saveToStorage();
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to save'), expect.any(Error));
+
+            // Load error
+            const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('invalid json');
+            const result = (store as any)._loadFromStorage(deviceId);
+            expect(result).toBe(false);
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to load'), expect.any(Error));
+
+            consoleSpy.mockRestore();
+            setItemSpy.mockRestore();
+            getItemSpy.mockRestore();
+        });
+
+        it('should return default interval for unknown range', () => {
+            const interval = (store as any)._getIntervalForRange('unknown' as any);
+            expect(interval).toBe(15);
+        });
+
+        it('should skip _saveToStorage if no device selected', () => {
+            dataStore.setSelectedDevice(null);
+            const spy = vi.spyOn(Storage.prototype, 'setItem');
+            (store as any)._saveToStorage();
+            expect(spy).not.toHaveBeenCalled();
+            spy.mockRestore();
+        });
+
+        it('should return null for unknown metric entity id', () => {
+            const device = { device_id: 'd1' } as any;
+            expect((store as any).getEntityIdForMetric(device, 'unknown_metric')).toBeNull();
+        });
+
+        it('should handle VPD fallback when hass is undefined', () => {
+            const device = { device_id: 'd1', name: 'Tent 1' } as any;
+            (store as any).dataService.hass = undefined;
+            expect((store as any).getEntityIdForMetric(device, 'vpd')).toBeNull();
+        });
+        it('should handle empty delta data in _fetchHistoryDelta', async () => {
+            store.setHistoryData('temperature', mockHistoryData);
+            store.updateLastTimestamp('temperature', mockHistoryData);
+
+            // Mock empty delta
+            vi.mocked(mockDataService.getHistoryStats).mockResolvedValue({
+                'sensor.temp': []
+            });
+
+            const spy = vi.spyOn(store as any, '_mergeDeltaData');
+
+            await (store as any)._fetchHistoryDelta();
+
+            expect(spy).not.toHaveBeenCalled();
+            spy.mockRestore();
+        });
+
+        it('should handle invalid storage data structure', () => {
+            const key = 'growspace_history_d1';
+            // Missing required fields
+            localStorage.setItem(key, JSON.stringify({ version: 1 }));
+            expect((store as any)._loadFromStorage('d1')).toBe(false);
+
+            localStorage.setItem(key, JSON.stringify({ version: 1, timestamp: Date.now() }));
+            expect((store as any)._loadFromStorage('d1')).toBe(false);
+        });
+
+        it('should handle missing timestamps in storage', () => {
+            const key = 'growspace_history_d1';
+            const data = {
+                version: 1,
+                timestamp: Date.now(),
+                history: {},
+                // timestamps missing
+            };
+            localStorage.setItem(key, JSON.stringify(data));
+
+            expect((store as any)._loadFromStorage('d1')).toBe(true);
+            expect(store.$lastTimestamps.get()).toEqual({});
+        });
+        it('should return early in _fetchHistoryDelta if no entities to fetch', async () => {
+            // Setup device
+            dataStore.setDevices([{
+                device_id: 'd1',
+                name: 'D1',
+                // Device has NO sensors defined here
+                environment_attributes: {}
+            } as any]);
+            dataStore.setSelectedDevice('d1');
+
+            // Set a timestamp for a metric that doesn't exist on device
+            store.$lastTimestamps.setKey('temperature', '2024-01-01T00:00:00Z');
+
+            const spy = vi.spyOn(mockDataService, 'getHistoryStats');
+
+            await (store as any)._fetchHistoryDelta();
+
+            expect(spy).not.toHaveBeenCalled();
+            spy.mockRestore();
+        });
+    });
 });

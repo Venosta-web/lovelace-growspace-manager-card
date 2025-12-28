@@ -986,4 +986,334 @@ describe('StrainLibraryDialog', () => {
             expect((element as any)._importDialogOpen).toBe(false);
         });
     });
+    describe('Coverage Gaps', () => {
+        it('should clamp invalid page numbers', async () => {
+            // Setup multiple pages
+            element.strains = Array.from({ length: 20 }, (_, i) => ({
+                key: `${i}`, strain: `Strain ${i}`, type: 'Sativa', phenotype: ''
+            }));
+            await element.updateComplete;
+
+            // Set to high page
+            (element as any)._currentPage = 999;
+            element.requestUpdate();
+            await element.updateComplete;
+            expect((element as any)._currentPage).toBe(2); // Total 20 items / 12 per page = 2 pages
+
+            // Set to low page
+            (element as any)._currentPage = 0;
+            element.requestUpdate();
+            await element.updateComplete;
+            expect((element as any)._currentPage).toBe(1);
+        });
+
+        it('should close mobile menu on overlay click', async () => {
+            (element as any)._mobileMenuOpen = true;
+            await element.updateComplete;
+
+            const overlay = element.shadowRoot?.querySelector('.menu-overlay');
+            (overlay as HTMLElement)?.click();
+            await element.updateComplete;
+
+            expect((element as any)._mobileMenuOpen).toBe(false);
+        });
+
+        it('should use default icon for unknown type', async () => {
+            element.strains = [{ ...mockStrains[0], type: 'AlienWeed' }];
+            await element.updateComplete;
+
+            const typeLabel = element.shadowRoot?.querySelector('.sc-type-row span');
+            expect(typeLabel?.textContent).toBe('AlienWeed');
+            // Icon check might be tricky as paths are strings, but we verified distinct ones before.
+            // Main point is no crash.
+        });
+
+        it('should clamp hybrid percentage inputs', async () => {
+            (element as any)._startEdit({
+                ...mockStrains[0],
+                type: 'Hybrid',
+                indica_percentage: 50,
+                sativa_percentage: 50
+            });
+            await element.updateComplete;
+
+            const inputs = element.shadowRoot?.querySelectorAll('.hg-num-input');
+            const indicaInput = inputs?.[0] as HTMLInputElement;
+
+            // Test < 0
+            indicaInput.value = '-10';
+            indicaInput.dispatchEvent(new Event('input'));
+            expect((element as any)._editorState.indica_percentage).toBe(0);
+
+            // Test > 100
+            indicaInput.value = '110';
+            indicaInput.dispatchEvent(new Event('input'));
+            expect((element as any)._editorState.indica_percentage).toBe(100);
+        });
+
+        it('should handle dragover event', async () => {
+            (element as any)._startEdit();
+            await element.updateComplete;
+
+            const dropArea = element.shadowRoot?.querySelector('.photo-upload-area');
+
+            class MockDragEvent extends Event {
+                dataTransfer: any;
+                constructor(type: string, init: any) {
+                    super(type, { bubbles: true, cancelable: true });
+                    this.dataTransfer = init.dataTransfer || {};
+                }
+            }
+
+            const event = new MockDragEvent('dragover', {
+                dataTransfer: { dropEffect: 'none' }
+            });
+
+            const spy = vi.spyOn(event, 'preventDefault');
+            dropArea?.dispatchEvent(event);
+
+            expect(spy).toHaveBeenCalled();
+            expect(event.dataTransfer?.dropEffect).toBe('copy');
+        });
+    });
+
+    describe('Coverage Gap Fillers', () => {
+        it('should return early in _handleSave if strain is missing (safety check)', async () => {
+            (element as any)._startEdit();
+            await element.updateComplete;
+
+            // Force strain to be undefined in editor state
+            (element as any)._editorState = { ...((element as any)._editorState), strain: undefined };
+
+            const listener = vi.fn();
+            element.addEventListener('save-strain', listener);
+
+            (element as any)._handleSave();
+
+            expect(listener).not.toHaveBeenCalled();
+            // Should remain in editor view
+            expect((element as any)._view).toBe('editor');
+        });
+
+        it('should do nothing in _confirmDelete if no pending key', async () => {
+            (element as any)._pendingDeleteKey = null;
+            const listener = vi.fn();
+            element.addEventListener('delete-strain', listener);
+
+            (element as any)._confirmDelete();
+
+            expect(listener).not.toHaveBeenCalled();
+        });
+
+        it('should handle file input change error in _handleImportFile', async () => {
+            // Mock document.createElement
+            const inputMock = {
+                type: '',
+                accept: '',
+                onchange: null as any,
+                click: vi.fn(),
+                files: [] as any
+            };
+
+            const createSpy = vi.spyOn(document, 'createElement').mockReturnValue(inputMock as any);
+            const listener = vi.fn();
+            element.addEventListener('import-library', listener);
+
+            (element as any)._handleImportFile();
+
+            // Setup a file change but with NO file selected (user cancelled picker)
+            // Or just trigger onchange with empty files list
+            Object.defineProperty(inputMock, 'files', { get: () => [] });
+
+            if (inputMock.onchange) {
+                inputMock.onchange({ target: inputMock } as any);
+            }
+
+            expect(listener).not.toHaveBeenCalled();
+            expect((element as any)._importDialogOpen).toBe(false);
+
+            createSpy.mockRestore();
+        });
+
+        it('should close dialog via header close button (in browse view)', async () => {
+            const closeSpy = vi.fn();
+            element.addEventListener('close', closeSpy);
+
+            // In browse view, there is a close button in header
+            const headerBtn = element.shadowRoot?.querySelector('.dialog-header .close');
+            expect(headerBtn).toBeTruthy();
+
+            (headerBtn as HTMLElement).click();
+            expect(closeSpy).toHaveBeenCalled();
+        });
+
+        it('should render correct icon for unknown strain type', async () => {
+            const s: StrainEntry = { ...mockStrains[0], type: 'UnknownType' };
+            element.strains = [s];
+            await element.updateComplete;
+
+            const typeRows = element.shadowRoot?.querySelectorAll('.sc-type-row');
+            // It should still render
+            expect(typeRows?.length).toBe(1);
+            expect(typeRows?.[0].textContent).toContain('UnknownType');
+        });
+
+        it('should click UI Save button in Editor view (covers template listener)', async () => {
+            (element as any)._startEdit(mockStrains[0]);
+            await element.updateComplete;
+
+            const spy = vi.spyOn((element as any), '_handleSave');
+
+            // Find the Save Strain button in the footer
+            // It has class "md3-button primary" and mdiCheck icon
+            const saveBtn = Array.from(element.shadowRoot?.querySelectorAll('.sd-footer button.primary') || [])
+                .find(b => b.textContent?.includes('Save Strain'));
+
+            expect(saveBtn).toBeTruthy();
+            (saveBtn as HTMLElement).click();
+
+            expect(spy).toHaveBeenCalled();
+        });
+
+        it('should click UI Close button in Editor view (covers template listener)', async () => {
+            (element as any)._startEdit();
+            await element.updateComplete;
+
+            const closeSpy = vi.fn();
+            element.addEventListener('close', closeSpy);
+
+            // In EDITOR view, the close button is in the header
+            // selector: .dialog-header .close
+            const closeBtn = element.shadowRoot?.querySelector('.dialog-header .close');
+            expect(closeBtn).toBeTruthy();
+
+            (closeBtn as HTMLElement).click();
+            expect(closeSpy).toHaveBeenCalled();
+        });
+
+        it('should handle compression error via File Input change (covers handleFileChange)', async () => {
+            (element as any)._startEdit();
+            await element.updateComplete;
+
+            const input = element.shadowRoot?.querySelector('input[type="file"][capture="environment"]');
+            expect(input).toBeTruthy();
+
+            const file = new File([''], 'fail.png', { type: 'image/png' });
+            Object.defineProperty(input, 'files', { get: () => [file] });
+
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            (PlantUtils.compressImage as any).mockRejectedValueOnce('Compression Failed inside Input');
+
+            (input as HTMLInputElement).dispatchEvent(new Event('change'));
+
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(consoleSpy).toHaveBeenCalledWith('Error compressing image:', 'Compression Failed inside Input');
+            consoleSpy.mockRestore();
+        });
+
+        it('should dispatch close event when ha-dialog fires closed', async () => {
+            const closeSpy = vi.fn();
+            element.addEventListener('close', closeSpy);
+
+            const dialog = element.shadowRoot?.querySelector('ha-dialog');
+            expect(dialog).toBeTruthy();
+
+            dialog?.dispatchEvent(new CustomEvent('closed'));
+            expect(closeSpy).toHaveBeenCalled();
+        });
+
+        it('should toggle mobile menu via header button (browse view)', async () => {
+            // In browse view
+            (element as any)._view = 'browse';
+            await element.updateComplete;
+
+            const buttons = Array.from(element.shadowRoot?.querySelectorAll('.header-actions button') || []);
+            const menuBtn = buttons.find(b => !b.classList.contains('close'));
+
+            expect(menuBtn).toBeTruthy();
+            (menuBtn as HTMLElement).click();
+            await element.updateComplete;
+
+            expect((element as any)._mobileMenuOpen).toBe(true);
+        });
+
+        it('should trigger Get Recommendation via footer button (browse view)', async () => {
+            (element as any)._view = 'browse';
+            await element.updateComplete;
+
+            const recSpy = vi.fn();
+            element.addEventListener('get-recommendation', recSpy);
+
+            // Footer "Get Recommendation" button
+            const footerIds = element.shadowRoot?.querySelectorAll('.sd-footer button');
+            // 1st button in browse view footer is Get Rec
+            const btn = footerIds?.[0];
+
+            expect(btn?.textContent).toContain('Get Recommendation');
+            (btn as HTMLElement).click();
+            expect(recSpy).toHaveBeenCalled();
+        });
+
+        it('should trigger New Strain via footer button (browse view)', async () => {
+            (element as any)._view = 'browse';
+            await element.updateComplete;
+
+            // Footer "New Strain" button -> calls _startEdit()
+            const footerIds = element.shadowRoot?.querySelectorAll('.sd-footer button');
+            // Last button
+            const btn = footerIds?.[footerIds.length - 1];
+
+            expect(btn?.textContent).toContain('New Strain');
+
+            (btn as HTMLElement).click();
+            await element.updateComplete;
+
+            expect((element as any)._view).toBe('editor');
+        });
+
+        it('should handle multiple strains sharing same image in library selector (covers map list and phenotype fallback)', async () => {
+            const sharedImg = 'data:image/png;base64,shared';
+            // Fix TS errors: use key instead of id, use empty string instead of undefined for phenotype (mock fallback behavior)
+            const s1: StrainEntry = { ...mockStrains[0], key: 's1', image: sharedImg, phenotype: '' };
+            const s2: StrainEntry = { ...mockStrains[0], key: 's2', image: sharedImg, phenotype: 'Pheno2' };
+
+            element.strains = [s1, s2];
+            await element.updateComplete;
+
+            // Open library selector
+            (element as any)._toggleImageSelector(true);
+            await element.updateComplete;
+
+            const overlays = element.shadowRoot?.querySelectorAll('.crop-overlay');
+            const selectorOverlay = Array.from(overlays || []).find(o => o.querySelector('.dialog-title')?.textContent?.includes('Select from Library'));
+
+            expect(selectorOverlay).toBeTruthy();
+
+            const items = selectorOverlay?.querySelectorAll('.sd-content div[style*="aspect-ratio"]');
+            // Should be 1 image item (grouped)
+            expect(items?.length).toBe(1);
+
+            // Check content of the item
+            const item = items?.[0];
+
+            expect(item?.textContent).toContain('Pheno: N/A'); // s1 fallback
+            expect(item?.textContent).toContain('Pheno: Pheno2'); // s2
+        });
+
+        it('should show empty state in image selector when no images exist', async () => {
+            element.strains = [{ ...mockStrains[0], image: undefined }]; // No images
+            await element.updateComplete;
+
+            (element as any)._toggleImageSelector(true);
+            await element.updateComplete;
+
+            const overlays = element.shadowRoot?.querySelectorAll('.crop-overlay');
+            const selectorOverlay = Array.from(overlays || []).find(o => o.querySelector('.dialog-title')?.textContent?.includes('Select from Library'));
+
+            expect(selectorOverlay).toBeTruthy();
+            const msg = selectorOverlay?.querySelector('p');
+            expect(msg?.textContent).toContain('No images found');
+        });
+    });
 });

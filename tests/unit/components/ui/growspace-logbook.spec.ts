@@ -208,4 +208,112 @@ describe('GrowspaceLogbook', () => {
 
         expect(mockControllerInstance.fetchEventLog).toHaveBeenCalled();
     });
+
+    it('should NOT re-init controller if already exists when hass changes', async () => {
+        mockControllerInstance.fetchEventLog.mockClear();
+        (element as any)._controller = mockControllerInstance;
+        element.hass = { ...element.hass, state: 'newer' } as any;
+        await element.updateComplete;
+
+        // Should only be called if we trigger a fetch, but init itself shouldn't happen.
+        // The fetch is triggered by growspaceId change, not hass change alone unless init happens.
+        // check init logic: if (changedProps.has('hass') && !this._controller)
+        // Since controller exists, init shouldn't run.
+        // But fetch might run? No, fetch only on growspaceId change or inside init.
+        expect(mockControllerInstance.fetchEventLog).not.toHaveBeenCalled();
+    });
+
+    it('should call initController in willUpdate when triggered manually', () => {
+        (element as any)._controller = undefined;
+        // Verify willUpdate logic directly to ensure coverage
+        const map = new Map();
+        map.set('hass', true);
+        (element as any).willUpdate(map);
+        expect(mockControllerInstance.fetchEventLog).toHaveBeenCalled();
+    });
+
+    it('should sort events by time descending', async () => {
+        const older = { ...mockEvents[0], start_time: new Date(Date.now() - 100000).toISOString(), sensor_type: 'older' };
+        const newer = { ...mockEvents[0], start_time: new Date(Date.now()).toISOString(), sensor_type: 'newer' };
+
+        (element as any)._events = [older, newer];
+        await element.updateComplete;
+
+        const cards = element.shadowRoot?.querySelectorAll('.event-card');
+        expect(cards?.length).toBe(2);
+        // Newer should be first
+        expect(cards?.[0].querySelector('.event-type')?.textContent).toContain('newer');
+        expect(cards?.[1].querySelector('.event-type')?.textContent).toContain('older');
+    });
+
+    it('should handle fetch error and reset loading state', async () => {
+        const errorMock = vi.fn().mockRejectedValue(new Error('Fetch failed'));
+        // Temporarily override the instance method or use spy if possible.
+        // Since we share the instance, we can just change the mock.
+        mockControllerInstance.fetchEventLog.mockRejectedValueOnce(new Error('Fetch failed'));
+
+        // Trigger fetch
+        element.growspaceId = 'gs_error';
+        // Check loading state immediately?
+        // It's async. We can check if it eventually resets.
+        await element.updateComplete;
+        await new Promise(r => setTimeout(r, 0)); // wait for async
+        await element.updateComplete;
+
+        expect((element as any)._isLoading).toBe(false);
+    });
+
+    it('should render non-alert events with water icon', async () => {
+        const normalEvent: GrowspaceEvent = {
+            ...mockEvents[0],
+            category: 'irrigation',
+            severity: 0.1
+        };
+        (element as any)._events = [normalEvent];
+        await element.updateComplete;
+
+        const icon = element.shadowRoot?.querySelector('ha-icon[icon="mdi:water"]');
+        expect(icon).toBeTruthy();
+    });
+
+    it('should format duration correctly', () => {
+        expect((element as any)._formatDuration(65)).toBe('1m 5s');
+        expect((element as any)._formatDuration(3600)).toBe('60m 0s');
+        expect((element as any)._formatDuration(0)).toBe('0m 0s');
+    });
+
+    it('should render reasons badges correctly', async () => {
+        const eventWithReasons = { ...mockEvents[0], reasons: ['Heat', 'Humidity'] };
+        (element as any)._events = [eventWithReasons];
+        await element.updateComplete;
+
+        const badges = element.shadowRoot?.querySelectorAll('.reason-badge');
+        expect(badges?.length).toBe(2);
+        expect(badges?.[0].textContent).toBe('Heat');
+        expect(badges?.[1].textContent).toBe('Humidity');
+    });
+
+    it('should handle drain sensor type in irrigation filter', async () => {
+        const drainEvent = { ...mockEvents[0], sensor_type: 'drain', category: 'other' };
+        (element as any)._events = [drainEvent];
+        (element as any)._activeFilter = 'irrigation';
+        await element.updateComplete;
+
+        const cards = element.shadowRoot?.querySelectorAll('.event-card');
+        expect(cards?.length).toBe(1);
+    });
+
+    it('should default to all events for unknown filter', async () => {
+        (element as any)._events = mockEvents;
+        (element as any)._activeFilter = 'invalid_filter';
+        await element.updateComplete;
+
+        const cards = element.shadowRoot?.querySelectorAll('.event-card');
+        expect(cards?.length).toBe(3);
+    });
+
+    it('should handle undefined sensor type in severity color', () => {
+        expect((element as any)._getSeverityColor(0.95, undefined)).toBe('var(--error-color)');
+        expect((element as any)._getSeverityColor(0.95, null)).toBe('var(--error-color)');
+    });
 });

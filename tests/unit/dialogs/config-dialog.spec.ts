@@ -805,4 +805,49 @@ describe('ConfigDialog', () => {
     function selectChange(el: HTMLElement) {
         el.dispatchEvent(new Event('change'));
     }
+    describe('Config Coverage Gaps', () => {
+        it('should populate notification service in add submission', () => {
+            const listener = vi.fn();
+            element.addEventListener('add-growspace-submit', listener);
+
+            (element as any).add_name = 'New GS';
+            (element as any).add_notification_service = 'mobile_app_test';
+
+            // Trigger submit
+            (element as any)._submitAddGrowspace();
+
+            expect(listener).toHaveBeenCalled();
+            expect(listener.mock.calls[0][0].detail.notification_service).toBe('mobile_app_test');
+        });
+
+        it('should handle edit population when device is not found', () => {
+            (element as any).edit_name = 'Old Name';
+            (element as any)._populateEditFields('non_existent_id');
+            // Should set ID but not update fields
+            expect((element as any).edit_selectedId).toBe('non_existent_id');
+            expect((element as any).edit_name).toBe('Old Name');
+        });
+
+        it('should close dialog via header button', async () => {
+            element.open = true;
+            await element.updateComplete;
+
+            const closeBtn = element.shadowRoot?.querySelector('.dialog-header button.text');
+            const listener = vi.fn();
+            element.addEventListener('close', listener);
+
+            (closeBtn as HTMLElement)?.click();
+            expect(listener).toHaveBeenCalled();
+        });
+
+        it('should render correct tab content based on property', async () => {
+            element.currentTab = 'edit_growspace';
+            await element.updateComplete;
+            expect(element.shadowRoot?.querySelector('.config-content select')).toBeTruthy();
+
+            element.currentTab = 'dehumidifier';
+            await element.updateComplete;
+            expect(element.shadowRoot?.querySelector('.config-content .sub-tabs')).toBeTruthy();
+        });
+    });
 });

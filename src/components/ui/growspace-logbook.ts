@@ -185,6 +185,9 @@ export class GrowspaceLogbook extends LitElement {
     this._isLoading = true;
     try {
       this._events = await this._controller.fetchEventLog(this.growspaceId);
+    } catch (e) {
+      console.error('Error fetching logbook events:', e);
+      this._events = [];
     } finally {
       this._isLoading = false;
     }

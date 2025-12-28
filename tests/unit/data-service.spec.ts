@@ -882,5 +882,237 @@ describe('DataService', () => {
             await service.addStrain({ strain: 'NoImg' });
             expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_strain', { strain: 'NoImg' });
         });
+
+        it('getHistory should include end_time in URL if provided', async () => {
+            const start = new Date('2023-01-01');
+            const end = new Date('2023-01-02');
+            (mockHass.callApi as any).mockResolvedValue([]);
+
+            await service.getHistory('sensor.test', start, end);
+
+            expect(mockHass.callApi).toHaveBeenCalledWith('GET', expect.stringContaining(`end_time=${end.toISOString()}`));
+        });
+
+        it('getBatchHistory should include end_time in URL if provided', async () => {
+            const start = new Date('2023-01-01');
+            const end = new Date('2023-01-02');
+            (mockHass.callApi as any).mockResolvedValue([]);
+
+            await service.getBatchHistory(['sensor.test'], start, end);
+
+            expect(mockHass.callApi).toHaveBeenCalledWith('GET', expect.stringContaining(`end_time=${end.toISOString()}`));
+        });
+
+        it('addStrain should fail if service call fails', async () => {
+            callServiceMock.mockRejectedValue(new Error('Service Failed'));
+            await expect(service.addStrain({ strain: 'Fail' }))
+                .rejects.toThrow('Service Failed');
+        });
+
+        it('removeStrain should call service correctly', async () => {
+            await service.removeStrain('Kush', 'OG');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'remove_strain', {
+                strain: 'Kush',
+                phenotype: 'OG'
+            });
+        });
+
+        it('removeStrain should handle errors', async () => {
+            callServiceMock.mockRejectedValue(new Error('Remove Failed'));
+            await expect(service.removeStrain('Kush'))
+                .rejects.toThrow('Remove Failed');
+        });
+
+        it('DataService constructor should accept hass instance', () => {
+            const mockHassInstance = { connection: {} } as any;
+            const ds = new DataService(mockHassInstance);
+            expect(ds.hass).toBe(mockHassInstance);
+        });
+
+        it('fetchGrowspaceData should return parsed single result', async () => {
+            const growspaceData = { growspace_id: 'gs1', name: 'GS1', type: 'normal', rows: 4, plants_per_row: 4, grid: {} };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(growspaceData);
+            const result = await service.fetchGrowspaceData('gs1');
+            expect(result).toEqual(expect.objectContaining({ growspace_id: 'gs1' }));
+        });
+
+        it('fetchStrainLibrary should log warning on validation error', async () => {
+            const badData = { response: { 'Kush': { meta: 'invalid_meta_structure' } } }; // Invalid meta type
+            // Mock console.warn to check for validation warning
+            const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
+
+            const result = await service.fetchStrainLibrary();
+
+            expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('API Verification warning'), expect.anything());
+            expect(result).toEqual([]);
+        });
+
+        it('getStrainLibrary should return empty array if strain sensor missing', () => {
+            service.hass = { states: {} } as any; // No states at all
+            const res = service.getStrainLibrary();
+            expect(res).toEqual([]);
+        });
+
+        it('getStrainLibrary should return empty array if strains attribute is unknown type', () => {
+            service.hass = {
+                states: {
+                    'sensor.strains': {
+                        attributes: { strains: 12345 } // Invalid type
+                    }
+                }
+            } as any;
+            const res = service.getStrainLibrary();
+            expect(res).toEqual([]);
+        });
+
+        it('takeClone should preserve target_growspace_id if provided', async () => {
+            const params = { mother_plant_id: 'm1', target_growspace_id: 'custom_room' };
+            await service.takeClone(params);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'take_clone', params);
+        });
+
+        it('importStrainLibrary should use statusText if response text is empty', async () => {
+            const mockFetch = vi.fn().mockResolvedValue({
+                ok: false,
+                text: async () => '',
+                statusText: 'Bad Request'
+            });
+            mockHass.fetchWithAuth = mockFetch;
+            await expect(service.importStrainLibrary(new File([''], 'x'), false))
+                .rejects.toThrow('Bad Request');
+        });
+
+        it('importStrainLibrary should handle non-Error rejections', async () => {
+            const mockFetch = vi.fn().mockRejectedValue('String Error'); // Not an Error object
+            mockHass.fetchWithAuth = mockFetch;
+            await expect(service.importStrainLibrary(new File([''], 'x'), false))
+                .rejects.toThrow('Failed to import strain library');
+        });
+
+        it('getStrainLibrary should sort by phenotype when strains match', () => {
+            service.hass = {
+                states: {
+                    'sensor.strains': {
+                        attributes: {
+                            strains: {
+                                'A': { phenotypes: { '2': {}, '1': {} } }
+                            }
+                        }
+                    }
+                }
+            } as any;
+            const res = service.getStrainLibrary();
+            expect(res).toHaveLength(2);
+            expect(res[0].phenotype).toBe('1');
+            expect(res[1].phenotype).toBe('2');
+        });
+
+        it('fetchStrainLibrary should handle missing meta/phenotypes', async () => {
+            const dirtyData = {
+                response: {
+                    'Kush': { /* No meta, no phenotypes */ }
+                }
+            };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(dirtyData);
+
+            // Should not crash, just empty list
+            const res = await service.fetchStrainLibrary();
+            expect(res).toEqual([]);
+        });
+
+        it('fetchStrainLibrary should handle unwrapped response', async () => {
+            const unwrappedData = {
+                'Kush': { meta: { breeder: 'Me' } } // No response wrapper
+            };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(unwrappedData);
+
+            const res = await service.fetchStrainLibrary();
+            expect(res).toHaveLength(0); // Because phenotypes is missing? No, mock above has no phenotypes either.
+            // Wait, logic says: const phenotypes = data.phenotypes || {};. Loop over phenotypes.
+            // If phenotypes is empty object, loop runs 0 times. 
+            // So result length 0 is correct if phenotypes missing.
+        });
+
+        it('fetchStrainLibrary should handle unwrapped response with phenotypes', async () => {
+            const unwrappedData = {
+                'Kush': { phenotypes: { 'default': {} } }
+            };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(unwrappedData);
+
+            const res = await service.fetchStrainLibrary();
+            expect(res).toHaveLength(1);
+            expect(res[0].strain).toBe('Kush');
+        });
+
+        it('getStrainLibrary should handle missing meta and phenotypes', () => {
+            service.hass = {
+                states: {
+                    'sensor.strains': {
+                        attributes: {
+                            strains: {
+                                'Kush': { /* Empty */ }
+                            }
+                        }
+                    }
+                }
+            } as any;
+            const res = service.getStrainLibrary();
+            expect(res).toEqual([]); // No phenotypes -> no entries
+        });
+
+        it('getGrowspaceDevices should handle null input explicitly', () => {
+            expect(service.getGrowspaceDevices(null as any)).toEqual([]);
+        });
+
+        it('getStrainLibrary should sort undefined phenotypes last (or first depending on localeCompare)', () => {
+            service.hass = {
+                states: {
+                    'sensor.strains': {
+                        attributes: {
+                            strains: {
+                                'A': { phenotypes: { '1': {}, '0': {} } }
+                                // Actually, keys are strings only. Undefined phenotype happens if phenotype prop is missing?
+                                // In loop: phenotype: phenoName. phenoName matches key.
+                                // If I want empty phenotype, I need key to be empty string?
+                            }
+                        }
+                    }
+                }
+            } as any;
+            // Wait, phenotype is ALWAYS phenoName string from map keys.
+            // UNLESS parsing logic changes?
+            // Line 132: phenotype: phenoName
+            // Keys of object are always strings.
+            // So phenotype is never undefined.
+            // BUT line 152 says: (a.phenotype || '')
+            // Is it possible for a.phenotype to be falsy? '' is falsy.
+            // If key is empty string?
+
+            service.hass = {
+                states: {
+                    'sensor.strains': {
+                        attributes: {
+                            strains: {
+                                'A': { phenotypes: { '': {}, 'b': {} } }
+                            }
+                        }
+                    }
+                }
+            } as any;
+
+            const res = service.getStrainLibrary();
+            expect(res).toHaveLength(2);
+            // '' vs 'b'. '' comes before 'b'.
+            expect(res[0].phenotype).toBe('');
+            expect(res[1].phenotype).toBe('b');
+        });
+
+    });
+
+    it('fetchStrainLibrary should handle null service response', async () => {
+        (mockHass.connection.sendMessagePromise as any).mockResolvedValue(null);
+        const res = await service.fetchStrainLibrary();
+        expect(res).toEqual([]);
     });
 });

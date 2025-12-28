@@ -1,4 +1,4 @@
-import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
+import { LitElement, html, css, TemplateResult, PropertyValues, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { classMap } from 'lit/directives/class-map.js';
@@ -36,7 +36,7 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
 
   connectedCallback() {
     super.connectedCallback();
-    if (this.store) {
+    if (!this._isEditModeController && this.store) {
       this._isEditModeController = new StoreController(this, this.store.ui.$isEditMode);
       this._selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
     }
@@ -136,7 +136,7 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
               />
               <div class="plant-card-overlay"></div>
             `
-        : ''}
+        : nothing}
         ${this.isEditMode
         ? html`
               <div
@@ -155,12 +155,12 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
                 </svg>
               </div>
             `
-        : ''}
+        : nothing}
 
         <div class="plant-card-content">
           <div class="pc-info">
             <div class="pc-strain-name" title="${strainName}">${strainName}</div>
-            ${pheno ? html`<div class="pc-pheno">${pheno}</div>` : ''}
+            ${pheno ? html`<div class="pc-pheno">${pheno}</div>` : nothing}
             <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
           </div>
 

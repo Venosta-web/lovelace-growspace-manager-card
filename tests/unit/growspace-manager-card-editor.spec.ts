@@ -161,4 +161,96 @@ describe('GrowspaceManagerCardEditor', () => {
             throw new Error('Subscription callback was not captured');
         }
     });
+
+    describe('Coverage Gap Fillers', () => {
+        it('should not subscribe twice if already subscribed', async () => {
+            const subscribeMock = vi.fn().mockResolvedValue(() => { });
+            const mockHass = {
+                states: {},
+                connection: { subscribeEvents: subscribeMock }
+            };
+
+            element.hass = mockHass;
+            await element.updateComplete;
+
+            // First subscription
+            expect(subscribeMock).toHaveBeenCalledTimes(1);
+
+            // Trigger update again
+            element.hass = { ...mockHass };
+            await element.updateComplete;
+
+            // Should still be 1 call due to _hasSubscription guard
+            expect(subscribeMock).toHaveBeenCalledTimes(1);
+        });
+
+        it('should reset subscription flag on disconnectedCallback', async () => {
+            const subscribeMock = vi.fn().mockResolvedValue(() => { });
+            const mockHass = {
+                states: {},
+                connection: { subscribeEvents: subscribeMock }
+            };
+
+            element.hass = mockHass;
+            await element.updateComplete;
+
+            expect((element as any)._hasSubscription).toBe(true);
+
+            element.disconnectedCallback();
+
+            expect((element as any)._hasSubscription).toBe(false);
+        });
+
+        it('should handle state_changed event with no gsObj', async () => {
+            let subscriptionCallback: Function | undefined;
+            const subscribeMock = vi.fn((cb) => {
+                subscriptionCallback = cb;
+                return () => { };
+            });
+
+            const mockHass = {
+                states: {},
+                connection: { subscribeEvents: subscribeMock }
+            };
+
+            element.hass = mockHass;
+            element.setConfig({ type: 'test' });
+            await element.updateComplete;
+
+            expect((element as any)._growspaceOptions).toEqual([]);
+
+            // Fire event with missing growspaces attribute
+            if (subscriptionCallback) {
+                subscriptionCallback({
+                    data: {
+                        new_state: {
+                            entity_id: 'sensor.growspaces_list',
+                            attributes: {}
+                        }
+                    }
+                });
+                await element.updateComplete;
+                expect((element as any)._growspaceOptions).toEqual([]);
+            }
+        });
+
+        it('should not dispatch config-changed if config is undefined', async () => {
+            const listener = vi.fn();
+            element.addEventListener('config-changed', listener);
+
+            // Call _valueChanged without config
+            (element as any)._valueChanged('initial_view_mode', 'compact');
+
+            expect(listener).not.toHaveBeenCalled();
+        });
+
+        it('should not subscribe if hass is undefined', async () => {
+            const newElement = new GrowspaceManagerCardEditor();
+            container.appendChild(newElement);
+            await newElement.updateComplete;
+
+            // _hasSubscription should remain false
+            expect((newElement as any)._hasSubscription).toBe(false);
+        });
+    });
 });

@@ -243,7 +243,7 @@ describe('PlantOverviewDialog', () => {
 
             await element.updateComplete;
 
-            expect(element.editedAttributes?.strain).toBe('Updated Strain');
+            expect(element.editedAttributes?.['strain']).toBe('Updated Strain');
 
             document.body.removeChild(element);
         });
@@ -447,6 +447,64 @@ describe('PlantOverviewDialog', () => {
         }
 
         document.body.removeChild(element);
+    });
+
+    it('should close dialog when header close button is clicked', async () => {
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const spy = vi.fn();
+        element.addEventListener('close', spy);
+
+        const closeBtn = element.shadowRoot?.querySelector('.dialog-header .md3-button');
+        (closeBtn as HTMLElement).click();
+
+        expect(spy).toHaveBeenCalled();
+        document.body.removeChild(element);
+    });
+
+    describe('Filtered Day Interactions', () => {
+        // Helper to test date change in specific stage
+        async function testDateChange(stage: PlantStage, label: string, key: string, val: string) {
+            element.plant = { ...mockPlant, state: stage, attributes: { ...mockPlant.attributes, stage: stage } };
+            (element as any).activeTab = 'timeline';
+            (element as any).showAllDates = false;
+
+            // Clean DOM each time or reuse?
+            if (element.isConnected) document.body.removeChild(element);
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const input = element.shadowRoot?.querySelector(`md3-date-input[label="${label}"]`);
+            expect(input, `${label} input should exist in stage ${stage}`).toBeTruthy();
+
+            input?.dispatchEvent(new CustomEvent('change', { detail: val }));
+            await element.updateComplete;
+
+            expect((element.editedAttributes as any)[key]).toBe(val);
+        }
+
+        it('should update Mother Start in MOTHER stage', async () => {
+            await testDateChange(PlantStage.MOTHER, 'Mother Start', 'mother_start', '2023-01-01');
+        });
+
+        it('should update Clone Start in CLONE stage', async () => {
+            await testDateChange(PlantStage.CLONE, 'Clone Start', 'clone_start', '2023-02-01');
+        });
+
+        it('should update Veg Start in VEG stage', async () => {
+            await testDateChange(PlantStage.VEG, 'Vegetative Start', 'veg_start', '2023-03-01');
+        });
+
+        it('should update Dry Start in DRY stage', async () => {
+            await testDateChange(PlantStage.DRY, 'Dry Start', 'dry_start', '2023-04-01');
+        });
+
+        it('should update Cure Start in CURE stage', async () => {
+            await testDateChange(PlantStage.CURE, 'Cure Start', 'cure_start', '2023-05-01');
+        });
     });
 
     describe('Action Edge Cases', () => {

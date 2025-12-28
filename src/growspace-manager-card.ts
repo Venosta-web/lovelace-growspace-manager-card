@@ -4,14 +4,13 @@ import {
   CSSResultGroup,
   TemplateResult,
   PropertyValues,
-  ReactiveControllerHost,
 } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 
 import { hassContext, configContext, strainLibraryContext, storeContext } from './context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { mdiCheckboxMarked, mdiFullscreenExit, mdiChevronDown, mdiChevronUp } from '@mdi/js';
+
 
 
 import { GrowspaceManagerCardConfig, PlantEntity, GrowspaceDevice, StrainEntry } from './types';
@@ -37,7 +36,6 @@ import { StoreController } from '@nanostores/lit';
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @provide({ context: storeContext })
-  @provide({ context: storeContext })
   accessor store = new GrowspaceStore();
 
   protected _subscriptionController = new SubscriptionController(this, this.store.data, () => this.store.updateHass(this.hass));
@@ -61,9 +59,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   protected _activeDevicesController = new StoreController(this, this.store.grid.$activeDevices);
   protected _gridLayoutController = new StoreController(this, this.store.grid.$gridLayout);
   protected _growspaceOptionsController = new StoreController(this, this.store.grid.$growspaceOptions);
-
-  // Controllers
-  // historyController removed (migrated to store)
 
   /* Getter for convenience/compatibility if needed, or update call sites */
   get selectedDevice() {
@@ -103,21 +98,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   connectedCallback() {
     super.connectedCallback();
     // Listen for export ready events from store
-    this.addEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady as EventListener);
+    this.addEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady as EventListener);
+    this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
   }
 
   private _handleLibraryExportReady = (e: LibraryExportReadyEvent) => {
     this._downloadFile(e.detail.url);
   };
-
-  protected willUpdate(changedProps: PropertyValues): void {
-    // Logic moved to updated() to avoid side-effects during update cycle
-  }
 
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
@@ -234,8 +225,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const growspaceOptions = this._growspaceOptionsController.value;
     const { effectiveRows, grid } = this._gridLayoutController.value;
     const isWide = selectedDeviceData.plants_per_row > 7;
-    // const viewMode unused here if passed directly to switcher, but let's keep var if check needed logic
-    // const viewMode = this._viewModeController.value;
 
     return html`
       <ha-card class=${isWide ? 'wide-growspace' : ''}>

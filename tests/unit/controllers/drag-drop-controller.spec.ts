@@ -395,5 +395,121 @@ describe('DragDropController', () => {
             eventMap['drop'](dropEvent);
             expect(dropSpy).toHaveBeenCalledWith(dropEvent);
         });
+        describe('Coverage Gap Fillers', () => {
+            it('should handle dragStart with missing dataTransfer (defensive check)', () => {
+                const e = new DragEvent('dragstart');
+                // Force dataTransfer to be undefined/null for this test manually if needed, 
+                // but our mock setup normally provides it. Let's create one without it.
+                Object.defineProperty(e, 'dataTransfer', { value: null });
+
+                controller.handleDragStart(e);
+
+                // Should still add class but not throw
+                expect(mockCard.classList.contains('dragging')).toBe(true);
+            });
+
+            it('should handle dragStart where card and target are null (unlikely but safe)', () => {
+                (mockHost.shadowRoot!.querySelector as any).mockReturnValue(null);
+                const e = new DragEvent('dragstart');
+                // Target is null by default in new DragEvent() in some envs, logic checks e.target
+                // Let's ensure e.target is not an element that passes check
+                Object.defineProperty(e, 'target', { value: null });
+
+                controller.handleDragStart(e);
+
+                // Should dispatch event still
+                expect(mockHost.dispatchEvent).toHaveBeenCalledWith(
+                    expect.objectContaining({ type: 'plant-drag-start' })
+                );
+            });
+
+            it('should handle wrapperAddClass / wrapperRemoveClass with null elements', () => {
+                // These are private helpers, but we can exercise them by forcing conditions 
+                // where _getCardElement returns null and we pass a null target to handlers
+
+                // For wrapperRemoveClass:
+                (mockHost.shadowRoot!.querySelector as any).mockReturnValue(null);
+                const e = new DragEvent('dragend');
+                Object.defineProperty(e, 'target', { value: null });
+
+                // Should not throw
+                controller.handleDragEnd(e);
+            });
+
+            it('should execute requestAnimationFrame callback in handleTouchMove', () => {
+                vi.useFakeTimers();
+                (controller as any)._isDraggingMobile = true;
+                (controller as any)._startX = 100;
+                (controller as any)._startY = 100;
+
+                // Mock requestAnimationFrame to NOT run immediately, so we can control it if we wanted,
+                // but the implementation uses it. The previous test mocked it to run immediately.
+                // Let's rely on standard behavior or use a specific spy to ensure the lambda body runs.
+
+                // Actually, the previous test: "should transform card during active mobile drag" 
+                // ALREADY mocked rAF to run immediately. Let's strictly verify the logic inside rAF 
+                // without the card presence to trigger the "if (card)" check being false?
+
+                // Scenario: Mobile drag moving, but card element suddenly gone (e.g. re-render)
+                (mockHost.shadowRoot!.querySelector as any).mockReturnValue(null);
+
+                const rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+                    cb(0);
+                    return 0;
+                });
+
+                const e = new TouchEvent('touchmove', {
+                    touches: [{ clientX: 150, clientY: 150 }] as any
+                });
+
+                controller.handleTouchMove(e);
+
+                expect(rafSpy).toHaveBeenCalled();
+                // Should not throw and obviously no style transform on null
+
+                vi.restoreAllMocks();
+                vi.useRealTimers();
+            });
+
+            it('should return early in handleTouchStart if inputs are invalid', () => {
+                // Edit mode already tested
+                // Multi-touch already tested
+                // Let's verify no side effects for edit mode specifically again just to be sure
+                mockHost.isEditMode = true;
+                const e = new TouchEvent('touchstart', { touches: [{}] as any });
+                controller.handleTouchStart(e);
+                expect((controller as any)._longPressTimer).toBeUndefined();
+            });
+
+            it('should remove dragging class from target in handleDragEnd', () => {
+                const targetEl = document.createElement('div');
+                targetEl.classList.add('dragging');
+                const e = new DragEvent('dragend');
+                Object.defineProperty(e, 'target', { value: targetEl });
+
+                controller.handleDragEnd(e);
+
+                expect(targetEl.classList.contains('dragging')).toBe(false);
+            });
+
+            it('should directly exercise _startMobileDrag and _endMobileDrag (force coverage)', () => {
+                const e = new TouchEvent('touchstart');
+
+                // Direct call to _startMobileDrag
+                (controller as any)._startMobileDrag(e);
+                expect((controller as any)._isDraggingMobile).toBe(true);
+                expect(mockCard.classList.contains('dragging-mobile')).toBe(true);
+
+                // Direct call to _endMobileDrag
+                // Need changedTouches for the event
+                const endE = new TouchEvent('touchend', {
+                    changedTouches: [{ clientX: 100, clientY: 100 }] as any
+                });
+
+                (controller as any)._endMobileDrag(endE);
+                expect((controller as any)._isDraggingMobile).toBe(false);
+                expect(mockCard.classList.contains('dragging-mobile')).toBe(false);
+            });
+        });
     });
 });

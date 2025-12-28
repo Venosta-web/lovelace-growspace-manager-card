@@ -1,9 +1,16 @@
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrowspaceStore } from '../../src/store/growspace-store';
 import { PlantEntity } from '../../src/types';
-import * as uiStore from '../../src/store/ui-store';
-import * as dataStore from '../../src/store/data-store';
+import * as _uiStore from '../../src/store/ui-store';
+import * as _dataStore from '../../src/store/data-store';
+
+const uiStore = _uiStore as any;
+const dataStore = _dataStore as any;
+
+import * as plantActions from '../../src/store/plant-actions';
+import * as strainActions from '../../src/store/strain-actions';
+import * as keyboardActions from '../../src/store/keyboard-actions';
 
 
 // Mock ui-store
@@ -1227,6 +1234,406 @@ describe('GrowspaceStore', () => {
             vi.clearAllMocks();
             store.setIsCompactView(false);
             expect(uiStore.setViewMode).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Strain Library Caching', () => {
+        beforeEach(() => {
+            vi.spyOn(store.data, 'setStrainLibrary');
+            vi.spyOn(store.dataService, 'fetchStrainLibrary');
+            vi.spyOn(Storage.prototype, 'setItem');
+        });
+
+        afterEach(() => {
+            vi.clearAllMocks();
+            localStorage.clear();
+        });
+
+        it('should use cached library if valid and not expired', async () => {
+            const cacheData = {
+                version: 2,
+                timestamp: Date.now(),
+                data: [{ strain: 'Cached', key: 'Cached|' } as any]
+            };
+            vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(JSON.stringify(cacheData));
+
+            await store.fetchStrainLibrary(false);
+
+            expect(store.data.setStrainLibrary).toHaveBeenCalledWith(cacheData.data);
+            expect(store.dataService.fetchStrainLibrary).not.toHaveBeenCalled();
+        });
+
+        it('should ignore cache if expired', async () => {
+            const cacheData = {
+                version: 2,
+                timestamp: Date.now() - (25 * 60 * 60 * 1000), // 25 hours ago
+                data: [{ strain: 'Old' }]
+            };
+            vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(JSON.stringify(cacheData));
+            (store.dataService.fetchStrainLibrary as any).mockResolvedValue([{ strain: 'New' }]);
+
+            await store.fetchStrainLibrary(false);
+
+            expect(store.dataService.fetchStrainLibrary).toHaveBeenCalled();
+            expect(store.data.setStrainLibrary).toHaveBeenCalledWith([{ strain: 'New' }]);
+        });
+
+        it('should ignore cache if version mismatch', async () => {
+            const cacheData = {
+                version: 1, // Old version
+                timestamp: Date.now(),
+                data: []
+            };
+            vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(JSON.stringify(cacheData));
+            (store.dataService.fetchStrainLibrary as any).mockResolvedValue([]);
+
+            await store.fetchStrainLibrary(false);
+            expect(store.dataService.fetchStrainLibrary).toHaveBeenCalled();
+        });
+
+        it('should handle malformed cache gracefully', async () => {
+            vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('{ bad json');
+            const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem');
+            (store.dataService.fetchStrainLibrary as any).mockResolvedValue([]);
+
+            await store.fetchStrainLibrary(false);
+
+            expect(removeItemSpy).toHaveBeenCalledWith('growspace_strain_library_v2');
+            expect(store.dataService.fetchStrainLibrary).toHaveBeenCalled();
+        });
+
+        it('should update cache after fetch', async () => {
+            vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
+            const newData = [{ strain: 'Fresh', key: 'Fresh|' } as any];
+            (store.dataService.fetchStrainLibrary as any).mockResolvedValue(newData);
+
+            await store.fetchStrainLibrary(false);
+
+            expect(Storage.prototype.setItem).toHaveBeenCalledWith(
+                'growspace_strain_library_v2',
+                expect.stringContaining('"strain":"Fresh"')
+            );
+        });
+
+        it('should handle fetch failure without cache', async () => {
+            vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
+            (store.dataService.fetchStrainLibrary as any).mockRejectedValue(new Error('Fail'));
+
+            await store.fetchStrainLibrary(false);
+            expect(store.data.setStrainLibrary).not.toHaveBeenCalled(); // Or logic handles it?
+            // Code catches error and logs. data not set.
+        });
+    });
+
+    describe('Import/Export Errors', () => {
+        it('performImport should handle invalid JSON', async () => {
+            const file = new File(['not json'], 'bad.json', { type: 'application/json' });
+            file.text = vi.fn().mockResolvedValue('not json');
+            const toastSpy = vi.spyOn(store.ui, 'showToast');
+
+            await store.performImport(file, false);
+
+            expect(toastSpy).toHaveBeenCalledWith(expect.stringContaining('Import failed'), 'error');
+        });
+
+        it('performImport should handle non-array JSON', async () => {
+            const file = new File(['{}'], 'obj.json', { type: 'application/json' });
+            file.text = vi.fn().mockResolvedValue('{}');
+            const toastSpy = vi.spyOn(store.ui, 'showToast');
+
+            await store.performImport(file, false);
+
+            expect(toastSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid format'), 'error');
+        });
+    });
+
+    describe('Additional Logic Coverage', () => {
+        const mockPlant1 = {
+            entity_id: 'sensor.plant1',
+            attributes: { plant_id: 'p1', strain: 'S1', row: 1, col: 1 }
+        } as any;
+
+        const mockDevice1 = {
+            device_id: 'd1',
+            plants: [mockPlant1],
+            rows: 4,
+            plants_per_row: 4
+        } as any;
+
+        const mockHass = {
+            connection: { subscribeEvents: vi.fn(), sendMessagePromise: vi.fn() },
+            callService: vi.fn(),
+            callApi: vi.fn()
+        } as any;
+
+        it('should handle openAddPlantDialog with full grid', () => {
+            const plant1 = { ...mockPlant1, attributes: { ...mockPlant1.attributes, plant_id: 'p1', row: 1, col: 1 } };
+            const device = {
+                ...mockDevice1,
+                plants: [plant1],
+                rows: 1,
+                plants_per_row: 1
+            };
+            (dataStore.$devices.get as any).mockReturnValue([device]);
+            (dataStore.$selectedDevice.get as any).mockReturnValue(device.device_id);
+
+            store.openAddPlantDialog();
+
+            // Since loop targetRow/Col init to 0, if no empty found, it uses 0,0.
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'ADD_PLANT',
+                payload: { row: 0, col: 0 }
+            }));
+        });
+
+        it('should perform default selection fallback', () => {
+            (dataStore.$config.get as any).mockReturnValue({ default_growspace: 'bad_id', auto_select_growspace: true });
+            (dataStore.$devices.get as any).mockReturnValue([mockDevice1]);
+            mockDataServiceInstance.getGrowspaceDevices.mockReturnValue([mockDevice1]);
+            (uiStore.$defaultApplied.get as any).mockReturnValue(false);
+            (dataStore.$wsDataCache.get as any).mockReturnValue({ 'dummy': {} }); // Force sync path
+
+            // Use public method that triggers update
+            store.updateHass(mockHass);
+
+            // Expectation via spy
+            expect(dataStore.setSelectedDevice).toHaveBeenCalledWith(mockDevice1.device_id);
+        });
+
+        it('select all plants should clear if no plants', () => {
+            const device = { ...mockDevice1, plants: [] };
+            (dataStore.$devices.get as any).mockReturnValue([device]);
+            (dataStore.$selectedDevice.get as any).mockReturnValue(device.device_id);
+
+            store.selectAllPlants();
+            expect(uiStore.selectAllPlants).toHaveBeenCalledWith([]);
+        });
+
+        it('openLogbookDialog should do nothing if no device selected', () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue(null);
+            store.openLogbookDialog();
+            expect(uiStore.setActiveDialog).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'LOGBOOK' }));
+        });
+
+        it('should handle _refreshGrowspaceData loading state on error', async () => {
+            (dataStore.$devices.get as any).mockReturnValue([]);
+            mockDataServiceInstance.fetchGrowspaceData.mockRejectedValue(new Error('Fetch Fail'));
+
+            await store.refreshData();
+
+            expect(uiStore.setIsLoading).toHaveBeenCalledWith(true);
+            expect(uiStore.setIsLoading).toHaveBeenCalledWith(false);
+        });
+
+        it('should skip refresh if already fetching', async () => {
+            let resolveFetch: any;
+            const p = new Promise(r => resolveFetch = r);
+            mockDataServiceInstance.fetchGrowspaceData.mockReturnValue(p as any);
+
+            store.refreshData(); // starts fetch
+            store.refreshData(); // should skip
+
+            expect(mockDataServiceInstance.fetchGrowspaceData).toHaveBeenCalledTimes(1);
+            resolveFetch({});
+        });
+    });
+
+    describe('Coverage Gap Filling 2', () => {
+        const mockPlant1 = {
+            entity_id: 'sensor.plant1',
+            attributes: { plant_id: 'p1', row: 1, col: 1 }
+        } as any;
+
+        const mockDevice1 = {
+            device_id: 'd1',
+            plants: [mockPlant1],
+            rows: 4,
+            plants_per_row: 4
+        } as any;
+
+        // Missing branches:
+        // 1. openAddPlantDialog with defaults for device rows/cols and plant row/col
+        // 2. getStrainRecommendation dialog type checks (pre and post await)
+
+        it('openAddPlantDialog should handle device with undefined defaults', () => {
+            const device = {
+                ...mockDevice1,
+                plants_per_row: undefined,
+                rows: undefined,
+                plants: [{
+                    ...mockPlant1,
+                    attributes: { ...mockPlant1.attributes, row: undefined, col: undefined, plant_id: 'p1' }
+                }]
+            };
+            (dataStore.$devices.get as any).mockReturnValue([device]);
+            (dataStore.$selectedDevice.get as any).mockReturnValue(device.device_id);
+
+            store.openAddPlantDialog();
+
+            // Plant at row undefined->1->0, col undefined->1->0. occupied 0,0.
+            // Grid defaults to 4x4.
+            // Should find next slot 0,1.
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'ADD_PLANT',
+                payload: { row: 0, col: 1 }
+            }));
+        });
+
+        it('getStrainRecommendation should NOT set loading if dialog type mismatch', async () => {
+            (uiStore.$activeDialog.get as any).mockReturnValue({ type: 'NONE' });
+            mockDataServiceInstance.getStrainRecommendation.mockResolvedValue({ response: 'ok' });
+
+            await store.getStrainRecommendation('q');
+
+            expect(uiStore.setActiveDialog).not.toHaveBeenCalledWith(expect.objectContaining({ payload: { isLoading: true } }));
+            expect(uiStore.setActiveDialog).not.toHaveBeenCalledWith(expect.objectContaining({ payload: { isLoading: false } }));
+        });
+
+        it('getStrainRecommendation check dialog type after await (success)', async () => {
+            (uiStore.$activeDialog.get as any)
+                .mockReturnValueOnce({ type: 'STRAIN_RECOMMENDATION', payload: {} })
+                .mockReturnValueOnce({ type: 'NONE', payload: {} });
+
+            mockDataServiceInstance.getStrainRecommendation.mockResolvedValue({ response: 'ok' });
+
+            await store.getStrainRecommendation('q');
+
+            // Loading set (first call match)
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ payload: { isLoading: true } }));
+            // Response NOT set (second call mismatch)
+            expect(uiStore.setActiveDialog).not.toHaveBeenCalledWith(expect.objectContaining({ payload: { isLoading: false, response: 'ok' } }));
+        });
+
+        it('getStrainRecommendation check dialog type after await (error)', async () => {
+            (uiStore.$activeDialog.get as any)
+                .mockReturnValueOnce({ type: 'STRAIN_RECOMMENDATION', payload: {} })
+                .mockReturnValueOnce({ type: 'NONE', payload: {} });
+
+            mockDataServiceInstance.getStrainRecommendation.mockRejectedValue(new Error('fail'));
+
+            try {
+                await store.getStrainRecommendation('q');
+            } catch (e) { }
+
+            expect(uiStore.setActiveDialog).not.toHaveBeenCalledWith(expect.objectContaining({ payload: { isLoading: false, response: expect.stringContaining('Error') } }));
+        });
+
+        it('openAddPlantDialog should fallback to entity_id if plant_id missing', () => {
+            const device = {
+                ...mockDevice1,
+                plants: [{
+                    ...mockPlant1,
+                    attributes: { ...mockPlant1.attributes, row: 0, col: 0, plant_id: '' }, // empty ID
+                    entity_id: 'sensor.fallback_id'
+                }]
+            };
+            (dataStore.$devices.get as any).mockReturnValue([device]);
+            (dataStore.$selectedDevice.get as any).mockReturnValue(device.device_id);
+
+            (dataStore.$optimisticDeletedPlantIds.get as any).mockReturnValue(new Set(['fallback_id']));
+
+            store.openAddPlantDialog();
+
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: { row: 0, col: 0 }
+            }));
+        });
+    });
+
+    describe('handleDrop Coverage', () => {
+        const mockPlant1 = {
+            entity_id: 'sensor.plant1',
+            attributes: { plant_id: 'p1', row: 1, col: 1 }
+        } as any;
+
+        const mockDevice1 = {
+            device_id: 'd1',
+            plants: [mockPlant1],
+            rows: 4,
+            plants_per_row: 4
+        } as any;
+
+        beforeEach(() => {
+            vi.spyOn(plantActions, 'handlePlantDrop').mockImplementation(async () => true);
+        });
+
+        it('should return early if sourcePlant is null', async () => {
+            await store.handleDrop(1, 1, mockPlant1, null);
+            expect(plantActions.handlePlantDrop).not.toHaveBeenCalled();
+        });
+
+        it('should return early if selectedDevice is null', async () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue(null);
+            await store.handleDrop(1, 1, mockPlant1, mockPlant1);
+            expect(plantActions.handlePlantDrop).not.toHaveBeenCalled();
+        });
+
+        it('should call plantActions.handlePlantDrop if valid', async () => {
+            const device = { ...mockDevice1 };
+            (dataStore.$devices.get as any).mockReturnValue([device]);
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+
+            await store.handleDrop(1, 2, mockPlant1, mockPlant1);
+            expect(plantActions.handlePlantDrop).toHaveBeenCalled();
+        });
+    });
+
+    describe('Miscellaneous Coverage', () => {
+        const mockPlant1 = {
+            entity_id: 'sensor.plant1',
+            attributes: { plant_id: 'p1', row: 1, col: 1 }
+        } as any;
+        const mockDevice1 = {
+            device_id: 'd1',
+            plants: [mockPlant1],
+            rows: 4,
+            plants_per_row: 4
+        } as any;
+
+        const mockHass = {
+            connection: { subscribeEvents: vi.fn(), sendMessagePromise: vi.fn() },
+            callService: vi.fn(),
+            callApi: vi.fn()
+        } as any;
+
+        it('updateGrid should call refreshData', () => {
+            const spy = vi.spyOn(store, 'refreshData');
+            store.updateGrid();
+            expect(spy).toHaveBeenCalled();
+        });
+
+        it('updateGrid should update hass if provided via property', () => {
+            store.hass = mockHass;
+            store.updateGrid();
+            expect(mockDataServiceInstance.updateHass).toHaveBeenCalledWith(mockHass);
+        });
+
+        it('analyzeGrowspace should handle non-string response (stringify)', async () => {
+            (uiStore.$activeDialog.get as any).mockReturnValue({ type: 'GROW_MASTER', payload: {} });
+            mockDataServiceInstance.askGrowAdvice.mockResolvedValue({ response: { foo: 'bar' } });
+            (dataStore.$devices.get as any).mockReturnValue([mockDevice1]);
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+
+            await store.analyzeGrowspace('q', false);
+
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: '{"foo":"bar"}' })
+            }));
+        });
+
+        it('analyzeGrowspace should handle error with dialog mismatch', async () => {
+            (uiStore.$activeDialog.get as any)
+                .mockReturnValueOnce({ type: 'GROW_MASTER', payload: {} })
+                .mockReturnValueOnce({ type: 'NONE', payload: {} });
+            mockDataServiceInstance.askGrowAdvice.mockRejectedValue(new Error('fail'));
+            (dataStore.$devices.get as any).mockReturnValue([mockDevice1]);
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+
+            try {
+                await store.analyzeGrowspace('q', false);
+            } catch (e) { }
+
+            expect(uiStore.setActiveDialog).not.toHaveBeenCalledWith(expect.objectContaining({ payload: { response: expect.stringContaining('Error') } }));
         });
     });
 });

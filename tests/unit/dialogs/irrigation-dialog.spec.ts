@@ -485,6 +485,60 @@ describe('IrrigationDialog', () => {
             expect(element.shadowRoot?.querySelector('.overlay-backdrop')).toBeFalsy();
         });
 
+        it('should handle canceling by clicking backdrop', async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // Open Add Dialog
+            const addBtns = element.shadowRoot?.querySelectorAll('button.primary');
+            (addBtns?.[0] as HTMLElement).click();
+            await element.updateComplete;
+
+            const backdrop = element.shadowRoot?.querySelector('.overlay-backdrop') as HTMLElement;
+            expect(backdrop).toBeTruthy();
+            backdrop.click();
+            await element.updateComplete;
+
+            expect(element.shadowRoot?.querySelector('.overlay-backdrop')).toBeFalsy();
+        });
+
+        it('should open add time dialog by clicking time bar', async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // Mock getBoundingClientRect
+            const timeBar = element.shadowRoot?.querySelector('.irrigation-time-bar') as HTMLElement;
+            // timeBar click logic uses clientX relative to rect.left
+
+            // We can't easily mock the MouseEvent clientX relative to rect in JSDOM cleanly without custom event construction
+            // but we can just trigger the click and ensure the method calls expected private logic (or checks UI result)
+
+            // Just simulate click
+            const mockEvent = {
+                currentTarget: timeBar,
+                clientX: 50,
+                stopPropagation: vi.fn(),
+                preventDefault: vi.fn()
+            };
+
+            // Call the handler directly if possible or simulate click?
+            // Since we can't easily pass clientX to click() method on element, 
+            // We'll dispatch a MouseEvent
+            const rect = { left: 0, width: 100 };
+            vi.spyOn(timeBar, 'getBoundingClientRect').mockReturnValue(rect as DOMRect);
+
+            timeBar.dispatchEvent(new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                clientX: 50
+            }));
+            await element.updateComplete;
+
+            expect(element.shadowRoot?.querySelector('.overlay-backdrop')).toBeTruthy();
+        });
+
         it('should handle API calls safely if device/service is missing', async () => {
             element.device = undefined;
             const consoleSpy = vi.spyOn(console, 'error');
@@ -498,6 +552,78 @@ describe('IrrigationDialog', () => {
 
             // Should simply return without error/call
             expect(mocks.setIrrigationSettings).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Additional Interactions', () => {
+        beforeEach(async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+        });
+
+        it('should switch tabs back and forth', async () => {
+            const tabs = element.shadowRoot?.querySelectorAll('.tab-item') as NodeListOf<HTMLElement>;
+
+            // Click Steering
+            tabs[1].click();
+            await element.updateComplete;
+            expect((element as any)._activeTab).toBe('steering');
+            expect(element.shadowRoot?.querySelector('.form-grid')).toBeTruthy();
+
+            // Click Schedules
+            tabs[0].click();
+            await element.updateComplete;
+            expect((element as any)._activeTab).toBe('schedules');
+            expect(element.shadowRoot?.querySelector('.time-bar-container')).toBeTruthy();
+        });
+
+        it('should dispatch close event', async () => {
+            const spy = vi.fn();
+            element.addEventListener('close', spy);
+
+            const closeBtn = element.shadowRoot?.querySelector('.dialog-header button');
+            (closeBtn as HTMLElement).click();
+
+            expect(spy).toHaveBeenCalled();
+        });
+
+        it('should update all strategy fields', async () => {
+            const tabs = element.shadowRoot?.querySelectorAll('.tab-item') as NodeListOf<HTMLElement>;
+            tabs[1].click();
+            await element.updateComplete;
+
+            const strategyFields = [
+                { label: 'Target VWC (%)', key: 'target_vwc_percent', val: '60', expected: 60 },
+                { label: 'Dryback (%)', key: 'maintenance_dryback_percent', val: '5', expected: 5 },
+                { label: 'P0 Duration (min)', key: 'p0_duration_minutes', val: '30', expected: 30 },
+                { label: 'P2 Stop Buffer (min)', key: 'p2_stop_before_lights_off_minutes', val: '60', expected: 60 },
+                { label: 'Shot Duration (sec)', key: 'shot_duration_seconds', val: '10', expected: 10 },
+                { label: 'Shot Interval (min)', key: 'shot_interval_minutes', val: '20', expected: 20 },
+            ];
+
+            for (const field of strategyFields) {
+                const input = Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') || [])
+                    .find(el => el.getAttribute('label') === field.label) as any;
+
+                expect(input).toBeTruthy();
+
+                input.value = field.val;
+                input.dispatchEvent(new CustomEvent('change', { detail: field.val }));
+            }
+
+            await element.updateComplete;
+            const saveBtn = element.shadowRoot?.querySelector('button.primary') as HTMLElement;
+            saveBtn.click();
+
+            expect(mocks.setIrrigationStrategy).toHaveBeenCalledWith('gs1', expect.objectContaining({
+                target_vwc_percent: 60,
+                maintenance_dryback_percent: 5,
+                p0_duration_minutes: 30,
+                p2_stop_before_lights_off_minutes: 60,
+                shot_duration_seconds: 10,
+                shot_interval_minutes: 20
+            }));
         });
     });
 });
