@@ -61,16 +61,16 @@ describe('MetricsUtils', () => {
         expect(result.mainChips).toBeDefined();
         const tempChip = result.mainChips.find(c => c.key === 'temperature');
         expect(tempChip).toBeDefined();
-        expect(tempChip.value).toBe('25°C');
+        expect(tempChip!.value).toBe('25°C');
 
         const vpdChip = result.mainChips.find(c => c.key === 'vpd');
         expect(vpdChip).toBeDefined();
-        expect(vpdChip.value).toBe('1.2 kPa');
-        expect(vpdChip.status).toBe('optimal'); // From overview entity
+        expect(vpdChip!.value).toBe('1.2 kPa');
+        expect(vpdChip!.status).toBe('optimal'); // From overview entity
 
         const lightChip = result.deviceChips.find(c => c.key === 'light');
         expect(lightChip).toBeDefined();
-        expect(lightChip.value).toBe('On');
+        expect(lightChip!.value).toBe('On');
     });
 
     it('should fallback VPD logic if main entity missing VPD', () => {
@@ -99,7 +99,7 @@ describe('MetricsUtils', () => {
 
         const vpdChip = result.mainChips.find(c => c.key === 'vpd');
         expect(vpdChip).toBeDefined();
-        expect(vpdChip.value).toBe('1.5 kPa');
+        expect(vpdChip!.value).toBe('1.5 kPa');
     });
 
     it('should handle irrigation times', () => {
@@ -117,7 +117,7 @@ describe('MetricsUtils', () => {
 
         const irrChip = result.mainChips.find(c => c.key === 'irrigation');
         expect(irrChip).toBeDefined();
-        expect(irrChip.value).toMatch(/^\d{2}:\d{2}$/);
+        expect(irrChip!.value).toMatch(/^\d{2}:\d{2}$/);
     });
 
     it('should process device chips', () => {
@@ -139,11 +139,11 @@ describe('MetricsUtils', () => {
 
         const exhaustChip = result.deviceChips.find(c => c.key === 'exhaust');
         expect(exhaustChip).toBeDefined();
-        expect(exhaustChip.value).toBe('on');
+        expect(exhaustChip!.value).toBe('on');
 
         const humidChip = result.deviceChips.find(c => c.key === 'humidifier');
         expect(humidChip).toBeDefined();
-        expect(humidChip.value).toBe('off');
+        expect(humidChip!.value).toBe('off');
     });
 
     it('should determine dominant stage correctly', () => {
@@ -197,7 +197,7 @@ describe('MetricsUtils', () => {
         // Should not throw and return what the code produces (value + unit)
         const tempChip = result.mainChips.find(c => c.key === 'temperature');
         expect(tempChip).toBeDefined();
-        expect(tempChip?.value).toBe('unknown°C');
+        expect(tempChip!.value).toBe('unknown°C');
     });
 
     it('should fallback to Name-based Calculated VPD entity ID', () => {
@@ -223,7 +223,7 @@ describe('MetricsUtils', () => {
         const vpdChip = result.mainChips.find(c => c.key === 'vpd');
         expect(vpdChip).toBeDefined();
         // Should find 0.8 from sensor.test_room_calculated_vpd
-        expect(vpdChip.value).toBe('0.8 kPa');
+        expect(vpdChip!.value).toBe('0.8 kPa');
     });
 
     it('should fallback to Legacy UUID-based Calculated VPD entity ID if Name-based missing', () => {
@@ -256,7 +256,7 @@ describe('MetricsUtils', () => {
         const vpdChip = result.mainChips.find(c => c.key === 'vpd');
         expect(vpdChip).toBeDefined();
         // Should find 0.9 from sensor.aabbcc_112233_calculated_vpd
-        expect(vpdChip.value).toBe('0.9 kPa');
+        expect(vpdChip!.value).toBe('0.9 kPa');
     });
 
     it('should determine isMetricLinked correctly', () => {
@@ -273,16 +273,16 @@ describe('MetricsUtils', () => {
         const vpd = linkedResult.mainChips.find(c => c.key === 'vpd');
         const irr = linkedResult.mainChips.find(c => c.key === 'irrigation');
 
-        expect(temp.linked).toBe(true);
-        expect(temp.groupIndex).toBe(0);
-        expect(hum.linked).toBe(true);
-        expect(hum.groupIndex).toBe(0);
-        expect(co2.linked).toBe(true);
-        expect(co2.groupIndex).toBe(1);
-        expect(vpd.linked).toBe(true);
-        expect(vpd.groupIndex).toBe(1);
-        expect(irr.linked).toBe(false);
-        expect(irr.groupIndex).toBe(-1);
+        expect(temp!.linked).toBe(true);
+        expect(temp!.groupIndex).toBe(0);
+        expect(hum!.linked).toBe(true);
+        expect(hum!.groupIndex).toBe(0);
+        expect(co2!.linked).toBe(true);
+        expect(co2!.groupIndex).toBe(1);
+        expect(vpd!.linked).toBe(true);
+        expect(vpd!.groupIndex).toBe(1);
+        expect(irr!.linked).toBe(false);
+        expect(irr!.groupIndex).toBe(-1);
     });
 
     it('should sort next irrigation events correctly in getNextEvent', () => {
@@ -304,7 +304,7 @@ describe('MetricsUtils', () => {
 
         const res = MetricsUtils.computeHeaderMetrics(mockHass, simpleDevice, new Set(), []);
         const chip = res.mainChips.find(c => c.key === 'irrigation');
-        expect(chip.value).toBe('13:00');
+        expect(chip!.value).toBe('13:00');
 
         vi.useRealTimers();
     });
@@ -349,22 +349,22 @@ describe('MetricsUtils', () => {
 
         let res = MetricsUtils.computeHeaderMetrics(vpdHass, dev, new Set(), []);
         let vpdChip = res.mainChips.find(c => c.key === 'vpd');
-        expect(vpdChip.status).toBe('warning');
+        expect(vpdChip!.status).toBe('warning');
 
         vpdHass.states['binary_sensor.test_optimal_conditions'].attributes.vpd = 2.5;
         res = MetricsUtils.computeHeaderMetrics(vpdHass, dev, new Set(), []);
         vpdChip = res.mainChips.find(c => c.key === 'vpd');
-        expect(vpdChip.status).toBe('danger');
+        expect(vpdChip!.status).toBe('danger');
 
         vpdHass.states['binary_sensor.test_optimal_conditions'].attributes.vpd = 0.4;
         res = MetricsUtils.computeHeaderMetrics(vpdHass, dev, new Set(), []);
         vpdChip = res.mainChips.find(c => c.key === 'vpd');
-        expect(vpdChip.status).toBe('danger');
+        expect(vpdChip!.status).toBe('danger');
 
         vpdHass.states['binary_sensor.test_optimal_conditions'].attributes.vpd = 1.0;
         res = MetricsUtils.computeHeaderMetrics(vpdHass, dev, new Set(), []);
         vpdChip = res.mainChips.find(c => c.key === 'vpd');
-        expect(vpdChip.status).toBe('optimal');
+        expect(vpdChip!.status).toBe('optimal');
     });
 
     it('should handle missing VPD sensor gracefully in fallback', () => {
@@ -425,7 +425,7 @@ describe('MetricsUtils', () => {
         const res = MetricsUtils.computeHeaderMetrics(hassObs, dev, new Set(), []);
 
         const temp = res.mainChips.find(c => c.key === 'temperature');
-        expect(temp.value).toBe('25°C');
+        expect(temp!.value).toBe('25°C');
     });
 
     it('should handle Cure specific env entity logic', () => {
@@ -447,7 +447,7 @@ describe('MetricsUtils', () => {
         const res = MetricsUtils.computeHeaderMetrics(cureHass, cureDevice, new Set(), []);
         const temp = res.mainChips.find(c => c.key === 'temperature');
         expect(temp).toBeDefined();
-        expect(temp.value).toBe('18°C');
+        expect(temp!.value).toBe('18°C');
     });
     describe('Extended Coverage', () => {
         it('should handle undefined linkedGraphGroups', () => {
@@ -459,7 +459,7 @@ describe('MetricsUtils', () => {
             );
             // It should proceed without error and metrics should not be linked
             const temp = result.mainChips.find(c => c.key === 'temperature');
-            expect(temp.linked).toBe(false);
+            expect(temp!.linked).toBe(false);
         });
 
         it('should format dominant stage labels correctly (single day vs plural)', () => {
@@ -480,14 +480,15 @@ describe('MetricsUtils', () => {
             // Case 1: 1 Day
             spy.mockReturnValue({ stage: 'veg', days: 1, plants: [] } as any);
             let res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
-            expect(res.dominant.daysLabel).toBe('1 Day Veg');
-            expect(res.dominant.weeksLabel).toBe('1 Week Veg'); // 1 day is in 1st week
+            expect(res.dominant).toBeTruthy();
+            expect(res.dominant!.daysLabel).toBe('1 Day Veg');
+            expect(res.dominant!.weeksLabel).toBe('1 Week Veg'); // 1 day is in 1st week
 
             // Case 2: 5 Days
             spy.mockReturnValue({ stage: 'flower', days: 5, plants: [] } as any);
             res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
-            expect(res.dominant.daysLabel).toBe('5 Days Flower');
-            expect(res.dominant.weeksLabel).toBe('1 Week Flower');
+            expect(res.dominant!.daysLabel).toBe('5 Days Flower');
+            expect(res.dominant!.weeksLabel).toBe('1 Week Flower');
 
             // Case 3: 15 Days (2 Weeks + 1 Day) -> 3 Weeks? Logic: Math.floor((15-1)/7)+1 = floor(2)+1 = 3 via logic
             // Wait: Math.floor((days - 1) / 7) + 1
@@ -496,8 +497,8 @@ describe('MetricsUtils', () => {
             // 7 days -> (6)/7 + 1 = 1 week.
             spy.mockReturnValue({ stage: 'cure', days: 8, plants: [] } as any);
             res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
-            expect(res.dominant.daysLabel).toBe('8 Days Cure');
-            expect(res.dominant.weeksLabel).toBe('2 Weeks Cure');
+            expect(res.dominant!.daysLabel).toBe('8 Days Cure');
+            expect(res.dominant!.weeksLabel).toBe('2 Weeks Cure');
 
             spy.mockRestore();
         });
@@ -522,7 +523,7 @@ describe('MetricsUtils', () => {
             const res = MetricsUtils.computeHeaderMetrics(fallbackHass, fallbackDev, new Set(), []);
             const chip = res.deviceChips.find(c => c.key === 'humidifier');
             expect(chip).toBeDefined();
-            expect(chip.value).toBe('idle');
+            expect(chip!.value).toBe('idle');
         });
 
         it('should fallback to sensor value for VPD if string is valid number', () => {
@@ -536,7 +537,7 @@ describe('MetricsUtils', () => {
 
             const res = MetricsUtils.computeHeaderMetrics(hassVpdStr, dev, new Set(), []);
             const vpd = res.mainChips.find(c => c.key === 'vpd');
-            expect(vpd.value).toBe('1.2 kPa'); // Should parse 1.2
+            expect(vpd!.value).toBe('1.2 kPa'); // Should parse 1.2
         });
 
         it('should NOT fallback to sensor value for VPD if string is invalid', () => {
@@ -570,8 +571,162 @@ describe('MetricsUtils', () => {
             const res = MetricsUtils.computeHeaderMetrics(hassLegacy, dev, new Set(), []);
             const vpd = res.mainChips.find(c => c.key === 'vpd');
             expect(vpd).toBeDefined();
-            expect(vpd.value).toBe('1.5 kPa');
+            expect(vpd!.value).toBe('1.5 kPa');
+        });
+        it('should fallback to UUID-based VPD if primary slug-based ID is unavailable', () => {
+            const devUUID = { ...mockDevice, device_id: 'uuid123', name: 'Grow Space' };
+            const hassUUID = {
+                states: {
+                    'sensor.uuid123_calculated_vpd': { state: '1.2' }
+                }
+            } as any;
+
+            const res = MetricsUtils.computeHeaderMetrics(hassUUID, devUUID, new Set(), []);
+            const vpdChip = res.mainChips.find(c => c.key === 'vpd');
+            expect(vpdChip).toBeDefined();
+            expect(vpdChip!.value).toBe('1.2 kPa');
+        });
+
+        it('should fallback if VPD sensor state is unknown', () => {
+            const devUUID = { ...mockDevice, device_id: 'uuid123', name: 'Grow Space' };
+            const hassUUID = {
+                states: {
+                    'sensor.vpd_sensor': { state: 'unknown' },
+                    'sensor.uuid123_calculated_vpd': { state: '0.9' }
+                }
+            } as any;
+            const devWithVpd = { ...devUUID, environment_attributes: { vpd_sensor: 'sensor.vpd_sensor' } };
+
+            const res = MetricsUtils.computeHeaderMetrics(hassUUID, devWithVpd, new Set(), []);
+            const vpdChip = res.mainChips.find(c => c.key === 'vpd');
+            expect(vpdChip).toBeDefined();
+            expect(vpdChip!.value).toBe('0.9 kPa');
+        });
+
+        it('should handle no events for next irrigation/drain', () => {
+            const devNoEvents = {
+                ...mockDevice,
+                irrigation_config: {
+                    irrigation_times: [],
+                    drain_times: []
+                }
+            } as any;
+
+            const res = MetricsUtils.computeHeaderMetrics(mockHass, devNoEvents, new Set(), []);
+            const irrigation = res.mainChips.find(c => c.key === 'irrigation');
+            const drain = res.mainChips.find(c => c.key === 'drain');
+
+            expect(irrigation).toBeUndefined();
+            expect(drain).toBeUndefined();
+        });
+
+        it('should show optimal chip when env entity is on', () => {
+            const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+            const optimal = res.mainChips.find(c => c.key === 'optimal');
+            expect(optimal).toBeDefined();
+            expect(optimal!.value).toBe('Optimal Conditions');
+            expect(optimal!.status).toBe('optimal');
+        });
+
+        it('should show warning chip with reasons when env entity is off', () => {
+            const hassOff = {
+                ...mockHass,
+                states: {
+                    ...mockHass.states,
+                    'binary_sensor.test_room_optimal_conditions': {
+                        state: 'off',
+                        attributes: { reasons: 'Low Humidity' }
+                    }
+                }
+            } as any;
+            const res = MetricsUtils.computeHeaderMetrics(hassOff, mockDevice, new Set(), []);
+            const optimal = res.mainChips.find(c => c.key === 'optimal');
+            expect(optimal).toBeDefined();
+            expect(optimal!.value).toBe('Low Humidity');
+            expect(optimal!.status).toBe('warning');
+        });
+
+        it('should include exhaust, humidifier, etc. with fallback values', () => {
+            const hassEmpty = {
+                states: {
+                    'fan.exhaust': undefined,
+                    'sensor.humidifier': null
+                }
+            } as any;
+            const devDevices = {
+                ...mockDevice,
+                environment_attributes: {
+                    exhaust_entity: 'fan.exhaust',
+                    humidifier_sensor: 'sensor.humidifier'
+                }
+            } as any;
+
+            const res = MetricsUtils.computeHeaderMetrics(hassEmpty, devDevices, new Set(), []);
+
+            const exhaust = res.deviceChips.find(c => c.key === 'exhaust');
+            expect(exhaust).toBeDefined();
+            expect(exhaust!.value).toBe('-');
+
+            const humidifier = res.deviceChips.find(c => c.key === 'humidifier');
+            expect(humidifier).toBeDefined();
+            expect(humidifier!.value).toBe('-');
+        });
+
+        it('should include exhaust, humidifier, dehumidifier, and fan chips when entities or sensors are provided', () => {
+            const hassDevs = {
+                states: {
+                    'fan.exhaust': { state: 'on' },
+                    'sensor.humidifier': { state: 'off' },
+                    'switch.dehumidifier': { state: 'on' },
+                    'fan.circulation': { state: 'off' }
+                }
+            } as any;
+            const devWithDevices = {
+                ...mockDevice,
+                environment_attributes: {
+                    exhaust_entity: 'fan.exhaust',
+                    humidifier_sensor: 'sensor.humidifier',
+                    dehumidifier_entity: 'switch.dehumidifier',
+                    circulation_fan_entity: 'fan.circulation'
+                }
+            } as any;
+
+            const res = MetricsUtils.computeHeaderMetrics(hassDevs, devWithDevices, new Set(), []);
+
+            const exhaust = res.deviceChips.find(c => c.key === 'exhaust');
+            expect(exhaust).toBeDefined();
+            expect(exhaust!.value).toBe('on');
+
+            const humidifier = res.deviceChips.find(c => c.key === 'humidifier');
+            expect(humidifier).toBeDefined();
+            expect(humidifier!.value).toBe('off');
+
+            const dehumidifier = res.deviceChips.find(c => c.key === 'dehumidifier');
+            expect(dehumidifier).toBeDefined();
+            expect(dehumidifier!.value).toBe('on');
+
+            const fan = res.deviceChips.find(c => c.key === 'circulation_fan');
+            expect(fan).toBeDefined();
+            expect(fan!.value).toBe('off');
+        });
+
+        it('should show "-" for devices with entity but missing state', () => {
+            const hassEmpty = {
+                states: {
+                    'switch.dehumidifier': null
+                }
+            } as any;
+            const devWithDevices = {
+                ...mockDevice,
+                environment_attributes: {
+                    dehumidifier_entity: 'switch.dehumidifier'
+                }
+            } as any;
+
+            const res = MetricsUtils.computeHeaderMetrics(hassEmpty, devWithDevices, new Set(), []);
+            const dehumidifier = res.deviceChips.find(c => c.key === 'dehumidifier');
+            expect(dehumidifier).toBeDefined();
+            expect(dehumidifier!.value).toBe('-');
         });
     });
 });
-

@@ -718,8 +718,20 @@ describe('Coverage Gap Fillers', () => {
         expect(result).toBeUndefined();
     });
 
-    it('should return undefined for formatDateForBackend with null', () => {
-        const result = PlantUtils.formatDateForBackend(null);
+    it('should return undefined for formatDateForBackend with invalid string', () => {
+        const result = PlantUtils.formatDateForBackend('invalid-date');
         expect(result).toBeUndefined();
+    });
+
+    it('should handle invalid date string in parseDateTimeLocal', () => {
+        expect(PlantUtils.parseDateTimeLocal('invalid')).toBeUndefined();
+    });
+
+    it('should return null for getDominantStage with empty plant list', () => {
+        expect(PlantUtils.getDominantStage([])).toBeNull();
+    });
+
+    it('should return null for getDominantStage with null plant list', () => {
+        expect(PlantUtils.getDominantStage(null as any)).toBeNull();
     });
 });

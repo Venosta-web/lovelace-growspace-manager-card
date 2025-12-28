@@ -1,6 +1,5 @@
-import { ReactiveControllerHost } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
-import { GrowspaceDevice, StrainEntry, PlantEntity, PlantOverviewDialogState, GrowspaceAPIResponse, GrowspaceManagerCardConfig } from '../types';
+import { GrowspaceDevice, StrainEntry, PlantEntity, PlantOverviewDialogState, GrowspaceAPIResponse, GrowspaceManagerCardConfig, GrowAdviceResponse } from '../types';
 import { DataService } from '../data-service';
 import { PlantUtils } from '../utils/plant-utils';
 import { LibraryExportReadyEvent } from '../events';
@@ -69,8 +68,7 @@ export class GrowspaceStore {
         };
     }
 
-    constructor(host?: ReactiveControllerHost) {
-        console.log('GrowspaceStore initialized (Instance Mode)');
+    constructor() {
         this.dataService = new DataService();
 
         // Initialize sub-stores
@@ -445,18 +443,28 @@ export class GrowspaceStore {
         }
 
         try {
-            let response;
+            let response: GrowAdviceResponse;
             if (all) {
-                // @ts-ignore
                 response = await this.dataService.analyzeAllGrowspaces();
             } else {
                 const selectedDevice = this.data.$selectedDevice.get();
                 if (!selectedDevice) throw new Error("No device selected");
-                // @ts-ignore
                 response = await this.dataService.askGrowAdvice(selectedDevice, query);
             }
 
-            const text = (response as any).response || response;
+            // Handle various response formats from the API
+            const extractText = (res: GrowAdviceResponse | string): string => {
+                if (typeof res === 'string') return res;
+                if (!res.response) return JSON.stringify(res);
+                if (typeof res.response === 'string') return res.response;
+                // res.response is an object - check if it has its own 'response' string property
+                const nested = res.response as { response?: unknown };
+                if ('response' in nested && typeof nested.response === 'string') {
+                    return nested.response;
+                }
+                return JSON.stringify(res.response);
+            };
+            const text = extractText(response as GrowAdviceResponse | string);
 
             const d = this.ui.$activeDialog.get();
             if (d.type === 'GROW_MASTER') {
@@ -616,9 +624,20 @@ export class GrowspaceStore {
         }
 
         try {
-            // @ts-ignore
             const res = await this.dataService.getStrainRecommendation(userQuery);
-            const text = (res as any).response || res;
+            // Handle various response formats from the API
+            const extractText = (res: GrowAdviceResponse | string): string => {
+                if (typeof res === 'string') return res;
+                if (!res.response) return JSON.stringify(res);
+                if (typeof res.response === 'string') return res.response;
+                // res.response is an object - check if it has its own 'response' string property
+                const nested = res.response as { response?: unknown };
+                if ('response' in nested && typeof nested.response === 'string') {
+                    return nested.response;
+                }
+                return JSON.stringify(res.response);
+            };
+            const text = extractText(res as GrowAdviceResponse | string);
 
             const d = this.ui.$activeDialog.get();
             if (d.type === 'STRAIN_RECOMMENDATION') {

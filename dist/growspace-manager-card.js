@@ -23863,7 +23863,7 @@ class MetricsUtils {
         const vpdDangerMin = overviewEntity?.attributes?.vpd_danger_min;
         const vpdDangerMax = overviewEntity?.attributes?.vpd_danger_max;
         if ((!vpdStatus || vpdStatus === 'unknown') &&
-            vpd !== undefined &&
+            vpd !== undefined && vpd !== null &&
             vpdTargetMin !== undefined &&
             vpdTargetMax !== undefined &&
             vpdDangerMin !== undefined &&
@@ -24224,7 +24224,7 @@ class ResizeController {
                 enumerable: true,
                 configurable: true,
                 writable: true,
-                value: void 0
+                value: {}
             });
             Object.defineProperty(this, "_draggedMetric", {
                 enumerable: true,
@@ -28978,17 +28978,13 @@ class GrowspaceHistoryStore {
             return null;
         if (mapping.source === 'irrigation') {
             const config = device.irrigation_config;
-            const key = mapping.primary;
-            // @ts-ignore
-            const entityId = config?.[key];
-            if (entityId)
+            const entityId = config?.[mapping.primary];
+            if (typeof entityId === 'string')
                 return entityId;
         }
-        const envAttrs = device.environment_attributes || {};
-        // @ts-ignore
+        const envAttrs = (device.environment_attributes || {});
         let entityId = envAttrs[mapping.primary];
         if (!entityId && mapping.fallback) {
-            // @ts-ignore
             entityId = envAttrs[mapping.fallback];
         }
         if (!entityId && metricKey === 'vpd' && device.name) {
@@ -29477,7 +29473,7 @@ class GrowspaceStore {
             handleDeletePlant: (plantId) => this.handleDeletePlant(plantId),
         };
     }
-    constructor(host) {
+    constructor() {
         Object.defineProperty(this, "dataService", {
             enumerable: true,
             configurable: true,
@@ -29529,7 +29525,6 @@ class GrowspaceStore {
                 return takeClone(this._plantActionContext, motherPlant, numClones);
             }
         });
-        console.log('GrowspaceStore initialized (Instance Mode)');
         this.dataService = new DataService();
         // Initialize sub-stores
         this.data = new GrowspaceDataStore();
@@ -29834,17 +29829,30 @@ class GrowspaceStore {
         try {
             let response;
             if (all) {
-                // @ts-ignore
                 response = await this.dataService.analyzeAllGrowspaces();
             }
             else {
                 const selectedDevice = this.data.$selectedDevice.get();
                 if (!selectedDevice)
                     throw new Error("No device selected");
-                // @ts-ignore
                 response = await this.dataService.askGrowAdvice(selectedDevice, query);
             }
-            const text = response.response || response;
+            // Handle various response formats from the API
+            const extractText = (res) => {
+                if (typeof res === 'string')
+                    return res;
+                if (!res.response)
+                    return JSON.stringify(res);
+                if (typeof res.response === 'string')
+                    return res.response;
+                // res.response is an object - check if it has its own 'response' string property
+                const nested = res.response;
+                if ('response' in nested && typeof nested.response === 'string') {
+                    return nested.response;
+                }
+                return JSON.stringify(res.response);
+            };
+            const text = extractText(response);
             const d = this.ui.$activeDialog.get();
             if (d.type === 'GROW_MASTER') {
                 this.ui.setActiveDialog({
@@ -29961,9 +29969,23 @@ class GrowspaceStore {
             });
         }
         try {
-            // @ts-ignore
             const res = await this.dataService.getStrainRecommendation(userQuery);
-            const text = res.response || res;
+            // Handle various response formats from the API
+            const extractText = (res) => {
+                if (typeof res === 'string')
+                    return res;
+                if (!res.response)
+                    return JSON.stringify(res);
+                if (typeof res.response === 'string')
+                    return res.response;
+                // res.response is an object - check if it has its own 'response' string property
+                const nested = res.response;
+                if ('response' in nested && typeof nested.response === 'string') {
+                    return nested.response;
+                }
+                return JSON.stringify(res.response);
+            };
+            const text = extractText(res);
             const d = this.ui.$activeDialog.get();
             if (d.type === 'STRAIN_RECOMMENDATION') {
                 this.ui.setActiveDialog({

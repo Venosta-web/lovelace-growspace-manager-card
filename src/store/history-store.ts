@@ -483,20 +483,16 @@ export class GrowspaceHistoryStore {
         if (!mapping) return null;
 
         if (mapping.source === 'irrigation') {
-            const config = device.irrigation_config;
-            const key = mapping.primary as keyof typeof config;
-            // @ts-ignore
-            const entityId = config?.[key];
-            if (entityId) return entityId as string;
+            const config = device.irrigation_config as unknown as Record<string, unknown>;
+            const entityId = config?.[mapping.primary];
+            if (typeof entityId === 'string') return entityId;
         }
 
-        const envAttrs = device.environment_attributes || {};
-        // @ts-ignore
-        let entityId = envAttrs[mapping.primary];
+        const envAttrs = (device.environment_attributes || {}) as Record<string, unknown>;
+        let entityId = envAttrs[mapping.primary] as string | undefined;
 
         if (!entityId && mapping.fallback) {
-            // @ts-ignore
-            entityId = envAttrs[mapping.fallback];
+            entityId = envAttrs[mapping.fallback] as string | undefined;
         }
 
         if (!entityId && metricKey === 'vpd' && device.name) {

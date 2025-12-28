@@ -155,7 +155,7 @@ describe('GrowspaceStore', () => {
             requestUpdate: vi.fn(),
             dispatchEvent: vi.fn()
         };
-        store = new GrowspaceStore(mockHost);
+        store = new GrowspaceStore();
         // Ensure proxy works
         store.hass = { connection: { subscribeEvents: vi.fn() } } as any;
     });
@@ -1608,6 +1608,51 @@ describe('GrowspaceStore', () => {
             expect(mockDataServiceInstance.updateHass).toHaveBeenCalledWith(mockHass);
         });
 
+        it('analyzeGrowspace should handle non-string nested response properties', async () => {
+            (uiStore.$activeDialog.get as any).mockReturnValue({ type: 'GROW_MASTER', payload: {} });
+            // Case where nested.response is not a string
+            mockDataServiceInstance.askGrowAdvice.mockResolvedValue({
+                response: { response: { something: 'else' } }
+            });
+            (dataStore.$devices.get as any).mockReturnValue([mockDevice1]);
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+
+            await store.analyzeGrowspace('q', false);
+
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: '{"response":{"something":"else"}}' })
+            }));
+        });
+
+        it('analyzeGrowspace should handle nested response objects with string value', async () => {
+            (uiStore.$activeDialog.get as any).mockReturnValue({ type: 'GROW_MASTER', payload: {} });
+            // Case where nested.response IS a string
+            mockDataServiceInstance.askGrowAdvice.mockResolvedValue({
+                response: { response: "nested text string" }
+            });
+            (dataStore.$devices.get as any).mockReturnValue([mockDevice1]);
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+
+            await store.analyzeGrowspace('q', false);
+
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: 'nested text string' })
+            }));
+        });
+
+        it('analyzeGrowspace should handle object without response field at all', async () => {
+            (uiStore.$activeDialog.get as any).mockReturnValue({ type: 'GROW_MASTER', payload: {} });
+            mockDataServiceInstance.askGrowAdvice.mockResolvedValue({ unknown: 'format' });
+            (dataStore.$devices.get as any).mockReturnValue([mockDevice1]);
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+
+            await store.analyzeGrowspace('q', false);
+
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: '{"unknown":"format"}' })
+            }));
+        });
+
         it('analyzeGrowspace should handle non-string response (stringify)', async () => {
             (uiStore.$activeDialog.get as any).mockReturnValue({ type: 'GROW_MASTER', payload: {} });
             mockDataServiceInstance.askGrowAdvice.mockResolvedValue({ response: { foo: 'bar' } });
@@ -1618,6 +1663,28 @@ describe('GrowspaceStore', () => {
 
             expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
                 payload: expect.objectContaining({ response: '{"foo":"bar"}' })
+            }));
+        });
+
+        it('getStrainRecommendation should handle nested response objects', async () => {
+            (uiStore.$activeDialog.get as any).mockReturnValue({ type: 'STRAIN_RECOMMENDATION', payload: {} });
+            mockDataServiceInstance.getStrainRecommendation.mockResolvedValue({ response: { response: "nested strain text" } });
+
+            await store.getStrainRecommendation('q');
+
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: 'nested strain text' })
+            }));
+        });
+
+        it('getStrainRecommendation should handle missing response field', async () => {
+            (uiStore.$activeDialog.get as any).mockReturnValue({ type: 'STRAIN_RECOMMENDATION', payload: {} });
+            mockDataServiceInstance.getStrainRecommendation.mockResolvedValue({ other: 'data' });
+
+            await store.getStrainRecommendation('q');
+
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: '{"other":"data"}' })
             }));
         });
 

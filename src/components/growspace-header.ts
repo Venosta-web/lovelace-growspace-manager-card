@@ -24,7 +24,7 @@ import './growspace-chip';
 import { consume } from '@lit/context';
 import { hassContext, configContext, storeContext } from '../context';
 import { GrowspaceDevice, GrowspaceManagerCardConfig, IrrigationTime } from '../types';
-import { MetricsUtils } from '../utils/metrics-utils';
+import { MetricsUtils, HeaderChip, DominantStageInfo } from '../utils/metrics-utils';
 import { ChartUtils } from '../utils/chart-utils';
 import { ResizeController } from '../controllers/resize-controller';
 import type { GrowspaceStore } from '../store/growspace-store';
@@ -77,10 +77,10 @@ export class GrowspaceHeader extends LitElement {
   private _resizeController = new ResizeController(this, () => this._checkScroll());
 
   // Cached metrics to avoid re-computation on every render
-  private _mainChips: any[] = [];
-  private _deviceChips: any[] = [];
-  private _dominant: any;
-  private _envAttrs: any;
+  private _mainChips: HeaderChip[] = [];
+  private _deviceChips: HeaderChip[] = [];
+  private _dominant: DominantStageInfo | undefined;
+  private _envAttrs: import('../types').SerializedEnvironmentAttributes = {};
   private _draggedMetric: string | null = null;
 
   // Helper getters for clarity in render/compute

@@ -13,12 +13,33 @@ import {
     mdiAirHumidifierOff,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
+import { HassEntity } from 'home-assistant-js-websocket';
 import { DateTime } from 'luxon';
-import { GrowspaceDevice, IrrigationTime } from '../types';
+import { GrowspaceDevice, IrrigationTime, SerializedEnvironmentAttributes } from '../types';
 import { PlantUtils } from './plant-utils';
 
+/** Represents a chip displayed in the header */
+export interface HeaderChip {
+    key: string;
+    icon: string;
+    value: string;
+    label?: string;
+    status?: string;
+    tooltip?: string;
+    active: boolean;
+    linked: boolean;
+    groupIndex: number;
+}
+
+/** Represents the dominant plant stage info */
+export interface DominantStageInfo {
+    icon: string;
+    daysLabel: string;
+    weeksLabel: string;
+}
+
 export class MetricsUtils {
-    private static _getAttributeValue(ent: any, key: string) {
+    private static _getAttributeValue(ent: HassEntity | undefined, key: string): unknown {
         if (!ent || !ent.attributes) return undefined;
         if (ent.attributes[key] !== undefined) return ent.attributes[key];
         if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
@@ -47,10 +68,10 @@ export class MetricsUtils {
         activeEnvGraphs: Set<string>,
         linkedGraphGroups: string[][]
     ): {
-        mainChips: any[];
-        deviceChips: any[];
-        dominant: any;
-        envAttrs: any;
+        mainChips: HeaderChip[];
+        deviceChips: HeaderChip[];
+        dominant: DominantStageInfo | undefined;
+        envAttrs: SerializedEnvironmentAttributes;
     } {
         if (!device || !hass)
             return { mainChips: [], deviceChips: [], dominant: undefined, envAttrs: {} };
@@ -146,7 +167,7 @@ export class MetricsUtils {
 
         if (
             (!vpdStatus || vpdStatus === 'unknown') &&
-            vpd !== undefined &&
+            vpd !== undefined && vpd !== null &&
             vpdTargetMin !== undefined &&
             vpdTargetMax !== undefined &&
             vpdDangerMin !== undefined &&

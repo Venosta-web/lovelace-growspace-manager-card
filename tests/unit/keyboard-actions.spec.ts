@@ -41,8 +41,8 @@ describe('keyboard-actions', () => {
     beforeEach(() => {
         vi.clearAllMocks();
 
-        // Create store instance (which will use the mocks)
-        store = new GrowspaceStore({ requestUpdate: vi.fn() } as any);
+        // Create store instance
+        store = new GrowspaceStore();
 
         mockContext = {
             exitEditMode: vi.fn(),
@@ -214,13 +214,27 @@ describe('keyboard-actions', () => {
             expect(mockContext.handlePlantClick).not.toHaveBeenCalled();
         });
 
-        it('should not delete when focused index is invalid and no plants are selected', () => {
-            vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(-1);
-            vi.mocked(store.ui.$selectedPlants.get).mockReturnValue(new Set());
+        it('should do nothing when selected device is not found in devices list', () => {
+            vi.mocked(store.data.$selectedDevice.get).mockReturnValue('nonexistent');
+            vi.mocked(store.data.$devices.get).mockReturnValue([]);
 
-            keyboardActions.handleKeyboardNavigation(mockContext, 'Delete', store.ui, store.data);
+            keyboardActions.handleKeyboardNavigation(mockContext, 'ArrowRight', store.ui, store.data);
 
-            expect(mockContext.handleDeletePlant).not.toHaveBeenCalled();
+            expect(store.ui.setFocusedPlantIndex).not.toHaveBeenCalled();
+        });
+
+        it('should handle plant without plant_id during filtering', () => {
+            const plantNoId = { ...mockPlants[0], attributes: { ...mockPlants[0].attributes, plant_id: undefined } };
+            vi.mocked(store.data.$devices.get).mockReturnValue([
+                { device_id: 'device1', name: 'Tent 1', plants: [plantNoId] } as any,
+            ]);
+            vi.mocked(store.data.$optimisticDeletedPlantIds.get).mockReturnValue(new Set(['p1'])); // p1 won't match our plant since it has no id
+
+            keyboardActions.handleKeyboardNavigation(mockContext, 'ArrowRight', store.ui, store.data);
+
+            // Plant should still be visible because it has no plant_id to match the deleted set
+            // With 1 plant, setFocusedPlantIndex(0)
+            expect(store.ui.setFocusedPlantIndex).toHaveBeenCalledWith(0);
         });
     });
 });
