@@ -148,11 +148,17 @@ export class DialogHost extends LitElement {
         <strain-library-dialog
             .open=${true}
             .strains=${strainLibrary}
-            @close=${() => this.store.ui.closeDialog()}
+            @close=${() => {
+                // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
+                if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {
+                    this.store.ui.closeDialog();
+                }
+            }}
             @save-strain=${(e: CustomEvent) => this.store.addStrain(e.detail)}
             @delete-strain=${(e: CustomEvent) => this.store.removeStrain(e.detail.key)}
             @import-library=${(e: CustomEvent) => this._performImport(e.detail.file, e.detail.replace)}
             @export-library=${() => this.store.handleExportLibrary()}
+            @get-recommendation=${() => this.store.openStrainRecommendationDialog()}
         ></strain-library-dialog>
         `;
     }
