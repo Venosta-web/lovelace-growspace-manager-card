@@ -197,5 +197,30 @@ describe('keyboard-actions', () => {
             // With only one visible plant, wrapping should stay at 0
             expect(store.ui.setFocusedPlantIndex).toHaveBeenCalledWith(0);
         });
+
+        it('should not trigger plant click on Enter when index is out of bounds', () => {
+            vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(-1); // Invalid index
+
+            keyboardActions.handleKeyboardNavigation(mockContext, 'Enter', store.ui, store.data);
+
+            expect(mockContext.handlePlantClick).not.toHaveBeenCalled();
+        });
+
+        it('should not trigger plant click on Space when index exceeds plants length', () => {
+            vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(99); // Out of bounds
+
+            keyboardActions.handleKeyboardNavigation(mockContext, ' ', store.ui, store.data);
+
+            expect(mockContext.handlePlantClick).not.toHaveBeenCalled();
+        });
+
+        it('should not delete when focused index is invalid and no plants are selected', () => {
+            vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(-1);
+            vi.mocked(store.ui.$selectedPlants.get).mockReturnValue(new Set());
+
+            keyboardActions.handleKeyboardNavigation(mockContext, 'Delete', store.ui, store.data);
+
+            expect(mockContext.handleDeletePlant).not.toHaveBeenCalled();
+        });
     });
 });

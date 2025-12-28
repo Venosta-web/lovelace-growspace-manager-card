@@ -37,8 +37,7 @@ export class IrrigationDialog extends LitElement {
     dialogStyles,
     css`
       :host {
-        --mdc-dialog-min-width: 400px;
-        --mdc-dialog-max-width: 1000px;
+        --mdc-dialog-min-width: clamp(400px, 750px, 70vw);
       }
 
       /* Overrides/Specific Layouts */
@@ -86,6 +85,12 @@ export class IrrigationDialog extends LitElement {
         width: 4px;
         cursor: pointer;
         border-radius: 2px;
+        /* Ensure marker is on top so hover works reliably */
+        z-index: 5;
+      }
+
+      .chart-marker:hover .chart-tooltip {
+        opacity: 1;
       }
 
       .chart-tooltip {
@@ -99,6 +104,9 @@ export class IrrigationDialog extends LitElement {
         white-space: nowrap;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         z-index: 10;
+        opacity: 0;
+        transition: opacity 0.2s;
+        pointer-events: none;
       }
 
       .legend-row {
@@ -599,13 +607,6 @@ export class IrrigationDialog extends LitElement {
       })}
         </div>
 
-        <div class="legend-row">
-          <span>00:00</span>
-          <span>06:00</span>
-          <span>12:00</span>
-          <span>18:00</span>
-          <span>24:00</span>
-        </div>
 
         ${addingTime
         ? html`

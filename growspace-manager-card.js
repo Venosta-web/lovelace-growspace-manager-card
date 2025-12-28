@@ -4781,9 +4781,9 @@ const GrowspaceAPIResponseSchema = objectType({
     dehumidifier_entity: stringType().optional(),
     dehumidifier_control_enabled: booleanType().optional(),
     circulation_fan_entity: stringType().optional(),
-    vpd: stringType().optional(),
-    soil_moisture_value: stringType().optional(),
-    dehumidifier_state: stringType().optional(),
+    vpd: stringType().nullable().optional(),
+    soil_moisture_value: stringType().nullable().optional(),
+    dehumidifier_state: stringType().nullable().optional(),
     dehumidifier_thresholds: recordType(stringType(), recordType(stringType(), objectType({ on: numberType(), off: numberType() }))).optional().default({}),
     // Statistics
     max_veg_days: numberType().optional().default(0),
@@ -13490,13 +13490,6 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
             })}
         </div>
 
-        <div class="legend-row">
-          <span>00:00</span>
-          <span>06:00</span>
-          <span>12:00</span>
-          <span>18:00</span>
-          <span>24:00</span>
-        </div>
 
         ${addingTime
                 ? x `
@@ -13658,8 +13651,7 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
             dialogStyles,
             i$6 `
       :host {
-        --mdc-dialog-min-width: 400px;
-        --mdc-dialog-max-width: 1000px;
+        --mdc-dialog-min-width: clamp(400px, 750px, 70vw);
       }
 
       /* Overrides/Specific Layouts */
@@ -13707,6 +13699,12 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
         width: 4px;
         cursor: pointer;
         border-radius: 2px;
+        /* Ensure marker is on top so hover works reliably */
+        z-index: 5;
+      }
+
+      .chart-marker:hover .chart-tooltip {
+        opacity: 1;
       }
 
       .chart-tooltip {
@@ -13720,6 +13718,9 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
         white-space: nowrap;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         z-index: 10;
+        opacity: 0;
+        transition: opacity 0.2s;
+        pointer-events: none;
       }
 
       .legend-row {

@@ -1,11 +1,9 @@
-
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { html } from 'lit';
 import { fixture } from '@open-wc/testing-helpers';
 import { GrowspaceAnalytics } from '../../../src/components/growspace-analytics';
 import { storeContext, hassContext } from '../../../src/context';
 import { ContextProvider } from '@lit/context';
-import * as historyStore from '../../../src/store/history-store';
 
 // Mock child components
 vi.mock('../../../src/growspace-env-chart', () => {
@@ -18,56 +16,66 @@ vi.mock('../../../src/growspace-env-chart', () => {
     return { GrowspaceEnvChart };
 });
 
-// Mock history store atoms
-vi.mock('../../../src/store/history-store', () => ({
-    $historyCache: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
-    $historyLoading: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
-    $historyLoaded: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
-    $activeEnvGraphs: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
-    $linkedGraphGroups: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
-    $graphRanges: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
-    $combinedHistory: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
-    setGraphRange: vi.fn(),
-    toggleEnvGraph: vi.fn(),
-    unlinkGraphGroup: vi.fn(),
-    unlinkGraphMetric: vi.fn(),
-    getGraphRange: vi.fn().mockReturnValue('24h')
-}));
-
 describe('GrowspaceAnalytics', () => {
     let element: GrowspaceAnalytics;
     let mockStore: any;
     let hassMock: any;
     let wrapper: HTMLElement;
 
+    // Local mocks for history store atoms/functions
+    let $historyCache: any;
+    let $historyLoading: any;
+    let $historyLoaded: any;
+    let $activeEnvGraphs: any;
+    let $linkedGraphGroups: any;
+    let $combinedHistory: any;
+    let $graphRanges: any;
+    let setGraphRange: any;
+    let toggleEnvGraph: any;
+    let unlinkGraphGroup: any;
+    let unlinkGraphMetric: any;
+
+    const createMockAtom = (initialValue: any) => ({
+        get: vi.fn().mockReturnValue(initialValue),
+        subscribe: vi.fn((cb) => vi.fn()),
+        set: vi.fn(),
+        listen: vi.fn()
+    });
+
     beforeEach(async () => {
-        // Reset store mocks
-        vi.mocked(historyStore.$historyCache.get).mockReturnValue({});
-        vi.mocked(historyStore.$historyLoading.get).mockReturnValue(false);
-        vi.mocked(historyStore.$historyLoaded.get).mockReturnValue(false);
-        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set());
-        vi.mocked(historyStore.$linkedGraphGroups.get).mockReturnValue([]);
-        vi.mocked(historyStore.$combinedHistory.get).mockReturnValue({
+        // Initialize local mocks
+        $historyCache = createMockAtom({});
+        $historyLoading = createMockAtom(false);
+        $historyLoaded = createMockAtom(false);
+        $activeEnvGraphs = createMockAtom(new Set());
+        $linkedGraphGroups = createMockAtom([]);
+        $combinedHistory = createMockAtom({
             temperature: [], humidity: [], vpd: [], co2: [], light: [],
             soil_moisture: [], exhaust: [], humidifier: [], dehumidifier: [],
             circulation_fan: [], irrigation: [], drain: [], optimal: []
         });
+        $graphRanges = createMockAtom({});
 
-        // Mock the GitStore structure that the component expects
+        setGraphRange = vi.fn();
+        toggleEnvGraph = vi.fn();
+        unlinkGraphGroup = vi.fn();
+        unlinkGraphMetric = vi.fn();
+
+        // Assemble mock store
         mockStore = {
             history: {
-                $historyCache: historyStore.$historyCache,
-                $historyLoading: historyStore.$historyLoading,
-                $historyLoaded: historyStore.$historyLoaded,
-                $activeEnvGraphs: historyStore.$activeEnvGraphs,
-                $linkedGraphGroups: historyStore.$linkedGraphGroups,
-                $combinedHistory: historyStore.$combinedHistory,
-                $graphRanges: historyStore.$graphRanges,
+                $historyCache,
+                $historyLoading,
+                $historyLoaded,
+                $activeEnvGraphs,
+                $linkedGraphGroups,
+                $combinedHistory,
+                $graphRanges,
                 getRange: vi.fn().mockReturnValue('24h'),
-                setGraphRange: historyStore.setGraphRange,
-                toggleEnvGraph: historyStore.toggleEnvGraph,
-                unlinkGraphGroup: historyStore.unlinkGraphGroup,
-                unlinkGraphMetric: historyStore.unlinkGraphMetric,
+                setGraphRange,
+                toggleEnvGraph,
+                unlinkGraphGroup,
+                unlinkGraphMetric,
                 loadHistoryOnDemand: vi.fn().mockResolvedValue(undefined),
                 startAutoRefresh: vi.fn(),
                 stopAutoRefresh: vi.fn(),
@@ -105,8 +113,28 @@ describe('GrowspaceAnalytics', () => {
         expect(element).toBeInstanceOf(GrowspaceAnalytics);
     });
 
+    it('should call stopAutoRefresh on disconnectedCallback', () => {
+        // Assert store was connected (startAutoRefresh was called in connectedCallback)
+        expect(mockStore.history.startAutoRefresh).toHaveBeenCalled();
+
+        // Simulate disconnection
+        element.disconnectedCallback();
+
+        // Assert stopAutoRefresh was called
+        expect(mockStore.history.stopAutoRefresh).toHaveBeenCalled();
+    });
+
+    it('should handle disconnectedCallback when store is not defined', () => {
+        // Create element without store
+        const elementWithoutStore = new GrowspaceAnalytics();
+        (elementWithoutStore as any).store = undefined;
+
+        // Should not throw
+        expect(() => elementWithoutStore.disconnectedCallback()).not.toThrow();
+    });
+
     it('should render nothing if no active graphs', async () => {
-        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set());
+        $activeEnvGraphs.get.mockReturnValue(new Set());
         element.requestUpdate();
         await element.updateComplete;
 
@@ -115,13 +143,7 @@ describe('GrowspaceAnalytics', () => {
     });
 
     it('should render single graph for single metric', async () => {
-        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature']));
-
-        // Mock controller value (NanoStores StoreController reads .value from the store)
-        // Since we mocked the store atoms, their subscribe methods are mocked.
-        // Lit StoreController usually subscribes and updates host.
-        // In unit tests with mocks, we might need to manually trigger update or rely on `requestUpdate`.
-        // The component calls `this._computeItemsToRender` in `willUpdate`.
+        $activeEnvGraphs.get.mockReturnValue(new Set(['temperature']));
 
         element.requestUpdate();
         await element.updateComplete;
@@ -132,8 +154,8 @@ describe('GrowspaceAnalytics', () => {
     });
 
     it('should render combined graph for grouped metrics', async () => {
-        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature', 'humidity']));
-        vi.mocked(historyStore.$linkedGraphGroups.get).mockReturnValue([['temperature', 'humidity']]);
+        $activeEnvGraphs.get.mockReturnValue(new Set(['temperature', 'humidity']));
+        $linkedGraphGroups.get.mockReturnValue([['temperature', 'humidity']]);
 
         element.requestUpdate();
         await element.updateComplete;
@@ -145,46 +167,30 @@ describe('GrowspaceAnalytics', () => {
     });
 
     it('should handle time range selection', async () => {
-        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature']));
+        $activeEnvGraphs.get.mockReturnValue(new Set(['temperature']));
         element.requestUpdate();
         await element.updateComplete;
 
         const rangeBtn = element.shadowRoot?.querySelector('.range-btn') as HTMLElement;
         rangeBtn.click();
 
-        expect(historyStore.setGraphRange).toHaveBeenCalledWith('d1', '1h');
+        expect(setGraphRange).toHaveBeenCalledWith('d1', '1h');
     });
 
     it('should handle toggle graph event', async () => {
-        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature']));
+        $activeEnvGraphs.get.mockReturnValue(new Set(['temperature']));
         element.requestUpdate();
         await element.updateComplete;
 
         const chart = element.shadowRoot?.querySelector('growspace-env-chart');
         chart?.dispatchEvent(new CustomEvent('toggle-graph', { detail: 'temperature' }));
 
-        expect(historyStore.toggleEnvGraph).toHaveBeenCalledWith('temperature');
-    });
-
-    it('should handle toggle graph event with metric property in detail', async () => {
-        // The component only handles string detail now based on code review:
-        // const metric = e.detail; if (metric && typeof metric === 'string') ...
-        // So this test case might be verifying legacy behavior or behavior that was removed/changed.
-        // Let's check logic: _handleToggleGraph checks `typeof metric === 'string'`.
-        // So object detail will be ignored.
-        // We should skip or remove this test if it expects a call, OR expect NOT called.
-        // Re-reading component code: `const metric = e.detail;`...
-
-        // Let's update test to expect NO call if detail is not string, or fix expectation.
-        // The previous test expected a call with object. That seems wrong if implementation changed.
-
-        // Actually, let's keep it simple and skip this test if we think it's obsolete, or expect no call.
-        // But for now let's leave it out or assert not called.
+        expect(toggleEnvGraph).toHaveBeenCalledWith('temperature');
     });
 
     it('should handle unlink-graphs event from combined chart', async () => {
-        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature', 'humidity']));
-        vi.mocked(historyStore.$linkedGraphGroups.get).mockReturnValue([['temperature', 'humidity']]);
+        $activeEnvGraphs.get.mockReturnValue(new Set(['temperature', 'humidity']));
+        $linkedGraphGroups.get.mockReturnValue([['temperature', 'humidity']]);
         element.requestUpdate();
         await element.updateComplete;
 
@@ -194,12 +200,12 @@ describe('GrowspaceAnalytics', () => {
             bubbles: true
         }));
 
-        expect(historyStore.unlinkGraphGroup).toHaveBeenCalledWith(0);
+        expect(unlinkGraphGroup).toHaveBeenCalledWith(0);
     });
 
     it('should handle unlink-graph event for single metric', async () => {
-        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature', 'humidity']));
-        vi.mocked(historyStore.$linkedGraphGroups.get).mockReturnValue([['temperature', 'humidity']]);
+        $activeEnvGraphs.get.mockReturnValue(new Set(['temperature', 'humidity']));
+        $linkedGraphGroups.get.mockReturnValue([['temperature', 'humidity']]);
         element.requestUpdate();
         await element.updateComplete;
 
@@ -209,12 +215,12 @@ describe('GrowspaceAnalytics', () => {
             bubbles: true
         }));
 
-        expect(historyStore.unlinkGraphMetric).toHaveBeenCalledWith('temperature');
+        expect(unlinkGraphMetric).toHaveBeenCalledWith('temperature');
     });
 
     it('should render loading state when history is loading', async () => {
-        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature']));
-        vi.mocked(historyStore.$historyLoading.get).mockReturnValue(true);
+        $activeEnvGraphs.get.mockReturnValue(new Set(['temperature']));
+        $historyLoading.get.mockReturnValue(true);
 
         element.requestUpdate();
         await element.updateComplete;
@@ -227,8 +233,8 @@ describe('GrowspaceAnalytics', () => {
     });
 
     it('should trigger lazy load in willUpdate when not loaded and not loading', async () => {
-        vi.mocked(historyStore.$historyLoaded.get).mockReturnValue(false);
-        vi.mocked(historyStore.$historyLoading.get).mockReturnValue(false);
+        $historyLoaded.get.mockReturnValue(false);
+        $historyLoading.get.mockReturnValue(false);
         mockStore.history.loadHistoryOnDemand.mockClear();
 
         element.requestUpdate();
@@ -238,7 +244,7 @@ describe('GrowspaceAnalytics', () => {
     });
 
     it('should not render if device is missing', async () => {
-        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['temperature']));
+        $activeEnvGraphs.get.mockReturnValue(new Set(['temperature']));
         element.device = undefined;
         element.requestUpdate();
         await element.updateComplete;
@@ -248,7 +254,7 @@ describe('GrowspaceAnalytics', () => {
     });
 
     it('should handle getSortIndex for unknown metric', async () => {
-        vi.mocked(historyStore.$activeEnvGraphs.get).mockReturnValue(new Set(['unknown_metric']));
+        $activeEnvGraphs.get.mockReturnValue(new Set(['unknown_metric']));
         (element as any)._computeItemsToRender();
 
         const items = (element as any)._itemsToRender;
