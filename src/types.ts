@@ -47,7 +47,6 @@ export type HistoryTimeRange = '1h' | '6h' | '24h' | '7d';
 export interface IrrigationScheduleItem {
   time: string; // HH:MM:SS
   duration?: number;
-  [key: string]: any;
 }
 
 // Alias for legacy support
@@ -62,7 +61,6 @@ export interface IrrigationStrategy {
   maintenance_dryback_percent: number;
   shot_duration_seconds: number;
   shot_interval_minutes: number;
-  [key: string]: any; // Allow partial for dialog state
 }
 
 export interface IrrigationConfig {
@@ -198,7 +196,6 @@ export interface GrowspaceDevice {
 export interface PlantAttributes extends RawPlantData {
   friendly_name?: string;
   growspace_id?: string;
-  [key: string]: any;
 }
 
 export interface PlantEntity extends HassEntity {
@@ -212,7 +209,6 @@ export interface GrowspaceOverviewEntity extends HassEntity {
     type?: string;
     plants_per_row?: number;
     rows?: number;
-    [key: string]: any;
   };
 }
 

@@ -29156,6 +29156,10 @@ async function movePlantToNextStage(ctx, plant) {
     try {
         const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
         await ctx.dataService.harvestPlant(plantId, targetGrowspace);
+        ctx.showToast(`Plant moved to ${targetGrowspace}`, 'success');
+        // Small delay to allow backend commit to complete before fetching updated data
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await ctx.refreshData();
         ctx.closeDialog();
         return true;
     }
@@ -29178,6 +29182,8 @@ async function movePlantToGrowspace(ctx, plant, targetGrowspace) {
             await ctx.dataService.harvestPlant(plantId, targetGrowspace);
         }
         ctx.showToast(`Plant moved to ${targetGrowspace}`, 'success');
+        // Small delay to allow backend commit to complete before fetching updated data
+        await new Promise(resolve => setTimeout(resolve, 500));
         await ctx.refreshData();
         ctx.closeDialog();
         return true;
