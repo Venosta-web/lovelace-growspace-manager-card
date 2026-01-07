@@ -13,6 +13,9 @@ import { GrowspaceGridStore } from './grid-store';
 import * as plantActions from './plant-actions';
 import * as strainActions from './strain-actions';
 import * as keyboardActions from './keyboard-actions';
+import { number } from 'zod';
+
+
 
 export class GrowspaceStore {
     dataService!: DataService;
@@ -548,32 +551,39 @@ export class GrowspaceStore {
         await this.handleMovePlantToNextStage(plant);
     }
 
-    openBatchWateringDialog() {
+    openBatchWateringDialog(growspaceId?: string) {
         const selectedIds = Array.from(this.ui.$selectedPlants.get());
-        if (selectedIds.length === 0) return;
+        if (selectedIds.length === 0 && !growspaceId) return;
 
-        // Find growspace context
-        const devices = this.data.$devices.get();
-        const growspaceIds = new Set<string>();
-        let primaryGrowspaceId: string | undefined;
-
-        selectedIds.forEach(id => {
+        // Determine context if not provided
+        if (!growspaceId && selectedIds.length > 0) {
+            const devices = this.data.$devices.get();
             for (const device of devices) {
-                if (device.plants.some(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id)) {
-                    growspaceIds.add(device.device_id);
-                    if (!primaryGrowspaceId) primaryGrowspaceId = device.device_id;
+                if (device.plants.some(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === selectedIds[0])) {
+                    growspaceId = device.device_id;
                     break;
                 }
             }
-        });
-
-        const isSingleGrowspace = growspaceIds.size === 1;
-        const growspaceId = isSingleGrowspace ? primaryGrowspaceId : undefined;
+        }
 
         this.ui.setActiveDialog({
             type: 'WATERING',
             payload: {
                 mode: 'plant',
+                plantIds: selectedIds,
+                growspaceId: growspaceId
+            }
+        });
+    }
+
+    openBatchTrainingDialog(growspaceId?: string) {
+        const selectedIds = Array.from(this.ui.$selectedPlants.get());
+        if (selectedIds.length === 0 && !growspaceId) return;
+
+        this.ui.setActiveDialog({
+            type: 'TRAINING',
+            payload: {
+                isOpen: true,
                 plantIds: selectedIds,
                 growspaceId: growspaceId
             }

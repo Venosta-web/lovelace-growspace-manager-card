@@ -243,6 +243,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             @select-all=${this._handleSelectAll}
             @clear-selection=${this._handleClearSelection}
             @water-selected=${this._handleWaterSelected}
+            @training-selected=${() => this.store.openBatchTrainingDialog()}
             @exit-edit-mode=${this._handleExitEditMode}
         >
           <growspace-view-switcher

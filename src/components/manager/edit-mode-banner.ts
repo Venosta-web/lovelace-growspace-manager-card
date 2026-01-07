@@ -73,6 +73,7 @@ export class EditModeBanner extends LitElement {
           <button class="md3-button text" @click=${() => this._dispatch('select-all')}>Select All</button>
           <button class="md3-button text" @click=${() => this._dispatch('clear-selection')}>Clear</button>
           <button class="md3-button text" @click=${() => this._dispatch('water-selected')}>Water / Nutrients</button>
+          <button class="md3-button text" @click=${() => this._dispatch('training-selected')}>Log Training</button>
           <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>Exit</button>
         </div>
       </div>

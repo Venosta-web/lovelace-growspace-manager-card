@@ -153,7 +153,9 @@ export interface RawPlantData {
   cure_start: string | null;
 
   // Watering tracking
-  last_watered: string | null;
+  last_watered?: string | null;
+  last_trained?: string | null;
+  last_training_technique?: string | null;
   days_since_last_watering: number | null;
 }
 
@@ -197,6 +199,16 @@ export interface GrowspaceDevice {
   irrigation_config: IrrigationConfig;
   irrigation_strategy?: IrrigationStrategy;
   nutrient_presets?: Record<string, NutrientPreset>;
+}
+
+export enum TrainingTechnique {
+  TOPPING = 'topping',
+  FIM = 'fim',
+  LST = 'lst',
+  SUPER_CROPPING = 'super_cropping',
+  SCROG = 'scrog',
+  DEFOLIATING = 'defoliating',
+  LOLLIPOPPING = 'lollipopping',
 }
 
 export interface PlantAttributes extends RawPlantData {
@@ -358,6 +370,12 @@ export interface WateringDialogState {
   plantIds?: string[];
   growspaceId?: string;
   mode: 'plant' | 'growspace';
+}
+
+export interface TrainingDialogState {
+  isOpen: boolean;
+  plantIds: string[];
+  growspaceId?: string;
 }
 
 export interface NutrientPresetsDialogState {

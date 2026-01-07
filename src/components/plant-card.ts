@@ -173,14 +173,22 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
         : nothing}
 
         <div class="plant-card-content">
+          ${this.plant.attributes.last_training_technique ? html`
+            <div class="status-icon training" title="Last trained: ${this.plant.attributes.last_training_technique}">
+              <md-icon>content_cut</md-icon>
+            </div>
+          ` : ''}
+          ${this.plant.attributes.problem ? html`
+            <div class="status-icon problem">
+              <md-icon>warning</md-icon>
+            </div>
+          ` : ''}
           <div class="pc-info">
             <div class="pc-strain-name" title="${strainName}">${strainName}</div>
             ${pheno ? html`<div class="pc-pheno">${pheno}</div>` : nothing}
             <div style="display: flex; align-items: center; gap: 8px;">
                <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
                ${this._hasRecommendedPreset ? html`
-                 <ha-svg-icon 
-                    .path=${mdiBottleTonicPlus} 
                     style="--mdc-icon-size: 14px; color: var(--primary-color);" 
                     title="Nutrient Preset Recommended"
                  ></ha-svg-icon>

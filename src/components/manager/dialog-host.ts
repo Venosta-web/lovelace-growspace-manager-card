@@ -17,6 +17,7 @@ import '../../dialogs/strain-recommendation-dialog';
 import '../../dialogs/irrigation-dialog';
 import '../../dialogs/logbook-dialog';
 import '../../dialogs/watering-dialog';
+import '../../dialogs/training-dialog';
 import './nutrient-presets-editor';
 
 import { HomeAssistant } from 'custom-card-helpers';
@@ -86,6 +87,8 @@ export class DialogHost extends LitElement {
                 return this._renderWateringDialog(active, selectedDeviceData);
             case 'NUTRIENT_PRESETS':
                 return this._renderNutrientPresetsDialog(active, selectedDeviceData);
+            case 'TRAINING':
+                return this._renderTrainingDialog(active);
             default:
                 return html``;
         }
@@ -368,9 +371,17 @@ export class DialogHost extends LitElement {
             .hass=${this.hass}
             .dataService=${this.store.dataService}
             .presets=${selectedDeviceData?.nutrient_presets || {}}
-            @close=${() => this.store.ui.closeDialog()}
             @data-changed=${() => this.store.refreshData()}
         ></nutrient-presets-editor>
+        `;
+    }
+
+    private _renderTrainingDialog(active: ActiveDialogState): TemplateResult {
+        if (active.type !== 'TRAINING') return html``;
+        return html`
+        <training-dialog
+            .store=${this.store}
+        ></training-dialog>
         `;
     }
 }

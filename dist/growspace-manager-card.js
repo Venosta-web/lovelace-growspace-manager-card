@@ -78,6 +78,16 @@ const STAGE_CONFIG = {
     [PlantStage.DRY]: { icon: mdiHairDryer, title: 'Dry', colorVar: '--state-dry-color' },
     [PlantStage.CURE]: { icon: mdiCannabis, title: 'Cure', colorVar: '--state-cure-color' },
 };
+var TrainingTechnique;
+(function (TrainingTechnique) {
+    TrainingTechnique["TOPPING"] = "topping";
+    TrainingTechnique["FIM"] = "fim";
+    TrainingTechnique["LST"] = "lst";
+    TrainingTechnique["SUPER_CROPPING"] = "super_cropping";
+    TrainingTechnique["SCROG"] = "scrog";
+    TrainingTechnique["DEFOLIATING"] = "defoliating";
+    TrainingTechnique["LOLLIPOPPING"] = "lollipopping";
+})(TrainingTechnique || (TrainingTechnique = {}));
 // --- Utils ---
 function createGrowspaceDevice(params) {
     return {
@@ -14955,6 +14965,174 @@ class GrowspaceLogbookController {
 })();
 
 (() => {
+    var _TrainingDialog_hass_accessor_storage, _TrainingDialog_store_accessor_storage, _TrainingDialog__technique_accessor_storage, _TrainingDialog__notes_accessor_storage, _TrainingDialog__submitting_accessor_storage;
+    let _classDecorators = [t$2('training-dialog')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _store_decorators;
+    let _store_initializers = [];
+    let _store_extraInitializers = [];
+    let __technique_decorators;
+    let __technique_initializers = [];
+    let __technique_extraInitializers = [];
+    let __notes_decorators;
+    let __notes_initializers = [];
+    let __notes_extraInitializers = [];
+    let __submitting_decorators;
+    let __submitting_initializers = [];
+    let __submitting_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get hass() { return __classPrivateFieldGet(this, _TrainingDialog_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _TrainingDialog_hass_accessor_storage, value, "f"); }
+        get store() { return __classPrivateFieldGet(this, _TrainingDialog_store_accessor_storage, "f"); }
+        set store(value) { __classPrivateFieldSet(this, _TrainingDialog_store_accessor_storage, value, "f"); }
+        get _technique() { return __classPrivateFieldGet(this, _TrainingDialog__technique_accessor_storage, "f"); }
+        set _technique(value) { __classPrivateFieldSet(this, _TrainingDialog__technique_accessor_storage, value, "f"); }
+        get _notes() { return __classPrivateFieldGet(this, _TrainingDialog__notes_accessor_storage, "f"); }
+        set _notes(value) { __classPrivateFieldSet(this, _TrainingDialog__notes_accessor_storage, value, "f"); }
+        get _submitting() { return __classPrivateFieldGet(this, _TrainingDialog__submitting_accessor_storage, "f"); }
+        set _submitting(value) { __classPrivateFieldSet(this, _TrainingDialog__submitting_accessor_storage, value, "f"); }
+        get _techniques() {
+            return Object.values(TrainingTechnique).map(t => ({
+                value: t,
+                label: t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+            }));
+        }
+        _handleClose() {
+            this.store.ui.closeDialog();
+        }
+        async _save() {
+            if (!this._technique)
+                return;
+            this._submitting = true;
+            try {
+                const activeDialog = this.store.ui.$activeDialog.get();
+                if (activeDialog.type !== 'TRAINING')
+                    return;
+                const { plantIds, growspaceId } = activeDialog.payload;
+                await this.hass.callService('growspace_manager', 'log_training_event', {
+                    technique: this._technique,
+                    notes: this._notes || undefined,
+                    growspace_id: growspaceId,
+                    plant_id: plantIds && plantIds.length > 0 ? plantIds : undefined,
+                });
+                this.store.ui.showToast('Training logged successfully', 'success');
+                this._handleClose();
+            }
+            catch (e) {
+                console.error('Failed to log training:', e);
+                this.store.ui.showToast('Failed to log training', 'error');
+            }
+            finally {
+                this._submitting = false;
+            }
+        }
+        render() {
+            const activeDialog = this.store.ui.$activeDialog.get();
+            if (activeDialog.type !== 'TRAINING')
+                return E;
+            const { plantIds } = activeDialog.payload;
+            const count = plantIds ? plantIds.length : 0;
+            const title = count > 0
+                ? `Log Training (${count} plant${count !== 1 ? 's' : ''})`
+                : 'Log Training';
+            return x `
+            <ha-dialog
+                open
+                .heading=${title}
+            >
+                <div class="content">
+                    <p>Select the technique used and add any optional notes.</p>
+                    
+                    <ha-combo-box
+                        .label=${'Technique'}
+                        .items=${this._techniques}
+                        .value=${this._technique}
+                        @value-changed=${(e) => this._technique = e.detail.value}
+                        required
+                        validationMessage="Please select a technique"
+                    ></ha-combo-box>
+
+                    <ha-textarea
+                        .label=${'Notes (Optional)'}
+                        .value=${this._notes}
+                        @input=${(e) => this._notes = e.target.value}
+                        autogrow
+                    ></ha-textarea>
+                </div>
+                <div slot="primaryAction" class="actions">
+                    <mwc-button 
+                        raised 
+                        @click=${this._save}
+                        ?disabled=${!this._technique || this._submitting}
+                    >Log</mwc-button>
+                </div>
+            </ha-dialog>
+        `;
+        }
+        constructor() {
+            super(...arguments);
+            _TrainingDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _TrainingDialog_store_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
+            _TrainingDialog__technique_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, __technique_initializers, '')));
+            _TrainingDialog__notes_accessor_storage.set(this, (__runInitializers(this, __technique_extraInitializers), __runInitializers(this, __notes_initializers, '')));
+            _TrainingDialog__submitting_accessor_storage.set(this, (__runInitializers(this, __notes_extraInitializers), __runInitializers(this, __submitting_initializers, false)));
+            __runInitializers(this, __submitting_extraInitializers);
+        }
+    };
+    _TrainingDialog_hass_accessor_storage = new WeakMap();
+    _TrainingDialog_store_accessor_storage = new WeakMap();
+    _TrainingDialog__technique_accessor_storage = new WeakMap();
+    _TrainingDialog__notes_accessor_storage = new WeakMap();
+    _TrainingDialog__submitting_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "TrainingDialog");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _store_decorators = [n$5({ attribute: false })];
+        __technique_decorators = [r$2()];
+        __notes_decorators = [r$2()];
+        __submitting_decorators = [r$2()];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
+        __esDecorate(_classThis, null, __technique_decorators, { kind: "accessor", name: "_technique", static: false, private: false, access: { has: obj => "_technique" in obj, get: obj => obj._technique, set: (obj, value) => { obj._technique = value; } }, metadata: _metadata }, __technique_initializers, __technique_extraInitializers);
+        __esDecorate(_classThis, null, __notes_decorators, { kind: "accessor", name: "_notes", static: false, private: false, access: { has: obj => "_notes" in obj, get: obj => obj._notes, set: (obj, value) => { obj._notes = value; } }, metadata: _metadata }, __notes_initializers, __notes_extraInitializers);
+        __esDecorate(_classThis, null, __submitting_decorators, { kind: "accessor", name: "_submitting", static: false, private: false, access: { has: obj => "_submitting" in obj, get: obj => obj._submitting, set: (obj, value) => { obj._submitting = value; } }, metadata: _metadata }, __submitting_initializers, __submitting_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            sharedStyles,
+            i$6 `
+      :host {
+        display: block;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+        margin-top: 16px;
+      }
+    `
+        ]
+    });
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
+
+(() => {
     var _NutrientPresetsEditor_open_accessor_storage, _NutrientPresetsEditor_hass_accessor_storage, _NutrientPresetsEditor_dataService_accessor_storage, _NutrientPresetsEditor_presets_accessor_storage, _NutrientPresetsEditor__view_accessor_storage, _NutrientPresetsEditor__editingPreset_accessor_storage, _NutrientPresetsEditor__error_accessor_storage;
     let _classDecorators = [t$2('nutrient-presets-editor')];
     let _classDescriptor;
@@ -15435,6 +15613,8 @@ class GrowspaceLogbookController {
                     return this._renderWateringDialog(active, selectedDeviceData);
                 case 'NUTRIENT_PRESETS':
                     return this._renderNutrientPresetsDialog(active, selectedDeviceData);
+                case 'TRAINING':
+                    return this._renderTrainingDialog(active);
                 default:
                     return x ``;
             }
@@ -15666,9 +15846,17 @@ class GrowspaceLogbookController {
             .hass=${this.hass}
             .dataService=${this.store.dataService}
             .presets=${selectedDeviceData?.nutrient_presets || {}}
-            @close=${() => this.store.ui.closeDialog()}
             @data-changed=${() => this.store.refreshData()}
         ></nutrient-presets-editor>
+        `;
+        }
+        _renderTrainingDialog(active) {
+            if (active.type !== 'TRAINING')
+                return x ``;
+            return x `
+        <training-dialog
+            .store=${this.store}
+        ></training-dialog>
         `;
         }
         constructor() {
@@ -15744,6 +15932,7 @@ class GrowspaceLogbookController {
           <button class="md3-button text" @click=${() => this._dispatch('select-all')}>Select All</button>
           <button class="md3-button text" @click=${() => this._dispatch('clear-selection')}>Clear</button>
           <button class="md3-button text" @click=${() => this._dispatch('water-selected')}>Water / Nutrients</button>
+          <button class="md3-button text" @click=${() => this._dispatch('training-selected')}>Log Training</button>
           <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>Exit</button>
         </div>
       </div>
@@ -16500,14 +16689,22 @@ const plantCardStyles = i$6 `
                 : E}
 
         <div class="plant-card-content">
+          ${this.plant.attributes.last_training_technique ? x `
+            <div class="status-icon training" title="Last trained: ${this.plant.attributes.last_training_technique}">
+              <md-icon>content_cut</md-icon>
+            </div>
+          ` : ''}
+          ${this.plant.attributes.problem ? x `
+            <div class="status-icon problem">
+              <md-icon>warning</md-icon>
+            </div>
+          ` : ''}
           <div class="pc-info">
             <div class="pc-strain-name" title="${strainName}">${strainName}</div>
             ${pheno ? x `<div class="pc-pheno">${pheno}</div>` : E}
             <div style="display: flex; align-items: center; gap: 8px;">
                <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
                ${this._hasRecommendedPreset ? x `
-                 <ha-svg-icon 
-                    .path=${mdiBottleTonicPlus} 
                     style="--mdc-icon-size: 14px; color: var(--primary-color);" 
                     title="Nutrient Preset Recommended"
                  ></ha-svg-icon>
@@ -31096,30 +31293,37 @@ class GrowspaceStore {
     async finishDryingPlant(plant) {
         await this.handleMovePlantToNextStage(plant);
     }
-    openBatchWateringDialog() {
+    openBatchWateringDialog(growspaceId) {
         const selectedIds = Array.from(this.ui.$selectedPlants.get());
-        if (selectedIds.length === 0)
+        if (selectedIds.length === 0 && !growspaceId)
             return;
-        // Find growspace context
-        const devices = this.data.$devices.get();
-        const growspaceIds = new Set();
-        let primaryGrowspaceId;
-        selectedIds.forEach(id => {
+        // Determine context if not provided
+        if (!growspaceId && selectedIds.length > 0) {
+            const devices = this.data.$devices.get();
             for (const device of devices) {
-                if (device.plants.some(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id)) {
-                    growspaceIds.add(device.device_id);
-                    if (!primaryGrowspaceId)
-                        primaryGrowspaceId = device.device_id;
+                if (device.plants.some(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === selectedIds[0])) {
+                    growspaceId = device.device_id;
                     break;
                 }
             }
-        });
-        const isSingleGrowspace = growspaceIds.size === 1;
-        const growspaceId = isSingleGrowspace ? primaryGrowspaceId : undefined;
+        }
         this.ui.setActiveDialog({
             type: 'WATERING',
             payload: {
                 mode: 'plant',
+                plantIds: selectedIds,
+                growspaceId: growspaceId
+            }
+        });
+    }
+    openBatchTrainingDialog(growspaceId) {
+        const selectedIds = Array.from(this.ui.$selectedPlants.get());
+        if (selectedIds.length === 0 && !growspaceId)
+            return;
+        this.ui.setActiveDialog({
+            type: 'TRAINING',
+            payload: {
+                isOpen: true,
                 plantIds: selectedIds,
                 growspaceId: growspaceId
             }
@@ -31555,6 +31759,7 @@ let GrowspaceManagerCard = (() => {
             @select-all=${this._handleSelectAll}
             @clear-selection=${this._handleClearSelection}
             @water-selected=${this._handleWaterSelected}
+            @training-selected=${() => this.store.openBatchTrainingDialog()}
             @exit-edit-mode=${this._handleExitEditMode}
         >
           <growspace-view-switcher
@@ -31861,5 +32066,5 @@ var growspaceManagerCardEditor = /*#__PURE__*/Object.freeze({
     GrowspaceManagerCardEditor: GrowspaceManagerCardEditor
 });
 
-export { DataService, GrowspaceManagerCard, PlantStage, PlantUtils, STAGE_CONFIG, createGrowspaceDevice };
+export { DataService, GrowspaceManagerCard, PlantStage, PlantUtils, STAGE_CONFIG, TrainingTechnique, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map
