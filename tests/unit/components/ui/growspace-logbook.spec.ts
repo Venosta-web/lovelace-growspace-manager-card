@@ -108,14 +108,25 @@ describe('GrowspaceLogbook', () => {
     });
 
     it('should filter events', async () => {
-        (element as any)._events = [...mockEvents];
+        (element as any)._events = [...mockEvents, {
+            growspace_id: 'gs1',
+            sensor_type: 'topping',
+            category: 'training',
+            severity: 0.5,
+            reasons: ['Technique: Topping'],
+            start_time: new Date().toISOString(),
+            end_time: new Date().toISOString(),
+            duration_sec: 0
+        }];
         (element as any)._isLoading = false;
         await element.updateComplete;
 
         let cards = element.shadowRoot?.querySelectorAll('.event-card');
-        expect(cards?.length).toBe(3);
+        expect(cards?.length).toBe(4);
 
         const chips = element.shadowRoot?.querySelectorAll('.filter-chip');
+
+        // Test Alerts
         const alertChip = Array.from(chips || []).find(c => c.textContent?.includes('Alerts'));
         (alertChip as HTMLElement)?.click();
         await element.updateComplete;
@@ -124,23 +135,92 @@ describe('GrowspaceLogbook', () => {
         expect(cards?.length).toBe(1);
         expect(cards?.[0].querySelector('.event-type')?.textContent).toContain('temperature');
 
-        const irrChip = Array.from(chips || []).find(c => c.textContent?.includes('Irrigation'));
-        (irrChip as HTMLElement)?.click();
+        // Test Watering
+        const wateringChip = Array.from(chips || []).find(c => c.textContent?.includes('Watering'));
+        (wateringChip as HTMLElement)?.click();
+        await element.updateComplete;
+
+        cards = element.shadowRoot?.querySelectorAll('.event-card');
+        // Should match irrigation event
+        const irrigationEvents = Array.from(cards || []).filter(c => c.textContent?.includes('irrigation'));
+        expect(irrigationEvents.length).toBeGreaterThan(0);
+
+        // Test Training
+        const trainingChip = Array.from(chips || []).find(c => c.textContent?.includes('Training'));
+        (trainingChip as HTMLElement)?.click();
         await element.updateComplete;
 
         cards = element.shadowRoot?.querySelectorAll('.event-card');
         expect(cards?.length).toBe(1);
-        expect(cards?.[0].querySelector('.event-type')?.textContent).toContain('irrigation');
+        expect(cards?.[0].querySelector('.event-type')?.textContent).toContain('topping');
+    });
+
+    it('should filter events robustly (mixed case, missing categories)', async () => {
+        const robustEvents: GrowspaceEvent[] = [
+            // Standard format
+            { ...mockEvents[0], sensor_type: 'temperature', category: 'alert', severity: 0.8 },
+            // Manual watering (category=environmental, sensor_type=irrigation)
+            { ...mockEvents[0], sensor_type: 'irrigation', category: 'environmental', severity: 0 },
+            // Old training event (no category, known technique)
+            { ...mockEvents[0], sensor_type: 'topping', category: undefined as any, severity: 0.5 },
+            // Drain event
+            { ...mockEvents[0], sensor_type: 'drain', category: 'irrigation', severity: 0 },
+            // Mixed case training
+            { ...mockEvents[0], sensor_type: 'Super_Cropping', category: 'Training', severity: 0.5 }
+        ];
+        (element as any)._events = robustEvents;
+        await element.updateComplete;
+
+        const chips = element.shadowRoot?.querySelectorAll('.filter-chip');
+
+        // Test Alerts
+        const alertChip = Array.from(chips || []).find(c => c.textContent?.includes('Alerts'));
+        (alertChip as HTMLElement)?.click();
+        await element.updateComplete;
+        let cards = element.shadowRoot?.querySelectorAll('.event-card');
+        expect(cards?.length).toBe(1); // Only temperature alert
+
+        // Test Watering
+        const wateringChip = Array.from(chips || []).find(c => c.textContent?.includes('Watering'));
+        (wateringChip as HTMLElement)?.click();
+        await element.updateComplete;
+        cards = element.shadowRoot?.querySelectorAll('.event-card');
+        expect(cards?.length).toBe(2); // Manual watering + Drain
+
+        // Test Training
+        const trainingChip = Array.from(chips || []).find(c => c.textContent?.includes('Training'));
+        (trainingChip as HTMLElement)?.click();
+        await element.updateComplete;
+        cards = element.shadowRoot?.querySelectorAll('.event-card');
+        expect(cards?.length).toBe(2); // Old topping + Mixed case super cropping
+    });
+
+    it('should filter environment events correctly', async () => {
+        const envEvents: GrowspaceEvent[] = [
+            { ...mockEvents[0], sensor_type: 'vpd', category: 'environment' },
+            { ...mockEvents[0], sensor_type: 'co2', category: 'environment' },
+            { ...mockEvents[0], sensor_type: 'unknown', category: 'environment' }
+        ];
+        (element as any)._events = envEvents;
+
+        const chips = element.shadowRoot?.querySelectorAll('.filter-chip');
+        const envChip = Array.from(chips || []).find(c => c.textContent?.includes('Environment'));
+        (envChip as HTMLElement)?.click();
+
+        await element.updateComplete;
+
+        const cards = element.shadowRoot?.querySelectorAll('.event-card');
+        // valid types: 'temperature', 'humidity', 'vpd', 'co2'
+        expect(cards?.length).toBe(2);
     });
 
     it('should display empty state if no events match filter', async () => {
-        (element as any)._events = [mockEvents[1]]; // Only irrigation
-        (element as any)._activeFilter = 'alerts'; // Filter for alerts
-        (element as any)._isLoading = false;
+        (element as any)._events = [mockEvents[0]]; // Only alert/temp
+        (element as any)._activeFilter = 'training'; // Filter for training
         await element.updateComplete;
 
         const emptyState = element.shadowRoot?.querySelector('.empty-state');
-        expect(emptyState).toBeTruthy();
+        expect(emptyState).not.toBeNull();
         expect(emptyState?.textContent).toContain('No events found');
     });
 
@@ -184,22 +264,6 @@ describe('GrowspaceLogbook', () => {
         });
     });
 
-    it('should filter environment events correctly', async () => {
-        const envEvents: GrowspaceEvent[] = [
-            { ...mockEvents[0], sensor_type: 'vpd', category: 'environment' },
-            { ...mockEvents[0], sensor_type: 'co2', category: 'environment' },
-            { ...mockEvents[0], sensor_type: 'unknown', category: 'environment' } // Should be filtered out by strict sensor_type check?
-        ];
-        (element as any)._events = envEvents;
-        (element as any)._activeFilter = 'environment';
-        await element.updateComplete;
-
-        const cards = element.shadowRoot?.querySelectorAll('.event-card');
-        // valid types: 'temperature', 'humidity', 'vpd', 'co2'
-        // We have vpd and co2. 'unknown' is not in list.
-        expect(cards?.length).toBe(2);
-    });
-
     it('should re-init controller if hass changes and controller missing', async () => {
         (element as any)._controller = undefined;
         // Trigger willUpdate via property change
@@ -215,11 +279,6 @@ describe('GrowspaceLogbook', () => {
         element.hass = { ...element.hass, state: 'newer' } as any;
         await element.updateComplete;
 
-        // Should only be called if we trigger a fetch, but init itself shouldn't happen.
-        // The fetch is triggered by growspaceId change, not hass change alone unless init happens.
-        // check init logic: if (changedProps.has('hass') && !this._controller)
-        // Since controller exists, init shouldn't run.
-        // But fetch might run? No, fetch only on growspaceId change or inside init.
         expect(mockControllerInstance.fetchEventLog).not.toHaveBeenCalled();
     });
 
@@ -263,51 +322,40 @@ describe('GrowspaceLogbook', () => {
         expect((element as any)._isLoading).toBe(false);
     });
 
-    it('should render non-alert events with water icon', async () => {
-        const normalEvent: GrowspaceEvent = {
-            ...mockEvents[0],
-            category: 'irrigation',
-            severity: 0.1
-        };
-        (element as any)._events = [normalEvent];
-        await element.updateComplete;
-
-        const icon = element.shadowRoot?.querySelector('ha-icon[icon="mdi:water"]');
-        expect(icon).toBeTruthy();
-    });
-
     it('should format duration correctly', () => {
         expect((element as any)._formatDuration(65)).toBe('1m 5s');
         expect((element as any)._formatDuration(3600)).toBe('60m 0s');
         expect((element as any)._formatDuration(0)).toBe('0m 0s');
     });
 
-    it('should render reasons badges correctly', async () => {
+    it('should render reasons correctly', async () => {
         const eventWithReasons = { ...mockEvents[0], reasons: ['Heat', 'Humidity'] };
         (element as any)._events = [eventWithReasons];
         await element.updateComplete;
 
-        const badges = element.shadowRoot?.querySelectorAll('.reason-badge');
-        expect(badges?.length).toBe(2);
-        expect(badges?.[0].textContent).toBe('Heat');
-        expect(badges?.[1].textContent).toBe('Humidity');
+        const reasonsDiv = element.shadowRoot?.querySelector('.event-reasons');
+        const reasonItems = reasonsDiv?.querySelectorAll('.reason-badge');
+        expect(reasonItems?.length).toBe(2);
+        expect(reasonItems?.[0].textContent).toBe('Heat');
+        expect(reasonItems?.[1].textContent).toBe('Humidity');
     });
 
-    it('should handle drain sensor type in irrigation filter', async () => {
+    it('should handle drain sensor type in watering filter', async () => {
         const drainEvent = { ...mockEvents[0], sensor_type: 'drain', category: 'other' };
         (element as any)._events = [drainEvent];
-        (element as any)._activeFilter = 'irrigation';
+        (element as any)._activeFilter = 'watering';
         await element.updateComplete;
 
         const cards = element.shadowRoot?.querySelectorAll('.event-card');
         expect(cards?.length).toBe(1);
     });
 
-    it('should default to all events for unknown filter', async () => {
+    it('should handle unknown filter gracefully (keep as all)', async () => {
         (element as any)._events = mockEvents;
         (element as any)._activeFilter = 'invalid_filter';
         await element.updateComplete;
 
+        // Code comment says "'all' case keeps filteredEvents as allEvents" which is the default initialization
         const cards = element.shadowRoot?.querySelectorAll('.event-card');
         expect(cards?.length).toBe(3);
     });

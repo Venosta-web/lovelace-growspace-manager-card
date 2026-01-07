@@ -221,6 +221,10 @@ export class GrowspaceLogbook extends LitElement {
     }
   }
 
+  private _setActiveFilter(filter: string) {
+    this._activeFilter = filter;
+  }
+
   render() {
     if (this._isLoading) {
       return html`<div class="empty-state">Loading events...</div>`;
@@ -228,19 +232,40 @@ export class GrowspaceLogbook extends LitElement {
 
     const allEvents = this._events || [];
 
+    const normalize = (s?: string) => s?.toLowerCase().trim() || '';
+
     // Filter logic
     let filteredEvents = allEvents;
-    if (this._activeFilter === 'alerts') {
-      filteredEvents = allEvents.filter((e) => e.category === 'alert' || e.severity >= 0.75);
-    } else if (this._activeFilter === 'irrigation') {
-      filteredEvents = allEvents.filter(
-        (e) => e.category === 'irrigation' || ['irrigation', 'drain'].includes(e.sensor_type)
-      );
+
+    if (this._activeFilter === 'watering') {
+      filteredEvents = allEvents.filter(e => {
+        const cat = normalize(e.category);
+        const type = normalize(e.sensor_type);
+        // Include 'environmental' category if sensor_type is irrigation/drain (manual watering creates this)
+        return cat === 'irrigation' ||
+          (cat === 'environmental' && ['irrigation', 'drain'].includes(type)) ||
+          ['irrigation', 'drain', 'water'].includes(type) ||
+          type.includes('water');
+      });
+    } else if (this._activeFilter === 'training') {
+      const techniques = ['topping', 'fim', 'lst', 'super_cropping', 'scrog', 'defoliating', 'lollipopping'];
+      filteredEvents = allEvents.filter(e => {
+        const cat = normalize(e.category);
+        const type = normalize(e.sensor_type);
+        return cat === 'training' || techniques.some(t => type.includes(t));
+      });
+    } else if (this._activeFilter === 'alerts') {
+      filteredEvents = allEvents.filter(e => {
+        const cat = normalize(e.category);
+        return cat === 'alert' || (e.severity !== undefined && e.severity >= 0.75);
+      });
     } else if (this._activeFilter === 'environment') {
-      filteredEvents = allEvents.filter((e) =>
-        ['temperature', 'humidity', 'vpd', 'co2'].includes(e.sensor_type)
-      );
+      filteredEvents = allEvents.filter(e => {
+        const type = normalize(e.sensor_type);
+        return ['temperature', 'humidity', 'vpd', 'co2'].includes(type);
+      });
     }
+    // 'all' case keeps filteredEvents as allEvents
 
     // ⚡ Performance: Schwartzian transform for efficient sorting
     // Parse dates once upfront O(n) instead of O(n log n) Date creations in comparator
@@ -253,8 +278,9 @@ export class GrowspaceLogbook extends LitElement {
     const filters = [
       { id: 'all', label: 'All' },
       { id: 'alerts', label: 'Alerts' },
-      { id: 'irrigation', label: 'Irrigation' },
+      { id: 'watering', label: 'Watering/Nutrients' },
       { id: 'environment', label: 'Environment' },
+      { id: 'training', label: 'Training' },
     ];
 
     return html`
@@ -263,7 +289,7 @@ export class GrowspaceLogbook extends LitElement {
       (filter) => html`
             <div
               class="filter-chip ${this._activeFilter === filter.id ? 'active' : ''}"
-              @click=${() => (this._activeFilter = filter.id)}
+              @click=${() => this._setActiveFilter(filter.id)}
             >
               ${filter.label}
             </div>
@@ -277,42 +303,32 @@ export class GrowspaceLogbook extends LitElement {
           (event) => html`
                 <div class="event-card">
                   <div class="event-header">
-                    <span class="event-time">${this._formatTime(event.start_time)}</span>
-                    <span class="event-duration">${this._formatDuration(event.duration_sec)}</span>
-                  </div>
-
-                  <div class="event-details">
                     <div>
-                      <div class="event-type">${event.sensor_type.replace(/_/g, ' ')}</div>
-
+                      <div class="event-type">${event.sensor_type ? event.sensor_type.replace(/_/g, ' ') : 'Event'}</div>
+                      <div class="event-time">${this._formatTime(event.start_time)}</div>
+                    </div>
+                    ${event.duration_sec > 0
+              ? html`<div class="event-duration">${this._formatDuration(event.duration_sec)}</div>`
+              : nothing}
+                  </div>
+                  
+                  <div class="event-details">
+                    <div class="event-reasons">
                       ${event.reasons && event.reasons.length > 0
-              ? html`
-                            <div class="event-reasons">
-                              ${event.reasons.map(
-                (reason) => html`<span class="reason-badge">${reason}</span>`
-              )}
-                            </div>
-                          `
+              ? event.reasons.map((reason) => html`<span class="reason-badge">${reason}</span>`)
               : nothing}
                     </div>
-
-                    ${event.category === 'alert'
+                    
+                    ${event.severity > 0.5 && event.category !== 'training'
               ? html`
-                          <div
+                          <div 
                             class="event-probability"
-                            style="color: ${this._getSeverityColor(
-                event.severity,
-                event.sensor_type
-              )}"
+                            style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}"
                           >
                             ${this._formatProb(event.severity)}
                           </div>
                         `
-              : html`
-                          <div class="event-probability">
-                            <ha-icon icon="mdi:water"></ha-icon>
-                          </div>
-                        `}
+              : nothing}
                   </div>
                 </div>
               `
