@@ -305,9 +305,18 @@ export class GrowspaceEnvChart extends LitElement {
       }
 
       if (dataPoints.length > 0) {
-        let min = Math.min(...dataPoints.map((d) => d.value));
-        let max = Math.max(...dataPoints.map((d) => d.value));
-        const sum = dataPoints.reduce((acc, curr) => acc + curr.value, 0);
+        // ⚡ BOLT OPTIMIZATION: Single-pass min/max/sum calculation
+        // Combines 3 separate iterations into one O(n) pass
+        // Also avoids spread operator which can cause stack overflow for large arrays
+        let min = dataPoints[0].value;
+        let max = dataPoints[0].value;
+        let sum = 0;
+        for (let i = 0; i < dataPoints.length; i++) {
+          const val = dataPoints[i].value;
+          if (val < min) min = val;
+          if (val > max) max = val;
+          sum += val;
+        }
         const avg = sum / dataPoints.length;
 
         const isStep = (config as any).type === 'step' || key === 'optimal' || key === 'dehumidifier' || key === 'light' || key === 'irrigation' || key === 'drain';

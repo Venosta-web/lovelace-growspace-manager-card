@@ -84,7 +84,8 @@ vi.mock('../../../src/store/history-store', () => ({
     unlinkGraphGroup: vi.fn(),
     unlinkGraphMetric: vi.fn(),
     linkGraphs: vi.fn(),
-    getGraphRange: vi.fn().mockReturnValue('24h')
+    getGraphRange: vi.fn().mockReturnValue('24h'),
+    loadHistoryOnDemand: vi.fn()
 }));
 
 describe('GrowspaceHeader', () => {
@@ -182,7 +183,8 @@ describe('GrowspaceHeader', () => {
             linkGraphs: vi.fn(),
             getRange: vi.fn().mockReturnValue('24h'),
             startAutoRefresh: vi.fn(),
-            stopAutoRefresh: vi.fn()
+            stopAutoRefresh: vi.fn(),
+            loadHistoryOnDemand: vi.fn()
         };
 
         // Setup Mocks
@@ -232,7 +234,8 @@ describe('GrowspaceHeader', () => {
             linkGraphs: vi.fn(),
             getRange: vi.fn().mockReturnValue('24h'),
             startAutoRefresh: vi.fn(),
-            stopAutoRefresh: vi.fn()
+            stopAutoRefresh: vi.fn(),
+            loadHistoryOnDemand: vi.fn()
         };
 
         // Setup Mocks
