@@ -369,6 +369,7 @@ export class WateringDialog extends LitElement {
                       <md3-text-input
                         label="Nutrient Name"
                         .value=${nutrient.name}
+                        .suggestions=${this._getNutrientSuggestions()}
                         @change=${(e: CustomEvent) => {
             const val = (e.target as HTMLInputElement).value || e.detail;
             this._updateNutrient(index, 'name', val);
@@ -493,5 +494,22 @@ export class WateringDialog extends LitElement {
                 </option>
             `;
     });
+  }
+
+  private _getNutrientSuggestions(): string[] {
+    const nutrients = new Set<string>();
+    const devices = this.store.data.$devices.get();
+
+    devices.forEach(device => {
+      if (device.nutrient_presets) {
+        Object.values(device.nutrient_presets).forEach(preset => {
+          preset.nutrients.forEach(n => {
+            if (n.name) nutrients.add(n.name);
+          });
+        });
+      }
+    });
+
+    return Array.from(nutrients).sort();
   }
 }

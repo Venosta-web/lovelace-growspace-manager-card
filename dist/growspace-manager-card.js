@@ -8018,7 +8018,7 @@ const dialogStyles = [
 ];
 
 (() => {
-    var _Md3TextInput_label_accessor_storage, _Md3TextInput_value_accessor_storage, _Md3TextInput_type_accessor_storage, _Md3TextInput_placeholder_accessor_storage, _Md3TextInput_list_accessor_storage;
+    var _Md3TextInput_label_accessor_storage, _Md3TextInput_value_accessor_storage, _Md3TextInput_type_accessor_storage, _Md3TextInput_placeholder_accessor_storage, _Md3TextInput_suggestions_accessor_storage, _Md3TextInput_list_accessor_storage;
     let _classDecorators = [t$2('md3-text-input')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -8036,10 +8036,28 @@ const dialogStyles = [
     let _placeholder_decorators;
     let _placeholder_initializers = [];
     let _placeholder_extraInitializers = [];
+    let _suggestions_decorators;
+    let _suggestions_initializers = [];
+    let _suggestions_extraInitializers = [];
     let _list_decorators;
     let _list_initializers = [];
     let _list_extraInitializers = [];
     _classThis = class extends _classSuper {
+        constructor() {
+            super(...arguments);
+            _Md3TextInput_label_accessor_storage.set(this, __runInitializers(this, _label_initializers, ''));
+            _Md3TextInput_value_accessor_storage.set(this, (__runInitializers(this, _label_extraInitializers), __runInitializers(this, _value_initializers, '')));
+            _Md3TextInput_type_accessor_storage.set(this, (__runInitializers(this, _value_extraInitializers), __runInitializers(this, _type_initializers, 'text')));
+            _Md3TextInput_placeholder_accessor_storage.set(this, (__runInitializers(this, _type_extraInitializers), __runInitializers(this, _placeholder_initializers, '')));
+            _Md3TextInput_suggestions_accessor_storage.set(this, (__runInitializers(this, _placeholder_extraInitializers), __runInitializers(this, _suggestions_initializers, [])));
+            _Md3TextInput_list_accessor_storage.set(this, (__runInitializers(this, _suggestions_extraInitializers), __runInitializers(this, _list_initializers, '')));
+            Object.defineProperty(this, "_listId", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, _list_extraInitializers), `datalist-${Math.random().toString(36).substr(2, 9)}`)
+            });
+        }
         get label() { return __classPrivateFieldGet(this, _Md3TextInput_label_accessor_storage, "f"); }
         set label(value) { __classPrivateFieldSet(this, _Md3TextInput_label_accessor_storage, value, "f"); }
         get value() { return __classPrivateFieldGet(this, _Md3TextInput_value_accessor_storage, "f"); }
@@ -8048,6 +8066,8 @@ const dialogStyles = [
         set type(value) { __classPrivateFieldSet(this, _Md3TextInput_type_accessor_storage, value, "f"); }
         get placeholder() { return __classPrivateFieldGet(this, _Md3TextInput_placeholder_accessor_storage, "f"); }
         set placeholder(value) { __classPrivateFieldSet(this, _Md3TextInput_placeholder_accessor_storage, value, "f"); }
+        get suggestions() { return __classPrivateFieldGet(this, _Md3TextInput_suggestions_accessor_storage, "f"); }
+        set suggestions(value) { __classPrivateFieldSet(this, _Md3TextInput_suggestions_accessor_storage, value, "f"); }
         get list() { return __classPrivateFieldGet(this, _Md3TextInput_list_accessor_storage, "f"); }
         set list(value) { __classPrivateFieldSet(this, _Md3TextInput_list_accessor_storage, value, "f"); }
         _handleInput(e) {
@@ -8056,6 +8076,7 @@ const dialogStyles = [
             this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
         }
         render() {
+            const listId = this.suggestions.length > 0 ? this._listId : this.list;
             return x `
       <div class="md3-input-group">
         <label class="md3-label">${this.label}</label>
@@ -8064,26 +8085,25 @@ const dialogStyles = [
           class="md3-input"
           .value=${this.value}
           .placeholder=${this.placeholder}
-          list=${this.list}
+          list=${listId || E}
           @input=${this._handleInput}
         />
+        ${this.suggestions.length > 0
+                ? x `
+              <datalist id=${this._listId}>
+                ${this.suggestions.map((s) => x `<option value=${s}></option>`)}
+              </datalist>
+            `
+                : E}
       </div>
     `;
-        }
-        constructor() {
-            super(...arguments);
-            _Md3TextInput_label_accessor_storage.set(this, __runInitializers(this, _label_initializers, ''));
-            _Md3TextInput_value_accessor_storage.set(this, (__runInitializers(this, _label_extraInitializers), __runInitializers(this, _value_initializers, '')));
-            _Md3TextInput_type_accessor_storage.set(this, (__runInitializers(this, _value_extraInitializers), __runInitializers(this, _type_initializers, 'text')));
-            _Md3TextInput_placeholder_accessor_storage.set(this, (__runInitializers(this, _type_extraInitializers), __runInitializers(this, _placeholder_initializers, '')));
-            _Md3TextInput_list_accessor_storage.set(this, (__runInitializers(this, _placeholder_extraInitializers), __runInitializers(this, _list_initializers, '')));
-            __runInitializers(this, _list_extraInitializers);
         }
     };
     _Md3TextInput_label_accessor_storage = new WeakMap();
     _Md3TextInput_value_accessor_storage = new WeakMap();
     _Md3TextInput_type_accessor_storage = new WeakMap();
     _Md3TextInput_placeholder_accessor_storage = new WeakMap();
+    _Md3TextInput_suggestions_accessor_storage = new WeakMap();
     _Md3TextInput_list_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "Md3TextInput");
     (() => {
@@ -8092,11 +8112,13 @@ const dialogStyles = [
         _value_decorators = [n$5()];
         _type_decorators = [n$5()];
         _placeholder_decorators = [n$5()];
+        _suggestions_decorators = [n$5({ type: Array })];
         _list_decorators = [n$5()];
         __esDecorate(_classThis, null, _label_decorators, { kind: "accessor", name: "label", static: false, private: false, access: { has: obj => "label" in obj, get: obj => obj.label, set: (obj, value) => { obj.label = value; } }, metadata: _metadata }, _label_initializers, _label_extraInitializers);
         __esDecorate(_classThis, null, _value_decorators, { kind: "accessor", name: "value", static: false, private: false, access: { has: obj => "value" in obj, get: obj => obj.value, set: (obj, value) => { obj.value = value; } }, metadata: _metadata }, _value_initializers, _value_extraInitializers);
         __esDecorate(_classThis, null, _type_decorators, { kind: "accessor", name: "type", static: false, private: false, access: { has: obj => "type" in obj, get: obj => obj.type, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, _type_initializers, _type_extraInitializers);
         __esDecorate(_classThis, null, _placeholder_decorators, { kind: "accessor", name: "placeholder", static: false, private: false, access: { has: obj => "placeholder" in obj, get: obj => obj.placeholder, set: (obj, value) => { obj.placeholder = value; } }, metadata: _metadata }, _placeholder_initializers, _placeholder_extraInitializers);
+        __esDecorate(_classThis, null, _suggestions_decorators, { kind: "accessor", name: "suggestions", static: false, private: false, access: { has: obj => "suggestions" in obj, get: obj => obj.suggestions, set: (obj, value) => { obj.suggestions = value; } }, metadata: _metadata }, _suggestions_initializers, _suggestions_extraInitializers);
         __esDecorate(_classThis, null, _list_decorators, { kind: "accessor", name: "list", static: false, private: false, access: { has: obj => "list" in obj, get: obj => obj.list, set: (obj, value) => { obj.list = value; } }, metadata: _metadata }, _list_initializers, _list_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         _classThis = _classDescriptor.value;
@@ -14625,6 +14647,7 @@ class GrowspaceLogbookController {
                       <md3-text-input
                         label="Nutrient Name"
                         .value=${nutrient.name}
+                        .suggestions=${this._getNutrientSuggestions()}
                         @change=${(e) => {
                 const val = e.target.value || e.detail;
                 this._updateNutrient(index, 'name', val);
@@ -14738,6 +14761,21 @@ class GrowspaceLogbookController {
                 </option>
             `;
             });
+        }
+        _getNutrientSuggestions() {
+            const nutrients = new Set();
+            const devices = this.store.data.$devices.get();
+            devices.forEach(device => {
+                if (device.nutrient_presets) {
+                    Object.values(device.nutrient_presets).forEach(preset => {
+                        preset.nutrients.forEach(n => {
+                            if (n.name)
+                                nutrients.add(n.name);
+                        });
+                    });
+                }
+            });
+            return Array.from(nutrients).sort();
         }
     };
     _WateringDialog_hass_accessor_storage = new WeakMap();
@@ -15176,6 +15214,7 @@ class GrowspaceLogbookController {
                     <md3-text-input
                         label="Nutrient Name"
                         .value=${n.name}
+                        .suggestions=${this._getNutrientSuggestions()}
                         @change=${(e) => this._updateNutrient(i, { name: e.detail })}
                         placeholder="e.g. CalMag"
                     ></md3-text-input>
@@ -15194,6 +15233,18 @@ class GrowspaceLogbookController {
         </div>
       </div>
     `;
+        }
+        _getNutrientSuggestions() {
+            const nutrients = new Set();
+            Object.values(this.presets).forEach(preset => {
+                if (preset.nutrients) {
+                    preset.nutrients.forEach(n => {
+                        if (n.name)
+                            nutrients.add(n.name);
+                    });
+                }
+            });
+            return Array.from(nutrients).sort();
         }
         constructor() {
             super(...arguments);

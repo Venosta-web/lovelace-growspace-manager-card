@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { dialogStyles } from '../../styles/dialog.styles';
 
@@ -8,7 +8,10 @@ export class Md3TextInput extends LitElement {
   @property() accessor value = '';
   @property() accessor type = 'text';
   @property() accessor placeholder = '';
+  @property({ type: Array }) accessor suggestions: string[] = [];
   @property() accessor list = '';
+
+  private _listId = `datalist-${Math.random().toString(36).substr(2, 9)}`;
 
   static styles = [
     dialogStyles,
@@ -27,6 +30,8 @@ export class Md3TextInput extends LitElement {
   }
 
   render() {
+    const listId = this.suggestions.length > 0 ? this._listId : this.list;
+
     return html`
       <div class="md3-input-group">
         <label class="md3-label">${this.label}</label>
@@ -35,9 +40,16 @@ export class Md3TextInput extends LitElement {
           class="md3-input"
           .value=${this.value}
           .placeholder=${this.placeholder}
-          list=${this.list}
+          list=${listId || nothing}
           @input=${this._handleInput}
         />
+        ${this.suggestions.length > 0
+        ? html`
+              <datalist id=${this._listId}>
+                ${this.suggestions.map((s) => html`<option value=${s}></option>`)}
+              </datalist>
+            `
+        : nothing}
       </div>
     `;
   }

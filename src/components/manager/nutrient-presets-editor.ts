@@ -322,6 +322,7 @@ export class NutrientPresetsEditor extends LitElement {
                     <md3-text-input
                         label="Nutrient Name"
                         .value=${n.name}
+                        .suggestions=${this._getNutrientSuggestions()}
                         @change=${(e: CustomEvent) => this._updateNutrient(i, { name: e.detail })}
                         placeholder="e.g. CalMag"
                     ></md3-text-input>
@@ -340,5 +341,16 @@ export class NutrientPresetsEditor extends LitElement {
         </div>
       </div>
     `;
+    }
+    private _getNutrientSuggestions(): string[] {
+        const nutrients = new Set<string>();
+        Object.values(this.presets).forEach(preset => {
+            if (preset.nutrients) {
+                preset.nutrients.forEach(n => {
+                    if (n.name) nutrients.add(n.name);
+                });
+            }
+        });
+        return Array.from(nutrients).sort();
     }
 }
