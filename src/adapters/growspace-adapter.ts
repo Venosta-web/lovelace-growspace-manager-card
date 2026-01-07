@@ -103,6 +103,7 @@ export class GrowspaceAdapter {
       // Configs
       irrigation_config: wsData.irrigation_config,
       irrigation_strategy: wsData.irrigation_strategy || undefined,
+      nutrient_presets: wsData.nutrient_presets,
     });
   }
 

@@ -17,6 +17,7 @@ import '../../dialogs/strain-recommendation-dialog';
 import '../../dialogs/irrigation-dialog';
 import '../../dialogs/logbook-dialog';
 import '../../dialogs/watering-dialog';
+import './nutrient-presets-editor';
 
 import { HomeAssistant } from 'custom-card-helpers';
 
@@ -83,6 +84,8 @@ export class DialogHost extends LitElement {
                 return this._renderLogbookDialog(active);
             case 'WATERING':
                 return this._renderWateringDialog(active, selectedDeviceData);
+            case 'NUTRIENT_PRESETS':
+                return this._renderNutrientPresetsDialog(active, selectedDeviceData);
             default:
                 return html``;
         }
@@ -351,6 +354,23 @@ export class DialogHost extends LitElement {
             @close=${() => this.store.ui.closeDialog()}
             @data-changed=${() => this.store.refreshData()}
         ></watering-dialog>
+        `;
+    }
+
+    private _renderNutrientPresetsDialog(
+        active: ActiveDialogState,
+        selectedDeviceData?: GrowspaceDevice
+    ): TemplateResult {
+        if (active.type !== 'NUTRIENT_PRESETS') return html``;
+        return html`
+        <nutrient-presets-editor
+            .open=${true}
+            .hass=${this.hass}
+            .dataService=${this.store.dataService}
+            .presets=${selectedDeviceData?.nutrient_presets || {}}
+            @close=${() => this.store.ui.closeDialog()}
+            @data-changed=${() => this.store.refreshData()}
+        ></nutrient-presets-editor>
         `;
     }
 }

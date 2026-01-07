@@ -170,6 +170,7 @@ export interface GrowspaceAPIResponse extends SerializedBiologicalMetrics, Seria
   grid: Record<string, RawPlantData | null>;
   irrigation_config: IrrigationConfig;
   irrigation_strategy?: IrrigationStrategy | null;
+  nutrient_presets?: Record<string, NutrientPreset>;
 }
 
 // --- Internal Frontend Models ---
@@ -195,6 +196,7 @@ export interface GrowspaceDevice {
 
   irrigation_config: IrrigationConfig;
   irrigation_strategy?: IrrigationStrategy;
+  nutrient_presets?: Record<string, NutrientPreset>;
 }
 
 export interface PlantAttributes extends RawPlantData {
@@ -356,6 +358,23 @@ export interface WateringDialogState {
   plantIds?: string[];
   growspaceId?: string;
   mode: 'plant' | 'growspace';
+}
+
+export interface NutrientPresetsDialogState {
+  presetId?: string;
+}
+
+export interface NutrientItem {
+  name: string;
+  dose_ml_l: number;
+}
+
+export interface NutrientPreset {
+  id: string;
+  name: string;
+  nutrients: NutrientItem[];
+  stage?: string;
+  min_days_in_stage?: number;
 }
 
 export interface NutrientEntry {

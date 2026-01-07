@@ -6,6 +6,7 @@ import {
   GrowMasterDialogState,
   StrainRecommendationDialogState,
   WateringDialogState,
+  NutrientPresetsDialogState,
 } from './types';
 
 // Discriminated union for central dialog management
@@ -19,5 +20,6 @@ export type ActiveDialogState =
   | { type: 'STRAIN_RECOMMENDATION'; payload: StrainRecommendationDialogState }
   | { type: 'IRRIGATION'; payload: {} }
   | { type: 'LOGBOOK'; payload: { growspaceId: string } }
-  | { type: 'WATERING'; payload: WateringDialogState };
+  | { type: 'WATERING'; payload: WateringDialogState }
+  | { type: 'NUTRIENT_PRESETS'; payload: NutrientPresetsDialogState };
 

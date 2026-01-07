@@ -17,7 +17,8 @@ import {
   mdiAirHumidifierOff,
   mdiDna,
   mdiWater,
-  mdiWaterPlus
+  mdiWaterPlus,
+  mdiBottleTonicPlus
 } from '@mdi/js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -29,6 +30,7 @@ import { MetricsUtils, HeaderChip, DominantStageInfo } from '../utils/metrics-ut
 import { ChartUtils } from '../utils/chart-utils';
 import { ResizeController } from '../controllers/resize-controller';
 import type { GrowspaceStore } from '../store/growspace-store';
+import { any } from 'zod';
 
 @customElement('growspace-header')
 export class GrowspaceHeader extends LitElement {
@@ -833,6 +835,18 @@ export class GrowspaceHeader extends LitElement {
         });
         break;
       }
+      case 'nutrient_presets':
+        this.store.openNutrientPresetsDialog();
+        break;
+      case 'control_dehumidifier':
+        // Implementation for dehumidifier toggle
+        if (this.device?.overview_entity_id) {
+          this.hass.callService('growspace_manager', 'update_environment_config', {
+            growspace_id: this._selectedDeviceController.value,
+            dehumidifier_control_enabled: !this._envAttrs.dehumidifier_control_enabled
+          });
+        }
+        break;
     }
   }
 
@@ -1173,9 +1187,13 @@ export class GrowspaceHeader extends LitElement {
             <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
             <span class="menu-item-label">Logbook</span>
         </div>
+        <div class="menu-item" @click=${() => this._triggerAction('nutrient_presets')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
+            <span class="menu-item-label">Nutrient Presets</span>
+        </div>
         <div class="menu-item" @click=${() => this._triggerAction('water')}>
             <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
-            <span class="menu-item-label">Water</span>
+            <span class="menu-item-label">${this.store.ui.$selectedPlants.get().size > 0 ? 'Water Selected' : 'Water Growspace'}</span>
         </div>
       </div>
     `;

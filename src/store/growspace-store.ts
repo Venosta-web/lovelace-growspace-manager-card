@@ -661,6 +661,13 @@ export class GrowspaceStore {
     }
 
 
+    openNutrientPresetsDialog() {
+        this.ui.setActiveDialog({
+            type: 'NUTRIENT_PRESETS',
+            payload: {}
+        });
+    }
+
     openLogbookDialog() {
         const growspaceId = this.data.$selectedDevice.get();
         if (growspaceId) {

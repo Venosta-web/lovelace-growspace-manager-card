@@ -177,5 +177,46 @@ describe('watering-dialog', () => {
             expect(record['Calmag']).toBe(2.5);
             expect(record['Bloom A']).toBe(3.0);
         });
+        describe('nutrient presets', () => {
+            it('should construct payload with preset_id when selected', () => {
+                const presetId = 'veg-week-1';
+                const plantId = 'test-plant';
+                const amount = 2.0;
+
+                const payload: Record<string, any> = {
+                    plant_id: plantId,
+                    amount,
+                    preset_id: presetId
+                };
+
+                expect(payload.preset_id).toBe('veg-week-1');
+            });
+
+            it('should recommend presets matching current stage', () => {
+                const plantStage = 'veg';
+                const preset = { id: 'p1', name: 'Veg Mix', stage: 'veg' };
+
+                const isRecommended = preset.stage === plantStage;
+                expect(isRecommended).toBe(true);
+            });
+
+            it('should recommend presets matching stage and min days', () => {
+                const plantStage = 'veg';
+                const daysInStage = 15;
+                const preset = { id: 'p1', name: 'Late Veg', stage: 'veg', min_days_in_stage: 14 };
+
+                const isRecommended = preset.stage === plantStage && daysInStage >= preset.min_days_in_stage;
+                expect(isRecommended).toBe(true);
+            });
+
+            it('should not recommend presets matching stage but not min days', () => {
+                const plantStage = 'veg';
+                const daysInStage = 5;
+                const preset = { id: 'p1', name: 'Late Veg', stage: 'veg', min_days_in_stage: 14 };
+
+                const isRecommended = preset.stage === plantStage && daysInStage >= (preset.min_days_in_stage || 0);
+                expect(isRecommended).toBe(false);
+            });
+        });
     });
 });

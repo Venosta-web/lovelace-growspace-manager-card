@@ -1,6 +1,6 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
-import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy, GrowspaceAPIResponse, HistorySensorState, GrowAdviceResponse } from './types';
+import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy, GrowspaceAPIResponse, HistorySensorState, GrowAdviceResponse, NutrientItem, NutrientPreset } from './types';
 import { GrowspaceAdapter } from './adapters/growspace-adapter';
 import { noChange } from 'lit';
 import { DOMAIN, SERVICES, WS_TYPE_GET_DATA, WS_TYPE_GET_HISTORY_STATS } from './constants';
@@ -808,9 +808,10 @@ export class DataService {
   async waterPlant(
     plantId: string,
     amount: number,
-    nutrients?: Record<string, number>
+    nutrients?: Record<string, number>,
+    presetId?: string
   ): Promise<void> {
-    console.log('[DataService:waterPlant] Watering plant:', plantId, 'amount:', amount);
+    console.log('[DataService:waterPlant] Watering plant:', plantId, 'amount:', amount, 'preset:', presetId);
     try {
       const payload: Record<string, any> = {
         plant_id: plantId,
@@ -818,6 +819,9 @@ export class DataService {
       };
       if (nutrients && Object.keys(nutrients).length > 0) {
         payload.nutrients = nutrients;
+      }
+      if (presetId) {
+        payload.preset_id = presetId;
       }
       await this.hass.callService(DOMAIN, SERVICES.WATER_PLANT, payload);
       console.log('[DataService:waterPlant] Service Called');
@@ -830,9 +834,10 @@ export class DataService {
   async waterGrowspace(
     growspaceId: string,
     amountPerPlant: number,
-    nutrients?: Record<string, number>
+    nutrients?: Record<string, number>,
+    presetId?: string
   ): Promise<void> {
-    console.log('[DataService:waterGrowspace] Watering growspace:', growspaceId, 'amount per plant:', amountPerPlant);
+    console.log('[DataService:waterGrowspace] Watering growspace:', growspaceId, 'amount per plant:', amountPerPlant, 'preset:', presetId);
     try {
       const payload: Record<string, any> = {
         growspace_id: growspaceId,
@@ -841,10 +846,45 @@ export class DataService {
       if (nutrients && Object.keys(nutrients).length > 0) {
         payload.nutrients = nutrients;
       }
+      if (presetId) {
+        payload.preset_id = presetId;
+      }
       await this.hass.callService(DOMAIN, SERVICES.WATER_GROWSPACE, payload);
       console.log('[DataService:waterGrowspace] Service Called');
     } catch (err) {
       console.error('[DataService:waterGrowspace] Error:', err);
+      throw err;
+    }
+  }
+
+  // --- Nutrient Presets ---
+
+  async saveNutrientPreset(params: {
+    preset_id?: string;
+    name: string;
+    nutrients: NutrientItem[];
+    stage?: string;
+    min_days_in_stage?: number;
+  }): Promise<void> {
+    console.log('[DataService:saveNutrientPreset] Saving preset:', params);
+    try {
+      await this.hass.callService(DOMAIN, SERVICES.SAVE_NUTRIENT_PRESET, params);
+      console.log('[DataService:saveNutrientPreset] Service Called');
+    } catch (err) {
+      console.error('[DataService:saveNutrientPreset] Error:', err);
+      throw err;
+    }
+  }
+
+  async removeNutrientPreset(presetId: string): Promise<void> {
+    console.log('[DataService:removeNutrientPreset] Removing preset:', presetId);
+    try {
+      await this.hass.callService(DOMAIN, SERVICES.REMOVE_NUTRIENT_PRESET, {
+        preset_id: presetId,
+      });
+      console.log('[DataService:removeNutrientPreset] Service Called');
+    } catch (err) {
+      console.error('[DataService:removeNutrientPreset] Error:', err);
       throw err;
     }
   }

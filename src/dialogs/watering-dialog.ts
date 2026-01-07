@@ -3,8 +3,8 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
-import { mdiWaterPlus, mdiClose, mdiPlus, mdiDelete } from '@mdi/js';
-import { WateringDialogState, NutrientEntry } from '../types';
+import { mdiWaterPlus, mdiClose, mdiPlus, mdiDelete, mdiAutoFix, mdiStar } from '@mdi/js';
+import { WateringDialogState, NutrientEntry, NutrientPreset, NutrientItem } from '../types';
 import { DataService } from '../data-service';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/md3-text-input';
@@ -13,26 +13,27 @@ import type { GrowspaceStore } from '../store/growspace-store';
 
 @customElement('watering-dialog')
 export class WateringDialog extends LitElement {
-    @consume({ context: hassContext, subscribe: true })
-    public accessor hass!: HomeAssistant;
+  @consume({ context: hassContext, subscribe: true })
+  public accessor hass!: HomeAssistant;
 
-    @consume({ context: storeContext, subscribe: true })
-    public accessor store!: GrowspaceStore;
+  @consume({ context: storeContext, subscribe: true })
+  public accessor store!: GrowspaceStore;
 
-    @property({ type: Boolean }) public accessor open = false;
-    @property({ attribute: false }) public accessor dialogState: WateringDialogState | undefined;
-    @property({ type: String }) public accessor growspaceName = '';
+  @property({ type: Boolean }) public accessor open = false;
+  @property({ attribute: false }) public accessor dialogState: WateringDialogState | undefined;
+  @property({ type: String }) public accessor growspaceName = '';
 
-    // Form state
-    @state() private accessor _volume = 1.0; // Liters
-    @state() private accessor _nutrients: NutrientEntry[] = [];
-    @state() private accessor _isSubmitting = false;
+  // Form state
+  @state() private accessor _volume = 1.0; // Liters
+  @state() private accessor _nutrients: NutrientEntry[] = [];
+  @state() private accessor _selectedPresetId = '';
+  @state() private accessor _isSubmitting = false;
 
-    private _dataService?: DataService;
+  private _dataService?: DataService;
 
-    static styles = [
-        dialogStyles,
-        css`
+  static styles = [
+    dialogStyles,
+    css`
       :host {
         --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
       }
@@ -139,110 +140,157 @@ export class WateringDialog extends LitElement {
         height: 18px;
         fill: currentColor;
       }
+
+      .preset-select {
+          margin-bottom: 12px;
+      }
+      
+      .preset-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 0.75rem;
+          background: var(--primary-color);
+          color: white;
+          margin-left: 8px;
+      }
+
+      .calculation-row strong {
+          color: var(--primary-color);
+      }
     `,
-    ];
+  ];
 
-    protected willUpdate(changedProps: PropertyValues): void {
-        if (changedProps.has('open') && this.open) {
-            this._resetForm();
+  protected willUpdate(changedProps: PropertyValues): void {
+    if (changedProps.has('open') && this.open) {
+      this._resetForm();
+    }
+    if (this.hass && (changedProps.has('hass') || !this._dataService)) {
+      this._dataService = new DataService(this.hass);
+    }
+  }
+
+  private _resetForm() {
+    this._volume = 1.0;
+    this._nutrients = [];
+    this._selectedPresetId = '';
+    this._isSubmitting = false;
+  }
+
+  private _addNutrient(name = '', concentration = 0) {
+    this._nutrients = [...this._nutrients, { name, concentration }];
+  }
+
+  private _updateNutrient(index: number, field: keyof NutrientEntry, value: string | number) {
+    const updated = [...this._nutrients];
+    updated[index] = { ...updated[index], [field]: value };
+    this._nutrients = updated;
+  }
+
+  private _removeNutrient(index: number) {
+    this._nutrients = this._nutrients.filter((_, i) => i !== index);
+    // If we manually remove a nutrient, we might be diverging from the preset
+    // but let's keep the presetId for the service call unless the user explicitly changes the preset selector
+  }
+
+  private _handlePresetChange(e: Event) {
+    const presetId = (e.target as HTMLSelectElement).value;
+    this._selectedPresetId = presetId;
+
+    if (!presetId) {
+      this._nutrients = [];
+      return;
+    }
+
+    const presets = this.dialogState?.growspaceId
+      ? this.store.data.$devices.get().find(d => d.device_id === this.dialogState?.growspaceId)?.nutrient_presets
+      : undefined;
+
+    if (presets && presets[presetId]) {
+      const preset = presets[presetId];
+      this._nutrients = preset.nutrients.map(n => ({
+        name: n.name,
+        concentration: n.dose_ml_l
+      }));
+    }
+  }
+
+  private _calculateTotalMl(concentration: number): number {
+    return this._volume * concentration;
+  }
+
+  private _getTotalNutrientsMl(): number {
+    return this._nutrients.reduce((sum, n) => sum + this._calculateTotalMl(n.concentration), 0);
+  }
+
+  private async _submit() {
+    if (!this._dataService || !this.dialogState) return;
+
+    this._isSubmitting = true;
+
+    try {
+      // Convert nutrients array to record
+      const nutrientsRecord: Record<string, number> = {};
+      for (const n of this._nutrients) {
+        if (n.name && n.concentration > 0) {
+          nutrientsRecord[n.name] = n.concentration;
         }
-        if (this.hass && (changedProps.has('hass') || !this._dataService)) {
-            this._dataService = new DataService(this.hass);
+      }
+
+      if (this.dialogState.mode === 'plant' && this.dialogState.plantIds?.length) {
+        // Water individual plants
+        for (const plantId of this.dialogState.plantIds) {
+          await this._dataService.waterPlant(
+            plantId,
+            this._volume,
+            Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined,
+            this._selectedPresetId || undefined
+          );
         }
+        this.store?.showToast(
+          `Watered ${this.dialogState.plantIds.length} plant(s)`,
+          'success'
+        );
+      } else if (this.dialogState.growspaceId) {
+        // Water entire growspace
+        await this._dataService.waterGrowspace(
+          this.dialogState.growspaceId,
+          this._volume,
+          Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined,
+          this._selectedPresetId || undefined
+        );
+        this.store?.showToast('Watered all plants in growspace', 'success');
+      }
+
+      await this.store?.refreshData();
+      this._close();
+    } catch (e: any) {
+      console.error('Failed to record watering:', e);
+      this.store?.showToast(`Error: ${e.message}`, 'error');
+    } finally {
+      this._isSubmitting = false;
     }
+  }
 
-    private _resetForm() {
-        this._volume = 1.0;
-        this._nutrients = [];
-        this._isSubmitting = false;
-    }
+  private _close() {
+    this.dispatchEvent(new CustomEvent('close'));
+  }
 
-    private _addNutrient() {
-        this._nutrients = [...this._nutrients, { name: '', concentration: 0 }];
-    }
+  protected render() {
+    if (!this.open) return nothing;
 
-    private _updateNutrient(index: number, field: keyof NutrientEntry, value: string | number) {
-        const updated = [...this._nutrients];
-        updated[index] = { ...updated[index], [field]: value };
-        this._nutrients = updated;
-    }
+    const dialogColor = '#2196F3';
+    const mode = this.dialogState?.mode || 'growspace';
+    const plantCount = this.dialogState?.plantIds?.length || 0;
 
-    private _removeNutrient(index: number) {
-        this._nutrients = this._nutrients.filter((_, i) => i !== index);
-    }
+    const modeText =
+      mode === 'plant' && plantCount > 0
+        ? `Watering ${plantCount} selected plant${plantCount > 1 ? 's' : ''}`
+        : `Watering all plants in ${this.growspaceName}`;
 
-    private _calculateTotalMl(concentration: number): number {
-        return this._volume * concentration;
-    }
-
-    private _getTotalNutrientsMl(): number {
-        return this._nutrients.reduce((sum, n) => sum + this._calculateTotalMl(n.concentration), 0);
-    }
-
-    private async _submit() {
-        if (!this._dataService || !this.dialogState) return;
-
-        this._isSubmitting = true;
-
-        try {
-            // Convert nutrients array to record
-            const nutrientsRecord: Record<string, number> = {};
-            for (const n of this._nutrients) {
-                if (n.name && n.concentration > 0) {
-                    nutrientsRecord[n.name] = n.concentration;
-                }
-            }
-
-            if (this.dialogState.mode === 'plant' && this.dialogState.plantIds?.length) {
-                // Water individual plants
-                for (const plantId of this.dialogState.plantIds) {
-                    await this._dataService.waterPlant(
-                        plantId,
-                        this._volume,
-                        Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined
-                    );
-                }
-                this.store?.showToast(
-                    `Watered ${this.dialogState.plantIds.length} plant(s)`,
-                    'success'
-                );
-            } else if (this.dialogState.growspaceId) {
-                // Water entire growspace
-                await this._dataService.waterGrowspace(
-                    this.dialogState.growspaceId,
-                    this._volume,
-                    Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined
-                );
-                this.store?.showToast('Watered all plants in growspace', 'success');
-            }
-
-            await this.store?.refreshData();
-            this._close();
-        } catch (e: any) {
-            console.error('Failed to record watering:', e);
-            this.store?.showToast(`Error: ${e.message}`, 'error');
-        } finally {
-            this._isSubmitting = false;
-        }
-    }
-
-    private _close() {
-        this.dispatchEvent(new CustomEvent('close'));
-    }
-
-    protected render() {
-        if (!this.open) return nothing;
-
-        const dialogColor = '#2196F3';
-        const mode = this.dialogState?.mode || 'growspace';
-        const plantCount = this.dialogState?.plantIds?.length || 0;
-
-        const modeText =
-            mode === 'plant' && plantCount > 0
-                ? `Watering ${plantCount} selected plant${plantCount > 1 ? 's' : ''}`
-                : `Watering all plants in ${this.growspaceName}`;
-
-        return html`
+    return html`
       <ha-dialog
         open
         @closed=${this._close}
@@ -288,29 +336,43 @@ export class WateringDialog extends LitElement {
                 .min=${0.1}
                 .step=${0.1}
                 @change=${(e: CustomEvent) => {
-                this._volume = parseFloat(e.detail) || 0;
-            }}
+        this._volume = parseFloat(e.detail) || 0;
+      }}
               ></md3-number-input>
             </div>
 
             <!-- Nutrients Section -->
             <div class="detail-card">
-              <h3 style="margin-top: 0;">Nutrients (Optional)</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h3 style="margin: 0;">Nutrients</h3>
+                ${this._selectedPresetId ? html`<span class="preset-chip">Preset Active</span>` : nothing}
+              </div>
+              
+              <div class="preset-select">
+                <div class="md3-input-group">
+                    <label class="md3-label">Use Nutrient Preset</label>
+                    <select class="md3-input" .value=${this._selectedPresetId} @change=${this._handlePresetChange}>
+                        <option value="">Manual / No Preset</option>
+                        ${this._renderPresetOptions()}
+                    </select>
+                </div>
+              </div>
+
               <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 16px;">
-                Track nutrient concentrations added to your solution.
+                Track nutrient concentrations. Values auto-populated from presets can be overridden.
               </p>
 
               <div class="nutrients-section">
                 ${this._nutrients.map(
-                (nutrient, index) => html`
+        (nutrient, index) => html`
                     <div class="nutrient-row">
                       <md3-text-input
                         label="Nutrient Name"
                         .value=${nutrient.name}
                         @change=${(e: CustomEvent) => {
-                        const val = (e.target as HTMLInputElement).value || e.detail;
-                        this._updateNutrient(index, 'name', val);
-                    }}
+            const val = (e.target as HTMLInputElement).value || e.detail;
+            this._updateNutrient(index, 'name', val);
+          }}
                       ></md3-text-input>
                       <md3-number-input
                         label="ml/L"
@@ -318,24 +380,23 @@ export class WateringDialog extends LitElement {
                         .min=${0}
                         .step=${0.1}
                         @change=${(e: CustomEvent) => {
-                        this._updateNutrient(index, 'concentration', parseFloat(e.detail) || 0);
-                    }}
+            this._updateNutrient(index, 'concentration', parseFloat(e.detail) || 0);
+          }}
                       ></md3-number-input>
                       <button
-                        class="md3-button text"
+                        class="md3-button icon"
                         @click=${() => this._removeNutrient(index)}
                         title="Remove nutrient"
+                        style="color: var(--error-color);"
                       >
-                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                          <path d="${mdiDelete}"></path>
-                        </svg>
+                        <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
                       </button>
                     </div>
                   `
-            )}
+      )}
 
-                <div class="add-nutrient-btn" @click=${this._addNutrient}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+                <div class="add-nutrient-btn" @click=${() => this._addNutrient()}>
+                  <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
                   <span>Add Nutrient</span>
                 </div>
               </div>
@@ -343,13 +404,13 @@ export class WateringDialog extends LitElement {
 
             <!-- Calculation Preview -->
             ${this._nutrients.length > 0
-                ? html`
+        ? html`
                   <div class="calculation-preview">
                     <h4 style="margin-top: 0; margin-bottom: 12px;">Calculation Preview</h4>
                     ${this._nutrients
-                        .filter((n) => n.name && n.concentration > 0)
-                        .map(
-                            (nutrient) => html`
+            .filter((n) => n.name && n.concentration > 0)
+            .map(
+              (nutrient) => html`
                           <div class="calculation-row">
                             <span class="calculation-label">${nutrient.name}</span>
                             <span class="calculation-value">
@@ -358,7 +419,7 @@ export class WateringDialog extends LitElement {
                             </span>
                           </div>
                         `
-                        )}
+            )}
                     <div class="calculation-row">
                       <span class="calculation-label">Total Nutrients</span>
                       <span class="calculation-value">
@@ -367,7 +428,7 @@ export class WateringDialog extends LitElement {
                     </div>
                   </div>
                 `
-                : nothing}
+        : nothing}
           </div>
 
           <div class="button-group">
@@ -386,5 +447,39 @@ export class WateringDialog extends LitElement {
         </div>
       </ha-dialog>
     `;
+  }
+  private _renderPresetOptions() {
+    const device = this.store.data.$devices.get().find(d => d.device_id === this.dialogState?.growspaceId);
+    if (!device || !device.nutrient_presets) return nothing;
+
+    const presets = Object.values(device.nutrient_presets);
+
+    // Logic for recommendations
+    let currentStage: string | undefined;
+    let daysInStage = 0;
+
+    if (this.dialogState?.mode === 'plant' && this.dialogState.plantIds?.length === 1) {
+      const plant = device.plants.find(p => p.attributes.plant_id === this.dialogState?.plantIds?.[0]);
+      if (plant) {
+        currentStage = plant.attributes.stage;
+        daysInStage = (plant.attributes as any).days_in_stage || 0;
+      }
     }
+
+    return presets.map(p => {
+      let recommended = false;
+      // Exact match logic from backend
+      if (p.stage && p.stage === currentStage) {
+        if (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage) {
+          recommended = true;
+        }
+      }
+
+      return html`
+                <option value="${p.id}" ?selected=${this._selectedPresetId === p.id}>
+                    ${p.name} ${recommended ? '⭐ (Recommended)' : ''}
+                </option>
+            `;
+    });
+  }
 }

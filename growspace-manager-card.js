@@ -5,6 +5,7 @@ var mdiAirHumidifierOff = "M22.1 21.5L2.4 1.7L1.1 3L3.8 5.7C3.3 6.3 3 7.1 3 8V22
 var mdiAlert = "M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z";
 var mdiArrowLeft = "M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z";
 var mdiArrowRight = "M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z";
+var mdiBottleTonicPlus = "M13 4H11L10 2H14L13 4M14 8V6H15V5H9V6H10V8C7.24 8 5 10.24 5 13V22H19V13C19 10.24 16.76 8 14 8M16 17H13V20H11V17H8V15H11V12H13V15H16V17Z";
 var mdiBrain = "M21.33,12.91C21.42,14.46 20.71,15.95 19.44,16.86L20.21,18.35C20.44,18.8 20.47,19.33 20.27,19.8C20.08,20.27 19.69,20.64 19.21,20.8L18.42,21.05C18.25,21.11 18.06,21.14 17.88,21.14C17.37,21.14 16.89,20.91 16.56,20.5L14.44,18C13.55,17.85 12.71,17.47 12,16.9C11.5,17.05 11,17.13 10.5,17.13C9.62,17.13 8.74,16.86 8,16.34C7.47,16.5 6.93,16.57 6.38,16.56C5.59,16.57 4.81,16.41 4.08,16.11C2.65,15.47 1.7,14.07 1.65,12.5C1.57,11.78 1.69,11.05 2,10.39C1.71,9.64 1.68,8.82 1.93,8.06C2.3,7.11 3,6.32 3.87,5.82C4.45,4.13 6.08,3 7.87,3.12C9.47,1.62 11.92,1.46 13.7,2.75C14.12,2.64 14.56,2.58 15,2.58C16.36,2.55 17.65,3.15 18.5,4.22C20.54,4.75 22,6.57 22.08,8.69C22.13,9.8 21.83,10.89 21.22,11.82C21.29,12.18 21.33,12.54 21.33,12.91M16.33,11.5C16.9,11.57 17.35,12 17.35,12.57A1,1 0 0,1 16.35,13.57H15.72C15.4,14.47 14.84,15.26 14.1,15.86C14.35,15.95 14.61,16 14.87,16.07C20,16 19.4,12.87 19.4,12.82C19.34,11.39 18.14,10.27 16.71,10.33A1,1 0 0,1 15.71,9.33A1,1 0 0,1 16.71,8.33C17.94,8.36 19.12,8.82 20.04,9.63C20.09,9.34 20.12,9.04 20.12,8.74C20.06,7.5 19.5,6.42 17.25,6.21C16,3.25 12.85,4.89 12.85,5.81V5.81C12.82,6.04 13.06,6.53 13.1,6.56A1,1 0 0,1 14.1,7.56C14.1,8.11 13.65,8.56 13.1,8.56V8.56C12.57,8.54 12.07,8.34 11.67,8C11.19,8.31 10.64,8.5 10.07,8.56V8.56C9.5,8.61 9.03,8.21 9,7.66C8.92,7.1 9.33,6.61 9.88,6.56C10.04,6.54 10.82,6.42 10.82,5.79V5.79C10.82,5.13 11.07,4.5 11.5,4C10.58,3.75 9.59,4.08 8.59,5.29C6.75,5 6,5.25 5.45,7.2C4.5,7.67 4,8 3.78,9C4.86,8.78 5.97,8.87 7,9.25C7.5,9.44 7.78,10 7.59,10.54C7.4,11.06 6.82,11.32 6.3,11.13C5.57,10.81 4.75,10.79 4,11.07C3.68,11.34 3.68,11.9 3.68,12.34C3.68,13.08 4.05,13.77 4.68,14.17C5.21,14.44 5.8,14.58 6.39,14.57C6.24,14.31 6.11,14.04 6,13.76C5.81,13.22 6.1,12.63 6.64,12.44C7.18,12.25 7.77,12.54 7.96,13.08C8.36,14.22 9.38,15 10.58,15.13C11.95,15.06 13.17,14.25 13.77,13C14,11.62 15.11,11.5 16.33,11.5M18.33,18.97L17.71,17.67L17,17.83L18,19.08L18.33,18.97M13.68,10.36C13.7,9.83 13.3,9.38 12.77,9.33C12.06,9.29 11.37,9.53 10.84,10C10.27,10.58 9.97,11.38 10,12.19A1,1 0 0,0 11,13.19C11.57,13.19 12,12.74 12,12.19C12,11.92 12.07,11.65 12.23,11.43C12.35,11.33 12.5,11.28 12.66,11.28C13.21,11.31 13.68,10.9 13.68,10.36Z";
 var mdiCalculator = "M7,2H17A2,2 0 0,1 19,4V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V4A2,2 0 0,1 7,2M7,4V8H17V4H7M7,10V12H9V10H7M11,10V12H13V10H11M15,10V12H17V10H15M7,14V16H9V14H7M11,14V16H13V14H11M15,14V16H17V14H15M7,18V20H9V18H7M11,18V20H13V18H11M15,18V20H17V18H15Z";
 var mdiCamera = "M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z";
@@ -22,6 +23,7 @@ var mdiCloudOutline = "M6.5 20Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 1
 var mdiCloudUpload = "M11 20H6.5Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20H13V12.85L14.6 14.4L16 13L12 9L8 13L9.4 14.4L11 12.85Z";
 var mdiCog = "M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z";
 var mdiContentCopy = "M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z";
+var mdiContentSave = "M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z";
 var mdiDelete = "M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z";
 var mdiDna = "M4,2H6V4C6,5.44 6.68,6.61 7.88,7.78C8.74,8.61 9.89,9.41 11.09,10.2L9.26,11.39C8.27,10.72 7.31,10 6.5,9.21C5.07,7.82 4,6.1 4,4V2M18,2H20V4C20,6.1 18.93,7.82 17.5,9.21C16.09,10.59 14.29,11.73 12.54,12.84C10.79,13.96 9.09,15.05 7.88,16.22C6.68,17.39 6,18.56 6,20V22H4V20C4,17.9 5.07,16.18 6.5,14.79C7.91,13.41 9.71,12.27 11.46,11.16C13.21,10.04 14.91,8.95 16.12,7.78C17.32,6.61 18,5.44 18,4V2M14.74,12.61C15.73,13.28 16.69,14 17.5,14.79C18.93,16.18 20,17.9 20,20V22H18V20C18,18.56 17.32,17.39 16.12,16.22C15.26,15.39 14.11,14.59 12.91,13.8L14.74,12.61M7,3H17V4L16.94,4.5H7.06L7,4V3M7.68,6H16.32C16.08,6.34 15.8,6.69 15.42,7.06L14.91,7.5H9.07L8.58,7.06C8.2,6.69 7.92,6.34 7.68,6M9.09,16.5H14.93L15.42,16.94C15.8,17.31 16.08,17.66 16.32,18H7.68C7.92,17.66 8.2,17.31 8.58,16.94L9.09,16.5M7.06,19.5H16.94L17,20V21H7V20L7.06,19.5Z";
 var mdiDotsVertical = "M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z";
@@ -699,6 +701,7 @@ class GrowspaceAdapter {
             // Configs
             irrigation_config: wsData.irrigation_config,
             irrigation_strategy: wsData.irrigation_strategy || undefined,
+            nutrient_presets: wsData.nutrient_presets,
         });
     }
     /**
@@ -838,6 +841,8 @@ const SERVICES = {
     STRAIN_RECOMMENDATION: 'strain_recommendation',
     WATER_PLANT: 'water_plant',
     WATER_GROWSPACE: 'water_growspace',
+    SAVE_NUTRIENT_PRESET: 'save_nutrient_preset',
+    REMOVE_NUTRIENT_PRESET: 'remove_nutrient_preset',
 };
 /**
  * Default configuration values to replace magic numbers throughout the codebase.
@@ -4801,6 +4806,16 @@ const GrowspaceAPIResponseSchema = objectType({
     granular_stage: stringType().optional().default('unknown'),
     is_day: booleanType().optional().default(false),
     air_exchange: unionType([stringType(), numberType().transform(String)]).nullable().optional(), // Default handled by optionality
+    nutrient_presets: recordType(stringType(), objectType({
+        id: stringType(),
+        name: stringType(),
+        nutrients: arrayType(objectType({
+            name: stringType(),
+            dose_ml_l: numberType(),
+        })),
+        stage: stringType().optional(),
+        min_days_in_stage: numberType().optional(),
+    })).optional().default({}),
 }).catchall(anyType()); // Allow extra fields to pass through without error
 const GrowspaceAPICollectionSchema = recordType(stringType(), GrowspaceAPIResponseSchema);
 const StrainPhenotypeSchema = objectType({
@@ -5478,8 +5493,8 @@ class DataService {
         }
     }
     // --- Watering Services ---
-    async waterPlant(plantId, amount, nutrients) {
-        console.log('[DataService:waterPlant] Watering plant:', plantId, 'amount:', amount);
+    async waterPlant(plantId, amount, nutrients, presetId) {
+        console.log('[DataService:waterPlant] Watering plant:', plantId, 'amount:', amount, 'preset:', presetId);
         try {
             const payload = {
                 plant_id: plantId,
@@ -5487,6 +5502,9 @@ class DataService {
             };
             if (nutrients && Object.keys(nutrients).length > 0) {
                 payload.nutrients = nutrients;
+            }
+            if (presetId) {
+                payload.preset_id = presetId;
             }
             await this.hass.callService(DOMAIN, SERVICES.WATER_PLANT, payload);
             console.log('[DataService:waterPlant] Service Called');
@@ -5496,8 +5514,8 @@ class DataService {
             throw err;
         }
     }
-    async waterGrowspace(growspaceId, amountPerPlant, nutrients) {
-        console.log('[DataService:waterGrowspace] Watering growspace:', growspaceId, 'amount per plant:', amountPerPlant);
+    async waterGrowspace(growspaceId, amountPerPlant, nutrients, presetId) {
+        console.log('[DataService:waterGrowspace] Watering growspace:', growspaceId, 'amount per plant:', amountPerPlant, 'preset:', presetId);
         try {
             const payload = {
                 growspace_id: growspaceId,
@@ -5506,11 +5524,39 @@ class DataService {
             if (nutrients && Object.keys(nutrients).length > 0) {
                 payload.nutrients = nutrients;
             }
+            if (presetId) {
+                payload.preset_id = presetId;
+            }
             await this.hass.callService(DOMAIN, SERVICES.WATER_GROWSPACE, payload);
             console.log('[DataService:waterGrowspace] Service Called');
         }
         catch (err) {
             console.error('[DataService:waterGrowspace] Error:', err);
+            throw err;
+        }
+    }
+    // --- Nutrient Presets ---
+    async saveNutrientPreset(params) {
+        console.log('[DataService:saveNutrientPreset] Saving preset:', params);
+        try {
+            await this.hass.callService(DOMAIN, SERVICES.SAVE_NUTRIENT_PRESET, params);
+            console.log('[DataService:saveNutrientPreset] Service Called');
+        }
+        catch (err) {
+            console.error('[DataService:saveNutrientPreset] Error:', err);
+            throw err;
+        }
+    }
+    async removeNutrientPreset(presetId) {
+        console.log('[DataService:removeNutrientPreset] Removing preset:', presetId);
+        try {
+            await this.hass.callService(DOMAIN, SERVICES.REMOVE_NUTRIENT_PRESET, {
+                preset_id: presetId,
+            });
+            console.log('[DataService:removeNutrientPreset] Service Called');
+        }
+        catch (err) {
+            console.error('[DataService:removeNutrientPreset] Error:', err);
             throw err;
         }
     }
@@ -14332,7 +14378,7 @@ class GrowspaceLogbookController {
 })();
 
 (() => {
-    var _WateringDialog_hass_accessor_storage, _WateringDialog_store_accessor_storage, _WateringDialog_open_accessor_storage, _WateringDialog_dialogState_accessor_storage, _WateringDialog_growspaceName_accessor_storage, _WateringDialog__volume_accessor_storage, _WateringDialog__nutrients_accessor_storage, _WateringDialog__isSubmitting_accessor_storage;
+    var _WateringDialog_hass_accessor_storage, _WateringDialog_store_accessor_storage, _WateringDialog_open_accessor_storage, _WateringDialog_dialogState_accessor_storage, _WateringDialog_growspaceName_accessor_storage, _WateringDialog__volume_accessor_storage, _WateringDialog__nutrients_accessor_storage, _WateringDialog__selectedPresetId_accessor_storage, _WateringDialog__isSubmitting_accessor_storage;
     let _classDecorators = [t$2('watering-dialog')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -14359,6 +14405,9 @@ class GrowspaceLogbookController {
     let __nutrients_decorators;
     let __nutrients_initializers = [];
     let __nutrients_extraInitializers = [];
+    let __selectedPresetId_decorators;
+    let __selectedPresetId_initializers = [];
+    let __selectedPresetId_extraInitializers = [];
     let __isSubmitting_decorators;
     let __isSubmitting_initializers = [];
     let __isSubmitting_extraInitializers = [];
@@ -14372,7 +14421,8 @@ class GrowspaceLogbookController {
             _WateringDialog_growspaceName_accessor_storage.set(this, (__runInitializers(this, _dialogState_extraInitializers), __runInitializers(this, _growspaceName_initializers, '')));
             _WateringDialog__volume_accessor_storage.set(this, (__runInitializers(this, _growspaceName_extraInitializers), __runInitializers(this, __volume_initializers, 1.0)));
             _WateringDialog__nutrients_accessor_storage.set(this, (__runInitializers(this, __volume_extraInitializers), __runInitializers(this, __nutrients_initializers, [])));
-            _WateringDialog__isSubmitting_accessor_storage.set(this, (__runInitializers(this, __nutrients_extraInitializers), __runInitializers(this, __isSubmitting_initializers, false)));
+            _WateringDialog__selectedPresetId_accessor_storage.set(this, (__runInitializers(this, __nutrients_extraInitializers), __runInitializers(this, __selectedPresetId_initializers, '')));
+            _WateringDialog__isSubmitting_accessor_storage.set(this, (__runInitializers(this, __selectedPresetId_extraInitializers), __runInitializers(this, __isSubmitting_initializers, false)));
             Object.defineProperty(this, "_dataService", {
                 enumerable: true,
                 configurable: true,
@@ -14395,6 +14445,8 @@ class GrowspaceLogbookController {
         set _volume(value) { __classPrivateFieldSet(this, _WateringDialog__volume_accessor_storage, value, "f"); }
         get _nutrients() { return __classPrivateFieldGet(this, _WateringDialog__nutrients_accessor_storage, "f"); }
         set _nutrients(value) { __classPrivateFieldSet(this, _WateringDialog__nutrients_accessor_storage, value, "f"); }
+        get _selectedPresetId() { return __classPrivateFieldGet(this, _WateringDialog__selectedPresetId_accessor_storage, "f"); }
+        set _selectedPresetId(value) { __classPrivateFieldSet(this, _WateringDialog__selectedPresetId_accessor_storage, value, "f"); }
         get _isSubmitting() { return __classPrivateFieldGet(this, _WateringDialog__isSubmitting_accessor_storage, "f"); }
         set _isSubmitting(value) { __classPrivateFieldSet(this, _WateringDialog__isSubmitting_accessor_storage, value, "f"); }
         willUpdate(changedProps) {
@@ -14408,10 +14460,11 @@ class GrowspaceLogbookController {
         _resetForm() {
             this._volume = 1.0;
             this._nutrients = [];
+            this._selectedPresetId = '';
             this._isSubmitting = false;
         }
-        _addNutrient() {
-            this._nutrients = [...this._nutrients, { name: '', concentration: 0 }];
+        _addNutrient(name = '', concentration = 0) {
+            this._nutrients = [...this._nutrients, { name, concentration }];
         }
         _updateNutrient(index, field, value) {
             const updated = [...this._nutrients];
@@ -14420,6 +14473,26 @@ class GrowspaceLogbookController {
         }
         _removeNutrient(index) {
             this._nutrients = this._nutrients.filter((_, i) => i !== index);
+            // If we manually remove a nutrient, we might be diverging from the preset
+            // but let's keep the presetId for the service call unless the user explicitly changes the preset selector
+        }
+        _handlePresetChange(e) {
+            const presetId = e.target.value;
+            this._selectedPresetId = presetId;
+            if (!presetId) {
+                this._nutrients = [];
+                return;
+            }
+            const presets = this.dialogState?.growspaceId
+                ? this.store.data.$devices.get().find(d => d.device_id === this.dialogState?.growspaceId)?.nutrient_presets
+                : undefined;
+            if (presets && presets[presetId]) {
+                const preset = presets[presetId];
+                this._nutrients = preset.nutrients.map(n => ({
+                    name: n.name,
+                    concentration: n.dose_ml_l
+                }));
+            }
         }
         _calculateTotalMl(concentration) {
             return this._volume * concentration;
@@ -14442,13 +14515,13 @@ class GrowspaceLogbookController {
                 if (this.dialogState.mode === 'plant' && this.dialogState.plantIds?.length) {
                     // Water individual plants
                     for (const plantId of this.dialogState.plantIds) {
-                        await this._dataService.waterPlant(plantId, this._volume, Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined);
+                        await this._dataService.waterPlant(plantId, this._volume, Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined, this._selectedPresetId || undefined);
                     }
                     this.store?.showToast(`Watered ${this.dialogState.plantIds.length} plant(s)`, 'success');
                 }
                 else if (this.dialogState.growspaceId) {
                     // Water entire growspace
-                    await this._dataService.waterGrowspace(this.dialogState.growspaceId, this._volume, Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined);
+                    await this._dataService.waterGrowspace(this.dialogState.growspaceId, this._volume, Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined, this._selectedPresetId || undefined);
                     this.store?.showToast('Watered all plants in growspace', 'success');
                 }
                 await this.store?.refreshData();
@@ -14527,9 +14600,23 @@ class GrowspaceLogbookController {
 
             <!-- Nutrients Section -->
             <div class="detail-card">
-              <h3 style="margin-top: 0;">Nutrients (Optional)</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h3 style="margin: 0;">Nutrients</h3>
+                ${this._selectedPresetId ? x `<span class="preset-chip">Preset Active</span>` : E}
+              </div>
+              
+              <div class="preset-select">
+                <div class="md3-input-group">
+                    <label class="md3-label">Use Nutrient Preset</label>
+                    <select class="md3-input" .value=${this._selectedPresetId} @change=${this._handlePresetChange}>
+                        <option value="">Manual / No Preset</option>
+                        ${this._renderPresetOptions()}
+                    </select>
+                </div>
+              </div>
+
               <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 16px;">
-                Track nutrient concentrations added to your solution.
+                Track nutrient concentrations. Values auto-populated from presets can be overridden.
               </p>
 
               <div class="nutrients-section">
@@ -14553,19 +14640,18 @@ class GrowspaceLogbookController {
             }}
                       ></md3-number-input>
                       <button
-                        class="md3-button text"
+                        class="md3-button icon"
                         @click=${() => this._removeNutrient(index)}
                         title="Remove nutrient"
+                        style="color: var(--error-color);"
                       >
-                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                          <path d="${mdiDelete}"></path>
-                        </svg>
+                        <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
                       </button>
                     </div>
                   `)}
 
-                <div class="add-nutrient-btn" @click=${this._addNutrient}>
-                  <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+                <div class="add-nutrient-btn" @click=${() => this._addNutrient()}>
+                  <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
                   <span>Add Nutrient</span>
                 </div>
               </div>
@@ -14615,6 +14701,36 @@ class GrowspaceLogbookController {
       </ha-dialog>
     `;
         }
+        _renderPresetOptions() {
+            const device = this.store.data.$devices.get().find(d => d.device_id === this.dialogState?.growspaceId);
+            if (!device || !device.nutrient_presets)
+                return E;
+            const presets = Object.values(device.nutrient_presets);
+            // Logic for recommendations
+            let currentStage;
+            let daysInStage = 0;
+            if (this.dialogState?.mode === 'plant' && this.dialogState.plantIds?.length === 1) {
+                const plant = device.plants.find(p => p.attributes.plant_id === this.dialogState?.plantIds?.[0]);
+                if (plant) {
+                    currentStage = plant.attributes.stage;
+                    daysInStage = plant.attributes.days_in_stage || 0;
+                }
+            }
+            return presets.map(p => {
+                let recommended = false;
+                // Exact match logic from backend
+                if (p.stage && p.stage === currentStage) {
+                    if (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage) {
+                        recommended = true;
+                    }
+                }
+                return x `
+                <option value="${p.id}" ?selected=${this._selectedPresetId === p.id}>
+                    ${p.name} ${recommended ? '⭐ (Recommended)' : ''}
+                </option>
+            `;
+            });
+        }
     };
     _WateringDialog_hass_accessor_storage = new WeakMap();
     _WateringDialog_store_accessor_storage = new WeakMap();
@@ -14623,6 +14739,7 @@ class GrowspaceLogbookController {
     _WateringDialog_growspaceName_accessor_storage = new WeakMap();
     _WateringDialog__volume_accessor_storage = new WeakMap();
     _WateringDialog__nutrients_accessor_storage = new WeakMap();
+    _WateringDialog__selectedPresetId_accessor_storage = new WeakMap();
     _WateringDialog__isSubmitting_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "WateringDialog");
     (() => {
@@ -14634,6 +14751,7 @@ class GrowspaceLogbookController {
         _growspaceName_decorators = [n$5({ type: String })];
         __volume_decorators = [r$2()];
         __nutrients_decorators = [r$2()];
+        __selectedPresetId_decorators = [r$2()];
         __isSubmitting_decorators = [r$2()];
         __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
         __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
@@ -14642,6 +14760,7 @@ class GrowspaceLogbookController {
         __esDecorate(_classThis, null, _growspaceName_decorators, { kind: "accessor", name: "growspaceName", static: false, private: false, access: { has: obj => "growspaceName" in obj, get: obj => obj.growspaceName, set: (obj, value) => { obj.growspaceName = value; } }, metadata: _metadata }, _growspaceName_initializers, _growspaceName_extraInitializers);
         __esDecorate(_classThis, null, __volume_decorators, { kind: "accessor", name: "_volume", static: false, private: false, access: { has: obj => "_volume" in obj, get: obj => obj._volume, set: (obj, value) => { obj._volume = value; } }, metadata: _metadata }, __volume_initializers, __volume_extraInitializers);
         __esDecorate(_classThis, null, __nutrients_decorators, { kind: "accessor", name: "_nutrients", static: false, private: false, access: { has: obj => "_nutrients" in obj, get: obj => obj._nutrients, set: (obj, value) => { obj._nutrients = value; } }, metadata: _metadata }, __nutrients_initializers, __nutrients_extraInitializers);
+        __esDecorate(_classThis, null, __selectedPresetId_decorators, { kind: "accessor", name: "_selectedPresetId", static: false, private: false, access: { has: obj => "_selectedPresetId" in obj, get: obj => obj._selectedPresetId, set: (obj, value) => { obj._selectedPresetId = value; } }, metadata: _metadata }, __selectedPresetId_initializers, __selectedPresetId_extraInitializers);
         __esDecorate(_classThis, null, __isSubmitting_decorators, { kind: "accessor", name: "_isSubmitting", static: false, private: false, access: { has: obj => "_isSubmitting" in obj, get: obj => obj._isSubmitting, set: (obj, value) => { obj._isSubmitting = value; } }, metadata: _metadata }, __isSubmitting_initializers, __isSubmitting_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         _classThis = _classDescriptor.value;
@@ -14760,7 +14879,427 @@ class GrowspaceLogbookController {
         height: 18px;
         fill: currentColor;
       }
+
+      .preset-select {
+          margin-bottom: 12px;
+      }
+      
+      .preset-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 0.75rem;
+          background: var(--primary-color);
+          color: white;
+          margin-left: 8px;
+      }
+
+      .calculation-row strong {
+          color: var(--primary-color);
+      }
     `,
+        ]
+    });
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
+
+(() => {
+    var _NutrientPresetsEditor_open_accessor_storage, _NutrientPresetsEditor_hass_accessor_storage, _NutrientPresetsEditor_dataService_accessor_storage, _NutrientPresetsEditor_presets_accessor_storage, _NutrientPresetsEditor__view_accessor_storage, _NutrientPresetsEditor__editingPreset_accessor_storage, _NutrientPresetsEditor__error_accessor_storage;
+    let _classDecorators = [t$2('nutrient-presets-editor')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _open_decorators;
+    let _open_initializers = [];
+    let _open_extraInitializers = [];
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _dataService_decorators;
+    let _dataService_initializers = [];
+    let _dataService_extraInitializers = [];
+    let _presets_decorators;
+    let _presets_initializers = [];
+    let _presets_extraInitializers = [];
+    let __view_decorators;
+    let __view_initializers = [];
+    let __view_extraInitializers = [];
+    let __editingPreset_decorators;
+    let __editingPreset_initializers = [];
+    let __editingPreset_extraInitializers = [];
+    let __error_decorators;
+    let __error_initializers = [];
+    let __error_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get open() { return __classPrivateFieldGet(this, _NutrientPresetsEditor_open_accessor_storage, "f"); }
+        set open(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor_open_accessor_storage, value, "f"); }
+        get hass() { return __classPrivateFieldGet(this, _NutrientPresetsEditor_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor_hass_accessor_storage, value, "f"); }
+        get dataService() { return __classPrivateFieldGet(this, _NutrientPresetsEditor_dataService_accessor_storage, "f"); }
+        set dataService(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor_dataService_accessor_storage, value, "f"); }
+        get presets() { return __classPrivateFieldGet(this, _NutrientPresetsEditor_presets_accessor_storage, "f"); }
+        set presets(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor_presets_accessor_storage, value, "f"); }
+        get _view() { return __classPrivateFieldGet(this, _NutrientPresetsEditor__view_accessor_storage, "f"); }
+        set _view(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor__view_accessor_storage, value, "f"); }
+        get _editingPreset() { return __classPrivateFieldGet(this, _NutrientPresetsEditor__editingPreset_accessor_storage, "f"); }
+        set _editingPreset(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor__editingPreset_accessor_storage, value, "f"); }
+        get _error() { return __classPrivateFieldGet(this, _NutrientPresetsEditor__error_accessor_storage, "f"); }
+        set _error(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor__error_accessor_storage, value, "f"); }
+        _close() {
+            this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+        }
+        _startNew() {
+            this._editingPreset = {
+                name: '',
+                nutrients: [{ name: '', dose_ml_l: 0 }],
+                stage: '',
+                min_days_in_stage: 0
+            };
+            this._view = 'EDIT';
+            this._error = null;
+        }
+        _editPreset(preset) {
+            this._editingPreset = { ...preset, nutrients: [...preset.nutrients.map(n => ({ ...n }))] };
+            this._view = 'EDIT';
+            this._error = null;
+        }
+        async _deletePreset(presetId) {
+            if (!confirm('Are you sure you want to delete this preset?'))
+                return;
+            try {
+                await this.dataService.removeNutrientPreset(presetId);
+                this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
+            }
+            catch (err) {
+                this._error = err.message;
+            }
+        }
+        _addNutrient() {
+            if (!this._editingPreset)
+                return;
+            const nutrients = [...(this._editingPreset.nutrients || []), { name: '', dose_ml_l: 0 }];
+            this._editingPreset = { ...this._editingPreset, nutrients };
+        }
+        _removeNutrient(index) {
+            if (!this._editingPreset)
+                return;
+            const nutrients = [...(this._editingPreset.nutrients || [])];
+            nutrients.splice(index, 1);
+            this._editingPreset = { ...this._editingPreset, nutrients };
+        }
+        _updateNutrient(index, updates) {
+            if (!this._editingPreset)
+                return;
+            const nutrients = [...(this._editingPreset.nutrients || [])];
+            nutrients[index] = { ...nutrients[index], ...updates };
+            this._editingPreset = { ...this._editingPreset, nutrients };
+        }
+        async _savePreset() {
+            if (!this._editingPreset || !this._editingPreset.name) {
+                this._error = 'Preset name is required';
+                return;
+            }
+            const nutrients = (this._editingPreset.nutrients || []).filter(n => n.name && n.dose_ml_l > 0);
+            if (nutrients.length === 0) {
+                this._error = 'At least one valid nutrient is required';
+                return;
+            }
+            try {
+                await this.dataService.saveNutrientPreset({
+                    preset_id: this._editingPreset.id,
+                    name: this._editingPreset.name,
+                    nutrients,
+                    stage: this._editingPreset.stage || undefined,
+                    min_days_in_stage: this._editingPreset.min_days_in_stage || undefined
+                });
+                this._view = 'LIST';
+                this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
+            }
+            catch (err) {
+                this._error = err.message;
+            }
+        }
+        render() {
+            if (!this.open)
+                return x ``;
+            return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .heading=${'Nutrient Presets'}
+      >
+        <div class="glass-dialog-container">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <ha-svg-icon .path=${mdiBottleTonicPlus}></ha-svg-icon>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">${this._view === 'LIST' ? 'Nutrient Presets' : (this._editingPreset?.id ? 'Edit Preset' : 'New Preset')}</h2>
+              <div class="dialog-subtitle">Manage your nutrient recipes</div>
+            </div>
+            <button class="md3-button text" @click=${this._close}>
+              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+            </button>
+          </div>
+
+          <div class="dialog-content-grid" style="display: block;">
+            ${this._error ? x `<div class="error-bar">${this._error}</div>` : E}
+            
+            ${this._view === 'LIST' ? this._renderList() : this._renderEdit()}
+          </div>
+
+          <div class="button-group">
+            ${this._view === 'LIST'
+                ? x `
+                  <button class="md3-button tonal" @click=${this._close}>Close</button>
+                  <button class="md3-button primary" @click=${this._startNew}>
+                    <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
+                    Add Preset
+                  </button>
+                `
+                : x `
+                  <button class="md3-button tonal" @click=${() => this._view = 'LIST'}>Cancel</button>
+                  <button class="md3-button primary" @click=${this._savePreset}>
+                    <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
+                    Save Preset
+                  </button>
+                `}
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+        }
+        _renderList() {
+            const presetEntries = Object.values(this.presets);
+            if (presetEntries.length === 0) {
+                return x `
+        <div class="empty-state">
+          <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-svg-icon>
+          <p>No nutrient presets defined yet.</p>
+          <p style="font-size: 0.9rem;">Presets allow you to quickly apply recurring nutrient recipes while watering.</p>
+        </div>
+      `;
+            }
+            return x `
+      <div class="presets-list">
+        ${presetEntries.map(preset => x `
+          <div class="preset-item">
+            <div class="preset-info">
+              <div class="preset-name">${preset.name}</div>
+              <div class="preset-details">
+                ${preset.nutrients.length} nutrients 
+                ${preset.stage ? x `• <span style="text-transform: capitalize;">${preset.stage}</span>` : ''}
+                ${preset.min_days_in_stage ? x `• Day ${preset.min_days_in_stage}+` : ''}
+              </div>
+            </div>
+            <div class="preset-actions">
+              <button class="md3-button icon" @click=${() => this._editPreset(preset)} title="Edit">
+                <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
+              </button>
+              <button class="md3-button icon" @click=${() => this._deletePreset(preset.id)} title="Delete" style="color: var(--error-color);">
+                <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+              </button>
+            </div>
+          </div>
+        `)}
+      </div>
+    `;
+        }
+        _renderEdit() {
+            if (!this._editingPreset)
+                return E;
+            return x `
+      <div class="preset-form">
+        <div class="form-section">
+           <h3>General Info</h3>
+           <md3-text-input
+              label="Preset Name"
+              .value=${this._editingPreset.name || ''}
+              @change=${(e) => this._editingPreset = { ...this._editingPreset, name: e.detail }}
+              placeholder="e.g. Veg Week 1"
+           ></md3-text-input>
+        </div>
+
+        <div class="form-section">
+            <h3>Recommend for Stage</h3>
+            <div class="stage-grid">
+                <div class="md3-input-group">
+                    <label class="md3-label">Growth Stage</label>
+                    <select 
+                        class="md3-input"
+                        .value=${this._editingPreset.stage || ''}
+                        @change=${(e) => this._editingPreset = { ...this._editingPreset, stage: e.target.value }}
+                    >
+                        <option value="">Any Stage</option>
+                        <option value="seedling">Seedling</option>
+                        <option value="veg">Veg</option>
+                        <option value="flower">Flower</option>
+                        <option value="dry">Dry</option>
+                        <option value="cure">Cure</option>
+                    </select>
+                </div>
+                <md3-number-input
+                    label="Min Days in Stage"
+                    .value=${this._editingPreset.min_days_in_stage || 0}
+                    @change=${(e) => this._editingPreset = { ...this._editingPreset, min_days_in_stage: parseInt(e.detail) }}
+                    min="0"
+                ></md3-number-input>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0;">Nutrient Items</h3>
+                <button class="md3-button text" @click=${this._addNutrient} style="--mdc-button-horizontal-padding: 8px;">
+                    <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
+                    Add
+                </button>
+            </div>
+            
+            ${this._editingPreset.nutrients?.map((n, i) => x `
+                <div class="nutrient-row">
+                    <md3-text-input
+                        label="Nutrient Name"
+                        .value=${n.name}
+                        @change=${(e) => this._updateNutrient(i, { name: e.detail })}
+                        placeholder="e.g. CalMag"
+                    ></md3-text-input>
+                    <md3-number-input
+                        label="ml/L"
+                        .value=${n.dose_ml_l}
+                        @change=${(e) => this._updateNutrient(i, { dose_ml_l: parseFloat(e.detail) })}
+                        min="0"
+                        step="0.1"
+                    ></md3-number-input>
+                    <button class="md3-button icon" @click=${() => this._removeNutrient(i)} style="color: var(--error-color);">
+                        <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                    </button>
+                </div>
+            `)}
+        </div>
+      </div>
+    `;
+        }
+        constructor() {
+            super(...arguments);
+            _NutrientPresetsEditor_open_accessor_storage.set(this, __runInitializers(this, _open_initializers, false));
+            _NutrientPresetsEditor_hass_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _hass_initializers, void 0)));
+            _NutrientPresetsEditor_dataService_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _dataService_initializers, void 0)));
+            _NutrientPresetsEditor_presets_accessor_storage.set(this, (__runInitializers(this, _dataService_extraInitializers), __runInitializers(this, _presets_initializers, {})));
+            _NutrientPresetsEditor__view_accessor_storage.set(this, (__runInitializers(this, _presets_extraInitializers), __runInitializers(this, __view_initializers, 'LIST')));
+            _NutrientPresetsEditor__editingPreset_accessor_storage.set(this, (__runInitializers(this, __view_extraInitializers), __runInitializers(this, __editingPreset_initializers, null)));
+            _NutrientPresetsEditor__error_accessor_storage.set(this, (__runInitializers(this, __editingPreset_extraInitializers), __runInitializers(this, __error_initializers, null)));
+            __runInitializers(this, __error_extraInitializers);
+        }
+    };
+    _NutrientPresetsEditor_open_accessor_storage = new WeakMap();
+    _NutrientPresetsEditor_hass_accessor_storage = new WeakMap();
+    _NutrientPresetsEditor_dataService_accessor_storage = new WeakMap();
+    _NutrientPresetsEditor_presets_accessor_storage = new WeakMap();
+    _NutrientPresetsEditor__view_accessor_storage = new WeakMap();
+    _NutrientPresetsEditor__editingPreset_accessor_storage = new WeakMap();
+    _NutrientPresetsEditor__error_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "NutrientPresetsEditor");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _open_decorators = [n$5({ type: Boolean })];
+        _hass_decorators = [n$5({ attribute: false })];
+        _dataService_decorators = [n$5({ attribute: false })];
+        _presets_decorators = [n$5({ attribute: false })];
+        __view_decorators = [r$2()];
+        __editingPreset_decorators = [r$2()];
+        __error_decorators = [r$2()];
+        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _dataService_decorators, { kind: "accessor", name: "dataService", static: false, private: false, access: { has: obj => "dataService" in obj, get: obj => obj.dataService, set: (obj, value) => { obj.dataService = value; } }, metadata: _metadata }, _dataService_initializers, _dataService_extraInitializers);
+        __esDecorate(_classThis, null, _presets_decorators, { kind: "accessor", name: "presets", static: false, private: false, access: { has: obj => "presets" in obj, get: obj => obj.presets, set: (obj, value) => { obj.presets = value; } }, metadata: _metadata }, _presets_initializers, _presets_extraInitializers);
+        __esDecorate(_classThis, null, __view_decorators, { kind: "accessor", name: "_view", static: false, private: false, access: { has: obj => "_view" in obj, get: obj => obj._view, set: (obj, value) => { obj._view = value; } }, metadata: _metadata }, __view_initializers, __view_extraInitializers);
+        __esDecorate(_classThis, null, __editingPreset_decorators, { kind: "accessor", name: "_editingPreset", static: false, private: false, access: { has: obj => "_editingPreset" in obj, get: obj => obj._editingPreset, set: (obj, value) => { obj._editingPreset = value; } }, metadata: _metadata }, __editingPreset_initializers, __editingPreset_extraInitializers);
+        __esDecorate(_classThis, null, __error_decorators, { kind: "accessor", name: "_error", static: false, private: false, access: { has: obj => "_error" in obj, get: obj => obj._error, set: (obj, value) => { obj._error = value; } }, metadata: _metadata }, __error_initializers, __error_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
+      .preset-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      }
+      .preset-info {
+        flex: 1;
+      }
+      .preset-name {
+        font-weight: 500;
+        font-size: 1rem;
+      }
+      .preset-details {
+        font-size: 0.8rem;
+        opacity: 0.7;
+      }
+      .preset-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        opacity: 0.6;
+      }
+      .nutrient-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .nutrient-row md3-text-input {
+        flex: 2;
+      }
+      .nutrient-row md3-number-input {
+        flex: 1;
+      }
+      .error-bar {
+        background: var(--error-color, #ff5252);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        margin-bottom: 16px;
+        font-size: 0.9rem;
+      }
+      .form-section {
+          margin-bottom: 24px;
+      }
+      .form-section h3 {
+          margin-top: 0;
+          font-size: 0.9rem;
+          text-transform: uppercase;
+          opacity: 0.6;
+          letter-spacing: 1px;
+          margin-bottom: 12px;
+      }
+      .stage-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+      }
+    `
         ]
     });
     (() => {
@@ -14835,6 +15374,8 @@ class GrowspaceLogbookController {
                     return this._renderLogbookDialog(active);
                 case 'WATERING':
                     return this._renderWateringDialog(active, selectedDeviceData);
+                case 'NUTRIENT_PRESETS':
+                    return this._renderNutrientPresetsDialog(active, selectedDeviceData);
                 default:
                     return x ``;
             }
@@ -15055,6 +15596,20 @@ class GrowspaceLogbookController {
             @close=${() => this.store.ui.closeDialog()}
             @data-changed=${() => this.store.refreshData()}
         ></watering-dialog>
+        `;
+        }
+        _renderNutrientPresetsDialog(active, selectedDeviceData) {
+            if (active.type !== 'NUTRIENT_PRESETS')
+                return x ``;
+            return x `
+        <nutrient-presets-editor
+            .open=${true}
+            .hass=${this.hass}
+            .dataService=${this.store.dataService}
+            .presets=${selectedDeviceData?.nutrient_presets || {}}
+            @close=${() => this.store.ui.closeDialog()}
+            @data-changed=${() => this.store.refreshData()}
+        ></nutrient-presets-editor>
         `;
         }
         constructor() {
@@ -15792,6 +16347,17 @@ const plantCardStyles = i$6 `
                 return null;
             return PlantUtils.getPlantDisplayData(this.plant, this.strainLibrary);
         }
+        get _hasRecommendedPreset() {
+            if (!this.plant || !this.store)
+                return false;
+            const growspaceId = this.plant.attributes.growspace_id;
+            const device = this.store.data.$devices.get().find(d => d.device_id === growspaceId);
+            if (!device || !device.nutrient_presets)
+                return false;
+            const currentStage = this.plant.attributes.stage;
+            const daysInStage = this.plant.attributes.days_in_stage || 0;
+            return Object.values(device.nutrient_presets).some(p => p.stage === currentStage && (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage));
+        }
         // --- Click Handlers ---
         focus(options) {
             const card = this.shadowRoot?.querySelector('.plant-card-rich');
@@ -15877,7 +16443,16 @@ const plantCardStyles = i$6 `
           <div class="pc-info">
             <div class="pc-strain-name" title="${strainName}">${strainName}</div>
             ${pheno ? x `<div class="pc-pheno">${pheno}</div>` : E}
-            <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+               <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
+               ${this._hasRecommendedPreset ? x `
+                 <ha-svg-icon 
+                    .path=${mdiBottleTonicPlus} 
+                    style="--mdc-icon-size: 14px; color: var(--primary-color);" 
+                    title="Nutrient Preset Recommended"
+                 ></ha-svg-icon>
+               ` : E}
+            </div>
           </div>
 
           <growspace-plant-stats .stages=${stages}></growspace-plant-stats>
@@ -25010,6 +25585,18 @@ class ResizeController {
                     });
                     break;
                 }
+                case 'nutrient_presets':
+                    this.store.openNutrientPresetsDialog();
+                    break;
+                case 'control_dehumidifier':
+                    // Implementation for dehumidifier toggle
+                    if (this.device?.overview_entity_id) {
+                        this.hass.callService('growspace_manager', 'update_environment_config', {
+                            growspace_id: this._selectedDeviceController.value,
+                            dehumidifier_control_enabled: !this._envAttrs.dehumidifier_control_enabled
+                        });
+                    }
+                    break;
             }
         }
         render() {
@@ -25314,9 +25901,13 @@ class ResizeController {
             <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
             <span class="menu-item-label">Logbook</span>
         </div>
+        <div class="menu-item" @click=${() => this._triggerAction('nutrient_presets')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
+            <span class="menu-item-label">Nutrient Presets</span>
+        </div>
         <div class="menu-item" @click=${() => this._triggerAction('water')}>
             <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
-            <span class="menu-item-label">Water</span>
+            <span class="menu-item-label">${this.store.ui.$selectedPlants.get().size > 0 ? 'Water Selected' : 'Water Growspace'}</span>
         </div>
       </div>
     `;
@@ -30547,6 +31138,12 @@ class GrowspaceStore {
             }
             throw e;
         }
+    }
+    openNutrientPresetsDialog() {
+        this.ui.setActiveDialog({
+            type: 'NUTRIENT_PRESETS',
+            payload: {}
+        });
     }
     openLogbookDialog() {
         const growspaceId = this.data.$selectedDevice.get();

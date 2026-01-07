@@ -8,6 +8,7 @@ import { strainLibraryContext, storeContext } from '../context';
 import {
   mdiCheckboxMarked,
   mdiCheckboxBlankOutline,
+  mdiBottleTonicPlus,
 } from '@mdi/js';
 import { PlantEntity, StrainEntry, PlantDisplayData, StageDisplay } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
@@ -59,6 +60,20 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
   get displayData(): PlantDisplayData | null {
     if (!this.plant) return null;
     return PlantUtils.getPlantDisplayData(this.plant, this.strainLibrary);
+  }
+
+  get _hasRecommendedPreset(): boolean {
+    if (!this.plant || !this.store) return false;
+    const growspaceId = this.plant.attributes.growspace_id;
+    const device = this.store.data.$devices.get().find(d => d.device_id === growspaceId);
+    if (!device || !device.nutrient_presets) return false;
+
+    const currentStage = this.plant.attributes.stage;
+    const daysInStage = (this.plant.attributes as any).days_in_stage || 0;
+
+    return Object.values(device.nutrient_presets).some(p =>
+      p.stage === currentStage && (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage)
+    );
   }
 
 
@@ -161,7 +176,16 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
           <div class="pc-info">
             <div class="pc-strain-name" title="${strainName}">${strainName}</div>
             ${pheno ? html`<div class="pc-pheno">${pheno}</div>` : nothing}
-            <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+               <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
+               ${this._hasRecommendedPreset ? html`
+                 <ha-svg-icon 
+                    .path=${mdiBottleTonicPlus} 
+                    style="--mdc-icon-size: 14px; color: var(--primary-color);" 
+                    title="Nutrient Preset Recommended"
+                 ></ha-svg-icon>
+               ` : nothing}
+            </div>
           </div>
 
           <growspace-plant-stats .stages=${stages}></growspace-plant-stats>

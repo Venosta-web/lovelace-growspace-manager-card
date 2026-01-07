@@ -167,6 +167,8 @@ export const SERVICES = {
   STRAIN_RECOMMENDATION: 'strain_recommendation',
   WATER_PLANT: 'water_plant',
   WATER_GROWSPACE: 'water_growspace',
+  SAVE_NUTRIENT_PRESET: 'save_nutrient_preset',
+  REMOVE_NUTRIENT_PRESET: 'remove_nutrient_preset',
 };
 
 /**

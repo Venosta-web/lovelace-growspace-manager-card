@@ -87,6 +87,16 @@ export const GrowspaceAPIResponseSchema = z.object({
     granular_stage: z.string().optional().default('unknown'),
     is_day: z.boolean().optional().default(false),
     air_exchange: z.union([z.string(), z.number().transform(String)]).nullable().optional(), // Default handled by optionality
+    nutrient_presets: z.record(z.string(), z.object({
+        id: z.string(),
+        name: z.string(),
+        nutrients: z.array(z.object({
+            name: z.string(),
+            dose_ml_l: z.number(),
+        })),
+        stage: z.string().optional(),
+        min_days_in_stage: z.number().optional(),
+    })).optional().default({}),
 }).catchall(z.any()); // Allow extra fields to pass through without error
 
 export type GrowspaceAPIResponse = z.infer<typeof GrowspaceAPIResponseSchema>;
