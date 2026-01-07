@@ -802,4 +802,50 @@ export class DataService {
       throw err;
     }
   }
+
+  // --- Watering Services ---
+
+  async waterPlant(
+    plantId: string,
+    amount: number,
+    nutrients?: Record<string, number>
+  ): Promise<void> {
+    console.log('[DataService:waterPlant] Watering plant:', plantId, 'amount:', amount);
+    try {
+      const payload: Record<string, any> = {
+        plant_id: plantId,
+        amount,
+      };
+      if (nutrients && Object.keys(nutrients).length > 0) {
+        payload.nutrients = nutrients;
+      }
+      await this.hass.callService(DOMAIN, SERVICES.WATER_PLANT, payload);
+      console.log('[DataService:waterPlant] Service Called');
+    } catch (err) {
+      console.error('[DataService:waterPlant] Error:', err);
+      throw err;
+    }
+  }
+
+  async waterGrowspace(
+    growspaceId: string,
+    amountPerPlant: number,
+    nutrients?: Record<string, number>
+  ): Promise<void> {
+    console.log('[DataService:waterGrowspace] Watering growspace:', growspaceId, 'amount per plant:', amountPerPlant);
+    try {
+      const payload: Record<string, any> = {
+        growspace_id: growspaceId,
+        amount_per_plant: amountPerPlant,
+      };
+      if (nutrients && Object.keys(nutrients).length > 0) {
+        payload.nutrients = nutrients;
+      }
+      await this.hass.callService(DOMAIN, SERVICES.WATER_GROWSPACE, payload);
+      console.log('[DataService:waterGrowspace] Service Called');
+    } catch (err) {
+      console.error('[DataService:waterGrowspace] Error:', err);
+      throw err;
+    }
+  }
 }

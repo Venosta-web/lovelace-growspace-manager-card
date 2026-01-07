@@ -165,6 +165,8 @@ export const SERVICES = {
   ASK_GROW_ADVICE: 'ask_grow_advice',
   ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
   STRAIN_RECOMMENDATION: 'strain_recommendation',
+  WATER_PLANT: 'water_plant',
+  WATER_GROWSPACE: 'water_growspace',
 };
 
 /**

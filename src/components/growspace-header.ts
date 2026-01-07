@@ -16,7 +16,8 @@ import {
   mdiChevronRight,
   mdiAirHumidifierOff,
   mdiDna,
-  mdiWater
+  mdiWater,
+  mdiWaterPlus
 } from '@mdi/js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -820,6 +821,18 @@ export class GrowspaceHeader extends LitElement {
       case 'logbook':
         this.store.openLogbookDialog();
         break;
+      case 'water': {
+        const selectedPlants = this.store.ui.$selectedPlants.get();
+        this.store.ui.$activeDialog.set({
+          type: 'WATERING',
+          payload: {
+            plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
+            growspaceId: this._selectedDeviceController.value || undefined,
+            mode: selectedPlants.size > 0 ? 'plant' : 'growspace',
+          }
+        });
+        break;
+      }
     }
   }
 
@@ -1159,6 +1172,10 @@ export class GrowspaceHeader extends LitElement {
         <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
             <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
             <span class="menu-item-label">Logbook</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('water')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
+            <span class="menu-item-label">Water</span>
         </div>
       </div>
     `;

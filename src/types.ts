@@ -151,6 +151,10 @@ export interface RawPlantData {
   flower_start: string | null;
   dry_start: string | null;
   cure_start: string | null;
+
+  // Watering tracking
+  last_watered: string | null;
+  days_since_last_watering: number | null;
 }
 
 // The exact structure returned by GrowspaceSerializer.serialize_growspace
@@ -346,6 +350,17 @@ export interface GrowMasterDialogState {
 export interface StrainRecommendationDialogState {
   isLoading: boolean;
   response: string | null;
+}
+
+export interface WateringDialogState {
+  plantIds?: string[];
+  growspaceId?: string;
+  mode: 'plant' | 'growspace';
+}
+
+export interface NutrientEntry {
+  name: string;
+  concentration: number; // ml/L
 }
 
 // --- Events & History (Restored) ---

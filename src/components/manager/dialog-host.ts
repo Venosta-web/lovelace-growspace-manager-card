@@ -16,6 +16,7 @@ import '../../dialogs/grow-master-dialog';
 import '../../dialogs/strain-recommendation-dialog';
 import '../../dialogs/irrigation-dialog';
 import '../../dialogs/logbook-dialog';
+import '../../dialogs/watering-dialog';
 
 import { HomeAssistant } from 'custom-card-helpers';
 
@@ -80,6 +81,8 @@ export class DialogHost extends LitElement {
                 return this._renderIrrigationDialog(active, selectedDeviceData);
             case 'LOGBOOK':
                 return this._renderLogbookDialog(active);
+            case 'WATERING':
+                return this._renderWateringDialog(active, selectedDeviceData);
             default:
                 return html``;
         }
@@ -331,6 +334,23 @@ export class DialogHost extends LitElement {
             .growspaceId=${dialogState.growspaceId}
             @close=${() => this.store.ui.closeDialog()}
         ></logbook-dialog>
+        `;
+    }
+
+    private _renderWateringDialog(
+        active: ActiveDialogState,
+        selectedDeviceData?: GrowspaceDevice
+    ): TemplateResult {
+        if (active.type !== 'WATERING') return html``;
+        const dialogState = active.payload;
+        return html`
+        <watering-dialog
+            .open=${true}
+            .dialogState=${dialogState}
+            .growspaceName=${selectedDeviceData?.name || ''}
+            @close=${() => this.store.ui.closeDialog()}
+            @data-changed=${() => this.store.refreshData()}
+        ></watering-dialog>
         `;
     }
 }

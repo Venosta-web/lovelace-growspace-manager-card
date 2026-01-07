@@ -49,6 +49,7 @@ var mdiTuneVariant = "M8 13C6.14 13 4.59 14.28 4.14 16H2V18H4.14C4.59 19.72 6.14
 var mdiViewDashboard = "M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z";
 var mdiWater = "M12,20A6,6 0 0,1 6,14C6,10 12,3.25 12,3.25C12,3.25 18,10 18,14A6,6 0 0,1 12,20Z";
 var mdiWaterPercent = "M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,0 18,14C18,10 12,3.25 12,3.25M14.47,9.97L15.53,11.03L9.53,17.03L8.47,15.97M9.75,10A1.25,1.25 0 0,1 11,11.25A1.25,1.25 0 0,1 9.75,12.5A1.25,1.25 0 0,1 8.5,11.25A1.25,1.25 0 0,1 9.75,10M14.25,14.5A1.25,1.25 0 0,1 15.5,15.75A1.25,1.25 0 0,1 14.25,17A1.25,1.25 0 0,1 13,15.75A1.25,1.25 0 0,1 14.25,14.5Z";
+var mdiWaterPlus = "M12 18C12 18.7 12.12 19.36 12.34 20C12.23 20 12.12 20 12 20C8.69 20 6 17.31 6 14C6 10 12 3.25 12 3.25S16.31 8.1 17.62 12C14.5 12.22 12 14.82 12 18M19 17V14H17V17H14V19H17V22H19V19H22V17H19Z";
 var mdiWeatherCloudy = "M6,19A5,5 0 0,1 1,14A5,5 0 0,1 6,9C7,6.65 9.3,5 12,5C15.43,5 18.24,7.66 18.5,11.03L19,11A4,4 0 0,1 23,15A4,4 0 0,1 19,19H6M19,13H17V12A5,5 0 0,0 12,7C9.5,7 7.45,8.82 7.06,11.19C6.73,11.07 6.37,11 6,11A3,3 0 0,0 3,14A3,3 0 0,0 6,17H19A2,2 0 0,0 21,15A2,2 0 0,0 19,13Z";
 var mdiWeatherNight = "M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z";
 var mdiWeatherSunny = "M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,6.65C6.9,7.16 6.36,7.78 5.94,8.5C5.5,9.24 5.25,10 5.11,10.79L3.34,7M3.36,17L5.12,13.23C5.26,14 5.53,14.78 5.95,15.5C6.37,16.24 6.91,16.86 7.5,17.37L3.36,17M20.65,7L18.88,10.79C18.74,10 18.47,9.23 18.05,8.5C17.63,7.78 17.1,7.15 16.5,6.64L20.65,7M20.64,17L16.5,17.36C17.09,16.85 17.62,16.22 18.04,15.5C18.46,14.77 18.73,14 18.87,13.21L20.64,17M12,22L9.59,18.56C10.33,18.83 11.14,19 12,19C12.82,19 13.63,18.83 14.37,18.56L12,22Z";
@@ -835,6 +836,8 @@ const SERVICES = {
     ASK_GROW_ADVICE: 'ask_grow_advice',
     ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
     STRAIN_RECOMMENDATION: 'strain_recommendation',
+    WATER_PLANT: 'water_plant',
+    WATER_GROWSPACE: 'water_growspace',
 };
 /**
  * Default configuration values to replace magic numbers throughout the codebase.
@@ -5471,6 +5474,43 @@ class DataService {
         }
         catch (err) {
             console.error('[DataService:getStrainRecommendation] Error:', err);
+            throw err;
+        }
+    }
+    // --- Watering Services ---
+    async waterPlant(plantId, amount, nutrients) {
+        console.log('[DataService:waterPlant] Watering plant:', plantId, 'amount:', amount);
+        try {
+            const payload = {
+                plant_id: plantId,
+                amount,
+            };
+            if (nutrients && Object.keys(nutrients).length > 0) {
+                payload.nutrients = nutrients;
+            }
+            await this.hass.callService(DOMAIN, SERVICES.WATER_PLANT, payload);
+            console.log('[DataService:waterPlant] Service Called');
+        }
+        catch (err) {
+            console.error('[DataService:waterPlant] Error:', err);
+            throw err;
+        }
+    }
+    async waterGrowspace(growspaceId, amountPerPlant, nutrients) {
+        console.log('[DataService:waterGrowspace] Watering growspace:', growspaceId, 'amount per plant:', amountPerPlant);
+        try {
+            const payload = {
+                growspace_id: growspaceId,
+                amount_per_plant: amountPerPlant,
+            };
+            if (nutrients && Object.keys(nutrients).length > 0) {
+                payload.nutrients = nutrients;
+            }
+            await this.hass.callService(DOMAIN, SERVICES.WATER_GROWSPACE, payload);
+            console.log('[DataService:waterGrowspace] Service Called');
+        }
+        catch (err) {
+            console.error('[DataService:waterGrowspace] Error:', err);
             throw err;
         }
     }
@@ -14292,6 +14332,444 @@ class GrowspaceLogbookController {
 })();
 
 (() => {
+    var _WateringDialog_hass_accessor_storage, _WateringDialog_store_accessor_storage, _WateringDialog_open_accessor_storage, _WateringDialog_dialogState_accessor_storage, _WateringDialog_growspaceName_accessor_storage, _WateringDialog__volume_accessor_storage, _WateringDialog__nutrients_accessor_storage, _WateringDialog__isSubmitting_accessor_storage;
+    let _classDecorators = [t$2('watering-dialog')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _store_decorators;
+    let _store_initializers = [];
+    let _store_extraInitializers = [];
+    let _open_decorators;
+    let _open_initializers = [];
+    let _open_extraInitializers = [];
+    let _dialogState_decorators;
+    let _dialogState_initializers = [];
+    let _dialogState_extraInitializers = [];
+    let _growspaceName_decorators;
+    let _growspaceName_initializers = [];
+    let _growspaceName_extraInitializers = [];
+    let __volume_decorators;
+    let __volume_initializers = [];
+    let __volume_extraInitializers = [];
+    let __nutrients_decorators;
+    let __nutrients_initializers = [];
+    let __nutrients_extraInitializers = [];
+    let __isSubmitting_decorators;
+    let __isSubmitting_initializers = [];
+    let __isSubmitting_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        constructor() {
+            super(...arguments);
+            _WateringDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _WateringDialog_store_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
+            _WateringDialog_open_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _open_initializers, false)));
+            _WateringDialog_dialogState_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _dialogState_initializers, void 0)));
+            _WateringDialog_growspaceName_accessor_storage.set(this, (__runInitializers(this, _dialogState_extraInitializers), __runInitializers(this, _growspaceName_initializers, '')));
+            _WateringDialog__volume_accessor_storage.set(this, (__runInitializers(this, _growspaceName_extraInitializers), __runInitializers(this, __volume_initializers, 1.0)));
+            _WateringDialog__nutrients_accessor_storage.set(this, (__runInitializers(this, __volume_extraInitializers), __runInitializers(this, __nutrients_initializers, [])));
+            _WateringDialog__isSubmitting_accessor_storage.set(this, (__runInitializers(this, __nutrients_extraInitializers), __runInitializers(this, __isSubmitting_initializers, false)));
+            Object.defineProperty(this, "_dataService", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: __runInitializers(this, __isSubmitting_extraInitializers)
+            });
+        }
+        get hass() { return __classPrivateFieldGet(this, _WateringDialog_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _WateringDialog_hass_accessor_storage, value, "f"); }
+        get store() { return __classPrivateFieldGet(this, _WateringDialog_store_accessor_storage, "f"); }
+        set store(value) { __classPrivateFieldSet(this, _WateringDialog_store_accessor_storage, value, "f"); }
+        get open() { return __classPrivateFieldGet(this, _WateringDialog_open_accessor_storage, "f"); }
+        set open(value) { __classPrivateFieldSet(this, _WateringDialog_open_accessor_storage, value, "f"); }
+        get dialogState() { return __classPrivateFieldGet(this, _WateringDialog_dialogState_accessor_storage, "f"); }
+        set dialogState(value) { __classPrivateFieldSet(this, _WateringDialog_dialogState_accessor_storage, value, "f"); }
+        get growspaceName() { return __classPrivateFieldGet(this, _WateringDialog_growspaceName_accessor_storage, "f"); }
+        set growspaceName(value) { __classPrivateFieldSet(this, _WateringDialog_growspaceName_accessor_storage, value, "f"); }
+        // Form state
+        get _volume() { return __classPrivateFieldGet(this, _WateringDialog__volume_accessor_storage, "f"); } // Liters
+        set _volume(value) { __classPrivateFieldSet(this, _WateringDialog__volume_accessor_storage, value, "f"); }
+        get _nutrients() { return __classPrivateFieldGet(this, _WateringDialog__nutrients_accessor_storage, "f"); }
+        set _nutrients(value) { __classPrivateFieldSet(this, _WateringDialog__nutrients_accessor_storage, value, "f"); }
+        get _isSubmitting() { return __classPrivateFieldGet(this, _WateringDialog__isSubmitting_accessor_storage, "f"); }
+        set _isSubmitting(value) { __classPrivateFieldSet(this, _WateringDialog__isSubmitting_accessor_storage, value, "f"); }
+        willUpdate(changedProps) {
+            if (changedProps.has('open') && this.open) {
+                this._resetForm();
+            }
+            if (this.hass && (changedProps.has('hass') || !this._dataService)) {
+                this._dataService = new DataService(this.hass);
+            }
+        }
+        _resetForm() {
+            this._volume = 1.0;
+            this._nutrients = [];
+            this._isSubmitting = false;
+        }
+        _addNutrient() {
+            this._nutrients = [...this._nutrients, { name: '', concentration: 0 }];
+        }
+        _updateNutrient(index, field, value) {
+            const updated = [...this._nutrients];
+            updated[index] = { ...updated[index], [field]: value };
+            this._nutrients = updated;
+        }
+        _removeNutrient(index) {
+            this._nutrients = this._nutrients.filter((_, i) => i !== index);
+        }
+        _calculateTotalMl(concentration) {
+            return this._volume * concentration;
+        }
+        _getTotalNutrientsMl() {
+            return this._nutrients.reduce((sum, n) => sum + this._calculateTotalMl(n.concentration), 0);
+        }
+        async _submit() {
+            if (!this._dataService || !this.dialogState)
+                return;
+            this._isSubmitting = true;
+            try {
+                // Convert nutrients array to record
+                const nutrientsRecord = {};
+                for (const n of this._nutrients) {
+                    if (n.name && n.concentration > 0) {
+                        nutrientsRecord[n.name] = n.concentration;
+                    }
+                }
+                if (this.dialogState.mode === 'plant' && this.dialogState.plantIds?.length) {
+                    // Water individual plants
+                    for (const plantId of this.dialogState.plantIds) {
+                        await this._dataService.waterPlant(plantId, this._volume, Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined);
+                    }
+                    this.store?.showToast(`Watered ${this.dialogState.plantIds.length} plant(s)`, 'success');
+                }
+                else if (this.dialogState.growspaceId) {
+                    // Water entire growspace
+                    await this._dataService.waterGrowspace(this.dialogState.growspaceId, this._volume, Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined);
+                    this.store?.showToast('Watered all plants in growspace', 'success');
+                }
+                await this.store?.refreshData();
+                this._close();
+            }
+            catch (e) {
+                console.error('Failed to record watering:', e);
+                this.store?.showToast(`Error: ${e.message}`, 'error');
+            }
+            finally {
+                this._isSubmitting = false;
+            }
+        }
+        _close() {
+            this.dispatchEvent(new CustomEvent('close'));
+        }
+        render() {
+            if (!this.open)
+                return E;
+            const dialogColor = '#2196F3';
+            const mode = this.dialogState?.mode || 'growspace';
+            const plantCount = this.dialogState?.plantIds?.length || 0;
+            const modeText = mode === 'plant' && plantCount > 0
+                ? `Watering ${plantCount} selected plant${plantCount > 1 ? 's' : ''}`
+                : `Watering all plants in ${this.growspaceName}`;
+            return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiWaterPlus}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Record Watering</h2>
+              <div class="dialog-subtitle">${this.growspaceName}</div>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="dialog-body">
+            <!-- Mode Indicator -->
+            <div class="mode-indicator">
+              <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
+              <span>${modeText}</span>
+            </div>
+
+            <!-- Volume Input -->
+            <div class="detail-card">
+              <h3 style="margin-top: 0;">Solution Volume</h3>
+              <md3-number-input
+                label="Volume (Liters)"
+                .value=${this._volume}
+                .min=${0.1}
+                .step=${0.1}
+                @change=${(e) => {
+                this._volume = parseFloat(e.detail) || 0;
+            }}
+              ></md3-number-input>
+            </div>
+
+            <!-- Nutrients Section -->
+            <div class="detail-card">
+              <h3 style="margin-top: 0;">Nutrients (Optional)</h3>
+              <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 16px;">
+                Track nutrient concentrations added to your solution.
+              </p>
+
+              <div class="nutrients-section">
+                ${this._nutrients.map((nutrient, index) => x `
+                    <div class="nutrient-row">
+                      <md3-text-input
+                        label="Nutrient Name"
+                        .value=${nutrient.name}
+                        @change=${(e) => {
+                const val = e.target.value || e.detail;
+                this._updateNutrient(index, 'name', val);
+            }}
+                      ></md3-text-input>
+                      <md3-number-input
+                        label="ml/L"
+                        .value=${nutrient.concentration}
+                        .min=${0}
+                        .step=${0.1}
+                        @change=${(e) => {
+                this._updateNutrient(index, 'concentration', parseFloat(e.detail) || 0);
+            }}
+                      ></md3-number-input>
+                      <button
+                        class="md3-button text"
+                        @click=${() => this._removeNutrient(index)}
+                        title="Remove nutrient"
+                      >
+                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                          <path d="${mdiDelete}"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  `)}
+
+                <div class="add-nutrient-btn" @click=${this._addNutrient}>
+                  <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+                  <span>Add Nutrient</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Calculation Preview -->
+            ${this._nutrients.length > 0
+                ? x `
+                  <div class="calculation-preview">
+                    <h4 style="margin-top: 0; margin-bottom: 12px;">Calculation Preview</h4>
+                    ${this._nutrients
+                    .filter((n) => n.name && n.concentration > 0)
+                    .map((nutrient) => x `
+                          <div class="calculation-row">
+                            <span class="calculation-label">${nutrient.name}</span>
+                            <span class="calculation-value">
+                              ${this._volume}L × ${nutrient.concentration} ml/L =
+                              <strong>${this._calculateTotalMl(nutrient.concentration).toFixed(1)} ml</strong>
+                            </span>
+                          </div>
+                        `)}
+                    <div class="calculation-row">
+                      <span class="calculation-label">Total Nutrients</span>
+                      <span class="calculation-value">
+                        <strong>${this._getTotalNutrientsMl().toFixed(1)} ml</strong>
+                      </span>
+                    </div>
+                  </div>
+                `
+                : E}
+          </div>
+
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
+              Cancel
+            </button>
+            <button
+              class="md3-button primary"
+              style="background: ${dialogColor};"
+              @click=${this._submit}
+              ?disabled=${this._isSubmitting || this._volume <= 0}
+            >
+              ${this._isSubmitting ? 'Recording...' : 'Record Watering'}
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+        }
+    };
+    _WateringDialog_hass_accessor_storage = new WeakMap();
+    _WateringDialog_store_accessor_storage = new WeakMap();
+    _WateringDialog_open_accessor_storage = new WeakMap();
+    _WateringDialog_dialogState_accessor_storage = new WeakMap();
+    _WateringDialog_growspaceName_accessor_storage = new WeakMap();
+    _WateringDialog__volume_accessor_storage = new WeakMap();
+    _WateringDialog__nutrients_accessor_storage = new WeakMap();
+    _WateringDialog__isSubmitting_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "WateringDialog");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _store_decorators = [c$2({ context: storeContext, subscribe: true })];
+        _open_decorators = [n$5({ type: Boolean })];
+        _dialogState_decorators = [n$5({ attribute: false })];
+        _growspaceName_decorators = [n$5({ type: String })];
+        __volume_decorators = [r$2()];
+        __nutrients_decorators = [r$2()];
+        __isSubmitting_decorators = [r$2()];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
+        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
+        __esDecorate(_classThis, null, _dialogState_decorators, { kind: "accessor", name: "dialogState", static: false, private: false, access: { has: obj => "dialogState" in obj, get: obj => obj.dialogState, set: (obj, value) => { obj.dialogState = value; } }, metadata: _metadata }, _dialogState_initializers, _dialogState_extraInitializers);
+        __esDecorate(_classThis, null, _growspaceName_decorators, { kind: "accessor", name: "growspaceName", static: false, private: false, access: { has: obj => "growspaceName" in obj, get: obj => obj.growspaceName, set: (obj, value) => { obj.growspaceName = value; } }, metadata: _metadata }, _growspaceName_initializers, _growspaceName_extraInitializers);
+        __esDecorate(_classThis, null, __volume_decorators, { kind: "accessor", name: "_volume", static: false, private: false, access: { has: obj => "_volume" in obj, get: obj => obj._volume, set: (obj, value) => { obj._volume = value; } }, metadata: _metadata }, __volume_initializers, __volume_extraInitializers);
+        __esDecorate(_classThis, null, __nutrients_decorators, { kind: "accessor", name: "_nutrients", static: false, private: false, access: { has: obj => "_nutrients" in obj, get: obj => obj._nutrients, set: (obj, value) => { obj._nutrients = value; } }, metadata: _metadata }, __nutrients_initializers, __nutrients_extraInitializers);
+        __esDecorate(_classThis, null, __isSubmitting_decorators, { kind: "accessor", name: "_isSubmitting", static: false, private: false, access: { has: obj => "_isSubmitting" in obj, get: obj => obj._isSubmitting, set: (obj, value) => { obj._isSubmitting = value; } }, metadata: _metadata }, __isSubmitting_initializers, __isSubmitting_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
+      :host {
+        --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
+      }
+
+      .dialog-body {
+        padding: 24px;
+        overflow-y: auto;
+        max-height: 70vh;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .nutrient-row {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+      }
+
+      .nutrient-row md3-text-input {
+        flex: 2;
+      }
+
+      .nutrient-row md3-number-input {
+        flex: 1;
+      }
+
+      .nutrient-row button {
+        flex-shrink: 0;
+        padding: 8px;
+        min-width: auto;
+      }
+
+      .nutrients-section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .calculation-preview {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 8px;
+      }
+
+      .calculation-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .calculation-row:last-child {
+        border-bottom: none;
+        font-weight: 600;
+      }
+
+      .calculation-label {
+        color: var(--secondary-text-color);
+      }
+
+      .calculation-value {
+        color: var(--primary-text-color);
+      }
+
+      .mode-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        background: rgba(33, 150, 243, 0.1);
+        border-radius: 8px;
+        font-size: 0.9rem;
+      }
+
+      .mode-indicator svg {
+        width: 20px;
+        height: 20px;
+        fill: var(--primary-color);
+      }
+
+      .add-nutrient-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        transition: all 0.2s;
+      }
+
+      .add-nutrient-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+
+      .add-nutrient-btn svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+    `,
+        ]
+    });
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
+
+(() => {
     var _DialogHost_hass_accessor_storage, _DialogHost_store_accessor_storage, _DialogHost_strainLibrary_accessor_storage;
     let _classDecorators = [t$2('growspace-dialog-host')];
     let _classDescriptor;
@@ -14355,6 +14833,8 @@ class GrowspaceLogbookController {
                     return this._renderIrrigationDialog(active, selectedDeviceData);
                 case 'LOGBOOK':
                     return this._renderLogbookDialog(active);
+                case 'WATERING':
+                    return this._renderWateringDialog(active, selectedDeviceData);
                 default:
                     return x ``;
             }
@@ -14561,6 +15041,20 @@ class GrowspaceLogbookController {
             .growspaceId=${dialogState.growspaceId}
             @close=${() => this.store.ui.closeDialog()}
         ></logbook-dialog>
+        `;
+        }
+        _renderWateringDialog(active, selectedDeviceData) {
+            if (active.type !== 'WATERING')
+                return x ``;
+            const dialogState = active.payload;
+            return x `
+        <watering-dialog
+            .open=${true}
+            .dialogState=${dialogState}
+            .growspaceName=${selectedDeviceData?.name || ''}
+            @close=${() => this.store.ui.closeDialog()}
+            @data-changed=${() => this.store.refreshData()}
+        ></watering-dialog>
         `;
         }
         constructor() {
@@ -24504,6 +24998,18 @@ class ResizeController {
                 case 'logbook':
                     this.store.openLogbookDialog();
                     break;
+                case 'water': {
+                    const selectedPlants = this.store.ui.$selectedPlants.get();
+                    this.store.ui.$activeDialog.set({
+                        type: 'WATERING',
+                        payload: {
+                            plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
+                            growspaceId: this._selectedDeviceController.value || undefined,
+                            mode: selectedPlants.size > 0 ? 'plant' : 'growspace',
+                        }
+                    });
+                    break;
+                }
             }
         }
         render() {
@@ -24807,6 +25313,10 @@ class ResizeController {
         <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
             <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
             <span class="menu-item-label">Logbook</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('water')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
+            <span class="menu-item-label">Water</span>
         </div>
       </div>
     `;
