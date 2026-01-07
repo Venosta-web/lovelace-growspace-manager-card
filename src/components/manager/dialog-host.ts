@@ -317,6 +317,7 @@ export class DialogHost extends LitElement {
             .growspaceName=${selectedDeviceData?.name || ''}
             @close=${() => this.store.ui.closeDialog()}
             @closed=${() => this.store.ui.closeDialog()}
+            @data-changed=${() => this.store.refreshData()}
         ></irrigation-dialog>
         `;
     }

@@ -738,6 +738,9 @@ export class GrowspaceHeader extends LitElement {
       this._historyLoadingController = new StoreController(this, this.store.history.$historyLoading);
       this._activeEnvGraphsController = new StoreController(this, this.store.history.$activeEnvGraphs);
       this._linkedGraphGroupsController = new StoreController(this, this.store.history.$linkedGraphGroups);
+
+      // Trigger history loading for sparklines on initial load
+      this.store.history.loadHistoryOnDemand();
     }
     this._updateMetrics();
   }

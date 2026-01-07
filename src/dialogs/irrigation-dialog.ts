@@ -224,6 +224,7 @@ export class IrrigationDialog extends LitElement {
         a.time.localeCompare(b.time)
       );
       this._adding_irrigation_time = undefined;
+      this._notifyDataChanged();
     } catch (e) {
       console.error('Failed to add irrigation time:', e);
     }
@@ -240,6 +241,7 @@ export class IrrigationDialog extends LitElement {
 
       // Optimistic update
       this._irrigation_times = this._irrigation_times.filter((t) => t.time !== time);
+      this._notifyDataChanged();
     } catch (e) {
       console.error('Failed to remove irrigation time:', e);
     }
@@ -261,6 +263,7 @@ export class IrrigationDialog extends LitElement {
         a.time.localeCompare(b.time)
       );
       this._adding_drain_time = undefined;
+      this._notifyDataChanged();
     } catch (e) {
       console.error('Failed to add drain time:', e);
     }
@@ -277,9 +280,14 @@ export class IrrigationDialog extends LitElement {
 
       // Optimistic update
       this._drain_times = this._drain_times.filter((t) => t.time !== time);
+      this._notifyDataChanged();
     } catch (e) {
       console.error('Failed to remove drain time:', e);
     }
+  }
+
+  private _notifyDataChanged() {
+    this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
   }
 
   private _startAddingIrrigationTime(x: number, width: number) {

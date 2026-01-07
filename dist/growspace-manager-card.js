@@ -13151,6 +13151,7 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
                 const newTime = { time, duration: duration || this._irrigation_duration };
                 this._irrigation_times = [...this._irrigation_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
                 this._adding_irrigation_time = undefined;
+                this._notifyDataChanged();
             }
             catch (e) {
                 console.error('Failed to add irrigation time:', e);
@@ -13166,6 +13167,7 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
                 });
                 // Optimistic update
                 this._irrigation_times = this._irrigation_times.filter((t) => t.time !== time);
+                this._notifyDataChanged();
             }
             catch (e) {
                 console.error('Failed to remove irrigation time:', e);
@@ -13184,6 +13186,7 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
                 const newTime = { time, duration: duration || this._drain_duration };
                 this._drain_times = [...this._drain_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
                 this._adding_drain_time = undefined;
+                this._notifyDataChanged();
             }
             catch (e) {
                 console.error('Failed to add drain time:', e);
@@ -13199,10 +13202,14 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
                 });
                 // Optimistic update
                 this._drain_times = this._drain_times.filter((t) => t.time !== time);
+                this._notifyDataChanged();
             }
             catch (e) {
                 console.error('Failed to remove drain time:', e);
             }
+        }
+        _notifyDataChanged() {
+            this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
         }
         _startAddingIrrigationTime(x, width) {
             const percentage = x / width;
@@ -14529,6 +14536,7 @@ class GrowspaceLogbookController {
             .growspaceName=${selectedDeviceData?.name || ''}
             @close=${() => this.store.ui.closeDialog()}
             @closed=${() => this.store.ui.closeDialog()}
+            @data-changed=${() => this.store.refreshData()}
         ></irrigation-dialog>
         `;
         }
@@ -24409,6 +24417,8 @@ class ResizeController {
                 this._historyLoadingController = new libExports.StoreController(this, this.store.history.$historyLoading);
                 this._activeEnvGraphsController = new libExports.StoreController(this, this.store.history.$activeEnvGraphs);
                 this._linkedGraphGroupsController = new libExports.StoreController(this, this.store.history.$linkedGraphGroups);
+                // Trigger history loading for sparklines on initial load
+                this.store.history.loadHistoryOnDemand();
             }
             this._updateMetrics();
         }
