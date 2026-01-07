@@ -190,6 +190,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.store.clearPlantSelection();
   }
 
+  private _handleWaterSelected() {
+    this.store.openBatchWateringDialog();
+  }
+
   private _handleExitEditMode() {
     this.store.ui.setEditMode(false);
   }
@@ -238,6 +242,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             @toggle-expansion=${() => this.store.toggleHeaderExpansion()}
             @select-all=${this._handleSelectAll}
             @clear-selection=${this._handleClearSelection}
+            @water-selected=${this._handleWaterSelected}
             @exit-edit-mode=${this._handleExitEditMode}
         >
           <growspace-view-switcher

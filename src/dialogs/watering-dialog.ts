@@ -458,11 +458,23 @@ export class WateringDialog extends LitElement {
     let currentStage: string | undefined;
     let daysInStage = 0;
 
-    if (this.dialogState?.mode === 'plant' && this.dialogState.plantIds?.length === 1) {
-      const plant = device.plants.find(p => p.attributes.plant_id === this.dialogState?.plantIds?.[0]);
-      if (plant) {
-        currentStage = plant.attributes.stage;
-        daysInStage = (plant.attributes as any).days_in_stage || 0;
+    if (this.dialogState?.mode === 'plant' && this.dialogState.plantIds?.length) {
+      // Check if all selected plants are in the same stage
+      const selectedPlants = device.plants.filter(p =>
+        this.dialogState!.plantIds!.includes(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))
+      );
+
+      if (selectedPlants.length > 0) {
+        // Use first plant as baseline
+        const firstStage = selectedPlants[0].attributes.stage;
+        const isHomogeneous = selectedPlants.every(p => p.attributes.stage === firstStage);
+
+        if (isHomogeneous) {
+          currentStage = firstStage;
+          // Use minimum days in stage to be safe, or average? 
+          // Minimum ensures we don't recommend something too advanced for the youngest plant.
+          daysInStage = Math.min(...selectedPlants.map(p => (p.attributes as any).days_in_stage || 0));
+        }
       }
     }
 

@@ -548,6 +548,38 @@ export class GrowspaceStore {
         await this.handleMovePlantToNextStage(plant);
     }
 
+    openBatchWateringDialog() {
+        const selectedIds = Array.from(this.ui.$selectedPlants.get());
+        if (selectedIds.length === 0) return;
+
+        // Find growspace context
+        const devices = this.data.$devices.get();
+        const growspaceIds = new Set<string>();
+        let primaryGrowspaceId: string | undefined;
+
+        selectedIds.forEach(id => {
+            for (const device of devices) {
+                if (device.plants.some(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id)) {
+                    growspaceIds.add(device.device_id);
+                    if (!primaryGrowspaceId) primaryGrowspaceId = device.device_id;
+                    break;
+                }
+            }
+        });
+
+        const isSingleGrowspace = growspaceIds.size === 1;
+        const growspaceId = isSingleGrowspace ? primaryGrowspaceId : undefined;
+
+        this.ui.setActiveDialog({
+            type: 'WATERING',
+            payload: {
+                mode: 'plant',
+                plantIds: selectedIds,
+                growspaceId: growspaceId
+            }
+        });
+    }
+
     openAddPlantDialog(row?: number, col?: number) {
         if (row !== undefined && col !== undefined) {
             this.fetchStrainLibrary();

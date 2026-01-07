@@ -6,12 +6,12 @@ import { uiStyles } from '../../styles/ui.styles';
 
 @customElement('growspace-edit-mode-banner')
 export class EditModeBanner extends LitElement {
-    @property({ type: Number }) accessor selectedCount = 0;
+  @property({ type: Number }) accessor selectedCount = 0;
 
-    static styles = [
-        sharedStyles,
-        uiStyles,
-        css`
+  static styles = [
+    sharedStyles,
+    uiStyles,
+    css`
       :host {
         display: block;
       }
@@ -58,10 +58,10 @@ export class EditModeBanner extends LitElement {
         gap: 8px;
       }
     `
-    ];
+  ];
 
-    protected render(): TemplateResult {
-        return html`
+  protected render(): TemplateResult {
+    return html`
       <div class="edit-mode-banner">
         <div class="banner-content">
           <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
@@ -72,13 +72,14 @@ export class EditModeBanner extends LitElement {
         <div class="banner-actions">
           <button class="md3-button text" @click=${() => this._dispatch('select-all')}>Select All</button>
           <button class="md3-button text" @click=${() => this._dispatch('clear-selection')}>Clear</button>
+          <button class="md3-button text" @click=${() => this._dispatch('water-selected')}>Water / Nutrients</button>
           <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>Exit</button>
         </div>
       </div>
     `;
-    }
+  }
 
-    private _dispatch(event: string) {
-        this.dispatchEvent(new CustomEvent(event, { bubbles: true, composed: true }));
-    }
+  private _dispatch(event: string) {
+    this.dispatchEvent(new CustomEvent(event, { bubbles: true, composed: true }));
+  }
 }

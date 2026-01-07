@@ -14709,11 +14709,19 @@ class GrowspaceLogbookController {
             // Logic for recommendations
             let currentStage;
             let daysInStage = 0;
-            if (this.dialogState?.mode === 'plant' && this.dialogState.plantIds?.length === 1) {
-                const plant = device.plants.find(p => p.attributes.plant_id === this.dialogState?.plantIds?.[0]);
-                if (plant) {
-                    currentStage = plant.attributes.stage;
-                    daysInStage = plant.attributes.days_in_stage || 0;
+            if (this.dialogState?.mode === 'plant' && this.dialogState.plantIds?.length) {
+                // Check if all selected plants are in the same stage
+                const selectedPlants = device.plants.filter(p => this.dialogState.plantIds.includes(p.attributes.plant_id || p.entity_id.replace('sensor.', '')));
+                if (selectedPlants.length > 0) {
+                    // Use first plant as baseline
+                    const firstStage = selectedPlants[0].attributes.stage;
+                    const isHomogeneous = selectedPlants.every(p => p.attributes.stage === firstStage);
+                    if (isHomogeneous) {
+                        currentStage = firstStage;
+                        // Use minimum days in stage to be safe, or average? 
+                        // Minimum ensures we don't recommend something too advanced for the youngest plant.
+                        daysInStage = Math.min(...selectedPlants.map(p => p.attributes.days_in_stage || 0));
+                    }
                 }
             }
             return presets.map(p => {
@@ -15684,6 +15692,7 @@ class GrowspaceLogbookController {
         <div class="banner-actions">
           <button class="md3-button text" @click=${() => this._dispatch('select-all')}>Select All</button>
           <button class="md3-button text" @click=${() => this._dispatch('clear-selection')}>Clear</button>
+          <button class="md3-button text" @click=${() => this._dispatch('water-selected')}>Water / Nutrients</button>
           <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>Exit</button>
         </div>
       </div>
@@ -31036,6 +31045,35 @@ class GrowspaceStore {
     async finishDryingPlant(plant) {
         await this.handleMovePlantToNextStage(plant);
     }
+    openBatchWateringDialog() {
+        const selectedIds = Array.from(this.ui.$selectedPlants.get());
+        if (selectedIds.length === 0)
+            return;
+        // Find growspace context
+        const devices = this.data.$devices.get();
+        const growspaceIds = new Set();
+        let primaryGrowspaceId;
+        selectedIds.forEach(id => {
+            for (const device of devices) {
+                if (device.plants.some(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id)) {
+                    growspaceIds.add(device.device_id);
+                    if (!primaryGrowspaceId)
+                        primaryGrowspaceId = device.device_id;
+                    break;
+                }
+            }
+        });
+        const isSingleGrowspace = growspaceIds.size === 1;
+        const growspaceId = isSingleGrowspace ? primaryGrowspaceId : undefined;
+        this.ui.setActiveDialog({
+            type: 'WATERING',
+            payload: {
+                mode: 'plant',
+                plantIds: selectedIds,
+                growspaceId: growspaceId
+            }
+        });
+    }
     openAddPlantDialog(row, col) {
         if (row !== undefined && col !== undefined) {
             this.fetchStrainLibrary();
@@ -31421,6 +31459,9 @@ let GrowspaceManagerCard = (() => {
         _handleClearSelection() {
             this.store.clearPlantSelection();
         }
+        _handleWaterSelected() {
+            this.store.openBatchWateringDialog();
+        }
         _handleExitEditMode() {
             this.store.ui.setEditMode(false);
         }
@@ -31462,6 +31503,7 @@ let GrowspaceManagerCard = (() => {
             @toggle-expansion=${() => this.store.toggleHeaderExpansion()}
             @select-all=${this._handleSelectAll}
             @clear-selection=${this._handleClearSelection}
+            @water-selected=${this._handleWaterSelected}
             @exit-edit-mode=${this._handleExitEditMode}
         >
           <growspace-view-switcher
